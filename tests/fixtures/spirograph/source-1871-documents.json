@@ -1,0 +1,518 @@
+[
+  {
+    "version": 1,
+    "equations": {},
+    "parameters": {},
+    "settings": {
+      "background": "#000000",
+      "pointSize": 2,
+      "opacity": 1,
+      "colorMetric": "index",
+      "wireframe": false,
+      "showGrid": false,
+      "showAxes": false,
+      "scale": 1,
+      "scaleX": 1,
+      "scaleY": 1,
+      "scaleZ": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "offsetZ": 0,
+      "rotateZ": 0,
+      "layers": "[{\"id\":\"guide-spirograph-rose\",\"name\":\"指南 · Rose Curve\",\"rotors\":[{\"radius\":75,\"mode\":\"inside\"}],\"statorRadius\":150,\"statorColor\":\"#B4B4B4\",\"penDistance\":75,\"speed\":1,\"showGuides\":true,\"autoStopOnClosure\":true,\"strokeColor\":\"#2E8B57\",\"palette\":[\"#2E8B57\"],\"strokeWidth\":1,\"visible\":true,\"enabled\":true,\"repeatGradient\":false,\"phase\":0,\"direction\":1,\"opacity\":1,\"turns\":12}]",
+      "startEaseEnabled": true,
+      "endEaseEnabled": true,
+      "easeDuration": 0.6,
+      "fadeInStatorsOnStart": true,
+      "fadeOutStatorsOnFinish": false,
+      "showTrace": true,
+      "finishTrace": false,
+      "traceStartTime": 0,
+      "transparentBackground": false,
+      "spiroView": "native",
+      "spiroSpan": 400,
+      "spiroCenterX": 0,
+      "spiroCenterY": 0,
+      "statorRadius": 3,
+      "rotorRadius": 1,
+      "rotorMode": "inside",
+      "penDistance": 1.6,
+      "turns": 12,
+      "count": 18000,
+      "rotors": "",
+      "animate": true,
+      "drawDuration": 12,
+      "rotation": 0,
+      "rotationSpeed": 0,
+      "spirographVersion": "mathart-1.7.8-v1"
+    },
+    "palette": {
+      "name": "极光 · Aurora",
+      "stops": [
+        "#43d9bd",
+        "#88ebcf",
+        "#f9d48f",
+        "#f08c85"
+      ],
+      "mode": "linear",
+      "offset": 0,
+      "cycles": 1
+    },
+    "camera": {
+      "position": [
+        7,
+        5,
+        8
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "orthographic": false,
+      "zoom": 1,
+      "autoFit": true
+    },
+    "timeline": {
+      "duration": 0.1,
+      "fps": 30,
+      "loop": true,
+      "tracks": [
+        {
+          "id": "guide-spirograph-rose-track-0",
+          "type": "spirograph_finish_wait",
+          "target": "timeline.wait",
+          "label": "spirograph_finish_wait",
+          "start": 0,
+          "duration": 1200,
+          "from": 0,
+          "to": 0,
+          "easing": "sine-in-out",
+          "pingPong": false,
+          "enabled": true,
+          "spirographWait": "visual-or-deadline-v1"
+        }
+      ],
+      "schedule": "spirograph-sequence-v1"
+    },
+    "provenance": {
+      "kind": "MathArt Studio",
+      "original": {
+        "config_version": "1.0.0",
+        "type": "SPIROGRAPH",
+        "parameters": {},
+        "settings": {
+          "backgroundColor": "#000000",
+          "sceneTransform": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "rotationDegrees": 0,
+            "scale": 1
+          },
+          "startEaseEnabled": true,
+          "endEaseEnabled": true,
+          "fadeInStatorsOnStart": true,
+          "fadeOutStatorsOnFinish": false,
+          "layers": [
+            {
+              "id": "guide-spirograph-rose",
+              "name": "指南 · Rose Curve",
+              "statorRadius": 150,
+              "rotors": [
+                {
+                  "radius": 75,
+                  "mode": "INSIDE"
+                }
+              ],
+              "penDistance": 75,
+              "speed": 1,
+              "strokeWidth": 1,
+              "strokeColor": "#2E8B57",
+              "statorColor": "#B4B4B4",
+              "palette": [
+                "#2E8B57"
+              ],
+              "showGuides": true,
+              "autoStopOnClosure": true,
+              "visible": true,
+              "enabled": true
+            }
+          ]
+        },
+        "timeline": [
+          {
+            "type": "spirograph_finish_wait",
+            "duration": 1200
+          }
+        ],
+        "name": "指南 · Rose Curve"
+      },
+      "warnings": [
+        "已启用 MathArt 1.7.8 旋轮规则：场景旋转保留原度数、Y 偏移正值向下，原生视口每单位为一像素；旋转动画目标速率为弧度/秒。未运行原版应用，绘制时钟、抗锯齿与像素结果不保证一致。",
+        "以下字段尚未映射，保留在 source，当前绘制/动画不会应用：parameters。",
+        "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+        "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。",
+        "指南称 Rose 为花瓣图案，但这组参数按源运动学退化为直线；保留原参数和名称。"
+      ],
+      "reference": {
+        "url": "https://www.mathartstudio.art/guide/spirograph",
+        "section": "玫瑰曲线（Rose Curve）",
+        "completion": "runtime-defaults",
+        "assumptions": [
+          "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+          "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。",
+          "指南称 Rose 为花瓣图案，但这组参数按源运动学退化为直线；保留原参数和名称。"
+        ]
+      }
+    },
+    "id": "saved-1871:guide-spirograph-rose",
+    "name": "指南 · Rose Curve",
+    "description": "保留指南 R=150、r=75、笔距 75；源运动学下退化为直线，不替换为花瓣曲线。",
+    "kind": "spirograph",
+    "favorite": false
+  },
+  {
+    "version": 1,
+    "equations": {},
+    "parameters": {},
+    "settings": {
+      "background": "#000000",
+      "pointSize": 2,
+      "opacity": 1,
+      "colorMetric": "index",
+      "wireframe": false,
+      "showGrid": false,
+      "showAxes": false,
+      "scale": 1,
+      "scaleX": 1,
+      "scaleY": 1,
+      "scaleZ": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "offsetZ": 0,
+      "rotateZ": 0,
+      "layers": "[{\"id\":\"guide-spirograph-star\",\"name\":\"指南 · Star Pattern\",\"rotors\":[{\"radius\":50,\"mode\":\"inside\"}],\"statorRadius\":150,\"statorColor\":\"#B4B4B4\",\"penDistance\":60,\"speed\":1,\"showGuides\":true,\"autoStopOnClosure\":true,\"strokeColor\":\"#2E8B57\",\"palette\":[\"#2E8B57\"],\"strokeWidth\":1,\"visible\":true,\"enabled\":true,\"repeatGradient\":false,\"phase\":0,\"direction\":1,\"opacity\":1,\"turns\":12}]",
+      "startEaseEnabled": true,
+      "endEaseEnabled": true,
+      "easeDuration": 0.6,
+      "fadeInStatorsOnStart": true,
+      "fadeOutStatorsOnFinish": false,
+      "showTrace": true,
+      "finishTrace": false,
+      "traceStartTime": 0,
+      "transparentBackground": false,
+      "spiroView": "native",
+      "spiroSpan": 400,
+      "spiroCenterX": 0,
+      "spiroCenterY": 0,
+      "statorRadius": 3,
+      "rotorRadius": 1,
+      "rotorMode": "inside",
+      "penDistance": 1.6,
+      "turns": 12,
+      "count": 18000,
+      "rotors": "",
+      "animate": true,
+      "drawDuration": 12,
+      "rotation": 0,
+      "rotationSpeed": 0,
+      "spirographVersion": "mathart-1.7.8-v1"
+    },
+    "palette": {
+      "name": "极光 · Aurora",
+      "stops": [
+        "#43d9bd",
+        "#88ebcf",
+        "#f9d48f",
+        "#f08c85"
+      ],
+      "mode": "linear",
+      "offset": 0,
+      "cycles": 1
+    },
+    "camera": {
+      "position": [
+        7,
+        5,
+        8
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "orthographic": false,
+      "zoom": 1,
+      "autoFit": true
+    },
+    "timeline": {
+      "duration": 0.1,
+      "fps": 30,
+      "loop": true,
+      "tracks": [
+        {
+          "id": "guide-spirograph-star-track-0",
+          "type": "spirograph_finish_wait",
+          "target": "timeline.wait",
+          "label": "spirograph_finish_wait",
+          "start": 0,
+          "duration": 1200,
+          "from": 0,
+          "to": 0,
+          "easing": "sine-in-out",
+          "pingPong": false,
+          "enabled": true,
+          "spirographWait": "visual-or-deadline-v1"
+        }
+      ],
+      "schedule": "spirograph-sequence-v1"
+    },
+    "provenance": {
+      "kind": "MathArt Studio",
+      "original": {
+        "config_version": "1.0.0",
+        "type": "SPIROGRAPH",
+        "parameters": {},
+        "settings": {
+          "backgroundColor": "#000000",
+          "sceneTransform": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "rotationDegrees": 0,
+            "scale": 1
+          },
+          "startEaseEnabled": true,
+          "endEaseEnabled": true,
+          "fadeInStatorsOnStart": true,
+          "fadeOutStatorsOnFinish": false,
+          "layers": [
+            {
+              "id": "guide-spirograph-star",
+              "name": "指南 · Star Pattern",
+              "statorRadius": 150,
+              "rotors": [
+                {
+                  "radius": 50,
+                  "mode": "INSIDE"
+                }
+              ],
+              "penDistance": 60,
+              "speed": 1,
+              "strokeWidth": 1,
+              "strokeColor": "#2E8B57",
+              "statorColor": "#B4B4B4",
+              "palette": [
+                "#2E8B57"
+              ],
+              "showGuides": true,
+              "autoStopOnClosure": true,
+              "visible": true,
+              "enabled": true
+            }
+          ]
+        },
+        "timeline": [
+          {
+            "type": "spirograph_finish_wait",
+            "duration": 1200
+          }
+        ],
+        "name": "指南 · Star Pattern"
+      },
+      "warnings": [
+        "已启用 MathArt 1.7.8 旋轮规则：场景旋转保留原度数、Y 偏移正值向下，原生视口每单位为一像素；旋转动画目标速率为弧度/秒。未运行原版应用，绘制时钟、抗锯齿与像素结果不保证一致。",
+        "以下字段尚未映射，保留在 source，当前绘制/动画不会应用：parameters。",
+        "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+        "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。"
+      ],
+      "reference": {
+        "url": "https://www.mathartstudio.art/guide/spirograph",
+        "section": "星形图案（Star Pattern）",
+        "completion": "runtime-defaults",
+        "assumptions": [
+          "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+          "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。"
+        ]
+      }
+    },
+    "id": "saved-1871:guide-spirograph-star",
+    "name": "指南 · Star Pattern",
+    "description": "按指南的定子 150、内转子 50 与笔距 60 绘制星形。",
+    "kind": "spirograph",
+    "favorite": false
+  },
+  {
+    "version": 1,
+    "equations": {},
+    "parameters": {},
+    "settings": {
+      "background": "#000000",
+      "pointSize": 2,
+      "opacity": 1,
+      "colorMetric": "index",
+      "wireframe": false,
+      "showGrid": false,
+      "showAxes": false,
+      "scale": 1,
+      "scaleX": 1,
+      "scaleY": 1,
+      "scaleZ": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "offsetZ": 0,
+      "rotateZ": 0,
+      "layers": "[{\"id\":\"guide-spirograph-nested\",\"name\":\"指南 · 复杂螺旋\",\"rotors\":[{\"radius\":75,\"mode\":\"inside\"},{\"radius\":30,\"mode\":\"outside\"}],\"statorRadius\":150,\"statorColor\":\"#B4B4B4\",\"penDistance\":40,\"speed\":1,\"showGuides\":true,\"autoStopOnClosure\":true,\"strokeColor\":\"#2E8B57\",\"palette\":[\"#2E8B57\"],\"strokeWidth\":1,\"visible\":true,\"enabled\":true,\"repeatGradient\":false,\"phase\":0,\"direction\":1,\"opacity\":1,\"turns\":12}]",
+      "startEaseEnabled": true,
+      "endEaseEnabled": true,
+      "easeDuration": 0.6,
+      "fadeInStatorsOnStart": true,
+      "fadeOutStatorsOnFinish": false,
+      "showTrace": true,
+      "finishTrace": false,
+      "traceStartTime": 0,
+      "transparentBackground": false,
+      "spiroView": "native",
+      "spiroSpan": 400,
+      "spiroCenterX": 0,
+      "spiroCenterY": 0,
+      "statorRadius": 3,
+      "rotorRadius": 1,
+      "rotorMode": "inside",
+      "penDistance": 1.6,
+      "turns": 12,
+      "count": 18000,
+      "rotors": "",
+      "animate": true,
+      "drawDuration": 12,
+      "rotation": 0,
+      "rotationSpeed": 0,
+      "spirographVersion": "mathart-1.7.8-v1"
+    },
+    "palette": {
+      "name": "极光 · Aurora",
+      "stops": [
+        "#43d9bd",
+        "#88ebcf",
+        "#f9d48f",
+        "#f08c85"
+      ],
+      "mode": "linear",
+      "offset": 0,
+      "cycles": 1
+    },
+    "camera": {
+      "position": [
+        7,
+        5,
+        8
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "orthographic": false,
+      "zoom": 1,
+      "autoFit": true
+    },
+    "timeline": {
+      "duration": 0.1,
+      "fps": 30,
+      "loop": true,
+      "tracks": [
+        {
+          "id": "guide-spirograph-nested-track-0",
+          "type": "spirograph_finish_wait",
+          "target": "timeline.wait",
+          "label": "spirograph_finish_wait",
+          "start": 0,
+          "duration": 1200,
+          "from": 0,
+          "to": 0,
+          "easing": "sine-in-out",
+          "pingPong": false,
+          "enabled": true,
+          "spirographWait": "visual-or-deadline-v1"
+        }
+      ],
+      "schedule": "spirograph-sequence-v1"
+    },
+    "provenance": {
+      "kind": "MathArt Studio",
+      "original": {
+        "config_version": "1.0.0",
+        "type": "SPIROGRAPH",
+        "parameters": {},
+        "settings": {
+          "backgroundColor": "#000000",
+          "sceneTransform": {
+            "offsetX": 0,
+            "offsetY": 0,
+            "rotationDegrees": 0,
+            "scale": 1
+          },
+          "startEaseEnabled": true,
+          "endEaseEnabled": true,
+          "fadeInStatorsOnStart": true,
+          "fadeOutStatorsOnFinish": false,
+          "layers": [
+            {
+              "id": "guide-spirograph-nested",
+              "name": "指南 · 复杂螺旋",
+              "statorRadius": 150,
+              "rotors": [
+                {
+                  "radius": 75,
+                  "mode": "INSIDE"
+                },
+                {
+                  "radius": 30,
+                  "mode": "OUTSIDE"
+                }
+              ],
+              "penDistance": 40,
+              "speed": 1,
+              "strokeWidth": 1,
+              "strokeColor": "#2E8B57",
+              "statorColor": "#B4B4B4",
+              "palette": [
+                "#2E8B57"
+              ],
+              "showGuides": true,
+              "autoStopOnClosure": true,
+              "visible": true,
+              "enabled": true
+            }
+          ]
+        },
+        "timeline": [
+          {
+            "type": "spirograph_finish_wait",
+            "duration": 1200
+          }
+        ],
+        "name": "指南 · 复杂螺旋"
+      },
+      "warnings": [
+        "已启用 MathArt 1.7.8 旋轮规则：场景旋转保留原度数、Y 偏移正值向下，原生视口每单位为一像素；旋转动画目标速率为弧度/秒。未运行原版应用，绘制时钟、抗锯齿与像素结果不保证一致。",
+        "以下字段尚未映射，保留在 source，当前绘制/动画不会应用：parameters。",
+        "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+        "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。"
+      ],
+      "reference": {
+        "url": "https://www.mathartstudio.art/guide/spirograph",
+        "section": "复杂螺旋",
+        "completion": "runtime-defaults",
+        "assumptions": [
+          "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+          "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。"
+        ]
+      }
+    },
+    "id": "saved-1871:guide-spirograph-nested",
+    "name": "指南 · 复杂螺旋",
+    "description": "按指南的定子 150、内转子 75、外转子 30 与笔距 40 绘制嵌套旋轮。",
+    "kind": "spirograph",
+    "favorite": false
+  }
+]

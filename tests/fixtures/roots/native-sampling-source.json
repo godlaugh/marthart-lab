@@ -1,0 +1,410 @@
+{
+  "kind": "independent static-derived numerical candidates; not original runtime validation",
+  "arithmetic": "Python double; elementary trig may differ by last bits from retained JRE; RNG integer/bit vectors exact by specified recurrence",
+  "partitionAndDomain": [
+    {
+      "sampleCount": 10,
+      "configuredWorkers": 3,
+      "seed": "0",
+      "workers": [
+        {
+          "worker": 0,
+          "start": 0,
+          "count": 4,
+          "workerSeed": "0",
+          "samples": [
+            {
+              "ordinal": 0,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 2.30967787376657,
+              "rectangle": [
+                -0.5189271686570283,
+                0.2748348507002165
+              ]
+            },
+            {
+              "ordinal": 1,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 0.5043700511763394,
+              "rectangle": [
+                0.19509055559440358,
+                -0.33356320104670045
+              ]
+            },
+            {
+              "ordinal": 2,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -1.148108152592815,
+              "rectangle": [
+                0.9696830803996179,
+                0.7583650357449603
+              ]
+            },
+            {
+              "ordinal": 3,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 4.412491794821143,
+              "rectangle": [
+                -0.45009206792903034,
+                -0.7422056982524465
+              ]
+            }
+          ]
+        },
+        {
+          "worker": 1,
+          "start": 4,
+          "count": 3,
+          "workerSeed": "-7046029254386353131",
+          "samples": [
+            {
+              "ordinal": 4,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 3.2200582366333244,
+              "rectangle": [
+                0.8796022154075867,
+                0.2783329342238108
+              ]
+            },
+            {
+              "ordinal": 5,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 2.6713787713161725,
+              "rectangle": [
+                0.828341663194905,
+                -0.1749445483301839
+              ]
+            },
+            {
+              "ordinal": 6,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -2.236220672871471,
+              "rectangle": [
+                0.5495913121297507,
+                -0.8103632407298296
+              ]
+            }
+          ]
+        },
+        {
+          "worker": 2,
+          "start": 7,
+          "count": 3,
+          "workerSeed": "4354685564936845354",
+          "samples": [
+            {
+              "ordinal": 7,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -1.20037439535994,
+              "rectangle": [
+                -0.7816817572950681,
+                -0.8928607630290253
+              ]
+            },
+            {
+              "ordinal": 8,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 0.46934785285550706,
+              "rectangle": [
+                0.016098312200684584,
+                -0.6237763766946482
+              ]
+            },
+            {
+              "ordinal": 9,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -3.532205262951126,
+              "rectangle": [
+                0.6296488860506757,
+                -0.7876033766741841
+              ]
+            }
+          ]
+        }
+      ],
+      "parameterOrder": [
+        "fixed",
+        "real",
+        "rectangle"
+      ],
+      "drawsPerSample": 3
+    },
+    {
+      "sampleCount": 2,
+      "configuredWorkers": 4,
+      "seed": "0",
+      "workers": [
+        {
+          "worker": 0,
+          "start": 0,
+          "count": 1,
+          "workerSeed": "0",
+          "samples": [
+            {
+              "ordinal": 0,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 2.30967787376657,
+              "rectangle": [
+                -0.5189271686570283,
+                0.2748348507002165
+              ]
+            }
+          ]
+        },
+        {
+          "worker": 1,
+          "start": 1,
+          "count": 1,
+          "workerSeed": "-7046029254386353131",
+          "samples": [
+            {
+              "ordinal": 1,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 3.2200582366333244,
+              "rectangle": [
+                0.8796022154075867,
+                0.2783329342238108
+              ]
+            }
+          ]
+        }
+      ],
+      "parameterOrder": [
+        "fixed",
+        "real",
+        "rectangle"
+      ],
+      "drawsPerSample": 3
+    },
+    {
+      "sampleCount": 8,
+      "configuredWorkers": 2,
+      "seed": "42",
+      "workers": [
+        {
+          "worker": 0,
+          "start": 0,
+          "count": 4,
+          "workerSeed": "42",
+          "samples": [
+            {
+              "ordinal": 0,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 2.275636800328681,
+              "rectangle": [
+                0.36644694351969087,
+                -0.38256108933468047
+              ]
+            },
+            {
+              "ordinal": 1,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -2.2292150992586333,
+              "rectangle": [
+                0.33109790358914726,
+                0.8067445293443565
+              ]
+            },
+            {
+              "ordinal": 2,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -1.3121708658869435,
+              "rectangle": [
+                -0.44850386111659524,
+                -0.07269284838169332
+              ]
+            },
+            {
+              "ordinal": 3,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 2.8290177879003577,
+              "rectangle": [
+                0.8386555657374337,
+                -0.1270180511534269
+              ]
+            }
+          ]
+        },
+        {
+          "worker": 1,
+          "start": 4,
+          "count": 4,
+          "workerSeed": "-7046029254386353089",
+          "samples": [
+            {
+              "ordinal": 4,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 3.1860173122070474,
+              "rectangle": [
+                -0.23502370221801683,
+                -0.3790630356134086
+              ]
+            },
+            {
+              "ordinal": 5,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -0.062206677142022215,
+              "rectangle": [
+                0.964349040991971,
+                0.9653632118631954
+              ]
+            },
+            {
+              "ordinal": 6,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -2.400283237153987,
+              "rectangle": [
+                -0.8685956293864627,
+                0.35857884534119466
+              ]
+            },
+            {
+              "ordinal": 7,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -0.5699235313661619,
+              "rectangle": [
+                0.13655926103939975,
+                0.7615896458507458
+              ]
+            }
+          ]
+        }
+      ],
+      "parameterOrder": [
+        "fixed",
+        "real",
+        "rectangle"
+      ],
+      "drawsPerSample": 3
+    },
+    {
+      "sampleCount": 4,
+      "configuredWorkers": 1,
+      "seed": "-1",
+      "workers": [
+        {
+          "worker": 0,
+          "start": 0,
+          "count": 4,
+          "workerSeed": "-1",
+          "samples": [
+            {
+              "ordinal": 0,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -2.3105736911949504,
+              "rectangle": [
+                -0.9754600361575294,
+                0.32416896822439023
+              ]
+            },
+            {
+              "ordinal": 1,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -0.8356168271171338,
+              "rectangle": [
+                0.6523318009536625,
+                0.6120745035936666
+              ]
+            },
+            {
+              "ordinal": 2,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": -4.432106007691359,
+              "rectangle": [
+                -0.8352580162853867,
+                0.4458644063060404
+              ]
+            },
+            {
+              "ordinal": 3,
+              "fixed": [
+                2,
+                3
+              ],
+              "real": 0.5930329459202444,
+              "rectangle": [
+                0.1984562680484252,
+                0.8604912297204232
+              ]
+            }
+          ]
+        }
+      ],
+      "parameterOrder": [
+        "fixed",
+        "real",
+        "rectangle"
+      ],
+      "drawsPerSample": 3
+    }
+  ]
+}

@@ -1,0 +1,570 @@
+[
+  {
+    "id": "guide-domain-1",
+    "name": "指南 1 · 三次多项式",
+    "description": "按指南公式、视口和等值线设置创建。未公开设置采用默认值，补全说明保存在来源信息中。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 1：三次多项式",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
+        "演示时长设为 20 秒；指南未指定时长。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "DOMAIN_COLORING",
+      "name": "指南 1 · 三次多项式",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "parameters": {},
+      "domainColoring": {
+        "formula": "z^3 - 1",
+        "viewport": {
+          "centerX": 0,
+          "centerY": 0,
+          "scale": 0.8
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 20,
+          "modDensity": 17
+        },
+        "iteration": {
+          "enabled": false,
+          "nextFormula": ""
+        }
+      },
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 20
+        }
+      ]
+    }
+  },
+  {
+    "id": "guide-domain-2",
+    "name": "指南 2 · 正弦函数的极点平移",
+    "description": "按指南公式、视口和等值线设置创建。未公开设置采用默认值，补全说明保存在来源信息中。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 2：正弦函数的极点平移",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
+        "演示时长设为 20 秒；指南未指定时长。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "DOMAIN_COLORING",
+      "name": "指南 2 · 正弦函数的极点平移",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "parameters": {},
+      "domainColoring": {
+        "formula": "sin(z-i)/sin(z+i)",
+        "viewport": {
+          "centerX": 0,
+          "centerY": 0,
+          "scale": 0.3
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 4,
+          "modDensity": 16
+        },
+        "iteration": {
+          "enabled": false,
+          "nextFormula": ""
+        }
+      },
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 20
+        }
+      ]
+    }
+  },
+  {
+    "id": "guide-domain-3",
+    "name": "指南 3 · 参数化正弦函数",
+    "description": "按指南公式、视口和等值线设置创建。未公开设置采用默认值，补全说明保存在来源信息中。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 3：参数化正弦函数",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
+        "演示时长设为 20 秒；指南未指定时长。",
+        "指南只给出振荡范围；此演示从 0 秒启动，step 设为 0.02，采用默认边沿缓动。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "DOMAIN_COLORING",
+      "name": "指南 3 · 参数化正弦函数",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "parameters": {
+        "t": 0.95
+      },
+      "domainColoring": {
+        "formula": "sin(z-1)/sin(z+t i)",
+        "viewport": {
+          "centerX": 0,
+          "centerY": 0,
+          "scale": 0.6
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 4.5,
+          "modDensity": 13.5
+        },
+        "iteration": {
+          "enabled": false,
+          "nextFormula": ""
+        }
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": [
+                {
+                  "parameters": {
+                    "t": {
+                      "min": 2,
+                      "max": -2,
+                      "step": 0.02,
+                      "enable": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 20
+        }
+      ]
+    }
+  },
+  {
+    "id": "guide-domain-4",
+    "name": "指南 4 · 复数幂",
+    "description": "按指南公式、视口和等值线设置创建。未公开设置采用默认值，补全说明保存在来源信息中。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 4：复数幂",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
+        "演示时长设为 20 秒；指南未指定时长。",
+        "指南只给出振荡范围；此演示从 0 秒启动，step 设为 0.02，采用默认边沿缓动。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "DOMAIN_COLORING",
+      "name": "指南 4 · 复数幂",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "parameters": {
+        "a": 1
+      },
+      "domainColoring": {
+        "formula": "z^(a+3i)",
+        "viewport": {
+          "centerX": 0,
+          "centerY": 0,
+          "scale": 2.6
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 4.5,
+          "modDensity": 13.5
+        },
+        "iteration": {
+          "enabled": false,
+          "nextFormula": ""
+        }
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": [
+                {
+                  "parameters": {
+                    "a": {
+                      "min": 1,
+                      "max": 3,
+                      "step": 0.02,
+                      "enable": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 20
+        }
+      ]
+    }
+  },
+  {
+    "id": "guide-domain-5",
+    "name": "指南 5 · Newton 分形（指南命名）",
+    "description": "按指南公式、视口和等值线设置创建。配色及其余设置取自对应安装包配置。“Newton”为指南命名；所给公式含 +c，不是标准牛顿迭代。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 5：Newton 分形（指南命名）",
+      "completion": "packaged-config",
+      "assumptions": [],
+      "package": {
+        "file": "domain_coloring1.json",
+        "sha256": "b6eb69cc1b59cbf87f3401080c65e28a9bdb0a0d3fef11ecd9b41a7e150e025e"
+      }
+    },
+    "config": {
+      "settings": {
+        "background_color": "#05070D",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "line_weight": 0.6800000071525574,
+        "dot_size": 1.5,
+        "show_trails": true
+      },
+      "domainColoring": {
+        "viewport": {
+          "centerY": 0,
+          "centerX": 0,
+          "scale": 0.5
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 13,
+          "phaseSharpness": 0.15000000596046448,
+          "modSharpness": 0.699999988079071,
+          "bias": -7.450580707946131e-10,
+          "modDensity": 7,
+          "mix": 0.8999999761581421
+        },
+        "formulaParams": {
+          "a": 1,
+          "b": 0
+        },
+        "formula": "z",
+        "iteration": {
+          "escapeRadius": 1000000,
+          "nextFormula": "(w^3-1)/(3*w^2) + c",
+          "maxSteps": 64,
+          "steps": 8,
+          "enabled": true,
+          "seedMode": "CONSTANT_C"
+        }
+      },
+      "main_equation": {
+        "color": "#FFFFFF",
+        "scale": 0.25,
+        "position": [
+          400,
+          400
+        ],
+        "enabled": true
+      },
+      "name": "domain_coloring1",
+      "description": "",
+      "timeline": [
+        {
+          "duration": 1,
+          "label": "Wait",
+          "type": "wait",
+          "easing": "SINE_IN_OUT"
+        }
+      ],
+      "palette": [
+        "#C63A50",
+        "#D35455",
+        "#E06B5A",
+        "#ED815E",
+        "#DD8C53",
+        "#CC9547",
+        "#BA9D39",
+        "#A4B351",
+        "#85C966",
+        "#51DD7A",
+        "#49D48C",
+        "#41CA9B",
+        "#3AC0A9",
+        "#36ACA7",
+        "#3397A5",
+        "#3083A2"
+      ],
+      "type": "DOMAIN_COLORING",
+      "camera": {
+        "phi": "PI/2",
+        "theta": "0",
+        "gamma": "0"
+      },
+      "parameters": {
+        "t": 0.7
+      },
+      "config_version": "1.0.0",
+      "isUserScene": true
+    }
+  },
+  {
+    "id": "guide-domain-6",
+    "name": "指南 6 · 三角迭代",
+    "description": "按指南公式、视口和等值线设置创建。配色及其余设置取自对应安装包配置。按实际配置使用 PIXEL_Z 种子；原文件名称中的 ZERO 不改变计算。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 6：三角迭代",
+      "completion": "packaged-config",
+      "assumptions": [],
+      "package": {
+        "file": "domain_coloring_zero_demo.json",
+        "sha256": "339a5cba31bb91c192ea47066aa6315fb17feba020abc03c2469ec6a0537cb76"
+      }
+    },
+    "config": {
+      "settings": {
+        "background_color": "#05070D",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "line_weight": 0.6800000071525574,
+        "dot_size": 1.5,
+        "show_trails": true
+      },
+      "domainColoring": {
+        "viewport": {
+          "centerY": 0,
+          "centerX": -0.5,
+          "scale": 0.5
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 10,
+          "phaseSharpness": 0.4000000059604645,
+          "modSharpness": 0.800000011920929,
+          "bias": 0,
+          "modDensity": 6,
+          "mix": 0.75
+        },
+        "formulaParams": {
+          "a": 1,
+          "b": 0
+        },
+        "formula": "z",
+        "iteration": {
+          "escapeRadius": 64,
+          "nextFormula": "sin(w)cos(w)/(1+w)",
+          "maxSteps": 64,
+          "steps": 45,
+          "enabled": true,
+          "seedMode": "PIXEL_Z"
+        }
+      },
+      "main_equation": {
+        "color": "#FFFFFF",
+        "scale": 0.25,
+        "position": [
+          400,
+          400
+        ],
+        "enabled": true
+      },
+      "name": "domain_coloring_zero_demo",
+      "description": "ZERO seed mode demo: w_{k+1}=w_k^2+c",
+      "timeline": [
+        {
+          "duration": 1,
+          "label": "Wait",
+          "type": "wait",
+          "easing": "SINE_IN_OUT"
+        }
+      ],
+      "palette": [
+        "#E76F51",
+        "#F4A261",
+        "#E0E1DD",
+        "#778DA9",
+        "#415A77",
+        "#1B263B",
+        "#0D1B2A"
+      ],
+      "type": "DOMAIN_COLORING",
+      "camera": {
+        "phi": "PI/2",
+        "theta": "0",
+        "gamma": "0"
+      },
+      "parameters": {
+        "t": 0.7
+      },
+      "config_version": "1.0.0",
+      "isUserScene": true
+    }
+  },
+  {
+    "id": "guide-domain-7",
+    "name": "指南 7 · ZERO 种子迭代",
+    "description": "按指南公式、视口和等值线设置创建。配色及其余设置取自对应安装包配置。按实际配置执行 sin(w + z²)；原文件的线性迭代描述不改变计算。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 7：ZERO 种子迭代",
+      "completion": "packaged-config",
+      "assumptions": [],
+      "package": {
+        "file": "domain_coloring_zero_linear_demo.json",
+        "sha256": "be59259b75f1cfe52709686769db7c1d75fc3ce73c7fbcd9d835a9d09445f344"
+      }
+    },
+    "config": {
+      "settings": {
+        "background_color": "#05070D",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "line_weight": 0.6800000071525574,
+        "dot_size": 1.5,
+        "show_trails": true
+      },
+      "domainColoring": {
+        "viewport": {
+          "centerY": 0,
+          "centerX": 0,
+          "scale": 1.2000000476837158
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 9,
+          "phaseSharpness": 0.3499999940395355,
+          "modSharpness": 0.699999988079071,
+          "bias": 0,
+          "modDensity": 5,
+          "mix": 0.8500000238418579
+        },
+        "formulaParams": {
+          "a": 1,
+          "b": 0
+        },
+        "formula": "z",
+        "iteration": {
+          "escapeRadius": 1024,
+          "nextFormula": "sin(w +z^2)",
+          "maxSteps": 64,
+          "steps": 27,
+          "enabled": true,
+          "seedMode": "ZERO"
+        }
+      },
+      "main_equation": {
+        "color": "#FFFFFF",
+        "scale": 0.25,
+        "position": [
+          400,
+          400
+        ],
+        "enabled": true
+      },
+      "name": "domain_coloring_zero_linear_demo",
+      "description": "ZERO seed mode demo: w_{k+1}=w_k+z",
+      "timeline": [
+        {
+          "duration": 1,
+          "label": "Wait",
+          "type": "wait",
+          "easing": "SINE_IN_OUT"
+        }
+      ],
+      "palette": [
+        "#1D3557",
+        "#457B9D",
+        "#A8DADC",
+        "#F1FAEE",
+        "#F4A261",
+        "#E76F51",
+        "#A4243B"
+      ],
+      "type": "DOMAIN_COLORING",
+      "camera": {
+        "phi": "PI/2",
+        "theta": "0",
+        "gamma": "0"
+      },
+      "parameters": {
+        "t": 0.7
+      },
+      "config_version": "1.0.0",
+      "isUserScene": true
+    }
+  },
+  {
+    "id": "guide-domain-8",
+    "name": "指南 8 · 有理函数",
+    "description": "按指南公式、视口和等值线设置创建。未公开设置采用默认值，补全说明保存在来源信息中。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/domain-coloring",
+      "section": "示例 8：有理函数",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
+        "演示时长设为 20 秒；指南未指定时长。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "DOMAIN_COLORING",
+      "name": "指南 8 · 有理函数",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "parameters": {},
+      "domainColoring": {
+        "formula": "((z^2 - 1)(z - 2 - i)^2) / (z^2 + 2 + 2i)",
+        "viewport": {
+          "centerX": 0,
+          "centerY": 0,
+          "scale": 0.3
+        },
+        "levelCurve": {
+          "mode": "PHASE_MODULUS",
+          "phaseDensity": 5,
+          "modDensity": 18
+        },
+        "iteration": {
+          "enabled": false,
+          "nextFormula": ""
+        }
+      },
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 20
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,12 @@
+import {describe,it,expect,vi} from 'vitest';
+import {BouncingGpu,validateBouncingGpuJob,type BouncingGpuJob} from '../src/engine/bouncingGpu';
+const job=():BouncingGpuJob=>({initial:new Float64Array([0,0,1,0,.1,.2,.3,.4]),boundary:{kind:'circle',radius:1},time:1});
+describe('Bouncing GPU owner validation and explicit fallback',()=>{
+ it('accepts normalized circle/ellipse/convex polygon states without modifying source',()=>{for(const boundary of [{kind:'circle',radius:1},{kind:'ellipse',a:2,b:1},{kind:'polygon',vertices:[[-1,-1],[1,-1],[1,1],[-1,1]]}] as const){const input={...job(),boundary:structuredClone(boundary)} as BouncingGpuJob,before=structuredClone(input);validateBouncingGpuJob(input);expect(input).toEqual(before);}});
+ it.each([0,3,4_000_004])('bounds xy/vxy expansion before GL allocation: %s floats',length=>{expect(()=>validateBouncingGpuJob({...job(),initial:new Float32Array(length)})).toThrow(/状态/);});
+ it.each([NaN,Infinity,-1])('rejects invalid elapsed time %s',time=>expect(()=>validateBouncingGpuJob({...job(),time})).toThrow(/时间/));
+ it('rejects out-of-bound starts, nonfinite state, nonconvex geometry and narrow axes',()=>{const a=job();a.initial[0]=2;expect(()=>validateBouncingGpuJob(a)).toThrow(/初始/);a.initial[0]=NaN;expect(()=>validateBouncingGpuJob(a)).toThrow(/初始/);expect(()=>validateBouncingGpuJob({...job(),boundary:{kind:'polygon',vertices:[[-1,-1],[1,-1],[0,0],[1,1],[-1,1]]}})).toThrow(/凸/);expect(()=>validateBouncingGpuJob({...job(),boundary:{kind:'ellipse',a:2000,b:1}})).toThrow(/轴比/);});
+ it('preserves explicit CPU fallback for huge travel or underflow rather than dropping motion',()=>{expect(()=>validateBouncingGpuJob({...job(),time:129})).toThrow(/预算/);const tiny=job();tiny.initial[2]=1e-40;expect(()=>validateBouncingGpuJob(tiny)).toThrow(/精度/);});
+ it('returns no fake GPU state when canvas is unavailable and disposes idempotently',()=>{vi.stubGlobal('OffscreenCanvas',undefined);try{const gpu=new BouncingGpu(),result=gpu.advance(job());expect(result.states).toBeUndefined();expect(result.warning).toContain('OffscreenCanvas');gpu.dispose();gpu.dispose();}finally{vi.unstubAllGlobals();}});
+ it('checks resources before requesting a context',()=>{const canvas=vi.fn();vi.stubGlobal('OffscreenCanvas',canvas);try{const result=new BouncingGpu().advance({...job(),time:9999});expect(result.warning).toContain('预算');expect(canvas).not.toHaveBeenCalled();}finally{vi.unstubAllGlobals();}});
+});

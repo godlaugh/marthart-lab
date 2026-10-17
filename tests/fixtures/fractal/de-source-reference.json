@@ -1,0 +1,1346 @@
+{
+  "schemaVersion": 1,
+  "status": "independent-static-reference-vectors",
+  "authority": "No production import; no original app/JVM or GL execution. Python struct binary32 operations and math transcendental reference only.",
+  "generator": {
+    "path": "studio/.cache/fractal-de-source/build-independent-fixtures.py",
+    "sha256": "b31e68cf66807668c8b0a1bd1aab9309adab51b590f239b6d57395944802630c"
+  },
+  "capabilities": [
+    {
+      "id": "mandelbrot-integer",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": true
+      }
+    },
+    {
+      "id": "mandelbrot-noninteger",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "julia-integer",
+      "input": {
+        "formula": "julia",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": true
+      }
+    },
+    {
+      "id": "julia-noninteger",
+      "input": {
+        "formula": "julia",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "newton-integer",
+      "input": {
+        "formula": "newton",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "newton-noninteger",
+      "input": {
+        "formula": "newton",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "nova-integer",
+      "input": {
+        "formula": "nova",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "nova-noninteger",
+      "input": {
+        "formula": "nova",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "phoenix-integer",
+      "input": {
+        "formula": "phoenix",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "phoenix-noninteger",
+      "input": {
+        "formula": "phoenix",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "magnet1-integer",
+      "input": {
+        "formula": "magnet1",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "magnet1-noninteger",
+      "input": {
+        "formula": "magnet1",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "magnet2-integer",
+      "input": {
+        "formula": "magnet2",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "magnet2-noninteger",
+      "input": {
+        "formula": "magnet2",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "lambda-integer",
+      "input": {
+        "formula": "lambda",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "lambda-noninteger",
+      "input": {
+        "formula": "lambda",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "c_sin-integer",
+      "input": {
+        "formula": "c_sin",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "c_sin-noninteger",
+      "input": {
+        "formula": "c_sin",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "spiral_septagon-integer",
+      "input": {
+        "formula": "spiral_septagon",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "spiral_septagon-noninteger",
+      "input": {
+        "formula": "spiral_septagon",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "binocular-integer",
+      "input": {
+        "formula": "binocular",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": true
+      }
+    },
+    {
+      "id": "binocular-noninteger",
+      "input": {
+        "formula": "binocular",
+        "powerF": 2.5,
+        "effectivePowerF": 2.5,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "near-below",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 2.0000009536743164,
+        "effectivePowerF": 2.0000009536743164,
+        "p": 2,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": true
+      }
+    },
+    {
+      "id": "near-above",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 2.0000011920928955,
+        "effectivePowerF": 2.0000011920928955,
+        "p": 2,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    },
+    {
+      "id": "near-negative-side",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 1.9999990463256836,
+        "effectivePowerF": 1.9999990463256836,
+        "p": 2,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": true
+      }
+    },
+    {
+      "id": "burning-ship",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 1,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "tricorn",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 2,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "no-de-selected",
+      "input": {
+        "formula": "mandelbrot",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 3,
+        "formulaType": 0,
+        "needsDistanceEstimator": false
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "supplied-p-below2",
+      "input": {
+        "formula": "binocular",
+        "powerF": 3.0,
+        "effectivePowerF": 3.0,
+        "p": 1,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": true,
+        "capable": false
+      }
+    },
+    {
+      "id": "binocular-stale-integerflag-dynamic-p4",
+      "input": {
+        "formula": "binocular",
+        "powerF": 3.5,
+        "effectivePowerF": 3.5,
+        "p": 4,
+        "formulaType": 0,
+        "needsDistanceEstimator": true
+      },
+      "expected": {
+        "isIntegerPower": false,
+        "capable": false
+      }
+    }
+  ],
+  "orbits": [
+    {
+      "id": "mandel-p2-ordinary-c2",
+      "input": {
+        "p": 2,
+        "julia": false,
+        "zHighSteps": [
+          [
+            0,
+            0
+          ],
+          [
+            2,
+            0
+          ]
+        ],
+        "finalZHigh": [
+          6,
+          0
+        ],
+        "path": "ordinary",
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          5.0,
+          0.0
+        ],
+        "derivativeBits": [
+          "40a00000",
+          "00000000"
+        ],
+        "derivativeTrace": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            5.0,
+            0.0
+          ]
+        ],
+        "distance": {
+          "valid": true,
+          "value": 4.300222873687744,
+          "computed": 4.300222873687744,
+          "radius": 6.0,
+          "derivativeLength": 5.0,
+          "valueBits": "40899b6d"
+        }
+      },
+      "meaning": "Analytical polynomial: z0=0,c=2; z2=6 and D2=5; source DE=12*ln(6)/5 before float rounding"
+    },
+    {
+      "id": "mandel-p2-perturb-c2-extra-derivative",
+      "input": {
+        "p": 2,
+        "julia": false,
+        "zHighSteps": [
+          [
+            0,
+            0
+          ],
+          [
+            2,
+            0
+          ],
+          [
+            6,
+            0
+          ]
+        ],
+        "finalZHigh": [
+          6,
+          0
+        ],
+        "path": "perturbation",
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          61.0,
+          0.0
+        ],
+        "derivativeBits": [
+          "42740000",
+          "00000000"
+        ],
+        "derivativeTrace": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            5.0,
+            0.0
+          ],
+          [
+            61.0,
+            0.0
+          ]
+        ],
+        "distance": {
+          "valid": true,
+          "value": 0.3524772822856903,
+          "computed": 0.3524772822856903,
+          "radius": 6.0,
+          "derivativeLength": 61.0,
+          "valueBits": "3eb477e7"
+        }
+      },
+      "meaning": "Source perturb branch updates derivative at z2=6 before checking escape there: D=61, DE=12*ln(6)/61"
+    },
+    {
+      "id": "julia-p2-single-update",
+      "input": {
+        "p": 2,
+        "julia": true,
+        "zHighSteps": [
+          [
+            2,
+            0
+          ]
+        ],
+        "finalZHigh": [
+          4,
+          0
+        ],
+        "path": "ordinary",
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          4.0,
+          0.0
+        ],
+        "derivativeBits": [
+          "40800000",
+          "00000000"
+        ],
+        "derivativeTrace": [
+          [
+            4.0,
+            0.0
+          ]
+        ],
+        "distance": {
+          "valid": true,
+          "value": 2.7725887298583984,
+          "computed": 2.7725887298583984,
+          "radius": 4.0,
+          "derivativeLength": 4.0,
+          "valueBits": "40317218"
+        }
+      },
+      "meaning": "z0=2,c=0; z1=4,D1=4; source DE=2*ln(4)"
+    },
+    {
+      "id": "julia-p3-complex-samples",
+      "input": {
+        "p": 3,
+        "julia": true,
+        "zHighSteps": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            2
+          ]
+        ],
+        "finalZHigh": [
+          3,
+          4
+        ],
+        "path": "ordinary",
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          0.0,
+          -72.0
+        ],
+        "derivativeBits": [
+          "00000000",
+          "c2900000"
+        ],
+        "derivativeTrace": [
+          [
+            0.0,
+            6.0
+          ],
+          [
+            0.0,
+            -72.0
+          ]
+        ],
+        "distance": {
+          "valid": true,
+          "value": 0.3352995812892914,
+          "computed": 0.3352995812892914,
+          "radius": 5.0,
+          "derivativeLength": 72.0,
+          "valueBits": "3eabac63"
+        }
+      },
+      "meaning": "Prescribed source high-component samples; not an executed original orbit"
+    },
+    {
+      "id": "mandel-p4-high-only",
+      "input": {
+        "p": 4,
+        "julia": false,
+        "zHighSteps": [
+          [
+            0,
+            0
+          ],
+          [
+            1.0000001192092896,
+            0.125
+          ]
+        ],
+        "finalZHigh": [
+          6,
+          0.25
+        ],
+        "path": "ordinary",
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          4.812501430511475,
+          1.4921878576278687
+        ],
+        "derivativeBits": [
+          "409a0003",
+          "3fbf0003"
+        ],
+        "derivativeTrace": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            4.812501430511475,
+            1.4921878576278687
+          ]
+        ],
+        "distance": {
+          "valid": true,
+          "value": 8.546216011047363,
+          "computed": 8.546216011047363,
+          "radius": 6.005206108093262,
+          "derivativeLength": 5.0385308265686035,
+          "valueBits": "4108bd4d"
+        }
+      },
+      "meaning": "Prescribed source high-component samples; not an executed original orbit"
+    },
+    {
+      "id": "power64-repeated-multiplication",
+      "input": {
+        "p": 64,
+        "julia": true,
+        "zHighSteps": [
+          [
+            1.001,
+            0.001
+          ]
+        ],
+        "finalZHigh": [
+          2,
+          1
+        ],
+        "path": "ordinary",
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          68.0269546508789,
+          4.2870774269104
+        ],
+        "derivativeBits": [
+          "42880dcd",
+          "40892fbd"
+        ],
+        "derivativeTrace": [
+          [
+            68.0269546508789,
+            4.2870774269104
+          ]
+        ],
+        "distance": {
+          "valid": true,
+          "value": 1.689536213874817,
+          "computed": 1.689536213874817,
+          "radius": 2.2360680103302,
+          "derivativeLength": 68.16190338134766,
+          "valueBits": "3fd842b9"
+        }
+      },
+      "meaning": "Prescribed source high-component samples; not an executed original orbit"
+    },
+    {
+      "id": "power66-64-multiply-ceiling",
+      "input": {
+        "p": 66,
+        "julia": true,
+        "zHighSteps": [
+          [
+            1.001,
+            0.001
+          ]
+        ],
+        "finalZHigh": [
+          2,
+          1
+        ],
+        "path": "ordinary",
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          70.21853637695312,
+          4.495622634887695
+        ],
+        "derivativeBits": [
+          "428c6fe4",
+          "408fdc24"
+        ],
+        "derivativeTrace": [
+          [
+            70.21853637695312,
+            4.495622634887695
+          ]
+        ],
+        "distance": {
+          "valid": true,
+          "value": 1.6878471374511719,
+          "computed": 1.6878471374511719,
+          "radius": 2.2360680103302,
+          "derivativeLength": 70.3623046875,
+          "valueBits": "3fd80b60"
+        }
+      },
+      "meaning": "Prescribed source high-component samples; not an executed original orbit"
+    },
+    {
+      "id": "inside-keeps-invalid-distance",
+      "input": {
+        "p": 2,
+        "julia": false,
+        "zHighSteps": [
+          [
+            0,
+            0
+          ]
+        ],
+        "finalZHigh": [
+          0.5,
+          0
+        ],
+        "path": "ordinary",
+        "capable": true,
+        "escaped": false
+      },
+      "expected": {
+        "derivative": [
+          1.0,
+          0.0
+        ],
+        "derivativeBits": [
+          "3f800000",
+          "00000000"
+        ],
+        "derivativeTrace": [
+          [
+            1.0,
+            0.0
+          ]
+        ],
+        "distance": {
+          "valid": false,
+          "value": 0.0,
+          "reason": "not-escaped"
+        }
+      },
+      "meaning": "Prescribed source high-component samples; not an executed original orbit"
+    },
+    {
+      "id": "unsupported-keeps-invalid-distance",
+      "input": {
+        "p": 2,
+        "julia": false,
+        "zHighSteps": [
+          [
+            0,
+            0
+          ]
+        ],
+        "finalZHigh": [
+          6,
+          0
+        ],
+        "path": "ordinary",
+        "capable": false,
+        "escaped": true
+      },
+      "expected": {
+        "derivative": [
+          0.0,
+          0.0
+        ],
+        "derivativeBits": [
+          "00000000",
+          "00000000"
+        ],
+        "derivativeTrace": [
+          [
+            0.0,
+            0.0
+          ]
+        ],
+        "distance": {
+          "valid": false,
+          "value": 0.0,
+          "reason": "capability-disabled"
+        }
+      },
+      "meaning": "Prescribed source high-component samples; not an executed original orbit"
+    }
+  ],
+  "terminalDistances": [
+    {
+      "id": "zero-derivative-floor",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          2,
+          0
+        ],
+        "derivative": [
+          0,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": true,
+        "value": 2772588800.0,
+        "computed": 2772588800.0,
+        "radius": 2.0,
+        "derivativeLength": 9.999999717180685e-10,
+        "valueBits": "4f254259"
+      }
+    },
+    {
+      "id": "tiny-derivative-floor",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          2,
+          0
+        ],
+        "derivative": [
+          1e-12,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": true,
+        "value": 2772588800.0,
+        "computed": 2772588800.0,
+        "radius": 2.0,
+        "derivativeLength": 9.999999717180685e-10,
+        "valueBits": "4f254259"
+      }
+    },
+    {
+      "id": "unit-radius-zero-valid",
+      "input": {
+        "p": 3,
+        "finalZHigh": [
+          1,
+          0
+        ],
+        "derivative": [
+          1,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": true,
+        "value": 0.0,
+        "computed": 0.0,
+        "radius": 1.0,
+        "derivativeLength": 1.0,
+        "valueBits": "00000000"
+      }
+    },
+    {
+      "id": "subunit-negative-invalid",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          0.5,
+          0
+        ],
+        "derivative": [
+          1,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": false,
+        "value": 0.0,
+        "computed": -0.6931471824645996,
+        "radius": 0.5,
+        "derivativeLength": 1.0,
+        "valueBits": "00000000"
+      }
+    },
+    {
+      "id": "zero-radius-floor-negative",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          0,
+          0
+        ],
+        "derivative": [
+          1,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": false,
+        "value": 0.0,
+        "computed": -4.144653331650261e-08,
+        "radius": 9.999999717180685e-10,
+        "derivativeLength": 1.0,
+        "valueBits": "00000000"
+      }
+    },
+    {
+      "id": "overflowed-derivative-length-valid-zero",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          2,
+          0
+        ],
+        "derivative": [
+          1e+30,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": true,
+        "value": 0.0,
+        "computed": 0.0,
+        "radius": 2.0,
+        "derivativeLength": "Infinity",
+        "valueBits": "00000000"
+      }
+    },
+    {
+      "id": "infinite-derivative-valid-zero",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          2,
+          0
+        ],
+        "derivative": [
+          "Infinity",
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": true,
+        "value": 0.0,
+        "computed": 0.0,
+        "radius": 2.0,
+        "derivativeLength": "Infinity",
+        "valueBits": "00000000"
+      }
+    },
+    {
+      "id": "overflowed-radius-invalid",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          1e+30,
+          0
+        ],
+        "derivative": [
+          1,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": false,
+        "value": 0.0,
+        "computed": "Infinity",
+        "radius": "Infinity",
+        "derivativeLength": 1.0,
+        "valueBits": "00000000"
+      }
+    },
+    {
+      "id": "both-lengths-infinite-invalid",
+      "input": {
+        "p": 2,
+        "finalZHigh": [
+          1e+30,
+          0
+        ],
+        "derivative": [
+          1e+30,
+          0
+        ],
+        "capable": true,
+        "escaped": true
+      },
+      "expected": {
+        "valid": false,
+        "value": 0.0,
+        "computed": "NaN",
+        "radius": "Infinity",
+        "derivativeLength": "Infinity",
+        "valueBits": "00000000"
+      }
+    }
+  ],
+  "colorIndices": [
+    {
+      "id": "inside-first-ignores-valid-distance",
+      "input": {
+        "escaped": false,
+        "distanceValid": true,
+        "distance": 16,
+        "finalZHigh": [
+          4,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 2,
+        "exitKind": 1,
+        "residualSquared": 0
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          2.0,
+          4.0
+        ],
+        "route": "inside-zero",
+        "index": 0.0,
+        "indexBits": "00000000"
+      }
+    },
+    {
+      "id": "distance-power2",
+      "input": {
+        "escaped": true,
+        "distanceValid": true,
+        "distance": 16,
+        "finalZHigh": [
+          4,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 2,
+        "exitKind": 1,
+        "residualSquared": 0
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          2.0,
+          4.0
+        ],
+        "route": "distance",
+        "index": 4.0,
+        "indexBits": "40800000"
+      }
+    },
+    {
+      "id": "distance-power4",
+      "input": {
+        "escaped": true,
+        "distanceValid": true,
+        "distance": 16,
+        "finalZHigh": [
+          4,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 4,
+        "exitKind": 1,
+        "residualSquared": 0
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          4.0,
+          4.0
+        ],
+        "route": "distance",
+        "index": 2.0,
+        "indexBits": "40000000"
+      }
+    },
+    {
+      "id": "invalid-same-radius-as-packed-bailout",
+      "input": {
+        "escaped": true,
+        "distanceValid": false,
+        "distance": 0,
+        "finalZHigh": [
+          2,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 2,
+        "exitKind": 1,
+        "residualSquared": 0
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          2.0,
+          4.0
+        ],
+        "route": "packed-smooth-escape",
+        "index": 0.20000000298023224,
+        "indexBits": "3e4ccccd"
+      }
+    },
+    {
+      "id": "unsupported-packed-de-power4",
+      "input": {
+        "escaped": true,
+        "distanceValid": false,
+        "distance": 0,
+        "finalZHigh": [
+          2,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 4,
+        "exitKind": 1,
+        "residualSquared": 0
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          4.0,
+          4.0
+        ],
+        "route": "packed-smooth-escape",
+        "index": 36341.09375,
+        "indexBits": "470df518"
+      }
+    },
+    {
+      "id": "unsupported-packed-de-power2-radius4",
+      "input": {
+        "escaped": true,
+        "distanceValid": false,
+        "distance": 0,
+        "finalZHigh": [
+          4,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 2,
+        "exitKind": 1,
+        "residualSquared": 0
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          2.0,
+          4.0
+        ],
+        "route": "packed-smooth-escape",
+        "index": -36340.6953125,
+        "indexBits": "c70df4b2"
+      }
+    },
+    {
+      "id": "convergent-fallback-ignores-power",
+      "input": {
+        "escaped": true,
+        "distanceValid": false,
+        "distance": 0,
+        "finalZHigh": [
+          4,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 2,
+        "exitKind": 2,
+        "residualSquared": 0.01
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          2.0,
+          4.0
+        ],
+        "route": "packed-smooth-convergence",
+        "index": 0.13983727991580963,
+        "indexBits": "3e0f3181"
+      }
+    },
+    {
+      "id": "convergent-fallback-other-power",
+      "input": {
+        "escaped": true,
+        "distanceValid": false,
+        "distance": 0,
+        "finalZHigh": [
+          4,
+          0
+        ],
+        "iteration": 3,
+        "distancePower": 8,
+        "exitKind": 2,
+        "residualSquared": 0.01
+      },
+      "expected": {
+        "packedP0": [
+          0.0,
+          1.0,
+          8.0,
+          4.0
+        ],
+        "route": "packed-smooth-convergence",
+        "index": 0.13983727991580963,
+        "indexBits": "3e0f3181"
+      }
+    }
+  ],
+  "limits": [
+    "All float operations are CPU staged reference values. Actual GLSL compiler association, denormals, length/log/pow implementations and driver behavior need separate real-GL validation.",
+    "NaN through GLSL max/length is deliberately not a universal numeric golden; test classification with a retained shader oracle.",
+    "Nonfinite JSON values use explicit string tags, not JSON null.",
+    "Source Mandelbrot/Julia power is real FLOAT. Local complex-power extensions have no corresponding native ingress; native Newton/Nova complex exponent is already DE-ineligible.",
+    "Binocular capability follows the shipped predicate, which omits an isBinocular exclusion; the derivative is the source polynomial recurrence, not a claim of a correct rational-map derivative.",
+    "These prespecified high-component orbit samples isolate the DE pipeline; only two simple polynomial cases are analytical complete orbit witnesses."
+  ]
+}

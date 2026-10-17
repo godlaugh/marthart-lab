@@ -1,0 +1,954 @@
+{
+  "source": "Unmodified production IteratedDensitySession before CPU formula caching; local independent numerical contract, no native application execution.",
+  "baselineSourceSha256": "99248116e074ab1341282166b4c5ca76d1ed662de9d368873bd8bbc86169d83c",
+  "context": {
+    "time": 0.3,
+    "width": 43,
+    "height": 31,
+    "quality": "export"
+  },
+  "cases": [
+    {
+      "name": "legacy-time",
+      "scene": {
+        "version": 1,
+        "id": "samila-cache-baseline",
+        "name": "Samila cache production regression",
+        "kind": "samila",
+        "equations": {
+          "f1": "sin(a*x*y)+cos(b*x^2)+.1*t",
+          "f2": "cos(c*x+y)+sin(d*y^4)+.1*time"
+        },
+        "parameters": {
+          "a": 2,
+          "b": 0.5,
+          "c": 0.7,
+          "d": 1.2
+        },
+        "settings": {
+          "iteratedMode": "continuous",
+          "iteratedBackend": "cpu",
+          "samilaHistoryModel": "legacy-v1",
+          "batchSize": 31,
+          "iteratedFps": 10,
+          "seed": 13,
+          "start": -0.8,
+          "stop": 0.9,
+          "mapping": "f1_f2",
+          "projection": "cartesian",
+          "showTrails": false,
+          "accumulationDecay": 0.93,
+          "alpha": 0.4,
+          "densityView": "manual",
+          "densitySpan": 8,
+          "pointSize": 1.5,
+          "paletteMode": "source",
+          "iteratedColor": "noise",
+          "colorSpeed": 0.7,
+          "rotationSpeed": 0.13
+        },
+        "palette": {
+          "name": "Regression",
+          "stops": [
+            "#16205c",
+            "#33ccdb",
+            "#f8dc8b"
+          ],
+          "mode": "linear",
+          "offset": 0.2,
+          "cycles": 1
+        },
+        "camera": {
+          "position": [
+            0,
+            0,
+            10
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "orthographic": true,
+          "zoom": 1
+        },
+        "timeline": {
+          "duration": 2,
+          "fps": 30,
+          "loop": false,
+          "tracks": [
+            {
+              "id": "a",
+              "target": "parameters.a",
+              "from": 2,
+              "to": 6,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "b",
+              "target": "parameters.b",
+              "from": 0.5,
+              "to": 1.7,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "c",
+              "target": "parameters.c",
+              "from": 0.7,
+              "to": 0.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "d",
+              "target": "parameters.d",
+              "from": 1.2,
+              "to": 2.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            }
+          ]
+        },
+        "favorite": false
+      },
+      "expected": {
+        "pixelsSha256": "8c6efe64e8fb91f326b78a75b4158d6db8534ef28082b8e25922d8242c4e5a49",
+        "stats": {
+          "samples": 124,
+          "generated": 31,
+          "invalid": 0
+        },
+        "density": {
+          "projection": "xy",
+          "bounds": {
+            "minX": -5.548387096774194,
+            "maxX": 5.548387096774194,
+            "minY": -4,
+            "maxY": 4
+          },
+          "inputPoints": 31,
+          "examined": 31,
+          "accepted": 31,
+          "clipped": 0,
+          "invalid": 0,
+          "occupiedPixels": 47,
+          "maxCount": 3.0504893924129366,
+          "toneBackend": "cpu",
+          "cancelled": false
+        },
+        "temporal": {
+          "time": 0.3,
+          "windowStart": 0,
+          "frames": 4,
+          "samplingFps": 10,
+          "recordedPoints": 31
+        }
+      }
+    },
+    {
+      "name": "bounded-alias-constants",
+      "scene": {
+        "version": 1,
+        "id": "samila-cache-baseline",
+        "name": "Samila cache production regression",
+        "kind": "samila",
+        "equations": {
+          "f1": "arcsin+arcsin(x)+pi+t",
+          "f2": "arccos(y)+e+time"
+        },
+        "parameters": {
+          "a": 2,
+          "b": 0.5,
+          "c": 0.7,
+          "d": 1.2,
+          "arcsin": 0.1,
+          "pi": 0.2,
+          "e": 0.3
+        },
+        "settings": {
+          "iteratedMode": "continuous",
+          "iteratedBackend": "cpu",
+          "samilaHistoryModel": "bounded-v2",
+          "batchSize": 31,
+          "iteratedFps": 10,
+          "seed": 13,
+          "start": -0.8,
+          "stop": 0.9,
+          "mapping": "f1_f2",
+          "projection": "cartesian",
+          "showTrails": false,
+          "accumulationDecay": 0.93,
+          "alpha": 0.4,
+          "densityView": "manual",
+          "densitySpan": 8,
+          "pointSize": 1.5,
+          "paletteMode": "source",
+          "iteratedColor": "noise",
+          "colorSpeed": 0.7,
+          "rotationSpeed": 0.13
+        },
+        "palette": {
+          "name": "Regression",
+          "stops": [
+            "#16205c",
+            "#33ccdb",
+            "#f8dc8b"
+          ],
+          "mode": "linear",
+          "offset": 0.2,
+          "cycles": 1
+        },
+        "camera": {
+          "position": [
+            0,
+            0,
+            10
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "orthographic": true,
+          "zoom": 1
+        },
+        "timeline": {
+          "duration": 2,
+          "fps": 30,
+          "loop": false,
+          "tracks": [
+            {
+              "id": "a",
+              "target": "parameters.a",
+              "from": 2,
+              "to": 6,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "b",
+              "target": "parameters.b",
+              "from": 0.5,
+              "to": 1.7,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "c",
+              "target": "parameters.c",
+              "from": 0.7,
+              "to": 0.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "d",
+              "target": "parameters.d",
+              "from": 1.2,
+              "to": 2.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "arcsin",
+              "target": "parameters.arcsin",
+              "from": 0.1,
+              "to": 0.6,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "pi",
+              "target": "parameters.pi",
+              "from": 0.2,
+              "to": 0.4,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "e",
+              "target": "parameters.e",
+              "from": 0.3,
+              "to": 0.8,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            }
+          ]
+        },
+        "favorite": false
+      },
+      "expected": {
+        "pixelsSha256": "fa5888c7c0fa3de31bd8eb8ea9b788728ecc6afdba6c67336c7d92fac245ddbf",
+        "stats": {
+          "samples": 589,
+          "generated": 186,
+          "invalid": 0
+        },
+        "density": {
+          "projection": "xy",
+          "bounds": {
+            "minX": -5.548387096774194,
+            "maxX": 5.548387096774194,
+            "minY": -4,
+            "maxY": 4
+          },
+          "inputPoints": 186,
+          "examined": 186,
+          "accepted": 186,
+          "clipped": 0,
+          "invalid": 0,
+          "occupiedPixels": 89,
+          "maxCount": 5.130468007572781,
+          "toneBackend": "cpu",
+          "cancelled": false
+        },
+        "temporal": {
+          "time": 0.3,
+          "windowStart": 0,
+          "frames": 4,
+          "samplingFps": 10,
+          "recordedPoints": 186
+        }
+      }
+    },
+    {
+      "name": "swirl_x",
+      "scene": {
+        "version": 1,
+        "id": "samila-cache-baseline",
+        "name": "Samila cache production regression",
+        "kind": "samila",
+        "equations": {
+          "f1": "sin(x)+.1*t",
+          "f2": "cos(y)-.1*time"
+        },
+        "parameters": {
+          "a": 2,
+          "b": 0.5,
+          "c": 0.7,
+          "d": 1.2
+        },
+        "settings": {
+          "iteratedMode": "continuous",
+          "iteratedBackend": "cpu",
+          "samilaHistoryModel": "bounded-v2",
+          "batchSize": 31,
+          "iteratedFps": 10,
+          "seed": 13,
+          "start": -0.8,
+          "stop": 0.9,
+          "mapping": "swirl_x",
+          "projection": "cartesian",
+          "showTrails": false,
+          "accumulationDecay": 0.93,
+          "alpha": 0.4,
+          "densityView": "manual",
+          "densitySpan": 8,
+          "pointSize": 1.5,
+          "paletteMode": "source",
+          "iteratedColor": "noise",
+          "colorSpeed": 0.7,
+          "rotationSpeed": 0.13
+        },
+        "palette": {
+          "name": "Regression",
+          "stops": [
+            "#16205c",
+            "#33ccdb",
+            "#f8dc8b"
+          ],
+          "mode": "linear",
+          "offset": 0.2,
+          "cycles": 1
+        },
+        "camera": {
+          "position": [
+            0,
+            0,
+            10
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "orthographic": true,
+          "zoom": 1
+        },
+        "timeline": {
+          "duration": 2,
+          "fps": 30,
+          "loop": false,
+          "tracks": [
+            {
+              "id": "a",
+              "target": "parameters.a",
+              "from": 2,
+              "to": 6,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "b",
+              "target": "parameters.b",
+              "from": 0.5,
+              "to": 1.7,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "c",
+              "target": "parameters.c",
+              "from": 0.7,
+              "to": 0.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "d",
+              "target": "parameters.d",
+              "from": 1.2,
+              "to": 2.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            }
+          ]
+        },
+        "favorite": false
+      },
+      "expected": {
+        "pixelsSha256": "bc5f3a5b1daab13ffc0589944e34b9ae74ea931af69380deda2cfc559d9c0841",
+        "stats": {
+          "samples": 589,
+          "generated": 186,
+          "invalid": 0
+        },
+        "density": {
+          "projection": "xy",
+          "bounds": {
+            "minX": -5.548387096774194,
+            "maxX": 5.548387096774194,
+            "minY": -4,
+            "maxY": 4
+          },
+          "inputPoints": 186,
+          "examined": 186,
+          "accepted": 186,
+          "clipped": 0,
+          "invalid": 0,
+          "occupiedPixels": 61,
+          "maxCount": 10.203746839107772,
+          "toneBackend": "cpu",
+          "cancelled": false
+        },
+        "temporal": {
+          "time": 0.3,
+          "windowStart": 0,
+          "frames": 4,
+          "samplingFps": 10,
+          "recordedPoints": 186
+        }
+      }
+    },
+    {
+      "name": "x_warp",
+      "scene": {
+        "version": 1,
+        "id": "samila-cache-baseline",
+        "name": "Samila cache production regression",
+        "kind": "samila",
+        "equations": {
+          "f1": "sin(x)+.1*t",
+          "f2": "cos(y)-.1*time"
+        },
+        "parameters": {
+          "a": 2,
+          "b": 0.5,
+          "c": 0.7,
+          "d": 1.2
+        },
+        "settings": {
+          "iteratedMode": "continuous",
+          "iteratedBackend": "cpu",
+          "samilaHistoryModel": "bounded-v2",
+          "batchSize": 31,
+          "iteratedFps": 10,
+          "seed": 13,
+          "start": -0.8,
+          "stop": 0.9,
+          "mapping": "x_warp",
+          "projection": "cartesian",
+          "showTrails": false,
+          "accumulationDecay": 0.93,
+          "alpha": 0.4,
+          "densityView": "manual",
+          "densitySpan": 8,
+          "pointSize": 1.5,
+          "paletteMode": "source",
+          "iteratedColor": "noise",
+          "colorSpeed": 0.7,
+          "rotationSpeed": 0.13
+        },
+        "palette": {
+          "name": "Regression",
+          "stops": [
+            "#16205c",
+            "#33ccdb",
+            "#f8dc8b"
+          ],
+          "mode": "linear",
+          "offset": 0.2,
+          "cycles": 1
+        },
+        "camera": {
+          "position": [
+            0,
+            0,
+            10
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "orthographic": true,
+          "zoom": 1
+        },
+        "timeline": {
+          "duration": 2,
+          "fps": 30,
+          "loop": false,
+          "tracks": [
+            {
+              "id": "a",
+              "target": "parameters.a",
+              "from": 2,
+              "to": 6,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "b",
+              "target": "parameters.b",
+              "from": 0.5,
+              "to": 1.7,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "c",
+              "target": "parameters.c",
+              "from": 0.7,
+              "to": 0.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "d",
+              "target": "parameters.d",
+              "from": 1.2,
+              "to": 2.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            }
+          ]
+        },
+        "favorite": false
+      },
+      "expected": {
+        "pixelsSha256": "87cc3a9516f993811eb9e8b0367ed6aad8f26d1bcc53f98b46f7f97cda31e54e",
+        "stats": {
+          "samples": 589,
+          "generated": 186,
+          "invalid": 0
+        },
+        "density": {
+          "projection": "xy",
+          "bounds": {
+            "minX": -5.548387096774194,
+            "maxX": 5.548387096774194,
+            "minY": -4,
+            "maxY": 4
+          },
+          "inputPoints": 186,
+          "examined": 186,
+          "accepted": 186,
+          "clipped": 0,
+          "invalid": 0,
+          "occupiedPixels": 31,
+          "maxCount": 16.225451193540767,
+          "toneBackend": "cpu",
+          "cancelled": false
+        },
+        "temporal": {
+          "time": 0.3,
+          "windowStart": 0,
+          "frames": 4,
+          "samplingFps": 10,
+          "recordedPoints": 186
+        }
+      }
+    },
+    {
+      "name": "cosmod_x",
+      "scene": {
+        "version": 1,
+        "id": "samila-cache-baseline",
+        "name": "Samila cache production regression",
+        "kind": "samila",
+        "equations": {
+          "f1": "sin(x)+.1*t",
+          "f2": "cos(y)-.1*time"
+        },
+        "parameters": {
+          "a": 2,
+          "b": 0.5,
+          "c": 0.7,
+          "d": 1.2
+        },
+        "settings": {
+          "iteratedMode": "continuous",
+          "iteratedBackend": "cpu",
+          "samilaHistoryModel": "bounded-v2",
+          "batchSize": 31,
+          "iteratedFps": 10,
+          "seed": 13,
+          "start": -0.8,
+          "stop": 0.9,
+          "mapping": "cosmod_x",
+          "projection": "cartesian",
+          "showTrails": false,
+          "accumulationDecay": 0.93,
+          "alpha": 0.4,
+          "densityView": "manual",
+          "densitySpan": 8,
+          "pointSize": 1.5,
+          "paletteMode": "source",
+          "iteratedColor": "noise",
+          "colorSpeed": 0.7,
+          "rotationSpeed": 0.13
+        },
+        "palette": {
+          "name": "Regression",
+          "stops": [
+            "#16205c",
+            "#33ccdb",
+            "#f8dc8b"
+          ],
+          "mode": "linear",
+          "offset": 0.2,
+          "cycles": 1
+        },
+        "camera": {
+          "position": [
+            0,
+            0,
+            10
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "orthographic": true,
+          "zoom": 1
+        },
+        "timeline": {
+          "duration": 2,
+          "fps": 30,
+          "loop": false,
+          "tracks": [
+            {
+              "id": "a",
+              "target": "parameters.a",
+              "from": 2,
+              "to": 6,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "b",
+              "target": "parameters.b",
+              "from": 0.5,
+              "to": 1.7,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "c",
+              "target": "parameters.c",
+              "from": 0.7,
+              "to": 0.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "d",
+              "target": "parameters.d",
+              "from": 1.2,
+              "to": 2.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            }
+          ]
+        },
+        "favorite": false
+      },
+      "expected": {
+        "pixelsSha256": "9506a3b0e52955e3e8063a7103e6dadc88c93c05061dce8f3c8119c9b5c118fc",
+        "stats": {
+          "samples": 589,
+          "generated": 186,
+          "invalid": 0
+        },
+        "density": {
+          "projection": "xy",
+          "bounds": {
+            "minX": -5.548387096774194,
+            "maxX": 5.548387096774194,
+            "minY": -4,
+            "maxY": 4
+          },
+          "inputPoints": 186,
+          "examined": 186,
+          "accepted": 186,
+          "clipped": 0,
+          "invalid": 0,
+          "occupiedPixels": 48,
+          "maxCount": 13.801942560118853,
+          "toneBackend": "cpu",
+          "cancelled": false
+        },
+        "temporal": {
+          "time": 0.3,
+          "windowStart": 0,
+          "frames": 4,
+          "samplingFps": 10,
+          "recordedPoints": 186
+        }
+      }
+    },
+    {
+      "name": "kaleidoscope_x",
+      "scene": {
+        "version": 1,
+        "id": "samila-cache-baseline",
+        "name": "Samila cache production regression",
+        "kind": "samila",
+        "equations": {
+          "f1": "sin(x)+.1*t",
+          "f2": "cos(y)-.1*time"
+        },
+        "parameters": {
+          "a": 2,
+          "b": 0.5,
+          "c": 0.7,
+          "d": 1.2
+        },
+        "settings": {
+          "iteratedMode": "continuous",
+          "iteratedBackend": "cpu",
+          "samilaHistoryModel": "bounded-v2",
+          "batchSize": 31,
+          "iteratedFps": 10,
+          "seed": 13,
+          "start": -0.8,
+          "stop": 0.9,
+          "mapping": "kaleidoscope_x",
+          "projection": "cartesian",
+          "showTrails": false,
+          "accumulationDecay": 0.93,
+          "alpha": 0.4,
+          "densityView": "manual",
+          "densitySpan": 8,
+          "pointSize": 1.5,
+          "paletteMode": "source",
+          "iteratedColor": "noise",
+          "colorSpeed": 0.7,
+          "rotationSpeed": 0.13
+        },
+        "palette": {
+          "name": "Regression",
+          "stops": [
+            "#16205c",
+            "#33ccdb",
+            "#f8dc8b"
+          ],
+          "mode": "linear",
+          "offset": 0.2,
+          "cycles": 1
+        },
+        "camera": {
+          "position": [
+            0,
+            0,
+            10
+          ],
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "orthographic": true,
+          "zoom": 1
+        },
+        "timeline": {
+          "duration": 2,
+          "fps": 30,
+          "loop": false,
+          "tracks": [
+            {
+              "id": "a",
+              "target": "parameters.a",
+              "from": 2,
+              "to": 6,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "b",
+              "target": "parameters.b",
+              "from": 0.5,
+              "to": 1.7,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "c",
+              "target": "parameters.c",
+              "from": 0.7,
+              "to": 0.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            },
+            {
+              "id": "d",
+              "target": "parameters.d",
+              "from": 1.2,
+              "to": 2.3,
+              "start": 0,
+              "duration": 0.3,
+              "easing": "linear",
+              "pingPong": false,
+              "enabled": true
+            }
+          ]
+        },
+        "favorite": false
+      },
+      "expected": {
+        "pixelsSha256": "3e6a07764494d3be6efea9d3ec87687cf5cfdfef2868361984036d07f074784f",
+        "stats": {
+          "samples": 589,
+          "generated": 186,
+          "invalid": 0
+        },
+        "density": {
+          "projection": "xy",
+          "bounds": {
+            "minX": -5.548387096774194,
+            "maxX": 5.548387096774194,
+            "minY": -4,
+            "maxY": 4
+          },
+          "inputPoints": 186,
+          "examined": 186,
+          "accepted": 186,
+          "clipped": 0,
+          "invalid": 0,
+          "occupiedPixels": 31,
+          "maxCount": 15.386441665581184,
+          "toneBackend": "cpu",
+          "cancelled": false
+        },
+        "temporal": {
+          "time": 0.3,
+          "windowStart": 0,
+          "frames": 4,
+          "samplingFps": 10,
+          "recordedPoints": 186
+        }
+      }
+    }
+  ]
+}

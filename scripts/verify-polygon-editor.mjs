@@ -1,0 +1,34 @@
+import {chromium,expect} from 'playwright/test';
+import {mkdir,writeFile} from 'node:fs/promises';
+const root=new URL('../',import.meta.url),out=name=>new URL('coverage/'+name,root),origin='http://127.0.0.1:5177/';
+await mkdir(new URL('coverage/',root),{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true});
+try{
+ const context=await browser.newContext({viewport:{width:1600,height:1050}}),page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.route(origin,r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Polygon editor acceptance</title>'}));await page.goto(origin);
+ await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const s=createScene(definition('bouncing'));s.name='Polygon editor verification';Object.assign(s.settings,{boundary:'polygon',count:80,initialRadius:.2,bouncingBackend:'cpu'});saveWorkspace(localStorage,{scenes:[s],active:s.id,language:'en',theme:'dark'});});
+ await page.unroute(origin);await page.reload();
+ const field=name=>page.getByRole('spinbutton',{name,exact:true}),button=name=>page.getByRole('button',{name,exact:true});
+ const read=()=>page.evaluate(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]??w.scenes.find(s=>s.id===w.active);});
+ await field('Regular polygon sides').fill('64');await expect(button('Add closing-edge midpoint')).toBeDisabled();await field('Regular polygon sides').fill('6');
+ await button('Reset six-point outline').click();await button('Add closing-edge midpoint').click();await expect(field('Vertex 7 X')).toHaveValue('-0.885');
+ await field('Vertex 1 X').fill('');await expect(button('Apply polygon')).toBeDisabled();await expect(page.getByRole('alert')).toContainText('finite');
+ if((await read()).settings.polygon!=='')throw Error('Invalid draft was persisted');
+ await field('Vertex 1 X').fill('-.95');await button('Apply polygon').click();await expect.poll(async()=>JSON.parse((await read()).settings.polygon||'null')?.length).toBe(7);await page.reload();await expect(field('Vertex 7 X')).toHaveValue('-0.885');
+ await button('Polygon vertex 4').press('ArrowRight');const nudged=await field('Vertex 4 X').inputValue();if(Number(nudged)<=.95)throw Error('Keyboard movement did not apply');
+ await field('Collision radius (physical units)').fill('.01');await expect(field('Vertex 4 X')).toHaveValue(nudged);await button('Revert vertex edits').click();
+ await button('Polygon vertex 4').scrollIntoViewIfNeeded();const bounds=await button('Polygon vertex 4').boundingBox();if(!bounds)throw Error('Missing vertex bounds');
+ await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.down();await page.mouse.move(bounds.x+bounds.width/2-12,bounds.y+bounds.height/2-9,{steps:4});await page.mouse.up();
+ const moved=await field('Vertex 4 X').inputValue();if(Number(moved)>=.95)throw Error('Pointer movement did not apply');
+ await button('Apply polygon').click();await expect.poll(async()=>JSON.parse((await read()).settings.polygon||'null')?.[3]?.[0]).toBe(Number(moved));
+ await button('Polygon vertex 4').scrollIntoViewIfNeeded();const cancelBounds=await button('Polygon vertex 4').boundingBox();await page.mouse.move(cancelBounds.x+cancelBounds.width/2,cancelBounds.y+cancelBounds.height/2);await page.mouse.down();await page.mouse.move(cancelBounds.x+22,cancelBounds.y-10,{steps:3});await page.keyboard.press('Escape');await page.mouse.up();await expect(field('Vertex 4 X')).toHaveValue(moved);
+ await field('Vertex 4 X').fill('-1');await expect(page.getByRole('alert')).toContainText('intersect');await expect(button('Apply polygon')).toBeDisabled();await button('Revert vertex edits').click();
+ for(let n=7;n>3;n--)await button(`Delete vertex ${n}`).click();await expect(button('Delete vertex 3')).toBeDisabled();await button('Revert vertex edits').click();
+ await page.getByRole('slider',{name:'Time position',exact:true}).fill('2');await expect(page.locator('footer')).toContainText('80');await button('Polygon vertex 4').click();
+ await page.screenshot({path:out('polygon-editor.png').pathname});
+ const saved=await read();await page.reload();await expect(field('Vertex 4 X')).toHaveValue(moved);await expect(field('Collision radius (physical units)')).toHaveValue('0.01');
+ if(errors.length)throw Error(errors.join('\n'));
+ const report={status:'passed',at:new Date().toISOString(),checks:['64 vertex cap','six-point reset','collinear closing-edge midpoint','empty draft rejected without persistence','apply and reload','keyboard nudge','collision-radius edits preserve pending vertex draft','pointer drag','Escape cancels active drag','self-intersection rejected','three-vertex minimum','actual frame at t=2','saved geometry and radius reload'],savedSettings:{polygon:saved.settings.polygon,collisionRadius:saved.settings.collisionRadius},pageErrors:errors,screenshot:'studio/coverage/polygon-editor.png',limitations:['Independent local Y-up world coordinates and auto-fit editor, not original Y-down clamped UI equivalence.','Original application was not executed.','This verifies modest 80-particle UI behavior; no throughput claim.']};
+ await writeFile(out('polygon-editor-browser.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
+}finally{await browser.close();}

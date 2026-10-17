@@ -1,0 +1,1088 @@
+{
+  "provenance": {
+    "path": ".cache/fractal-newton-nova-reference-oracle-1792130953157/report.json",
+    "sha256": "c656baa0fd499b9e0d0b9b08d82796390bab69f33677c12cb6a3d460f84872bf",
+    "scope": "Retained static Java DoubleDouble/reference bytecode transcribed to JS number operations; no production math imports, original JVM or browser execution. Explicit source-mapped contexts; full public mapping validation is separate.",
+    "evidence": {
+      "dd": {
+        "path": ".cache/fractal-newton-nova-double-double-next.json",
+        "sha256": "8f02a3b2fd7a318528ee6e8946c7c20ee19f892d719fd2a947019aefd70f3e5a"
+      },
+      "reference": {
+        "path": ".cache/fractal-newton-nova-reference-service-next.json",
+        "sha256": "c756d71c5795f0369a235dfbb049deec0e0fce264b474312a2b5f8092eb6b22d"
+      },
+      "mapper": {
+        "path": "../.cache/mathart-investigation/nova-runtime-mapper-bytecode.json",
+        "sha256": "7560fda7c39a513bb262c87c70706c7b647bfd48462d31e0a6de1dd4780d3f9a"
+      },
+      "formula": {
+        "path": "../.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/fractal/parts/formulas/formula_newton_nova.glsl",
+        "sha256": "4dfc7e88674c60d3be1b9b10ef116e7a7f2aab8e8805dc7b029c13f3a3c6c523"
+      },
+      "math": {
+        "path": "../.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/fractal/parts/fractal_math.glsl",
+        "sha256": "e37d4e2d87c941cce9376b1b402a2e578a2f2aaf2f96e07e5382c7711b0b04dd"
+      },
+      "main": {
+        "path": "../.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/fractal/parts/fractal_main.glsl",
+        "sha256": "3caff012e4206d391b8ec2814626011e45126956872d0e05f6428bd1a70bf60d"
+      },
+      "init": {
+        "path": "../.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/fractal/parts/pipeline/fractal_pipeline_init.glsl",
+        "sha256": "f0d4aecd3a618151bea2393782b1201a10941f8b102c01d4d2be0f83424544d9"
+      }
+    },
+    "limits": [
+      "Binary64 arithmetic ordering is transcribed; this is not original JVM runtime execution.",
+      "Shader DS uses a separate binary32 implementation and capped power helper; these DD reference vectors do not substitute for its actual GL oracle.",
+      "JSON numbers preserve numerical values but do not encode signed zero; signed-zero ownership is tested separately."
+    ]
+  },
+  "vectors": [
+    {
+      "input": {
+        "name": "newton-real-binary-p2",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          2,
+          0,
+          0,
+          0,
+          1.25,
+          0,
+          0,
+          0,
+          1.024999976158142,
+          2.3841858265427618e-08,
+          0,
+          0,
+          1.000304937362671,
+          -5.931389068791759e-08,
+          0,
+          0
+        ],
+        "initialZ": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "newton-complex-low-center-p3",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          0.73,
+          2.7755575615628914e-17,
+          -0.21,
+          -6.938893903907228e-18
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 3,
+        "relaxation": 1,
+        "iterations": 8,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 8,
+        "values": [
+          0.7300000190734863,
+          -1.907348590179936e-08,
+          -0.20999999344348907,
+          -6.556510889765832e-09,
+          0.9760603308677673,
+          -2.972247870047795e-08,
+          0.166972354054451,
+          3.415159710584703e-09,
+          0.9713137149810791,
+          2.5039060602694008e-08,
+          -0.001682815607637167,
+          4.650907783898539e-11,
+          1.000852346420288,
+          1.7014226472156224e-08,
+          0.00010235588706564158,
+          4.9527656281744825e-14,
+          1.0000007152557373,
+          1.7998935675223038e-12,
+          1.7419321807210508e-07,
+          2.8542064765395845e-15,
+          1,
+          4.811706588725428e-13,
+          2.4918568185434975e-13,
+          -2.8964480396561524e-21,
+          1,
+          0,
+          2.3984105414793415e-25,
+          -5.0330491423845086e-33,
+          1,
+          0,
+          0,
+          0
+        ],
+        "initialZ": [
+          [
+            0.73,
+            2.7755575615628914e-17
+          ],
+          [
+            -0.21,
+            -6.938893903907228e-18
+          ]
+        ],
+        "constant": [
+          [
+            0.73,
+            2.7755575615628914e-17
+          ],
+          [
+            -0.21,
+            -6.938893903907228e-18
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "nova-mandel-seed-not-center",
+        "formula": "nova",
+        "variant": "mandelbrot",
+        "center": [
+          0.02,
+          8.673617379884035e-19,
+          0.01,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 3,
+        "relaxation": 1,
+        "iterations": 8,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 8,
+        "values": [
+          1,
+          0,
+          0,
+          0,
+          1.0199999809265137,
+          1.907348590179936e-08,
+          0.009999999776482582,
+          2.2351741291171123e-10,
+          1.0202971696853638,
+          5.431556004964477e-08,
+          0.010385725647211075,
+          -4.1053466182106035e-10,
+          1.0203015804290771,
+          7.935446966200743e-09,
+          0.010406401008367538,
+          -4.6106876649965045e-10,
+          1.020301342010498,
+          2.1747672107608196e-08,
+          0.010407298803329468,
+          -3.4423932454563655e-11,
+          1.020301342010498,
+          -4.3470516075672094e-09,
+          0.01040732953697443,
+          3.0974067755096257e-10,
+          1.020301342010498,
+          -5.97188165585294e-09,
+          0.010407330468297005,
+          1.0186094329123208e-10,
+          1.020301342010498,
+          -6.049790002293776e-09,
+          0.010407330468297005,
+          9.916756998906706e-11
+        ],
+        "initialZ": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            0.02,
+            8.673617379884035e-19
+          ],
+          [
+            0.01,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "nova-julia-center-seed",
+        "formula": "nova",
+        "variant": "julia",
+        "center": [
+          0.8,
+          2.7755575615628914e-17,
+          0.2,
+          0
+        ],
+        "mappedJulia": [
+          0.01,
+          0.03
+        ],
+        "power": 3,
+        "relaxation": 1,
+        "iterations": 8,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 8,
+        "values": [
+          0.800000011920929,
+          -1.1920929132713809e-08,
+          0.20000000298023224,
+          -2.9802322831784522e-09,
+          0.9758592844009399,
+          4.894867844384976e-10,
+          -0.06734717637300491,
+          2.2092216944713527e-09,
+          1.0056401491165161,
+          2.2827533641134323e-08,
+          0.03295821696519852,
+          -1.0538305783569513e-09,
+          1.0089714527130127,
+          -5.9571142685399536e-08,
+          0.03041396103799343,
+          1.44086825804024e-10,
+          1.0091882944107056,
+          4.34418829797778e-08,
+          0.030571887269616127,
+          6.318212619760288e-10,
+          1.0091837644577026,
+          -4.902583583543674e-08,
+          0.03058798611164093,
+          5.015965975907477e-10,
+          1.0091826915740967,
+          -2.234195051187271e-08,
+          0.03058806248009205,
+          2.2193014093119245e-10,
+          1.0091826915740967,
+          -4.9415145753073375e-08,
+          0.030588002875447273,
+          -4.560080438253955e-11
+        ],
+        "initialZ": [
+          [
+            0.8,
+            2.7755575615628914e-17
+          ],
+          [
+            0.2,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            0.01,
+            0
+          ],
+          [
+            0.03,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "newton-nearzero-23-height",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          1e-25,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 31,
+        "height": 23
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          0.043478261679410934,
+          -8.098457460192776e-10,
+          0,
+          0,
+          11.52173900604248,
+          1.2439230090421916e-07,
+          0,
+          0,
+          5.804265975952148,
+          -1.843196599793373e-07,
+          0,
+          0,
+          2.988276481628418,
+          -4.6224307936881814e-08,
+          0,
+          0
+        ],
+        "initialZ": [
+          [
+            0.043478260869565216,
+            1e-25
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            1e-25,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "newton-nearzero-47-height",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          1e-25,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 61,
+        "height": 47
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          0.021276595070958138,
+          6.73722688748768e-10,
+          0,
+          0,
+          23.510639190673828,
+          -8.928014949560747e-07,
+          0,
+          0,
+          11.776586532592773,
+          -4.1533081684974604e-07,
+          0,
+          0,
+          5.930750370025635,
+          -1.8544818658483564e-07,
+          0,
+          0
+        ],
+        "initialZ": [
+          [
+            0.02127659574468085,
+            1e-25
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            1e-25,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "newton-dd-low-collapsed-before-float-pack",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          2,
+          5.551115123125783e-17,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          2,
+          0,
+          0,
+          0,
+          1.25,
+          0,
+          0,
+          0,
+          1.024999976158142,
+          2.3841858265427618e-08,
+          0,
+          0,
+          1.000304937362671,
+          -5.931389068791759e-08,
+          0,
+          0
+        ],
+        "initialZ": [
+          [
+            2,
+            5.551115123125783e-17
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            2,
+            5.551115123125783e-17
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "reference-nonpositive-relax-defaults-one",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 0,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          2,
+          0,
+          0,
+          0,
+          1.25,
+          0,
+          0,
+          0,
+          1.024999976158142,
+          2.3841858265427618e-08,
+          0,
+          0,
+          1.000304937362671,
+          -5.931389068791759e-08,
+          0,
+          0
+        ],
+        "initialZ": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "reference-relax-f32",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          0.91,
+          0,
+          0.17,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 3,
+        "relaxation": 0.7,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          0.9100000262260437,
+          -2.6226043559063328e-08,
+          0.17000000178813934,
+          -1.7881393032936899e-09,
+          0.9515712857246399,
+          8.057106981596007e-09,
+          0.03203742578625679,
+          -8.247146854323262e-10,
+          0.9863513112068176,
+          -9.19005982424892e-10,
+          0.007249662186950445,
+          8.488534181116947e-11,
+          0.9959993362426758,
+          5.782968770517982e-09,
+          0.0020328827667981386,
+          -1.1550198991683303e-10
+        ],
+        "initialZ": [
+          [
+            0.91,
+            0
+          ],
+          [
+            0.17,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            0.91,
+            0
+          ],
+          [
+            0.17,
+            0
+          ]
+        ],
+        "relax": 0.699999988079071
+      }
+    },
+    {
+      "input": {
+        "name": "reference-uncapped-power-16",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          1.01,
+          0,
+          0.02,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 16,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          1.0099999904632568,
+          9.53674295089968e-09,
+          0.019999999552965164,
+          4.4703482582342247e-10,
+          0.9982014298439026,
+          -1.668586513403625e-08,
+          0.0030419486574828625,
+          8.331539624872875e-11,
+          0.9999529719352722,
+          -1.4751802002166414e-09,
+          -8.210093074012548e-05,
+          -7.333033377569798e-13,
+          0.9999999403953552,
+          2.560275014218405e-08,
+          5.791715551595189e-08,
+          -5.778018309036265e-16
+        ],
+        "initialZ": [
+          [
+            1.01,
+            0
+          ],
+          [
+            0.02,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            1.01,
+            0
+          ],
+          [
+            0.02,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "reference-uncapped-power-17",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          1.01,
+          0,
+          0.02,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 17,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          1.0099999904632568,
+          9.53674295089968e-09,
+          0.019999999552965164,
+          4.4703482582342247e-10,
+          0.9981086850166321,
+          -1.508949409867455e-08,
+          0.003244859166443348,
+          1.1049092196735444e-11,
+          0.9999418258666992,
+          -7.586518968594191e-09,
+          -9.81855919235386e-05,
+          -1.5275779773060716e-12,
+          0.9999999403953552,
+          9.49092271440577e-09,
+          9.140410384134157e-08,
+          -2.627092591183473e-15
+        ],
+        "initialZ": [
+          [
+            1.01,
+            0
+          ],
+          [
+            0.02,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            1.01,
+            0
+          ],
+          [
+            0.02,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "reference-uncapped-power-18",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          1.01,
+          0,
+          0.02,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 18,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 4,
+        "values": [
+          1.0099999904632568,
+          9.53674295089968e-09,
+          0.019999999552965164,
+          4.4703482582342247e-10,
+          0.9980191588401794,
+          1.0127608973675706e-08,
+          0.0034475084394216537,
+          9.682519369613729e-11,
+          0.999928891658783,
+          1.8221163244902527e-08,
+          -0.00011601113510550931,
+          -8.155900000500482e-13,
+          0.9999999403953552,
+          -1.1971204472160935e-08,
+          1.4021372862771386e-07,
+          6.19389793361097e-15
+        ],
+        "initialZ": [
+          [
+            1.01,
+            0
+          ],
+          [
+            0.02,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            1.01,
+            0
+          ],
+          [
+            0.02,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "nova-zero-seed-whole-reference-unavailable",
+        "formula": "nova",
+        "variant": "mandelbrot",
+        "center": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          0,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "unavailable",
+        "reason": "NOVA_REF_DERIV_SINGULAR",
+        "length": 0,
+        "values": [],
+        "failedStep": 0,
+        "initialZ": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "newton-huge-dimensions-bias-singularity",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 4,
+        "width": 100000000000000000000,
+        "height": 100000000000000000000
+      },
+      "expected": {
+        "kind": "unavailable",
+        "reason": "REF_DERIV_SINGULAR",
+        "length": 0,
+        "values": [],
+        "failedStep": 0,
+        "initialZ": [
+          [
+            1e-18,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "reference-last-step-may-invalidate-whole-table",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          1e+150,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 1,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "unavailable",
+        "reason": "REF_STEP_INVALID",
+        "length": 0,
+        "values": [],
+        "failedStep": 0,
+        "initialZ": [
+          [
+            1e+150,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            1e+150,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1
+      }
+    },
+    {
+      "input": {
+        "name": "reference-2048-cap-no-early-convergence",
+        "formula": "newton",
+        "variant": "mandelbrot",
+        "center": [
+          1,
+          0,
+          0,
+          0
+        ],
+        "mappedJulia": [
+          1,
+          0
+        ],
+        "power": 2,
+        "relaxation": 1,
+        "iterations": 4096,
+        "width": 97,
+        "height": 73
+      },
+      "expected": {
+        "kind": "ready",
+        "layout": "real-hi-low-imag-hi-low",
+        "length": 2048,
+        "initialZ": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "constant": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "relax": 1,
+        "repeatTuple": [
+          1,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ]
+}

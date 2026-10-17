@@ -1,0 +1,154 @@
+import {test,before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {execFile,spawn} from 'node:child_process';
+import {promisify} from 'node:util';
+import {mkdtemp,readFile,readdir,rm,writeFile,chmod,stat} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
+import {createExportServer} from './index.mjs';
+const exec=promisify(execFile),services=new Set(),directories=[];let red,blue,jpeg,wrongSize;
+const evidence=[];
+async function fixture(color,codec='png',size='64x48'){
+ const {stdout}=await exec('ffmpeg',['-hide_banner','-loglevel','error','-f','lavfi','-i',`color=c=${color}:s=${size}:r=6`,'-frames:v','1','-f','image2pipe','-vcodec',codec,'pipe:1'],{encoding:'buffer',maxBuffer:8*1024**2});return stdout;
+}
+async function service(options={}){
+ const root=options.root??await mkdtemp(path.join(tmpdir(),'mathart-export-test-'));if(!options.root)directories.push(root);
+ const app=await createExportServer({root,...options});services.add(app);const address=await app.listen(0);
+ return {app,root,url:`http://127.0.0.1:${address.port}`};
+}
+async function stop(app){await app.close();services.delete(app);assert.equal(app.ownedProcessCount,0,'all owned encoder and health children must close');}
+async function request(s,route,options={},status=200){const r=await fetch(s.url+route,options),data=await r.json();assert.equal(r.status,status,JSON.stringify(data));return data;}
+const create=(s,params={})=>request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:64,height:48,fps:6,frames:3,format:'mp4',...params})},201);
+const frame=(s,id,index,bytes=red,status=200)=>request(s,`/api/exports/${id}/frames${index===undefined?'':`?index=${index}`}`,{method:'POST',headers:{'content-type':'image/png'},body:bytes},status);
+async function until(fn,timeout=3000){const start=Date.now();while(!await fn()){if(Date.now()-start>timeout)assert.fail('condition timed out');await new Promise(r=>setTimeout(r,20));}}
+before(async()=>{[red,blue,jpeg,wrongSize]=await Promise.all([fixture('red'),fixture('blue'),fixture('red','mjpeg'),fixture('red','png','32x32')]);});
+after(async()=>{for(const s of services)await s.close();for(const dir of directories)await rm(dir,{recursive:true,force:true});console.log('Real FFmpeg/ffprobe evidence: '+JSON.stringify(evidence));});
+
+test('PNG/JPEG bytes persist exactly and downloads survive service restart',async()=>{
+ const s=await service(),saved=[];
+ for(const [type,bytes] of [['image/png',red],['image/jpeg',jpeg]]){
+  const info=await request(s,'/api/images',{method:'POST',headers:{'content-type':type},body:bytes},201);assert.equal(info.bytes,bytes.length);assert.match(info.id,/^[0-9a-f-]{36}$/);
+  assert.deepEqual(await readFile(path.join(s.root,path.basename(info.url))),bytes);
+  const response=await fetch(s.url+info.url);assert.equal(response.headers.get('content-type'),type);assert.deepEqual(Buffer.from(await response.arrayBuffer()),bytes);saved.push([info,bytes]);
+ }
+ await stop(s.app);const restarted=await service({root:s.root});
+ for(const [info,bytes] of saved){const r=await fetch(restarted.url+info.url);assert.equal(r.status,200);assert.deepEqual(Buffer.from(await r.arrayBuffer()),bytes);}
+ await stop(restarted.app);
+});
+
+for(const format of ['mp4','webm','gif'])test(`real ${format} encoding preserves dimensions and all three submitted frames`,async()=>{
+ const s=await service();const health=await request(s,'/api/health');assert.equal(health.ffmpeg,true);const {id}=await create(s,{format});
+ for(const [i,bytes] of [red,blue,red].entries())assert.equal((await frame(s,id,i,bytes)).frames,i+1);
+ const result=await request(s,`/api/exports/${id}/finish`,{method:'POST'});assert.equal(result.frames,3);assert.ok(result.bytes>0);
+ const file=path.join(s.root,`${id}.${format}`);assert.equal((await stat(file)).size,result.bytes);
+ const {stdout}=await exec('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=codec_name,width,height,nb_read_frames','-of','json',file]);
+ const video=JSON.parse(stdout).streams[0];assert.equal(video.width,64);assert.equal(video.height,48);assert.equal(Number(video.nb_read_frames),3);evidence.push({format,...video,bytes:result.bytes});
+ // Decode again: distinct input frames must remain distinct after lossy encoding/palette conversion.
+ const decoded=await exec('ffmpeg',['-v','error','-i',file,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{encoding:'buffer',maxBuffer:1024**2});
+ const stride=64*48*3;assert.equal(decoded.stdout.length,3*stride);assert.notDeepEqual(decoded.stdout.subarray(0,stride),decoded.stdout.subarray(stride,2*stride));
+ const bytes=await readFile(file);const download=await fetch(s.url+result.url);assert.deepEqual(Buffer.from(await download.arrayBuffer()),bytes);
+ await stop(s.app);const restarted=await service({root:s.root});assert.equal((await fetch(restarted.url+result.url)).status,200);await stop(restarted.app);
+});
+
+test('conditional dialog cleanup preserves a completed video while explicit default DELETE still removes it',async()=>{
+ const s=await service(),{id}=await create(s,{frames:1});await frame(s,id,0);
+ const result=await request(s,`/api/exports/${id}/finish`,{method:'POST'}),file=path.join(s.root,`${id}.mp4`),saved=await readFile(file);
+ const conditional=await request(s,`/api/exports/${id}?onlyUnfinished=true`,{method:'DELETE'});
+ assert.deepEqual(conditional,{cancelled:false,complete:true});
+ assert.equal((await request(s,`/api/exports/${id}`)).status,'complete');
+ assert.deepEqual(await readFile(file),saved);assert.deepEqual(Buffer.from(await(await fetch(s.url+result.url)).arrayBuffer()),saved);
+ // Retry remains safe after the client lost its previous finish/cleanup response.
+ assert.deepEqual(await request(s,`/api/exports/${id}?onlyUnfinished=true`,{method:'DELETE'}),conditional);
+ await request(s,`/api/exports/${id}`,{method:'DELETE'});assert.deepEqual(await readdir(s.root),[]);
+ await request(s,`/api/exports/${id}`,{},404);await request(s,result.url,{},404);
+ // The additive condition still performs real cancellation of an unfinished encoder.
+ const active=await create(s,{frames:1});await request(s,`/api/exports/${active.id}?onlyUnfinished=true`,{method:'DELETE'});
+ assert.equal(s.app.ownedProcessCount,0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
+});
+
+test('rejects unsafe origins, bad hosts, MIME mismatch, corrupt images and bounded uploads',async()=>{
+ const s=await service({limits:{maxImageBytes:Math.max(red.length,jpeg.length)+20}});
+ await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png',origin:'https://example.com'},body:red},403);
+ await new Promise((resolve,reject)=>{const req=http.get(s.url+'/api/health',{headers:{host:'evil.example'}},res=>{assert.equal(res.statusCode,403);res.resume();res.once('end',resolve);});req.once('error',reject);});
+ await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/gif'},body:red},415);
+ await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png'},body:jpeg},400);
+ const corrupted=Buffer.from(red);corrupted[corrupted.length-5]^=1;await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png'},body:corrupted},400);
+ await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png'},body:Buffer.alloc(Math.max(red.length,jpeg.length)+21)},413);
+ await request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:'{'},400);
+ assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
+});
+
+test('frame order/dimensions are checked without consuming a rejected frame; incomplete finish is refused',async()=>{
+ const s=await service(),{id}=await create(s);
+ await frame(s,id,undefined,red,409);await frame(s,id,1,red,409);await frame(s,id,0,wrongSize,400);
+ await request(s,`/api/exports/${id}/finish`,{method:'POST'},409);await frame(s,id,0);await frame(s,id,0,red,409);
+ const state=await request(s,`/api/exports/${id}`);assert.equal(state.frames,1);
+ await request(s,`/api/exports/${id}`,{method:'DELETE'});assert.equal(s.app.ownedProcessCount,0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
+});
+
+test('missing encoder is a failed creation, with no leaked reservations or child',async()=>{
+ const s=await service({ffmpegPath:'/nonexistent/mathart-test-ffmpeg',limits:{maxDiskBytes:128,maxOutputBytes:128}});
+ assert.equal((await request(s,'/api/health')).ffmpeg,false);
+ for(let i=0;i<2;i++)await request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:64,height:48,fps:6,frames:1,format:'mp4'})},503);
+ await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
+});
+
+test('active job and total pixel/input/disk budgets fail explicitly',async()=>{
+ const s=await service({limits:{maxActive:1,maxInputBytes:red.length-1,maxFramePixels:64*48*3,maxDiskBytes:1024**3,maxOutputBytes:1024**3}}),{id}=await create(s);
+ await request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:64,height:48,fps:6,frames:3,format:'mp4'})},409);
+ await request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:64,height:48,fps:6,frames:4,format:'mp4'})},413);
+ await frame(s,id,0,red,413);await until(()=>s.app.ownedProcessCount===0);
+ const state=await request(s,`/api/exports/${id}`);assert.equal(state.status,'failed');assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
+ const disk=await service({limits:{maxDiskBytes:red.length-1}});await request(disk,'/api/images',{method:'POST',headers:{'content-type':'image/png'},body:red},507);assert.deepEqual(await readdir(disk.root),[]);await stop(disk.app);
+});
+
+test('disconnect during frame upload cancels its encoder and removes its partial file',async()=>{
+ const s=await service(),{id}=await create(s);
+ await new Promise(resolve=>{const req=http.request(s.url+`/api/exports/${id}/frames?index=0`,{method:'POST',headers:{'content-type':'image/png','content-length':red.length+100}},()=>{});req.on('error',()=>resolve());req.write(red.subarray(0,20));setTimeout(()=>req.destroy(),40);});
+ await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);assert.equal((await request(s,`/api/exports/${id}`)).status,'cancelled');await stop(s.app);
+});
+
+test('service shutdown signals only its own children and escalates an encoder ignoring SIGTERM',async()=>{
+ const directory=await mkdtemp(path.join(tmpdir(),'mathart-encoder-fixture-'));directories.push(directory);
+ const fixture=path.join(directory,'encoder.mjs'),ready=path.join(directory,'ready');await writeFile(fixture,`#!/usr/bin/env node\nimport {writeFileSync} from 'node:fs';process.on('SIGTERM',()=>{});writeFileSync(${JSON.stringify(ready)},'ready');process.stdin.resume();setInterval(()=>{},1000);\n`);await chmod(fixture,0o755);
+ const s=await service({ffmpegPath:fixture,limits:{killGraceMs:50}});await create(s);await until(async()=>{try{await stat(ready);return true;}catch{return false;}});assert.equal(s.app.ownedProcessCount,1);
+ const unrelated=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});
+ try{await stop(s.app);assert.equal(unrelated.exitCode,null);assert.equal(unrelated.signalCode,null);assert.deepEqual(await readdir(s.root),[]);}finally{unrelated.kill();await new Promise(r=>unrelated.once('close',r));}
+});
+
+test('idle encoder is reaped and a new export can use its released slot',async()=>{
+ const s=await service({limits:{idleTimeoutMs:80,maxActive:1}}),{id}=await create(s);
+ await until(()=>s.app.ownedProcessCount===0);assert.equal((await request(s,`/api/exports/${id}`)).status,'failed');
+ await create(s);await stop(s.app);assert.deepEqual(await readdir(s.root),[]);
+});
+
+test('real encoder output size failure never publishes a partial file',async()=>{
+ const s=await service({limits:{maxOutputBytes:128}}),{id}=await create(s,{frames:1});await frame(s,id,0);
+ const r=await fetch(s.url+`/api/exports/${id}/finish`,{method:'POST'}),body=await r.json();assert.ok([409,500,507].includes(r.status),JSON.stringify(body));assert.ok(body.error);
+ await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);await request(s,`/api/exports/${id}/file`,{},409);await stop(s.app);
+});
+
+async function hangingEncoder(){
+ const directory=await mkdtemp(path.join(tmpdir(),'mathart-hanging-encoder-'));directories.push(directory);
+ const fixture=path.join(directory,'encoder.mjs'),ready=path.join(directory,'ready');
+ await writeFile(fixture,`#!/usr/bin/env node\nimport {writeFileSync} from 'node:fs';process.on('SIGTERM',()=>{});writeFileSync(${JSON.stringify(ready)},'ready');process.stdin.resume();setInterval(()=>{},1000);\n`);await chmod(fixture,0o755);
+ return {fixture,ready,async wait(){await until(async()=>{try{await stat(ready);return true;}catch{return false;}});}};
+}
+
+test('finish deadline fails explicitly and kills an encoder that never exits',async()=>{
+ const hanging=await hangingEncoder(),s=await service({ffmpegPath:hanging.fixture,limits:{finishTimeoutMs:60,killGraceMs:30}}),{id}=await create(s,{frames:1});await hanging.wait();await frame(s,id,0);
+ const failure=await request(s,`/api/exports/${id}/finish`,{method:'POST'},500);assert.match(failure.error,/超时/);assert.equal(s.app.ownedProcessCount,0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
+});
+
+test('disconnect while waiting for finish cancels the owned encoder',async()=>{
+ const hanging=await hangingEncoder(),s=await service({ffmpegPath:hanging.fixture,limits:{killGraceMs:30}}),{id}=await create(s,{frames:1});await hanging.wait();await frame(s,id,0);
+ await new Promise(resolve=>{const req=http.request(s.url+`/api/exports/${id}/finish`,{method:'POST'});req.on('error',()=>resolve());req.end();setTimeout(()=>req.destroy(),40);});
+ await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);assert.equal((await request(s,`/api/exports/${id}`)).status,'cancelled');await stop(s.app);
+});
+
+test('slow frame upload times out, returns an error and releases the encoder',async()=>{
+ const s=await service({limits:{bodyTimeoutMs:80,killGraceMs:30}}),{id}=await create(s);
+ await new Promise((resolve,reject)=>{const req=http.request(s.url+`/api/exports/${id}/frames?index=0`,{method:'POST',headers:{'content-type':'image/png','content-length':red.length+100}},res=>{assert.equal(res.statusCode,408);res.resume();res.on('end',resolve);});req.on('error',reject);req.write(red.subarray(0,20));});
+ await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
+});

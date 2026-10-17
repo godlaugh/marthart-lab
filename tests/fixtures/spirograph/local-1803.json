@@ -1,0 +1,321 @@
+{
+  "description": "Captured local-v1 production raster before source-version changes; no native runtime claim",
+  "base": {
+    "version": 1,
+    "id": "baseline",
+    "kind": "spirograph",
+    "name": "baseline",
+    "equations": {},
+    "parameters": {},
+    "settings": {
+      "layers": "[{\"id\":\"layer-1\",\"name\":\"图层\",\"statorRadius\":24,\"statorColor\":\"#64748b\",\"rotors\":[{\"radius\":7,\"mode\":\"inside\"},{\"radius\":3,\"mode\":\"outside\"}],\"penDistance\":5,\"speed\":8,\"showGuides\":true,\"autoStopOnClosure\":true,\"strokeColor\":\"#43d9bd\",\"palette\":[],\"strokeWidth\":1,\"visible\":true,\"enabled\":true,\"repeatGradient\":false,\"phase\":0,\"direction\":1,\"opacity\":1,\"turns\":2},{\"id\":\"second\",\"name\":\"图层\",\"statorRadius\":24,\"statorColor\":\"#64748b\",\"rotors\":[{\"radius\":8,\"mode\":\"outside\"}],\"penDistance\":5,\"speed\":13,\"showGuides\":true,\"autoStopOnClosure\":true,\"strokeColor\":\"#ff6655\",\"palette\":[],\"strokeWidth\":1,\"visible\":true,\"enabled\":true,\"repeatGradient\":false,\"phase\":0,\"direction\":1,\"opacity\":1,\"turns\":2}]",
+      "count": 240,
+      "transparentBackground": true
+    },
+    "palette": {
+      "name": "p",
+      "mode": "linear",
+      "stops": [
+        "#ff0000",
+        "#0000ff"
+      ],
+      "offset": 0,
+      "cycles": 1
+    },
+    "camera": {
+      "position": [
+        0,
+        0,
+        10
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "orthographic": true,
+      "zoom": 1
+    },
+    "timeline": {
+      "duration": 20,
+      "loop": false,
+      "fps": 30,
+      "tracks": []
+    },
+    "favorite": false
+  },
+  "rows": [
+    {
+      "settings": {},
+      "time": 0,
+      "sha256": "00f5cd9465f92eb028445195bf11ddec6551f69bb9d90958f43adcc8955cf48b",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {},
+      "time": 0.3,
+      "sha256": "00f5cd9465f92eb028445195bf11ddec6551f69bb9d90958f43adcc8955cf48b",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {},
+      "time": 2,
+      "sha256": "00f5cd9465f92eb028445195bf11ddec6551f69bb9d90958f43adcc8955cf48b",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {},
+      "time": 10,
+      "sha256": "00f5cd9465f92eb028445195bf11ddec6551f69bb9d90958f43adcc8955cf48b",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {
+        "animate": true
+      },
+      "time": 0,
+      "sha256": "8f078dd71c1304d8e7e0d5cb955542c438e9c422630fb9d9b0a33f3afc7b18b0",
+      "samples": 241,
+      "generated": 106
+    },
+    {
+      "settings": {
+        "animate": true
+      },
+      "time": 0.3,
+      "sha256": "62a429031a61d0673240011167d6840841f2b03707f3016dc672ba8afd8e1151",
+      "samples": 241,
+      "generated": 111
+    },
+    {
+      "settings": {
+        "animate": true
+      },
+      "time": 2,
+      "sha256": "7d6ed445dde665f261eefecc09a43a7269287bf2e36ff12ae751aaa52bc82d0f",
+      "samples": 241,
+      "generated": 136
+    },
+    {
+      "settings": {
+        "animate": true
+      },
+      "time": 10,
+      "sha256": "6ea0d6b0bdcd07a3db86e980528bddfe24f89f64e4a10c82d243d117a7e543fb",
+      "samples": 241,
+      "generated": 254
+    },
+    {
+      "settings": {
+        "animate": true,
+        "fadeInStatorsOnStart": true,
+        "fadeOutStatorsOnFinish": true,
+        "startEaseEnabled": true,
+        "endEaseEnabled": true
+      },
+      "time": 0,
+      "sha256": "c2a9d2dfcf0846b0babef6873e7956fa28f553657c34522fb9489e8aba67366a",
+      "samples": 241,
+      "generated": 0
+    },
+    {
+      "settings": {
+        "animate": true,
+        "fadeInStatorsOnStart": true,
+        "fadeOutStatorsOnFinish": true,
+        "startEaseEnabled": true,
+        "endEaseEnabled": true
+      },
+      "time": 0.3,
+      "sha256": "8723d59ec4424fa7da6828088467e3e04d62d3496158b5e2ecebe64dc730bdc4",
+      "samples": 241,
+      "generated": 107
+    },
+    {
+      "settings": {
+        "animate": true,
+        "fadeInStatorsOnStart": true,
+        "fadeOutStatorsOnFinish": true,
+        "startEaseEnabled": true,
+        "endEaseEnabled": true
+      },
+      "time": 2,
+      "sha256": "f727387799715610354aaa4c8a70fd8d35c4dbbb78f8f7d2ef0cfecea0133062",
+      "samples": 241,
+      "generated": 130
+    },
+    {
+      "settings": {
+        "animate": true,
+        "fadeInStatorsOnStart": true,
+        "fadeOutStatorsOnFinish": true,
+        "startEaseEnabled": true,
+        "endEaseEnabled": true
+      },
+      "time": 10,
+      "sha256": "d53d7543f12eac810b1ddfcdae126f6ec07a0a44a1013189fa056d0422c14de5",
+      "samples": 241,
+      "generated": 248
+    },
+    {
+      "settings": {
+        "scale": 1.2,
+        "scaleX": 0.8,
+        "scaleY": 1.1,
+        "rotation": 0.3,
+        "rotateZ": 0.4,
+        "offsetX": 2,
+        "offsetY": 3,
+        "rotationSpeed": 0.2
+      },
+      "time": 0,
+      "sha256": "52cac0498881d335f659518e7e8f9ebb969f66450fed39b2a5c95bd7fb488c41",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {
+        "scale": 1.2,
+        "scaleX": 0.8,
+        "scaleY": 1.1,
+        "rotation": 0.3,
+        "rotateZ": 0.4,
+        "offsetX": 2,
+        "offsetY": 3,
+        "rotationSpeed": 0.2
+      },
+      "time": 0.3,
+      "sha256": "5a002875bb12c2144a5f58486935e8fbe72446ea3a022c5863df6edc39be04b2",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {
+        "scale": 1.2,
+        "scaleX": 0.8,
+        "scaleY": 1.1,
+        "rotation": 0.3,
+        "rotateZ": 0.4,
+        "offsetX": 2,
+        "offsetY": 3,
+        "rotationSpeed": 0.2
+      },
+      "time": 2,
+      "sha256": "9cf281f32f8c7e9bf50c0cc8ad6baf6fa76b8f488de3dbdf3982c275e263c03e",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {
+        "scale": 1.2,
+        "scaleX": 0.8,
+        "scaleY": 1.1,
+        "rotation": 0.3,
+        "rotateZ": 0.4,
+        "offsetX": 2,
+        "offsetY": 3,
+        "rotationSpeed": 0.2
+      },
+      "time": 10,
+      "sha256": "db53b4c8af5f0ddd46c8b04abb35971e30ed6d9c1e5f796f2e60feb7eef1afab",
+      "samples": 241,
+      "generated": 418
+    },
+    {
+      "settings": {
+        "spiroView": "fixed",
+        "spiroSpan": 120,
+        "spiroCenterX": 3,
+        "spiroCenterY": -7
+      },
+      "time": 0,
+      "sha256": "b2e542e1884bcf9e83917b020b2228700e5b6e30288282563c3703aa5cdc2110",
+      "samples": 241,
+      "generated": 404
+    },
+    {
+      "settings": {
+        "spiroView": "fixed",
+        "spiroSpan": 120,
+        "spiroCenterX": 3,
+        "spiroCenterY": -7
+      },
+      "time": 0.3,
+      "sha256": "b2e542e1884bcf9e83917b020b2228700e5b6e30288282563c3703aa5cdc2110",
+      "samples": 241,
+      "generated": 404
+    },
+    {
+      "settings": {
+        "spiroView": "fixed",
+        "spiroSpan": 120,
+        "spiroCenterX": 3,
+        "spiroCenterY": -7
+      },
+      "time": 2,
+      "sha256": "b2e542e1884bcf9e83917b020b2228700e5b6e30288282563c3703aa5cdc2110",
+      "samples": 241,
+      "generated": 404
+    },
+    {
+      "settings": {
+        "spiroView": "fixed",
+        "spiroSpan": 120,
+        "spiroCenterX": 3,
+        "spiroCenterY": -7
+      },
+      "time": 10,
+      "sha256": "b2e542e1884bcf9e83917b020b2228700e5b6e30288282563c3703aa5cdc2110",
+      "samples": 241,
+      "generated": 404
+    },
+    {
+      "settings": {
+        "animate": true,
+        "traceStartTime": 1,
+        "traceClearTime": 3
+      },
+      "time": 0,
+      "sha256": "c2a9d2dfcf0846b0babef6873e7956fa28f553657c34522fb9489e8aba67366a",
+      "samples": 241,
+      "generated": 0
+    },
+    {
+      "settings": {
+        "animate": true,
+        "traceStartTime": 1,
+        "traceClearTime": 3
+      },
+      "time": 0.3,
+      "sha256": "c2a9d2dfcf0846b0babef6873e7956fa28f553657c34522fb9489e8aba67366a",
+      "samples": 241,
+      "generated": 0
+    },
+    {
+      "settings": {
+        "animate": true,
+        "traceStartTime": 1,
+        "traceClearTime": 3
+      },
+      "time": 2,
+      "sha256": "8b3fdc42bec52cec52711c16deea106c2745e0619265bcbab3652e9e89bf0543",
+      "samples": 241,
+      "generated": 121
+    },
+    {
+      "settings": {
+        "animate": true,
+        "traceStartTime": 1,
+        "traceClearTime": 3
+      },
+      "time": 10,
+      "sha256": "a13108176957a93d7e23152ef2fad1a0bf9ea841294df6804e60af5f31224aa4",
+      "samples": 241,
+      "generated": 210
+    }
+  ]
+}

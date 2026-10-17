@@ -1,0 +1,36 @@
+# Dependencies and generated builds
+/node_modules/
+/dist/
+/dist-desktop/
+*.tsbuildinfo
+
+# Local verification output, caches and research artifacts
+/.cache/
+/coverage/
+/test-results/
+/playwright-report/
+/.vitest/
+/_reference/
+/reports/
+/logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local configuration and editor state
+.env
+.env.*
+!.env.example
+!.env.*.example
+/.codex/
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# OS metadata
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]

@@ -1,0 +1,202 @@
+[
+  {
+    "id": "guide-spirograph-rose",
+    "name": "指南 · Rose Curve",
+    "description": "保留指南 R=150、r=75、笔距 75；源运动学下退化为直线，不替换为花瓣曲线。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/spirograph",
+      "section": "玫瑰曲线（Rose Curve）",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+        "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。",
+        "指南称 Rose 为花瓣图案，但这组参数按源运动学退化为直线；保留原参数和名称。",
+        "示例采用 60 FPS 离线逐帧参考时钟，这是本地选择，不是指南声明的实时帧率。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "SPIROGRAPH",
+      "parameters": {},
+      "settings": {
+        "backgroundColor": "#000000",
+        "sceneTransform": {
+          "offsetX": 0,
+          "offsetY": 0,
+          "rotationDegrees": 0,
+          "scale": 1
+        },
+        "startEaseEnabled": true,
+        "endEaseEnabled": true,
+        "fadeInStatorsOnStart": true,
+        "fadeOutStatorsOnFinish": false,
+        "layers": [
+          {
+            "id": "guide-spirograph-rose",
+            "name": "指南 · Rose Curve",
+            "statorRadius": 150,
+            "rotors": [
+              {
+                "radius": 75,
+                "mode": "INSIDE"
+              }
+            ],
+            "penDistance": 75,
+            "speed": 1,
+            "strokeWidth": 1,
+            "strokeColor": "#2E8B57",
+            "statorColor": "#B4B4B4",
+            "palette": [
+              "#2E8B57"
+            ],
+            "showGuides": true,
+            "autoStopOnClosure": true,
+            "visible": true,
+            "enabled": true
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "type": "spirograph_finish_wait",
+          "duration": 1200
+        }
+      ],
+      "name": "指南 · Rose Curve"
+    }
+  },
+  {
+    "id": "guide-spirograph-star",
+    "name": "指南 · Star Pattern",
+    "description": "按指南的定子 150、内转子 50 与笔距 60 绘制星形。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/spirograph",
+      "section": "星形图案（Star Pattern）",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+        "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。",
+        "示例采用 60 FPS 离线逐帧参考时钟，这是本地选择，不是指南声明的实时帧率。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "SPIROGRAPH",
+      "parameters": {},
+      "settings": {
+        "backgroundColor": "#000000",
+        "sceneTransform": {
+          "offsetX": 0,
+          "offsetY": 0,
+          "rotationDegrees": 0,
+          "scale": 1
+        },
+        "startEaseEnabled": true,
+        "endEaseEnabled": true,
+        "fadeInStatorsOnStart": true,
+        "fadeOutStatorsOnFinish": false,
+        "layers": [
+          {
+            "id": "guide-spirograph-star",
+            "name": "指南 · Star Pattern",
+            "statorRadius": 150,
+            "rotors": [
+              {
+                "radius": 50,
+                "mode": "INSIDE"
+              }
+            ],
+            "penDistance": 60,
+            "speed": 1,
+            "strokeWidth": 1,
+            "strokeColor": "#2E8B57",
+            "statorColor": "#B4B4B4",
+            "palette": [
+              "#2E8B57"
+            ],
+            "showGuides": true,
+            "autoStopOnClosure": true,
+            "visible": true,
+            "enabled": true
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "type": "spirograph_finish_wait",
+          "duration": 1200
+        }
+      ],
+      "name": "指南 · Star Pattern"
+    }
+  },
+  {
+    "id": "guide-spirograph-nested",
+    "name": "指南 · 复杂螺旋",
+    "description": "按指南的定子 150、内转子 75、外转子 30 与笔距 40 绘制嵌套旋轮。",
+    "reference": {
+      "url": "https://www.mathartstudio.art/guide/spirograph",
+      "section": "复杂螺旋",
+      "completion": "runtime-defaults",
+      "assumptions": [
+        "指南只给出定子、转子和笔距；配色、速度、线宽、场景变换、起止缓动和引导圆采用已核实的原版默认值。",
+        "图层名称、标识与 1200 秒完成等待上限是本地补全，指南未指定；通常在视觉完成时提前结束。",
+        "示例采用 60 FPS 离线逐帧参考时钟，这是本地选择，不是指南声明的实时帧率。"
+      ]
+    },
+    "config": {
+      "config_version": "1.0.0",
+      "type": "SPIROGRAPH",
+      "parameters": {},
+      "settings": {
+        "backgroundColor": "#000000",
+        "sceneTransform": {
+          "offsetX": 0,
+          "offsetY": 0,
+          "rotationDegrees": 0,
+          "scale": 1
+        },
+        "startEaseEnabled": true,
+        "endEaseEnabled": true,
+        "fadeInStatorsOnStart": true,
+        "fadeOutStatorsOnFinish": false,
+        "layers": [
+          {
+            "id": "guide-spirograph-nested",
+            "name": "指南 · 复杂螺旋",
+            "statorRadius": 150,
+            "rotors": [
+              {
+                "radius": 75,
+                "mode": "INSIDE"
+              },
+              {
+                "radius": 30,
+                "mode": "OUTSIDE"
+              }
+            ],
+            "penDistance": 40,
+            "speed": 1,
+            "strokeWidth": 1,
+            "strokeColor": "#2E8B57",
+            "statorColor": "#B4B4B4",
+            "palette": [
+              "#2E8B57"
+            ],
+            "showGuides": true,
+            "autoStopOnClosure": true,
+            "visible": true,
+            "enabled": true
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "type": "spirograph_finish_wait",
+          "duration": 1200
+        }
+      ],
+      "name": "指南 · 复杂螺旋"
+    }
+  }
+]

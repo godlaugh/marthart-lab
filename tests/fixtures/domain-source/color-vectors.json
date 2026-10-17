@@ -1,0 +1,2631 @@
+{
+  "scope": "No production modules imported; no original JVM class executed. JS Math supplies transcendental functions; Java Math exact low-bit equivalence is not claimed. All byte outputs chosen for this corpus are derived predictions awaiting independent implementation/GL comparison.",
+  "oracleSha256": "7fe937bc606a2a7c0fb737750a9e5b7ca49bc12af22ec9b59a1a37da281b8f30",
+  "provenance": [
+    {
+      "path": ".cache/domain-source-ManimColors-bytecode.json",
+      "sha256": "033bdf3d1b684cf57e623befae383f223033c170dd025097fba18aa91de96926"
+    },
+    {
+      "path": ".cache/gradient-domain-bytecode.json",
+      "sha256": "861775051fa3d6330fe46a7f6f2debe1185d15904eea57b2c98d7cf54a1736e8"
+    },
+    {
+      "path": ".cache/domain-source-constant-pool-snippets.json",
+      "sha256": "81d75fd9d0006caf7b623cf264ddd0bc71b1195623caf86186b2bfb575406318"
+    }
+  ],
+  "midpoint": [
+    {
+      "id": "black-white",
+      "mode": "RGB",
+      "a": "#FF000000",
+      "b": "#FFFFFFFF",
+      "t": 0.5,
+      "expected": "#FF7F7F7F"
+    },
+    {
+      "id": "black-white",
+      "mode": "LINEAR",
+      "a": "#FF000000",
+      "b": "#FFFFFFFF",
+      "t": 0.5,
+      "expected": "#FFBCBCBC"
+    },
+    {
+      "id": "black-white",
+      "mode": "OKLAB",
+      "a": "#FF000000",
+      "b": "#FFFFFFFF",
+      "t": 0.5,
+      "expected": "#FF636363"
+    },
+    {
+      "id": "black-white",
+      "mode": "OKLCH",
+      "a": "#FF000000",
+      "b": "#FFFFFFFF",
+      "t": 0.5,
+      "expected": "#FF636363"
+    },
+    {
+      "id": "black-red",
+      "mode": "RGB",
+      "a": "#FF000000",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FF7F0000"
+    },
+    {
+      "id": "black-red",
+      "mode": "LINEAR",
+      "a": "#FF000000",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FFBC0000"
+    },
+    {
+      "id": "black-red",
+      "mode": "OKLAB",
+      "a": "#FF000000",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FF630000"
+    },
+    {
+      "id": "black-red",
+      "mode": "OKLCH",
+      "a": "#FF000000",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FF62001C"
+    },
+    {
+      "id": "red-black",
+      "mode": "RGB",
+      "a": "#FFFF0000",
+      "b": "#FF000000",
+      "t": 0.5,
+      "expected": "#FF7F0000"
+    },
+    {
+      "id": "red-black",
+      "mode": "LINEAR",
+      "a": "#FFFF0000",
+      "b": "#FF000000",
+      "t": 0.5,
+      "expected": "#FFBC0000"
+    },
+    {
+      "id": "red-black",
+      "mode": "OKLAB",
+      "a": "#FFFF0000",
+      "b": "#FF000000",
+      "t": 0.5,
+      "expected": "#FF630000"
+    },
+    {
+      "id": "red-black",
+      "mode": "OKLCH",
+      "a": "#FFFF0000",
+      "b": "#FF000000",
+      "t": 0.5,
+      "expected": "#FF630000"
+    },
+    {
+      "id": "white-blue",
+      "mode": "RGB",
+      "a": "#FFFFFFFF",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FF7F7FFF"
+    },
+    {
+      "id": "white-blue",
+      "mode": "LINEAR",
+      "a": "#FFFFFFFF",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FFBCBCFF"
+    },
+    {
+      "id": "white-blue",
+      "mode": "OKLAB",
+      "a": "#FFFFFFFF",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FF74A3FF"
+    },
+    {
+      "id": "white-blue",
+      "mode": "OKLCH",
+      "a": "#FFFFFFFF",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FF00C5A5"
+    },
+    {
+      "id": "red-blue",
+      "mode": "RGB",
+      "a": "#FFFF0000",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FF7F007F"
+    },
+    {
+      "id": "red-blue",
+      "mode": "LINEAR",
+      "a": "#FFFF0000",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FFBC00BC"
+    },
+    {
+      "id": "red-blue",
+      "mode": "OKLAB",
+      "a": "#FFFF0000",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FF8C53A2"
+    },
+    {
+      "id": "red-blue",
+      "mode": "OKLCH",
+      "a": "#FFFF0000",
+      "b": "#FF0000FF",
+      "t": 0.5,
+      "expected": "#FFBA00C2"
+    },
+    {
+      "id": "cyan-red",
+      "mode": "RGB",
+      "a": "#FF00FFFF",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FF7F7F7F"
+    },
+    {
+      "id": "cyan-red",
+      "mode": "LINEAR",
+      "a": "#FF00FFFF",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FFBCBCBC"
+    },
+    {
+      "id": "cyan-red",
+      "mode": "OKLAB",
+      "a": "#FF00FFFF",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FFD2A993"
+    },
+    {
+      "id": "cyan-red",
+      "mode": "OKLCH",
+      "a": "#FF00FFFF",
+      "b": "#FFFF0000",
+      "t": 0.5,
+      "expected": "#FFB8BE00"
+    },
+    {
+      "id": "odd-bytes-alpha",
+      "mode": "RGB",
+      "a": "#01010305",
+      "b": "#02020406",
+      "t": 0.5,
+      "expected": "#01010305"
+    },
+    {
+      "id": "odd-bytes-alpha",
+      "mode": "LINEAR",
+      "a": "#01010305",
+      "b": "#02020406",
+      "t": 0.5,
+      "expected": "#02020406"
+    },
+    {
+      "id": "odd-bytes-alpha",
+      "mode": "OKLAB",
+      "a": "#01010305",
+      "b": "#02020406",
+      "t": 0.5,
+      "expected": "#02010305"
+    },
+    {
+      "id": "odd-bytes-alpha",
+      "mode": "OKLCH",
+      "a": "#01010305",
+      "b": "#02020406",
+      "t": 0.5,
+      "expected": "#02010305"
+    },
+    {
+      "id": "low-transfer",
+      "mode": "RGB",
+      "a": "#FF000A0B",
+      "b": "#FF151F20",
+      "t": 0.5,
+      "expected": "#FF0A1415"
+    },
+    {
+      "id": "low-transfer",
+      "mode": "LINEAR",
+      "a": "#FF000A0B",
+      "b": "#FF151F20",
+      "t": 0.5,
+      "expected": "#FF0C1718"
+    },
+    {
+      "id": "low-transfer",
+      "mode": "OKLAB",
+      "a": "#FF000A0B",
+      "b": "#FF151F20",
+      "t": 0.5,
+      "expected": "#FF081415"
+    },
+    {
+      "id": "low-transfer",
+      "mode": "OKLCH",
+      "a": "#FF000A0B",
+      "b": "#FF151F20",
+      "t": 0.5,
+      "expected": "#FF081415"
+    },
+    {
+      "id": "hue-wrap",
+      "mode": "RGB",
+      "a": "#FFFF0080",
+      "b": "#FFFF8000",
+      "t": 0.5,
+      "expected": "#FFFF4040"
+    },
+    {
+      "id": "hue-wrap",
+      "mode": "LINEAR",
+      "a": "#FFFF0080",
+      "b": "#FFFF8000",
+      "t": 0.5,
+      "expected": "#FFFF5C5C"
+    },
+    {
+      "id": "hue-wrap",
+      "mode": "OKLAB",
+      "a": "#FFFF0080",
+      "b": "#FFFF8000",
+      "t": 0.5,
+      "expected": "#FFFF595C"
+    },
+    {
+      "id": "hue-wrap",
+      "mode": "OKLCH",
+      "a": "#FFFF0080",
+      "b": "#FFFF8000",
+      "t": 0.5,
+      "expected": "#FFFF4F45"
+    },
+    {
+      "id": "gray-gray",
+      "mode": "RGB",
+      "a": "#FF707070",
+      "b": "#FF919191",
+      "t": 0.5,
+      "expected": "#FF808080"
+    },
+    {
+      "id": "gray-gray",
+      "mode": "LINEAR",
+      "a": "#FF707070",
+      "b": "#FF919191",
+      "t": 0.5,
+      "expected": "#FF828282"
+    },
+    {
+      "id": "gray-gray",
+      "mode": "OKLAB",
+      "a": "#FF707070",
+      "b": "#FF919191",
+      "t": 0.5,
+      "expected": "#FF808080"
+    },
+    {
+      "id": "gray-gray",
+      "mode": "OKLCH",
+      "a": "#FF707070",
+      "b": "#FF919191",
+      "t": 0.5,
+      "expected": "#FF808080"
+    }
+  ],
+  "fractional": [
+    {
+      "mode": "RGB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0,
+      "parameterFloat": 0,
+      "expected": "#39010305"
+    },
+    {
+      "mode": "RGB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 1,
+      "parameterFloat": 1,
+      "expected": "#B0FCF8F0"
+    },
+    {
+      "mode": "RGB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.1,
+      "parameterFloat": 0.10000000149011612,
+      "expected": "#441A1B1C"
+    },
+    {
+      "mode": "RGB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.3333333333333333,
+      "parameterFloat": 0.3333333432674408,
+      "expected": "#60545453"
+    },
+    {
+      "mode": "RGB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.49999997,
+      "parameterFloat": 0.4999999701976776,
+      "expected": "#747E7D7A"
+    },
+    {
+      "mode": "LINEAR",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0,
+      "parameterFloat": 0,
+      "expected": "#39010305"
+    },
+    {
+      "mode": "LINEAR",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 1,
+      "parameterFloat": 1,
+      "expected": "#B0FCF8F0"
+    },
+    {
+      "mode": "LINEAR",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.1,
+      "parameterFloat": 0.10000000149011612,
+      "expected": "#45585754"
+    },
+    {
+      "mode": "LINEAR",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.3333333333333333,
+      "parameterFloat": 0.3333333432674408,
+      "expected": "#619A9893"
+    },
+    {
+      "mode": "LINEAR",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.49999997,
+      "parameterFloat": 0.4999999701976776,
+      "expected": "#75B9B6B0"
+    },
+    {
+      "mode": "OKLAB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0,
+      "parameterFloat": 0,
+      "expected": "#39010305"
+    },
+    {
+      "mode": "OKLAB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 1,
+      "parameterFloat": 1,
+      "expected": "#B0FCF8F0"
+    },
+    {
+      "mode": "OKLAB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.1,
+      "parameterFloat": 0.10000000149011612,
+      "expected": "#450E1316"
+    },
+    {
+      "mode": "OKLAB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.3333333333333333,
+      "parameterFloat": 0.3333333432674408,
+      "expected": "#61424547"
+    },
+    {
+      "mode": "OKLAB",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.49999997,
+      "parameterFloat": 0.4999999701976776,
+      "expected": "#756C6E6D"
+    },
+    {
+      "mode": "OKLCH",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0,
+      "parameterFloat": 0,
+      "expected": "#39010305"
+    },
+    {
+      "mode": "OKLCH",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 1,
+      "parameterFloat": 1,
+      "expected": "#B0FCF8F0"
+    },
+    {
+      "mode": "OKLCH",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.1,
+      "parameterFloat": 0.10000000149011612,
+      "expected": "#450C1316"
+    },
+    {
+      "mode": "OKLCH",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.3333333333333333,
+      "parameterFloat": 0.3333333432674408,
+      "expected": "#613E4746"
+    },
+    {
+      "mode": "OKLCH",
+      "a": "#39010305",
+      "b": "#B0FCF8F0",
+      "t": 0.49999997,
+      "parameterFloat": 0.4999999701976776,
+      "expected": "#7568706B"
+    }
+  ],
+  "palettes": [
+    {
+      "id": "empty",
+      "mode": "RGB",
+      "raw": [],
+      "expected": [],
+      "trace": []
+    },
+    {
+      "id": "empty",
+      "mode": "LINEAR",
+      "raw": [],
+      "expected": [],
+      "trace": []
+    },
+    {
+      "id": "empty",
+      "mode": "OKLAB",
+      "raw": [],
+      "expected": [],
+      "trace": []
+    },
+    {
+      "id": "empty",
+      "mode": "OKLCH",
+      "raw": [],
+      "expected": [],
+      "trace": []
+    },
+    {
+      "id": "singleton",
+      "mode": "RGB",
+      "raw": [
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "singleton",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "singleton",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "singleton",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "two-distinct",
+      "mode": "RGB",
+      "raw": [
+        "#FFFF0000",
+        "#FF0000FF"
+      ],
+      "expected": [
+        "#FFFF0000",
+        "#FFBF003F",
+        "#FF7F007F",
+        "#FF3F00BF",
+        "#FF0000FF",
+        "#FF3F00BF",
+        "#FF7F007F",
+        "#FFBF003F",
+        "#FFFF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.53708981869576,
+          "left": "#FFFF0000",
+          "right": "#FF0000FF",
+          "color": "#FF7F007F"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.53708981869576,
+          "left": "#FF0000FF",
+          "right": "#FFFF0000",
+          "color": "#FF7F007F"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.3146423154089609,
+          "left": "#FFFF0000",
+          "right": "#FF7F007F",
+          "color": "#FFBF003F"
+        },
+        {
+          "op": "insert",
+          "index": 5,
+          "distance": 0.3146423154089609,
+          "left": "#FF7F007F",
+          "right": "#FFFF0000",
+          "color": "#FFBF003F"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.2898138404217701,
+          "left": "#FF7F007F",
+          "right": "#FF0000FF",
+          "color": "#FF3F00BF"
+        },
+        {
+          "op": "insert",
+          "index": 5,
+          "distance": 0.2898138404217701,
+          "left": "#FF0000FF",
+          "right": "#FF7F007F",
+          "color": "#FF3F00BF"
+        }
+      ]
+    },
+    {
+      "id": "two-distinct",
+      "mode": "LINEAR",
+      "raw": [
+        "#FFFF0000",
+        "#FF0000FF"
+      ],
+      "expected": [
+        "#FFFF0000",
+        "#FFE10089",
+        "#FFBC00BC",
+        "#FF8900E1",
+        "#FF0000FF",
+        "#FF8900E1",
+        "#FFBC00BC",
+        "#FFE10089",
+        "#FFFF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.53708981869576,
+          "left": "#FFFF0000",
+          "right": "#FF0000FF",
+          "color": "#FFBC00BC"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.53708981869576,
+          "left": "#FF0000FF",
+          "right": "#FFFF0000",
+          "color": "#FFBC00BC"
+        },
+        {
+          "op": "insert",
+          "index": 2,
+          "distance": 0.32475171727816915,
+          "left": "#FFBC00BC",
+          "right": "#FF0000FF",
+          "color": "#FF8900E1"
+        },
+        {
+          "op": "insert",
+          "index": 4,
+          "distance": 0.32475171727816915,
+          "left": "#FF0000FF",
+          "right": "#FFBC00BC",
+          "color": "#FF8900E1"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.26967941666543305,
+          "left": "#FFFF0000",
+          "right": "#FFBC00BC",
+          "color": "#FFE10089"
+        },
+        {
+          "op": "insert",
+          "index": 7,
+          "distance": 0.26967941666543305,
+          "left": "#FFBC00BC",
+          "right": "#FFFF0000",
+          "color": "#FFE10089"
+        }
+      ]
+    },
+    {
+      "id": "two-distinct",
+      "mode": "OKLAB",
+      "raw": [
+        "#FFFF0000",
+        "#FF0000FF"
+      ],
+      "expected": [
+        "#FFFF0000",
+        "#FFC6496D",
+        "#FF8C53A2",
+        "#FF5047D1",
+        "#FF0000FF",
+        "#FF5047D1",
+        "#FF8C53A2",
+        "#FFC6496D",
+        "#FFFF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.53708981869576,
+          "left": "#FFFF0000",
+          "right": "#FF0000FF",
+          "color": "#FF8C53A2"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.53708981869576,
+          "left": "#FF0000FF",
+          "right": "#FFFF0000",
+          "color": "#FF8C53A2"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.26880600649100794,
+          "left": "#FFFF0000",
+          "right": "#FF8C53A2",
+          "color": "#FFC6496D"
+        },
+        {
+          "op": "insert",
+          "index": 5,
+          "distance": 0.26880600649100794,
+          "left": "#FF8C53A2",
+          "right": "#FFFF0000",
+          "color": "#FFC6496D"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.268286027963255,
+          "left": "#FF8C53A2",
+          "right": "#FF0000FF",
+          "color": "#FF5047D1"
+        },
+        {
+          "op": "insert",
+          "index": 5,
+          "distance": 0.268286027963255,
+          "left": "#FF0000FF",
+          "right": "#FF8C53A2",
+          "color": "#FF5047D1"
+        }
+      ]
+    },
+    {
+      "id": "two-distinct",
+      "mode": "OKLCH",
+      "raw": [
+        "#FFFF0000",
+        "#FF0000FF"
+      ],
+      "expected": [
+        "#FFFF0000",
+        "#FFE8007E",
+        "#FFBA00C2",
+        "#FF7B00F1",
+        "#FF0000FF",
+        "#FF7B00F1",
+        "#FFBA00C2",
+        "#FFE8007E",
+        "#FFFF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.53708981869576,
+          "left": "#FFFF0000",
+          "right": "#FF0000FF",
+          "color": "#FFBA00C2"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.53708981869576,
+          "left": "#FF0000FF",
+          "right": "#FFFF0000",
+          "color": "#FFBA00C2"
+        },
+        {
+          "op": "insert",
+          "index": 2,
+          "distance": 0.317330907706461,
+          "left": "#FFBA00C2",
+          "right": "#FF0000FF",
+          "color": "#FF7B00F1"
+        },
+        {
+          "op": "insert",
+          "index": 4,
+          "distance": 0.317330907706461,
+          "left": "#FF0000FF",
+          "right": "#FFBA00C2",
+          "color": "#FF7B00F1"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.2795405529857471,
+          "left": "#FFFF0000",
+          "right": "#FFBA00C2",
+          "color": "#FFE8007E"
+        },
+        {
+          "op": "insert",
+          "index": 7,
+          "distance": 0.2795405529857471,
+          "left": "#FFBA00C2",
+          "right": "#FFFF0000",
+          "color": "#FFE8007E"
+        }
+      ]
+    },
+    {
+      "id": "two-equal",
+      "mode": "RGB",
+      "raw": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "two-equal",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "two-equal",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "two-equal",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "expected": [
+        "#FF123456",
+        "#FF123456"
+      ],
+      "trace": []
+    },
+    {
+      "id": "two-tie",
+      "mode": "RGB",
+      "raw": [
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF0F0F0F",
+        "#FF1F1F1F",
+        "#FF3F3F3F",
+        "#FF5F5F5F",
+        "#FF7F7F7F",
+        "#FFBFBFBF",
+        "#FFFFFFFF",
+        "#FFBFBFBF",
+        "#FF7F7F7F",
+        "#FF5F5F5F",
+        "#FF3F3F3F",
+        "#FF1F1F1F",
+        "#FF0F0F0F",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.9999999934735468,
+          "left": "#FF000000",
+          "right": "#FFFFFFFF",
+          "color": "#FF7F7F7F"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.9999999934735468,
+          "left": "#FFFFFFFF",
+          "right": "#FF000000",
+          "color": "#FF7F7F7F"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.5964894569254804,
+          "left": "#FF000000",
+          "right": "#FF7F7F7F",
+          "color": "#FF3F3F3F"
+        },
+        {
+          "op": "insert",
+          "index": 5,
+          "distance": 0.5964894569254804,
+          "left": "#FF7F7F7F",
+          "right": "#FF000000",
+          "color": "#FF3F3F3F"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.4035105365480665,
+          "left": "#FF7F7F7F",
+          "right": "#FFFFFFFF",
+          "color": "#FFBFBFBF"
+        },
+        {
+          "op": "insert",
+          "index": 5,
+          "distance": 0.4035105365480665,
+          "left": "#FFFFFFFF",
+          "right": "#FF7F7F7F",
+          "color": "#FFBFBFBF"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.3676810529312511,
+          "left": "#FF000000",
+          "right": "#FF3F3F3F",
+          "color": "#FF1F1F1F"
+        },
+        {
+          "op": "insert",
+          "index": 9,
+          "distance": 0.3676810529312511,
+          "left": "#FF3F3F3F",
+          "right": "#FF000000",
+          "color": "#FF1F1F1F"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.2392923761961736,
+          "left": "#FF000000",
+          "right": "#FF1F1F1F",
+          "color": "#FF0F0F0F"
+        },
+        {
+          "op": "insert",
+          "index": 11,
+          "distance": 0.2392923761961736,
+          "left": "#FF1F1F1F",
+          "right": "#FF000000",
+          "color": "#FF0F0F0F"
+        },
+        {
+          "op": "insert",
+          "index": 4,
+          "distance": 0.22880840399422928,
+          "left": "#FF3F3F3F",
+          "right": "#FF7F7F7F",
+          "color": "#FF5F5F5F"
+        },
+        {
+          "op": "insert",
+          "index": 10,
+          "distance": 0.22880840399422928,
+          "left": "#FF7F7F7F",
+          "right": "#FF3F3F3F",
+          "color": "#FF5F5F5F"
+        }
+      ]
+    },
+    {
+      "id": "two-tie",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF161616",
+        "#FF222222",
+        "#FF323232",
+        "#FF474747",
+        "#FF636363",
+        "#FF898989",
+        "#FFBCBCBC",
+        "#FFFFFFFF",
+        "#FFBCBCBC",
+        "#FF898989",
+        "#FF636363",
+        "#FF474747",
+        "#FF323232",
+        "#FF222222",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.9999999934735468,
+          "left": "#FF000000",
+          "right": "#FFFFFFFF",
+          "color": "#FFBCBCBC"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.9999999934735468,
+          "left": "#FFFFFFFF",
+          "right": "#FF000000",
+          "color": "#FFBCBCBC"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.7952249133221948,
+          "left": "#FF000000",
+          "right": "#FFBCBCBC",
+          "color": "#FF898989"
+        },
+        {
+          "op": "insert",
+          "index": 5,
+          "distance": 0.7952249133221948,
+          "left": "#FFBCBCBC",
+          "right": "#FF000000",
+          "color": "#FF898989"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.6300934436283391,
+          "left": "#FF000000",
+          "right": "#FF898989",
+          "color": "#FF636363"
+        },
+        {
+          "op": "insert",
+          "index": 7,
+          "distance": 0.6300934436283391,
+          "left": "#FF898989",
+          "right": "#FF000000",
+          "color": "#FF636363"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.49969556817080624,
+          "left": "#FF000000",
+          "right": "#FF636363",
+          "color": "#FF474747"
+        },
+        {
+          "op": "insert",
+          "index": 9,
+          "distance": 0.49969556817080624,
+          "left": "#FF636363",
+          "right": "#FF000000",
+          "color": "#FF474747"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.39792680745315395,
+          "left": "#FF000000",
+          "right": "#FF474747",
+          "color": "#FF323232"
+        },
+        {
+          "op": "insert",
+          "index": 11,
+          "distance": 0.39792680745315395,
+          "left": "#FF474747",
+          "right": "#FF000000",
+          "color": "#FF323232"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.3171360077696262,
+          "left": "#FF000000",
+          "right": "#FF323232",
+          "color": "#FF222222"
+        },
+        {
+          "op": "insert",
+          "index": 13,
+          "distance": 0.3171360077696262,
+          "left": "#FF323232",
+          "right": "#FF000000",
+          "color": "#FF222222"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.2519647482199764,
+          "left": "#FF000000",
+          "right": "#FF222222",
+          "color": "#FF161616"
+        }
+      ]
+    },
+    {
+      "id": "two-tie",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF060606",
+        "#FF212121",
+        "#FF414141",
+        "#FF636363",
+        "#FF888888",
+        "#FFAEAEAE",
+        "#FFD6D6D6",
+        "#FFFFFFFF",
+        "#FFD6D6D6",
+        "#FFAEAEAE",
+        "#FF888888",
+        "#FF636363",
+        "#FF414141",
+        "#FF212121",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.9999999934735468,
+          "left": "#FF000000",
+          "right": "#FFFFFFFF",
+          "color": "#FF636363"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.9999999934735468,
+          "left": "#FFFFFFFF",
+          "right": "#FF000000",
+          "color": "#FF636363"
+        },
+        {
+          "op": "insert",
+          "index": 2,
+          "distance": 0.5003044253027406,
+          "left": "#FF636363",
+          "right": "#FFFFFFFF",
+          "color": "#FFAEAEAE"
+        },
+        {
+          "op": "insert",
+          "index": 4,
+          "distance": 0.5003044253027406,
+          "left": "#FFFFFFFF",
+          "right": "#FF636363",
+          "color": "#FFAEAEAE"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.49969556817080624,
+          "left": "#FF000000",
+          "right": "#FF636363",
+          "color": "#FF212121"
+        },
+        {
+          "op": "insert",
+          "index": 7,
+          "distance": 0.49969556817080624,
+          "left": "#FF636363",
+          "right": "#FF000000",
+          "color": "#FF212121"
+        },
+        {
+          "op": "insert",
+          "index": 2,
+          "distance": 0.25193685967311596,
+          "left": "#FF212121",
+          "right": "#FF636363",
+          "color": "#FF414141"
+        },
+        {
+          "op": "insert",
+          "index": 8,
+          "distance": 0.25193685967311596,
+          "left": "#FF636363",
+          "right": "#FF212121",
+          "color": "#FF414141"
+        },
+        {
+          "op": "insert",
+          "index": 4,
+          "distance": 0.25112880637934165,
+          "left": "#FF636363",
+          "right": "#FFAEAEAE",
+          "color": "#FF888888"
+        },
+        {
+          "op": "insert",
+          "index": 8,
+          "distance": 0.25112880637934165,
+          "left": "#FFAEAEAE",
+          "right": "#FF636363",
+          "color": "#FF888888"
+        },
+        {
+          "op": "insert",
+          "index": 6,
+          "distance": 0.24917561892339896,
+          "left": "#FFAEAEAE",
+          "right": "#FFFFFFFF",
+          "color": "#FFD6D6D6"
+        },
+        {
+          "op": "insert",
+          "index": 8,
+          "distance": 0.24917561892339896,
+          "left": "#FFFFFFFF",
+          "right": "#FFAEAEAE",
+          "color": "#FFD6D6D6"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.24775870849769027,
+          "left": "#FF000000",
+          "right": "#FF212121",
+          "color": "#FF060606"
+        }
+      ]
+    },
+    {
+      "id": "two-tie",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF060606",
+        "#FF212121",
+        "#FF414141",
+        "#FF636363",
+        "#FF888888",
+        "#FFAEAEAE",
+        "#FFD6D6D6",
+        "#FFFFFFFF",
+        "#FFD6D6D6",
+        "#FFAEAEAE",
+        "#FF888888",
+        "#FF636363",
+        "#FF414141",
+        "#FF212121",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.9999999934735468,
+          "left": "#FF000000",
+          "right": "#FFFFFFFF",
+          "color": "#FF636363"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.9999999934735468,
+          "left": "#FFFFFFFF",
+          "right": "#FF000000",
+          "color": "#FF636363"
+        },
+        {
+          "op": "insert",
+          "index": 2,
+          "distance": 0.5003044253027406,
+          "left": "#FF636363",
+          "right": "#FFFFFFFF",
+          "color": "#FFAEAEAE"
+        },
+        {
+          "op": "insert",
+          "index": 4,
+          "distance": 0.5003044253027406,
+          "left": "#FFFFFFFF",
+          "right": "#FF636363",
+          "color": "#FFAEAEAE"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.49969556817080624,
+          "left": "#FF000000",
+          "right": "#FF636363",
+          "color": "#FF212121"
+        },
+        {
+          "op": "insert",
+          "index": 7,
+          "distance": 0.49969556817080624,
+          "left": "#FF636363",
+          "right": "#FF000000",
+          "color": "#FF212121"
+        },
+        {
+          "op": "insert",
+          "index": 2,
+          "distance": 0.25193685967311596,
+          "left": "#FF212121",
+          "right": "#FF636363",
+          "color": "#FF414141"
+        },
+        {
+          "op": "insert",
+          "index": 8,
+          "distance": 0.25193685967311596,
+          "left": "#FF636363",
+          "right": "#FF212121",
+          "color": "#FF414141"
+        },
+        {
+          "op": "insert",
+          "index": 4,
+          "distance": 0.25112880637934165,
+          "left": "#FF636363",
+          "right": "#FFAEAEAE",
+          "color": "#FF888888"
+        },
+        {
+          "op": "insert",
+          "index": 8,
+          "distance": 0.25112880637934165,
+          "left": "#FFAEAEAE",
+          "right": "#FF636363",
+          "color": "#FF888888"
+        },
+        {
+          "op": "insert",
+          "index": 6,
+          "distance": 0.24917561892339896,
+          "left": "#FFAEAEAE",
+          "right": "#FFFFFFFF",
+          "color": "#FFD6D6D6"
+        },
+        {
+          "op": "insert",
+          "index": 8,
+          "distance": 0.24917561892339896,
+          "left": "#FFFFFFFF",
+          "right": "#FFAEAEAE",
+          "color": "#FFD6D6D6"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.24775870849769027,
+          "left": "#FF000000",
+          "right": "#FF212121",
+          "color": "#FF060606"
+        }
+      ]
+    },
+    {
+      "id": "15-unclosed",
+      "mode": "RGB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "15-unclosed",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "15-unclosed",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "15-unclosed",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "16-unclosed",
+      "mode": "RGB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 15,
+          "before": "#FF102030",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "16-unclosed",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 15,
+          "before": "#FF102030",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "16-unclosed",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 15,
+          "before": "#FF102030",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "16-unclosed",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 15,
+          "before": "#FF102030",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "16-closed",
+      "mode": "RGB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": []
+    },
+    {
+      "id": "16-closed",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": []
+    },
+    {
+      "id": "16-closed",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": []
+    },
+    {
+      "id": "16-closed",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF00EE00"
+      ],
+      "trace": []
+    },
+    {
+      "id": "17-unclosed",
+      "mode": "RGB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF405060"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 16,
+          "before": "#FF405060",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "17-unclosed",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF405060"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 16,
+          "before": "#FF405060",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "17-unclosed",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF405060"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 16,
+          "before": "#FF405060",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "17-unclosed",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF405060"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": [
+        {
+          "op": "replace-actual-last",
+          "at": 16,
+          "before": "#FF405060",
+          "after": "#FF00EE00"
+        }
+      ]
+    },
+    {
+      "id": "17-closed",
+      "mode": "RGB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": []
+    },
+    {
+      "id": "17-closed",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": []
+    },
+    {
+      "id": "17-closed",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": []
+    },
+    {
+      "id": "17-closed",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030",
+        "#FF00EE00"
+      ],
+      "expected": [
+        "#FF00EE00",
+        "#FF11DD07",
+        "#FF22CC0E",
+        "#FF33BB15",
+        "#FF44AA1C",
+        "#FF559923",
+        "#FF66882A",
+        "#FF777731",
+        "#FF886638",
+        "#FF99553F",
+        "#FFAA4446",
+        "#FFBB334D",
+        "#FFCC2254",
+        "#FFDD115B",
+        "#FFEE0062",
+        "#FF102030"
+      ],
+      "trace": []
+    },
+    {
+      "id": "closure-alpha",
+      "mode": "RGB",
+      "raw": [
+        "#00FF0000",
+        "#FFFF0000"
+      ],
+      "expected": [
+        "#00FF0000",
+        "#FFFF0000",
+        "#00FF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "closure-alpha",
+      "mode": "LINEAR",
+      "raw": [
+        "#00FF0000",
+        "#FFFF0000"
+      ],
+      "expected": [
+        "#00FF0000",
+        "#FFFF0000",
+        "#00FF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "closure-alpha",
+      "mode": "OKLAB",
+      "raw": [
+        "#00FF0000",
+        "#FFFF0000"
+      ],
+      "expected": [
+        "#00FF0000",
+        "#FFFF0000",
+        "#00FF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "closure-alpha",
+      "mode": "OKLCH",
+      "raw": [
+        "#00FF0000",
+        "#FFFF0000"
+      ],
+      "expected": [
+        "#00FF0000",
+        "#FFFF0000",
+        "#00FF0000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "threshold-below",
+      "mode": "RGB",
+      "raw": [
+        "#FF000000",
+        "#FF1A1A1A"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF1A1A1A",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "threshold-below",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF000000",
+        "#FF1A1A1A"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF1A1A1A",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "threshold-below",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF000000",
+        "#FF1A1A1A"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF1A1A1A",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "threshold-below",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF000000",
+        "#FF1A1A1A"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF1A1A1A",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        }
+      ]
+    },
+    {
+      "id": "threshold-above",
+      "mode": "RGB",
+      "raw": [
+        "#FF000000",
+        "#FF1B1B1B"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF0D0D0D",
+        "#FF1B1B1B",
+        "#FF0D0D0D",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.22212874192541784,
+          "left": "#FF000000",
+          "right": "#FF1B1B1B",
+          "color": "#FF0D0D0D"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.22212874192541784,
+          "left": "#FF1B1B1B",
+          "right": "#FF000000",
+          "color": "#FF0D0D0D"
+        }
+      ]
+    },
+    {
+      "id": "threshold-above",
+      "mode": "LINEAR",
+      "raw": [
+        "#FF000000",
+        "#FF1B1B1B"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF111111",
+        "#FF1B1B1B",
+        "#FF111111",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.22212874192541784,
+          "left": "#FF000000",
+          "right": "#FF1B1B1B",
+          "color": "#FF111111"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.22212874192541784,
+          "left": "#FF1B1B1B",
+          "right": "#FF000000",
+          "color": "#FF111111"
+        }
+      ]
+    },
+    {
+      "id": "threshold-above",
+      "mode": "OKLAB",
+      "raw": [
+        "#FF000000",
+        "#FF1B1B1B"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF050505",
+        "#FF1B1B1B",
+        "#FF050505",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.22212874192541784,
+          "left": "#FF000000",
+          "right": "#FF1B1B1B",
+          "color": "#FF050505"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.22212874192541784,
+          "left": "#FF1B1B1B",
+          "right": "#FF000000",
+          "color": "#FF050505"
+        }
+      ]
+    },
+    {
+      "id": "threshold-above",
+      "mode": "OKLCH",
+      "raw": [
+        "#FF000000",
+        "#FF1B1B1B"
+      ],
+      "expected": [
+        "#FF000000",
+        "#FF050505",
+        "#FF1B1B1B",
+        "#FF050505",
+        "#FF000000"
+      ],
+      "trace": [
+        {
+          "op": "append-first"
+        },
+        {
+          "op": "insert",
+          "index": 1,
+          "distance": 0.22212874192541784,
+          "left": "#FF000000",
+          "right": "#FF1B1B1B",
+          "color": "#FF050505"
+        },
+        {
+          "op": "insert",
+          "index": 3,
+          "distance": 0.22212874192541784,
+          "left": "#FF1B1B1B",
+          "right": "#FF000000",
+          "color": "#FF050505"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+import {chromium} from 'playwright/test';
+import {createServer} from 'vite';
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const paths=['src/engine/samilaCamera.ts','src/engine/timeline.ts','src/engine/sceneCamera.ts','src/scenes/iteratedDensity.ts','src/engine/iteratedDensityGpu.ts','src/engine/density.ts','src/engine/densityGpuTone.ts','src/engine/legacyImport.ts','src/engine/client.ts','src/engine/generate.worker.ts','src/engine/temporal.ts','scripts/verify-samila-camera-alias.mjs'];
+const snapshot=()=>Promise.all(paths.map(async path=>({path:'studio/'+path,sha256:createHash('sha256').update(await readFile(path)).digest('hex')})));
+const before=await snapshot(),server=await createServer({server:{host:'127.0.0.1',port:5287,strictPort:false,hmr:false},logLevel:'error'});let browser;
+try{
+ await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage(),errors=[],origin=server.resolvedUrls.local[0];page.on('pageerror',e=>errors.push(e.message));await page.route(origin,r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Samila scalar alias regression</title>'}));await page.goto(origin);
+ const cases=await page.evaluate(async()=>{
+  const{createScene,parseScene,persistentScene}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts'),{initializeSamilaCamera}=await import('/src/engine/samilaCamera.ts'),{Generator}=await import('/src/engine/client.ts'),{IteratedDensitySession}=await import('/src/scenes/iteratedDensity.ts');
+  const assert=(v,m)=>{if(!v)throw Error(m);},same=(a,b)=>a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]));
+  const rows=[],context={time:0,width:47,height:31,quality:'export'};
+  for(const backend of['cpu','gpu']){
+   const s=createScene(definition('samila'));s.equations={f1:'x',f2:'y'};s.parameters={};s.settings=initializeSamilaCamera({...s.settings,iteratedBackend:backend,batchSize:64,iteratedFps:2,densityView:'manual',densitySpan:6,pointSize:1,accumulationDecay:1,alpha:1,mapping:'f1_f2',projection:'cartesian',rotation:0,rotationSpeed:0,scaleX:2,scaleY:.7,samilaCameraTheta:0});
+   const track={from:0,to:0,start:0,duration:1,easing:'linear',pingPong:false,enabled:true};s.timeline.tracks=[{...track,id:'rotate',type:'animate',target:'camera.actions',actions:[{id:'r',method:'rotateTheta',args:{angle:1}}]},{...track,id:'numeric',type:'numeric',target:'settings.samilaCameraTheta',fromCurrent:true,to:2,start:1}];
+   const canonical=structuredClone(s);canonical.timeline.tracks[1].target='camera.theta';const g=new Generator(),control=new Generator(),owner=new IteratedDensitySession(),other=new IteratedDensitySession();let max=0;
+   try{
+    for(const time of[0,.5,1,1.05,1.5,2,.5]){const actual=await g.generate(s,{...context,time}),expected=await control.generate(canonical,{...context,time});assert(actual.type==='raster'&&expected.type==='raster','raster');assert(actual.backend===(backend==='gpu'?'webgl2':'cpu'),'unexpected fallback '+actual.warnings);assert(JSON.stringify(actual.samilaView)===JSON.stringify(expected.samilaView),'alias view differs at '+time);assert(Math.abs(actual.samilaView.currentTheta-time)<1e-12,'theta jumped at '+time);for(let i=0;i<actual.pixels.length;i++)max=Math.max(max,Math.abs(actual.pixels[i]-expected.pixels[i]));assert(max<=(backend==='cpu'?0:1),'pixel difference '+max);}
+    const roundtrip=parseScene(JSON.stringify(persistentScene(s))),a=owner.generate(roundtrip,{...context,time:1.05}),b=other.generate(canonical,{...context,time:1.05});assert(same(owner.snapshotInk(),other.snapshotInk()),'raw ink differs');assert(a.samilaView.time===1.05&&a.temporal.time===1,'fractional frame identity');assert(a.samilaView.currentTheta===b.samilaView.currentTheta,'saved alias differs');assert(roundtrip.settings.samilaCameraTheta===0,'authored baseline changed');
+    rows.push({backend:backend==='gpu'?'webgl2':'cpu',status:'passed',workerRequests:14,seekTimes:[0,.5,1,1.05,1.5,2,.5],maxByteDifference:max,rawInkEqual:true,saveRoundtrip:true,displayTime:a.samilaView.time,fixedTime:a.temporal.time,theta:a.samilaView.currentTheta});
+   }finally{g.dispose();control.dispose();owner.reset();other.reset();assert(owner.diagnostics().retainedBytes===0&&other.diagnostics().retainedBytes===0,'retained session state');}
+  }return rows;
+ });
+ const after=await snapshot(),report={at:new Date().toISOString(),status:errors.length===0&&JSON.stringify(before)===JSON.stringify(after)?'passed':'failed',browser:browser.version(),cases,pageErrors:errors,startEndSourceMatch:JSON.stringify(before)===JSON.stringify(after),sourceSnapshots:after,scope:['Actual local Generator worker and production owner; original software not run.','Final timeline alias fix only; earlier performance and broader raw-ink/tone matrices retain their historical hashes.','CPU exact byte oracle; GPU same-backend cross-context tolerance one byte. Borrowed worker contexts were disposed, not instrumented for exact GL handle counts.']};await writeFile('.cache/samila-camera-alias-browser.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));if(report.status!=='passed')process.exitCode=1;
+}finally{await browser?.close();await server.close();}

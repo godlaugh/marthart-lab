@@ -1,0 +1,18 @@
+import {describe,it,expect,vi} from 'vitest';
+import {PerlinGpu,validatePerlinTextureJob,type PerlinTextureJob} from '../src/engine/perlinGpu';
+function job():PerlinTextureJob {return{width:37,height:23,style:'filament',steps:32,step:.008,time:0,brightness:1,vignette:0,fiber:1,transform:{sx:1,sy:1,co:1,si:0,ox:0,oy:0},values:new Float32Array(128*128).fill(.5),flowX:new Float32Array(128*128).fill(1),flowY:new Float32Array(128*128),palette:new Float32Array(1024*3).fill(1),background:[0,0,0],transparent:true};}
+describe('Perlin GPU parsed boundary',()=>{
+ it('accepts finite mirrored transforms and negative time without changing caller data',()=>{const input=job();input.transform.sx=-2;input.time=-30;const before=structuredClone(input);validatePerlinTextureJob(input);expect(input).toEqual(before);});
+ it.each([[0,23],[1.5,23],[8193,2048],[Number.MAX_SAFE_INTEGER,2]])('rejects expanded pixel count %s × %s before GPU creation',(width,height)=>{const input={...job(),width,height};expect(()=>validatePerlinTextureJob(input)).toThrow(/像素/);});
+ it('accepts full-resolution4K64-step jobs while keeping finite step bounds',()=>{expect(()=>validatePerlinTextureJob({...job(),width:3840,height:2160,steps:64})).not.toThrow();expect(()=>validatePerlinTextureJob({...job(),steps:129})).toThrow(/采样/);});
+ it.each(['values','flowX','flowY','palette'] as const)('rejects invalid %s shape and nonfinite contents',key=>{const input=job();input[key]=new Float32Array(1);expect(()=>validatePerlinTextureJob(input)).toThrow(/Float32/);const input2=job();input2[key][13]=NaN;expect(()=>validatePerlinTextureJob(input2)).toThrow(/13/);});
+ it('accepts zero and tiny normal flow vectors without adding a normalization epsilon',()=>{const input=job();input.flowX.fill(1e-20);validatePerlinTextureJob(input);input.flowX.fill(0);validatePerlinTextureJob(input);});
+ it('rejects subnormal vectors which some GPUs flush to zero',()=>{const input=job();input.flowX[0]=1e-40;expect(()=>validatePerlinTextureJob(input)).toThrow(/过小/);});
+ it('preserves large-scale CPU fallback instead of collapsing pixel steps in float32',()=>{const input=job();input.transform.sx=1e-12;expect(()=>validatePerlinTextureJob(input)).toThrow(/分辨率/);});
+ it('rejects huge time phases before fractional grid detail is lost',()=>{expect(()=>validatePerlinTextureJob({...job(),time:1e9})).toThrow(/相位/);});
+ it.each([NaN,Infinity,1e40])('rejects nonrepresentable derived time %s',time=>{expect(()=>validatePerlinTextureJob({...job(),time})).toThrow(/float32/);});
+ it('rejects a malformed rotation rather than accepting an unintended shear',()=>{const input=job();input.transform.co=2;expect(()=>validatePerlinTextureJob(input)).toThrow(/旋转/);});
+ it('uses an explicit no-pixels fallback when OffscreenCanvas is unavailable',()=>{vi.stubGlobal('OffscreenCanvas',undefined);try{const gpu=new PerlinGpu(),result=gpu.render(job());expect(result.pixels).toBeUndefined();expect(result.warning).toContain('OffscreenCanvas');gpu.dispose();gpu.dispose();}finally{vi.unstubAllGlobals();}});
+ it('validates expanded allocation before requesting a GPU context',()=>{const canvas=vi.fn();vi.stubGlobal('OffscreenCanvas',canvas);try{const result=new PerlinGpu().render({...job(),width:8193,height:2048,steps:128});expect(result.pixels).toBeUndefined();expect(result.warning).toContain('像素');expect(canvas).not.toHaveBeenCalled();}finally{vi.unstubAllGlobals();}});
+ it('cancels before graphics allocation without claiming CPU fallback',()=>{const canvas=vi.fn();vi.stubGlobal('OffscreenCanvas',canvas);try{expect(()=>new PerlinGpu().render(job(),()=>true)).toThrow('已取消');expect(canvas).not.toHaveBeenCalled();}finally{vi.unstubAllGlobals();}});
+});

@@ -1,0 +1,38 @@
+import {useRef,useState,type PointerEvent} from 'react';
+import {Plus,RotateCcw,Trash2} from 'lucide-react';
+import type {Settings} from '../types';
+import {useI18n} from '../i18n';
+import {insetBouncingBoundary} from '../scenes/bouncing';
+import {appendPolygonMidpoint,parsePolygonRows,polygonEditorView,readPolygonRows,resetPolygonRows,type PolygonRow} from '../engine/polygonEditor';
+
+export function BouncingPolygonEditor({settings,onApply}:{settings:Settings;onApply:(polygon:string)=>void}) {
+  const {t}=useI18n();
+  const [initial]=useState(()=>{try{return{rows:readPolygonRows(settings),error:''};}catch(e){return{rows:[] as PolygonRow[],error:e instanceof Error?e.message:String(e)};}});
+  const [rows,setRows]=useState(initial.rows),[selected,setSelected]=useState(0),[view,setView]=useState(()=>polygonEditorView(initial.rows)),[message,setMessage]=useState('');
+  const svg=useRef<SVGSVGElement>(null),drag=useRef<{id:number;index:number;before:PolygonRow[]}|null>(null);
+  let error='',convex=true;
+  try{const facts=parsePolygonRows(rows);convex=facts.convex;insetBouncingBoundary({kind:'polygon',vertices:facts.vertices},Number(settings.collisionRadius??0));}catch(e){error=e instanceof Error?e.message:String(e);}
+  const dirty=JSON.stringify(rows)!==JSON.stringify(initial.rows);
+  const px=(x:number)=>140+(x-view.x)/view.span*280,py=(y:number)=>140-(y-view.y)/view.span*280;
+  function change(index:number,key:'x'|'y',value:string){setRows(current=>current.map((p,i)=>i===index?{...p,[key]:value}:p));setMessage('');}
+  function remove(index:number){if(rows.length<=3)return;setRows(rows.filter((_,i)=>i!==index));setSelected(Math.max(0,Math.min(index,rows.length-2)));setMessage('');}
+  function begin(e:PointerEvent<SVGCircleElement>,index:number){if(drag.current)return;e.preventDefault();e.currentTarget.focus();setSelected(index);drag.current={id:e.pointerId,index,before:rows.map(p=>({...p}))};svg.current?.setPointerCapture(e.pointerId);}
+  function move(e:PointerEvent<SVGSVGElement>){const active=drag.current;if(!active||e.pointerId!==active.id)return;const box=e.currentTarget.getBoundingClientRect();if(!box.width||!box.height)return;const x=view.x+((e.clientX-box.left)/box.width-.5)*view.span,y=view.y-( (e.clientY-box.top)/box.height-.5)*view.span;setRows(current=>current.map((p,i)=>i===active.index?{x:String(Number(x.toPrecision(12))),y:String(Number(y.toPrecision(12)))}:p));setMessage('');}
+  function cancel(){if(drag.current)setRows(drag.current.before);drag.current=null;}
+  return <details open className="inspector-section"><summary>{t('多边形顶点编辑')}</summary><div className="section-body polygon-editor">
+    <p className="muted">{t('拖动顶点或输入坐标。Y 轴向上；应用后更新粒子边界。方向键微调，Shift 加速。')}</p>
+    {initial.error&&!dirty&&<p role="alert">{t(initial.error)}</p>}
+    <svg ref={svg} role="group" aria-label={t('多边形编辑画布')} viewBox="0 0 280 280" className="polygon-canvas" onPointerMove={move} onPointerUp={e=>{if(drag.current?.id===e.pointerId)drag.current=null;}} onPointerCancel={e=>{if(drag.current?.id===e.pointerId)cancel();}} onLostPointerCapture={e=>{if(drag.current?.id===e.pointerId)drag.current=null;}} onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();cancel();}}}>
+      <line x1={0} x2={280} y1={py(0)} y2={py(0)} className="polygon-axis"/><line y1={0} y2={280} x1={px(0)} x2={px(0)} className="polygon-axis"/>
+      <polygon points={rows.filter(p=>p.x.trim()&&p.y.trim()&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y))).map(p=>`${px(Number(p.x))},${py(Number(p.y))}`).join(' ')} className={error?'polygon-outline invalid':'polygon-outline'}/>
+      {rows.map((p,i)=>p.x.trim()&&p.y.trim()&&Number.isFinite(Number(p.x))&&Number.isFinite(Number(p.y))?<g key={i}><circle tabIndex={0} role="button" aria-label={t('多边形顶点 {0}',{0:i+1})} aria-pressed={selected===i} cx={px(Number(p.x))} cy={py(Number(p.y))} r={selected===i?7:5} className="polygon-point" onPointerDown={e=>begin(e,i)} onFocus={()=>setSelected(i)} onClick={()=>setSelected(i)} onKeyDown={e=>{if(e.key==='Delete'){e.preventDefault();remove(i);}if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const step=view.span*(e.shiftKey ? .05 : .005),key=e.key==='ArrowLeft'||e.key==='ArrowRight'?'x':'y',sign=e.key==='ArrowLeft'||e.key==='ArrowDown'?-1:1;change(i,key,String(Number(p[key])+sign*step));}}}/><text x={px(Number(p.x))+9} y={py(Number(p.y))-9} className="polygon-number">{i+1}</text></g>:null)}
+    </svg>
+    <div className="explore-actions"><button onClick={()=>setView(polygonEditorView(rows))}>{t('适配顶点视图')}</button><button onClick={()=>{const next=resetPolygonRows();setRows(next);setView(polygonEditorView(next));setSelected(0);setMessage('');}}><RotateCcw size={13}/>{t('重置六顶点轮廓')}</button></div>
+    <div className="polygon-rows" role="group" aria-label={t('多边形坐标列表')}>{rows.map((p,i)=><div className={selected===i?'polygon-row selected':'polygon-row'} key={i}><button aria-label={t('选择顶点 {0}',{0:i+1})} onClick={()=>setSelected(i)}>{i+1}</button>{(['x','y'] as const).map(key=><input key={key} type="number" step="any" aria-label={t('顶点 {0} {1}',{0:i+1,1:key.toUpperCase()})} value={p[key]} onFocus={()=>setSelected(i)} onChange={e=>change(i,key,e.target.value)}/>)}<button disabled={rows.length<=3} aria-label={t('删除顶点 {0}',{0:i+1})} onClick={()=>remove(i)}><Trash2 size={13}/></button></div>)}</div>
+    <button disabled={rows.length>=64||!!error} onClick={()=>{try{setRows(appendPolygonMidpoint(rows));setSelected(rows.length);setMessage('');}catch(e){setMessage(e instanceof Error?e.message:String(e));}}}><Plus size={13}/>{t('添加首尾边中点')}</button>
+    {!error&&!convex&&<p role="status" className="muted">{t('当前为凹多边形，使用 CPU 点粒子碰撞；非零碰撞半径需要凸多边形。')}</p>}
+    {error&&<p className="export-error" role="alert">{t(error)}</p>}
+    <div className="explore-actions"><button className="apply-button" disabled={!dirty||!!error} onClick={()=>{onApply(JSON.stringify(parsePolygonRows(rows).vertices));setMessage('顶点已应用');}}>{t('应用多边形')}</button><button disabled={!dirty} onClick={()=>{setRows(initial.rows);setView(polygonEditorView(initial.rows));setSelected(0);setMessage('');}}>{t('撤销顶点编辑')}</button></div>
+    {message&&<p role="status">{t(message)}</p>}
+  </div></details>;
+}

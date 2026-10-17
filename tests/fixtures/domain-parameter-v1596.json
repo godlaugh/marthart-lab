@@ -1,0 +1,5174 @@
+{
+  "schemaVersion": 1,
+  "model": "domain-1.7.8",
+  "baseline": 1596,
+  "scope": "Persistent documents captured before the registry importer migration; expected scalar goldens remain independently specified in the tests. IDs only are canonicalized.",
+  "records": [
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": -8
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-1",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": -8
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": -8,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-1-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-1-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-1-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": -8
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": -8
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-2",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": -8
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": -8,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-2-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-2-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-2-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": -8
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0.95
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 20
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-3",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0.95
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0.949999988079071,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 20,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-3-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-3-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 0.25,
+                          "easing": "sine-out"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-3-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 20,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0.95
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 20
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": -2,
+                        "max": 2,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-4",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-4-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-4-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": -2,
+                        "max": 2,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-4-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": -2,
+                              "max": 2,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": -2,
+                        "max": 2,
+                        "step": 0,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-5",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-5-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-5-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": -2,
+                        "max": 2,
+                        "step": 0,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-5-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": -2,
+                              "max": 2,
+                              "step": 0,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-6",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-6-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-6-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-6-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": -2,
+                              "max": 2,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-7",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-7-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-7-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-7-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-8",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-8-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-8-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-8-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.01,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.03,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.01,
+                        "enable": true
+                      }
+                    }
+                  }
+                ],
+                "enabled": false
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 3
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-9",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 3,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-9-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-9-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.01,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "legacy-parameter-9-track-0-action-1",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.03,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "legacy-parameter-9-track-0-action-2",
+                    "method": "paramStart",
+                    "enabled": false,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.01,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-9-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 3,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0.01,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": -0.03,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0.01,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ],
+                      "enabled": false
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 3
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+              "timeline.0.actions.1.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+              "timeline.0.actions.2.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+          "timeline.0.actions.1.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+          "timeline.0.actions.2.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 1
+          },
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": []
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 1
+          },
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 2
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-10",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-10-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-10-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-10-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 1,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              },
+              {
+                "id": "legacy-parameter-10-track-2",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 1,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-10-track-2-action-0",
+                    "method": "paramStop",
+                    "enabled": true,
+                    "args": {}
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-10-track-3",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 1,
+                "duration": 1,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              },
+              {
+                "id": "legacy-parameter-10-track-4",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 2,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-10-track-4-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-10-track-5",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 2,
+                "duration": 2,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 1
+                },
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStop",
+                      "args": []
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 1
+                },
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 2
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+              "timeline.4.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+          "timeline.4.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-11",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-11-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-11-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-11-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 1,
+            "easing": "BACK_OUT",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.0001,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 1
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-12",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 2,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-12-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 1,
+                "easing": "back-out",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-12-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.0001,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-12-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 1,
+                "duration": 1,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 1,
+                  "easing": "BACK_OUT",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": -2,
+                              "max": 2,
+                              "step": 0.0001,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 1
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 0
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 1,
+            "easing": "THERE_AND_BACK",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.0001,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 1
+          },
+          {
+            "type": "animate",
+            "duration": 1,
+            "easing": "THERE_AND_BACK",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": []
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 2
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-13",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 0
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 0,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 5,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-13-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 1,
+                "easing": "there-and-back",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-13-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.0001,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-13-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 1,
+                "duration": 1,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              },
+              {
+                "id": "legacy-parameter-13-track-2",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 2,
+                "duration": 1,
+                "easing": "there-and-back",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-13-track-2-action-0",
+                    "method": "paramStop",
+                    "enabled": true,
+                    "args": {}
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-13-track-3",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 3,
+                "duration": 2,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 0
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 1,
+                  "easing": "THERE_AND_BACK",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": -2,
+                              "max": 2,
+                              "step": 0.0001,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 1
+                },
+                {
+                  "type": "animate",
+                  "duration": 1,
+                  "easing": "THERE_AND_BACK",
+                  "actions": [
+                    {
+                      "method": "paramStop",
+                      "args": []
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 2
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 1
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "parameters": {
+                      "a": {
+                        "min": 1,
+                        "max": 3,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 20
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-14",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 1
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 1,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 20,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-14-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-14-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 1,
+                        "max": 3,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 0.25,
+                          "easing": "sine-out"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-14-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 20,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 1
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "parameters": {
+                            "a": {
+                              "min": 1,
+                              "max": 3,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 20
+                }
+              ]
+            },
+            "warnings": [
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 8
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": -3,
+                        "max": 3,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 2
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-15",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 8
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 8,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 2,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-15-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-15-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": -2,
+                        "max": 2,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "legacy-parameter-15-track-0-action-1",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": -3,
+                        "max": 3,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-15-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 2,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 8
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": -2,
+                              "max": 2,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": -3,
+                              "max": 3,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 2
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+              "timeline.0.actions.1.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。",
+          "timeline.0.actions.1.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 8
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-16",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 8
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 8,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-16-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-16-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-16-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 8
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 8
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-17",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 8
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 8,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-17-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-17-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": -2,
+                        "step": 0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-17-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 8
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": -2,
+                              "step": 0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 9
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": 2,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-18",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 9
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 9,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-18-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-18-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": 2,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-18-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 9
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": 2,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 9
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2,
+                        "max": 2.000000238418579,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-19",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 9
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 9,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-19-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-19-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2,
+                        "max": 2.000000238418579,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-19-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 9
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2,
+                              "max": 2.000000238418579,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    },
+    {
+      "input": {
+        "config_version": "1.0.0",
+        "type": "DOMAIN_COLORING",
+        "name": "Raw reversed interval",
+        "parameters": {
+          "a": 9
+        },
+        "domainColoring": {
+          "formula": "z+a"
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": [
+                  {
+                    "edgeEasing": {
+                      "window": 0.5,
+                      "floor": 1,
+                      "easing": "LINEAR"
+                    },
+                    "parameters": {
+                      "a": {
+                        "min": 2.000000238418579,
+                        "max": 2,
+                        "step": -0.02,
+                        "enable": true
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 4
+          }
+        ]
+      },
+      "result": {
+        "format": "mathart",
+        "scene": {
+          "version": 1,
+          "id": "legacy-parameter-20",
+          "name": "Raw reversed interval",
+          "description": "复变函数的相位、模与迭代等值线。",
+          "kind": "domain",
+          "equations": {
+            "f": "z+a"
+          },
+          "parameters": {
+            "a": 9
+          },
+          "settings": {
+            "background": "#111317",
+            "pointSize": 2,
+            "opacity": 1,
+            "colorMetric": "height",
+            "wireframe": false,
+            "showGrid": false,
+            "showAxes": false,
+            "domainBackend": "auto",
+            "centerX": 0,
+            "centerY": 0,
+            "rotation": 0,
+            "scale": 2.5,
+            "iterationEnabled": false,
+            "seedMode": "PIXEL_Z",
+            "iterationSteps": 1,
+            "constantReal": 9,
+            "constantImag": 0,
+            "bailout": 1000000,
+            "curveMode": "PHASE_MODULUS",
+            "phaseDensity": 12,
+            "modDensity": 8,
+            "phaseSharpness": 1,
+            "modSharpness": 1,
+            "curveBias": 0.15,
+            "curveMix": 1,
+            "paletteOffset": 0,
+            "complexGrid": false,
+            "gridSpacing": 1,
+            "supersampling": 1,
+            "domainColorVersion": "mathart-1.7.8-gpu",
+            "domainViewportVersion": "mathart-1.7.8-gpu",
+            "domainIterationVersion": "mathart-1.7.8-gpu",
+            "domainSourceImportPath": "runtime-config",
+            "iterationMaxSteps": 64
+          },
+          "palette": {
+            "name": "极光 · Aurora",
+            "stops": [
+              "#43d9bd",
+              "#88ebcf",
+              "#f9d48f",
+              "#f08c85"
+            ],
+            "mode": "linear",
+            "offset": 0,
+            "cycles": 1
+          },
+          "camera": {
+            "position": [
+              7,
+              5,
+              8
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "orthographic": false,
+            "zoom": 1,
+            "autoFit": true
+          },
+          "timeline": {
+            "duration": 4,
+            "fps": 30,
+            "loop": true,
+            "tracks": [
+              {
+                "id": "legacy-parameter-20-track-0",
+                "type": "animate",
+                "target": "camera.actions",
+                "label": "animate",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 0,
+                "easing": "linear",
+                "pingPong": false,
+                "enabled": true,
+                "actions": [
+                  {
+                    "id": "legacy-parameter-20-track-0-action-0",
+                    "method": "paramStart",
+                    "enabled": true,
+                    "parameters": [
+                      {
+                        "model": "domain-1.7.8",
+                        "target": "parameters.a",
+                        "min": 2.000000238418579,
+                        "max": 2,
+                        "step": -0.02,
+                        "enabled": true,
+                        "edgeEasing": {
+                          "window": 0.5,
+                          "floor": 1,
+                          "easing": "linear"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "legacy-parameter-20-track-1",
+                "type": "wait",
+                "target": "timeline.wait",
+                "label": "wait",
+                "from": 0,
+                "to": 0,
+                "start": 0,
+                "duration": 4,
+                "easing": "sine-in-out",
+                "pingPong": false,
+                "enabled": true
+              }
+            ]
+          },
+          "favorite": false,
+          "provenance": {
+            "kind": "MathArt Studio",
+            "original": {
+              "config_version": "1.0.0",
+              "type": "DOMAIN_COLORING",
+              "name": "Raw reversed interval",
+              "parameters": {
+                "a": 9
+              },
+              "domainColoring": {
+                "formula": "z+a"
+              },
+              "timeline": [
+                {
+                  "type": "animate",
+                  "duration": 0,
+                  "easing": "LINEAR",
+                  "actions": [
+                    {
+                      "method": "paramStart",
+                      "args": [
+                        {
+                          "edgeEasing": {
+                            "window": 0.5,
+                            "floor": 1,
+                            "easing": "LINEAR"
+                          },
+                          "parameters": {
+                            "a": {
+                              "min": 2.000000238418579,
+                              "max": 2,
+                              "step": -0.02,
+                              "enable": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "wait",
+                  "duration": 4
+                }
+              ]
+            },
+            "warnings": [
+              "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+              "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+              "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+            ]
+          }
+        },
+        "warnings": [
+          "原产物主公式文字规则覆盖常量 c；已保留显式常量，仅使用公式推导值。",
+          "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "timeline.0.actions.0.args.0.parameters.a：保留原始 min/max/step；执行时排序端点并从启动时参数值确定相位，采用 60 fps 参考时钟。"
+        ]
+      }
+    }
+  ]
+}

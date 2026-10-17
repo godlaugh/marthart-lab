@@ -1,0 +1,361 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-python-staged-float-fixtures",
+  "sourceEvidence": [
+    {
+      "path": "studio/.cache/roots-native-projection-mobject-bytecode.json",
+      "sha256": "ded7c51cf7cee8e5caba27bff795fa700ad6bcc7e5949aa8a09e7d5d3fc12639",
+      "entry": "mathart/complexroots/ComplexRootsMobject.class",
+      "classSha256": "be1fb929b51f555d0c6065132f3b55a27cd26dfd9f56507e91951b079c1e7315",
+      "methods": [
+        {
+          "name": "splatPendingPointsGpu",
+          "descriptor": "(Lcom/jogamp/opengl/GL4;IFLprocessing/opengl/PGraphicsOpenGL;)I",
+          "instructionsSha256": "08000c38f95fe7abf6d3a0d3ce80c69b92d937ef3d7e01a4a3a8117d52f18133"
+        },
+        {
+          "name": "transformedWorldZ",
+          "descriptor": "(F)F",
+          "instructionsSha256": "c52910ec244fb5a3683c107b8aeb81b2d9934c27eb39931fb092d9fec768225c"
+        },
+        {
+          "name": "densityDiameterToPixels",
+          "descriptor": "(FII)F",
+          "instructionsSha256": "06f6933ef8d3d59683f09a359f855733c1d0598853331b6bd35dfa7145df03f7"
+        },
+        {
+          "name": "pixelScale",
+          "descriptor": "(II)F",
+          "instructionsSha256": "6b13d142780ef7bb88ee648314620cd18b2505e6dfba951f35b603f3de0ea0c6"
+        },
+        {
+          "name": "spotSizeToPixelRadius",
+          "descriptor": "(FF)F",
+          "instructionsSha256": "cdd8ecb679ff68bb45808ea5a03a0b8e2e93eb1c1c0292c2befe4d59aa2a0995"
+        }
+      ]
+    },
+    {
+      "path": "studio/.cache/roots-native-scene-bytecode.json",
+      "sha256": "34bb879bad78aaf9326024e0ef70af53634c9d6549610a08b05c2eda24002521",
+      "entry": "mathart/scene/Scene.class",
+      "classSha256": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "methods": [
+        {
+          "name": "applyPerspective",
+          "descriptor": "()V",
+          "instructionsSha256": "f498900c1ceadcd8b1f7dd6f8f2a5dd2da195cef6b3993bca03ad4b8beb2dab4"
+        },
+        {
+          "name": "applyPerspective",
+          "descriptor": "(Lprocessing/core/PGraphics;)V",
+          "instructionsSha256": "68ee371147d4137a35c681ffd6bf3499d08aef7836f9d66bcd2618b056ffc9f8"
+        }
+      ]
+    }
+  ],
+  "oracle": {
+    "path": "studio/.cache/roots-projection-numeric-oracle-final.py",
+    "sha256": "3dd6d7f35bdf3a0b67429bb131d543f096a262eddbf4f3920fc62330d0260595"
+  },
+  "world": [
+    {
+      "id": "rotate-before-anisotropic-scale",
+      "raw": [
+        1,
+        0,
+        7
+      ],
+      "scale": [
+        2,
+        1,
+        4
+      ],
+      "offset": [
+        0,
+        0,
+        0
+      ],
+      "degrees": 90,
+      "outputs": {
+        "density": [
+          1.2246468525851679e-16,
+          1.0,
+          0.0
+        ],
+        "point-cloud": [
+          1.2246468525851679e-16,
+          1.0,
+          28.0
+        ]
+      }
+    },
+    {
+      "id": "negative-scale-oblique",
+      "raw": [
+        1.25,
+        -2.5,
+        -0.75
+      ],
+      "scale": [
+        -2,
+        3,
+        -5
+      ],
+      "offset": [
+        0.125,
+        -0.25,
+        4
+      ],
+      "degrees": 37,
+      "outputs": {
+        "density": [
+          -4.880663871765137,
+          -3.982959747314453,
+          4.0
+        ],
+        "point-cloud": [
+          -4.880663871765137,
+          -3.982959747314453,
+          7.75
+        ]
+      }
+    },
+    {
+      "id": "zero-scale-offset",
+      "raw": [
+        100,
+        200,
+        300
+      ],
+      "scale": [
+        0,
+        0,
+        0
+      ],
+      "offset": [
+        -10,
+        20,
+        -30
+      ],
+      "degrees": -90,
+      "outputs": {
+        "density": [
+          -10.0,
+          20.0,
+          -30.0
+        ],
+        "point-cloud": [
+          -10.0,
+          20.0,
+          -30.0
+        ]
+      }
+    },
+    {
+      "id": "float-ingress",
+      "raw": [
+        1.0000000596046448,
+        0.9999999701976776,
+        1e+30
+      ],
+      "scale": [
+        240,
+        240,
+        35
+      ],
+      "offset": [
+        0.1,
+        0.2,
+        0.3
+      ],
+      "degrees": 360,
+      "outputs": {
+        "density": [
+          240.10000610351562,
+          240.1999969482422,
+          0.30000001192092896
+        ],
+        "point-cloud": [
+          240.10000610351562,
+          240.1999969482422,
+          3.5000000677777045e+31
+        ]
+      }
+    }
+  ],
+  "diameter": [
+    {
+      "dot": 0.01,
+      "displayScale": 1,
+      "logicalWidth": 800,
+      "physicalWidth": 800,
+      "expected": {
+        "uniform": 1.0,
+        "points": 1.0,
+        "quad": 0.800000011920929,
+        "pixelRatio": 1.0
+      }
+    },
+    {
+      "dot": 0.01,
+      "displayScale": 1,
+      "logicalWidth": 800,
+      "physicalWidth": 1600,
+      "expected": {
+        "uniform": 2.0,
+        "points": 2.0,
+        "quad": 1.2000000476837158,
+        "pixelRatio": 2.0
+      }
+    },
+    {
+      "dot": 0.01,
+      "displayScale": 2,
+      "logicalWidth": 1600,
+      "physicalWidth": 3200,
+      "expected": {
+        "uniform": 4.0,
+        "points": 4.0,
+        "quad": 2.4000000953674316,
+        "pixelRatio": 2.0
+      }
+    },
+    {
+      "dot": 0.001,
+      "displayScale": 0.125,
+      "logicalWidth": 801,
+      "physicalWidth": 1200,
+      "expected": {
+        "uniform": 0.7490636706352234,
+        "points": 1.0,
+        "quad": 0.800000011920929,
+        "pixelRatio": 1.4981273412704468
+      }
+    },
+    {
+      "dot": 0.1,
+      "displayScale": 1,
+      "logicalWidth": 257,
+      "physicalWidth": 257,
+      "expected": {
+        "uniform": 10.0,
+        "points": 10.0,
+        "quad": 6.0,
+        "pixelRatio": 1.0
+      }
+    },
+    {
+      "dot": 0.01,
+      "displayScale": 1,
+      "logicalWidth": 0,
+      "physicalWidth": 100,
+      "expected": {
+        "uniform": 1.0,
+        "points": 1.0,
+        "quad": 0.800000011920929,
+        "pixelRatio": 1.0
+      }
+    }
+  ],
+  "optics": [
+    {
+      "width": 800,
+      "height": 800,
+      "focalDistance": 50,
+      "zoom": 1,
+      "expected": {
+        "halfSensorOverFocal": 0.25,
+        "fov": 0.489957332611084,
+        "cameraZ": 1600.0,
+        "aspect": 1.0,
+        "near": 16.0,
+        "far": 80000.0
+      }
+    },
+    {
+      "width": 1200,
+      "height": 800,
+      "focalDistance": 50,
+      "zoom": 2,
+      "expected": {
+        "halfSensorOverFocal": 0.25,
+        "fov": 0.24870999157428741,
+        "cameraZ": 1600.0,
+        "aspect": 1.5,
+        "near": 16.0,
+        "far": 80000.0
+      }
+    },
+    {
+      "width": 257,
+      "height": 193,
+      "focalDistance": 50,
+      "zoom": 0.5,
+      "expected": {
+        "halfSensorOverFocal": 0.25,
+        "fov": 0.9272952079772949,
+        "cameraZ": 386.0,
+        "aspect": 1.3316062688827515,
+        "near": 3.859999895095825,
+        "far": 19300.0
+      }
+    },
+    {
+      "width": 3840,
+      "height": 2160,
+      "focalDistance": 35,
+      "zoom": 1,
+      "expected": {
+        "halfSensorOverFocal": 0.3571428656578064,
+        "fov": 0.6860479116439819,
+        "cameraZ": 3024.0,
+        "aspect": 1.7777777910232544,
+        "near": 30.239999771118164,
+        "far": 151200.0
+      }
+    },
+    {
+      "width": 800,
+      "height": 800,
+      "focalDistance": 0.001,
+      "zoom": 0.001,
+      "expected": {
+        "halfSensorOverFocal": 12499.9990234375,
+        "fov": 3.1405928134918213,
+        "cameraZ": 0.03200000151991844,
+        "aspect": 1.0,
+        "near": 0.0003200000210199505,
+        "far": 1.600000023841858
+      }
+    },
+    {
+      "width": 800,
+      "height": 800,
+      "focalDistance": 100000000.0,
+      "zoom": 100000000.0,
+      "expected": {
+        "halfSensorOverFocal": 1.2499999968440534e-07,
+        "fov": 0.0010000000474974513,
+        "cameraZ": 3200000000.0,
+        "aspect": 1.0,
+        "near": 32000000.0,
+        "far": 160000000000.0
+      }
+    }
+  ],
+  "selfChecks": {
+    "rotationOrder": true,
+    "densityDepthIndependent": true,
+    "dpi2": true,
+    "offscreen2xAndDpi2": true,
+    "cameraZIndependentOfZoom": true,
+    "signedZeroDivision": true
+  },
+  "limitations": [
+    "This is an independent arithmetic transcription of the named methods, not a production implementation or executed original JVM.",
+    "Python libm radians/cos/sin/atan may differ in low bits from Java Math or JS/GL. Float arithmetic stages are explicit; transcendental bit parity is not asserted.",
+    "PMatrix composition, GL rasterization/probes, camera defaults in the complete scene chain, accumulation lifecycles and image/video export are outside these finite fixtures.",
+    "Pixel diameter is independent of projected depth in the retained host helper; these examples do not replace the complete native point/quad kernel validation."
+  ]
+}
