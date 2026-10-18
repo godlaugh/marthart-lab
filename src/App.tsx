@@ -1,3 +1,4 @@
+import {SourceSurfacePaletteEditor} from './components/SourceSurfacePaletteEditor';
 import {ordinarySourceViewport,ordinarySourceCameraInitial} from './engine/ordinarySourceCamera';
 import {usesSourceSurfaceParticles,prepareSourceSurfaceParticles} from './engine/sourceSurfaceParticles';
 import {OrdinarySourceCameraControls} from './components/OrdinarySourceCameraControls';
@@ -1046,6 +1047,7 @@ export default function App() {
                   {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} section="formula"/>:<SettingsFields
                     controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls))).filter(control=>{
                       if(!isMeshMaterialControlVisible(scene,control.key)||!rootMathControlVisible(scene,control.key)||!rootsPresentationControlVisible(scene,control.key))return false;
+                      if(usesSourceSurfaceParticles(scene)&&control.key==='colorMetric')return false;
                       const historyControls=['showTrails','recordTrails','fadeTrails','trailLifetime','trailSampleRate','trailWidth'];
                       if(scene.kind==='surface'&&scene.settings.renderMode!=='points'&&historyControls.includes(control.key))return false;
                       if(scene.kind==='attractor'&&scene.settings.simulationMode!=='continuous'&&[...historyControls,'simulationFps'].includes(control.key))return false;
@@ -1058,7 +1060,7 @@ export default function App() {
                       return true;
                     }).map(control=>{
                       if(!usesSourceSurfaceParticles(scene))return control;
-                      if(control.key==='fadeTrails')return{...control,label:t('按记录顺序渐隐'),help:t('最旧记录透明、最新记录不透明；边界断点也计入渐隐顺序。')};
+                      if(control.key==='fadeTrails')return{...control,label:t('按记录顺序渐隐'),help:t('最旧记录透明、最新记录使用色板透明度；边界断点也计入渐隐顺序。')};
                       if(control.key==='recordTrails')return{...control,help:t('设置初始录制状态；时间线中的拖尾片段可随后切换。修改后从起点重算当前画面。')};
                       if(control.key==='showTrails')return{...control,help:t('只控制拖尾是否显示；重新显示时按时间线重建历史。')};
                       if(control.key==='trailWidth')return{...control,help:t('源曲面线宽采用输入值的 0.95 倍，最小呈现宽度为 0.1 像素；隐藏拖尾请关闭显示开关。')};
@@ -1106,12 +1108,12 @@ export default function App() {
               ) : (
                 <>
                   <FractalControls scene={scene} onChange={edit} section="color"/>
-                  <GeometryColorControls scene={scene} onChange={edit}/>
+                  {!usesSourceSurfaceParticles(scene)&&<GeometryColorControls scene={scene} onChange={edit}/>}
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
-                      {scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
+                      {usesSourceSurfaceParticles(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
+                      {!usesSourceSurfaceParticles(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
                           label: t("着色依据"),

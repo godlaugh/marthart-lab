@@ -1,3 +1,4 @@
+import {parseSourceSurfacePalette} from './sourceSurfaceColor';
 import {usesSourceSurfaceParticles} from './sourceSurfaceParticles';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {parseFractalSourceColorProfile,parseFractalSourceColorConfiguration} from './fractalSourceColor';
@@ -190,6 +191,14 @@ export function parseSceneValue(data: unknown): SceneDocument {
   }
   if(data.kind==='surface'||data.kind==='implicit')geometryColorModel({kind:data.kind,settings:data.settings as Settings});
   if(data.kind==='surface'||data.kind==='attractor')parseTrailAppearance(data.settings as Settings);
+  // Source-particle documents saved before the dedicated palette editor used
+  // the local palette field. Migrate authored stops once at the file boundary;
+  // never recover an older value from import provenance over later edits.
+  if(data.surfaceSourcePalette===undefined&&usesSourceSurfaceParticles(data as unknown as SceneDocument))data.surfaceSourcePalette={colors:[...palette.stops]};
+  if(data.surfaceSourcePalette!==undefined){
+    if(!usesSourceSurfaceParticles(data as unknown as SceneDocument))fail('曲面源色板仅适用于原版 CPU 点曲面');
+    data.surfaceSourcePalette=parseSourceSurfacePalette(data.surfaceSourcePalette);
+  }
   if(data.rootsSourcePalette!==undefined){
     if(data.kind!=='roots')fail('复根源色板仅适用于复根场景');
     data.rootsSourcePalette=parseRootsSourcePalette(data.rootsSourcePalette);

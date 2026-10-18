@@ -1,3 +1,4 @@
+import type {SourceSurfacePalette} from './engine/sourceSurfaceColor';
 import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
 import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
 import type {FractalSourceFrameFacts} from './engine/fractalSourceFrame';
@@ -172,6 +173,7 @@ export interface SceneDocument {
    * switching to local keeps this configuration available for restoration. */
   fractalSourceColor?: FractalSourceColorConfiguration;
   rootsSourcePalette?: RootsSourcePalette;
+  surfaceSourcePalette?: SourceSurfacePalette;
   rootsMath?: RootsMathConfiguration;
   /** Optional authored presentation payload. Omission retains legacy rules;
    * local-v1 keeps this payload dormant without discarding its source values. */
@@ -274,6 +276,8 @@ export interface GeometryOutput {
    * supplied empty result, while omission does not mean an empty topology. */
   meshEdges?: Uint32Array;
   colors?: Float32Array;
+  /** Producer-owned normalized alpha per point, multiplied by display opacity. */
+  pointAlphas?: Float32Array;
   /** Parameter-grid provenance from the surface producer, before vertex compaction.
    * Each cell mask: bit 0 = (a,b,c), bit 1 = (a,c,d); omitted triangles stay holes. */
   surfaceGrid?: {

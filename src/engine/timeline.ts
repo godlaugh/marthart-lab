@@ -206,6 +206,7 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   const copied:SceneDocument = { ...scene, parameters: { ...scene.parameters }, settings: { ...scene.settings }, palette: { ...scene.palette, stops: [...scene.palette.stops], ...(scene.palette.positions ? { positions: [...scene.palette.positions] } : {}) }, camera: { ...scene.camera, position: [...scene.camera.position], target: [...scene.camera.target] }, ...(scene.evaluatedCamera?{evaluatedCamera:cloneEvaluatedCamera(scene.evaluatedCamera)}:{}) };
   if(scene.fractalSourceColor)copied.fractalSourceColor=structuredClone(scene.fractalSourceColor);
   if(scene.domainSourcePalette)copied.domainSourcePalette={...scene.domainSourcePalette,colors:[...scene.domainSourcePalette.colors]};
+  if(scene.surfaceSourcePalette)copied.surfaceSourcePalette={colors:[...scene.surfaceSourcePalette.colors]};
   if(scene.rootsSourcePalette)copied.rootsSourcePalette={colors:[...scene.rootsSourcePalette.colors]};
   if(scene.rootsMath)copied.rootsMath=structuredClone(scene.rootsMath);
   if(scene.rootsPresentation)copied.rootsPresentation=structuredClone(scene.rootsPresentation);
@@ -443,7 +444,7 @@ export function sceneAtTime(scene: SceneDocument, position: number): SceneDocume
   const rootsPresentationIdentity=JSON.stringify(scene.rootsPresentation,(_key,value:unknown)=>typeof value==='number'?Object.is(value,-0)?{negativeZero:true}:finite(value,'时间线文档数值'):value);
   const fractalSourceColorIdentity=JSON.stringify(scene.fractalSourceColor,(_key,value:unknown)=>typeof value==='number'?Object.is(value,-0)?{negativeZero:true}:finite(value,'时间线文档数值'):value);
   const sourceCameraIdentity=JSON.stringify(scene.sourceCamera,(_key,value)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
-  const key = JSON.stringify({ sourceCameraIdentity, rootsMathIdentity, rootsPresentationIdentity, fractalSourceColorIdentity, kind: scene.kind, equations:scene.equations, parameters: scene.parameters, settings: scene.settings, palette: scene.palette, domainSourcePalette:scene.domainSourcePalette, rootsSourcePalette:scene.rootsSourcePalette, camera: scene.camera, timeline: scene.timeline }, (_key, value: unknown) => typeof value === 'number' ? finite(value, '时间线文档数值') : value);
+  const key = JSON.stringify({ sourceCameraIdentity, rootsMathIdentity, rootsPresentationIdentity, fractalSourceColorIdentity, kind: scene.kind, equations:scene.equations, parameters: scene.parameters, settings: scene.settings, palette: scene.palette, domainSourcePalette:scene.domainSourcePalette, rootsSourcePalette:scene.rootsSourcePalette, surfaceSourcePalette:scene.surfaceSourcePalette, camera: scene.camera, timeline: scene.timeline }, (_key, value: unknown) => typeof value === 'number' ? finite(value, '时间线文档数值') : value);
   let evaluate = compiledTimelines.get(key);
   if (!evaluate) {
     const snapshot=JSON.parse(key);

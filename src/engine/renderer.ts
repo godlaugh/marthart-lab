@@ -155,23 +155,23 @@ export class ArtRenderer {
       this.group.add(plane);
       this.controls.enableRotate = false;
     } else {
+      let colors=output.colors??vertexColors(output.positions,document.palette,String(document.settings.colorMetric??'height'));
+      const alphas=output.pointAlphas;
+      if(alphas){
+        const count=output.positions.length/3;
+        if(output.topology!=='points'||!Number.isInteger(count)||alphas.length!==count||colors.length!==count*3||count>512*512)throw new Error('逐点透明度与曲面点数量不匹配或超过本地容量');
+        // Three's RGBA vertex color path owns blending; do not reconstruct alpha
+        // from scene settings in the renderer or export consumer.
+        const rgba=new Float32Array(count*4);
+        for(let i=0;i<count;i++){
+          if(!Number.isFinite(alphas[i])||alphas[i]<0||alphas[i]>1)throw new Error('逐点透明度必须在 0 至 1 之间');
+          rgba[i*4]=colors[i*3];rgba[i*4+1]=colors[i*3+1];rgba[i*4+2]=colors[i*3+2];rgba[i*4+3]=alphas[i];
+        }
+        colors=rgba;
+      }
       const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        "position",
-        new THREE.BufferAttribute(output.positions, 3),
-      );
-      geometry.setAttribute(
-        "color",
-        new THREE.BufferAttribute(
-          output.colors ??
-            vertexColors(
-              output.positions,
-              document.palette,
-              String(document.settings.colorMetric ?? "height"),
-            ),
-          3,
-        ),
-      );
+      geometry.setAttribute('position',new THREE.BufferAttribute(output.positions,3));
+      geometry.setAttribute('color',new THREE.BufferAttribute(colors,alphas?4:3));
       if (output.indices)
         geometry.setIndex(new THREE.BufferAttribute(output.indices, 1));
       const opacity = Number(document.settings.opacity ?? 1);

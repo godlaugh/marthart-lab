@@ -1,3 +1,4 @@
+import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
 import {FRACTAL_SOURCE_COLOR_PROFILE,prepareFractalSourceColorImport} from './fractalSourceColor';
 import {initializeSamilaCamera} from './samilaCamera';
 import {recordingDurationError} from './recordingContract';
@@ -230,7 +231,7 @@ function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(s.kind!=='roots')numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!['domain','roots','fractal'].includes(s.kind))commonLocalPalette(r,s);
+ if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceParticles(s))commonLocalPalette(r,s);
  if(!usesSourceSurfaceParticles(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
@@ -914,6 +915,8 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  for(const axis of ['x','y','z']){settings['scale'+axis.toUpperCase()]=Math.fround(r.domainDouble(['settings','scale_'+axis],55));settings['offset'+axis.toUpperCase()]=Math.fround(r.domainDouble(['settings','offset_'+axis],0));}
  settings.showTrails=r.domainBoolean(['settings','show_trails'],true);
  settings.fadeTrails=r.domainBoolean(['settings','fade_trails'],true);
+ settings.fadePoints=true; // BaseSurfaceConfig default; JsonSurfaceConfig does not read fade_points.
+ s.surfaceSourcePalette=parseSourceSurfacePalette({colors:r.has('palette')?r.use('palette'):[...DEFAULT_SOURCE_SURFACE_COLORS]});
  settings.trailLifetime=Math.fround(r.domainDouble(['settings','trail_lifetime'],4));
  settings.trailWidth=Math.fround(r.domainDouble(['settings','line_weight'],1));
  settings.recordTrails=true; // Native constructor records even when display is hidden; no JSON record_trails read.

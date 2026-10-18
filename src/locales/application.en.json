@@ -1205,5 +1205,13 @@
   "按模拟时间过期；每粒子还受原版记录容量限制，全部粒子合计最多 100 万条记录（含断点）。": "Expires by simulation time, also subject to the native per-particle capacity. All particles share a limit of 1 million records, including breaks.",
   "设置初始录制状态；时间线中的拖尾片段可随后切换。修改后从起点重算当前画面。": "Set initial recording; trail clips can change it later. Edits replay from the start.",
   "记录拖尾": "Record trails",
-  "即时切换录制，占用一次队列更新；不改变显示开关，已有线条继续按寿命过期。恢复录制不会自动插入断点。": "Switch recording instantly in one queue update. Visibility stays unchanged and existing lines keep expiring. Resuming does not insert a break."
+  "即时切换录制，占用一次队列更新；不改变显示开关，已有线条继续按寿命过期。恢复录制不会自动插入断点。": "Switch recording instantly in one queue update. Visibility stays unchanged and existing lines keep expiring. Resuming does not insert a break.",
+  "颜色沿 U 方向排列，并跟随各自的粒子。支持带透明度的 #AARRGGBB 颜色。": "Colors follow U order and stay with their particles. #AARRGGBB colors include alpha.",
+  "曲面源颜色序号": "Source surface color index",
+  "曲面源颜色": "Source surface color",
+  "曲面源颜色原文": "Source surface color text",
+  "恢复曲面六色默认": "Restore six surface colors",
+  "周期边界点渐隐": "Fade points at periodic boundaries",
+  "流动粒子靠近周期边界时渐隐；拖尾仍使用色板中的透明度。": "Flowing particles fade near periodic boundaries; trails retain palette alpha.",
+  "最旧记录透明、最新记录使用色板透明度；边界断点也计入渐隐顺序。": "The oldest record is transparent; the newest uses palette alpha. Boundary breaks count in the fade order."
 }

@@ -1,3 +1,4 @@
+import {parseSourceSurfacePalette,prepareSourceSurfaceColors,type SourceSurfacePalette,type PreparedSourceSurfaceColors} from './sourceSurfaceColor';
 import type {SceneDocument} from '../types';
 import {prepareSourceRealExpression,parseDomainSourceFloat,type SourceRealExpression} from './domainSourceScalar';
 import type {OrdinarySourceCameraParticles,OrdinaryCameraTargetRequest,OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding} from './ordinarySourceCameraTimeline';
@@ -38,6 +39,9 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  if(s.renderMode!=='points'||s.computeBackend!=='cpu')fail('unsupported','原版曲面粒子当前只接入 CPU 点模式；GPU 与网格仍待接入');
  for(const key of ['showTrails','recordTrails','fadeTrails'])if(typeof s[key]!=='boolean')fail('input',`原版曲面 ${key} 缺少布尔值`);
  if(scalar(s.trailWidth,'trailWidth')<0)fail('input','原版曲面拖尾线宽的本地呈现要求非负值');
+ if(s.fadePoints!==undefined&&typeof s.fadePoints!=='boolean')fail('input','原版曲面 fadePoints 需要布尔值');
+ const palette=scene.surfaceSourcePalette===undefined?undefined:parseSourceSurfacePalette(scene.surfaceSourcePalette);
+ const fadePoints=s.fadePoints!==false;
  const trails={show:s.showTrails===true,record:s.recordTrails!==false,fade:s.fadeTrails===true,lifetime:scalar(s.trailLifetime,'trailLifetime')};
  if(s.scale!==1||['rotateX','rotateY','rotateZ'].some(key=>Number(s[key]??0)!==0))fail('unsupported','原版曲面粒子使用分轴 scale 与 offset，不执行本地整体缩放或物体旋转');
  for(const track of scene.timeline.tracks){
@@ -59,18 +63,27 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  keys.forEach((key,i)=>{const value=scene.parameters[key];if(!Number.isFinite(value))fail('input',`原版曲面参数 ${key} 必须有限`);variables[i+2]=value;});
  const expressions=['x','y','z'].map(key=>{const parsed=prepareSourceRealExpression(scene.equations[key],names);if(!parsed.ok)fail(parsed.error.kind,`原版曲面公式 ${key}：${JSON.stringify(parsed.error)}`);return parsed.value;});
  const operations=expressions.reduce((sum,e)=>sum+e.operations,0);
- return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,scales,offsets,variables,expressions,operations,trails},coverage,isCancelled)};
+ return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,scales,offsets,variables,expressions,operations,trails,palette,fadePoints},coverage,isCancelled)};
 }
-interface Configuration {u:Axis;v:Axis;count:number;scales:number[];offsets:number[];variables:Float64Array;expressions:SourceRealExpression[];operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
+interface Configuration {palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;scales:number[];offsets:number[];variables:Float64Array;expressions:SourceRealExpression[];operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
 function wrap(value:number,axis:Axis):number {
  const range=F(axis.max-axis.min);if(range<=0)return axis.min;
  let rest=F(F(value-axis.min)%range);if(rest<0)rest=F(rest+range);return F(axis.min+rest);
+}
+function edgeFade(factor:number,axis:Axis,value:number):number {
+ if(!axis.flowing||!axis.periodic)return factor;
+ const width=F(F(axis.max-axis.min)*F(.1)),lower=F(value-axis.min),upper=F(axis.max-value);
+ if(lower<width)return F(factor*F(lower/width));
+ if(upper<width)return F(factor*F(upper/width));
+ return factor;
 }
 /** CPU ParametricSurface state. The same position buffer feeds geometry and
  * bound tracking targets. Sparse coverage is for UI camera queries only; it
  * executes the identical particle recurrence, never a second analytic sampler.
  * All buffers are owned by this replay and snapshots are copied before transfer. */
 export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
+ private readonly color?:PreparedSourceSurfaceColors;
+ private readonly pointAlphas?:Float32Array;
  private readonly state:Float32Array;
  private readonly positions:Float32Array;
  private readonly ids:number[]=[];
@@ -87,7 +100,9 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   const capacity=coverage==='all'?config.count:Math.min(config.count,4096);
   this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.variables=config.variables.slice();
   this.recording=config.trails.record;
-  if(coverage==='all'&&config.trails.show&&config.trails.record)this.history=new SurfaceTrailHistory(config.count,config.trails.lifetime,config.trails.fade,()=>this.check());
+  // Camera-only queries never allocate full-grid color buffers.
+  if(coverage==='all'){this.color=prepareSourceSurfaceColors(config.palette,config.u.count,config.v.count,config.u.periodic);this.pointAlphas=new Float32Array(capacity);}
+  if(coverage==='all'&&config.trails.show&&config.trails.record)this.history=new SurfaceTrailHistory(config.count,config.trails.lifetime,config.trails.fade,this.color!.packed,()=>this.check());
   if(coverage==='all')for(let id=0;id<config.count;id++)this.ensure(id);
  }
  private check(){if(this.failed)throw this.failure;if(this.isCancelled?.())fail('cancelled','原版曲面粒子回放已取消');}
@@ -117,7 +132,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   this.ids.push(id);this.slots.set(id,slot);
   this.state[at]=F(u.min+F(F(i)*F(F(u.max-u.min)/F(u.count))));
   this.state[at+1]=F(v.min+F(F(j)*F(F(v.max-v.min)/F(v.count))));
-  this.state[at+2]=u.speed;this.state[at+3]=v.speed;this.calculate(slot);return slot;
+  this.state[at+2]=u.speed;this.state[at+3]=v.speed;this.calculate(slot);if(this.pointAlphas)this.pointAlphas[slot]=(this.color!.packed[id]>>>24)/255;return slot;
  }
  bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding {return this.guarded(()=>{
   if(this.lastFrame>=0)fail('input','原版曲面目标必须在第一帧前绑定');
@@ -129,7 +144,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  });}
  setRecordingTrails(enabled:boolean):void {this.guarded(()=>{
   if(typeof enabled!=='boolean')fail('input','原版拖尾录制开关必须是布尔值');
-  if(enabled&&!this.history&&this.coverage==='all'&&this.config.trails.show)this.history=new SurfaceTrailHistory(this.config.count,this.config.trails.lifetime,this.config.trails.fade,()=>this.check());
+  if(enabled&&!this.history&&this.coverage==='all'&&this.config.trails.show)this.history=new SurfaceTrailHistory(this.config.count,this.config.trails.lifetime,this.config.trails.fade,this.color!.packed,()=>this.check());
   this.recording=enabled;
  });}
  update(frame:OrdinaryCameraParticleFrame):void {this.guarded(()=>{
@@ -158,12 +173,19 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
    }
    this.state[at]=u.periodic&&u.flowing?wrap(nextU,u):nextU;this.state[at+1]=v.periodic&&v.flowing?wrap(nextV,v):nextV;
    this.calculate(slot);
+   if(this.pointAlphas){
+    // updateCPUDots PCs623–791/1168–1255: multiply U then V edge fades,
+    // truncate the packed alpha once. Initial/dt=0 state keeps base alpha.
+    let factor=1;
+    if(this.config.fadePoints){factor=edgeFade(factor,u,this.state[at]);factor=edgeFade(factor,v,this.state[at+1]);}
+    this.pointAlphas[slot]=(Math.trunc(F((this.color!.packed[this.ids[slot]]>>>24)*factor))&255)/255;
+   }
    if(this.history){const to=slot*3;if(this.recording)this.history.add(slot,this.positions[to],this.positions[to+1],this.positions[to+2],time);this.history.expire(slot,time);}
   }
  });}
- snapshot():{positions:Float32Array;particleIds:Uint32Array;workUnits:number;trails?:SourceSurfaceTrails} {return this.guarded(()=>{
+ snapshot():{positions:Float32Array;particleIds:Uint32Array;colors:Float32Array;pointAlphas:Float32Array;diagnostics:string[];workUnits:number;trails?:SourceSurfaceTrails} {return this.guarded(()=>{
   if(this.coverage!=='all')fail('input','稀疏相机查询不能伪装成完整曲面输出');
-  return{positions:this.positions.slice(),particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(this.history?{trails:this.history.snapshot()}: {})};
+  return{positions:this.positions.slice(),colors:this.color!.colors.slice(),pointAlphas:this.pointAlphas!.slice(),diagnostics:[...this.color!.diagnostics],particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(this.history?{trails:this.history.snapshot()}: {})};
  });}
 }
 
@@ -183,7 +205,7 @@ class SurfaceTrailHistory {
  private readonly blocks:{values:Float32Array;next:Uint32Array}[]=[];
  private readonly maximum:number;
  private free=0;private fresh=1;private total=0;
- constructor(particles:number,private readonly lifetime:number,private readonly fade:boolean,private readonly check:()=>void){
+ constructor(particles:number,private readonly lifetime:number,private readonly fade:boolean,private readonly packed:Uint32Array,private readonly check:()=>void){
   this.heads=new Uint32Array(particles);this.tails=new Uint32Array(particles);this.counts=new Uint32Array(particles);
   const product=F(lifetime*60),integer=Math.max(-2147483648,Math.min(2147483647,Math.trunc(product)));
   this.maximum=Math.max(0,(integer+120)|0); // JVM f2i then signed iadd.
@@ -234,7 +256,8 @@ class SurfaceTrailHistory {
     positions[vertex*3]=data[i];positions[vertex*3+1]=data[i+1];positions[vertex*3+2]=data[i+2];particleIds[vertex]=slot;
     // PGraphics RGB/255: source stroke(alpha) normalizes and packs to an 8-bit
     // channel before its GL vertex consumer. Separators count in the denominator.
-    const stroke=this.fade?F(255*F(ordinal/denominator)):255;
+    const baseAlpha=(this.packed[slot]>>>24)||255; // Native trail fallback for zero alpha.
+    const stroke=this.fade?F(baseAlpha*F(ordinal/denominator)):baseAlpha;
     alphas[vertex]=F(Math.trunc(F(255*F(stroke/255)))/255);
     if(previous>=0){indices[edge++]=previous;indices[edge++]=vertex;}previous=vertex++;
    }
