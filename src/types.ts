@@ -1,5 +1,6 @@
 import type {SourceSurfacePointAppearance} from './engine/sourceSurfacePointAppearance';
 import type {SourceSurfaceMeshAppearance} from './engine/sourceSurfaceMeshRenderer';
+import type {SourceSurfaceMeshWireframeFrame} from './engine/sourceSurfaceMeshWireframe';
 import type {SourceSurfacePalette} from './engine/sourceSurfaceColor';
 import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
 import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
@@ -299,6 +300,8 @@ export interface GeometryOutput {
   sourceMeshAppearance?: SourceSurfaceMeshAppearance;
   /** Original packed colors per mesh vertex, before native fill(int) semantics. */
   sourceMeshColors?: Uint32Array;
+  /** Ordered native CPU line pairs, packed stroke color and resolved width. */
+  sourceMeshWireframe?: SourceSurfaceMeshWireframeFrame;
   /** Parameter-grid provenance from the surface producer, before vertex compaction.
    * Each cell mask: bit 0 = (a,b,c), bit 1 = (a,c,d); omitted triangles stay holes. */
   surfaceGrid?: {

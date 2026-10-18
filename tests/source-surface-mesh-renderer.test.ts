@@ -36,4 +36,13 @@ describe('CPU source mesh fill boundary',()=>{
  it('rejects incompatible/malformed frames before constructing GPU resources',()=>{
   for(const changed of [{topology:'points' as const},{sourceMeshColors:new Uint32Array(2)},{indices:new Uint32Array([0,1,3])},{indices:new Uint32Array(2)},{sourceMeshAppearance:{...sourceSurfaceMeshAppearance(true,1),fillAlphaByte:1.5}}])expect(()=>createSourceSurfaceMeshFill({...output(),...changed},plan)).toThrow();
  });
+ it('transfers source wire pairs once without detaching retained owner snapshots',()=>{
+  const out={...output(),sourceMeshWireframe:{positions:new Float32Array([0,0,0,1,2,3]),packedColor:0x80445566,lineWidth:1,mode:'coupled' as const},stats:{samples:3,generated:3,invalid:0}};
+  const retained=structuredClone(out),buffers=outputBuffers(out);
+  expect(buffers.filter(buffer=>buffer===out.sourceMeshWireframe.positions.buffer)).toHaveLength(1);
+  const received=structuredClone(out,{transfer:buffers});
+  expect(out.sourceMeshWireframe.positions.byteLength).toBe(0);
+  expect(received.sourceMeshWireframe).toEqual(retained.sourceMeshWireframe);
+  expect(retained.sourceMeshWireframe.positions.byteLength).toBe(24);
+ });
 });

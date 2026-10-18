@@ -10,7 +10,7 @@ import {createServer as createTcpServer} from 'node:net';
 // No original JVM/JOGL framebuffer or native application parity is implied.
 const core='../.cache/mathart-investigation/MathArt.app/Contents/app/core-4.5.0-acdf3bce2932985b9d091c284407a54.jar';
 const hash=b=>createHash('sha256').update(b).digest('hex');
-const paths=['src/engine/sourceSurfaceMeshRenderer.ts','src/engine/sourceSurfaceFunction.ts','src/engine/sourceSurfaceMeshGeometry.ts','src/engine/sourceSurfaceMeshRuntime.ts','src/engine/sourceSurfaceMeshConfig.ts','src/engine/sourceSurfaceMeshWireframe.ts','src/engine/outputBuffers.ts','src/engine/sourceSurfaceColor.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceCamera.ts','src/engine/ordinarySourceCamera.ts','src/engine/renderer.ts','src/types.ts','scripts/verify-source-surface-mesh-fill.mjs'];
+const paths=['src/engine/sourceProcessingGeometry.ts','src/engine/sourceSurfaceLineRenderer.ts','src/engine/sourceSurfaceMeshRenderer.ts','src/engine/sourceSurfaceFunction.ts','src/engine/sourceSurfaceMeshGeometry.ts','src/engine/sourceSurfaceMeshRuntime.ts','src/engine/sourceSurfaceMeshConfig.ts','src/engine/sourceSurfaceMeshWireframe.ts','src/engine/outputBuffers.ts','src/engine/sourceSurfaceColor.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceCamera.ts','src/engine/ordinarySourceCamera.ts','src/engine/renderer.ts','src/types.ts','scripts/verify-source-surface-mesh-fill.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));
 const before=await hashes(),coreHash=hash(await readFile(core));
 if(coreHash!=='89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a')throw Error('Processing artifact identity changed');

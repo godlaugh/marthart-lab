@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type {GeometryOutput} from '../types';
 import type {SourceCameraPlan} from './sourceCamera';
+import {writeSourceEyePosition,writeSourcePackedColor} from './sourceProcessingGeometry';
 
 export const SOURCE_SURFACE_CPU_MESH_MODEL='surface-cpu-mesh-1.7.8' as const;
 export interface SourceSurfaceMeshAppearance {
@@ -21,9 +22,7 @@ export function sourceSurfaceMeshFillColors(packed:Uint32Array,fillAlphaByte:num
  if(packed.length>512*512+4*511+4||!Number.isInteger(fillAlphaByte)||fillAlphaByte<0||fillAlphaByte>255||!Number.isFinite(displayOpacity)||displayOpacity<0||displayOpacity>1)throw new Error('源曲面填充颜色容量或透明度无效');
  const colors=new Float32Array(packed.length*4);
  for(let i=0;i<packed.length;i++){
-  const rgb=packed[i]&0xffffff,gray=fillAlphaByte===0&&rgb<=255,j=i*4;
-  colors[j]=(gray?rgb:(rgb>>>16)&255)/255;colors[j+1]=(gray?rgb:(rgb>>>8)&255)/255;colors[j+2]=(rgb&255)/255;
-  colors[j+3]=Math.fround((gray?255:fillAlphaByte)/255)*displayOpacity;
+  writeSourcePackedColor((packed[i]&0xffffff)|(fillAlphaByte<<24),colors,i*4,displayOpacity);
  }
  return colors;
 }
@@ -33,13 +32,10 @@ export function sourceSurfaceMeshFillColors(packed:Uint32Array,fillAlphaByte:num
  * these staged float operations on the CPU is observably different from a
  * combined transform or modelview arithmetic inside a GPU shader. */
 export function sourceMeshEyeVertices(positions:Float32Array,plan:SourceCameraPlan):Float32Array {
- const count=positions.length/3,F=Math.fround,m=plan.modelView.rowMajor;
+ const count=positions.length/3,m=plan.modelView.rowMajor;
  if(!Number.isInteger(count)||count>512*512+4*511+4)throw new Error('源曲面网格顶点超过本地容量或缓冲无效');
  const eye=new Float32Array(count*4);
- for(let i=0;i<count;i++)for(let row=0;row<4;row++){
-  const k=row*4,j=i*3;
-  eye[i*4+row]=F(F(F(F(m[k]*positions[j])+F(m[k+1]*positions[j+1]))+F(m[k+2]*positions[j+2]))+m[k+3]);
- }
+ for(let i=0;i<count;i++)writeSourceEyePosition(m,positions[i*3],positions[i*3+1],positions[i*3+2],eye,i*4);
  return eye;
 }
 // Unlit ColorVert/ColorFrag behavior; no tone mapping or sRGB conversion. CPU
