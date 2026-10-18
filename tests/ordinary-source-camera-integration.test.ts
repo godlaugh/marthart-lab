@@ -54,7 +54,8 @@ describe('source project file through production ordinary camera timeline',()=>{
   const result=parse('IMPLICIT',{timeline:[{enabled:false,type:17,duration:'bad'},animate('stopAmbient',[]),{type:'not-native',duration:2}]});
   expect(result.scene.timeline.tracks).toHaveLength(2);expect(result.scene.timeline.duration).toBe(3);expect(result.scene.timeline.tracks[1].type).toBe('wait');
   expect(parse('ATTRACTOR',{timeline:[{type:'not-native',duration:2}]}).scene.timeline.tracks).toEqual([]);
-  for(const clip of [animate('track',[1]),{type:'trails',enable:true}])expect(()=>parse('SURFACE',{timeline:[clip]})).toThrow(/尚无|尚缺/);
+  expect(()=>parse('SURFACE',{timeline:[animate('track',[1])]})).toThrow('曲面拖尾');
+  expect(()=>parse('SURFACE',{timeline:[{type:'trails',enable:true}]})).toThrow('尚缺');
  });
  it('retains supported local noncamera behavior with explicit source-parity limits and native clip duration',()=>{
   const result=parse('SURFACE',{parameters:{a:1},timeline:[animate('paramStart',[{parameters:{a:{step:.1,min:0,max:2}}}]),{type:'param',duration:2,parameters:{a:{step:.1,min:0,max:2}}}]});

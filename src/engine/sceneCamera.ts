@@ -1,3 +1,4 @@
+import {usesSourceSurfaceParticles} from './sourceSurfaceParticles';
 import {ordinarySourceCameraGeometry} from './ordinarySourceCamera';
 import {samilaCameraEnabled,initializeSamilaCameraFrame,refreshSamilaCameraSetting} from './samilaCamera';
 import type {CameraState,EvaluatedCamera,SceneDocument,Settings,SceneOutput} from '../types';
@@ -12,12 +13,12 @@ export const usesOrdinarySourceCamera=(scene:CameraCapabilities)=>scene.sourceCa
 const ordinaryMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking']);
 export const supportsCameraActions=(scene:CameraCapabilities)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene):!hasMathematicalPlane(scene);
 /** Scalar-camera families opt into specific components, never the full orbit. */
-export const supportsCameraAction=(scene:CameraCapabilities,method:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&ordinaryMethods.has(method):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
+export const supportsCameraAction=(scene:CameraCapabilities,method:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&(ordinaryMethods.has(method)||method==='track'&&supportsParticleTracking(scene)):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
 export const supportsCameraComponent=(scene:CameraCapabilities,axis:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&['phi','theta','gamma'].includes(axis):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&axis==='theta';
 export const supportsCameraTarget=(scene:CameraCapabilities,target:string)=>!target.startsWith('camera.')||!usesOrdinarySourceCamera(scene)&&(supportsCameraActions(scene)||samilaCameraEnabled(scene)&&target==='camera.theta');
 /** Indexed targets use mathematical identities, never compacted display indices
  * or coordinates inferred from a projected density image. */
-export const supportsParticleTracking=(scene:CameraCapabilities)=>!usesOrdinarySourceCamera(scene)&&(scene.kind==='surface'||scene.kind==='attractor'&&scene.settings.simulationMode==='continuous'&&scene.settings.presentation!=='density');
+export const supportsParticleTracking=(scene:CameraCapabilities)=>usesOrdinarySourceCamera(scene)?usesSourceSurfaceParticles(scene): (scene.kind==='surface'||scene.kind==='attractor'&&scene.settings.simulationMode==='continuous'&&scene.settings.presentation!=='density');
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 const finite=(v:number,name:string)=>{if(!Number.isFinite(v))throw new Error(`${name} 必须有限`);return v;};
 const copy=(c:CameraState):CameraState=>({...c,position:[...c.position],target:[...c.target]});

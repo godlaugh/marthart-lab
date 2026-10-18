@@ -46,14 +46,14 @@ describe('legacy scene import production contract',()=>{
  it('maps Newton convergence threshold separately from the escape radius',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'newton',parameters:{exponent:[3,0],relaxation:.5,bailout:.001}}}));expect(result.scene.settings.tolerance).toBe(.001);expect(result.scene.settings.bailout).toBeGreaterThan(1);expect(result.scene.settings.power).toBe(3);});
  it('maps Binocular and Spiral parameters without changing their formulas',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'binocular',parameters:{power:4,quad_coeff:[1,2],const_term:[3,4],z0_coeff:[-1,.2],denom_offset:2,bailout:.001,singularity_guard_eps:1e-10}}}));expect(result.scene.settings.formula).toBe('binocular');expect(result.scene.settings.quadImag).toBe(2);expect(result.scene.settings.constReal).toBe(3);expect(result.scene.settings.z0Imag).toBe(.2);expect(result.scene.settings.denomOffset).toBe(2);expect(result.scene.settings.singularityGuard).toBe(1e-10);});
  it('preserves an unsupported formula ID so generation fails explicitly',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'future_fractal'}}));expect(result.scene.settings.formula).toBe('future_fractal');expect(result.warnings.join()).toContain('未实现');expect(()=>definition('fractal').generate(result.scene,{time:0,quality:'preview',width:8,height:8})).toThrow();});
- it('keeps legacy local tracking documents while rejecting source tracking without its native provider',()=>{
+ it('keeps legacy local tracking documents while rejecting unimplemented source Mesh tracking',()=>{
   const local=createScene(definition('surface'));local.timeline.duration=5;local.timeline.tracks=[
    {id:'wait',type:'wait',target:'timeline.wait',from:0,to:0,start:0,duration:2,easing:'linear',pingPong:false,enabled:true},
    {id:'track',type:'animate',target:'camera.actions',from:0,to:0,start:2,duration:3,easing:'linear',pingPong:false,enabled:true,actions:[{id:'track-action',method:'track',args:{index:5}}]},
    {id:'disabled',type:'wait',target:'timeline.wait',from:0,to:0,start:5,duration:9,easing:'linear',pingPong:false,enabled:false},
   ];
   const saved=serializeScene(local),reopened=parseScene(saved);expect(reopened.sourceCamera).toBeUndefined();expect(reopened.timeline.tracks).toEqual(local.timeline.tracks);expect(serializeScene(reopened)).toBe(saved);
-  expect(()=>parse({...fixtures[0],timeline:[{type:'wait',duration:2},{type:'animate',duration:3,actions:[{method:'track',args:[5]}]}]})).toThrow('provider');
+  expect(()=>parse({...fixtures[0],timeline:[{type:'wait',duration:2},{type:'animate',duration:3,actions:[{method:'track',args:[5]}]}]})).toThrow('GPU/网格');
   expect(serializeScene(local)).toBe(saved);
  });
  it('does not mutate input source through edits to the converted document',()=>{const result=parse({...fixtures[0],palette:['#112233','#445566']});result.scene.parameters.a=22;result.scene.palette.stops[0]='#ffffff';expect((result.source as any).parameters.a).toBeUndefined();expect((result.source as any).palette[0]).toBe('#112233');});

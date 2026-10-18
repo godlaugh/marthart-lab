@@ -56,12 +56,14 @@ export function* rootsTimelineNumberTokenPaths(raw:readonly unknown[]):Iterable<
  }
 }
 const ordinaryFamilies=new Set<SceneDocument['kind']>(['surface','implicit','attractor','perlin']);
-const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters;
+export const SOURCE_SURFACE_NUMBER_FIELDS=['u_segments','v_segments','u_min','u_max','v_min','v_max','speed_u','speed_v','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z'] as const;
+const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length;
 // Every retained token requires at least one source JSON value node. Clip and
 // action bounds also constrain slots; taking the smaller bound does not grant
 // extra source capacity merely because paths repeat in persisted provenance.
 const ordinaryMaximum=Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+maxTimelineClips*(4+maxTimelineActions*maxCameraArgs));
-function ordinaryField(path:readonly unknown[]):boolean {
+function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
+ if(family==='surface'&&path.length===2&&path[0]==='settings'&&SOURCE_SURFACE_NUMBER_FIELDS.some(key=>key===path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
 }
@@ -79,7 +81,7 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
  return raw.map(value=>{
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('源数字词法记录无效');
   const {path,token}=value as {path?:unknown;token?:unknown};
-  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):ordinary&&ordinaryField(path)?JSON.stringify(path):undefined):undefined;
+  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):ordinary&&ordinaryField(path,sceneKind)?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效');
   if(roots&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1])){
    const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify(path.slice(0,-1)),previous=gradientPayloads.get(action);

@@ -1,4 +1,5 @@
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
+import {usesSourceSurfaceParticles,replaySourceSurface} from './sourceSurfaceParticles';
 import {evaluateOrdinarySourceCameraTimeline,resolveOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {inactiveFractalSourceColorTarget,usesFractalSourceColor,readFractalSourceColorAnimation,writeFractalSourceColorAnimation,FRACTAL_SOURCE_COLOR_ANIMATION_TARGETS} from './fractalSourceColorAuthoring';
 import {rootMathAnimationTargetEnabled} from './rootsMathConfig';
@@ -86,7 +87,7 @@ export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument):string[]{
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,'复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。'];
  const genericWarning=genericParameterTimelineWarning(scene),messages:string[]=[...(genericWarning?[genericWarning]:[]),...parseSamilaCamera(scene).warnings];
- if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!;messages.push(...evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0).diagnostics.map(d=>d.message),'原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
+ if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!,frame=usesSourceSurfaceParticles(scene)?replaySourceSurface(scene,0,'tracked').frame:evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0);messages.push(...frame.diagnostics.map(d=>d.message),'原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&!rootMathAnimationTargetEnabled(scene,track.target)||track.type==='param'&&track.parameterAnimations?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&action.parameters?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))))))messages.push('源复根数学不使用通用参数或旧采样与求解字段；相关轨道保留时长但未执行。');
  const inactiveSourceParameters=(parameters:readonly ParameterAnimation[]|undefined)=>parameters?.some(p=>p.enabled&&inactiveFractalSourceColorTarget(scene,p.target));
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&inactiveFractalSourceColorTarget(scene,track.target)||track.type==='param'&&inactiveSourceParameters(track.parameterAnimations)||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&inactiveSourceParameters(action.parameters)))))messages.push('原版分形着色已停用；其偏移动画保留但不执行。');
@@ -214,7 +215,7 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   delete copied.evaluatedSpirographFrame;
   delete copied.evaluatedRootsCamera;
   delete copied.evaluatedSourceCamera;
-  if(scene.sourceCamera){copied.sourceCamera=structuredClone(scene.sourceCamera);if(time!==undefined)copied.evaluatedSourceCamera=evaluateOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(copied)!,scene.timeline.tracks,scene.timeline.fps,time);}
+  if(scene.sourceCamera){copied.sourceCamera=structuredClone(scene.sourceCamera);if(time!==undefined)copied.evaluatedSourceCamera=usesSourceSurfaceParticles(copied)?replaySourceSurface(copied,time,'tracked').frame:evaluateOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(copied)!,scene.timeline.tracks,scene.timeline.fps,time);}
   if(time!==undefined&&scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)==='mathart-1.7.8-v1'){
     copied.evaluatedSpirographRotationRadians=finite(spirographSourceRotationRate(scene.settings.rotationSpeed)*time,'旋轮运行时旋转');
   }

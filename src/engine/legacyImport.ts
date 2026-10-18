@@ -29,13 +29,14 @@ import {withRootsPresentation} from './rootsPresentationAuthoring';
 import {prepareRootsCameraTimeline,withRootsSceneTimeline} from './rootsCameraTimeline';
 import {prepareRootsGradientImport} from './rootsGradientConfig';
 import {lookupSourceEasing} from './sourceEasing';
-import {PROJECT_RESOLUTION_SOURCE_NUMBER_PATHS,rootsTimelineNumberTokenPaths,type SourceNumberToken} from './sourceNumberTokens';
+import {PROJECT_RESOLUTION_SOURCE_NUMBER_PATHS,rootsTimelineNumberTokenPaths,SOURCE_SURFACE_NUMBER_FIELDS,type SourceNumberToken} from './sourceNumberTokens';
 import {prepareSourceProjectResolution} from './projectResolution';
 import {parseSourceJson,type SourceJsonObjectMetadata} from './sourceJson';
 import {createRootsNativeMath,defaultRootNativeParameter,parseRootsMath} from './rootsMathConfig';
 import {prepareRootsSourceMemberOrder,prepareRootsSourceJsonInt,prepareRootsSourceJsonLong,prepareRootsSourceJsonString} from './rootsSourceOrder';
 import {isJavaBlank} from './sourceJavaText';
-import {prepareOrdinarySourceScalarScope,type OrdinarySourceScalarScope,type OrdinarySourceScalarResult,type OrdinarySourceCameraFamily} from './ordinarySourceCameraImport';
+import {prepareOrdinarySourceScalarScope,prepareSurfaceSourceStringField,type OrdinarySourceScalarScope,type OrdinarySourceScalarResult,type OrdinarySourceCameraFamily} from './ordinarySourceCameraImport';
+import {SOURCE_SURFACE_PARTICLES,prepareSourceSurfaceParticles,usesSourceSurfaceParticles} from './sourceSurfaceParticles';
 import {ordinarySourceCameraGeometry} from './ordinarySourceCamera';
 import {ORDINARY_CAMERA_SEQUENCE} from './ordinarySourceCameraTimeline';
 
@@ -230,7 +231,7 @@ function common(r:Reader,s:SceneDocument){
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(s.kind!=='roots')numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!['domain','roots','fractal'].includes(s.kind))commonLocalPalette(r,s);
- if(['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
+ if(!usesSourceSurfaceParticles(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
@@ -256,6 +257,7 @@ function geometryMaterial(r:Reader,s:SceneDocument){
 function surface(r:Reader,s:SceneDocument){
  numberTo(r,s,'settings.line_weight','trailWidth',{min:0});
  for(const k of ['x','y','z'])equation(r,s,'equations.'+k,k);
+ if(usesSourceSurfaceParticles(s)){ordinarySurfaceParticleGeometry(r,s);return;}
  const original=r.str('settings.surface_mode')??'POINTS';s.settings.renderMode=original==='MESH'?'mesh':'points';if(!['MESH','POINTS'].includes(original))r.warnings.push(`settings.surface_mode=${original} 尚无等价模式；当前显示点采样。`);
  for(const axis of ['u','v']){
   numberTo(r,s,`settings.${axis}_min`,axis+'Min');numberTo(r,s,`settings.${axis}_max`,axis+'Max');
@@ -891,22 +893,66 @@ function ordinaryCamera(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope
  const accumulation=s.kind==='perlin'?r.domainBoolean(['settings','use_accumulation_buffer'],false,'default'):false;
  s.settings.sourceCameraProjection=accumulation?'scene-fade-orthographic':'perspective';
 }
+function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
+ const hasSettings=r.has(['settings']);if(hasSettings)r.object(['settings']);
+ const render=(r.str(['settings','render_mode'])??'CPU').toUpperCase();
+ const mode=(r.str(['settings','surface_mode'])??'POINTS').toUpperCase();
+ if(render==='GPU'||mode==='MESH')fail('原版曲面 track 当前只接入 CPU 点模式；GPU/网格的目标身份和显示仍待接入');
+ const settings=s.settings;
+ Object.assign(settings,{surfaceGeometryVersion:SOURCE_SURFACE_PARTICLES,renderMode:'points',computeBackend:'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,flowU:0,flowV:0});
+ for(const field of SOURCE_SURFACE_NUMBER_FIELDS)r.retainNumberToken(['settings',field]);
+ for(const [axis,defaultCount,maxText]of [['u',hasSettings?40:99,'TWO_PI'],['v',hasSettings?20:99,'PI']] as const){
+  const upper=axis.toUpperCase();settings[axis+'Segments']=r.sourceInt(['settings',axis+'_segments'],defaultCount);
+  for(const [end,fallback]of [['min','0'],['max',maxText]]){
+   const path=['settings',axis+'_'+end],parsed=ordinaryResult(prepareSurfaceSourceStringField(r.use(path),pathLabel(path),fallback));
+   settings[axis+(end==='min'?'Min':'Max')]=parsed.value;r.warnings.push(...parsed.diagnostics);
+  }
+  settings['speed'+upper]=Math.fround(r.domainDouble(['settings','speed_'+axis],.3));
+  settings['periodic'+upper]=r.domainBoolean(['settings','periodic_'+axis],false);
+  settings['flowing'+upper]=r.domainBoolean(['settings','flowing_'+axis],true);
+ }
+ for(const axis of ['x','y','z']){settings['scale'+axis.toUpperCase()]=Math.fround(r.domainDouble(['settings','scale_'+axis],55));settings['offset'+axis.toUpperCase()]=Math.fround(r.domainDouble(['settings','offset_'+axis],0));}
+ settings.showTrails=r.domainBoolean(['settings','show_trails'],true);
+ r.warnings.push('曲面 track 使用源 CPU 点状态、半开参数域和原版索引；拖尾、参数动画、GPU/网格跟踪仍待接入，调色与完整原版画面尚未验收。');
+}
 /** Eager source setupTimeline dispatch. Preserve every native queue duration;
  * known but unimplemented animation children fail rather than become local
  * mathjs actions or silently disappear. Unknown native actions make Wait via
  * CameraAnimator.build when no camera child was constructed. */
-function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope):void {
- const clips=r.peek(['timeline']);s.timeline={...s.timeline,schedule:ORDINARY_CAMERA_SEQUENCE,tracks:[]};
- if(clips===undefined)return;
+interface OrdinaryTimelineAction {path:string[];method:string;raw:unknown;}
+interface OrdinaryTimelineClip {path:string[];originalType:string;type:string;actions:OrdinaryTimelineAction[];}
+/** Parse structural dispatch once. Geometry selection and queue compilation use
+ * the same enabled clips/actions; disabled source clips are never inspected. */
+function ordinaryTimelineStructure(r:Reader):OrdinaryTimelineClip[] {
+ const clips=r.peek(['timeline']);if(clips===undefined)return[];
  if(!Array.isArray(clips)||clips.length>1000)fail('timeline 应为最多 1000 段的数组');
- if(!clips.length)r.use(['timeline']);let total=0;
- const field=(path:readonly string[],fallback:number)=>{
-  r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
- };
+ if(!clips.length)r.use(['timeline']);
+ const result:OrdinaryTimelineClip[]=[];
  for(let i=0;i<clips.length;i++){
   const path=['timeline',String(i)];r.object(path);
   if(!r.domainBoolean([...path,'enabled'])){r.acknowledge(path,'原版跳过禁用片段，不读取类型、时长或动作');continue;}
-  const originalType=r.str([...path,'type'],true)!,type=originalType.toLowerCase();
+  const originalType=r.str([...path,'type'],true)!,type=originalType.toLowerCase(),actions:OrdinaryTimelineAction[]=[];
+  if(type==='animate'){
+   const raw=r.peek([...path,'actions']);
+   if(raw!==undefined&&(!Array.isArray(raw)||raw.length>64))fail(`${pathLabel(path)}.actions 应为最多 64 个动作的数组`);
+   if(Array.isArray(raw)){
+    if(!raw.length)r.use([...path,'actions']);
+    for(let j=0;j<raw.length;j++){
+     const actionPath=[...path,'actions',String(j)];r.object(actionPath);
+     actions.push({path:actionPath,method:r.str([...actionPath,'method'],true)!,raw:r.peek([...actionPath,'args'])});
+    }
+   }
+  }
+  result.push({path,originalType,type,actions});
+ }
+ return result;
+}
+function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope,structure=ordinaryTimelineStructure(r)):void {
+ s.timeline={...s.timeline,schedule:ORDINARY_CAMERA_SEQUENCE,tracks:[]};let total=0;
+ const field=(path:readonly string[],fallback:number)=>{
+  r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
+ };
+ for(const {path,originalType,type,actions:sourceActions} of structure){
   if(!['wait','animate','align'].includes(type)&&!(s.kind==='surface'&&type==='param')){
    const nativeChild=(s.kind==='surface'&&['trails','surface_mode_transition'].includes(type))||(s.kind==='perlin'&&type==='trails');
    if(nativeChild)fail(`${pathLabel(path)} ${type} 尚缺原版动画子项编译事实；不能丢弃或猜测其队列时长`);
@@ -927,13 +973,10 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
    track.target='camera.orientation';track.alignMode='next-turn';track.orientation={};
    for(const axis of ['phi','theta','gamma'] as const)if(r.has([...path,'target_'+axis]))track.orientation[axis]=field([...path,'target_'+axis],0);
   }else if(type==='animate'){
-   const actions=r.peek([...path,'actions']);if(actions!==undefined&&(!Array.isArray(actions)||actions.length>64))fail(`${pathLabel(path)}.actions 应为最多 64 个动作的数组`);
-   track.actions=[];track.target='camera.actions';if(Array.isArray(actions)&&!actions.length)r.use([...path,'actions']);
-   const actionList=(actions??[]) as unknown[];
-   for(let j=0;j<actionList.length;j++){
-    const actionPath=[...path,'actions',String(j)];r.object(actionPath);const method=r.str([...actionPath,'method'],true)!,raw=r.peek([...actionPath,'args']);
+   track.actions=[];track.target='camera.actions';
+   for(const {path:actionPath,method,raw} of sourceActions){
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
-    const unimplementedTracking=method==='track'&&Array.isArray(raw)&&raw.length>0&&(s.kind==='surface'||s.kind==='attractor');
+    const unimplementedTracking=method==='track'&&Array.isArray(raw)&&raw.length>0&&s.kind==='attractor';
     if(unimplementedTracking)fail(`${pathLabel(actionPath)} ${method} 尚无完整原版 provider/动画编译合同；未按本地动作代替`);
     const noncamera=['paramStart','paramStop'].includes(method)&&s.kind!=='attractor'||['gradientStart','gradientStop'].includes(method)&&s.kind!=='implicit';
     if(noncamera){
@@ -949,7 +992,8 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
     const args=Array.isArray(raw)?raw:[];if(args.length>128)fail(`${pathLabel(actionPath)}.args 超过 128 项本地容量`);
     const arg=(index:number)=>{const p=[...actionPath,'args',String(index)];r.retainNumberToken(p);const out=ordinaryResult(scope.argument(r.use(p),pathLabel(p)));r.warnings.push(...out.diagnostics);return out.value;};
     let action:AnimationAction|undefined;
-    if(['rotatePhi','rotateTheta','zoom','focal'].includes(method))action={id:crypto.randomUUID(),method,args:{[method.startsWith('rotate')?'angle':'value']:arg(0)}};
+    if(method==='track'&&s.kind==='surface'&&args.length>0)action={id:crypto.randomUUID(),method,args:{index:arg(0)}};
+    else if(['rotatePhi','rotateTheta','zoom','focal'].includes(method))action={id:crypto.randomUUID(),method,args:{[method.startsWith('rotate')?'angle':'value']:arg(0)}};
     else if(method==='rotateTo'&&s.kind!=='attractor'&&args.length>=3)action={id:crypto.randomUUID(),method,args:{phi:arg(0),theta:arg(1),gamma:arg(2)}};
     else if((method==='ambient'||method==='setRates'&&s.kind==='attractor')&&args.length>=(s.kind==='attractor'?2:3))action={id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:arg(0),thetaSpeed:arg(1),gammaSpeed:args.length>=3?arg(2):0}};
     else if(['stopTracking','stopAmbient'].includes(method)&&s.kind!=='implicit')action={id:crypto.randomUUID(),method,args:{}};
@@ -962,9 +1006,10 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
  }
  if(total>0)s.timeline.duration=total;
  validateTimelineCapacity(s.timeline.tracks);
+ if(usesSourceSurfaceParticles(s))prepareSourceSurfaceParticles(s);
 }
-function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarScope){
- if(s.sourceCamera&&ordinaryScope){ordinaryCameraTimeline(r,s,ordinaryScope);return;}
+function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarScope,structure?:OrdinaryTimelineClip[]){
+ if(s.sourceCamera&&ordinaryScope){ordinaryCameraTimeline(r,s,ordinaryScope,structure);return;}
  if(s.kind==='domain'){domainTimeline(r,s);return;}
  if(s.kind==='spirograph'&&parseSpirographVersion(s.settings.spirographVersion)!=='local-v1'){spirographTimeline(r,s);return;}
  if(s.kind==='roots'){rootsCameraTimeline(r,s);return;}
@@ -1209,6 +1254,10 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
  const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;scene.parameters=ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
  if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
+ // Source geometry and queue share parsed dispatch facts. Select its owner
+ // before common/local geometry reads, so fallback values are never reinterpreted.
+ const ordinaryStructure=kind==='surface'?ordinaryTimelineStructure(r):undefined;
+ if(ordinaryStructure?.some(clip=>clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
  common(r,scene);
@@ -1220,7 +1269,7 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  if(kind==='samila'&&r.has('camera')){r.object('camera');samilaTheta=r.num('camera.theta',scene.parameters);}
  if(kind==='samila'&&samilaTheta!==undefined&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaCameraTheta:samilaTheta});
  if(ordinaryScope)ordinaryCamera(r,scene,ordinaryScope);
- formulaAnnotations(r,scene);timeline(r,scene,ordinaryScope);
+ formulaAnnotations(r,scene);timeline(r,scene,ordinaryScope,ordinaryStructure);
  if(kind==='samila'){
   const thetaAction=scene.timeline.tracks.some(t=>t.type==='align'&&t.orientation?.theta!==undefined||t.actions?.some(a=>['rotateTheta','rotateTo','ambient'].includes(a.method)));
   if(options.samilaCamera!=='legacy-v1'&&(samilaTheta!==undefined||thetaAction)){

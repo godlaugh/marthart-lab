@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {parseLegacyScene} from '../src/engine/legacyImport';
 import {generateScene} from '../src/engine/temporal';
 const parse=(type:string,extra:Record<string,unknown>)=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',type,name:'geometry import',parameters:{},...extra}));
-const context={time:1,width:32,height:24,quality:'preview' as const};
+const context={time:1,width:32,height:24,quality:'preview' as const,sourceViewport:{logicalWidth:32,logicalHeight:24,referenceLogicalHeight:24,target:'primary' as const,projectionPass:'perspective' as const}};
 describe('legacy continuous geometry import',()=>{
  it('maps CPU surface trail settings to real historical segments without changing source data',()=>{
   const input={equations:{x:'u+t',y:'v',z:'0'},settings:{surface_mode:'POINTS',u_segments:2,v_segments:2,show_trails:true,fade_trails:true,trail_lifetime:.5,periodic_u:false,periodic_v:false,speed_u:'0',speed_v:'0'}};

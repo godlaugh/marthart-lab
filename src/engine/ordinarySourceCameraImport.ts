@@ -48,6 +48,18 @@ function numericSurface(raw:number,path:string):number{
  }
  return rounded;
 }
+function surfaceFieldValue(raw:unknown,path:string,fallback:string,bindings:ReadonlyMap<string,number>,diagnostics:string[]):number {
+ const value=raw??fallback;
+ if(typeof value==='string'||typeof value==='boolean')return surfaceString(String(value),path,bindings,diagnostics);
+ if(typeof value==='number')return numericSurface(value,path);
+ diagnostics.push(`${path}: 原版 getString 后表达式无效，返回 0。`);return 0;
+}
+/** Surface bounds are parsed before the parameter map is constructed, so their
+ * default scope is empty. Shares the exact getString/Float.parseFloat owner
+ * with initial Surface camera fields, including numeric midpoint limitations. */
+export function prepareSurfaceSourceStringField(raw:unknown,path:string,fallback:string):OrdinarySourceScalarResult<{value:number;diagnostics:string[]}>{return attempt(()=>{
+ const diagnostics:string[]=[];return{value:finite(surfaceFieldValue(raw,path,fallback,new Map(),diagnostics),path),diagnostics};
+});}
 function parameters(raw:unknown,order:readonly string[]|undefined,diagnostics:string[]):ReadonlyMap<string,number>{
  const scope=new Map<string,number>();if(raw===undefined)return scope;
  const source=record(raw,'parameters'),keys=Object.keys(source);
@@ -108,11 +120,8 @@ export function prepareOrdinarySourceScalarScope(family:OrdinarySourceCameraFami
    const value=original??(key==='phi'?'PI/2':'0');
    const path=`camera.${key}`;
    let parsed:number;
-   if(surface){
-    if(typeof value==='string'||typeof value==='boolean')parsed=surfaceString(String(value),path,bindings,diagnostics);
-    else if(typeof value==='number')parsed=numericSurface(value,path);
-    else {parsed=0;diagnostics.push(`${path}: 原版 getString 后表达式无效，返回 0。`);}
-   }else parsed=unwrap(prepareDomainSourceScalar(value,{fallback:0,precision:'float32'}),path,diagnostics);
+   if(surface)parsed=surfaceFieldValue(value,path,'0',bindings,diagnostics);
+   else parsed=unwrap(prepareDomainSourceScalar(value,{fallback:0,precision:'float32'}),path,diagnostics);
    if(!Number.isFinite(parsed))fail({kind:'nonfinite',path,value:parsed});
    angles[key]=parsed;
   }

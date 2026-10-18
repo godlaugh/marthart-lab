@@ -114,12 +114,12 @@ function normalize(text: string): string {
  const replacements: Readonly<Record<string, string>> = { '−': '-', '–': '-', '—': '-', '－': '-', '＋': '+', '×': '*', '·': '*', '⋅': '*', '÷': '/', '（': '(', '）': ')', '，': ',', '［': '[', '］': ']', 'π': 'pi' };
  return text.replace(/[−–—－＋×·⋅÷（），［］π]/g, char => replacements[char]);
 }
-type Node = { kind: 'number'; value: number } | { kind: 'unary'; op: string; argument: Node } | { kind: 'binary'; op: string; left: Node; right: Node } | { kind: 'call'; name: string; args: Node[] };
+type Node = { kind: 'number'; value: number } | {kind:'variable';slot:number} | { kind: 'unary'; op: string; argument: Node } | { kind: 'binary'; op: string; left: Node; right: Node } | { kind: 'call'; name: string; args: Node[] };
 const letter = (char: string) => char !== '' && /\p{L}/u.test(char);
 const letterOrDigit = (char: string) => char !== '' && /[\p{L}\p{Nd}]/u.test(char);
 class Parser {
  private pos = 0; private nodes = 0; private depth = 0;
- constructor(private readonly source: string, private readonly bindings?: ReadonlyMap<string, number>) {}
+ constructor(private readonly source: string, private readonly bindings?: ReadonlyMap<string, number>,private readonly slots?:ReadonlyMap<string,number>) {}
  private char() { return this.source[this.pos] ?? ''; }
  private skip() { while (this.char() === ' ') this.pos++; }
  private eat(char: string) { this.skip(); if (this.char() !== char) return false; this.pos++; return true; }
@@ -163,7 +163,8 @@ class Parser {
       value = this.node({ kind: 'call', name: ({ arcsin: 'asin', arccos: 'acos', arctan: 'atan' } as Record<string,string>)[lower] ?? lower, args });
      } else {
       // Source parseFactor checks exact varMap membership before named constants.
-      if (this.bindings?.has(name)) value = this.node({ kind: 'number', value: this.bindings.get(name)! });
+      if(this.slots?.has(name))value=this.node({kind:'variable',slot:this.slots.get(name)!});
+      else if (this.bindings?.has(name)) value = this.node({ kind: 'number', value: this.bindings.get(name)! });
       else { const key = name.toUpperCase(); if (!Object.hasOwn(constants, key)) invalid(); value = this.node({ kind: 'number', value: constants[key] }); }
      }
     } else return invalid();
@@ -179,8 +180,8 @@ function javaRound(value: number): number {
  if (value <= -(2 ** 63)) return -(2 ** 63);
  return Math.round(value) || 0;
 }
-function call(name: string, values: number[]): number {
- const a = values[0];
+function call(name: string, values: ArrayLike<number>,start=0,count=values.length): number {
+ const a = values[start];
  switch (name) {
   case 'sin': return Math.sin(a); case 'cos': return Math.cos(a); case 'tan': return Math.tan(a);
   case 'asin': return Math.asin(a); case 'acos': return Math.acos(a); case 'atan': return Math.atan(a);
@@ -189,10 +190,10 @@ function call(name: string, values: number[]): number {
   case 'log10': return Math.log10(a); case 'exp': return Math.exp(a); case 'floor': return Math.floor(a); case 'ceil': return Math.ceil(a);
   case 'round': return javaRound(a); case 'sign': return Math.sign(a);
  }
- if (values.length < 2) return 0;
- if (name === 'pow') return Math.pow(a, values[1]);
- if (name === 'atan2') return Math.atan2(a, values[1]);
- let result = a; for (let i = 1; i < values.length; i++) result = name === 'min' ? Math.min(result, values[i]) : Math.max(result, values[i]);
+ if (count < 2) return 0;
+ if (name === 'pow') return Math.pow(a, values[start+1]);
+ if (name === 'atan2') return Math.atan2(a, values[start+1]);
+ let result = a; for (let i = 1; i < count; i++) result = name === 'min' ? Math.min(result, values[start+i]) : Math.max(result, values[start+i]);
  return result;
 }
 /** Iterative evaluation bounds stack growth for long left-associated sums.
@@ -203,6 +204,7 @@ function evaluate(root: Node): number {
  while (frames.length) {
   const frame = frames.pop()!, node = frame.node;
   if (node.kind === 'number') { values.push(node.value); continue; }
+  if(node.kind==='variable')throw new Error('Runtime variable used in scalar-only expression');
   if (!frame.expanded) {
    let children: Node[];
    if (node.kind === 'unary') children = [node.argument];
@@ -254,4 +256,55 @@ export function prepareDomainSourceScalar(raw: unknown, options: ScalarOptions):
  * string "1e3" falls back, and string "1/0" is a successful nonfinite result. */
 export function prepareDomainSourceObjectScalar(raw: unknown, options: ScalarOptions): DomainSourceScalarResult {
  return prepareScalar(raw, options, false);
+}
+
+export interface SourceRealExpression {
+ /** Executed nodes per evaluation. Callers include this in their work budget. */
+ readonly operations:number;
+ /** Synchronous evaluation uses a private bounded stack; it retains no input
+  * array. Variable slots can change between calls without reparsing formulas. */
+ evaluate(variables:ArrayLike<number>):number;
+}
+export type SourceRealExpressionResult={readonly ok:true;readonly value:SourceRealExpression}|
+ {readonly ok:false;readonly error:{readonly kind:'input';readonly reason:string}|{readonly kind:'capacity';readonly resource:string;readonly limit:number;readonly actual:number}};
+/** The same FastExpression grammar as scalar imports, with runtime variable
+ * slots as used by JsonSurfaceFunction/GenericDifferentialEquation. Repeated
+ * names intentionally use the last slot: source parameters may shadow u/v or
+ * built-in constants. Formula syntax errors are NOT scalar fallback zero. */
+export function prepareSourceRealExpression(raw:unknown,variableNames:readonly string[]):SourceRealExpressionResult {
+ try{
+  if(typeof raw!=='string'||!Array.isArray(variableNames)||variableNames.some(name=>typeof name!=='string'))return{ok:false,error:{kind:'input',reason:'Expected formula text and variable slot names'}};
+  if(raw.length>DOMAIN_SOURCE_SCALAR_LIMITS.characters)throw new Capacity('characters',raw.length);
+  const characters=variableNames.reduce((sum,name)=>sum+name.length,0);
+  if(characters>DOMAIN_SOURCE_SCALAR_LIMITS.characters)throw new Capacity('characters',characters);
+  if(variableNames.length>8194)return{ok:false,error:{kind:'capacity',resource:'variables',limit:8194,actual:variableNames.length}};
+  const root=javaTrim(raw)===''?{kind:'number',value:0} as const:new Parser(normalize(raw),undefined,new Map(variableNames.map((name,slot)=>[name,slot]))).parse();
+  type Instruction={node:Node;count:number};
+  const instructions:Instruction[]=[],pending:{node:Node;expanded:boolean}[]=[{node:root,expanded:false}];
+  while(pending.length){
+   const {node,expanded}=pending.pop()!;
+   if(node.kind==='number'||node.kind==='variable'){instructions.push({node,count:0});continue;}
+   const children=node.kind==='unary'?[node.argument]:node.kind==='binary'?[node.left,node.right]:node.args.slice(0,node.name==='min'||node.name==='max'?node.args.length:node.name==='pow'||node.name==='atan2'?2:1);
+   if(!children.length)invalid();
+   if(expanded){instructions.push({node,count:children.length});continue;}
+   pending.push({node,expanded:true});for(let i=children.length-1;i>=0;i--)pending.push({node:children[i],expanded:false});
+  }
+  const stack=new Float64Array(instructions.length),slots=variableNames.length;
+  return{ok:true,value:{operations:instructions.length,evaluate(variables){
+   if(!variables||variables.length!==slots)throw new Error('Source formula variable slot count differs from its compiled layout');
+   let top=0;
+   for(const {node,count} of instructions){
+    if(node.kind==='number'){stack[top++]=node.value;continue;}
+    if(node.kind==='variable'){stack[top++]=variables[node.slot];continue;}
+    const at=top-count,a=stack[at],b=stack[at+1];
+    stack[at]=node.kind==='unary'?(node.op==='-'?-a:a):node.kind==='call'?call(node.name,stack,at,count):node.op==='+'?a+b:node.op==='-'?a-b:node.op==='*'?a*b:node.op==='/'?a/b:node.op==='%'?a%b:Math.pow(a,b);
+    top=at+1;
+   }
+   return stack[0];
+  }}};
+ }catch(error){
+  if(error instanceof InvalidExpression)return{ok:false,error:{kind:'input',reason:'Invalid source formula'}};
+  if(error instanceof Capacity)return{ok:false,error:{kind:'capacity',resource:error.resource,limit:DOMAIN_SOURCE_SCALAR_LIMITS[error.resource],actual:error.actual}};
+  throw error;
+ }
 }

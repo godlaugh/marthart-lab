@@ -1,3 +1,4 @@
+import {parseProjectFile} from '../src/engine/legacyImport';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,it,expect} from 'vitest';
@@ -44,4 +45,9 @@ describe('ordinary source camera Timeline authoring boundaries',()=>{
  it('does not expose local camera fallback for a source marker on unsupported raster presentation',()=>{
   const scene=source('perlin');scene.settings.particleDisplay='accumulation';expect(supportsCameraComponent(scene,'theta')).toBe(false);expect(supportsCameraAction(scene,'rotateTheta')).toBe(false);expect(supportsParticleTracking(scene)).toBe(false);expect(html(scene)).toContain('role="alert"');
  });
+});
+
+it('offers only implemented clips for source CPU particle replay',()=>{
+ const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Source index',equations:{x:'u',y:'v',z:'0'},settings:{show_trails:false,u_segments:3,v_segments:5},timeline:[{type:'animate',duration:1,actions:[{method:'track',args:[7]}]}]})).scene;
+ const markup=html(scene),types=choices(markup);expect(types).not.toContain('value="param"');expect(types).not.toContain('value="surface_mode_transition"');expect(types).toContain('value="animate"');expect(supportsCameraAction(scene,'track')).toBe(true);
 });

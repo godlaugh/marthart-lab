@@ -1,4 +1,5 @@
 import {ordinarySourceViewport,ordinarySourceCameraInitial} from './engine/ordinarySourceCamera';
+import {usesSourceSurfaceParticles,prepareSourceSurfaceParticles} from './engine/sourceSurfaceParticles';
 import {OrdinarySourceCameraControls} from './components/OrdinarySourceCameraControls';
 import {version as appVersion} from '../package.json';
 import {TextPrompt,type TextPromptRequest} from "./components/TextPrompt";
@@ -264,7 +265,7 @@ export default function App() {
   }
   const rootsSessionId=useRef(crypto.randomUUID());
   function edit(next: SceneDocument) {
-    if(next.sourceCamera)try{ordinarySourceCameraInitial(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     history.current.push(sceneRef.current);
     if (history.current.length > 40) history.current.shift();
     future.current=[];

@@ -51,8 +51,8 @@ describe('original timeline Reader to real scene evaluator',()=>{
   expect(result.scene.timeline.tracks[0].actions![0].args).toEqual({phi:0,theta:Math.fround(Math.PI/2),gamma:Math.fround(Math.PI)});expect(at.evaluatedSourceCamera!.camera).toMatchObject({phi:0,theta:Math.fround(Math.PI/2),gamma:Math.fround(Math.PI)});expect(at.camera).toEqual(result.scene.camera);
   const twice=parse(surface([animate(1,[action('rotateTheta',1)]),animate(1,[action('rotateTheta',1)])]));twice.scene.timeline.fps=4;expect(sceneAtTime(twice.scene,1.75).evaluatedSourceCamera!.camera.theta).toBe(1);
  });
- it('rejects original dynamic tracking without a provider while retaining local indexed tracking beside zoom',()=>{
-  const raw=surface([animate(2,[action('track',174),action('zoom',4)])]);expect(()=>parse(raw)).toThrow('provider');
+ it('rejects unimplemented source tracking with trails while retaining local indexed tracking beside zoom',()=>{
+  const raw=surface([animate(2,[action('track',174),action('zoom',4)])]);expect(()=>parse(raw)).toThrow('曲面拖尾');
   const scene=local([localClip(0,2,[localAction('track',{index:174}),localAction('zoom',{value:4})])],raw);expect(scene.timeline.tracks[0].actions!.map(a=>a.method)).toEqual(['track','zoom']);expect(sceneAtTime(scene,2).camera.zoom).toBe(4);expect(scene.timeline.tracks[0].actions![0].args).toEqual({index:174});expect(scene.provenance!.original).toEqual(raw);
  });
  it('preserves skipped native disabled clips in source and editable local disabled clips in version-1 documents',()=>{
