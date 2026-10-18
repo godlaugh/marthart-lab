@@ -255,6 +255,8 @@ export interface GeometryOutput {
     requestedLatticeSamples: number; latticeSamples: number;
     latticeValidationSamples: number;
     rootEvaluations: number; refinedEdges: number; rejectedEdges: number;
+    /** Shared zero corners certified for the final extraction, excluding discarded GPU attempts. */
+    representedZeroCorners: number;
     unresolvedCells: number; degenerateTriangles: number;
     estimatedPeakWorkingBytes: number;
   };

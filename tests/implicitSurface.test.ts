@@ -24,7 +24,28 @@ describe('bounded implicit grid and root ownership',()=>{
  it.each([{f:'x*x+y*y+z*z-1.5^2',n:40,euler:2}])('owns near-zero corner identities without cracks at $n cells',({f,n,euler})=>{
   const out=generate(f,{resolution:n,minX:-2,maxX:2,minY:-2,maxY:2,minZ:-2,maxZ:2}),edges=edgeCounts(out);expect(new Set(edges.values())).toEqual(new Set([2]));expect(out.stats.generated-edges.size+out.indices!.length/3).toBe(euler);expect(out.implicit!.rejectedEdges).toBe(0);
  });
- it('records torus rounding/uncertified-edge topology limitations while retaining accurate vertices',()=>{const out=generate('(sqrt(x*x+y*y)-1)^2+z*z-.4^2',{resolution:40,minX:-2,maxX:2,minY:-2,maxY:2,minZ:-2,maxZ:2}),edges=edgeCounts(out);expect([...edges.values()].some(n=>n!==2)).toBe(true);expect(out.implicit!.degenerateTriangles).toBeGreaterThan(0);if(out.implicit!.rejectedEdges)expect(out.warnings?.join('')).toContain('候选边');for(let i=0;i<out.positions.length;i+=3){const[x,y,z]=out.positions.subarray(i,i+3);expect(Math.abs(Math.hypot(Math.hypot(x,y)-1,z)-.4)).toBeLessThan(1e-6);}});
+ it.each([40,80])('certifies shared represented corner zeros and closes the torus at %i cells',resolution=>{
+  const out=generate('(sqrt(x*x+y*y)-1)^2+z*z-.4^2',{resolution,minX:-2,maxX:2,minY:-2,maxY:2,minZ:-2,maxZ:2}),edges=edgeCounts(out);
+  expect(new Set(edges.values())).toEqual(new Set([2]));expect(out.stats.generated-edges.size+out.indices!.length/3).toBe(0);
+  expect(out.implicit).toMatchObject({rejectedEdges:0,unresolvedCells:0});expect(out.implicit!.representedZeroCorners).toBeGreaterThan(0);
+  for(let i=0;i<out.positions.length;i+=3){const[x,y,z]=out.positions.subarray(i,i+3);expect(Math.abs(Math.hypot(Math.hypot(x,y)-1,z)-.4)).toBeLessThan(1e-6);}
+ });
+ it('canonicalizes only a proven root inside the same Float32 output cell',()=>{
+  const within=generate('x-(1+2^-27)',{resolution:4,minX:0,maxX:2}),outside=generate('x-(1+2^-23)',{resolution:4,minX:0,maxX:2});
+  expect(within.implicit!.representedZeroCorners).toBeGreaterThan(0);expect(outside.implicit!.representedZeroCorners).toBe(0);
+  for(let i=0;i<within.positions.length;i+=3)expect(within.positions[i]).toBe(1);
+  for(let i=0;i<outside.positions.length;i+=3)expect(outside.positions[i]).toBe(1+2**-23);
+  // Fresh requests may reuse a grid but never a previous corner certificate.
+  const repeated=generate('x-(1+2^-27)',{resolution:4,minX:0,maxX:2});expect(repeated.positions).toEqual(within.positions);expect(repeated.indices).toEqual(within.indices);
+ });
+ it.each([1,1e-10])('does not capture a translated/scaled representable offset to the origin (scale %s)',scaleX=>{
+  const out=generate('x-(1+2^-27)',{resolution:4,minX:0,maxX:2,scaleX,offsetX:-scaleX});
+  expect(out.implicit!.representedZeroCorners).toBe(0);expect(out.stats.generated).toBeGreaterThan(0);
+  const expected=Math.fround((1+2**-27)*scaleX-scaleX);for(let i=0;i<out.positions.length;i+=3)expect(out.positions[i]).toBe(expected);
+ });
+ it.each(['x<1 ? -1e-20 : 1','1/(x-1)','(x+1e16)-1e16-.1'])('does not normalize an uncertified or undefined corner for %s',f=>{
+  const out=generate(f,{resolution:4,minX:0,maxX:2});expect(out.implicit!.representedZeroCorners).toBe(0);expect(out.stats.generated).toBe(0);
+ });
  it('uses input scale, not an absolute tolerance, for corner identity',()=>{
   const offset=generate('x-1e-10',{resolution:6});for(let i=0;i<offset.positions.length;i+=3)expect(Math.abs(offset.positions[i]/1e-10-1)).toBeLessThan(1e-6);
   const tiny=generate('x-1e-20',{resolution:6,minX:-1e-19,maxX:1e-19,minY:-1e-19,maxY:1e-19,minZ:-1e-19,maxZ:1e-19});expect(tiny.stats.generated).toBeGreaterThan(0);for(let i=0;i<tiny.positions.length;i+=3)expect(Math.abs(tiny.positions[i]/1e-20-1)).toBeLessThan(1e-6);
