@@ -1,0 +1,2026 @@
+{
+  "metadata": {
+    "evidenceKind": "Independent Python float32 derivation from retained classfile bytecode; no native JVM execution",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "classes": [
+      {
+        "entry": "mathart/surface/ParametricSurface.class",
+        "classSha256": "f845653098ac1a4112420b83cf258596be4569da66eabb0feaacc3020d0e5ceb",
+        "decodedEvidenceSha256": "c4d539dbd1d30d52c460f2497d9e01d9943309548f6d4b4e30a6f6c56fc86b4d"
+      },
+      {
+        "entry": "mathart/utils/ManimColors.class",
+        "classSha256": "a4da46f892de65a559dfc117164c79bb5a4a22988abc24772a1eb2af7edc286e",
+        "decodedEvidenceSha256": "a5dacdd6138ad2bc23288f932e79f3250e833b6215847ce36ac48a8bb32b6ed5"
+      },
+      {
+        "entry": "processing/core/PApplet.class",
+        "classSha256": "5e2413f11fbdd22e9e8b4a27ed2c260e9678fadf41984183796f98680ba9c35f",
+        "decodedEvidenceSha256": "d6b72831f71cce2b856f094e75b320f341f1eaeea6c7c3fbb28550e175ebcca5",
+        "artifact": "Processing core 4.5.0 (separate JAR)",
+        "artifactSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a"
+      },
+      {
+        "entry": "mathart/animation/gradient/GradientActionConfig$GradientMode.class",
+        "classSha256": "d8f339a97c2c32796b9ba2dff64e00cdede4ef29c8278fa17c781f9b52189202",
+        "decodedEvidenceSha256": "5f01d37bdd9b4f3dc2bf6c973041d7dcd299598cc8764d772e2a33f7b0a97e04"
+      }
+    ],
+    "methods": [
+      "mapGradientFrameToPaletteState",
+      "applyGradientState",
+      "sampleSurfaceGradientColor",
+      "sampleShiftedPalette",
+      "circularLerpUnit",
+      "circularUnitDistance",
+      "normalizedCircularDistance",
+      "softBlendFromGap",
+      "wrapUnit",
+      "quantizeTrailAgeKey",
+      "ManimColors.lerp",
+      "PApplet.sin/floor/lerp/constrain"
+    ],
+    "interpolation": "RGB; noncyclic palette segments directly use ManimColors.lerp regardless of runtime interpolation selection",
+    "precision": "Round every Java float instruction to IEEE binary32. PApplet.sin uses Python libm double sin then binary32; Java Math.sin implementation not executed.",
+    "nonFiniteEncoding": "null input plus nonFiniteInputs path tag; null does not mean Java zero",
+    "limitations": [
+      "No native JVM, application window, or framebuffer execution",
+      "Non-RGB lerp dispatch requires separate existing interpolation oracle; these samples use RGB",
+      "Temporal GradientRuntime production and draw order are outside this numerical foundation"
+    ]
+  },
+  "mapping": [
+    {
+      "name": "hue_rotate-zero",
+      "mode": "HUE_ROTATE",
+      "frame": {
+        "palette": 0.0,
+        "inside": 0.0,
+        "outside": 0.0
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.08999999612569809,
+        "blend": 0.09999999403953552
+      }
+    },
+    {
+      "name": "hue_rotate-quarter-gap",
+      "mode": "HUE_ROTATE",
+      "frame": {
+        "palette": 0.20000000298023224,
+        "inside": 0.125,
+        "outside": 0.375
+      },
+      "expected": {
+        "primary": 0.20000000298023224,
+        "secondary": 0.3199999928474426,
+        "blend": 0.14000000059604645
+      }
+    },
+    {
+      "name": "hue_rotate-half-gap",
+      "mode": "HUE_ROTATE",
+      "frame": {
+        "palette": 0.8999999761581421,
+        "inside": 0.0,
+        "outside": 0.5
+      },
+      "expected": {
+        "primary": 0.8999999761581421,
+        "secondary": 0.019999980926513672,
+        "blend": 0.14000000059604645
+      }
+    },
+    {
+      "name": "hue_rotate-wrap-gap",
+      "mode": "HUE_ROTATE",
+      "frame": {
+        "palette": -0.4000000059604645,
+        "inside": 0.9800000190734863,
+        "outside": 0.019999999552965164
+      },
+      "expected": {
+        "primary": -0.4000000059604645,
+        "secondary": 0.6899999976158142,
+        "blend": 0.09999999403953552
+      }
+    },
+    {
+      "name": "hue_rotate-negative-and-multiturn",
+      "mode": "HUE_ROTATE",
+      "frame": {
+        "palette": 2.299999952316284,
+        "inside": -1.2000000476837158,
+        "outside": 2.700000047683716
+      },
+      "expected": {
+        "primary": 2.299999952316284,
+        "secondary": 0.3599998950958252,
+        "blend": 0.05999999865889549
+      }
+    },
+    {
+      "name": "hue_rotate-same-wrapped",
+      "mode": "HUE_ROTATE",
+      "frame": {
+        "palette": 0.25,
+        "inside": -0.25,
+        "outside": 0.75
+      },
+      "expected": {
+        "primary": 0.25,
+        "secondary": 0.3700000047683716,
+        "blend": 0.14000000059604645
+      }
+    },
+    {
+      "name": "offset_cycle-zero",
+      "mode": "OFFSET_CYCLE",
+      "frame": {
+        "palette": 0.0,
+        "inside": 0.0,
+        "outside": 0.0
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.07999999821186066
+      }
+    },
+    {
+      "name": "offset_cycle-quarter-gap",
+      "mode": "OFFSET_CYCLE",
+      "frame": {
+        "palette": 0.20000000298023224,
+        "inside": 0.125,
+        "outside": 0.375
+      },
+      "expected": {
+        "primary": 0.125,
+        "secondary": 0.375,
+        "blend": 0.2199999988079071
+      }
+    },
+    {
+      "name": "offset_cycle-half-gap",
+      "mode": "OFFSET_CYCLE",
+      "frame": {
+        "palette": 0.8999999761581421,
+        "inside": 0.0,
+        "outside": 0.5
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.5,
+        "blend": 0.36000001430511475
+      }
+    },
+    {
+      "name": "offset_cycle-wrap-gap",
+      "mode": "OFFSET_CYCLE",
+      "frame": {
+        "palette": -0.4000000059604645,
+        "inside": 0.9800000190734863,
+        "outside": 0.019999999552965164
+      },
+      "expected": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 0.08508926630020142
+      }
+    },
+    {
+      "name": "offset_cycle-negative-and-multiturn",
+      "mode": "OFFSET_CYCLE",
+      "frame": {
+        "palette": 2.299999952316284,
+        "inside": -1.2000000476837158,
+        "outside": 2.700000047683716
+      },
+      "expected": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.700000047683716,
+        "blend": 0.1091199442744255
+      }
+    },
+    {
+      "name": "offset_cycle-same-wrapped",
+      "mode": "OFFSET_CYCLE",
+      "frame": {
+        "palette": 0.25,
+        "inside": -0.25,
+        "outside": 0.75
+      },
+      "expected": {
+        "primary": -0.25,
+        "secondary": 0.75,
+        "blend": 0.07999999821186066
+      }
+    },
+    {
+      "name": "cross_fade-zero",
+      "mode": "CROSS_FADE",
+      "frame": {
+        "palette": 0.0,
+        "inside": 0.0,
+        "outside": 0.0
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.19999998807907104
+      }
+    },
+    {
+      "name": "cross_fade-quarter-gap",
+      "mode": "CROSS_FADE",
+      "frame": {
+        "palette": 0.20000000298023224,
+        "inside": 0.125,
+        "outside": 0.375
+      },
+      "expected": {
+        "primary": 0.125,
+        "secondary": 0.375,
+        "blend": 0.4649999737739563
+      }
+    },
+    {
+      "name": "cross_fade-half-gap",
+      "mode": "CROSS_FADE",
+      "frame": {
+        "palette": 0.8999999761581421,
+        "inside": 0.0,
+        "outside": 0.5
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.5,
+        "blend": 0.6899999976158142
+      }
+    },
+    {
+      "name": "cross_fade-wrap-gap",
+      "mode": "CROSS_FADE",
+      "frame": {
+        "palette": -0.4000000059604645,
+        "inside": 0.9800000190734863,
+        "outside": 0.019999999552965164
+      },
+      "expected": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 0.20817917585372925
+      }
+    },
+    {
+      "name": "cross_fade-negative-and-multiturn",
+      "mode": "CROSS_FADE",
+      "frame": {
+        "palette": 2.299999952316284,
+        "inside": -1.2000000476837158,
+        "outside": 2.700000047683716
+      },
+      "expected": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.700000047683716,
+        "blend": 0.20679990947246552
+      }
+    },
+    {
+      "name": "cross_fade-same-wrapped",
+      "mode": "CROSS_FADE",
+      "frame": {
+        "palette": 0.25,
+        "inside": -0.25,
+        "outside": 0.75
+      },
+      "expected": {
+        "primary": -0.25,
+        "secondary": 0.75,
+        "blend": 0.23999999463558197
+      }
+    },
+    {
+      "name": "palette_morph-zero",
+      "mode": "PALETTE_MORPH",
+      "frame": {
+        "palette": 0.0,
+        "inside": 0.0,
+        "outside": 0.0
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.14499999582767487
+      }
+    },
+    {
+      "name": "palette_morph-quarter-gap",
+      "mode": "PALETTE_MORPH",
+      "frame": {
+        "palette": 0.20000000298023224,
+        "inside": 0.125,
+        "outside": 0.375
+      },
+      "expected": {
+        "primary": 0.20000000298023224,
+        "secondary": 0.375,
+        "blend": 0.3400000035762787
+      }
+    },
+    {
+      "name": "palette_morph-half-gap",
+      "mode": "PALETTE_MORPH",
+      "frame": {
+        "palette": 0.8999999761581421,
+        "inside": 0.0,
+        "outside": 0.5
+      },
+      "expected": {
+        "primary": 0.8999999761581421,
+        "secondary": 0.5,
+        "blend": 0.5099999904632568
+      }
+    },
+    {
+      "name": "palette_morph-wrap-gap",
+      "mode": "PALETTE_MORPH",
+      "frame": {
+        "palette": -0.4000000059604645,
+        "inside": 0.9800000190734863,
+        "outside": 0.019999999552965164
+      },
+      "expected": {
+        "primary": -0.4000000059604645,
+        "secondary": 0.019999999552965164,
+        "blend": 0.15117982029914856
+      }
+    },
+    {
+      "name": "palette_morph-negative-and-multiturn",
+      "mode": "PALETTE_MORPH",
+      "frame": {
+        "palette": 2.299999952316284,
+        "inside": -1.2000000476837158,
+        "outside": 2.700000047683716
+      },
+      "expected": {
+        "primary": 2.299999952316284,
+        "secondary": 2.700000047683716,
+        "blend": 0.15535993874073029
+      }
+    },
+    {
+      "name": "palette_morph-same-wrapped",
+      "mode": "PALETTE_MORPH",
+      "frame": {
+        "palette": 0.25,
+        "inside": -0.25,
+        "outside": 0.75
+      },
+      "expected": {
+        "primary": 0.25,
+        "secondary": 0.75,
+        "blend": 0.17000000178813934
+      }
+    }
+  ],
+  "smoothing": [
+    {
+      "name": "unchanged",
+      "previous": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "target": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "changed": false
+    },
+    {
+      "name": "standard-factors",
+      "previous": {
+        "primary": 0.10000000149011612,
+        "secondary": 0.30000001192092896,
+        "blend": 0.20000000298023224
+      },
+      "target": {
+        "primary": 0.4000000059604645,
+        "secondary": 0.5,
+        "blend": 0.800000011920929
+      },
+      "expected": {
+        "primary": 0.1599999964237213,
+        "secondary": 0.3400000035762787,
+        "blend": 0.30800002813339233
+      },
+      "changed": true
+    },
+    {
+      "name": "wrap-shortest-arcs",
+      "previous": {
+        "primary": 0.949999988079071,
+        "secondary": 0.05000000074505806,
+        "blend": 0.5
+      },
+      "target": {
+        "primary": 0.05000000074505806,
+        "secondary": 0.949999988079071,
+        "blend": 0.6000000238418579
+      },
+      "expected": {
+        "primary": 0.9699999690055847,
+        "secondary": 0.029999995604157448,
+        "blend": 0.5180000066757202
+      },
+      "changed": true
+    },
+    {
+      "name": "positive-half-tie",
+      "previous": {
+        "primary": 0.0,
+        "secondary": 0.25,
+        "blend": 0.0
+      },
+      "target": {
+        "primary": 0.5,
+        "secondary": 0.75,
+        "blend": 0.5
+      },
+      "expected": {
+        "primary": 0.10000000149011612,
+        "secondary": 0.3499999940395355,
+        "blend": 0.09000000357627869
+      },
+      "changed": true
+    },
+    {
+      "name": "negative-half-tie",
+      "previous": {
+        "primary": 0.5,
+        "secondary": 0.75,
+        "blend": 0.5
+      },
+      "target": {
+        "primary": 0.0,
+        "secondary": 0.25,
+        "blend": 0.0
+      },
+      "expected": {
+        "primary": 0.4000000059604645,
+        "secondary": 0.6499999761581421,
+        "blend": 0.4099999964237213
+      },
+      "changed": true
+    },
+    {
+      "name": "negative-multiturn",
+      "previous": {
+        "primary": 0.25,
+        "secondary": 0.800000011920929,
+        "blend": 0.20000000298023224
+      },
+      "target": {
+        "primary": -2.0999999046325684,
+        "secondary": 3.200000047683716,
+        "blend": 2.0
+      },
+      "expected": {
+        "primary": 0.18000000715255737,
+        "secondary": 0.8799999952316284,
+        "blend": 0.3440000116825104
+      },
+      "changed": true
+    },
+    {
+      "name": "blend-clamp-low",
+      "previous": {
+        "primary": 0.20000000298023224,
+        "secondary": 0.4000000059604645,
+        "blend": 0.800000011920929
+      },
+      "target": {
+        "primary": 0.20000000298023224,
+        "secondary": 0.4000000059604645,
+        "blend": -1.0
+      },
+      "expected": {
+        "primary": 0.20000000298023224,
+        "secondary": 0.4000000059604645,
+        "blend": 0.656000018119812
+      },
+      "changed": true
+    },
+    {
+      "name": "strict-epsilon-equal-no-write",
+      "previous": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "target": {
+        "primary": 0.0004999999655410647,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "expected": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "changed": false
+    },
+    {
+      "name": "strict-epsilon-next-float-write",
+      "previous": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "target": {
+        "primary": 0.0005000000237487257,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "expected": {
+        "primary": 0.00010000000474974513,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "changed": true
+    },
+    {
+      "name": "other-change-commits-subthreshold-primary",
+      "previous": {
+        "primary": 0.0,
+        "secondary": 0.0,
+        "blend": 0.0
+      },
+      "target": {
+        "primary": 0.0004999999655410647,
+        "secondary": 0.0,
+        "blend": 1.0
+      },
+      "expected": {
+        "primary": 9.999999747378752e-05,
+        "secondary": 0.0,
+        "blend": 0.18000000715255737
+      },
+      "changed": true
+    }
+  ],
+  "samples": [
+    {
+      "name": "hue_rotate-open-0",
+      "mode": "HUE_ROTATE",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1806598826
+    },
+    {
+      "name": "hue_rotate-open-1",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2578693250
+    },
+    {
+      "name": "hue_rotate-open-2",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1081287273
+    },
+    {
+      "name": "hue_rotate-open-3",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2006143832
+    },
+    {
+      "name": "hue_rotate-open-4",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1959531414
+    },
+    {
+      "name": "hue_rotate-open-5",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1351856061
+    },
+    {
+      "name": "hue_rotate-open-6",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2410047834
+    },
+    {
+      "name": "hue_rotate-open-7",
+      "mode": "HUE_ROTATE",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2578693250
+    },
+    {
+      "name": "hue_rotate-open-8",
+      "mode": "HUE_ROTATE",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2948448624
+    },
+    {
+      "name": "hue_rotate-cyclic-0",
+      "mode": "HUE_ROTATE",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1719694439
+    },
+    {
+      "name": "hue_rotate-cyclic-1",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 56658392
+    },
+    {
+      "name": "hue_rotate-cyclic-2",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1351556471
+    },
+    {
+      "name": "hue_rotate-cyclic-3",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2593360187
+    },
+    {
+      "name": "hue_rotate-cyclic-4",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2581608073
+    },
+    {
+      "name": "hue_rotate-cyclic-5",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 155279248
+    },
+    {
+      "name": "hue_rotate-cyclic-6",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1318541473
+    },
+    {
+      "name": "hue_rotate-cyclic-7",
+      "mode": "HUE_ROTATE",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 56658392
+    },
+    {
+      "name": "hue_rotate-cyclic-8",
+      "mode": "HUE_ROTATE",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 23697391
+    },
+    {
+      "name": "hue_rotate-singleton",
+      "mode": "HUE_ROTATE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": 0.23000000417232513,
+        "secondary": 0.7699999809265137,
+        "blend": 0.800000011920929
+      },
+      "cyclic": true,
+      "palette": [
+        2151710975
+      ],
+      "expected": 2151710975
+    },
+    {
+      "name": "offset_cycle-open-0",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2595989121
+    },
+    {
+      "name": "offset_cycle-open-1",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 3721771850
+    },
+    {
+      "name": "offset_cycle-open-2",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 743581528
+    },
+    {
+      "name": "offset_cycle-open-3",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2075473272
+    },
+    {
+      "name": "offset_cycle-open-4",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1301294469
+    },
+    {
+      "name": "offset_cycle-open-5",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1368633275
+    },
+    {
+      "name": "offset_cycle-open-6",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2882365029
+    },
+    {
+      "name": "offset_cycle-open-7",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 3721771850
+    },
+    {
+      "name": "offset_cycle-open-8",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 3166880612
+    },
+    {
+      "name": "offset_cycle-cyclic-0",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1266652827
+    },
+    {
+      "name": "offset_cycle-cyclic-1",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1217505730
+    },
+    {
+      "name": "offset_cycle-cyclic-2",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 912467041
+    },
+    {
+      "name": "offset_cycle-cyclic-3",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2730256732
+    },
+    {
+      "name": "offset_cycle-cyclic-4",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1571232903
+    },
+    {
+      "name": "offset_cycle-cyclic-5",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 138502033
+    },
+    {
+      "name": "offset_cycle-cyclic-6",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2445767308
+    },
+    {
+      "name": "offset_cycle-cyclic-7",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1217505730
+    },
+    {
+      "name": "offset_cycle-cyclic-8",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 24026617
+    },
+    {
+      "name": "offset_cycle-singleton",
+      "mode": "OFFSET_CYCLE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": 0.23000000417232513,
+        "secondary": 0.7699999809265137,
+        "blend": 0.800000011920929
+      },
+      "cyclic": true,
+      "palette": [
+        2151710975
+      ],
+      "expected": 2151710975
+    },
+    {
+      "name": "cross_fade-open-0",
+      "mode": "CROSS_FADE",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1520473525
+    },
+    {
+      "name": "cross_fade-open-1",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1957143711
+    },
+    {
+      "name": "cross_fade-open-2",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 878585182
+    },
+    {
+      "name": "cross_fade-open-3",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2192873110
+    },
+    {
+      "name": "cross_fade-open-4",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1655645838
+    },
+    {
+      "name": "cross_fade-open-5",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1671148205
+    },
+    {
+      "name": "cross_fade-open-6",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2343197022
+    },
+    {
+      "name": "cross_fade-open-7",
+      "mode": "CROSS_FADE",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2343807373
+    },
+    {
+      "name": "cross_fade-open-8",
+      "mode": "CROSS_FADE",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 3435775575
+    },
+    {
+      "name": "cross_fade-cyclic-0",
+      "mode": "CROSS_FADE",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1046702451
+    },
+    {
+      "name": "cross_fade-cyclic-1",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 341733039
+    },
+    {
+      "name": "cross_fade-cyclic-2",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1081352553
+    },
+    {
+      "name": "cross_fade-cyclic-3",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2038729304
+    },
+    {
+      "name": "cross_fade-cyclic-4",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1976572827
+    },
+    {
+      "name": "cross_fade-cyclic-5",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 122251683
+    },
+    {
+      "name": "cross_fade-cyclic-6",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1621772953
+    },
+    {
+      "name": "cross_fade-cyclic-7",
+      "mode": "CROSS_FADE",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 342392259
+    },
+    {
+      "name": "cross_fade-cyclic-8",
+      "mode": "CROSS_FADE",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 393781991
+    },
+    {
+      "name": "cross_fade-singleton",
+      "mode": "CROSS_FADE",
+      "coordinate": 0.5,
+      "state": {
+        "primary": 0.23000000417232513,
+        "secondary": 0.7699999809265137,
+        "blend": 0.800000011920929
+      },
+      "cyclic": true,
+      "palette": [
+        2151710975
+      ],
+      "expected": 2151710975
+    },
+    {
+      "name": "palette_morph-open-0",
+      "mode": "PALETTE_MORPH",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1352891838
+    },
+    {
+      "name": "palette_morph-open-1",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1436391098
+    },
+    {
+      "name": "palette_morph-open-2",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1486560125
+    },
+    {
+      "name": "palette_morph-open-3",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1989496667
+    },
+    {
+      "name": "palette_morph-open-4",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1554132873
+    },
+    {
+      "name": "palette_morph-open-5",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1116515528
+    },
+    {
+      "name": "palette_morph-open-6",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2243844486
+    },
+    {
+      "name": "palette_morph-open-7",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 3503206224
+    },
+    {
+      "name": "palette_morph-open-8",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": false,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 3116483175
+    },
+    {
+      "name": "palette_morph-cyclic-0",
+      "mode": "PALETTE_MORPH",
+      "coordinate": -0.25,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1618240084
+    },
+    {
+      "name": "palette_morph-cyclic-1",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 542661515
+    },
+    {
+      "name": "palette_morph-cyclic-2",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.125,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1875121298
+    },
+    {
+      "name": "palette_morph-cyclic-3",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.3333333432674408,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 2610333244
+    },
+    {
+      "name": "palette_morph-cyclic-4",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.5,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1706761880
+    },
+    {
+      "name": "palette_morph-cyclic-5",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.875,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 154883714
+    },
+    {
+      "name": "palette_morph-cyclic-6",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.9999999403953552,
+      "state": {
+        "primary": 0.17000000178813934,
+        "secondary": 0.6899999976158142,
+        "blend": 0.4300000071525574
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1454199475
+    },
+    {
+      "name": "palette_morph-cyclic-7",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 1.0,
+      "state": {
+        "primary": -1.2000000476837158,
+        "secondary": 2.3499999046325684,
+        "blend": -1.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 1016238798
+    },
+    {
+      "name": "palette_morph-cyclic-8",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 1.75,
+      "state": {
+        "primary": 0.9800000190734863,
+        "secondary": 0.019999999552965164,
+        "blend": 2.0
+      },
+      "cyclic": true,
+      "palette": [
+        270544960,
+        2162167968,
+        4292923440,
+        7381247
+      ],
+      "expected": 175020778
+    },
+    {
+      "name": "palette_morph-singleton",
+      "mode": "PALETTE_MORPH",
+      "coordinate": 0.5,
+      "state": {
+        "primary": 0.23000000417232513,
+        "secondary": 0.7699999809265137,
+        "blend": 0.800000011920929
+      },
+      "cyclic": true,
+      "palette": [
+        2151710975
+      ],
+      "expected": 2151710975
+    }
+  ],
+  "ages": [
+    {
+      "name": "zero",
+      "time": 0.0,
+      "recordTime": 0.0,
+      "expected": 0
+    },
+    {
+      "name": "positive",
+      "time": 1.0,
+      "recordTime": 0.25,
+      "expected": 90
+    },
+    {
+      "name": "future",
+      "time": 1.0,
+      "recordTime": 2.0,
+      "expected": 0
+    },
+    {
+      "name": "half-quantum",
+      "time": 0.004166666883975267,
+      "recordTime": 0.0,
+      "expected": 1
+    },
+    {
+      "name": "just-below-half",
+      "time": 0.004166665952652693,
+      "recordTime": 0.0,
+      "expected": 0
+    },
+    {
+      "name": "multiple-half",
+      "time": 0.02083333395421505,
+      "recordTime": 0.0,
+      "expected": 3
+    },
+    {
+      "name": "negative-clock",
+      "time": -2.0,
+      "recordTime": -3.0,
+      "expected": 120
+    },
+    {
+      "name": "saturating-int",
+      "time": 100000000.0,
+      "recordTime": 0.0,
+      "expected": 2147483647
+    },
+    {
+      "name": "nan-record",
+      "time": 1.0,
+      "recordTime": null,
+      "expected": -2147483648,
+      "nonFiniteInputs": {
+        "recordTime": "NaN"
+      }
+    },
+    {
+      "name": "infinite-record",
+      "time": 1.0,
+      "recordTime": null,
+      "expected": -2147483648,
+      "nonFiniteInputs": {
+        "recordTime": "Infinity"
+      }
+    },
+    {
+      "name": "nan-clock",
+      "time": null,
+      "recordTime": 0.0,
+      "expected": 0,
+      "nonFiniteInputs": {
+        "time": "NaN"
+      }
+    },
+    {
+      "name": "infinite-clock",
+      "time": null,
+      "recordTime": 0.0,
+      "expected": 0,
+      "nonFiniteInputs": {
+        "time": "Infinity"
+      }
+    }
+  ]
+}
