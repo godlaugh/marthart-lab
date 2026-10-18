@@ -736,5 +736,6 @@
   "保存的动作开关不控制源相机；请用片段开关控制执行，或删除动作。": "The saved action toggle does not control the source camera. Use the clip toggle or delete the action.",
   "绝对角度（保留，不执行）": "Absolute angle (retained, unsupported)",
   "此片段未接入源相机顺序队列；作者数据保留，可停用或删除。": "This clip is unsupported by the source camera sequence. Its data is retained; disable or delete it.",
-  "原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。": "The source camera replays at a fixed local frame rate. Native live timing and non-camera effects still need full comparison."
+  "原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。": "The source camera replays at a fixed local frame rate. Native live timing and non-camera effects still need full comparison.",
+  "渐变同时作用于曲面两侧；运行时循环采样色板并按记录年龄着色拖尾。停止保留最后的色板偏移；同片段动作按列表顺序执行。": "The gradient affects both sides of the surface. While running, it samples colors cyclically and colors trails by record age. Stop retains the final palette offset. Actions within a clip run in list order."
 }

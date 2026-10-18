@@ -19,4 +19,19 @@ describe('ordinary camera numeric provenance admission',()=>{
   expect(()=>parseSourceNumberTokens([token(['parameters','x'.repeat(40000)]),token(['parameters','y'.repeat(40000)])],'surface')).toThrow('参数名总文本');
   expect(()=>parseSourceNumberTokens([token(['camera','phi'],'1'.repeat(MAX_SOURCE_NUMBER_TOKEN_TEXT+1))],'surface')).toThrow('8 MiB');
  });
+ it('admits only the Surface-selected direct or first-object gradient payload',()=>{
+  const base=['timeline','0','actions','0','args'];
+  for(const path of [[...base,'speed'],[...base,'0','mode'],base])expect(parseSourceNumberTokens([token(path,'1e999')],'surface')).toEqual([token(path,'1e999')]);
+  for(const suffix of [['1','speed'],['00','speed'],['0','unknown'],['0','speed','nested']])expect(()=>parseSourceNumberTokens([token([...base,...suffix])],'surface')).toThrow('字段路径');
+  for(const family of ['implicit','attractor','perlin'] as const)expect(()=>parseSourceNumberTokens([token([...base,'speed'])],family)).toThrow('字段路径');
+  // Roots retains its distinct scan-for-first-object contract.
+  expect(parseSourceNumberTokens([token([...base,'2','speed'])],'roots')).toHaveLength(1);
+ });
+ it('rejects mixed selected payloads within one Surface action while preserving independent actions',()=>{
+  const first=token(['timeline','0','actions','0','args','speed']);
+  const mixed=token(['timeline','0','actions','0','args','0','mode']);
+  expect(()=>parseSourceNumberTokens([first,mixed],'surface')).toThrow('一个源渐变动作');
+  expect(parseSourceNumberTokens([first,{...mixed,path:['timeline','0','actions','1','args','0','mode']}],'surface')).toHaveLength(2);
+ });
+
 });

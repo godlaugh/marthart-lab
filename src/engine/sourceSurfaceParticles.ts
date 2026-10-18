@@ -1,4 +1,7 @@
-import {parseSourceSurfacePalette,prepareSourceSurfaceColors,type SourceSurfacePalette,type PreparedSourceSurfaceColors} from './sourceSurfaceColor';
+import {SourceGradientRuntime,type SourceGradientAction} from './sourceGradientRuntime';
+import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sourceSurfacePaletteTarget,smoothSourceSurfacePalette,type SourceSurfacePaletteState} from './sourceSurfaceGradient';
+import {createSourceSurfaceTrailGradient} from './sourceSurfaceTrailGradient';
+import {parseSourceSurfacePalette,prepareSourceSurfaceColors,refreshSourceSurfaceColors,type SourceSurfacePalette,type PreparedSourceSurfaceColors} from './sourceSurfaceColor';
 import type {SceneDocument} from '../types';
 import {prepareSourceRealExpression,parseDomainSourceFloat,type SourceRealExpression} from './domainSourceScalar';
 import type {OrdinarySourceCameraParticles,OrdinaryCameraTargetRequest,OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding} from './ordinarySourceCameraTimeline';
@@ -8,13 +11,13 @@ import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 /** Explicit version: existing local and ordinary-camera documents retain their
  * previous surface sampler until they opt into the source particle geometry. */
 export const SOURCE_SURFACE_CLIP_TYPES:readonly string[]=['wait','animate','align','trails'];
-export const SOURCE_SURFACE_CAMERA_METHODS:readonly string[]=['rotatePhi','rotateTheta','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','track','stopTracking'];
+export const SOURCE_SURFACE_ACTION_METHODS:readonly string[]=['rotatePhi','rotateTheta','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','track','stopTracking','gradientStart','gradientStop'];
 export const SOURCE_SURFACE_PARTICLES='mathart-1.7.8-points-v1';
 export const usesSourceSurfaceParticles=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='surface'&&scene.settings.surfaceGeometryVersion===SOURCE_SURFACE_PARTICLES;
 export function replaySourceSurface(scene:SceneDocument,time:number,coverage:'all'|'tracked',isCancelled?:()=>boolean){
  const initial=ordinarySourceCameraInitial(scene);if(!initial)throw new Error('原版曲面粒子需要对应的原版相机');
  const prepared=prepareSourceSurfaceParticles(scene);let particles:SourceSurfaceParticles|undefined;
- const frame=evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,time,{isCancelled,createParticles:()=>particles=prepared.create(coverage,isCancelled)});
+ const frame=evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,time,{isCancelled,gradientTarget:'surface',createParticles:()=>particles=prepared.create(coverage,isCancelled)});
  return{frame,particles:particles!};
 }
 const F=Math.fround,MAX_PARTICLES=512*512,MAX_WORK=20_000_000;
@@ -46,7 +49,7 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  if(s.scale!==1||['rotateX','rotateY','rotateZ'].some(key=>Number(s[key]??0)!==0))fail('unsupported','原版曲面粒子使用分轴 scale 与 offset，不执行本地整体缩放或物体旋转');
  for(const track of scene.timeline.tracks){
   if(!track.enabled)continue;
-  if(!SOURCE_SURFACE_CLIP_TYPES.includes(track.type??'')||track.actions?.some(a=>!SOURCE_SURFACE_CAMERA_METHODS.includes(a.method)))fail('unsupported','原版曲面粒子的参数/渐变或模式动画尚未接入，不能按本地时钟替代');
+  if(!SOURCE_SURFACE_CLIP_TYPES.includes(track.type??'')||track.actions?.some(a=>!SOURCE_SURFACE_ACTION_METHODS.includes(a.method)))fail('unsupported','原版曲面粒子的参数/模式动画尚未接入，不能按本地时钟替代');
  }
  const axis=(name:'U'|'V'):Axis=>{
   const prefix=name.toLowerCase(),count=s[prefix+'Segments'];
@@ -82,6 +85,9 @@ function edgeFade(factor:number,axis:Axis,value:number):number {
  * executes the identical particle recurrence, never a second analytic sampler.
  * All buffers are owned by this replay and snapshots are copied before transfer. */
 export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
+ private readonly gradient:SourceGradientRuntime;
+ private paletteState:SourceSurfacePaletteState=INITIAL_SOURCE_SURFACE_PALETTE_STATE;
+ private animationTime=0;
  private readonly color?:PreparedSourceSurfaceColors;
  private readonly pointAlphas?:Float32Array;
  private readonly state:Float32Array;
@@ -103,13 +109,26 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   // Camera-only queries never allocate full-grid color buffers.
   if(coverage==='all'){this.color=prepareSourceSurfaceColors(config.palette,config.u.count,config.v.count,config.u.periodic);this.pointAlphas=new Float32Array(capacity);}
   if(coverage==='all'&&config.trails.show&&config.trails.record)this.history=new SurfaceTrailHistory(config.count,config.trails.lifetime,config.trails.fade,this.color!.packed,()=>this.check());
+  this.gradient=new SourceGradientRuntime(()=>this.paletteState.primary,(frame,gradient)=>{
+   this.reserveWork(64);const next=smoothSourceSurfacePalette(this.paletteState,sourceSurfacePaletteTarget(frame,gradient.mode));
+   if(!next.changed)return;
+   this.paletteState=next.state;
+   if(this.color){
+    this.reserveWork(config.count*4+config.u.count*128);
+    refreshSourceSurfaceColors(this.color,config.u.count,config.v.count,this.paletteState,gradient.mode,gradient.interpolation,true,()=>this.check());
+    // Native refresh replaces baseCol AND col. The later particle update
+    // reapplies boundary fade; zero-dt animation callbacks still reset alpha.
+    for(let id=0;id<config.count;id++){if((id&1023)===0)this.check();this.pointAlphas![id]=(this.color.packed[id]>>>24)/255;}
+   }
+  });
   if(coverage==='all')for(let id=0;id<config.count;id++)this.ensure(id);
  }
  private check(){if(this.failed)throw this.failure;if(this.isCancelled?.())fail('cancelled','原版曲面粒子回放已取消');}
  private guarded<T>(operation:()=>T):T {
   try{this.check();return operation();}catch(error){this.failed=true;this.failure=error;throw error;}
  }
- private reserve(count=1){this.check();this.used+=count*(this.config.operations+24);if(this.used>MAX_WORK)fail('capacity','原版曲面粒子回放超过本地 2000 万工作单位预算');}
+ private reserve(count=1){this.reserveWork(count*(this.config.operations+24));}
+ private reserveWork(units:number){this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','原版曲面粒子回放超过本地 2000 万工作单位预算');}
  /** Shared expression/transform owner for heads and seam endpoints. Boundary
   * nonfinite results become source break records; invalid heads still reject. */
  private position(u:number,v:number,out:Float32Array,offset:number):boolean {
@@ -147,9 +166,12 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   if(enabled&&!this.history&&this.coverage==='all'&&this.config.trails.show)this.history=new SurfaceTrailHistory(this.config.count,this.config.trails.lifetime,this.config.trails.fade,this.color!.packed,()=>this.check());
   this.recording=enabled;
  });}
+ beginGradientActions(actions:readonly SourceGradientAction[]):void {this.guarded(()=>this.gradient.begin(actions));}
+ interpolateGradientActions(eased:number,finished:boolean):void {this.guarded(()=>this.gradient.interpolate(eased,finished));}
  update(frame:OrdinaryCameraParticleFrame):void {this.guarded(()=>{
   this.check();if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
   this.lastFrame=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
+  this.animationTime=F(frame.time);this.gradient.update(dt);
   this.reserve(this.ids.length);
   const u=this.config.u,v=this.config.v,time=F(frame.time);
   for(let slot=0;slot<this.ids.length;slot++){
@@ -185,21 +207,24 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  });}
  snapshot():{positions:Float32Array;particleIds:Uint32Array;colors:Float32Array;pointAlphas:Float32Array;diagnostics:string[];workUnits:number;trails?:SourceSurfaceTrails} {return this.guarded(()=>{
   if(this.coverage!=='all')fail('input','稀疏相机查询不能伪装成完整曲面输出');
-  return{positions:this.positions.slice(),colors:this.color!.colors.slice(),pointAlphas:this.pointAlphas!.slice(),diagnostics:[...this.color!.diagnostics],particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(this.history?{trails:this.history.snapshot()}: {})};
+  const dynamic=this.history&&this.gradient.running?createSourceSurfaceTrailGradient({palette:this.color!.palette,runtime:this.gradient,time:this.animationTime,numU:this.config.u.count,numV:this.config.v.count,reserve:units=>this.reserveWork(units)}):undefined;
+  const trails=this.history?.snapshot(dynamic);
+  return{positions:this.positions.slice(),colors:this.color!.colors.slice(),pointAlphas:this.pointAlphas!.slice(),diagnostics:[...this.color!.diagnostics],particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(trails?{trails}: {})};
  });}
 }
 
 
 export interface SourceSurfaceTrails {
- readonly positions:Float32Array;readonly alphas:Float32Array;readonly indices:Uint32Array;
+ readonly positions:Float32Array;readonly colors:Float32Array;readonly alphas:Float32Array;readonly indices:Uint32Array;
  readonly particleIds:Uint32Array;readonly records:number;readonly oldestTime:number;
 }
 const TRAIL_RECORDS=1_000_000,TRAIL_BLOCK=4096;
 /** Source Dot3D FIFO semantics with pooled typed storage. Native per-dot
  * retention is preserved; lazy blocks replace thousands of mostly empty arrays.
  * The 1M aggregate record bound includes NaN separators and precedes allocation.
- * Known storage: <=20MB pool + 12 bytes/particle metadata, <=28MB snapshot;
- * downstream color and renderer instance buffers have their own owner budgets. */
+ * Known storage: <=20MB pool + 12 bytes/particle metadata, <=40MB snapshot;
+ * renderer instance buffers have their own owner budgets. Colors are now
+ * produced here; scene consumers must not reconstruct them from current heads. */
 class SurfaceTrailHistory {
  private readonly heads:Uint32Array;private readonly tails:Uint32Array;private readonly counts:Uint32Array;
  private readonly blocks:{values:Float32Array;next:Uint32Array}[]=[];
@@ -235,33 +260,47 @@ class SurfaceTrailHistory {
  expire(slot:number,time:number){
   while(this.heads[slot]){const id=this.heads[slot];if(!(F(time-this.block(id).values[this.index(id)*4+3])>this.lifetime))break;this.remove(slot);}
  }
- snapshot():SourceSurfaceTrails {
+ snapshot(dynamicColor?:(particleId:number,recordTime:number,baseColor:number)=>number):SourceSurfaceTrails {
   let vertices=0,segments=0,oldestTime=Infinity;
   const finite=(data:Float32Array,i:number)=>Number.isFinite(data[i])&&Number.isFinite(data[i+1])&&Number.isFinite(data[i+2]);
   for(let slot=0;slot<this.heads.length;slot++){
-   if((slot&255)===0)this.check();let previous=false;
+   if((slot&255)===0)this.check();let previous=false,visited=0;
    for(let id=this.heads[slot];id;id=this.next(id)){
+    if((visited++&1023)===0)this.check();
     const data=this.block(id).values,i=this.index(id)*4,valid=finite(data,i);oldestTime=Math.min(oldestTime,data[i+3]);
     if(valid){vertices++;if(previous)segments++;}previous=valid;
    }
   }
   // Both counts are bounded by retained records. Finite points are compacted
   // only after edge identity and original ordinal fade are known.
-  const positions=new Float32Array(vertices*3),alphas=new Float32Array(vertices),particleIds=new Uint32Array(vertices),indices=new Uint32Array(segments*2);
+  const positions=new Float32Array(vertices*3),colors=new Float32Array(vertices*3),alphas=new Float32Array(vertices),particleIds=new Uint32Array(vertices),indices=new Uint32Array(segments*2);
+  const writeColor=(vertex:number,color:number)=>{colors[vertex*3]=((color>>>16)&255)/255;colors[vertex*3+1]=((color>>>8)&255)/255;colors[vertex*3+2]=(color&255)/255;};
   let vertex=0,edge=0;
   for(let slot=0;slot<this.heads.length;slot++){
-   if((slot&255)===0)this.check();let previous=-1,ordinal=0;const denominator=Math.max(1,this.counts[slot]-1);
+   if((slot&255)===0)this.check();let previous=-1,ordinal=0,previousTime=0,previousColor=0,hasPreviousColor=false;const denominator=Math.max(1,this.counts[slot]-1);
    for(let id=this.heads[slot];id;id=this.next(id),ordinal++){
-    const data=this.block(id).values,i=this.index(id)*4;if(!finite(data,i)){previous=-1;continue;}
+    if((ordinal&1023)===0)this.check();
+    const data=this.block(id).values,i=this.index(id)*4;if(!finite(data,i)){previous=-1;hasPreviousColor=false;continue;}
     positions[vertex*3]=data[i];positions[vertex*3+1]=data[i+1];positions[vertex*3+2]=data[i+2];particleIds[vertex]=slot;
     // PGraphics RGB/255: source stroke(alpha) normalizes and packs to an 8-bit
     // channel before its GL vertex consumer. Separators count in the denominator.
-    const baseAlpha=(this.packed[slot]>>>24)||255; // Native trail fallback for zero alpha.
+    const baseAlpha=dynamicColor?255:(this.packed[slot]>>>24)||255; // Native trail fallback for zero alpha.
     const stroke=this.fade?F(baseAlpha*F(ordinal/denominator)):baseAlpha;
     alphas[vertex]=F(Math.trunc(F(255*F(stroke/255)))/255);
-    if(previous>=0){indices[edge++]=previous;indices[edge++]=vertex;}previous=vertex++;
+    writeColor(vertex,this.packed[slot]);
+    if(previous>=0){
+     if(dynamicColor){
+      // Only drawn segment endpoints enter native age/color caches. A
+      // contiguous segment reuses the preceding endpoint's sampled color.
+      if(!hasPreviousColor)previousColor=dynamicColor(slot,previousTime,this.packed[slot]);
+      writeColor(previous,previousColor);previousColor=dynamicColor(slot,data[i+3],this.packed[slot]);
+      writeColor(vertex,previousColor);hasPreviousColor=true;
+     }
+     indices[edge++]=previous;indices[edge++]=vertex;
+    }
+    previous=vertex++;previousTime=data[i+3];
    }
   }
-  return{positions,alphas,indices,particleIds,records:this.total,oldestTime:Number.isFinite(oldestTime)?oldestTime:0};
+  return{positions,colors,alphas,indices,particleIds,records:this.total,oldestTime:Number.isFinite(oldestTime)?oldestTime:0};
  }
 }

@@ -1,3 +1,5 @@
+import {parseSourceSurfaceGradientConfiguration} from './sourceSurfaceGradientConfig';
+import type {SourceGradientAction} from './sourceGradientRuntime';
 import type {AnimationAction,AnimationTrack} from '../types';
 import {resolveSourceCamera,SOURCE_CAMERA_MODEL,type SourceCameraScalars,type SourceCameraVec3} from './sourceCamera';
 import {RootsSceneClock,type RootsSceneClip,type RootsSceneFrame} from './rootsSceneClock';
@@ -38,9 +40,13 @@ export interface OrdinarySourceCameraParticles {
  /** Source InstantAction executes before this frame's Mobject update. It
   * changes recording only; history lifetime/display remain producer-owned. */
  setRecordingTrails?(enabled:boolean):void;
+ beginGradientActions?(actions:readonly SourceGradientAction[]):void;
+ interpolateGradientActions?(eased:number,finished:boolean):void;
 }
 export interface OrdinarySourceCameraTimelineOptions {
  readonly isCancelled?:()=>boolean;
+ /** Explicit producer contract; other scene gradients keep their own clocks. */
+ readonly gradientTarget?:'surface';
  /** Fresh, synchronous, in-memory producer state per replay. No scalar cache
   * may borrow its identity or history. CPU/GPU trajectory ownership belongs to
   * the producer; local orbit samplers are not native particle implementations. */
@@ -55,7 +61,7 @@ type Axis='phi'|'theta'|'gamma';
 type Targets=Partial<Record<Axis,number>>;
 type Tracking={readonly kind:'origin'}|Extract<OrdinaryCameraTargetBinding,{kind:'bound'}>;
 type TrackingAction={readonly kind:'origin'}|{readonly kind:'bind';readonly request:OrdinaryCameraTargetRequest};
-interface Clip extends RootsSceneClip {readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];readonly recordingTrails?:boolean;}
+interface Clip extends RootsSceneClip {readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];readonly recordingTrails?:boolean;readonly surfaceGradientActions?:readonly SourceGradientAction[];}
 interface Plan {initial:SourceCameraScalars;clips:Clip[];diagnostics:OrdinaryCameraDiagnostic[];fps:number;dt:number;}
 const F=Math.fround,axes=['phi','theta','gamma'] as const,TAU=F(2*Math.PI),names=new Set(SOURCE_EASING_NAMES);
 const WORK_LIMIT=2_000_000; // Bounded synchronous frames plus remaining-queue folds, as the existing source clock.
@@ -64,7 +70,7 @@ const finite=(v:number):number=>{if(!Number.isFinite(v))throw new OrdinarySource
 const lerp=(a:number,b:number,t:number)=>finite(F(a+F(F(b-a)*t)));
 const check=(options:OrdinarySourceCameraTimelineOptions)=>{if(options.isCancelled?.())throw new OrdinarySourceCameraTimelineError('cancelled','源相机回放已取消');};
 const noncameraMethods=new Set(['paramStart','paramStop','gradientStart','gradientStop']);
-function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number):Plan {
+function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,gradientTarget?:'surface'):Plan {
  if(!initial||typeof initial!=='object'||['phi','theta','gamma','center','zoom','focalDistance'].some(key=>!Object.hasOwn(initial,key)))throw new OrdinarySourceCameraTimelineError('input','源相机初始标量必须完整');
  const validated=resolveSourceCamera({model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:initial});
  if(!validated.ok||validated.value.kind!=='known')throw new OrdinarySourceCameraTimelineError('input','源相机初始标量无效');
@@ -92,7 +98,7 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
    const targets:Targets={};for(const axis of axes)if(track.orientation?.[axis]!==undefined)targets[axis]=float(track.orientation[axis],`align ${axis}`);clip.align=targets;
   }else if(track.type==='animate'){
    if(track.actions!==undefined&&(!Array.isArray(track.actions)||track.actions.length>64))throw new OrdinarySourceCameraTimelineError('capacity','源相机片段最多 64 个动作',track.id);
-   const targets:Targets={},trackingActions:TrackingAction[]=[];
+   const targets:Targets={},trackingActions:TrackingAction[]=[],surfaceGradientActions:SourceGradientAction[]=[];
    for(const [actionIndex,action] of (track.actions??[]).entries()){
     if(!action||typeof action!=='object')throw new OrdinarySourceCameraTimelineError('input','源相机动作无效',track.id);
     if(action.enabled===false)warn(track,'action-enabled','源 CameraAnimator 不读取动作级 enabled；片段开关控制整个片段。');
@@ -109,11 +115,14 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
     // it does not freeze the current local orbit center.
     else if(action.method==='stopTracking')trackingActions.push({kind:'origin'});
     else if(action.method==='track')trackingActions.push({kind:'bind',request:{action:structuredClone(action),trackId:track.id,actionIndex}});
+    else if(gradientTarget==='surface'&&action.method==='gradientStart')surfaceGradientActions.push({kind:'start',config:parseSourceSurfaceGradientConfiguration(action.gradient)});
+    else if(gradientTarget==='surface'&&action.method==='gradientStop')surfaceGradientActions.push({kind:'stop'});
     else if(noncameraMethods.has(action.method))warn(track,'noncamera-clock',`${action.method} 仍由独立生产 owner 执行；其 native 参数/渐变帧时钟未在相机合同中验证。`);
     else throw new OrdinarySourceCameraTimelineError('unsupported',`源相机不能解释动作 ${action.method}；需原始编译事实`,track.id);
    }
    if(Object.keys(targets).length)clip.targets=targets;
    if(trackingActions.length)clip.trackingActions=trackingActions;
+   if(surfaceGradientActions.length)clip.surfaceGradientActions=surfaceGradientActions;
   }else if(track.type!=='wait'){
    if(track.type==='param'||track.type==='surface_mode_transition')warn(track,'noncamera-clock',`${track.type} 的时长保留为队列占位；非相机效果仍由独立 owner 执行，其 native 帧时钟未验证。`);
    else throw new OrdinarySourceCameraTimelineError('unsupported',`片段 ${track.type??'numeric'} 的原始队列时长未解析，不能假设为本地 duration`,track.id);
@@ -151,8 +160,8 @@ function bindTracking(plan:Plan,particles:OrdinarySourceCameraParticles|undefine
 const replays=new Map<string,Replay>();
 type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
 const layouts=new Map<string,Layout>();
-function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number):string|undefined {
- const key=JSON.stringify([initial,tracks,fps],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
+function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,gradientTarget?:'surface'):string|undefined {
+ const key=JSON.stringify([initial,tracks,fps,gradientTarget],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
  return key.length<=1_000_000?key:undefined;
 }
 /** Four latest pure scalar sessions, one state each. Provider-backed particle
@@ -163,15 +172,16 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
  check(options);
  if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
  const target=targetFrame(time,fps),reserve=budget();
- const key=options.createParticles?undefined:inputKey(initial,tracks,fps);
+ const key=options.createParticles?undefined:inputKey(initial,tracks,fps,options.gradientTarget);
  let state=key===undefined?undefined:replays.get(key);
  if(state&&state.frameIndex>target)state=undefined;
  if(!state){
-  const plan=prepare(initial,tracks,fps);
+  const plan=prepare(initial,tracks,fps,options.gradientTarget);
   if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
   const particles=options.createParticles?.();
   if(options.createParticles&&(!particles||typeof particles.bind!=='function'||typeof particles.update!=='function'))throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者缺少构建或逐帧更新入口');
   if(plan.clips.some(c=>c.instant)&&typeof particles?.setRecordingTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源拖尾片段需要支持录制开关的粒子生产者');
+  if(plan.clips.some(c=>c.surfaceGradientActions?.length)&&(typeof particles?.beginGradientActions!=='function'||typeof particles?.interpolateGradientActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源曲面渐变需要支持完整生命周期的粒子生产者');
   const clipTracking=bindTracking(plan,particles,options);
   // Only queue/zoom belong to the reused clock. Feeding it rates would evolve
   // a hidden angle history without MoveCamera resets and can falsely overflow.
@@ -188,15 +198,18 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
    check(options);reserve(replay.facts.queueIndex,plan.clips.length);
    const before=replay.facts,index=before.queueIndex,clip=plan.clips[index],tracking=replay.clipTracking[index],camera=replay.camera;
    const facts=replay.facts=clock.step(plan.dt,{isCancelled:options.isCancelled});
+   let gradientEased:number|undefined;
    if(clip?.instant){
     if(facts.startedClip!==null){check(options);replay.particles!.setRecordingTrails!(clip.recordingTrails!);}
    }else if(clip){
     if(facts.startedClip!==null){
+     if(options.gradientTarget)replay.particles?.beginGradientActions?.(clip.surfaceGradientActions??[]);
      replay.start=copy(camera);replay.targets={...clip.targets};replay.startRates=[...replay.rates];
      if(clip.align)for(const axis of axes)if(clip.align[axis]!==undefined)replay.targets[axis]=finite(F(F(F(F(Math.floor(F(camera[axis]/TAU)))+1)*TAU)+clip.align[axis]!));
      if(tracking)replay.tracking=undefined;
     }
     const runtime=F((facts.startedClip!==null?0:before.clipRuntime)+facts.activeDt),eased=sourceEase(clip.easing,Math.max(0,Math.min(1,F(runtime/clip.duration))));
+    gradientEased=eased;
     for(const axis of axes)if(replay.targets[axis]!==undefined)camera[axis]=lerp(replay.start[axis],replay.targets[axis]!,eased);
     if(clip.focal!==undefined)camera.focalDistance=lerp(replay.start.focalDistance,clip.focal,eased);
     if(clip.rates)replay.rates=clip.rates.map((value,i)=>lerp(replay.startRates[i],value,eased)) as [number,number,number];
@@ -204,6 +217,7 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
     if(clip.rates&&facts.finishedClip!==null)replay.rates=[...clip.rates];
     if(tracking){const to=point(tracking);camera.center=to.map((v,i)=>lerp(replay.start.center[i],v,eased)) as [number,number,number];if(facts.finishedClip!==null)replay.tracking=tracking;}
    }
+   if(gradientEased!==undefined&&options.gradientTarget)replay.particles?.interpolateGradientActions?.(gradientEased,facts.finishedClip!==null);
    camera.zoom=facts.camera.zoom;
    // Scene.update PC132/183/225: animation, then Mobject, then camera. The
    // queue's final frame still updates Mobject; later frames skip it entirely.
@@ -220,10 +234,10 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
 }
 /** Display layout facts only. Never feed rounded display durations back into
  * the source clock: the retained source float duration remains authoritative. */
-export function resolveOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:Pick<OrdinarySourceCameraTimelineOptions,'isCancelled'>={}) {
- check(options);const key=inputKey(initial,tracks,fps),cached=key===undefined?undefined:layouts.get(key);
+export function resolveOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:Pick<OrdinarySourceCameraTimelineOptions,'isCancelled'|'gradientTarget'>={}) {
+ check(options);const key=inputKey(initial,tracks,fps,options.gradientTarget),cached=key===undefined?undefined:layouts.get(key);
  if(cached){layouts.delete(key!);layouts.set(key!,cached);return structuredClone(cached);}
- const plan=prepare(initial,tracks,fps),clock=new RootsSceneClock(plan.initial,plan.clips.map(c=>({duration:c.duration,easing:'linear',...(c.instant?{instant:true as const}:{})}))),reserve=budget();
+ const plan=prepare(initial,tracks,fps,options.gradientTarget),clock=new RootsSceneClock(plan.initial,plan.clips.map(c=>({duration:c.duration,easing:'linear',...(c.instant?{instant:true as const}:{})}))),reserve=budget();
  let facts=clock.snapshot(),frame=0;const starts:number[]=[],durations:number[]=[];
  while(!facts.queueComplete){check(options);reserve(facts.queueIndex,plan.clips.length);facts=clock.step(plan.dt,{isCancelled:options.isCancelled});if(facts.startedClip!==null)starts[facts.startedClip]=frame/fps;if(facts.finishedClip!==null)durations[facts.finishedClip]=(frame+1)/fps-starts[facts.finishedClip];frame++;}
  const layout:Layout={schedule:ORDINARY_CAMERA_SEQUENCE,span:frame/fps,clips:plan.clips.map((c,i)=>({trackId:c.trackId,start:starts[i],duration:durations[i],sourceDuration:c.duration})),diagnostics:plan.diagnostics};

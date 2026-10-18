@@ -1,3 +1,5 @@
+import {usesSourceSurfaceParticles} from './sourceSurfaceParticles';
+import {SOURCE_SURFACE_GRADIENT_DEFAULT} from './sourceSurfaceGradientConfig';
 import type {GradientAnimation,SceneDocument} from '../types';
 import {validatePalette} from './palette';
 import {parseDomainColorVersion} from './domainSourceColor';
@@ -12,10 +14,10 @@ export function supportsGradientOffsets(scene:Pick<SceneDocument,'kind'|'setting
  * Omitted legacy gradient models still mean the local palette; only newly
  * authored source-color actions receive the source offset default. */
 export function gradientAnimationCapabilities(scene:Pick<SceneDocument,'kind'|'settings'>){
- const sourceRoots=scene.kind==='roots'&&usesRootsSourceDensity(scene.settings),sourceFractal=usesFractalSourceColor(scene),localPalette=!sourceRoots&&!sourceFractal&&(scene.kind!=='domain'||parseDomainColorVersion(scene.settings.domainColorVersion)==='local-v1');
- const defaultAnimation:GradientAnimation=localPalette||sourceRoots?{mode:'offset_cycle',speed:.1,interpolation:'rgb'}:{model:'offsets',mode:'hue_rotate',speed:60,interpolation:'oklab',affectInside:true,affectOutside:true};
- return{localPalette,offsets:supportsGradientOffsets(scene),defaultAnimation,paletteOffsetTarget:sourceRoots?'settings.rootSourcePaletteOffset':sourceFractal?'fractalColor.paletteOffset':localPalette?'palette.offset':'settings.paletteOffset',
-  retainedPaletteWarning:localPalette?undefined:sourceRoots?'复根源密度不消费本地色板动画；相关片段保留时间安排，可用数值动画修改原版复根色板偏移。':sourceFractal?'原版分形着色使用独立色板；本地色板动画保留，请使用内部与外部偏移动画。':'当前源着色不消费本地色板动画或 palette.offset / palette.cycles；相关动画已保留，但不会执行。请改用域偏移与循环采样。'};
+ const sourceSurface=usesSourceSurfaceParticles(scene),sourceRoots=scene.kind==='roots'&&usesRootsSourceDensity(scene.settings),sourceFractal=usesFractalSourceColor(scene),localPalette=!sourceSurface&&!sourceRoots&&!sourceFractal&&(scene.kind!=='domain'||parseDomainColorVersion(scene.settings.domainColorVersion)==='local-v1');
+ const defaultAnimation:GradientAnimation=sourceSurface?{...SOURCE_SURFACE_GRADIENT_DEFAULT}:localPalette||sourceRoots?{mode:'offset_cycle',speed:.1,interpolation:'rgb'}:{model:'offsets',mode:'hue_rotate',speed:60,interpolation:'oklab',affectInside:true,affectOutside:true};
+ return{localPalette,offsets:sourceSurface||supportsGradientOffsets(scene),defaultAnimation,paletteOffsetTarget:sourceRoots?'settings.rootSourcePaletteOffset':sourceFractal?'fractalColor.paletteOffset':localPalette?'palette.offset':'settings.paletteOffset',
+  retainedPaletteWarning:localPalette?undefined:sourceSurface?'原版曲面使用独立色板与渐变时间线；本地色板动画不参与执行。':sourceRoots?'复根源密度不消费本地色板动画；相关片段保留时间安排，可用数值动画修改原版复根色板偏移。':sourceFractal?'原版分形着色使用独立色板；本地色板动画保留，请使用内部与外部偏移动画。':'当前源着色不消费本地色板动画或 palette.offset / palette.cycles；相关动画已保留，但不会执行。请改用域偏移与循环采样。'};
 }
 export function isLocalPaletteAnimationTarget(target:string):boolean{return target==='palette.offset'||target==='palette.cycles';}
 export function validateGradientConfig(config:GradientAnimation):void{

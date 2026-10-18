@@ -1,3 +1,4 @@
+import {SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS} from './sourceSurfaceGradientConfig';
 import type {SceneDocument} from '../types';
 import {ROOTS_BATCH_SIZE_SOURCE_PATHS,ROOTS_PRESENTATION_INTEGER_PATHS,ROOTS_PRESENTATION_SCALAR_PATHS} from './rootsSourceFields';
 import {ROOTS_GRADIENT_SOURCE_FIELDS,rootsGradientSourcePayload} from './rootsGradientConfig';
@@ -26,7 +27,7 @@ const maxTimelineClips=1000,maxTimelineActions=64,maxCameraArgs=3;
 // expanded persisted size; this bound only limits registered record counts.
 const maxTimelineFields=maxTimelineClips*(1+maxTimelineActions*(maxCameraArgs+ROOTS_GRADIENT_SOURCE_FIELDS.length));
 const index=(raw:unknown,limit:number)=>typeof raw==='string'&&/^(?:0|[1-9][0-9]*)$/.test(raw)&&Number(raw)<limit;
-const gradientField=(raw:unknown)=>typeof raw==='string'&&(ROOTS_GRADIENT_SOURCE_FIELDS as readonly string[]).includes(raw);
+const gradientField=(raw:unknown,fields:readonly string[]=ROOTS_GRADIENT_SOURCE_FIELDS)=>typeof raw==='string'&&fields.includes(raw);
 function timelineField(path:readonly unknown[]):boolean {
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(
   path.length===3&&path[2]==='duration'||
@@ -61,10 +62,11 @@ const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SO
 // Every retained token requires at least one source JSON value node. Clip and
 // action bounds also constrain slots; taking the smaller bound does not grant
 // extra source capacity merely because paths repeat in persisted provenance.
-const ordinaryMaximum=Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+maxTimelineClips*(4+maxTimelineActions*maxCameraArgs));
+const ordinaryMaximum=Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length)));
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
  if(family==='surface'&&path.length===2&&path[0]==='settings'&&SOURCE_SURFACE_NUMBER_FIELDS.some(key=>key===path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
+ if(family==='surface'&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
 }
 /** Global resolution, Roots presentation/timeline slots and ordinary camera,
@@ -83,7 +85,7 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
   const {path,token}=value as {path?:unknown;token?:unknown};
   const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):ordinary&&ordinaryField(path,sceneKind)?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效');
-  if(roots&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1])){
+  if((roots||sceneKind==='surface')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
    const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify(path.slice(0,-1)),previous=gradientPayloads.get(action);
    if(previous!==undefined&&previous!==payload)throw new Error('一个源渐变动作只能保留首个对象的数字词法');
    gradientPayloads.set(action,payload);

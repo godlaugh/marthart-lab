@@ -1,12 +1,13 @@
+import type {DomainSourceInterpolation} from './domainSourcePalette';
 import {sourceConfigPackedColor,SourceConfigColorError,SOURCE_COLOR_TEXT_BUDGET} from './sourceConfigColor';
-import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sampleSourceSurfaceGradient} from './sourceSurfaceGradient';
+import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sampleSourceSurfaceGradient,type SourceSurfacePaletteState,type SourceSurfaceGradientMode} from './sourceSurfaceGradient';
 
 /** ManimColors.DEFAULT_PALETTE, MathArt 1.7.8. Keep authored color text until
  * preparation: ConfigUtils recovers invalid strings as white, not on import. */
 export const DEFAULT_SOURCE_SURFACE_COLORS=Object.freeze(['#FC6255','#FF862F','#FFCD62','#83C167','#58C4DD','#9A72AC']);
 export const MAX_SOURCE_SURFACE_COLORS=65_536;
 export interface SourceSurfacePalette {colors:string[];}
-export interface PreparedSourceSurfaceColors {packed:Uint32Array;colors:Float32Array;diagnostics:string[];}
+export interface PreparedSourceSurfaceColors {readonly palette:PreparedSourceSurfacePalette;packed:Uint32Array;colors:Float32Array;diagnostics:string[];}
 export interface PreparedSourceSurfacePalette {readonly packed:readonly number[];readonly diagnostics:readonly string[];}
 const F=Math.fround;
 
@@ -44,18 +45,23 @@ export function prepareSourceSurfacePalette(input:SourceSurfacePalette|undefined
 export function prepareSourceSurfaceColors(input:SourceSurfacePalette|undefined,numU:number,numV:number,cyclic:boolean):PreparedSourceSurfaceColors {
  for(const size of [numU,numV])if(!Number.isInteger(size)||size<1||size>512)throw new Error('原版曲面颜色网格每轴必须为 1 至 512 的整数');
  if(typeof cyclic!=='boolean')throw new Error('原版曲面颜色周期标记必须是布尔值');
- const palette=prepareSourceSurfacePalette(input),rows=new Uint32Array(numU);
- for(let i=0;i<numU;i++){
-  const coordinate=numU===1?0:F(i/Math.max(1,numU-1));
-  rows[i]=sampleSourceSurfaceGradient(palette.packed,coordinate,INITIAL_SOURCE_SURFACE_PALETTE_STATE,'hue_rotate','rgb',cyclic);
+ const palette=prepareSourceSurfacePalette(input),packed=new Uint32Array(numU*numV),colors=new Float32Array(packed.length*3);
+ const prepared={palette,packed,colors,diagnostics:[...palette.diagnostics]};
+ refreshSourceSurfaceColors(prepared,numU,numV,INITIAL_SOURCE_SURFACE_PALETTE_STATE,'hue_rotate','rgb',cyclic);
+ return prepared;
+}
+
+/** One row sampler owns static and live head colors, including cyclic seam
+ * replacement. Target state and callback scheduling belong to the particle owner. */
+export function refreshSourceSurfaceColors(prepared:PreparedSourceSurfaceColors,numU:number,numV:number,state:SourceSurfacePaletteState,mode:SourceSurfaceGradientMode,interpolation:DomainSourceInterpolation,cyclic:boolean,check?:()=>void):void {
+ const {palette,packed,colors}=prepared;let first=0;
+ for(let row=0;row<numU;row++){
+  check?.();
+  const color=cyclic&&row===numU-1&&numU>1?first:sampleSourceSurfaceGradient(palette.packed,F(row/Math.max(1,numU-1)),state,mode,interpolation,cyclic);
+  if(row===0)first=color;
+  for(let column=0;column<numV;column++){
+   const id=row*numV+column;packed[id]=color;
+   colors[id*3]=((color>>>16)&255)/255;colors[id*3+1]=((color>>>8)&255)/255;colors[id*3+2]=(color&255)/255;
+  }
  }
- // Source CPU getCyclicPaletteSmoothingPasses() returns zero; the explicit
- // endpoint replacement still runs, even though wrapped sampling matches it.
- if(cyclic&&numU>1)rows[numU-1]=rows[0];
- const packed=new Uint32Array(numU*numV),colors=new Float32Array(packed.length*3);
- for(let id=0;id<packed.length;id++){
-  const color=rows[Math.floor(id/numV)];packed[id]=color;
-  colors[id*3]=((color>>>16)&255)/255;colors[id*3+1]=((color>>>8)&255)/255;colors[id*3+2]=(color&255)/255;
- }
- return{packed,colors,diagnostics:[...palette.diagnostics]};
 }

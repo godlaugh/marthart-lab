@@ -1,3 +1,4 @@
+import {sourceGradientFrame,sourceGradientWrap as wrap} from './sourceGradientRuntime';
 import {SOURCE_EASING_NAMES,sourceEase} from './sourceEasing';
 import {parseRootsGradientConfiguration,RootsGradientConfigurationError} from './rootsGradientConfig';
 import type {RootsGradientConfiguration} from './rootsGradientConfig';
@@ -90,39 +91,11 @@ function copy(state:State):State {
     ...(state.gradient?{gradient:{...state.gradient,phases:[]}}:{})};
 }
 
-// GradientRuntimeState uses double arithmetic. Do not replace remainder with
-// n-floor(n): Java drem and JS % retain negative zero. The source also wraps
-// again inside shapeUnit, and OFFSET_CYCLE wraps before calling shapeUnit.
-const wrap=(value:number):number=>{const remainder=value%1;return remainder<0?remainder+1:remainder;};
-function shapeUnit(value:number,interpolation:RootsGradientConfiguration['interpolation']):number {
-  const u=wrap(value);
-  if(interpolation==='linear')return u;
-  if(u<=0)return 0;
-  if(u>=1)return 1;
-  return interpolation==='oklch'?((u*u)*u)*(u*(u*6-15)+10):(u*u)*(3-2*u);
-}
-const wave=(progress:number,frequency:number,phase:number)=>Math.sin((progress*frequency+phase)*6.283185307179586);
+// Common double frame arithmetic; Roots owns its F32 target mapping and
+// active/raw update phases, separately from Surface's per-application smoothing.
 function applyGradientFrame(gradient:GradientState):void {
   const config=gradient.config!;
-  const progress=gradient.progress;
-  let palette=gradient.base,inside=gradient.base,outside=gradient.base;
-  const shaped=shapeUnit(config.mode==='offset_cycle'?wrap(progress):progress,config.interpolation);
-  if(config.mode==='hue_rotate')palette=gradient.base+shaped;
-  else if(config.mode==='offset_cycle'){
-    const displacement=wave(progress,.5,0)*.05;
-    inside=(gradient.base+shaped)+displacement;
-    outside=(gradient.base+shaped)-displacement*.5;
-  }else if(config.mode==='cross_fade'){
-    const displacement=(.5+.5*wave(progress,1,.25))*.08;
-    inside=(gradient.base+shaped)-displacement;
-    outside=(gradient.base+shaped)+displacement;
-    palette=gradient.base+shaped;
-  }else{
-    const displacement=wave(progress,.75,.35)*.06;
-    inside=(gradient.base+shaped)-displacement;
-    outside=(gradient.base+shaped)+displacement;
-    palette=gradient.base+shaped;
-  }
+  const {palette,inside,outside}=sourceGradientFrame(gradient.base,config,gradient.progress);
   // ComplexRootsMobject.applyGradientFrame performs both d2f conversions,
   // then fadd/fmul. Nonfinite candidates are ignored, not a clock failure.
   const candidate=config.mode==='offset_cycle'||config.mode==='cross_fade'?F(.5*F(F(inside)+F(outside))):F(palette);

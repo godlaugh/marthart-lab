@@ -75,11 +75,11 @@ describe('original timeline Reader to real scene evaluator',()=>{
  });
  it('preserves local gradient start/stop endpoints and rejects unsupported independent-side import flags',()=>{
   const scene=local([localClip(0,0,[localAction('gradientStart',{}, {gradient:{mode:'offset_cycle',speed:.2,interpolation:'rgb'}})]),localClip(0,2,[],{type:'wait'}),localClip(2,0,[localAction('gradientStop')]),localClip(2,2,[],{type:'wait'})]);expect(sceneAtTime(scene,1).palette.offset).toBeCloseTo(.2);expect(sceneAtTime(scene,4).palette.offset).toBeCloseTo(.4);
-  const raw=surface([animate(1,[action('gradientStart',{mode:'OFFSET_CYCLE',speed:.2,affectInside:false})])]),limited=parse(raw);expect(limited.scene.timeline.tracks[0].actions).toEqual([]);expect(limited.warnings.join()).toContain('仅内部');expect(limited.source).toEqual(raw);
+  const raw=surface([animate(1,[action('gradientStart',{mode:'OFFSET_CYCLE',speed:.2,affectInside:false})])]),limited=parse(raw);expect(limited.scene.timeline.tracks[0].actions![0].gradient).toMatchObject({model:'offsets',affectInside:true,affectOutside:true});expect(limited.warnings.join()).toContain('固定同时作用于两侧');expect(limited.source).toEqual(raw);
  });
  it('keeps all four saved local gradient algorithms and labels native import limitations',()=>{
   for(const mode of ['offset_cycle','hue_rotate','palette_morph','cross_fade'] as const){const gradient:GradientAnimation={mode,speed:.3,interpolation:'oklab'},scene=local([localClip(0,0,[localAction('gradientStart',{}, {gradient})]),localClip(0,3,[],{type:'wait'})]);expect(sceneAtTime(scene,1).palette).not.toEqual(scene.palette);
-   const result=parse(surface([animate(1,[action('gradientStart',{mode:mode.toUpperCase(),speed:.3,interpolation:'OKLAB'})]),wait(3)]));expect(result.warnings.join()).toContain('独立实现');expect(result.scene.timeline.tracks[0].actions![0].gradient?.mode).toBe(mode);
+   const result=parse(surface([animate(1,[action('gradientStart',{mode:mode.toUpperCase(),speed:.3,interpolation:'OKLAB'})]),wait(3)]));expect(result.scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-points-v1');expect(result.scene.timeline.tracks[0].actions![0].gradient).toMatchObject({model:'offsets',mode,speed:.3,interpolation:'oklab'});
   }
  });
  it('keeps saved local trails and mesh blending while refusing unresolved native instant-child timing',()=>{

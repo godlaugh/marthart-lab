@@ -1,3 +1,4 @@
+import {parseSourceSurfaceGradientConfiguration} from './sourceSurfaceGradientConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {usesSourceSurfaceParticles,replaySourceSurface} from './sourceSurfaceParticles';
 import {evaluateOrdinarySourceCameraTimeline,resolveOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
@@ -164,7 +165,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
-  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps);const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
+  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{gradientTarget:usesSourceSurfaceParticles(scene)?'surface':undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
   if(usesRootsCameraTimeline(scene))return resolveRootsCameraTimeline(scene);
   if(scene.timeline.schedule==='roots-camera-sequence-v1'||scene.timeline.schedule==='roots-scene-sequence-v1')return {...scene.timeline,schedule:undefined};
   if(usesSpirographFrameClock(scene))return interactiveSpirographFrames.timeline(scene);
@@ -397,7 +398,7 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
   return{...p,...(edge?{edgeEasing:edge}:{})};
  });
 }
-export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule']):void{
+export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceSurface=false):void{
  if(track.spirographWait!==undefined&&(track.spirographWait!=='visual-or-deadline-v1'||track.type!=='spirograph_finish_wait'||sceneKind!==undefined&&sceneKind!=='spirograph'))throw new Error('旋轮完成等待规则无效');
  if(track.gradient!==undefined)validateGradientConfig(track.gradient);
  if(track.alignMode!==undefined&&!['absolute','next-turn'].includes(track.alignMode))throw new Error('未知相机对齐模式');
@@ -408,6 +409,7 @@ export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:Scene
   // Authored full-scene configuration has one contract even while its clip is
   // disabled. Camera-only markers retain the older generic validation rules.
   if(sceneKind==='roots'&&schedule==='roots-scene-sequence-v1'&&action.method==='gradientStart')parseRootsGradientConfiguration(action.gradient);
+  else if(sourceSurface&&action.method==='gradientStart')parseSourceSurfaceGradientConfiguration(action.gradient);
   else validateGradientConfig(action.gradient);
  }}}
 }
@@ -415,7 +417,7 @@ function validateTrack(track: AnimationTrack, scene: SceneDocument) {
   if (!Number.isFinite(track.start) || track.start < 0) throw new Error('片段起点必须是非负有限数值');
   if (!CLIP_TYPES.some(item => item.type === (track.type ?? 'numeric'))) throw new Error(`未知片段类型 ${track.type}`);
   if (track.actions && (!Array.isArray(track.actions) || track.actions.length > 64)) throw new Error('单片段最多64个动作');
-  validateTimelineExtensions(track,scene.kind,scene.timeline.schedule);clipProgress(track, track.start, clipDuration(track, scene));
+  validateTimelineExtensions(track,scene.kind,scene.timeline.schedule,usesSourceSurfaceParticles(scene));clipProgress(track, track.start, clipDuration(track, scene));
 }
 
 type TimelineEvaluator = (position: number, base: SceneDocument) => SceneDocument;
@@ -626,6 +628,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
     if (!ACTIONS.some(([name]) => name === item.method)) throw new Error(`未知动画动作 ${item.method}`);
     if(item.domainParameters)return; // The group registry owner handles these together.
     const baseline = evaluate(track.start), initial = angles(baseline), method = item.method;
+    if(usesSourceSurfaceParticles(scene)&&(method==='gradientStart'||method==='gradientStop'))return;
     if (method === 'gradientStart') { gradient(track, item.gradient ?? { mode: 'offset_cycle', speed: .1, interpolation: 'rgb' }); return; }
     if (method === 'gradientStop') { stop('gradient', track); return; }
     if (method === 'paramStart') { oscillators(track, item.parameters ?? [], true,sourceStartup); return; }
@@ -770,7 +773,9 @@ export function createAnimationTrack(scene: SceneDocument, type: AnimationClipTy
     return {id:crypto.randomUUID(),type,target:type==='wait'?'timeline.wait':'camera.actions',from:0,to:0,start:0,duration:1,easing:'sine-in-out',pingPong:false,enabled:true,repeat:1,...(type==='animate'?{actions:[{id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:0,thetaSpeed:.2,gammaSpeed:0}}]}:{})};
   }
   const target = genericParameterTargets(scene).find(target=>rootMathAnimationTargetEnabled(scene,target)) ?? gradientAnimationCapabilities(scene).paletteOffsetTarget;
-  const from = readAnimationValue(scene, target), duration = Math.min(3, Math.max(.1, resolveTimeline(scene).duration - start));
+  // Only numeric/parameter clips consume a scalar source. Action, wait and
+  // recording clips must not require an unrelated palette offset to exist.
+  const from = type==='numeric'||type==='param'?readAnimationValue(scene,target):0, duration = Math.min(3, Math.max(.1, resolveTimeline(scene).duration - start));
   const track: AnimationTrack = { id: crypto.randomUUID(), type, target, from, to: from + 1, start, duration, easing: 'sine-in-out', pingPong: false, enabled: true, repeat: 1, label: CLIP_TYPES.find(item => item.type === type)?.label };
   if (type === 'animate') { const method=supportsCameraAction(scene,'rotateTheta')?'rotateTheta':scene.kind==='fractal'?'fractalRotate':scene.kind==='domain'?'domainRotate':scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)!=='local-v1'?'spirographRotate':gradientAnimationCapabilities(scene).localPalette||gradientAnimationCapabilities(scene).offsets?'gradientStart':'paramStart';track.target = 'camera.actions'; track.actions = [{ id: crypto.randomUUID(), method, args: method==='rotateTheta'?{ angle: Math.PI / 2 }:method==='gradientStart'||method==='paramStart'?{}:{speed:.2}, enabled: true }]; }
   if (type === 'align') { track.target = 'camera.orientation'; track.orientation = supportsCameraActions(scene)?{theta:0,phi:0,gamma:0}:{theta:0}; track.alignMode='next-turn'; }

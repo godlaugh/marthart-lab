@@ -59,7 +59,7 @@ describe('source CPU surface through public import, document and geometry',()=>{
  });
  it('does not mix local parameter or gradient animation with source particle replay',()=>{
   const s=scene();s.timeline.tracks[0].actions!.push({id:'p',method:'paramStart',args:{}});
-  expect(()=>prepareSourceSurfaceParticles(s)).toThrow('参数/渐变');
+  expect(()=>prepareSourceSurfaceParticles(s)).toThrow('参数/模式');
  });
 });
 
