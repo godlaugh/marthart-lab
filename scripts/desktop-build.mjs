@@ -11,7 +11,7 @@ const staging=await mkdtemp(path.join(root,'.cache','desktop-stage-')),out=path.
 await mkdir(out,{recursive:true});await writeFile(path.join(out,'.gitignore'),'*\n');
 try{
  await mkdir(path.join(staging,'desktop'));await mkdir(path.join(staging,'server'));
- for(const file of ['main.mjs','host.mjs','preload.cjs','storage.mjs','preferences.mjs','smoke.mjs'])await cp(path.join(root,'desktop',file),path.join(staging,'desktop',file));
+ for(const file of ['main.mjs','host.mjs','preload.cjs','storage.mjs','preferences.mjs','graphics.mjs','smoke.mjs'])await cp(path.join(root,'desktop',file),path.join(staging,'desktop',file));
  await cp(path.join(root,'server/index.mjs'),path.join(staging,'server/index.mjs'));
  await cp(path.join(root,'dist'),path.join(staging,'dist'),{recursive:true});
  await writeFile(path.join(staging,'package.json'),JSON.stringify({name:manifest.name,productName:'MathArt Lab',version:manifest.version,private:true,type:'module',main:'desktop/main.mjs'},null,2));

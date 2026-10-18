@@ -6,12 +6,14 @@ import {randomUUID} from 'node:crypto';
 import {createDesktopHost,findFFmpeg} from './host.mjs';
 import {createWorkspaceStore,STORAGE_KEYS} from './storage.mjs';
 import {createDesktopPreferences} from './preferences.mjs';
+import {configureDesktopGraphics} from './graphics.mjs';
 const directory=path.dirname(fileURLToPath(import.meta.url)),name='MathArt Lab';
 app.setName(name);
 const smokeReport=app.commandLine.getSwitchValue('mathart-smoke-report');
 const workspaceDirectory=app.commandLine.getSwitchValue('mathart-user-data');
 app.setPath('userData',workspaceDirectory?path.resolve(workspaceDirectory):path.join(app.getPath('appData'),name));
 app.commandLine.appendSwitch('disable-background-networking');
+configureDesktopGraphics(app.commandLine);
 let host,store,preferences,activeFFmpeg,ffmpegWarning='',window,closing=false,finished=false,report,exitCode=0;
 const downloads=new Set();
 function trusted(event){return window&&!window.isDestroyed()&&event.sender===window.webContents&&event.senderFrame?.url.startsWith(host.origin+'/');}
@@ -75,7 +77,7 @@ async function start(){try{
  console.log(`MathArt desktop ready: ${host.origin}`);
  if(smokeReport){
   const {runSmoke}=await import('./smoke.mjs');report=await runSmoke({window,host,userData,phase:app.commandLine.getSwitchValue('mathart-smoke-phase')||'initial'});
-  report.version={electron:process.versions.electron,chrome:process.versions.chrome,node:process.versions.node};await shutdown();
+  report.version={electron:process.versions.electron,chrome:process.versions.chrome,node:process.versions.node};report.graphics={enabledAngleFeatures:app.commandLine.getSwitchValue('enable-angle-features'),disabledAngleFeatures:app.commandLine.getSwitchValue('disable-angle-features')};await shutdown();
  }
 }catch(error){exitCode=1;console.error(error);if(smokeReport){report={status:'failed',error:error.stack,origin:host?.origin,port:host?.port,apiPort:host?.apiPort};}else dialog.showErrorBox(name+' 启动失败',error.message);await shutdown();}}
 if(app.requestSingleInstanceLock())void start();else{finished=true;app.exit(0);}
