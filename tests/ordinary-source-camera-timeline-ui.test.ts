@@ -49,5 +49,5 @@ describe('ordinary source camera Timeline authoring boundaries',()=>{
 
 it('offers only implemented clips for source CPU particle replay',()=>{
  const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Source index',equations:{x:'u',y:'v',z:'0'},settings:{show_trails:false,u_segments:3,v_segments:5},timeline:[{type:'animate',duration:1,actions:[{method:'track',args:[7]}]}]})).scene;
- const markup=html(scene),types=choices(markup);expect(types).not.toContain('value="param"');expect(types).not.toContain('value="surface_mode_transition"');expect(types).toContain('value="animate"');expect(types).toContain('value="trails"');expect(supportsCameraAction(scene,'track')).toBe(true);
+ const markup=html(scene),types=choices(markup);expect(types).toContain('value="param"');expect(types).not.toContain('value="surface_mode_transition"');expect(types).toContain('value="animate"');expect(types).toContain('value="trails"');expect(supportsCameraAction(scene,'track')).toBe(true);
 });

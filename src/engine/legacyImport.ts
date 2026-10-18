@@ -1,3 +1,5 @@
+import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceSurfaceParameterEdge,SOURCE_SURFACE_PARAMETER_EDGE_DEFAULT,type SourceSurfaceParameterResult} from './sourceSurfaceParameterConfig';
+import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
 import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type SourceSurfaceGradientImportFacts} from './sourceSurfaceGradientConfig';
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
 import {FRACTAL_SOURCE_COLOR_PROFILE,prepareFractalSourceColorImport} from './fractalSourceColor';
@@ -923,17 +925,26 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  settings.trailLifetime=Math.fround(r.domainDouble(['settings','trail_lifetime'],4));
  settings.trailWidth=Math.fround(r.domainDouble(['settings','line_weight'],1));
  settings.recordTrails=true; // Native constructor records even when display is hidden; no JSON record_trails read.
- r.warnings.push('曲面跟踪与拖尾片段使用源 CPU 点状态、半开参数域和原版索引；拖尾按源断点、容量及顺序渐隐；参数动画、GPU/网格跟踪仍待接入，调色与完整原版画面尚未验收。');
+ r.warnings.push('曲面动画使用源 CPU 点状态、半开参数域和原版索引；参数注册表、渐变和拖尾按源规则回放；GPU/网格尚未接入，完整原版画面尚未验收。');
 }
 /** Eager source setupTimeline dispatch. Preserve every native queue duration;
  * known but unimplemented animation children fail rather than become local
  * mathjs actions or silently disappear. Unknown native actions make Wait via
  * CameraAnimator.build when no camera child was constructed. */
-interface OrdinaryTimelineAction {path:string[];method:string;raw:unknown;surfaceGradient?:SourceSurfaceGradientImportFacts;}
-interface OrdinaryTimelineClip {path:string[];originalType:string;type:string;actions:OrdinaryTimelineAction[];}
+interface OrdinaryTimelineAction {path:string[];method:string;raw:unknown;surfaceGradient?:SourceSurfaceGradientImportFacts;surfaceParameters?:SourceSurfaceParameterAction[];}
+interface OrdinaryTimelineClip {path:string[];originalType:string;type:string;actions:OrdinaryTimelineAction[];surfaceParameterClip?:SourceSurfaceParameterClip;}
 /** Parse structural dispatch once. Geometry selection and queue compilation use
  * the same enabled clips/actions; disabled source clips are never inspected. */
-function ordinaryTimelineStructure(r:Reader,surface=false):OrdinaryTimelineClip[] {
+function surfaceParameterImport<T>(r:Reader,prefix:readonly string[],result:SourceSurfaceParameterResult<{configuration:T;consumedPaths:string[][];numericPaths:string[][];diagnostics:string[]}>):T {
+ if(!result.ok)return fail(`${pathLabel([...prefix,...result.error.path])} 曲面源参数 ${result.error.kind}: ${result.error.reason}`);
+ for(const path of result.value.consumedPaths)r.use([...prefix,...path]);
+ for(const path of result.value.numericPaths)r.retainNumberToken([...prefix,...path]);
+ for(const diagnostic of result.value.diagnostics)r.warnings.push(`${pathLabel(prefix)}: ${diagnostic}`);
+ return result.value.configuration;
+}
+function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:OrdinarySourceScalarScope):OrdinaryTimelineClip[] {
+ let edgeDefaults:OscillationEdgeEasing={...SOURCE_SURFACE_PARAMETER_EDGE_DEFAULT};
+ if(surface&&r.has(['settings','param_edge_easing']))edgeDefaults=surfaceParameterImport(r,['settings','param_edge_easing'],importSourceSurfaceParameterEdge(r.peek(['settings','param_edge_easing'])));
  const clips=r.peek(['timeline']);if(clips===undefined)return[];
  if(!Array.isArray(clips)||clips.length>1000)fail('timeline 应为最多 1000 段的数组');
  if(!clips.length)r.use(['timeline']);
@@ -950,20 +961,30 @@ function ordinaryTimelineStructure(r:Reader,surface=false):OrdinaryTimelineClip[
     for(let j=0;j<raw.length;j++){
      const actionPath=[...path,'actions',String(j)];r.object(actionPath);
      const method=r.str([...actionPath,'method'],true)!,args=r.peek([...actionPath,'args']);
-     actions.push({path:actionPath,method,raw:args,...(surface&&method==='gradientStart'?{surfaceGradient:importSourceSurfaceGradient(args)}:{})});
+     // JsonSurfaceConfig.setupTimeline first obtains an array/object argument.
+     // Its null guard skips the whole action before any child builder runs.
+     if(surface&&!Array.isArray(args)&&!isObject(args)){
+      r.retainNumberToken([...actionPath,'args']);
+      if(r.has([...actionPath,'args']))r.acknowledge([...actionPath,'args'],'原版曲面仅分派数组或对象参数，跳过此动作');
+      r.warnings.push(`${pathLabel(actionPath)} ${method}：原版曲面未取得数组或对象参数，跳过此动作；片段时长和原值保留。`);
+      continue;
+     }
+     const surfaceParameters=surface&&(method==='paramStart'||method==='paramStop')?surfaceParameterImport(r,[...actionPath,'args'],importSourceSurfaceParameterAction(method,args,{scope:parameterScope!,memberOrder:path=>r.sourceKeys([...actionPath,'args',...path]),edgeDefaults})):undefined;
+     actions.push({path:actionPath,method,raw:args,...(surface&&method==='gradientStart'?{surfaceGradient:importSourceSurfaceGradient(args)}:{}),...(surfaceParameters?{surfaceParameters}:{})});
     }
    }
   }
-  result.push({path,originalType,type,actions});
+  const surfaceParameterClip=surface&&type==='param'?surfaceParameterImport(r,[...path,'parameters'],importSourceSurfaceParameterClip(r.peek([...path,'parameters']),{scope:parameterScope!,memberOrder:relative=>r.sourceKeys([...path,'parameters',...relative])})):undefined;
+  result.push({path,originalType,type,actions,...(surfaceParameterClip?{surfaceParameterClip}:{})});
  }
  return result;
 }
-function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope,structure=ordinaryTimelineStructure(r,s.kind==='surface')):void {
+function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope,structure=ordinaryTimelineStructure(r,s.kind==='surface',scope)):void {
  s.timeline={...s.timeline,schedule:ORDINARY_CAMERA_SEQUENCE,tracks:[]};let total=0;
  const field=(path:readonly string[],fallback:number)=>{
   r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
  };
- for(const {path,originalType,type,actions:sourceActions} of structure){
+ for(const {path,originalType,type,actions:sourceActions,surfaceParameterClip} of structure){
   if(type==='trails'&&usesSourceSurfaceParticles(s)){
    // JsonSurfaceConfig constructs InstantAction directly: duration/easing are
    // not read, even when malformed. Preserve them in source, never parse/clamp.
@@ -982,23 +1003,23 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
   }
   const duration=field([...path,'duration'],1);
   if(duration<=0||duration>86400)fail(`${pathLabel(path)}.duration 原版值 ${duration} 超出本地源相机队列支持的 (0,86400]；不会替换或丢时长`);
-  let easing='sine-in-out';if(type==='animate'||type==='align'){
+  let easing='sine-in-out';if(type==='animate'||type==='align'||type==='param'&&s.kind==='surface'){
    const raw=r.use([...path,'easing']),mapped=lookupSourceEasing(raw);easing=mapped??'sine-in-out';
    if(raw!=null&&!mapped)r.warnings.push(`${pathLabel(path)}.easing 未匹配源注册名，采用 SINE_IN_OUT；原值保留。`);
   }
   const track:AnimationTrack={id:crypto.randomUUID(),type:type==='animate'?'animate':type==='align'?'align':type==='param'&&s.kind==='surface'?'param':'wait',target:'timeline.wait',label:originalType,from:0,to:0,start:0,duration,easing,pingPong:false,enabled:true};
   if(type==='param'&&s.kind==='surface'){
-   track.parameterClock='elapsed';track.replaceParameters=true;track.parameterAnimations=legacyOscillators(r,s,path.join('.'),s);track.target=track.parameterAnimations[0]?.target??'timeline.wait';
-   r.warnings.push(`${pathLabel(path)}：保留原版传入的片段时长；参数变化仍采用既有本地解析和振荡，不声明其标量、帧时钟与原版一致。`);
+   track.surfaceParameterClip=surfaceParameterClip;track.target='surface.parameters';
   }else if(type==='align'){
    track.target='camera.orientation';track.alignMode='next-turn';track.orientation={};
    for(const axis of ['phi','theta','gamma'] as const)if(r.has([...path,'target_'+axis]))track.orientation[axis]=field([...path,'target_'+axis],0);
   }else if(type==='animate'){
    track.actions=[];track.target='camera.actions';
-   for(const {path:actionPath,method,raw,surfaceGradient} of sourceActions){
+   for(const {path:actionPath,method,raw,surfaceGradient,surfaceParameters} of sourceActions){
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
     const unimplementedTracking=method==='track'&&Array.isArray(raw)&&raw.length>0&&s.kind==='attractor';
     if(unimplementedTracking)fail(`${pathLabel(actionPath)} ${method} 尚无完整原版 provider/动画编译合同；未按本地动作代替`);
+    if(surfaceParameters){if(surfaceParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,surfaceParameters});continue;}
     if(s.kind==='surface'&&(method==='gradientStart'||method==='gradientStop')){
      if(method==='gradientStop'){track.actions.push({id:crypto.randomUUID(),method,enabled:true});continue;}
      const facts=surfaceGradient!,argsPath=[...actionPath,'args'];
@@ -1294,8 +1315,8 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
  // Source geometry and queue share parsed dispatch facts. Select its owner
  // before common/local geometry reads, so fallback values are never reinterpreted.
- const ordinaryStructure=kind==='surface'?ordinaryTimelineStructure(r,true):undefined;
- if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start')))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
+ const ordinaryStructure=kind==='surface'?ordinaryTimelineStructure(r,true,ordinaryScope):undefined;
+ if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
  common(r,scene);

@@ -737,5 +737,12 @@
   "绝对角度（保留，不执行）": "Absolute angle (retained, unsupported)",
   "此片段未接入源相机顺序队列；作者数据保留，可停用或删除。": "This clip is unsupported by the source camera sequence. Its data is retained; disable or delete it.",
   "原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。": "The source camera replays at a fixed local frame rate. Native live timing and non-camera effects still need full comparison.",
-  "渐变同时作用于曲面两侧；运行时循环采样色板并按记录年龄着色拖尾。停止保留最后的色板偏移；同片段动作按列表顺序执行。": "The gradient affects both sides of the surface. While running, it samples colors cyclically and colors trails by record age. Stop retains the final palette offset. Actions within a clip run in list order."
+  "渐变同时作用于曲面两侧；运行时循环采样色板并按记录年龄着色拖尾。停止保留最后的色板偏移；同片段动作按列表顺序执行。": "The gradient affects both sides of the surface. While running, it samples colors cyclically and colors trails by record age. Stop retains the final palette offset. Actions within a clip run in list order.",
+  "每帧步长": "Step per frame",
+  "保留的参数动作尚无有效源配置。": "The retained parameter action has no valid source configuration.",
+  "保留的参数片段尚无有效源配置。": "The retained parameter clip has no valid source configuration.",
+  "设置源参数配置": "Configure source parameters",
+  "所有参数动画": "All parameter animations",
+  "名称按原文匹配。全部开始沿用已有参数动画；具名开始替换该参数的设置。具名停止只暂停对应参数，全部停止暂停所有参数。": "Names match exactly. Start all resumes existing parameter animations; named start replaces that parameter’s settings. Named stop pauses only that parameter; stop all pauses every parameter.",
+  "独立参数片段会替换当前参数动画列表，按帧更新，结束时停止；片段缓动不改变参数速度。": "A standalone parameter clip replaces the current parameter animations, updates each frame, and stops at its end. Clip easing does not change parameter speed."
 }

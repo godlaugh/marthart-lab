@@ -58,9 +58,9 @@ describe('source project file through production ordinary camera timeline',()=>{
   expect(parse('SURFACE',{timeline:[{type:'trails',enable:true}]}).scene.timeline.tracks[0]).toMatchObject({type:'trails',duration:0,trailsEnabled:true});
   expect(()=>parse('SURFACE',{timeline:[{type:'surface_mode_transition'}]})).toThrow('尚缺');
  });
- it('retains supported local noncamera behavior with explicit source-parity limits and native clip duration',()=>{
+ it('uses the source parameter owner while preserving native clip duration',()=>{
   const result=parse('SURFACE',{parameters:{a:1},timeline:[animate('paramStart',[{parameters:{a:{step:.1,min:0,max:2}}}]),{type:'param',duration:2,parameters:{a:{step:.1,min:0,max:2}}}]});
-  expect(result.scene.timeline.duration).toBe(3);expect(result.scene.timeline.tracks).toHaveLength(2);expect(result.warnings.join()).toContain('本地解析');expect(result.warnings.join()).toContain('同一片段时长');
+  expect(result.scene.timeline.duration).toBe(3);expect(result.scene.timeline.tracks).toHaveLength(2);expect(result.scene.timeline.tracks[0].actions![0].surfaceParameters![0].configuration).toMatchObject({step:Math.fround(.1),min:0,max:2});expect(result.scene.timeline.tracks[1].surfaceParameterClip!.parameters[0]).toMatchObject({name:'a',step:Math.fround(.1),enabled:true});expect(result.scene.timeline.tracks[1].parameterAnimations).toBeUndefined();
  });
  it('defaults missing duration to one but retains source-specific malformed handling',()=>{
   expect(parse('SURFACE',{timeline:[{type:'wait'}]}).scene.timeline.tracks[0].duration).toBe(1);

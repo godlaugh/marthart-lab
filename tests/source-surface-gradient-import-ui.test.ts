@@ -27,7 +27,8 @@ describe('Surface source gradient public import and authoring',()=>{
  });
  it('reads a direct object or only the first array object, never a later configuration',()=>{
   expect(config([{mode:'PALETTE_MORPH',speed:24},{speed:99}])).toEqual({...SOURCE_SURFACE_GRADIENT_DEFAULT,mode:'palette_morph',speed:24});
-  for(const args of [undefined,[],[null,{mode:'CROSS_FADE',speed:99}],17])expect(config(args)).toEqual(SOURCE_SURFACE_GRADIENT_DEFAULT);
+  for(const args of [[],[null,{mode:'CROSS_FADE',speed:99}]])expect(config(args)).toEqual(SOURCE_SURFACE_GRADIENT_DEFAULT);
+  for(const args of [undefined,null,17,'{}'])expect(config(args)).toBeUndefined();
  });
  it('preserves skipped unknown modes and FRACTAL targets without activating local palette actions',()=>{
   const raw=source([{method:'gradientStart',args:[{mode:'unknown'}]},{method:'gradientStart',args:{targetDomain:'fRaCtAl'}},{method:'gradientStart',args:{targetDomain:' FRACTAL ',speed:13}}]);
@@ -45,7 +46,7 @@ describe('Surface source gradient public import and authoring',()=>{
   }
  });
  it('retains a skipped target payload and numeric fallback argument as evidence without applying them',()=>{
-  const text=JSON.stringify(source([{method:'gradientStart',args:{targetDomain:'FRACTAL',speed:1}},{method:'gradientStart',args:2}])).replace('"speed":1','"speed":1e999').replace('"args":2','"args":-1e999');
+  const text=JSON.stringify(source([{method:'gradientStart',args:{targetDomain:'FRACTAL',speed:1}},{method:'gradientStart',args:2},{method:'gradientStart',args:[]}])).replace('"speed":1','"speed":1e999').replace('"args":2','"args":-1e999');
   const scene=parseScene(serializeScene(parseProjectFile(text).scene));expect(scene.timeline.tracks[0].actions).toHaveLength(1);
   expect(scene.timeline.tracks[0].actions![0].gradient).toEqual(SOURCE_SURFACE_GRADIENT_DEFAULT);
   expect(scene.provenance!.sourceNumberTokens).toEqual(expect.arrayContaining([{path:['timeline','0','actions','0','args','speed'],token:'1e999'},{path:['timeline','0','actions','1','args'],token:'-1e999'}]));
@@ -57,7 +58,7 @@ describe('Surface source gradient public import and authoring',()=>{
   expect(scene.timeline.tracks[0].actions![0].gradient!.speed).toBe(0);
  });
  it('does not silently route GPU or mesh gradient documents through CPU points',()=>{
-  for(const settings of [{render_mode:'GPU'},{surface_mode:'MESH'}])expect(()=>parseProjectFile(JSON.stringify(source([{method:'gradientStart'}],settings)))).toThrow('CPU 点模式');
+  for(const settings of [{render_mode:'GPU'},{surface_mode:'MESH'}])expect(()=>parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:[]}],settings)))).toThrow('CPU 点模式');
  });
  it('offers all source modes and color interpolation without regional toggles or local palette controls',()=>{
   const value={...SOURCE_SURFACE_GRADIENT_DEFAULT},before=structuredClone(value),html=render(value);

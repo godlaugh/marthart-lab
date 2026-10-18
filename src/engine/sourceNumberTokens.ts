@@ -1,3 +1,4 @@
+import {SOURCE_SURFACE_PARAMETER_FIELDS,SOURCE_SURFACE_PARAMETER_EDGE_FIELDS} from './sourceSurfaceParameterConfig';
 import {SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS} from './sourceSurfaceGradientConfig';
 import type {SceneDocument} from '../types';
 import {ROOTS_BATCH_SIZE_SOURCE_PATHS,ROOTS_PRESENTATION_INTEGER_PATHS,ROOTS_PRESENTATION_SCALAR_PATHS} from './rootsSourceFields';
@@ -58,12 +59,25 @@ export function* rootsTimelineNumberTokenPaths(raw:readonly unknown[]):Iterable<
 }
 const ordinaryFamilies=new Set<SceneDocument['kind']>(['surface','implicit','attractor','perlin']);
 export const SOURCE_SURFACE_NUMBER_FIELDS=['u_segments','v_segments','u_min','u_max','v_min','v_max','speed_u','speed_v','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','trail_lifetime','line_weight','dot_size'] as const;
-const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length;
+const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_PARAMETER_EDGE_FIELDS.length;
 // Every retained token requires at least one source JSON value node. Clip and
 // action bounds also constrain slots; taking the smaller bound does not grant
 // extra source capacity merely because paths repeat in persisted provenance.
 const ordinaryMaximum=Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length)));
+const surfaceParameterField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_SURFACE_PARAMETER_FIELDS as readonly string[]).includes(raw);
+const surfaceEdgeField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_SURFACE_PARAMETER_EDGE_FIELDS as readonly string[]).includes(raw);
+const surfaceParameterName=(raw:unknown)=>typeof raw==='string'&&raw.length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
+function surfaceParameterPath(path:readonly unknown[]):boolean {
+ if(path.length===3&&path[0]==='settings'&&path[1]==='param_edge_easing'&&surfaceEdgeField(path[2]))return true;
+ if(path[0]!=='timeline'||!index(path[1],maxTimelineClips))return false;
+ if(path[2]==='parameters')return surfaceParameterName(path[3])&&(path.length===4||path.length===5&&surfaceParameterField(path[4]));
+ if(path[2]!=='actions'||!index(path[3],maxTimelineActions)||path[4]!=='args')return false;
+ const tail=path.slice(path[5]==='0'?6:5);
+ if(tail.length===2&&tail[0]==='edgeEasing'&&surfaceEdgeField(tail[1]))return true;
+ return tail[0]==='parameters'&&surfaceParameterName(tail[1])&&(tail.length===2||tail.length===3&&surfaceParameterField(tail[2])||tail.length===4&&tail[2]==='edgeEasing'&&surfaceEdgeField(tail[3]));
+}
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
+ if(family==='surface'&&surfaceParameterPath(path))return true;
  if(family==='surface'&&path.length===2&&path[0]==='settings'&&SOURCE_SURFACE_NUMBER_FIELDS.some(key=>key===path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
  if(family==='surface'&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
@@ -86,8 +100,8 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
   const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):ordinary&&ordinaryField(path,sceneKind)?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效');
   if((roots||sceneKind==='surface')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
-   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify(path.slice(0,-1)),previous=gradientPayloads.get(action);
-   if(previous!==undefined&&previous!==payload)throw new Error('一个源渐变动作只能保留首个对象的数字词法');
+   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify(sceneKind==='surface'?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
+   if(previous!==undefined&&previous!==payload)throw new Error('一个源动画动作只能保留首个对象的数字词法');
    gradientPayloads.set(action,payload);
   }
   if(ordinary&&path[0]==='parameters'){if(++parameterCount>ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters)throw new Error('源参数数字词法超过参数成员容量');parameterNameCharacters+=(path[1] as string).length;if(parameterNameCharacters>ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters)throw new Error('源参数名总文本超过相机作用域输入容量');}

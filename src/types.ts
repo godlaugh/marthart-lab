@@ -115,12 +115,26 @@ export type DomainParameterAction = {
   scope:{kind:'all'} | {kind:'named';name:string};
   configuration?:{min:number;max:number;step:number;edgeEasing?:OscillationEdgeEasing};
 };
+/** Source Surface identities are names, never dotted local animation targets. */
+export interface SourceSurfaceParameterConfiguration {min:number;max:number;step:number;edgeEasing:OscillationEdgeEasing;}
+export type SourceSurfaceParameterAction = {
+  model:'surface-registry-1.7.8';
+  scope:{kind:'all'}|{kind:'named';name:string};
+  configuration?:SourceSurfaceParameterConfiguration;
+};
+export interface SourceSurfaceParameterClip {
+  model:'surface-registry-1.7.8';
+  /** Standalone clips replace the registry, retaining disabled entries and
+   * the animator's separate null-edge default. */
+  parameters:{name:string;min:number;max:number;step:number;enabled:boolean}[];
+}
 export interface AnimationAction {
   id: string; method: string; enabled?: boolean;
   args?: Record<string, number | string | boolean>;
   parameters?: ParameterAnimation[]; gradient?: GradientAnimation;
   /** Ordered source operations within this action; All is one registry operation. */
   domainParameters?:DomainParameterAction[];
+  surfaceParameters?:SourceSurfaceParameterAction[];
 }
 export interface AnimationTrack {
   id: string;
@@ -139,6 +153,7 @@ export interface AnimationTrack {
   round?: boolean;
   actions?: AnimationAction[];
   parameterAnimations?: ParameterAnimation[];
+  surfaceParameterClip?:SourceSurfaceParameterClip;
   parameterClock?: "elapsed" | "eased";
   replaceParameters?:boolean;
   orientation?: { theta?: number; phi?: number; gamma?: number };

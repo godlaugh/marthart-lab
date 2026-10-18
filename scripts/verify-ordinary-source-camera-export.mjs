@@ -4,15 +4,15 @@ import {readFile,writeFile,mkdtemp,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {createServer as createTcpServer} from 'node:net';
 import {createExportServer} from '../server/index.mjs';
-const gradientRuntime=process.argv.includes('--surface-gradient-runtime'),gradientFoundation=process.argv.includes('--surface-gradient-foundation'),sourcePoints=gradientRuntime||gradientFoundation||process.argv.includes('--source-points'),surfaceColor=sourcePoints||process.argv.includes('--surface-color'),surfaceRecording=!gradientRuntime&&(surfaceColor||process.argv.includes('--surface-recording')),surfaceTrails=gradientRuntime||surfaceRecording||process.argv.includes('--surface-trails'),surfaceParticles=surfaceTrails||process.argv.includes('--surface-particles'),artifactPrefix=gradientRuntime?'v2-surface-gradient-runtime-export':gradientFoundation?'v2-surface-gradient-export':sourcePoints?'v2-source-point-export':surfaceColor?'v2-source-surface-color-export':surfaceRecording?'v2-source-dynamic-trails-export':surfaceTrails?'v2-source-surface-trails-export':surfaceParticles?'v2-source-surface-export':'v2-ordinary-camera-export';
+const parameterRuntime=process.argv.includes('--surface-parameter-runtime'),gradientRuntime=parameterRuntime||process.argv.includes('--surface-gradient-runtime'),gradientFoundation=process.argv.includes('--surface-gradient-foundation'),sourcePoints=gradientRuntime||gradientFoundation||process.argv.includes('--source-points'),surfaceColor=sourcePoints||process.argv.includes('--surface-color'),surfaceRecording=!gradientRuntime&&(surfaceColor||process.argv.includes('--surface-recording')),surfaceTrails=gradientRuntime||surfaceRecording||process.argv.includes('--surface-trails'),surfaceParticles=surfaceTrails||process.argv.includes('--surface-particles'),artifactPrefix=parameterRuntime?'v2-surface-parameter-runtime-export':gradientRuntime?'v2-surface-gradient-runtime-export':gradientFoundation?'v2-surface-gradient-export':sourcePoints?'v2-source-point-export':surfaceColor?'v2-source-surface-color-export':surfaceRecording?'v2-source-dynamic-trails-export':surfaceTrails?'v2-source-surface-trails-export':surfaceParticles?'v2-source-surface-export':'v2-ordinary-camera-export';
 const check=(v,m)=>{if(!v)throw Error(m);};
-const paths=['src/engine/sourceNumberTokens.ts','src/engine/gradientOffsets.ts','src/engine/sourceGradientRuntime.ts','src/engine/sourceSurfaceGradientConfig.ts','src/engine/sourceSurfaceTrailGradient.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceSurfacePointAppearance.ts','src/engine/sourceSurfacePointRenderer.ts','src/engine/sourceSurfacePointShaders.ts','src/types.ts','src/engine/sourceSurfaceColor.ts','src/engine/outputBuffers.ts','src/components/SourceSurfacePaletteEditor.tsx','src/App.tsx','src/components/OrdinarySourceCameraControls.tsx','src/components/ExportDialog.tsx','src/components/Viewport.tsx','src/engine/client.ts','src/engine/legacyImport.ts','src/engine/ordinarySourceCameraImport.ts','src/engine/ordinarySourceCameraTimeline.ts','src/engine/rootsSceneClock.ts','src/engine/document.ts','src/engine/renderer.ts','src/engine/timeline.ts','src/engine/sourceSurfaceParticles.ts','src/scenes/sourceSurface.ts','src/components/Timeline.tsx','server/index.mjs','scripts/verify-ordinary-source-camera-export.mjs'];
+const paths=['src/engine/sourceSurfaceParameterConfig.ts','src/engine/sourceSurfaceParameterRuntime.ts','src/engine/sourceEasing.ts','src/locales/components.en.json','src/locales/application.en.json','src/engine/sourceNumberTokens.ts','src/engine/gradientOffsets.ts','src/engine/sourceGradientRuntime.ts','src/engine/sourceSurfaceGradientConfig.ts','src/engine/sourceSurfaceTrailGradient.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceSurfacePointAppearance.ts','src/engine/sourceSurfacePointRenderer.ts','src/engine/sourceSurfacePointShaders.ts','src/types.ts','src/engine/sourceSurfaceColor.ts','src/engine/outputBuffers.ts','src/components/SourceSurfacePaletteEditor.tsx','src/App.tsx','src/components/OrdinarySourceCameraControls.tsx','src/components/ExportDialog.tsx','src/components/Viewport.tsx','src/engine/client.ts','src/engine/legacyImport.ts','src/engine/ordinarySourceCameraImport.ts','src/engine/ordinarySourceCameraTimeline.ts','src/engine/rootsSceneClock.ts','src/engine/document.ts','src/engine/renderer.ts','src/engine/timeline.ts','src/engine/sourceSurfaceParticles.ts','src/scenes/sourceSurface.ts','src/components/Timeline.tsx','server/index.mjs','scripts/verify-ordinary-source-camera-export.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));
 const before=await hashes(),directory=await mkdtemp('.cache/ordinary-camera-export-service-');
 // Vite treats port=0 as its default. Reserve an ephemeral port, then bind it
 // strictly: a race must fail, never redirect this run to an unrelated service.
 const port=await new Promise((resolve,reject)=>{const listener=createTcpServer();listener.once('error',reject);listener.listen(0,'127.0.0.1',()=>{const port=listener.address().port;listener.close(error=>error?reject(error):resolve(port));});});
-const report={at:new Date().toISOString(),surfaceParticles,surfaceTrails,surfaceRecording,surfaceColor,sourcePoints,gradientFoundation,gradientRuntime,scope:'Actual App imports original Surface JSON, edits source camera, reloads, exports PNG through ExportDialog and an isolated production image service, and compares against cold Worker/Renderer. Not original app parity.',directory};let page,server,browser,exportServer;
+const report={at:new Date().toISOString(),surfaceParticles,surfaceTrails,surfaceRecording,surfaceColor,sourcePoints,gradientFoundation,gradientRuntime,parameterRuntime,scope:'Actual App imports original Surface JSON, edits source camera, reloads, exports PNG through ExportDialog and an isolated production image service, and compares against cold Worker/Renderer. Not original app parity.',directory};let page,server,browser,exportServer;
 try{
  exportServer=await createExportServer({root:directory,allowedOrigins:[`http://127.0.0.1:${port}`]});const address=await exportServer.listen(0);
  server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await server.listen();
@@ -20,9 +20,10 @@ try{
  page=await browser.newPage({viewport:{width:1360,height:920},acceptDownloads:true});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
   const Native=window.Worker;window.__cameraAudit={requests:[],completed:[],errors:[]};
-  window.Worker=class extends Native{constructor(...args){super(...args);this.addEventListener('message',({data})=>{if(data.operation==='generate'&&data.output)window.__cameraAudit.completed.push({id:data.id,frame:data.output.sourceCameraFrame,pointAppearance:data.output.sourcePointAppearance,pointAlphas:data.output.pointAlphas?Array.from(data.output.pointAlphas):undefined,colors:data.output.colors?Array.from(data.output.colors):undefined,target:data.output.positions?Array.from(data.output.positions.slice(21,24)):undefined,trails:data.output.trails?{...(window.__gradientAudit?{colors:Array.from(data.output.trails.colors??[]),alphas:Array.from(data.output.trails.alphas??[])}:{}),vertices:data.output.trails.positions.length/3,segments:(data.output.trails.indices?.length??0)/2,appearance:data.output.trails.appearance}:undefined});if(data.error)window.__cameraAudit.errors.push(data.error);});}postMessage(message,...args){if(message.operation==='generate')window.__cameraAudit.requests.push(structuredClone(message));return super.postMessage(message,...args);}};
+  window.Worker=class extends Native{constructor(...args){super(...args);this.addEventListener('message',({data})=>{if(data.operation==='generate'&&data.output)window.__cameraAudit.completed.push({id:data.id,frame:data.output.sourceCameraFrame,pointAppearance:data.output.sourcePointAppearance,pointAlphas:data.output.pointAlphas?Array.from(data.output.pointAlphas):undefined,colors:data.output.colors?Array.from(data.output.colors):undefined,...(window.__parameterAudit&&data.output.positions?{positions:Array.from(data.output.positions)}:{}),target:data.output.positions?Array.from(data.output.positions.slice(21,24)):undefined,trails:data.output.trails?{...(window.__gradientAudit?{colors:Array.from(data.output.trails.colors??[]),alphas:Array.from(data.output.trails.alphas??[])}:{}),vertices:data.output.trails.positions.length/3,segments:(data.output.trails.indices?.length??0)/2,appearance:data.output.trails.appearance}:undefined});if(data.error)window.__cameraAudit.errors.push(data.error);});}postMessage(message,...args){if(message.operation==='generate')window.__cameraAudit.requests.push(structuredClone(message));return super.postMessage(message,...args);}};
  });
  if(gradientRuntime)await page.addInitScript(()=>{window.__gradientAudit=true;});
+ if(parameterRuntime)await page.addInitScript(()=>{window.__parameterAudit=true;});
  const origin=server.resolvedUrls.local[0];await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));await page.goto(origin+'fixture');
  await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const scene=createScene(definition('surface'));Object.assign(scene.settings,{uSegments:3,vSegments:3,showTrails:false});saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'low',frameRate:30}});});
  await page.goto(origin);const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
@@ -37,7 +38,14 @@ try{
  if(surfaceColor){source.palette=['#40FF0000','#800000FF'];source.settings.dot_size=12;}
  if(gradientRuntime){
   source.timeline[0].actions.push({method:'gradientStart',args:{mode:'HUE_ROTATE',interpolation:'LINEAR',speed:90}});
-  source.timeline=[source.timeline[0],{type:'wait',duration:.5},{type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'gradientStop'}]},{type:'wait',duration:.5},{type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'gradientStart',args:{mode:'OFFSET_CYCLE',interpolation:'RGB',speed:120}}]},{type:'wait',duration:1}];
+  source.timeline=[source.timeline[0],{type:'wait',duration:.5},{type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'gradientStop',args:[]}]},{type:'wait',duration:.5},{type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'gradientStart',args:{mode:'OFFSET_CYCLE',interpolation:'RGB',speed:120}}]},{type:'wait',duration:1}];
+ }
+
+ if(parameterRuntime){
+  source.parameters={a:0};source.equations.z='u*v/10+a';
+  source.timeline[0].actions.push({method:'paramStart',args:{parameters:{a:{min:-2,max:2,step:.125}}}});
+  source.timeline[2].actions.push({method:'paramStop',args:{parameters:{a:{}}}});
+  source.timeline.splice(5,0,{type:'param',duration:.5,easing:'LINEAR',parameters:{a:{min:-3,max:3,step:-.125,enable:true}}});
  }
 
  await page.locator('input[type=file]').setInputFiles({name:'source-camera.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source))});await page.getByTestId('ordinary-source-camera').waitFor();await ready();
@@ -63,6 +71,29 @@ try{
   check(await editor.getByRole('checkbox').count()===0,'source gradient exposes ignored regional switches');
   report.gradientEditing={mode:'palette_morph',interpolation:'oklch',speed:240,reloaded:true};
  }
+ if(parameterRuntime){
+  const editor=page.getByTestId('surface-parameter-actions');await editor.waitFor();
+  check(await editor.getByRole('combobox',{name:'Parameter scope 1',exact:true}).inputValue()==='named','parameter scope not imported');
+  check(await editor.getByRole('textbox',{name:'Exact parameter name 1',exact:true}).inputValue()==='a','source parameter identity not imported');
+  const step=editor.getByRole('spinbutton',{name:'Step per frame',exact:true});await step.fill('0.25');await step.blur();
+  const window=editor.getByRole('spinbutton',{name:'Turning-point window (rad)',exact:true});await window.fill('0.75');await window.blur();
+  await editor.getByRole('combobox',{name:'Turning-point easing',exact:true}).selectOption('quad-in');await ready();
+  await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1')),p=w.drafts?.[w.active]?.timeline.tracks[0]?.actions.find(a=>a.method==='paramStart')?.surfaceParameters?.[0];return p?.scope.name==='a'&&p.configuration.step===.25&&p.configuration.edgeEasing.window===.75&&p.configuration.edgeEasing.easing==='quad-in';});
+  await page.reload();await ready();await page.getByRole('button',{name:'Clip animate',exact:true}).first().click();
+  check(await step.inputValue()==='0.25','parameter step lost on reload');check(await window.inputValue()==='0.75','parameter edge window lost on reload');
+  check(await editor.getByRole('combobox',{name:'Turning-point easing',exact:true}).inputValue()==='quad-in','parameter edge easing lost on reload');
+  await page.getByRole('button',{name:'Clip param',exact:true}).click();
+  const clip=page.getByTestId('surface-parameter-clip');await clip.waitFor();
+  const clipStep=clip.getByRole('spinbutton',{name:'Step per frame',exact:true});await clipStep.fill('-0.25');await clipStep.blur();
+  const enabled=clip.getByRole('checkbox',{name:'Enabled',exact:true});check(await enabled.isChecked(),'standalone parameter enable not imported');
+  await enabled.uncheck();await ready();await enabled.check();await ready();
+  check(await clip.getByRole('combobox',{name:'Turning-point easing',exact:true}).count()===0,'standalone exposes unsupported edge controls');
+  await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1')),p=w.drafts?.[w.active]?.timeline.tracks.find(t=>t.type==='param')?.surfaceParameterClip?.parameters[0];return p?.name==='a'&&p.step===-.25&&p.enabled===true;});
+  await page.reload();await ready();await page.getByRole('button',{name:'Clip param',exact:true}).click();
+  check(await clipStep.inputValue()==='-0.25'&&await enabled.isChecked(),'standalone parameter edits lost on reload');
+  report.parameterEditing={name:'a',step:.25,edgeWindow:.75,edgeEasing:'quad-in',standaloneStep:-.25,standaloneEnabled:true,reloaded:true};
+ }
+
  if(surfaceRecording){
   await page.getByRole('button',{name:'Clip trails',exact:true}).first().click();
   const recording=page.getByRole('checkbox',{name:'Record trails',exact:true});check(!await recording.isChecked(),'imported recording off state lost');
@@ -130,6 +161,24 @@ try{
   await page.getByRole('slider',{name:'Time position',exact:true}).press('End');await ready();
   await page.waitForFunction(()=>{const r=window.__cameraAudit.requests.at(-1);return r?.context.time>=3.5&&window.__cameraAudit.completed.some(c=>c.id===r.id&&c.trails?.colors?.length>0);});
  }
+ if(parameterRuntime){
+  const frames=[];
+  for(const time of [.25,.75,1.6,1.8,2.6,3.2,3.8,.25]){
+   const seekTime=await page.getByRole('slider',{name:'Time position',exact:true}).evaluate((element,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(element,String(value));element.dispatchEvent(new Event('input',{bubbles:true}));element.dispatchEvent(new Event('change',{bubbles:true}));return Number(element.value);},time);
+   await page.waitForFunction(value=>{const r=window.__cameraAudit.requests.at(-1);return Math.abs(r?.context.time-value)<1e-6&&window.__cameraAudit.completed.some(c=>c.id===r.id);},seekTime);await ready();
+   frames.push(await page.evaluate(()=>{const r=window.__cameraAudit.requests.at(-1),c=window.__cameraAudit.completed.findLast(c=>c.id===r.id),[x,y,z]=c.positions.slice(0,3);return{time:r.context.time,positions:c.positions,derivedA:z/20-(x/20)*(y/20)/10,colors:c.colors,trails:c.trails};}));
+  }
+  check(Math.abs(frames[0].derivedA-frames[1].derivedA)>1e-4,'running parameter did not change generated geometry');
+  check(Math.abs(frames[2].derivedA-frames[3].derivedA)<1e-4,'named-stop parameter drifted');
+  check(Math.abs(frames[4].derivedA-frames[3].derivedA)>1e-4,'standalone replacement did not change geometry');
+  check(Math.abs(frames[5].derivedA-frames[6].derivedA)<1e-4,'standalone finished parameter drifted');
+  check(frames.every(f=>f.positions.every(Number.isFinite)&&f.trails?.segments>0&&f.trails.colors?.length===f.trails.vertices*3),'parameter/gradient/trail output missing or invalid');
+  check(JSON.stringify(frames[0])===JSON.stringify(frames.at(-1)),'reverse seek changed parameter geometry/colors/trails');
+  report.parameterSeekFrames=frames;report.parameterObservation='a is derived from source equation z=u*v/10+a after reversing scale20; tolerance1e-4 covers output Float32 rounding. This is local application evidence, not native parity.';
+  await page.getByRole('slider',{name:'Time position',exact:true}).press('End');await ready();
+  await page.waitForFunction(()=>{const r=window.__cameraAudit.requests.at(-1);return r?.context.time>=4&&window.__cameraAudit.completed.some(c=>c.id===r.id&&c.positions?.length>0);});
+ }
+
  await page.waitForFunction(()=>window.__cameraAudit.completed.some(x=>x.frame));
  const preview=await page.evaluate(()=>window.__cameraAudit.completed.findLast(x=>x.frame)?.frame);check(preview,'missing preview camera');
  const healthResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/health');

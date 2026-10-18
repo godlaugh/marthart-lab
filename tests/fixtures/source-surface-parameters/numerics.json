@@ -1,0 +1,475 @@
+{
+  "metadata": {
+    "evidenceKind": "Independent Python bytecode transcription; no native JVM or rendered frame execution",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "methods": [
+      "SurfaceParameterAnimator.addParam/start/update",
+      "OscillationEdgeEasing.speedScale/angularDistance/wrapPhase",
+      "Easings.easeOutSine"
+    ],
+    "sourceDetails": "See retained .cache/v2-surface-parameter-runtime-audit.json for class hashes and instruction offsets",
+    "precision": "double recurrence, original F32 frame inputs and easing intermediates; Python libm transcendental final ulps may differ from JVM/JS"
+  },
+  "witnesses": [
+    {
+      "name": "positive-inside-default-edge",
+      "inputs": {
+        "initial": 0.25,
+        "step": 0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 0.5,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 0.25268025514207865,
+      "frames": [
+        {
+          "phaseBefore": 0.25268025514207865,
+          "edgeScale": 1.0,
+          "delta": 0.05,
+          "phase": 0.30268025514207864,
+          "value": 0.2980796876593962,
+          "geometryFloat": 0.2980796992778778
+        },
+        {
+          "phaseBefore": 0.30268025514207864,
+          "edgeScale": 1.0,
+          "delta": 0.05,
+          "phase": 0.3526802551420786,
+          "value": 0.34541433133654437,
+          "geometryFloat": 0.34541434049606323
+        },
+        {
+          "phaseBefore": 0.3526802551420786,
+          "edgeScale": 1.0,
+          "delta": 0.05,
+          "phase": 0.4026802551420786,
+          "value": 0.39188561907365743,
+          "geometryFloat": 0.3918856084346771
+        },
+        {
+          "phaseBefore": 0.4026802551420786,
+          "edgeScale": 1.0,
+          "delta": 0.05,
+          "phase": 0.4526802551420786,
+          "value": 0.43737739685317145,
+          "geometryFloat": 0.437377393245697
+        }
+      ]
+    },
+    {
+      "name": "negative-inside-default-edge",
+      "inputs": {
+        "initial": 0.25,
+        "step": -0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 2.8889123984477143,
+      "frames": [
+        {
+          "phaseBefore": 2.8889123984477143,
+          "edgeScale": 1.0,
+          "delta": 0.1,
+          "phase": 2.9889123984477144,
+          "value": 0.1520877513024687,
+          "geometryFloat": 0.1520877480506897
+        },
+        {
+          "phaseBefore": 2.9889123984477144,
+          "edgeScale": 1.0,
+          "delta": 0.1,
+          "phase": 3.0889123984477145,
+          "value": 0.05265589206744941,
+          "geometryFloat": 0.052655890583992004
+        },
+        {
+          "phaseBefore": 3.0889123984477145,
+          "edgeScale": 1.0,
+          "delta": 0.1,
+          "phase": 3.1889123984477146,
+          "value": -0.04730208743538406,
+          "geometryFloat": -0.047302085906267166
+        },
+        {
+          "phaseBefore": 3.1889123984477146,
+          "edgeScale": 1.0,
+          "delta": 0.1,
+          "phase": 3.2889123984477147,
+          "value": -0.14678744011655442,
+          "geometryFloat": -0.14678743481636047
+        }
+      ]
+    },
+    {
+      "name": "outside-positive-starts-upper",
+      "inputs": {
+        "initial": 5,
+        "step": 0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 1.5707963267948966,
+      "frames": [
+        {
+          "phaseBefore": 1.5707963267948966,
+          "edgeScale": 0.5,
+          "delta": 0.05,
+          "phase": 1.6207963267948966,
+          "value": 0.9987502603949663,
+          "geometryFloat": 0.9987502694129944
+        },
+        {
+          "phaseBefore": 1.6207963267948966,
+          "edgeScale": 0.5975451618432999,
+          "delta": 0.05975451618432999,
+          "phase": 1.6805508429792266,
+          "value": 0.9939830168035515,
+          "geometryFloat": 0.9939830303192139
+        },
+        {
+          "phaseBefore": 1.6805508429792266,
+          "edgeScale": 0.7088920325040817,
+          "delta": 0.07088920325040818,
+          "phase": 1.751440046229635,
+          "value": 0.9837282441403077,
+          "geometryFloat": 0.9837282299995422
+        }
+      ]
+    },
+    {
+      "name": "outside-negative-starts-lower",
+      "inputs": {
+        "initial": -5,
+        "step": -0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 4.71238898038469,
+      "frames": [
+        {
+          "phaseBefore": 4.71238898038469,
+          "edgeScale": 0.5,
+          "delta": 0.05,
+          "phase": 4.7623889803846895,
+          "value": -0.9987502603949663,
+          "geometryFloat": -0.9987502694129944
+        },
+        {
+          "phaseBefore": 4.7623889803846895,
+          "edgeScale": 0.5975451618432999,
+          "delta": 0.05975451618432999,
+          "phase": 4.822143496569019,
+          "value": -0.9939830168035515,
+          "geometryFloat": -0.9939830303192139
+        },
+        {
+          "phaseBefore": 4.822143496569019,
+          "edgeScale": 0.7088920325040817,
+          "delta": 0.07088920325040818,
+          "phase": 4.893032699819427,
+          "value": -0.9837282441403078,
+          "geometryFloat": -0.9837282299995422
+        }
+      ]
+    },
+    {
+      "name": "reverse-range-keeps-min",
+      "inputs": {
+        "initial": 0.25,
+        "step": 0.1,
+        "min": 2,
+        "max": -2,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 0,
+      "frames": [
+        {
+          "phaseBefore": 0,
+          "edgeScale": 1.0,
+          "delta": 0,
+          "phase": 0,
+          "value": 2,
+          "geometryFloat": 2.0
+        },
+        {
+          "phaseBefore": 0,
+          "edgeScale": 1.0,
+          "delta": 0,
+          "phase": 0,
+          "value": 2,
+          "geometryFloat": 2.0
+        }
+      ]
+    },
+    {
+      "name": "narrow-range-keeps-min-even-zero-gain",
+      "inputs": {
+        "initial": 0.25,
+        "step": 0.1,
+        "min": 2,
+        "max": 2.0000001,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 0,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 0,
+      "frames": [
+        {
+          "phaseBefore": 0,
+          "edgeScale": 1.0,
+          "delta": 0,
+          "phase": 0,
+          "value": 2,
+          "geometryFloat": 2.0
+        },
+        {
+          "phaseBefore": 0,
+          "edgeScale": 1.0,
+          "delta": 0,
+          "phase": 0,
+          "value": 2,
+          "geometryFloat": 2.0
+        }
+      ]
+    },
+    {
+      "name": "stored-phase-only-one-subtraction",
+      "inputs": {
+        "initial": 0,
+        "step": 20,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 0.0,
+      "frames": [
+        {
+          "phaseBefore": 0.0,
+          "edgeScale": 1.0,
+          "delta": 20.0,
+          "phase": 13.716814692820414,
+          "value": 0.9129452507276278,
+          "geometryFloat": 0.9129452705383301
+        },
+        {
+          "phaseBefore": 13.716814692820414,
+          "edgeScale": 1.0,
+          "delta": 20.0,
+          "phase": 27.433629385640828,
+          "value": 0.7451131604793485,
+          "geometryFloat": 0.7451131343841553
+        },
+        {
+          "phaseBefore": 27.433629385640828,
+          "edgeScale": 1.0,
+          "delta": 20.0,
+          "phase": 41.15044407846124,
+          "value": -0.3048106211022174,
+          "geometryFloat": -0.30481061339378357
+        }
+      ]
+    },
+    {
+      "name": "frameRate-one-uses-sixty",
+      "inputs": {
+        "initial": 0,
+        "step": 0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 1.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 0.0,
+      "frames": [
+        {
+          "phaseBefore": 0.0,
+          "edgeScale": 1.0,
+          "delta": 1.5,
+          "phase": 1.5,
+          "value": 0.9974949866040544,
+          "geometryFloat": 0.9974949955940247
+        },
+        {
+          "phaseBefore": 1.5,
+          "edgeScale": 0.6372244507074356,
+          "delta": 0.9558366760611535,
+          "phase": 2.4558366760611534,
+          "value": 0.6332582740710302,
+          "geometryFloat": 0.6332582831382751
+        }
+      ]
+    },
+    {
+      "name": "frameRate-four-is-not-fixed-sixty",
+      "inputs": {
+        "initial": 0,
+        "step": 0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 0.0,
+      "frames": [
+        {
+          "phaseBefore": 0.0,
+          "edgeScale": 1.0,
+          "delta": 0.1,
+          "phase": 0.1,
+          "value": 0.09983341664682815,
+          "geometryFloat": 0.0998334139585495
+        },
+        {
+          "phaseBefore": 0.1,
+          "edgeScale": 1.0,
+          "delta": 0.1,
+          "phase": 0.2,
+          "value": 0.19866933079506122,
+          "geometryFloat": 0.19866932928562164
+        }
+      ]
+    },
+    {
+      "name": "named-json-edge-default-differs",
+      "inputs": {
+        "initial": 5,
+        "step": 0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 1,
+        "edge": {
+          "window": 0.5,
+          "floor": 0.25,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 1.5707963267948966,
+      "frames": [
+        {
+          "phaseBefore": 1.5707963267948966,
+          "edgeScale": 0.25,
+          "delta": 0.025,
+          "phase": 1.5957963267948965,
+          "value": 0.9996875162757026,
+          "geometryFloat": 0.9996874928474426
+        },
+        {
+          "phaseBefore": 1.5957963267948965,
+          "edgeScale": 0.30884432420134544,
+          "delta": 0.030884432420134545,
+          "phase": 1.626680759215031,
+          "value": 0.9984388714627723,
+          "geometryFloat": 0.9984388947486877
+        },
+        {
+          "phaseBefore": 1.626680759215031,
+          "edgeScale": 0.3809991888701916,
+          "delta": 0.03809991888701916,
+          "phase": 1.6647806781020502,
+          "value": 0.9955867208525905,
+          "geometryFloat": 0.9955866932868958
+        }
+      ]
+    },
+    {
+      "name": "zero-gain-still-clamps-first-value",
+      "inputs": {
+        "initial": 5,
+        "step": 0.1,
+        "min": -1,
+        "max": 1,
+        "dt": 0.25,
+        "frameRate": 4.0,
+        "scale": 0,
+        "edge": {
+          "window": 0.4,
+          "floor": 0.5,
+          "easing": "SINE_OUT"
+        }
+      },
+      "initialPhase": 1.5707963267948966,
+      "frames": [
+        {
+          "phaseBefore": 1.5707963267948966,
+          "edgeScale": 0.5,
+          "delta": 0.0,
+          "phase": 1.5707963267948966,
+          "value": 1.0,
+          "geometryFloat": 1.0
+        },
+        {
+          "phaseBefore": 1.5707963267948966,
+          "edgeScale": 0.5,
+          "delta": 0.0,
+          "phase": 1.5707963267948966,
+          "value": 1.0,
+          "geometryFloat": 1.0
+        }
+      ]
+    }
+  ]
+}

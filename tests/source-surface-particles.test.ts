@@ -57,9 +57,9 @@ describe('source CPU surface through public import, document and geometry',()=>{
  it.each([{render_mode:'GPU'},{surface_mode:'MESH'},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
   expect(()=>scene({...source(),settings:{...source().settings,...settings}})).toThrow(/尚未|待接入|1–512/);
  });
- it('does not mix local parameter or gradient animation with source particle replay',()=>{
+ it('rejects parameter actions without the source registry model during replay',()=>{
   const s=scene();s.timeline.tracks[0].actions!.push({id:'p',method:'paramStart',args:{}});
-  expect(()=>prepareSourceSurfaceParticles(s)).toThrow('参数/模式');
+  expect(()=>replaySourceSurface(s,0,'all')).toThrow('需要数组');
  });
 });
 

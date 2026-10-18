@@ -1,3 +1,4 @@
+import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceSurfaceParameterConfig';
 import {parseSourceSurfaceGradientConfiguration} from './sourceSurfaceGradientConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {usesSourceSurfaceParticles,replaySourceSurface} from './sourceSurfaceParticles';
@@ -165,7 +166,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
-  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{gradientTarget:usesSourceSurfaceParticles(scene)?'surface':undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
+  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:usesSourceSurfaceParticles(scene)?'surface':undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
   if(usesRootsCameraTimeline(scene))return resolveRootsCameraTimeline(scene);
   if(scene.timeline.schedule==='roots-camera-sequence-v1'||scene.timeline.schedule==='roots-scene-sequence-v1')return {...scene.timeline,schedule:undefined};
   if(usesSpirographFrameClock(scene))return interactiveSpirographFrames.timeline(scene);
@@ -401,11 +402,12 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceSurface=false):void{
  if(track.spirographWait!==undefined&&(track.spirographWait!=='visual-or-deadline-v1'||track.type!=='spirograph_finish_wait'||sceneKind!==undefined&&sceneKind!=='spirograph'))throw new Error('旋轮完成等待规则无效');
  if(track.gradient!==undefined)validateGradientConfig(track.gradient);
+ if(track.surfaceParameterClip!==undefined||sourceSurface&&track.type==='param'){if(!sourceSurface||track.type!=='param'||track.parameterAnimations!==undefined||track.parameterClock!==undefined||track.replaceParameters!==undefined)throw new Error('曲面源参数片段不能混用其他参数模型');parseSourceSurfaceParameterClip(track.surfaceParameterClip);}
  if(track.alignMode!==undefined&&!['absolute','next-turn'].includes(track.alignMode))throw new Error('未知相机对齐模式');
  if(track.orientation!==undefined){if(!track.orientation||typeof track.orientation!=='object'||Array.isArray(track.orientation)||Object.keys(track.orientation).some(key=>!['theta','phi','gamma'].includes(key))||Object.values(track.orientation).some(value=>typeof value!=='number'||!Number.isFinite(value)))throw new Error('相机对齐目标无效');}
  if(track.parameterClock!==undefined&&!['elapsed','eased'].includes(track.parameterClock)||track.replaceParameters!==undefined&&typeof track.replaceParameters!=='boolean')throw new Error('参数时钟配置无效');
  if(track.parameterAnimations!==undefined)track.parameterAnimations=validateParameterAnimations(track.parameterAnimations,sceneKind);
- if(track.actions!==undefined){if(!Array.isArray(track.actions)||track.actions.length>64)throw new Error('片段动作无效');for(const action of track.actions){if(!action||typeof action!=='object')throw new Error('动画动作无效');if(action.parameters!==undefined)action.parameters=validateParameterAnimations(action.parameters,sceneKind);if(action.domainParameters!==undefined){if(action.parameters!==undefined)throw new Error('域参数注册表不能同时声明旧参数振荡');action.domainParameters=validateDomainParameterActions(action.domainParameters,action.method,sceneKind,easingCurve);}if(action.gradient!==undefined){
+ if(track.actions!==undefined){if(!Array.isArray(track.actions)||track.actions.length>64)throw new Error('片段动作无效');for(const action of track.actions){if(!action||typeof action!=='object')throw new Error('动画动作无效');if(action.surfaceParameters!==undefined||sourceSurface&&['paramStart','paramStop'].includes(action.method)){if(!sourceSurface||!['paramStart','paramStop'].includes(action.method)||action.parameters!==undefined||action.domainParameters!==undefined)throw new Error('曲面源参数动作不能混用其他参数模型');parseSourceSurfaceParameterActions(action.surfaceParameters,action.method as 'paramStart'|'paramStop');}if(action.parameters!==undefined)action.parameters=validateParameterAnimations(action.parameters,sceneKind);if(action.domainParameters!==undefined){if(action.parameters!==undefined)throw new Error('域参数注册表不能同时声明旧参数振荡');action.domainParameters=validateDomainParameterActions(action.domainParameters,action.method,sceneKind,easingCurve);}if(action.gradient!==undefined){
   // Authored full-scene configuration has one contract even while its clip is
   // disabled. Camera-only markers retain the older generic validation rules.
   if(sceneKind==='roots'&&schedule==='roots-scene-sequence-v1'&&action.method==='gradientStart')parseRootsGradientConfiguration(action.gradient);
@@ -628,7 +630,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
     if (!ACTIONS.some(([name]) => name === item.method)) throw new Error(`未知动画动作 ${item.method}`);
     if(item.domainParameters)return; // The group registry owner handles these together.
     const baseline = evaluate(track.start), initial = angles(baseline), method = item.method;
-    if(usesSourceSurfaceParticles(scene)&&(method==='gradientStart'||method==='gradientStop'))return;
+    if(usesSourceSurfaceParticles(scene)&&(method==='gradientStart'||method==='gradientStop'||method==='paramStart'||method==='paramStop'))return;
     if (method === 'gradientStart') { gradient(track, item.gradient ?? { mode: 'offset_cycle', speed: .1, interpolation: 'rgb' }); return; }
     if (method === 'gradientStop') { stop('gradient', track); return; }
     if (method === 'paramStart') { oscillators(track, item.parameters ?? [], true,sourceStartup); return; }
@@ -726,7 +728,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
       for(let i=0;i<items.length;i++)if(!rotationMethod||items[i].method!==rotationMethod||i===lastRotation)action(track,items[i],baseline);
       continue;
     }
-    if (type === 'param') { if(track.replaceParameters)for(const key of continuous.keys())if(key.startsWith('param:'))stop(key,track,true);oscillators(track, track.parameterAnimations ?? [], false); continue; }
+    if (type === 'param') { if(usesSourceSurfaceParticles(scene))continue; if(track.replaceParameters)for(const key of continuous.keys())if(key.startsWith('param:'))stop(key,track,true);oscillators(track, track.parameterAnimations ?? [], false); continue; }
     if (type === 'align') {
       if(track.alignMode!==undefined&&!['absolute','next-turn'].includes(track.alignMode))throw new Error('未知相机对齐模式');
       const initial=angles(baseline),destination:Partial<typeof initial>={};
@@ -771,6 +773,10 @@ export function createAnimationTrack(scene: SceneDocument, type: AnimationClipTy
   if(usesRootsCameraTimeline(scene)){
     if(!['wait','animate'].includes(type))throw new Error('复根源相机时间线仅支持等待与动作组');
     return {id:crypto.randomUUID(),type,target:type==='wait'?'timeline.wait':'camera.actions',from:0,to:0,start:0,duration:1,easing:'sine-in-out',pingPong:false,enabled:true,repeat:1,...(type==='animate'?{actions:[{id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:0,thetaSpeed:.2,gammaSpeed:0}}]}:{})};
+  }
+  if(usesSourceSurfaceParticles(scene)&&type==='param'){
+    const name=Object.keys(scene.parameters)[0];
+    return{id:crypto.randomUUID(),type,target:'surface.parameters',from:0,to:0,start:0,duration:1,easing:'linear',pingPong:false,enabled:true,repeat:1,surfaceParameterClip:{model:'surface-registry-1.7.8',parameters:name?[{name,min:-100,max:100,step:Math.fround(.1),enabled:true}]:[]}};
   }
   const target = genericParameterTargets(scene).find(target=>rootMathAnimationTargetEnabled(scene,target)) ?? gradientAnimationCapabilities(scene).paletteOffsetTarget;
   // Only numeric/parameter clips consume a scalar source. Action, wait and

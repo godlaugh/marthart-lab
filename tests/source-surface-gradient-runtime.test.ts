@@ -15,7 +15,7 @@ function imported(mode:string,groups:string[][]){
   equations:{x:'u',y:'v',z:'0'},palette:['#60FF0000','#A000FF00','#E00000FF'],
   settings:{u_segments:3,v_segments:1,u_min:0,u_max:96,v_min:0,v_max:1,speed_u:1,speed_v:0,periodic_u:false,periodic_v:false,
    scale_x:1,scale_y:1,scale_z:1,offset_x:0,offset_y:0,offset_z:0,show_trails:true,fade_trails:false,trail_lifetime:10},
-  timeline:[...groups.map(actions=>actions.length?{type:'animate',duration:.5,easing:'LINEAR',actions:actions.map(action=>action==='start'?{method:'gradientStart',args:{mode,interpolation:'RGB',speed:90}}:{method:'gradientStop'})}:{type:'wait',duration:.5}),{type:'trails',enable:false}],
+  timeline:[...groups.map(actions=>actions.length?{type:'animate',duration:.5,easing:'LINEAR',actions:actions.map(action=>action==='start'?{method:'gradientStart',args:{mode,interpolation:'RGB',speed:90}}:{method:'gradientStop',args:[]})}:{type:'wait',duration:.5}),{type:'trails',enable:false}],
  }));
  result.scene.timeline.fps=4;return result;
 }

@@ -1,3 +1,4 @@
+import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction,type SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
 import {SourceGradientRuntime,type SourceGradientAction} from './sourceGradientRuntime';
 import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sourceSurfacePaletteTarget,smoothSourceSurfacePalette,type SourceSurfacePaletteState} from './sourceSurfaceGradient';
 import {createSourceSurfaceTrailGradient} from './sourceSurfaceTrailGradient';
@@ -10,14 +11,14 @@ import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 
 /** Explicit version: existing local and ordinary-camera documents retain their
  * previous surface sampler until they opt into the source particle geometry. */
-export const SOURCE_SURFACE_CLIP_TYPES:readonly string[]=['wait','animate','align','trails'];
-export const SOURCE_SURFACE_ACTION_METHODS:readonly string[]=['rotatePhi','rotateTheta','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','track','stopTracking','gradientStart','gradientStop'];
+export const SOURCE_SURFACE_CLIP_TYPES:readonly string[]=['wait','animate','align','trails','param'];
+export const SOURCE_SURFACE_ACTION_METHODS:readonly string[]=['rotatePhi','rotateTheta','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','track','stopTracking','gradientStart','gradientStop','paramStart','paramStop'];
 export const SOURCE_SURFACE_PARTICLES='mathart-1.7.8-points-v1';
 export const usesSourceSurfaceParticles=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='surface'&&scene.settings.surfaceGeometryVersion===SOURCE_SURFACE_PARTICLES;
 export function replaySourceSurface(scene:SceneDocument,time:number,coverage:'all'|'tracked',isCancelled?:()=>boolean){
  const initial=ordinarySourceCameraInitial(scene);if(!initial)throw new Error('原版曲面粒子需要对应的原版相机');
  const prepared=prepareSourceSurfaceParticles(scene);let particles:SourceSurfaceParticles|undefined;
- const frame=evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,time,{isCancelled,gradientTarget:'surface',createParticles:()=>particles=prepared.create(coverage,isCancelled)});
+ const frame=evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,time,{isCancelled,particleActions:'surface',createParticles:()=>particles=prepared.create(coverage,isCancelled)});
  return{frame,particles:particles!};
 }
 const F=Math.fround,MAX_PARTICLES=512*512,MAX_WORK=20_000_000;
@@ -38,6 +39,7 @@ function scalar(raw:unknown,label:string):number {
  * original JSON or sampling through the unrelated local mathjs geometry path. */
 export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourceSurfaceParticles {
  if(!usesSourceSurfaceParticles(scene))fail('input','缺少原版曲面粒子版本');
+ if(!Number.isFinite(scene.timeline.fps)||scene.timeline.fps<1||scene.timeline.fps>120)fail('input','原版曲面帧率必须在 1–120');
  const s=scene.settings;
  if(s.renderMode!=='points'||s.computeBackend!=='cpu')fail('unsupported','原版曲面粒子当前只接入 CPU 点模式；GPU 与网格仍待接入');
  for(const key of ['showTrails','recordTrails','fadeTrails'])if(typeof s[key]!=='boolean')fail('input',`原版曲面 ${key} 缺少布尔值`);
@@ -49,7 +51,7 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  if(s.scale!==1||['rotateX','rotateY','rotateZ'].some(key=>Number(s[key]??0)!==0))fail('unsupported','原版曲面粒子使用分轴 scale 与 offset，不执行本地整体缩放或物体旋转');
  for(const track of scene.timeline.tracks){
   if(!track.enabled)continue;
-  if(!SOURCE_SURFACE_CLIP_TYPES.includes(track.type??'')||track.actions?.some(a=>!SOURCE_SURFACE_ACTION_METHODS.includes(a.method)))fail('unsupported','原版曲面粒子的参数/模式动画尚未接入，不能按本地时钟替代');
+  if(!SOURCE_SURFACE_CLIP_TYPES.includes(track.type??'')||track.actions?.some(a=>!SOURCE_SURFACE_ACTION_METHODS.includes(a.method)))fail('unsupported','原版曲面粒子的模式动画尚未接入，不能按本地时钟替代');
  }
  const axis=(name:'U'|'V'):Axis=>{
   const prefix=name.toLowerCase(),count=s[prefix+'Segments'];
@@ -66,9 +68,9 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  keys.forEach((key,i)=>{const value=scene.parameters[key];if(!Number.isFinite(value))fail('input',`原版曲面参数 ${key} 必须有限`);variables[i+2]=value;});
  const expressions=['x','y','z'].map(key=>{const parsed=prepareSourceRealExpression(scene.equations[key],names);if(!parsed.ok)fail(parsed.error.kind,`原版曲面公式 ${key}：${JSON.stringify(parsed.error)}`);return parsed.value;});
  const operations=expressions.reduce((sum,e)=>sum+e.operations,0);
- return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,scales,offsets,variables,expressions,operations,trails,palette,fadePoints},coverage,isCancelled)};
+ return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,scales,offsets,variables,parameterKeys:keys,frameRate:F(scene.timeline.fps),expressions,operations,trails,palette,fadePoints},coverage,isCancelled)};
 }
-interface Configuration {palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;scales:number[];offsets:number[];variables:Float64Array;expressions:SourceRealExpression[];operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
+interface Configuration {parameterKeys:string[];frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;scales:number[];offsets:number[];variables:Float64Array;expressions:SourceRealExpression[];operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
 function wrap(value:number,axis:Axis):number {
  const range=F(axis.max-axis.min);if(range<=0)return axis.min;
  let rest=F(F(value-axis.min)%range);if(rest<0)rest=F(rest+range);return F(axis.min+rest);
@@ -86,6 +88,8 @@ function edgeFade(factor:number,axis:Axis,value:number):number {
  * All buffers are owned by this replay and snapshots are copied before transfer. */
 export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly gradient:SourceGradientRuntime;
+ private readonly parameters:SourceSurfaceParameterRuntime;
+ private readonly ignoredParameterNames=new Set<string>();
  private paletteState:SourceSurfacePaletteState=INITIAL_SOURCE_SURFACE_PALETTE_STATE;
  private animationTime=0;
  private readonly color?:PreparedSourceSurfaceColors;
@@ -120,6 +124,12 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
     // reapplies boundary fade; zero-dt animation callbacks still reset alpha.
     for(let id=0;id<config.count;id++){if((id&1023)===0)this.check();this.pointAlphas![id]=(this.color.packed[id]>>>24)/255;}
    }
+  });
+  const parameterSlots=new Map(config.parameterKeys.map((name,i)=>[name,i+2]));
+  this.parameters=new SourceSurfaceParameterRuntime({
+   read:name=>{const slot=parameterSlots.get(name);return slot===undefined?0:this.variables[slot];},
+   write:(name,value)=>{const slot=parameterSlots.get(name);if(slot===undefined){this.ignoredParameterNames.add(name);return;}if(!Number.isFinite(value))fail('arithmetic',`原版曲面参数 ${name} 产生非有限值`);this.variables[slot]=value;},
+   reserve:units=>this.reserveWork(units),
   });
   if(coverage==='all')for(let id=0;id<config.count;id++)this.ensure(id);
  }
@@ -168,10 +178,14 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  });}
  beginGradientActions(actions:readonly SourceGradientAction[]):void {this.guarded(()=>this.gradient.begin(actions));}
  interpolateGradientActions(eased:number,finished:boolean):void {this.guarded(()=>this.gradient.interpolate(eased,finished));}
+ beginParameterActions(actions:readonly SourceSurfaceParameterAction[]):void {this.guarded(()=>this.parameters.begin(actions));}
+ interpolateParameterActions(eased:number,finished:boolean):void {this.guarded(()=>this.parameters.interpolate(eased,finished));}
+ beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]):void {this.guarded(()=>this.parameters.replace(parameters));}
+ finishParameterClip():void {this.guarded(()=>this.parameters.stop());}
  update(frame:OrdinaryCameraParticleFrame):void {this.guarded(()=>{
   this.check();if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
   this.lastFrame=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
-  this.animationTime=F(frame.time);this.gradient.update(dt);
+  this.animationTime=F(frame.time);this.parameters.update(dt,this.config.frameRate);this.gradient.update(dt);
   this.reserve(this.ids.length);
   const u=this.config.u,v=this.config.v,time=F(frame.time);
   for(let slot=0;slot<this.ids.length;slot++){
@@ -209,7 +223,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   if(this.coverage!=='all')fail('input','稀疏相机查询不能伪装成完整曲面输出');
   const dynamic=this.history&&this.gradient.running?createSourceSurfaceTrailGradient({palette:this.color!.palette,runtime:this.gradient,time:this.animationTime,numU:this.config.u.count,numV:this.config.v.count,reserve:units=>this.reserveWork(units)}):undefined;
   const trails=this.history?.snapshot(dynamic);
-  return{positions:this.positions.slice(),colors:this.color!.colors.slice(),pointAlphas:this.pointAlphas!.slice(),diagnostics:[...this.color!.diagnostics],particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(trails?{trails}: {})};
+  return{positions:this.positions.slice(),colors:this.color!.colors.slice(),pointAlphas:this.pointAlphas!.slice(),diagnostics:[...this.color!.diagnostics,...(this.ignoredParameterNames.size?[`原版曲面忽略 ${this.ignoredParameterNames.size} 个未声明参数的写入；参数名已保留在时间线。`]:[])],particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(trails?{trails}: {})};
  });}
 }
 
