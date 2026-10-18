@@ -1,0 +1,154 @@
+{
+  "classSha256": "1f69e0ba1954e520dadb0b4089910ec8cc07f26edf20dfdd8688a79dd88454bc",
+  "scope": "Independent bounded JavaScript interpretation of retained bytecode, not native JVM execution",
+  "cases": [
+    {
+      "id": "cloak",
+      "parameters": {
+        "lambda": -2.34,
+        "alpha": 2,
+        "beta": 0.2,
+        "gamma": 0.2,
+        "omega": 0,
+        "symmetry_degree": 5
+      },
+      "template": "standard",
+      "expected": {
+        "score": 0.8303343513048296,
+        "accepted": true
+      }
+    },
+    {
+      "id": "sixfold",
+      "parameters": {
+        "lambda": -2.5,
+        "alpha": 5,
+        "beta": -1.9,
+        "gamma": 1,
+        "omega": 0,
+        "symmetry_degree": 6
+      },
+      "template": "standard",
+      "expected": {
+        "score": 0.6331350007116207,
+        "accepted": true
+      }
+    },
+    {
+      "id": "rotating",
+      "parameters": {
+        "lambda": -2.34,
+        "alpha": 2,
+        "beta": 0.2,
+        "gamma": 0.2,
+        "omega": 0.02,
+        "symmetry_degree": 5
+      },
+      "template": "standard",
+      "expected": {
+        "score": 0.8280116502253605,
+        "accepted": true
+      }
+    },
+    {
+      "id": "zero",
+      "parameters": {
+        "lambda": 0,
+        "alpha": 0,
+        "beta": 0,
+        "gamma": 0,
+        "omega": 0,
+        "symmetry_degree": 2
+      },
+      "template": "standard",
+      "expected": {
+        "score": 0.30174511111111113,
+        "accepted": false
+      }
+    },
+    {
+      "id": "identity",
+      "parameters": {
+        "lambda": 1,
+        "alpha": 0,
+        "beta": 0,
+        "gamma": 0,
+        "omega": 0,
+        "symmetry_degree": 2
+      },
+      "template": "standard",
+      "expected": {
+        "score": 0.295670844510485,
+        "accepted": false
+      }
+    },
+    {
+      "id": "escape",
+      "parameters": {
+        "lambda": 100,
+        "alpha": 0,
+        "beta": 0,
+        "gamma": 0,
+        "omega": 0,
+        "symmetry_degree": 2
+      },
+      "template": "standard",
+      "expected": {
+        "score": -1,
+        "accepted": false
+      }
+    },
+    {
+      "id": "samplingEscape",
+      "parameters": {
+        "lambda": 1.05,
+        "alpha": 0,
+        "beta": 0,
+        "gamma": 0,
+        "omega": 0,
+        "symmetry_degree": 2
+      },
+      "template": "standard",
+      "expected": {
+        "score": -0.13762604176155893,
+        "accepted": false
+      }
+    },
+    {
+      "id": "modifiedAccepted",
+      "parameters": {
+        "lambda": -2.34,
+        "alpha": 2,
+        "beta": 0.2,
+        "gamma": 0.2,
+        "omega": 0,
+        "symmetry_degree": 5,
+        "delta": 0.001,
+        "delta_power": 2
+      },
+      "template": "modified",
+      "expected": {
+        "score": 0.8316547928201785,
+        "accepted": true
+      }
+    },
+    {
+      "id": "modified",
+      "parameters": {
+        "lambda": -2.3,
+        "alpha": 2,
+        "beta": 0.2,
+        "gamma": 0.3,
+        "omega": 0.04,
+        "symmetry_degree": 5,
+        "delta": 0.7,
+        "delta_power": 3
+      },
+      "template": "modified",
+      "expected": {
+        "score": -1,
+        "accepted": false
+      }
+    }
+  ]
+}

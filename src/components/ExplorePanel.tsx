@@ -59,7 +59,10 @@ export function ExplorePanel({scene,onChange}:{scene:SceneDocument;onChange:(nex
     if(scene.kind==='map'||scene.kind==='symmetry'){
       try{
         const result=scene.kind==='map'?exploreMap(seed,{x:scene.equations.x,y:scene.equations.y,z:scene.equations.z},scene.parameters,{dimension:mapDimension(scene.settings)}):exploreSymmetry(seed,{customGlsl:scene.equations.glsl,profile:String(scene.settings.explorationProfile??'any') as SymmetryProfile,...(scene.settings.lockDegree?{degree:Number(scene.settings.degree??5)}:{}),template:scene.settings.template==='modified'?'modified':'standard'});
-        onChange({...scene,parameters:result.parameters,settings:{...scene.settings,...('settings' in result?result.settings as SymmetryExploration['settings']:{}),explorationSeed:seed}});setSeed((seed+1)>>>0);setMessage(`已应用新的参数组合，${result.acceptedCandidates} / ${result.candidates} 个候选通过轨迹检查。`);
+        // The built-in Symmetry search owns its fixed coefficients only. Extra
+        // authored uniforms/parameters survive as they do when switching from
+        // a custom formula to a template, including their saved animations.
+        onChange({...scene,parameters:scene.kind==='symmetry'?{...scene.parameters,...result.parameters}:result.parameters,settings:{...scene.settings,...('settings' in result?result.settings as SymmetryExploration['settings']:{}),explorationSeed:seed}});setSeed((seed+1)>>>0);setMessage(`已应用新的参数组合，${result.acceptedCandidates} / ${result.candidates} 个候选通过轨迹检查。`);
       }catch(error){setMessage(String(error));}return;
     }
     if(scene.kind==='surface'){

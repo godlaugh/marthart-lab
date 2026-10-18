@@ -1,5 +1,6 @@
 import {compileReal,finite,random} from '../engine/expression';
 import {readSymmetryCustomSource} from '../engine/symmetryCustom';
+import {evaluateSymmetryCandidate,type SymmetryCandidateMetrics} from './symmetrySearch';
 export type Point3=[number,number,number];
 /** A field owns both its step metric and validity. Consumers must not infer
  * validity from the sign of a metric: custom shaders may return negative values. */
@@ -48,7 +49,8 @@ export const SYMMETRY_PROFILES=['any','shield','cloak','sector','pinwheel','ribb
 export type SymmetryProfile=typeof SYMMETRY_PROFILES[number];
 type Range=[number,number];
 interface Profile {ranges:[Range,Range,Range,Range,Range];degree:Range;minAbs:[number,number,number];modified?:boolean;}
-// Parameter domain facts from shipped profile metadata; sampling/scoring below is independent.
+// Parameter domain facts from shipped profile metadata. Candidate RNG remains
+// the explicit local seed contract; scoring uses the retained source probes.
 const PROFILES:Record<SymmetryProfile,Profile>={
  any:{ranges:[[-3,3],[-3,3],[-1.4,1.4],[-1,1],[-1,1]],degree:[2,10],minAbs:[0,0,0]},
  shield:{ranges:[[.9,3],[-3,-.45],[-1,1],[-1,1],[-.2,.2]],degree:[3,12],minAbs:[.1,.25,0]},
@@ -73,7 +75,7 @@ function orbitMetrics(points:Point3[],expected:number,dimension:2|3):OrbitMetric
   return{score,finiteRatio:points.length/expected,occupied,span,center,bounds:{min,max}};
 }
 function seedValue(seed:number){if(!Number.isInteger(seed)||seed<0||seed>0xffffffff)throw new Error('探索种子必须是 32 位非负整数');return seed;}
-export interface SymmetryExploration {seed:number;profile:SymmetryProfile;parameters:Record<string,number>;settings:{degree:number;template:'standard'|'modified';deltaPower:number};metrics:OrbitMetrics;candidates:number;acceptedCandidates:number;}
+export interface SymmetryExploration {seed:number;profile:SymmetryProfile;parameters:Record<string,number>;settings:{degree:number;template:'standard'|'modified';deltaPower:number};metrics:SymmetryCandidateMetrics;candidates:number;acceptedCandidates:number;}
 export function exploreSymmetry(seed:number,options:{profile?:SymmetryProfile;degree?:number;template?:'standard'|'modified';candidates?:number;isCancelled?:()=>boolean;customGlsl?:unknown}={}):SymmetryExploration {
   if(readSymmetryCustomSource(options.customGlsl)!==undefined)throw new Error('自定义 Symmetry GLSL 不支持内建模板探索；请先显式选择标准或径向修正模板。');
   const r=random(seedValue(seed)),profile=options.profile??'any',spec=PROFILES[profile];if(!spec)throw new Error('未知对称探索类型');
@@ -86,11 +88,15 @@ export function exploreSymmetry(seed:number,options:{profile?:SymmetryProfile;de
     if(options.isCancelled?.())throw new Error('对称探索已取消');
     const [lambda,alpha,beta,gamma,omega]=spec.ranges.map((range,i)=>sampleRange(range,i>1?spec.minAbs[i-2]:0));
     const template=spec.modified?'modified':options.template??'standard',n=options.degree??Math.floor(ranged([spec.degree[0],spec.degree[1]+1])),delta=template==='modified'?sampleRange([-1,1],spec.modified?.25:0):0,deltaPower=template==='modified'?2+Math.floor(r()*5):1;
-    const p:SymmetryParameters={lambda,alpha,beta,gamma,omega,n,template,delta,deltaPower};let x=.01+r()*.1,y=.01+r()*.1;const points:Point3[]=[];let diverged=false;
-    for(let i=0;i<2280;i++){[x,y]=symmetryStep(x,y,p);if(!Number.isFinite(x)||!Number.isFinite(y)||Math.hypot(x,y)>10){diverged=true;break;}if(i>=80)points.push([x,y,0]);}
-    if(diverged)continue;const metrics=orbitMetrics(points,2200,2);if(!metrics)continue;acceptedCandidates++;
+    const p=validateSymmetryParameters({lambda,alpha,beta,gamma,omega,n,template,delta,deltaPower});
+    // Preserve the established seeded candidate sequence: the previous local
+    // heuristic consumed two random initial coordinates for each candidate.
+    r();r();
+    const metrics=evaluateSymmetryCandidate(p,options.isCancelled);if(!metrics.accepted)continue;acceptedCandidates++;
     if(!best||metrics.score>best.metrics.score)best={seed,profile,parameters:{lambda,alpha,beta,gamma,omega,delta},settings:{degree:n,template,deltaPower},metrics,candidates,acceptedCandidates};
   }
+  // Source search can return its best rejected candidate. Our existing authoring
+  // contract instead reports failure and leaves the user's document unchanged.
   if(!best)throw new Error('本次搜索未找到稳定且非退化的对称轨迹；请更换种子或增加候选数');
   return{...best,acceptedCandidates};
 }
