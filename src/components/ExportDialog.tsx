@@ -1,3 +1,4 @@
+import {usesSourceSurfaceParticles} from '../engine/sourceSurfaceParticles';
 import {ordinarySourceViewport} from '../engine/ordinarySourceCamera';
 import { useEffect, useRef, useState } from "react";
 import { Download, Image, Film, X } from "lucide-react";
@@ -23,6 +24,7 @@ export function ExportDialog({
   time,
   currentSpirographFrame,
   previewLogicalHeight,
+  previewPointPixelDensity,
   currentRootsCapture,
   onClose,
   onDone,
@@ -31,6 +33,7 @@ export function ExportDialog({
   time: number;
   currentSpirographFrame?:number;
   previewLogicalHeight?:number;
+  previewPointPixelDensity?:number;
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   onClose: () => void;
   onDone: (message: string) => void;
@@ -133,7 +136,8 @@ export function ExportDialog({
       const exportScene=rootsFrames&&kind==='video'?withRootsFreshRecording(scene,recordingFps):scene;
       const timeline=sourceFrames?exportScene.timeline:resolveTimeline(exportScene);
       if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
-      const exportContext={quality:'export' as const,width,height,...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!)}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      if(usesSourceSurfaceParticles(exportScene)&&previewPointPixelDensity===undefined)throw new Error('源曲面点导出缺少已呈现预览的像素密度，请等待预览完成');
+      const exportContext={quality:'export' as const,width,height,...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const canvas = document.createElement('canvas');
       r=new ArtRenderer(canvas);
       r.setSize(width,height,1);

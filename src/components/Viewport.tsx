@@ -36,7 +36,7 @@ export const Viewport = forwardRef<
     time: number;
     pixelRatio?:number;
     onCamera?: (c: CameraState) => void;
-    onSize?:(width:number,height:number,resolution?:ProjectResolution)=>void;
+    onSize?:(width:number,height:number,resolution?:ProjectResolution,pixelRatio?:number)=>void;
     onViewSettings?: (values:Settings)=>void;
     onSamilaViewport?:SamilaViewportCommit;
     onRootsPresentation?:RootsPresentationCommit;
@@ -103,7 +103,7 @@ export const Viewport = forwardRef<
         const width=Math.round(fit.width),height=Math.round(fit.height);
         const sourceCamera=!!interaction.current.scene.sourceCamera;
         r.setSize(sourceCamera?width:fit.width,sourceCamera?height:fit.height,ratio.current);presented.current.appearance();
-        if(width>0&&height>0)sizeCallback.current?.(width,height,configured);
+        if(width>0&&height>0)sizeCallback.current?.(width,height,configured,r.renderer.getPixelRatio());
       }catch(error){failed(error);}
     };
     refit.current=resize;

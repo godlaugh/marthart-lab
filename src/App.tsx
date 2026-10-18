@@ -193,7 +193,7 @@ export default function App() {
     [newMenu, setNewMenu] = useState(false),
     [inputDialog,setInputDialog]=useState<TextPromptRequest|null>(null),
     [cameraRevision, setCameraRevision] = useState(0),
-    [viewportMeasurement,setViewportMeasurement]=useState<{size:[number,number];resolution?:ProjectResolution}|null>(null),
+    [viewportMeasurement,setViewportMeasurement]=useState<{size:[number,number];resolution?:ProjectResolution;pixelRatio:number}|null>(null),
     [pickingJulia,setPickingJulia]=useState(false),
     [formulaDraft, setFormulaDraft] = useState(scene.equations);
   // Selection previews the resolved endpoint without changing the authored
@@ -535,7 +535,7 @@ export default function App() {
     if(generationScene.current?.id!==scene.id)setOutput(null);
     generationScene.current=scene;
     const profile=previewProfile(renderPreferences.quality),dimensions=previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1])}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
   },[scene,playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;playbackStartedAt.current=performance.now();setPlaying(true);}
@@ -840,7 +840,7 @@ export default function App() {
               time={renderTime}
               pixelRatio={previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio}
               onCamera={cameraChanged}
-              onSize={(width,height,resolution)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution})}
+              onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
               onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}))}
               onSamilaViewport={(expected,view,begin)=>{
                 if(playingRef.current)return;
@@ -1148,11 +1148,11 @@ export default function App() {
                       {rootsAppearanceControlVisible(scene,'pointSize')&&<Control
                         spec={{
                           key: "pointSize",
-                          label: t("粒子大小"),
+                          label: t(usesSourceSurfaceParticles(scene)?"点半径":"粒子大小"),
                           group: "",
                           type: "number",
-                          min: 0.1,
-                          max: 30,
+                          min: usesSourceSurfaceParticles(scene)?undefined:0.1,
+                          max: usesSourceSurfaceParticles(scene)?undefined:30,
                           step: 0.1,
                         }}
                         value={scene.settings.pointSize}
@@ -1258,7 +1258,8 @@ export default function App() {
           scene={{ ...scene, camera: camera.current }}
           time={time}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}
-          previewLogicalHeight={viewportSize?.[1]}
+          previewLogicalHeight={scene.sourceCamera?(presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
+          previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourcePointAppearance?.referencePixelDensity:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{
             size:{width:output?.type==='raster'?output.width:1920,height:output?.type==='raster'?output.height:1080},
             ready:completedFrameReady,

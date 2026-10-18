@@ -230,7 +230,7 @@ function commonLocalPalette(r:Reader,s:SceneDocument){
 function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
- if(s.kind!=='roots')numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
+ if(s.kind!=='roots'&&!usesSourceSurfaceParticles(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceParticles(s))commonLocalPalette(r,s);
  if(!usesSourceSurfaceParticles(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
@@ -900,6 +900,8 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  const mode=(r.str(['settings','surface_mode'])??'POINTS').toUpperCase();
  if(render==='GPU'||mode==='MESH')fail('原版曲面 track 当前只接入 CPU 点模式；GPU/网格的目标身份和显示仍待接入');
  const settings=s.settings;
+ settings.pointSize=Math.fround(hasSettings?r.domainDouble(['settings','dot_size'],2):1.68);
+ if(!Number.isFinite(settings.pointSize))fail('原版曲面点半径转换为非有限数值');
  Object.assign(settings,{surfaceGeometryVersion:SOURCE_SURFACE_PARTICLES,renderMode:'points',computeBackend:'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,flowU:0,flowV:0});
  for(const field of SOURCE_SURFACE_NUMBER_FIELDS)r.retainNumberToken(['settings',field]);
  for(const [axis,defaultCount,maxText]of [['u',hasSettings?40:99,'TWO_PI'],['v',hasSettings?20:99,'PI']] as const){

@@ -56,7 +56,7 @@ export function* rootsTimelineNumberTokenPaths(raw:readonly unknown[]):Iterable<
  }
 }
 const ordinaryFamilies=new Set<SceneDocument['kind']>(['surface','implicit','attractor','perlin']);
-export const SOURCE_SURFACE_NUMBER_FIELDS=['u_segments','v_segments','u_min','u_max','v_min','v_max','speed_u','speed_v','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','trail_lifetime','line_weight'] as const;
+export const SOURCE_SURFACE_NUMBER_FIELDS=['u_segments','v_segments','u_min','u_max','v_min','v_max','speed_u','speed_v','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','trail_lifetime','line_weight','dot_size'] as const;
 const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length;
 // Every retained token requires at least one source JSON value node. Clip and
 // action bounds also constrain slots; taking the smaller bound does not grant

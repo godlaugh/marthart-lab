@@ -1,3 +1,4 @@
+import type {SourceSurfacePointAppearance} from './engine/sourceSurfacePointAppearance';
 import type {SourceSurfacePalette} from './engine/sourceSurfaceColor';
 import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
 import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
@@ -278,6 +279,7 @@ export interface GeometryOutput {
   colors?: Float32Array;
   /** Producer-owned normalized alpha per point, multiplied by display opacity. */
   pointAlphas?: Float32Array;
+  sourcePointAppearance?: SourceSurfacePointAppearance;
   /** Parameter-grid provenance from the surface producer, before vertex compaction.
    * Each cell mask: bit 0 = (a,b,c), bit 1 = (a,c,d); omitted triangles stay holes. */
   surfaceGrid?: {
@@ -379,6 +381,8 @@ export interface GenerateContext {
   spirographFrame?:SpirographFrameRequest;
   rootsViewport?:RootsViewportRequest;
   sourceViewport?:SourceCameraViewport;
+  /** Measured local primary renderer density; separate from source-app DPI evidence. */
+  sourcePointPixelDensity?:number;
   /** Actual local logical canvas size, separate from preview sampling pixels.
    * Offscreen requests use the explicit export dimensions; neither proves
    * the original application's operating-system DPI or framebuffer scale. */
@@ -395,7 +399,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

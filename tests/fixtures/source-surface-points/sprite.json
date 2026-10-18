@@ -1,0 +1,153 @@
+{
+  "evidence": "Independently transcribed Processing PApplet.dist/map and PGraphics.color Float32 instructions; no native JVM execution.",
+  "size": 64,
+  "sha256": "7d3797d2a270276b81aaedf071cefa3f1018071b373b8b2f8c21f2da3448de8e",
+  "rgba": [
+    {
+      "xy": [
+        32,
+        32
+      ],
+      "value": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "xy": [
+        32,
+        3
+      ],
+      "value": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "xy": [
+        32,
+        2
+      ],
+      "value": [
+        255,
+        255,
+        255,
+        127
+      ]
+    },
+    {
+      "xy": [
+        32,
+        1
+      ],
+      "value": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "xy": [
+        3,
+        32
+      ],
+      "value": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "xy": [
+        2,
+        32
+      ],
+      "value": [
+        255,
+        255,
+        255,
+        127
+      ]
+    },
+    {
+      "xy": [
+        1,
+        32
+      ],
+      "value": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "xy": [
+        11,
+        11
+      ],
+      "value": [
+        255,
+        255,
+        255,
+        165
+      ]
+    },
+    {
+      "xy": [
+        12,
+        12
+      ],
+      "value": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "xy": [
+        0,
+        0
+      ],
+      "value": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "density": 1,
+      "ratio": 1,
+      "scale": 1.399999976158142,
+      "radiusForTwo": 2.240000009536743
+    },
+    {
+      "density": 2,
+      "ratio": 1,
+      "scale": 1.3290789127349854,
+      "radiusForTwo": 2.126526355743408
+    },
+    {
+      "density": 2,
+      "ratio": 4,
+      "scale": 2.6581578254699707,
+      "radiusForTwo": 4.253052711486816
+    },
+    {
+      "density": 1,
+      "ratio": 0.25,
+      "scale": 0.699999988079071,
+      "radiusForTwo": 1.1200000047683716
+    }
+  ]
+}

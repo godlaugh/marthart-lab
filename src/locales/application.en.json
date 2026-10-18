@@ -1213,5 +1213,6 @@
   "恢复曲面六色默认": "Restore six surface colors",
   "周期边界点渐隐": "Fade points at periodic boundaries",
   "流动粒子靠近周期边界时渐隐；拖尾仍使用色板中的透明度。": "Flowing particles fade near periodic boundaries; trails retain palette alpha.",
-  "最旧记录透明、最新记录使用色板透明度；边界断点也计入渐隐顺序。": "The oldest record is transparent; the newest uses palette alpha. Boundary breaks count in the fade order."
+  "最旧记录透明、最新记录使用色板透明度；边界断点也计入渐隐顺序。": "The oldest record is transparent; the newest uses palette alpha. Boundary breaks count in the fade order.",
+  "点半径": "Point radius"
 }
