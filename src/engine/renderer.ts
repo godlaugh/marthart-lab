@@ -1,4 +1,5 @@
 import {createSourceSurfacePoints} from './sourceSurfacePointRenderer';
+import {createSourceSurfaceMeshFill} from './sourceSurfaceMeshRenderer';
 import {prepareOrdinarySourceFrame} from './ordinarySourceCamera';
 import type {SourceCameraPlan} from './sourceCamera';
 import {implicitMeshPresentation,createImplicitWireframe} from './implicitMeshPresentation';
@@ -117,6 +118,7 @@ export class ArtRenderer {
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
     if(output.sourceCameraFrame&&output.type!=='geometry')throw new Error('原版几何相机不能应用到已投影的像素图像');
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
+    if(output.type==='geometry'&&output.sourcePointAppearance&&output.sourceMeshAppearance)throw new Error('源曲面点与网格外观不能混用');
     const sourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
     const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
     if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
@@ -156,6 +158,10 @@ export class ArtRenderer {
       );
       this.group.add(plane);
       this.controls.enableRotate = false;
+    } else if(output.sourceMeshAppearance){
+      if(!sourcePlan)throw new Error('源曲面网格需要对应的源相机帧');
+      this.group.add(createSourceSurfaceMeshFill(output,sourcePlan,Number(document.settings.opacity??1)));
+      this.controls.enableRotate=false;
     } else if(output.sourcePointAppearance){
       if(!sourcePlan)throw new Error('源曲面点外观需要对应的源相机帧');
       this.group.add(createSourceSurfacePoints(output,sourcePlan,Number(document.settings.opacity??1)));

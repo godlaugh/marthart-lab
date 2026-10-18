@@ -1,6 +1,6 @@
 import type {DomainSourceInterpolation} from './domainSourcePalette';
 import {sourceConfigPackedColor,SourceConfigColorError,SOURCE_COLOR_TEXT_BUDGET} from './sourceConfigColor';
-import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sampleSourceSurfaceGradient,type SourceSurfacePaletteState,type SourceSurfaceGradientMode} from './sourceSurfaceGradient';
+import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sampleSourceSurfaceGradient,smoothSourceSurfaceCyclicRows,type SourceSurfacePaletteState,type SourceSurfaceGradientMode,type SourceSurfaceCyclicSmoothingPasses} from './sourceSurfaceGradient';
 
 /** ManimColors.DEFAULT_PALETTE, MathArt 1.7.8. Keep authored color text until
  * preparation: ConfigUtils recovers invalid strings as white, not on import. */
@@ -42,22 +42,33 @@ export function prepareSourceSurfacePalette(input:SourceSurfacePalette|undefined
 /** Final static CPU colors after applyPalette replaces the initial reversed
  * gradient. The shared sampler also owns dynamic colors; this entry point
  * deliberately requests the initial inactive state. */
-export function prepareSourceSurfaceColors(input:SourceSurfacePalette|undefined,numU:number,numV:number,cyclic:boolean):PreparedSourceSurfaceColors {
+export function prepareSourceSurfaceColors(input:SourceSurfacePalette|undefined,numU:number,numV:number,cyclic:boolean,cyclicSmoothingPasses:SourceSurfaceCyclicSmoothingPasses=0):PreparedSourceSurfaceColors {
  for(const size of [numU,numV])if(!Number.isInteger(size)||size<1||size>512)throw new Error('原版曲面颜色网格每轴必须为 1 至 512 的整数');
  if(typeof cyclic!=='boolean')throw new Error('原版曲面颜色周期标记必须是布尔值');
  const palette=prepareSourceSurfacePalette(input),packed=new Uint32Array(numU*numV),colors=new Float32Array(packed.length*3);
  const prepared={palette,packed,colors,diagnostics:[...palette.diagnostics]};
- refreshSourceSurfaceColors(prepared,numU,numV,INITIAL_SOURCE_SURFACE_PALETTE_STATE,'hue_rotate','rgb',cyclic);
+ refreshSourceSurfaceColors(prepared,numU,numV,INITIAL_SOURCE_SURFACE_PALETTE_STATE,'hue_rotate','rgb',cyclic,undefined,cyclicSmoothingPasses);
  return prepared;
 }
 
 /** One row sampler owns static and live head colors, including cyclic seam
  * replacement. Target state and callback scheduling belong to the particle owner. */
-export function refreshSourceSurfaceColors(prepared:PreparedSourceSurfaceColors,numU:number,numV:number,state:SourceSurfacePaletteState,mode:SourceSurfaceGradientMode,interpolation:DomainSourceInterpolation,cyclic:boolean,check?:()=>void):void {
- const {palette,packed,colors}=prepared;let first=0;
+export function refreshSourceSurfaceColors(prepared:PreparedSourceSurfaceColors,numU:number,numV:number,state:SourceSurfacePaletteState,mode:SourceSurfaceGradientMode,interpolation:DomainSourceInterpolation,cyclic:boolean,check?:()=>void,cyclicSmoothingPasses:SourceSurfaceCyclicSmoothingPasses=0):void {
+ const {palette,packed,colors}=prepared;
+ // Only cyclic mesh needs neighbor rows. Preserve the points streaming path
+ // without a new per-callback allocation; the mesh scratch is bounded by 512.
+ const rows=cyclic&&cyclicSmoothingPasses===3&&numU>3?new Uint32Array(numU):undefined;
+ if(rows){
+  for(let row=0;row<numU;row++){
+   check?.();
+   rows[row]=sampleSourceSurfaceGradient(palette.packed,F(row/Math.max(1,numU-1)),state,mode,interpolation,cyclic);
+  }
+  smoothSourceSurfaceCyclicRows(rows,cyclicSmoothingPasses,check);
+ }
+ let first=0;
  for(let row=0;row<numU;row++){
   check?.();
-  const color=cyclic&&row===numU-1&&numU>1?first:sampleSourceSurfaceGradient(palette.packed,F(row/Math.max(1,numU-1)),state,mode,interpolation,cyclic);
+  const color=cyclic&&row===numU-1&&numU>1?first:rows?rows[row]:sampleSourceSurfaceGradient(palette.packed,F(row/Math.max(1,numU-1)),state,mode,interpolation,cyclic);
   if(row===0)first=color;
   for(let column=0;column<numV;column++){
    const id=row*numV+column;packed[id]=color;

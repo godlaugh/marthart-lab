@@ -4,7 +4,8 @@ import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sourceSurfacePaletteTarget,smoothSo
 import {createSourceSurfaceTrailGradient} from './sourceSurfaceTrailGradient';
 import {parseSourceSurfacePalette,prepareSourceSurfaceColors,refreshSourceSurfaceColors,type SourceSurfacePalette,type PreparedSourceSurfaceColors} from './sourceSurfaceColor';
 import type {SceneDocument} from '../types';
-import {prepareSourceRealExpression,parseDomainSourceFloat,type SourceRealExpression} from './domainSourceScalar';
+import {parseDomainSourceFloat} from './domainSourceScalar';
+import {prepareSourceSurfaceFunction,type PreparedSourceSurfaceFunction,type SourceSurfaceFunction} from './sourceSurfaceFunction';
 import type {OrdinarySourceCameraParticles,OrdinaryCameraTargetRequest,OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding} from './ordinarySourceCameraTimeline';
 import {evaluateOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
@@ -62,15 +63,11 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  const u=axis('U'),v=axis('V'),count=u.count*v.count;
  if(count>MAX_PARTICLES)fail('capacity','原版曲面粒子超过本地网格容量');
  const scales=['X','Y','Z'].map(a=>scalar(s['scale'+a],'scale'+a)),offsets=['X','Y','Z'].map(a=>scalar(s['offset'+a],'offset'+a));
- const keys=Object.keys(scene.parameters).sort();
- if(keys.length>8192)fail('capacity','原版曲面参数超过 8192 项本地容量');
- const names=['u','v',...keys],variables=new Float64Array(names.length);
- keys.forEach((key,i)=>{const value=scene.parameters[key];if(!Number.isFinite(value))fail('input',`原版曲面参数 ${key} 必须有限`);variables[i+2]=value;});
- const expressions=['x','y','z'].map(key=>{const parsed=prepareSourceRealExpression(scene.equations[key],names);if(!parsed.ok)fail(parsed.error.kind,`原版曲面公式 ${key}：${JSON.stringify(parsed.error)}`);return parsed.value;});
- const operations=expressions.reduce((sum,e)=>sum+e.operations,0);
- return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,scales,offsets,variables,parameterKeys:keys,frameRate:F(scene.timeline.fps),expressions,operations,trails,palette,fadePoints},coverage,isCancelled)};
+ const surfaceFunction=prepareSourceSurfaceFunction({equations:scene.equations,parameters:scene.parameters,scales,offsets});
+ const operations=surfaceFunction.operations;
+ return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,surfaceFunction,frameRate:F(scene.timeline.fps),operations,trails,palette,fadePoints},coverage,isCancelled)};
 }
-interface Configuration {parameterKeys:string[];frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;scales:number[];offsets:number[];variables:Float64Array;expressions:SourceRealExpression[];operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
+interface Configuration {surfaceFunction:PreparedSourceSurfaceFunction;frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
 function wrap(value:number,axis:Axis):number {
  const range=F(axis.max-axis.min);if(range<=0)return axis.min;
  let rest=F(F(value-axis.min)%range);if(rest<0)rest=F(rest+range);return F(axis.min+rest);
@@ -98,7 +95,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly positions:Float32Array;
  private readonly ids:number[]=[];
  private readonly slots=new Map<number,number>();
- private readonly variables:Float64Array;
+ private readonly surfaceFunction:SourceSurfaceFunction;
  private history?:SurfaceTrailHistory;
  private readonly boundaryPoint=new Float32Array(3);
  private recording:boolean;
@@ -108,7 +105,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private lastFrame=-1;
  constructor(private readonly config:Configuration,private readonly coverage:'all'|'tracked',private readonly isCancelled?:()=>boolean){
   const capacity=coverage==='all'?config.count:Math.min(config.count,4096);
-  this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.variables=config.variables.slice();
+  this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.surfaceFunction=config.surfaceFunction.create();
   this.recording=config.trails.record;
   // Camera-only queries never allocate full-grid color buffers.
   if(coverage==='all'){this.color=prepareSourceSurfaceColors(config.palette,config.u.count,config.v.count,config.u.periodic);this.pointAlphas=new Float32Array(capacity);}
@@ -125,10 +122,9 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
     for(let id=0;id<config.count;id++){if((id&1023)===0)this.check();this.pointAlphas![id]=(this.color.packed[id]>>>24)/255;}
    }
   });
-  const parameterSlots=new Map(config.parameterKeys.map((name,i)=>[name,i+2]));
   this.parameters=new SourceSurfaceParameterRuntime({
-   read:name=>{const slot=parameterSlots.get(name);return slot===undefined?0:this.variables[slot];},
-   write:(name,value)=>{const slot=parameterSlots.get(name);if(slot===undefined){this.ignoredParameterNames.add(name);return;}if(!Number.isFinite(value))fail('arithmetic',`原版曲面参数 ${name} 产生非有限值`);this.variables[slot]=value;},
+   read:name=>this.surfaceFunction.read(name),
+   write:(name,value)=>{if(!this.surfaceFunction.write(name,value))this.ignoredParameterNames.add(name);},
    reserve:units=>this.reserveWork(units),
   });
   if(coverage==='all')for(let id=0;id<config.count;id++)this.ensure(id);
@@ -142,9 +138,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  /** Shared expression/transform owner for heads and seam endpoints. Boundary
   * nonfinite results become source break records; invalid heads still reject. */
  private position(u:number,v:number,out:Float32Array,offset:number):boolean {
-  const c=this.config;this.variables[0]=u;this.variables[1]=v;let finite=true;
-  for(let k=0;k<3;k++){const value=F(F(F(c.expressions[k].evaluate(this.variables))*c.scales[k])+c.offsets[k]);out[offset+k]=value;finite&&=Number.isFinite(value);}
-  return finite;
+  return this.surfaceFunction.position(u,v,out,offset);
  }
  private calculate(slot:number){
   if(!this.position(this.state[slot*4],this.state[slot*4+1],this.positions,slot*3))fail('arithmetic',`原版曲面粒子 ${this.ids[slot]} 产生非有限坐标；没有替换成邻点或原点`);

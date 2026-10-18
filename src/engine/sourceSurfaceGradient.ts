@@ -4,6 +4,7 @@ export type SourceSurfaceGradientMode='hue_rotate'|'offset_cycle'|'cross_fade'|'
 export interface SourceSurfacePaletteState {readonly primary:number;readonly secondary:number;readonly blend:number;}
 export interface SourceSurfaceGradientFrame {readonly palette:number;readonly inside:number;readonly outside:number;}
 export const INITIAL_SOURCE_SURFACE_PALETTE_STATE:SourceSurfacePaletteState=Object.freeze({primary:0,secondary:0,blend:0});
+export type SourceSurfaceCyclicSmoothingPasses=0|3;
 const F=Math.fround,TAU=F(Math.PI*2);
 const add=(a:number,b:number)=>F(a+b),sub=(a:number,b:number)=>F(a-b),mul=(a:number,b:number)=>F(a*b);
 const constrain=(v:number,lo:number,hi:number)=>v<lo?lo:v>hi?hi:v;
@@ -26,6 +27,26 @@ const softBlend=(gap:number,maximum:number)=>{
 };
 const sin=(v:number)=>F(Math.sin(v));
 const wave=(v:number)=>add(F(.5),mul(F(.5),sin(mul(TAU,v))));
+
+/** ParametricSurface.smoothCyclicGradientInPlace / blurColor. The last row is
+ * a duplicate seam and is excluded from every convolution. MeshSurface asks
+ * for three passes; points ask for zero. Each pass reads a separate buffer,
+ * rounding each ARGB channel with integer (previous + 2*current + next + 2)/4.
+ * The caller replaces the final seam row only after smoothing has completed. */
+export function smoothSourceSurfaceCyclicRows(rows:Uint32Array,passes:SourceSurfaceCyclicSmoothingPasses,check?:()=>void):void {
+ const count=rows.length-1;if(passes===0||count<3)return;
+ let current=rows.slice(0,count),next=new Uint32Array(count);
+ for(let pass=0;pass<passes;pass++){
+  check?.();
+  for(let row=0;row<count;row++){
+   const previous=current[(row+count-1)%count],center=current[row],following=current[(row+1)%count];let color=0;
+   for(const shift of [24,16,8,0])color|=(((((previous>>>shift)&255)+2*((center>>>shift)&255)+((following>>>shift)&255)+2)>>2)<<shift);
+   next[row]=color;
+  }
+  [current,next]=[next,current];
+ }
+ rows.set(current);
+}
 
 /** ParametricSurface.mapGradientFrameToPaletteState. The shared gradient
  * runtime emits doubles; this target converts each component to Float32,

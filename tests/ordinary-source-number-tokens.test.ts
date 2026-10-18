@@ -30,7 +30,7 @@ describe('ordinary camera numeric provenance admission',()=>{
  it('rejects mixed selected payloads within one Surface action while preserving independent actions',()=>{
   const first=token(['timeline','0','actions','0','args','speed']);
   const mixed=token(['timeline','0','actions','0','args','0','mode']);
-  expect(()=>parseSourceNumberTokens([first,mixed],'surface')).toThrow('一个源渐变动作');
+  expect(()=>parseSourceNumberTokens([first,mixed],'surface')).toThrow('一个源动画动作');
   expect(parseSourceNumberTokens([first,{...mixed,path:['timeline','0','actions','1','args','0','mode']}],'surface')).toHaveLength(2);
  });
 

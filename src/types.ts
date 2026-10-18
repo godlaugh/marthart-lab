@@ -1,4 +1,5 @@
 import type {SourceSurfacePointAppearance} from './engine/sourceSurfacePointAppearance';
+import type {SourceSurfaceMeshAppearance} from './engine/sourceSurfaceMeshRenderer';
 import type {SourceSurfacePalette} from './engine/sourceSurfaceColor';
 import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
 import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
@@ -295,6 +296,9 @@ export interface GeometryOutput {
   /** Producer-owned normalized alpha per point, multiplied by display opacity. */
   pointAlphas?: Float32Array;
   sourcePointAppearance?: SourceSurfacePointAppearance;
+  sourceMeshAppearance?: SourceSurfaceMeshAppearance;
+  /** Original packed colors per mesh vertex, before native fill(int) semantics. */
+  sourceMeshColors?: Uint32Array;
   /** Parameter-grid provenance from the surface producer, before vertex compaction.
    * Each cell mask: bit 0 = (a,b,c), bit 1 = (a,c,d); omitted triangles stay holes. */
   surfaceGrid?: {
