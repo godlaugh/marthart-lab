@@ -3,7 +3,7 @@ import {createServer} from 'vite';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const output=process.argv[2]??'.cache/roots-native-projection-gpu-attempt1.json';
-const files=['src/engine/rootsNativeDensityGpu.ts','src/engine/rootsProjection.ts','src/engine/rootsPresentationConfig.ts','src/engine/rootsGpuFailure.ts','tests/roots-native-projection-gpu.test.ts','scripts/verify-roots-native-projection-gpu.mjs'];
+const files=['src/engine/sourceCamera.ts','src/engine/rootsNativeDensityGpu.ts','src/engine/rootsProjection.ts','src/engine/rootsPresentationConfig.ts','src/engine/rootsGpuFailure.ts','tests/roots-native-projection-gpu.test.ts','scripts/verify-roots-native-projection-gpu.mjs'];
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const hashes=async()=>Object.fromEntries(await Promise.all(files.map(async p=>[p,hash(await readFile(p))])));
 const shaderRoot='../.cache/mathart-investigation/MathArt.app/Contents/app/data/shader/';

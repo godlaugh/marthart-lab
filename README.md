@@ -223,6 +223,8 @@ node scripts/check-coverage.mjs --self-test
 
 共享桌面配置的分形验证通过 51 张完整图像、4 次 Worker 请求、12 组旧版兼容对照及跨实例检查；真实 Electron 在同一隔离工作区重启后也通过。运行 `node scripts/verify-fractal-source-color.mjs --prepare-only` 后，将输出目录传给 `node scripts/verify-fractal-desktop-graphics.mjs <prepared-directory>` 可复验桌面缓存差异；这些脚本仍需要上述本地研究证据。原版 JVM/JOGL、原版完整画面及其它设备仍未对照。这是 2.0 源码改动，未覆盖已有 1.0 应用交付包。
 
+相机差异核对已确认原版使用 `Rz(-gamma) × Rx(phi) × Rz(theta)`；本地通用轨道相机的 theta 仍采用不同轴向，普通场景的完整导入与播放接入尚未完成。复根场景已接入共用的原版矩阵计算，移除了重复实现；123 项相关测试、12 组独立矩阵金标和 30 组实际 GPU 输出对照通过。GPU 对照执行保留的原版着色器，不等于原版应用窗口验收。
+
 REA 自身仍位于仓库根目录，启动、依赖和 MCP 验证记录见 `.cache/local-verification/`；本实现位于独立的 `studio/` 目录。
 
 域着色的“渲染恢复规则”与三项作者规则分开保存。缺省策略保留 1723 之前保存作品的行为；新导入的 GPU 原版 JSON 显式采用“GPU 故障后使用 CPU 整链”。设备、编译或绘制等已分类 GPU 故障发生后，同一已求值时间帧按原产物 CPU 公式、CPU 视口和 CPU 着色重新完成整图，不改写保存的三项选择、原始公式或色板。显式选择 CPU 后端仍按所选规则计算；数值保护、成功的 GPU 终值加 CPU 着色、输入错误、本地资源准入限制和取消不冒充 GPU 故障；实际设备能力查询或分配失败由 GPU 边界另行分类。

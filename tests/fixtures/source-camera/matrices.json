@@ -1,0 +1,1158 @@
+{
+  "schemaVersion": 1,
+  "model": "mathart-1.7.8-v1",
+  "kind": "independent-python-bytecode-transcription",
+  "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "sourceEvidence": [
+    {
+      "path": ".cache/roots-native-camera-bytecode.json",
+      "entry": "mathart/scene/CameraController.class",
+      "classSha256": "80a478f361fdcbca2d8aeda2cc96f55e500a3527fa889ffd69765d815d0be9dd",
+      "evidenceSha256": "64d577bada4ea9ceb18e15b0cd935f5d77eb1377cf008acd6c1b1d6cf3e8a779"
+    },
+    {
+      "path": ".cache/roots-native-scene-bytecode.json",
+      "entry": "mathart/scene/Scene.class",
+      "classSha256": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "evidenceSha256": "34bb879bad78aaf9326024e0ef70af53634c9d6549610a08b05c2eda24002521"
+    },
+    {
+      "path": ".cache/roots-projection-matrix-rotate.json",
+      "entry": "processing/core/PMatrix3D.class",
+      "classSha256": "037bf25c8ca287341f71d44c497a5bada41d00bd66fc969cfc0430251abff92a",
+      "evidenceSha256": "1aefa7ef026f4451da8edefc5928013e8d9eb334783e8b1755be96f51ad70ac3"
+    },
+    {
+      "path": ".cache/roots-projection-matrix-methods.json",
+      "entry": "processing/core/PMatrix3D.class",
+      "classSha256": "037bf25c8ca287341f71d44c497a5bada41d00bd66fc969cfc0430251abff92a",
+      "evidenceSha256": "647c2b7cf53f472bff0635a4aa0126166f6db68513d8b2a933bc15cec54c0aa7"
+    },
+    {
+      "path": ".cache/roots-projection-processing-transforms.json",
+      "entry": "processing/opengl/PGraphicsOpenGL.class",
+      "classSha256": "a0129d4660d76f8f881dd867bef85f3bfab547f10db63616d482b7f8881c736c",
+      "evidenceSha256": "1470cd6196a400f6e5024bdd37acbd5167fc1ed31d1f00e978503276f1d29a71"
+    },
+    {
+      "path": ".cache/roots-projection-camera-primitives.json",
+      "entry": "processing/opengl/PGraphicsOpenGL.class",
+      "classSha256": "a0129d4660d76f8f881dd867bef85f3bfab547f10db63616d482b7f8881c736c",
+      "evidenceSha256": "885629e33b6c5ee1f095c15fcdadcf12a294e5ac813e8852fd4771b28be412f4"
+    }
+  ],
+  "cases": [
+    {
+      "id": "scene-default",
+      "frame": {},
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.0,
+          "gamma": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "zero",
+      "frame": {
+        "phi": 0
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 0.0,
+          "theta": 0.0,
+          "gamma": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "theta-quarter",
+      "frame": {
+        "phi": 0,
+        "theta": 1.5707963267948966
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 0.0,
+          "theta": 1.5707963705062866,
+          "gamma": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.9999999403953552,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "phi-quarter",
+      "frame": {
+        "phi": 1.5707963267948966
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.0,
+          "gamma": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "gamma-quarter",
+      "frame": {
+        "phi": 0,
+        "gamma": 1.5707963267948966
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 0.0,
+          "theta": 0.0,
+          "gamma": 1.5707963705062866,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          0.0,
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          -4.371138828673793e-08,
+          1.0,
+          0.0,
+          0.0,
+          -1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.9999999403953552,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "mixed",
+      "frame": {
+        "phi": 0.3,
+        "theta": 0.4,
+        "gamma": 0.2
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 0.30000001192092896,
+          "theta": 0.4000000059604645,
+          "gamma": 0.20000000298023224,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          0.9766111373901367,
+          -0.20684215426445007,
+          -0.05871080234646797,
+          0.0,
+          0.18162326514720917,
+          0.9397488236427307,
+          -0.2896294891834259,
+          0.0,
+          0.11508098989725113,
+          0.2721921503543854,
+          0.9553365111351013,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          0.9766111373901367,
+          -0.20684215426445007,
+          -0.05871080234646797,
+          0.0,
+          0.18162326514720917,
+          0.9397488236427307,
+          -0.2896294891834259,
+          0.0,
+          0.11508098989725113,
+          0.2721921503543854,
+          0.9553365111351013,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "mixed-center",
+      "frame": {
+        "phi": 0.3,
+        "theta": 0.4,
+        "gamma": 0.2,
+        "center": [
+          1.25,
+          -2.5,
+          3.75
+        ]
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 0.30000001192092896,
+          "theta": 0.4000000059604645,
+          "gamma": 0.20000000298023224,
+          "center": [
+            1.25,
+            -2.5,
+            3.75
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          0.9766111373901367,
+          -0.20684215426445007,
+          -0.05871080234646797,
+          0.0,
+          0.18162326514720917,
+          0.9397488236427307,
+          -0.2896294891834259,
+          0.0,
+          0.11508098989725113,
+          0.2721921503543854,
+          0.9553365111351013,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          0.9766111373901367,
+          -0.20684215426445007,
+          -0.05871080234646797,
+          -1.5177037715911865,
+          0.18162326514720917,
+          0.9397488236427307,
+          -0.2896294891834259,
+          3.20845365524292,
+          0.11508098989725113,
+          0.2721921503543854,
+          0.9553365111351013,
+          -54.24588394165039,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "rodrigues-rounding",
+      "frame": {
+        "phi": 1.58
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 1.5800000429153442,
+          "theta": 0.0,
+          "gamma": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.009203585796058178,
+          -0.9999576210975647,
+          0.0,
+          0.0,
+          0.9999576210975647,
+          -0.009203585796058178,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.009203585796058178,
+          -0.9999576210975647,
+          0.0,
+          0.0,
+          0.9999576210975647,
+          -0.009203585796058178,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          1.0666667222976685,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -1.0242048501968384,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "offscreen-optics",
+      "frame": {
+        "phi": 0.3,
+        "theta": -0.4,
+        "gamma": 0.2,
+        "center": [
+          1,
+          -2,
+          3
+        ],
+        "zoom": 2,
+        "focalDistance": 35
+      },
+      "viewport": {
+        "logicalWidth": 64,
+        "logicalHeight": 96,
+        "referenceLogicalHeight": 64,
+        "target": "offscreen",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 0.30000001192092896,
+          "theta": -0.4000000059604645,
+          "gamma": 0.20000000298023224,
+          "center": [
+            1.0,
+            -2.0,
+            3.0
+          ],
+          "zoom": 2.0,
+          "focalDistance": 35.0
+        },
+        "displayScale": 1.5,
+        "rotation": [
+          0.8287910223007202,
+          0.5564696788787842,
+          -0.05871080234646797,
+          0.0,
+          -0.5475963950157166,
+          0.7850179076194763,
+          -0.2896294891834259,
+          0.0,
+          -0.11508098989725113,
+          0.2721921503543854,
+          0.9553365111351013,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          1.243186593055725,
+          0.8347044587135315,
+          -0.0880662053823471,
+          0.690420925617218,
+          -0.8213946223258972,
+          1.177526831626892,
+          -0.43444424867630005,
+          4.479781150817871,
+          -0.172621488571167,
+          0.40828821063041687,
+          1.4330047369003296,
+          -137.70980834960938,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          8.399999618530273,
+          0,
+          0.0,
+          0,
+          0,
+          -5.599999904632568,
+          0.0,
+          0,
+          0,
+          0,
+          -1.000400185585022,
+          -2.688537836074829,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.3571428656578064,
+          "fov": 0.3534177243709564,
+          "cameraZ": 134.39999389648438,
+          "aspect": 0.6666666865348816,
+          "near": 1.343999981880188,
+          "far": 6719.99951171875,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "fade-ortho",
+      "frame": {
+        "phi": 0.3,
+        "gamma": 0.2
+      },
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 64,
+        "referenceLogicalHeight": 64,
+        "target": "primary",
+        "projectionPass": "scene-fade-orthographic"
+      },
+      "expected": {
+        "camera": {
+          "phi": 0.30000001192092896,
+          "theta": 0.0,
+          "gamma": 0.20000000298023224,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0,
+        "rotation": [
+          0.9800665974617004,
+          0.1897960603237152,
+          -0.05871080234646797,
+          0.0,
+          -0.19866932928562164,
+          0.9362934231758118,
+          -0.2896294891834259,
+          0.0,
+          0.0,
+          0.29552021622657776,
+          0.9553365111351013,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          0.9800665974617004,
+          0.1897960603237152,
+          -0.05871080234646797,
+          0.0,
+          -0.19866932928562164,
+          0.9362934231758118,
+          -0.2896294891834259,
+          0.0,
+          0.0,
+          0.29552021622657776,
+          0.9553365111351013,
+          -51.20000076293945,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          0.02083333395421505,
+          0,
+          0,
+          -0.0,
+          0,
+          -0.03125,
+          0,
+          -0.0,
+          0,
+          0,
+          -0.0036084388848394156,
+          -1.0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 51.20000076293945,
+          "aspect": 1.5,
+          "near": 0.5120000243186951,
+          "far": 2560.0,
+          "orthographicFar": 554.2562866210938
+        }
+      }
+    },
+    {
+      "id": "scale-threshold-below",
+      "frame": {},
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 2001,
+        "referenceLogicalHeight": 2000,
+        "target": "offscreen",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.0,
+          "gamma": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.000499963760376,
+        "rotation": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          -1600.800048828125,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          33.35000228881836,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -32.02240753173828,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 1600.800048828125,
+          "aspect": 0.04797601327300072,
+          "near": 16.00800132751465,
+          "far": 80040.0,
+          "orthographicFar": null
+        }
+      }
+    },
+    {
+      "id": "scale-threshold-above",
+      "frame": {},
+      "viewport": {
+        "logicalWidth": 96,
+        "logicalHeight": 1001,
+        "referenceLogicalHeight": 999,
+        "target": "offscreen",
+        "projectionPass": "perspective"
+      },
+      "expected": {
+        "camera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.0,
+          "gamma": 0.0,
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "zoom": 1.0,
+          "focalDistance": 20.0
+        },
+        "displayScale": 1.0020020008087158,
+        "rotation": [
+          0.9999999403953552,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.371138828673793e-08,
+          -1.0,
+          0.0,
+          0.0,
+          1.0,
+          -4.371138828673793e-08,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "modelView": [
+          1.0020018815994263,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -4.379889873007414e-08,
+          -1.0020020008087158,
+          0.0,
+          0.0,
+          1.0020020008087158,
+          -4.379889873007414e-08,
+          -800.7999877929688,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ],
+        "projection": [
+          16.683334350585938,
+          0,
+          0.0,
+          0,
+          0,
+          -1.6000001430511475,
+          0.0,
+          0,
+          0,
+          0,
+          -1.0004000663757324,
+          -16.019201278686523,
+          0,
+          0,
+          -1,
+          0
+        ],
+        "optics": {
+          "halfSensorOverFocal": 0.625,
+          "fov": 1.1171985864639282,
+          "cameraZ": 800.7999877929688,
+          "aspect": 0.09590409696102142,
+          "near": 8.007999420166016,
+          "far": 40040.0,
+          "orthographicFar": null
+        }
+      }
+    }
+  ],
+  "limits": [
+    "No original app execution or original framebuffer.",
+    "Host Python/JS libm final bits are not asserted equal to Java/driver across all values.",
+    "Ordinary Scene matrix facts only; no family display policy or 2D viewport invented."
+  ]
+}

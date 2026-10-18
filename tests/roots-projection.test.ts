@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fixture from './fixtures/roots/projection-source.json';
+import cameraFixture from './fixtures/source-camera/matrices.json';
 import { defaultRootsPresentationConfiguration, type RootsPresentationConfiguration } from '../src/engine/rootsPresentationConfig';
 import { prepareRootsProjection, transformRootsPoint, projectRootsPoint, updateRootsProjectionState, validatePreparedRootsProjection, RootsProjectionError } from '../src/engine/rootsProjection';
 
@@ -15,6 +16,19 @@ function changed(prior: ReturnType<typeof prepare>, edit: (c: RootsPresentationC
  return prepare(config(c => { c.camera = {...prior.camera, center: [...prior.camera.center]}; c.transform = {...prior.transform, scale: [...prior.transform.scale], offset: [...prior.transform.offset]}; edit(c); }), prior.logicalWidth, prior.logicalHeight, prior.physicalWidth, prior.physicalHeight, prior.referenceLogicalHeight, prior.target);
 }
 describe('Roots source projection prepared owner', () => {
+ // Exercise independent full-matrix goldens through the real family producer,
+ // including configuration parsing, projection pass and offscreen dimensions.
+ for (const row of cameraFixture.cases) it(`shared camera via Roots producer: ${row.id}`, () => {
+  const v=row.viewport,c=config(c=>{Object.assign(c.camera,row.frame);c.accumulation.enabled=v.projectionPass==='scene-fade-orthographic';});
+  const p=prepare(c,v.logicalWidth,v.logicalHeight,v.logicalWidth,v.logicalHeight,v.referenceLogicalHeight,v.target as 'primary'|'offscreen');
+  expect(p.camera).toEqual(row.expected.camera);expect(p.displayScale).toBe(row.expected.displayScale);
+  expect(p.optics).toEqual({...row.expected.optics,projectionKind:c.accumulation.enabled?'orthographic':'perspective'});
+  // JSON omits signed zero; these are host-libm goldens, not a JVM framebuffer.
+  for(const key of ['modelView','projection'] as const){
+   expect(p[key].rowMajor.map(x=>x===0?0:x)).toEqual(row.expected[key]);
+   for(let r=0;r<4;r++)for(let col=0;col<4;col++)expect(p[key].columnMajor[col*4+r]).toBe(p[key].rowMajor[r*4+col]);
+  }
+ });
  for (const row of fixture.world) for (const mode of ['density', 'point-cloud'] as const) it(`independent staged-float world: ${row.id}/${mode}`, () => {
   const p = prepare(config(c => { c.mode = mode; c.transform = {scale: triple(row.scale), offset: triple(row.offset), rotationDegrees: row.degrees}; }));
   const r = transformRootsPoint(p, triple(row.raw));
