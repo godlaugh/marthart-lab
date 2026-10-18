@@ -6,7 +6,7 @@ import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 
 /** Explicit version: existing local and ordinary-camera documents retain their
  * previous surface sampler until they opt into the source particle geometry. */
-export const SOURCE_SURFACE_CLIP_TYPES:readonly string[]=['wait','animate','align'];
+export const SOURCE_SURFACE_CLIP_TYPES:readonly string[]=['wait','animate','align','trails'];
 export const SOURCE_SURFACE_CAMERA_METHODS:readonly string[]=['rotatePhi','rotateTheta','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','track','stopTracking'];
 export const SOURCE_SURFACE_PARTICLES='mathart-1.7.8-points-v1';
 export const usesSourceSurfaceParticles=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='surface'&&scene.settings.surfaceGeometryVersion===SOURCE_SURFACE_PARTICLES;
@@ -76,8 +76,9 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly ids:number[]=[];
  private readonly slots=new Map<number,number>();
  private readonly variables:Float64Array;
- private readonly history?:SurfaceTrailHistory;
+ private history?:SurfaceTrailHistory;
  private readonly boundaryPoint=new Float32Array(3);
+ private recording:boolean;
  private used=0;
  private failure:unknown;
  private failed=false;
@@ -85,6 +86,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  constructor(private readonly config:Configuration,private readonly coverage:'all'|'tracked',private readonly isCancelled?:()=>boolean){
   const capacity=coverage==='all'?config.count:Math.min(config.count,4096);
   this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.variables=config.variables.slice();
+  this.recording=config.trails.record;
   if(coverage==='all'&&config.trails.show&&config.trails.record)this.history=new SurfaceTrailHistory(config.count,config.trails.lifetime,config.trails.fade,()=>this.check());
   if(coverage==='all')for(let id=0;id<config.count;id++)this.ensure(id);
  }
@@ -125,6 +127,11 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   const id=Math.max(0,Math.min(this.config.count-1,Math.trunc(F(raw)))),slot=this.ensure(id),positions=this.positions;
   return{kind:'bound',readPosition:()=>this.guarded(()=>[positions[slot*3],positions[slot*3+1],positions[slot*3+2]])};
  });}
+ setRecordingTrails(enabled:boolean):void {this.guarded(()=>{
+  if(typeof enabled!=='boolean')fail('input','原版拖尾录制开关必须是布尔值');
+  if(enabled&&!this.history&&this.coverage==='all'&&this.config.trails.show)this.history=new SurfaceTrailHistory(this.config.count,this.config.trails.lifetime,this.config.trails.fade,()=>this.check());
+  this.recording=enabled;
+ });}
  update(frame:OrdinaryCameraParticleFrame):void {this.guarded(()=>{
   this.check();if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
   this.lastFrame=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
@@ -139,7 +146,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
    const crossU=u.periodic&&u.flowing?(nextU>u.max?1:nextU<u.min?-1:0):0,crossV=v.periodic&&v.flowing?(nextV>v.max?1:nextV<v.min?-1:0):0;
    if(u.periodic&&!u.flowing&&(nextU<u.min||nextU>u.max)){this.state[at+2]=-this.state[at+2];nextU=nextU<u.min?u.min:u.max;}
    if(v.periodic&&!v.flowing&&(nextV<v.min||nextV>v.max)){this.state[at+3]=-this.state[at+3];nextV=nextV<v.min?v.min:v.max;}
-   if(this.history&&(crossU||crossV)){
+   if(this.history&&this.recording&&(crossU||crossV)){
     const fraction=(old:number,next:number,axis:Axis,direction:number)=>Math.max(0,Math.min(1,F(F((direction>0?axis.max:axis.min)-old)/F(next-old))));
     const crossing=Math.min(crossU?fraction(oldU,nextU,u,crossU):1,crossV?fraction(oldV,nextV,v,crossV):1);
     const edgeU=F(oldU+F(F(nextU-oldU)*crossing)),edgeV=F(oldV+F(F(nextV-oldV)*crossing));
@@ -151,7 +158,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
    }
    this.state[at]=u.periodic&&u.flowing?wrap(nextU,u):nextU;this.state[at+1]=v.periodic&&v.flowing?wrap(nextV,v):nextV;
    this.calculate(slot);
-   if(this.history){const to=slot*3;this.history.add(slot,this.positions[to],this.positions[to+1],this.positions[to+2],time);this.history.expire(slot,time);}
+   if(this.history){const to=slot*3;if(this.recording)this.history.add(slot,this.positions[to],this.positions[to+1],this.positions[to+2],time);this.history.expire(slot,time);}
   }
  });}
  snapshot():{positions:Float32Array;particleIds:Uint32Array;workUnits:number;trails?:SourceSurfaceTrails} {return this.guarded(()=>{

@@ -4,6 +4,9 @@ import type {RootsGradientConfiguration} from './rootsGradientConfig';
 
 export interface RootsSceneClip {
   readonly duration:number;
+  /** Verified InstantAction: zero duration, no interpolated children. The
+   * queue still consumes one update; this is not a general zero-duration tween. */
+  readonly instant?:true;
   /** Canonical name, already resolved by the importing/authoring owner. */
   readonly easing:string;
   readonly zoom?:number;
@@ -209,9 +212,11 @@ export class RootsSceneClock {
     this.clips=clips.map((clip:RootsSceneClip,index)=>{
       if(!clip||typeof clip!=='object')throw new RootsSceneClockError('input',`Roots 相机片段 ${index} 无效`);
       const duration=finiteFloat(clip.duration,`片段 ${index} 时长`);
-      // Native Roots JSON already clamps to at least .001F. Reject zero here
-      // instead of inventing an instantaneous 0/0 animation contract.
-      if(duration<=0)throw new RootsSceneClockError('input','Roots 相机片段时长必须大于 0');
+      // Roots JSON clamps to .001F. Ordinary scenes can explicitly compile an
+      // InstantAction whose onUpdate ignores even 0/0; never allow a tween here.
+      if(clip.instant!==undefined&&clip.instant!==true)throw new RootsSceneClockError('input','即时片段标记无效');
+      if(clip.instant&&(duration!==0||clip.zoom!==undefined||clip.rates!==undefined||clip.gradientActions?.length))throw new RootsSceneClockError('input','即时片段必须零时长且没有插值子项');
+      if(duration<0||duration===0&&!clip.instant)throw new RootsSceneClockError('input','Roots 相机片段时长必须大于 0');
       if(!names.has(clip.easing))throw new RootsSceneClockError('input',`Roots 相机片段缓动未知：${String(clip.easing)}`);
       if(clip.rates!==undefined&&(!Array.isArray(clip.rates)||clip.rates.length!==3))
         throw new RootsSceneClockError('input','Roots 相机角速度必须为三个数值');
@@ -222,7 +227,7 @@ export class RootsSceneClock {
         try{return Object.freeze({kind:'start',config:Object.freeze(parseRootsGradientConfiguration(action.config))});}
         catch(error){if(error instanceof RootsGradientConfigurationError)throw new RootsSceneClockError(error.code,error.message);throw error;}
       });
-      return{duration,easing:clip.easing,
+      return{duration,easing:clip.easing,...(clip.instant?{instant:true as const}:{}),
         ...(gradientActions===undefined?{}:{gradientActions:Object.freeze(gradientActions)}),
         ...(clip.zoom===undefined?{}:{zoom:finiteFloat(clip.zoom,'目标 zoom')}),
         ...(clip.rates===undefined?{}:{rates:clip.rates.map((value:number,i:number)=>finiteFloat(value,`目标角速度 ${i}`)) as Triple})};

@@ -1059,7 +1059,7 @@ export default function App() {
                     }).map(control=>{
                       if(!usesSourceSurfaceParticles(scene))return control;
                       if(control.key==='fadeTrails')return{...control,label:t('按记录顺序渐隐'),help:t('最旧记录透明、最新记录不透明；边界断点也计入渐隐顺序。')};
-                      if(control.key==='recordTrails')return{...control,help:t('修改后从起点重算当前画面；记录开关作用于整段回放。')};
+                      if(control.key==='recordTrails')return{...control,help:t('设置初始录制状态；时间线中的拖尾片段可随后切换。修改后从起点重算当前画面。')};
                       if(control.key==='showTrails')return{...control,help:t('只控制拖尾是否显示；重新显示时按时间线重建历史。')};
                       if(control.key==='trailWidth')return{...control,help:t('源曲面线宽采用输入值的 0.95 倍，最小呈现宽度为 0.1 像素；隐藏拖尾请关闭显示开关。')};
                       if(control.key==='trailLifetime')return{...control,min:0,help:t('按模拟时间过期；每粒子还受原版记录容量限制，全部粒子合计最多 100 万条记录（含断点）。')};

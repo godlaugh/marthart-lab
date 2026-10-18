@@ -917,7 +917,7 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  settings.trailLifetime=Math.fround(r.domainDouble(['settings','trail_lifetime'],4));
  settings.trailWidth=Math.fround(r.domainDouble(['settings','line_weight'],1));
  settings.recordTrails=true; // Native constructor records even when display is hidden; no JSON record_trails read.
- r.warnings.push('曲面 track 使用源 CPU 点状态、半开参数域和原版索引；拖尾按源断点、容量及顺序渐隐；参数动画、GPU/网格跟踪仍待接入，调色与完整原版画面尚未验收。');
+ r.warnings.push('曲面跟踪与拖尾片段使用源 CPU 点状态、半开参数域和原版索引；拖尾按源断点、容量及顺序渐隐；参数动画、GPU/网格跟踪仍待接入，调色与完整原版画面尚未验收。');
 }
 /** Eager source setupTimeline dispatch. Preserve every native queue duration;
  * known but unimplemented animation children fail rather than become local
@@ -957,6 +957,16 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
   r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
  };
  for(const {path,originalType,type,actions:sourceActions} of structure){
+  if(type==='trails'&&usesSourceSurfaceParticles(s)){
+   // JsonSurfaceConfig constructs InstantAction directly: duration/easing are
+   // not read, even when malformed. Preserve them in source, never parse/clamp.
+   const trailsEnabled=r.domainBoolean([...path,'enable'],true);
+   r.retainNumberToken([...path,'duration']);
+   if(r.has([...path,'duration']))r.acknowledge([...path,'duration'],'原版拖尾开关为即时动作，不读取 duration');
+   if(r.has([...path,'easing']))r.acknowledge([...path,'easing'],'原版拖尾开关不读取 easing');
+   s.timeline.tracks.push({id:crypto.randomUUID(),type:'trails',target:'settings.recordTrails',label:originalType,from:0,to:0,start:0,duration:0,easing:'linear',pingPong:false,enabled:true,trailsEnabled});
+   continue;
+  }
   if(!['wait','animate','align'].includes(type)&&!(s.kind==='surface'&&type==='param')){
    const nativeChild=(s.kind==='surface'&&['trails','surface_mode_transition'].includes(type))||(s.kind==='perlin'&&type==='trails');
    if(nativeChild)fail(`${pathLabel(path)} ${type} 尚缺原版动画子项编译事实；不能丢弃或猜测其队列时长`);
@@ -1261,7 +1271,7 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  // Source geometry and queue share parsed dispatch facts. Select its owner
  // before common/local geometry reads, so fallback values are never reinterpreted.
  const ordinaryStructure=kind==='surface'?ordinaryTimelineStructure(r):undefined;
- if(ordinaryStructure?.some(clip=>clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
+ if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
  common(r,scene);

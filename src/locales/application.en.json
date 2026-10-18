@@ -1200,8 +1200,10 @@
   "应用图层 JSON": "Apply layer JSON",
   "按记录顺序渐隐": "Fade by record order",
   "最旧记录透明、最新记录不透明；边界断点也计入渐隐顺序。": "Oldest records are transparent and newest records opaque; boundary breaks also count in the fade order.",
-  "修改后从起点重算当前画面；记录开关作用于整段回放。": "Edits replay the current frame from the start; recording applies to the whole replay.",
   "只控制拖尾是否显示；重新显示时按时间线重建历史。": "Controls trail visibility only; showing trails rebuilds their history from the timeline.",
   "源曲面线宽采用输入值的 0.95 倍，最小呈现宽度为 0.1 像素；隐藏拖尾请关闭显示开关。": "Source surface lines use 0.95 times the input width, with a minimum of 0.1 pixels; use the visibility toggle to hide trails.",
-  "按模拟时间过期；每粒子还受原版记录容量限制，全部粒子合计最多 100 万条记录（含断点）。": "Expires by simulation time, also subject to the native per-particle capacity. All particles share a limit of 1 million records, including breaks."
+  "按模拟时间过期；每粒子还受原版记录容量限制，全部粒子合计最多 100 万条记录（含断点）。": "Expires by simulation time, also subject to the native per-particle capacity. All particles share a limit of 1 million records, including breaks.",
+  "设置初始录制状态；时间线中的拖尾片段可随后切换。修改后从起点重算当前画面。": "Set initial recording; trail clips can change it later. Edits replay from the start.",
+  "记录拖尾": "Record trails",
+  "即时切换录制，占用一次队列更新；不改变显示开关，已有线条继续按寿命过期。恢复录制不会自动插入断点。": "Switch recording instantly in one queue update. Visibility stays unchanged and existing lines keep expiring. Resuming does not insert a break."
 }

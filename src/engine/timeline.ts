@@ -732,7 +732,9 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
       if(Object.keys(destination).length)plans.push({start:track.start,apply:(out,at)=>{const t=clipProgress(track,at),update:Partial<typeof initial>={};for(const axis of ['theta','phi','gamma'] as const)if(destination[axis]!==undefined)update[axis]=mix(initial[axis],destination[axis]!,t);setAngles(out,update);}});
       continue;
     }
-    if (type === 'trails') { plans.push({ start: track.start, apply: out => { out.settings.recordTrails = track.trailsEnabled !== false; out.settings.showTrails = track.trailsEnabled !== false; } }); continue; }
+    // Source recording is applied by the same queue that advances particles.
+    // Never overwrite its initial recording state or display flag here.
+    if (type === 'trails') { if(!usesSourceSurfaceParticles(scene))plans.push({ start: track.start, apply: out => { out.settings.recordTrails = track.trailsEnabled !== false; out.settings.showTrails = track.trailsEnabled !== false; } }); continue; }
     if (type === 'surface_mode_transition') {
       if (scene.kind !== 'surface') throw new Error('曲面过渡仅适用于参数曲面');
       const from = Number(baseline.settings.surfaceBlend ?? (baseline.settings.renderMode === 'points' ? 0 : 1)), to = track.surfaceMode === 'points' ? 0 : 1;
@@ -774,7 +776,7 @@ export function createAnimationTrack(scene: SceneDocument, type: AnimationClipTy
   if (type === 'param') track.parameterAnimations = [{ target, ...(parameterAnimationSuggestion(scene,target)??{min:from-1,max:from+1}), step: 1, enabled: true }];
   if (type === 'fractal_zoom') { track.target = 'settings.zoom'; const centerX = Number(scene.settings.centerX ?? 0), centerY = Number(scene.settings.centerY ?? 0), centerXLow=Number(scene.settings.centerXLow??0),centerYLow=Number(scene.settings.centerYLow??0),zoom = Number(scene.settings.zoom ?? 1); track.keyframes = [{ time: 0, centerX, centerY,centerXLow,centerYLow, zoom }, { time: duration, centerX, centerY,centerXLow,centerYLow, zoom: Math.min(1e28,zoom * 10) }]; track.interpolation = 'exponential'; }
   if (type === 'surface_mode_transition') { track.target = 'settings.surfaceBlend'; track.surfaceMode = scene.settings.renderMode === 'points' ? 'mesh' : 'points'; }
-  if (type === 'trails') { track.target = 'settings.recordTrails'; track.trailsEnabled = true; }
+  if (type === 'trails') { track.target = 'settings.recordTrails'; track.trailsEnabled = true;if(usesSourceSurfaceParticles(scene)){track.duration=0;track.easing='linear';} }
   if (type === 'wait' || type === 'spirograph_finish_wait') track.target = 'timeline.wait';
   if (type === 'spirograph_finish_wait') {
     if(scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)==='mathart-1.7.8-v1'){

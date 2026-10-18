@@ -1,3 +1,4 @@
+import {usesSourceSurfaceParticles} from './sourceSurfaceParticles';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {parseFractalSourceColorProfile,parseFractalSourceColorConfiguration} from './fractalSourceColor';
 import type { SceneDefinition, SceneDocument, Preset } from "../types";
@@ -227,7 +228,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
       !["from", "to", "start", "duration"].every(
         (k) => typeof track[k] === "number" && Number.isFinite(track[k]),
       ) ||
-      (Number(track.duration) < 0 || Number(track.duration) === 0 && !['animate','spirograph_finish_wait'].includes(String(track.type)) && !(track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument))) ||
+      (Number(track.duration) < 0 || Number(track.duration) === 0 && !['animate','spirograph_finish_wait'].includes(String(track.type)) && !(track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)) && !(track.type==='trails'&&usesSourceSurfaceParticles(data as unknown as SceneDocument))) ||
       Number(track.start) < 0
     )
       fail("动画轨道无效");

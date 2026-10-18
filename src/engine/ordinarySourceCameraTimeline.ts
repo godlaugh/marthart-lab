@@ -35,6 +35,9 @@ export interface OrdinarySourceCameraParticles {
   * Includes waits and frames with no target reads; stops when the queue was
   * already complete at frame start. This is not CameraController's raw dt. */
  update(frame:OrdinaryCameraParticleFrame):void;
+ /** Source InstantAction executes before this frame's Mobject update. It
+  * changes recording only; history lifetime/display remain producer-owned. */
+ setRecordingTrails?(enabled:boolean):void;
 }
 export interface OrdinarySourceCameraTimelineOptions {
  readonly isCancelled?:()=>boolean;
@@ -52,7 +55,7 @@ type Axis='phi'|'theta'|'gamma';
 type Targets=Partial<Record<Axis,number>>;
 type Tracking={readonly kind:'origin'}|Extract<OrdinaryCameraTargetBinding,{kind:'bound'}>;
 type TrackingAction={readonly kind:'origin'}|{readonly kind:'bind';readonly request:OrdinaryCameraTargetRequest};
-interface Clip extends RootsSceneClip {readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];}
+interface Clip extends RootsSceneClip {readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];readonly recordingTrails?:boolean;}
 interface Plan {initial:SourceCameraScalars;clips:Clip[];diagnostics:OrdinaryCameraDiagnostic[];fps:number;dt:number;}
 const F=Math.fround,axes=['phi','theta','gamma'] as const,TAU=F(2*Math.PI),names=new Set(SOURCE_EASING_NAMES);
 const WORK_LIMIT=2_000_000; // Bounded synchronous frames plus remaining-queue folds, as the existing source clock.
@@ -73,16 +76,18 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
  const warn=(track:AnimationTrack,code:OrdinaryCameraDiagnostic['code'],message:string)=>diagnostics.push({trackId:track.id,code,message});
  for(const track of tracks){
   if(!track.enabled)continue;
-  const duration=float(track.duration,'源片段时长');
+  const instant=track.type==='trails',duration=float(track.duration,'源片段时长');
   // Generic Animation does not share Roots JSON's .001 clamp. Zero may yield
   // 0/0, and instant trail children need their exact compiled group duration.
-  if(duration<=0)throw new OrdinarySourceCameraTimelineError('unsupported','普通源相机队列的零时长片段需要原始编译时长，不能替换为 .001 秒',track.id);
+  if(instant&&(duration!==0||typeof track.trailsEnabled!=='boolean'))throw new OrdinarySourceCameraTimelineError('input','源拖尾片段必须为零时长并指定录制开关',track.id);
+  if(duration<0||duration===0&&!instant)throw new OrdinarySourceCameraTimelineError('unsupported','普通源相机队列的零时长片段需要原始编译时长，不能替换为 .001 秒',track.id);
   if(duration>86400)throw new OrdinarySourceCameraTimelineError('capacity','源片段时长超过 24 小时',track.id);
   if(!names.has(track.easing))throw new OrdinarySourceCameraTimelineError('input',`未知源缓动 ${track.easing}`,track.id);
   if(track.start!==0)warn(track,'sequence-start','源队列按保存顺序执行；绝对 start 不参与执行，延迟必须由等待片段表达。');
   if(track.pingPong||(track.repeat??1)!==1)warn(track,'sequence-repeat','源队列不执行 repeat/pingPong；作者输入保留。');
   const clip:{-readonly[K in keyof Clip]:Clip[K]}={duration,easing:track.easing,trackId:track.id};
-  if(track.type==='align'){
+  if(instant){clip.instant=true;clip.recordingTrails=track.trailsEnabled;}
+  else if(track.type==='align'){
    if(track.alignMode==='absolute')throw new OrdinarySourceCameraTimelineError('unsupported','源 AlignCamera 使用下一圈对齐，不支持本地 absolute 对齐',track.id);
    const targets:Targets={};for(const axis of axes)if(track.orientation?.[axis]!==undefined)targets[axis]=float(track.orientation[axis],`align ${axis}`);clip.align=targets;
   }else if(track.type==='animate'){
@@ -166,6 +171,7 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
   if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
   const particles=options.createParticles?.();
   if(options.createParticles&&(!particles||typeof particles.bind!=='function'||typeof particles.update!=='function'))throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者缺少构建或逐帧更新入口');
+  if(plan.clips.some(c=>c.instant)&&typeof particles?.setRecordingTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源拖尾片段需要支持录制开关的粒子生产者');
   const clipTracking=bindTracking(plan,particles,options);
   // Only queue/zoom belong to the reused clock. Feeding it rates would evolve
   // a hidden angle history without MoveCamera resets and can falsely overflow.
@@ -182,7 +188,9 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
    check(options);reserve(replay.facts.queueIndex,plan.clips.length);
    const before=replay.facts,index=before.queueIndex,clip=plan.clips[index],tracking=replay.clipTracking[index],camera=replay.camera;
    const facts=replay.facts=clock.step(plan.dt,{isCancelled:options.isCancelled});
-   if(clip){
+   if(clip?.instant){
+    if(facts.startedClip!==null){check(options);replay.particles!.setRecordingTrails!(clip.recordingTrails!);}
+   }else if(clip){
     if(facts.startedClip!==null){
      replay.start=copy(camera);replay.targets={...clip.targets};replay.startRates=[...replay.rates];
      if(clip.align)for(const axis of axes)if(clip.align[axis]!==undefined)replay.targets[axis]=finite(F(F(F(F(Math.floor(F(camera[axis]/TAU)))+1)*TAU)+clip.align[axis]!));
@@ -215,7 +223,7 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
 export function resolveOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:Pick<OrdinarySourceCameraTimelineOptions,'isCancelled'>={}) {
  check(options);const key=inputKey(initial,tracks,fps),cached=key===undefined?undefined:layouts.get(key);
  if(cached){layouts.delete(key!);layouts.set(key!,cached);return structuredClone(cached);}
- const plan=prepare(initial,tracks,fps),clock=new RootsSceneClock(plan.initial,plan.clips.map(c=>({duration:c.duration,easing:'linear'}))),reserve=budget();
+ const plan=prepare(initial,tracks,fps),clock=new RootsSceneClock(plan.initial,plan.clips.map(c=>({duration:c.duration,easing:'linear',...(c.instant?{instant:true as const}:{})}))),reserve=budget();
  let facts=clock.snapshot(),frame=0;const starts:number[]=[],durations:number[]=[];
  while(!facts.queueComplete){check(options);reserve(facts.queueIndex,plan.clips.length);facts=clock.step(plan.dt,{isCancelled:options.isCancelled});if(facts.startedClip!==null)starts[facts.startedClip]=frame/fps;if(facts.finishedClip!==null)durations[facts.finishedClip]=(frame+1)/fps-starts[facts.finishedClip];frame++;}
  const layout:Layout={schedule:ORDINARY_CAMERA_SEQUENCE,span:frame/fps,clips:plan.clips.map((c,i)=>({trackId:c.trackId,start:starts[i],duration:durations[i],sourceDuration:c.duration})),diagnostics:plan.diagnostics};

@@ -4,15 +4,15 @@ import {readFile,writeFile,mkdtemp,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {createServer as createTcpServer} from 'node:net';
 import {createExportServer} from '../server/index.mjs';
-const surfaceTrails=process.argv.includes('--surface-trails'),surfaceParticles=surfaceTrails||process.argv.includes('--surface-particles'),artifactPrefix=surfaceTrails?'v2-source-surface-trails-export':surfaceParticles?'v2-source-surface-export':'v2-ordinary-camera-export';
+const surfaceRecording=process.argv.includes('--surface-recording'),surfaceTrails=surfaceRecording||process.argv.includes('--surface-trails'),surfaceParticles=surfaceTrails||process.argv.includes('--surface-particles'),artifactPrefix=surfaceRecording?'v2-source-dynamic-trails-export':surfaceTrails?'v2-source-surface-trails-export':surfaceParticles?'v2-source-surface-export':'v2-ordinary-camera-export';
 const check=(v,m)=>{if(!v)throw Error(m);};
-const paths=['src/App.tsx','src/components/OrdinarySourceCameraControls.tsx','src/components/ExportDialog.tsx','src/components/Viewport.tsx','src/engine/client.ts','src/engine/legacyImport.ts','src/engine/ordinarySourceCameraImport.ts','src/engine/ordinarySourceCameraTimeline.ts','src/engine/renderer.ts','src/engine/timeline.ts','src/engine/sourceSurfaceParticles.ts','src/scenes/sourceSurface.ts','src/components/Timeline.tsx','server/index.mjs','scripts/verify-ordinary-source-camera-export.mjs'];
+const paths=['src/App.tsx','src/components/OrdinarySourceCameraControls.tsx','src/components/ExportDialog.tsx','src/components/Viewport.tsx','src/engine/client.ts','src/engine/legacyImport.ts','src/engine/ordinarySourceCameraImport.ts','src/engine/ordinarySourceCameraTimeline.ts','src/engine/rootsSceneClock.ts','src/engine/document.ts','src/engine/renderer.ts','src/engine/timeline.ts','src/engine/sourceSurfaceParticles.ts','src/scenes/sourceSurface.ts','src/components/Timeline.tsx','server/index.mjs','scripts/verify-ordinary-source-camera-export.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));
 const before=await hashes(),directory=await mkdtemp('.cache/ordinary-camera-export-service-');
 // Vite treats port=0 as its default. Reserve an ephemeral port, then bind it
 // strictly: a race must fail, never redirect this run to an unrelated service.
 const port=await new Promise((resolve,reject)=>{const listener=createTcpServer();listener.once('error',reject);listener.listen(0,'127.0.0.1',()=>{const port=listener.address().port;listener.close(error=>error?reject(error):resolve(port));});});
-const report={at:new Date().toISOString(),surfaceParticles,surfaceTrails,scope:'Actual App imports original Surface JSON, edits source camera, reloads, exports PNG through ExportDialog and an isolated production image service, and compares against cold Worker/Renderer. Not original app parity.',directory};let page,server,browser,exportServer;
+const report={at:new Date().toISOString(),surfaceParticles,surfaceTrails,surfaceRecording,scope:'Actual App imports original Surface JSON, edits source camera, reloads, exports PNG through ExportDialog and an isolated production image service, and compares against cold Worker/Renderer. Not original app parity.',directory};let page,server,browser,exportServer;
 try{
  exportServer=await createExportServer({root:directory,allowedOrigins:[`http://127.0.0.1:${port}`]});const address=await exportServer.listen(0);
  server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await server.listen();
@@ -32,6 +32,7 @@ try{
   source.timeline=[{type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'track',args:[7]}]},{type:'wait',duration:1.5}];
  }
  if(surfaceTrails)Object.assign(source.settings,{show_trails:true,fade_trails:true,trail_lifetime:.75,line_weight:6,periodic_u:true,flowing_u:true,speed_u:13});
+ if(surfaceRecording)source.timeline=[source.timeline[0],{type:'trails',enable:false,duration:'ignored'},{type:'wait',duration:.5},{type:'trails',enable:true},{type:'wait',duration:1}];
  await page.locator('input[type=file]').setInputFiles({name:'source-camera.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source))});await page.getByTestId('ordinary-source-camera').waitFor();await ready();
  const panel=page.getByTestId('ordinary-source-camera');await panel.getByLabel('Theta · radians',{exact:true}).fill('0.3');await panel.getByRole('button',{name:'Apply initial camera',exact:true}).click();await ready();
  await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.sourceCamera?.frame?.theta===.3;});
@@ -41,6 +42,14 @@ try{
   const index=page.getByRole('spinbutton',{name:'Particle index',exact:true});await index.fill('6');await index.blur();await ready();
   await index.fill('7');await index.blur();await ready();
   check(await page.getByRole('combobox',{name:'Tracking target',exact:true}).count()===0,'source tracking exposes local fixed coordinate mode');
+ }
+ if(surfaceRecording){
+  await page.getByRole('button',{name:'Clip trails',exact:true}).first().click();
+  const recording=page.getByRole('checkbox',{name:'Record trails',exact:true});check(!await recording.isChecked(),'imported recording off state lost');
+  check(await page.getByRole('spinbutton',{name:'Clip duration',exact:true}).count()===0,'instant action exposes duration control');
+  await recording.check();await ready();await recording.uncheck();await ready();
+  await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.timeline.tracks[1]?.trailsEnabled===false;});
+  await page.reload();await ready();await page.getByRole('button',{name:'Clip trails',exact:true}).first().click();check(!await recording.isChecked(),'recording edit lost on reload');
  }
  if(surfaceTrails){
   await page.getByRole('slider',{name:'Time position',exact:true}).press('End');
@@ -88,6 +97,15 @@ try{
   if(surfaceTrails){check(report.particleFrames[0].trailRecords===30,'first source seam record count');check(report.particleFrames.every(f=>f.finite&&f.trailSegments>0),'finite trail topology missing');check(actual.completed.trails?.segments>0,'exported active trails missing');}
   for(const f of report.particleFrames.slice(1))check(JSON.stringify(f.center)===JSON.stringify(f.target),'tracking center differs from delivered target');
   check(JSON.stringify(report.particleFrames.at(-1).target)===JSON.stringify(report.particleFrames[1].target),'reverse seek changed particle state');
+ }
+ if(surfaceRecording){
+  report.recordingFrames=await page.evaluate(async request=>{
+   const {Generator}=await import('/src/engine/client.ts'),g=new Generator();
+   try{const scene=structuredClone(request.scene);scene.timeline.fps=4;Object.assign(scene.settings,{uSegments:1,vSegments:1,uMin:0,uMax:100,vMin:0,vMax:1,periodicU:false,speedU:1,speedV:0,scaleX:1,scaleY:1,scaleZ:1,trailLifetime:.5});scene.equations={x:'u',y:'v',z:'0'};
+    const frames=[];for(const time of [.25,.5,.75,1,1.25,1.5,.25]){const out=await g.generate(scene,{...request.context,time});frames.push({time,head:out.positions[0],records:out.temporal.recordedPoints,x:Array.from(out.trails.positions).filter((_,i)=>i%3===0),segments:out.trails.indices.length/2});}return frames;
+   }finally{g.dispose();}
+  },actual.request);
+  check(JSON.stringify(report.recordingFrames.map(f=>f.x))===JSON.stringify([[.25,.5],[.25,.5],[.5],[],[1.5],[1.5,1.75],[.25,.5]]),'recording pause/expiry/resume/reverse Worker history differs from instruction-derived golden');
  }
  const oracle=await page.evaluate(async request=>{const{Generator}=await import('/src/engine/client.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),{sceneAtTime}=await import('/src/engine/timeline.ts');const g=new Generator(),r=new ArtRenderer(document.createElement('canvas'));try{const out=await g.generate(request.scene,request.context);r.setSize(request.context.width,request.context.height,1);r.setOutput(out,sceneAtTime(request.scene,out.sourceCameraFrame.time),false);const styles=[];r.scene.traverse(o=>{if(o.isLineSegments2)styles.push({width:o.material.linewidth,depthTest:o.material.depthTest,renderOrder:o.renderOrder});});const blob=await r.blob('image/png');return{styles,sha:Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()))).map(v=>v.toString(16).padStart(2,'0')).join('')};}finally{g.dispose();r.dispose();r.renderer.forceContextLoss();}},actual.request);
  const png=await readFile(`.cache/${artifactPrefix}.png`),sha=createHash('sha256').update(png).digest('hex');check(png.readUInt32BE(16)===257&&png.readUInt32BE(20)===193,'PNG dimensions');check(sha===oracle.sha,'actual download differs from cold renderer');

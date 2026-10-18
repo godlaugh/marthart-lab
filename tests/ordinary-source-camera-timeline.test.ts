@@ -52,8 +52,9 @@ describe('ordinary source scalar camera queue',()=>{
   expect(out.clips.map(c=>[c.start,c.duration])).toEqual([[0,.5],[.5,.5]]);expect(out.clips.map(c=>c.sourceDuration)).toEqual([Math.fround(.3),Math.fround(.3)]);expect(out.span).toBe(1);expect(out.diagnostics.map(x=>x.code)).toContain('noncamera-clock');expect(JSON.stringify(tracks)).toBe(before);
  });
  it('fails closed on source timing/semantics that the shared authored tracks cannot express',()=>{
-  for(const track of [clip([],{duration:0}),clip([],{type:'trails'}),clip([],{type:'numeric',target:'camera.theta'}),clip([],{type:'align',alignMode:'absolute'}),clip([action('unknown')])])expect(errorCode(()=>evaluate(initial,[track],4,0))).toBe('unsupported');
+  for(const track of [clip([],{duration:0}),clip([],{type:'numeric',target:'camera.theta'}),clip([],{type:'align',alignMode:'absolute'}),clip([action('unknown')])])expect(errorCode(()=>evaluate(initial,[track],4,0))).toBe('unsupported');
  });
+ it('rejects malformed trail clips before requiring a producer',()=>{expect(errorCode(()=>evaluate(initial,[clip([],{type:'trails'})],4,0))).toBe('input');});
  it('keeps incremental cache isolated across reverse seeks, changed inputs, caller mutations and cancelled replay',()=>{
   const tracks=[clip([action('ambient',{thetaSpeed:.3})],{duration:2})];clearOrdinarySourceCameraTimelineCache();
   const first=evaluate(initial,tracks,30,.5),later=evaluate(initial,tracks,30,1);(later.camera.center as unknown as number[])[0]=999;
