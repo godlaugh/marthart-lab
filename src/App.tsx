@@ -172,7 +172,8 @@ export default function App() {
     [generationRevision,setGenerationRevision] = useState(0),
     [renderTime,setRenderTime]=useState(0),
     [error, setError] = useState(""),
-    [time, setTime] = useState(0),
+    [playhead, setPlayhead] = useState(0),
+    [finalPreview, setFinalPreview] = useState(scene.kind==='spirograph'),
     [playing, setPlaying] = useState(false),
     [toast, setToast] = useState(restored?.startupError ?? (restored?.recovered ? t("已从上一次有效备份恢复工作区；损坏数据已保留。") : '')),
     [exporting, setExporting] = useState(false),
@@ -191,6 +192,16 @@ export default function App() {
     [viewportMeasurement,setViewportMeasurement]=useState<{size:[number,number];resolution?:ProjectResolution}|null>(null),
     [pickingJulia,setPickingJulia]=useState(false),
     [formulaDraft, setFormulaDraft] = useState(scene.equations);
+  // Selection previews the resolved endpoint without changing the authored
+  // document. Geometry edits can move that endpoint; manual transport leaves
+  // preview mode and owns its own playhead from then on.
+  const finalPreviewTime=useMemo(()=>{
+    if(!finalPreview)return null;
+    try{return resolveTimeline(scene).duration;}
+    catch{return null;} // Timeline displays the schedule error; allow repair.
+  },[scene,finalPreview]);
+  const time=finalPreviewTime??playhead;
+  function setTime(value:number){setFinalPreview(false);setPlayhead(value);}
   const viewport = useRef<ViewportHandle>(null),
     generationQueue=useRef<GenerationQueue|null>(null),
     generationScene=useRef<SceneDocument|null>(null),
@@ -223,7 +234,7 @@ export default function App() {
       autoPlayPending.current=autoPlayPending.current||playingRef.current;
       playingRef.current=false;setPlaying(false);
       generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();
-      playbackClock.current=0;timeRef.current=0;setTime(0);
+      playbackClock.current=0;timeRef.current=0;setPlayhead(0);
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
       setPreviewCancelled(false);
     }
@@ -297,6 +308,7 @@ export default function App() {
     history.current=[];
     future.current=[];
     setScene(structuredClone(next));
+    setFinalPreview(next.kind==='spirograph');
     setFormulaDraft(next.equations);
     setError("");
     camera.current = next.camera;
@@ -370,6 +382,7 @@ export default function App() {
     autoPlayPending.current=false;
     if(value)playbackStartedAt.current=performance.now();
     if(value)setPickingJulia(false);
+    if(value&&finalPreview){playbackClock.current=0;timeRef.current=0;setTime(0);}
     if(value&&!continuousBouncing(scene)&&!playingRef.current&&(scene.timeline.playbackMode==='once'||(!scene.timeline.playbackMode&&!scene.timeline.loop))&&timeRef.current>=resolveTimeline(scene).duration){playbackClock.current=0;setTime(0);}
     setPlaying(value);
   }
@@ -472,7 +485,7 @@ export default function App() {
     }
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [scene,language,recording]);
+  }, [scene,language,recording,finalPreview]);
   useEffect(() => {
     let id: number,
       prev = playbackStartedAt.current??performance.now();
@@ -583,7 +596,7 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button className="text-button" title={t("实时录制")} onClick={()=>{autoPlayPending.current=false;setPlaying(false);setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button className="text-button" title={t("实时录制")} onClick={()=>{autoPlayPending.current=false;setPlaying(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
@@ -886,6 +899,7 @@ export default function App() {
           <Timeline
             scene={scene}
             time={time}
+            finalPreview={finalPreviewTime!==null}
             playing={playing}
             onTime={seek}
             onPlay={play}
@@ -1243,7 +1257,7 @@ export default function App() {
         />
       )}
       {inputDialog&&<TextPrompt request={inputDialog} onClose={()=>setInputDialog(null)}/>}
-      {recording&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&!previewCancelled&&!error}
+      {recording&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
         onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}

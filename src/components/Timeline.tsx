@@ -21,7 +21,7 @@ import {usesSpirographFrameClock,spirographSimulationFps} from '../engine/spirog
 import {SOURCE_EASING_NAMES} from '../engine/sourceEasing';
 import { timelineWarnings,isCameraAction,ACTIONS, CLIP_TYPES, EASING_NAMES, clipDuration, resolveTimeline, isSpirographEventTarget, isSpirographIgnoredTarget, createAnimationTrack, readAnimationValue } from '../engine/timeline';
 
-type Props = { scene: SceneDocument; time: number; playing: boolean; onTime: (t: number) => void; onPlay: (p: boolean) => void; onChange: (s: SceneDocument) => void };
+type Props = { scene: SceneDocument; time: number; playing: boolean; finalPreview?: boolean; onTime: (t: number) => void; onPlay: (p: boolean) => void; onChange: (s: SceneDocument) => void };
 const rowStyle = { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const };
 function NumberField({ label, value, onChange, min, max, disabled = false }: { label: string; value: number; onChange: (n: number) => void; min?: number; max?: number; disabled?: boolean }) {
   const {t}=useI18n();
@@ -119,7 +119,7 @@ function ActionEditor({ action, scene, targets, onChange }: { action: AnimationA
   {!rootsCamera&&action.method === 'gradientStart' && <GradientEditor config={action.gradient} scene={scene} onChange={gradient => patch({ gradient })} />}</div>;
 }
 
-export function Timeline({ scene, time, playing, onTime, onPlay, onChange }: Props) {
+export function Timeline({ scene, time, playing, finalPreview=false, onTime, onPlay, onChange }: Props) {
   const {t}=useI18n();
   const experience=bouncingExperience(scene),gradientCapabilities=gradientAnimationCapabilities(scene),frameClock=usesSpirographFrameClock(scene),rootsCamera=usesRootsCameraTimeline(scene),rootsGradient=usesRootsGradientTimeline(scene);
   const [expanded, setExpanded] = useState(true), [selected, setSelected] = useState<string | null>(null), [newType, setNewType] = useState<AnimationClipType>(experience.continuous||frameClock||rootsCamera?'wait':'numeric'), [dropTime, setDropTime] = useState<number | null>(null);
@@ -181,6 +181,7 @@ export function Timeline({ scene, time, playing, onTime, onPlay, onChange }: Pro
   return <section className={`timeline ${expanded ? '' : 'collapsed'}`} aria-label={t("动画时间线")}>
     <div className="timeline-toolbar"><button title={t("返回起点")} onClick={() => { onPlay(false); onTime(0); }}><SkipBack size={14} /></button><button className="play-button" aria-label={playing ? t("暂停") : t("播放")} disabled={!!experience.error} onClick={() => onPlay(!playing)}>{playing ? <Pause size={15} /> : <Play size={15} />}</button>
       <span className="time-readout">{time.toFixed(2)} <span>{frameClock?t('秒 · 离线逐帧预览'):experience.continuous?t('秒 · 连续运行'):`/ ${timeline.duration.toFixed(2)} s`}</span></span>
+      {finalPreview&&<span className="muted final-preview" title={t('点击播放或录制将从头开始')}>{t('最终效果预览')}</span>}
       {!experience.continuous&&!frameClock&&<select aria-label={t("播放模式")} value={timeline.playbackMode ?? (timeline.loop ? 'loop' : 'once')} onChange={e => update({ playbackMode: e.target.value as 'once' | 'loop' | 'ping-pong', loop: e.target.value !== 'once' })}><option value="once">{t("单次播放")}</option><option value="loop">{t("循环播放")}</option><option value="ping-pong">{t("往返播放")}</option></select>}
       {(experience.continuous||frameClock)&&<NumberField label={t('场景时间')} value={time} min={0} max={86400} onChange={value=>{onPlay(false);onTime(value);}}/>}
       <NumberField label={t(experience.continuous?'导出范围 · 秒':sequential?'最小播放跨度':'动画时长')} value={authoredTimeline.duration} min={.1} max={86400} onChange={duration => update({ duration })} />
