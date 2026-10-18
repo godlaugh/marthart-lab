@@ -54,7 +54,7 @@ describe('source CPU surface through public import, document and geometry',()=>{
   const raw=source();raw.timeline[0].actions[0].args=[];
   const s=scene(raw);expect(usesSourceSurfaceParticles(s)).toBe(false);expect(supportsParticleTracking(s)).toBe(false);
  });
- it.each([{show_trails:true},{render_mode:'GPU'},{surface_mode:'MESH'},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
+ it.each([{render_mode:'GPU'},{surface_mode:'MESH'},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
   expect(()=>scene({...source(),settings:{...source().settings,...settings}})).toThrow(/尚未|待接入|1–512/);
  });
  it('does not mix local parameter or gradient animation with source particle replay',()=>{

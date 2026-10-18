@@ -284,12 +284,14 @@ export interface GeometryOutput {
   surfaceWireframe?: {positions:Float32Array;indices:Uint32Array;backend:'cpu'|'webgl2'};
   /** Stable identities for particle heads; omission means no temporal joining. */
   particleIds?: Uint32Array;
-  /** Independent line-segment history. Age alpha is multiplied by display opacity. */
+  /** Independent line-segment history. Producer alpha is multiplied by display opacity. */
   trails?: {
     positions: Float32Array;
     colors?: Float32Array;
     alphas: Float32Array;
     indices?: Uint32Array;
+    /** Optional producer-owned logical-pixel line style paired with this frame. */
+    appearance?: {width:number;overlay:boolean};
   };
   topology: "points" | "lines" | "segments" | "mesh";
 }

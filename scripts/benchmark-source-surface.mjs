@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto';
 // Local CPU workloads only. Scalar comparison uses the same source grammar and
 // double outputs. Geometry has no equivalent native baseline; it is a profile,
 // not an assertion of speedup, original runtime equivalence or video throughput.
+const includeTrails=process.argv.includes('--trails');
 const directory=await mkdtemp('.cache/source-surface-cost-'),entry=resolve(directory,'entry.mjs');
 await build({stdin:{contents:`export {prepareSourceRealExpression,prepareDomainSourceScalar} from './src/engine/domainSourceScalar';export {parseProjectFile} from './src/engine/legacyImport';export {parseScene,serializeScene} from './src/engine/document';export {generateScene} from './src/engine/temporal';export {ordinarySourceViewport} from './src/engine/ordinarySourceCamera';`,resolveDir:process.cwd(),loader:'ts'},bundle:true,platform:'node',format:'esm',packages:'external',outfile:entry});
 const runner=resolve(directory,'run.mjs');
@@ -28,11 +29,11 @@ for(let repeat=0;repeat<3;repeat++){
   }
   hash.update(Buffer.from(values.buffer));outputs=values.length;
  }else{
-  const raw={config_version:'1.0.0',type:'SURFACE',name:'CPU cost',equations:{x:'(2+cos(v))*cos(u)',y:'(2+cos(v))*sin(u)',z:'sin(v)'},settings:{show_trails:false,u_segments:40,v_segments:20,periodic_u:true,periodic_v:true,u_min:0,u_max:'TWO_PI',v_min:0,v_max:'TWO_PI'},timeline:[{type:'animate',duration:2,actions:[{method:'track',args:[410]}]}]};
+  const raw={config_version:'1.0.0',type:'SURFACE',name:'CPU cost',equations:{x:'(2+cos(v))*cos(u)',y:'(2+cos(v))*sin(u)',z:'sin(v)'},settings:{show_trails:mode==='geometry-trails',u_segments:40,v_segments:20,periodic_u:true,periodic_v:true,u_min:0,u_max:'TWO_PI',v_min:0,v_max:'TWO_PI'},timeline:[{type:'animate',duration:2,actions:[{method:'track',args:[410]}]}]};
   const scene=api.parseScene(api.serializeScene(api.parseProjectFile(JSON.stringify(raw)).scene));
   for(let i=0;i<20;i++){
    const out=api.generateScene(scene,{time:i/10,width:320,height:240,quality:'preview',sourceViewport:api.ordinarySourceViewport(scene,320,240,'primary',240)});
-   hash.update(Buffer.from(out.positions.buffer));hash.update(JSON.stringify(out.sourceCameraFrame));outputs+=out.positions.length/3;
+   hash.update(Buffer.from(out.positions.buffer));hash.update(JSON.stringify(out.sourceCameraFrame));if(out.trails){for(const array of [out.trails.positions,out.trails.indices,out.trails.alphas,out.trails.colors])hash.update(Buffer.from(array.buffer));}outputs+=out.positions.length/3;
   }
  }
  const elapsedMs=performance.now()-start,used=process.cpuUsage(cpu);
@@ -41,12 +42,14 @@ for(let repeat=0;repeat<3;repeat++){
 console.log(JSON.stringify({mode,node:process.version,rows}));
 `);
 const results=[];
-for(const mode of ['scalar','compiled','geometry']){
+for(const mode of ['scalar','compiled','geometry',...(includeTrails?['geometry-trails']:[])]){
  const child=spawnSync(process.execPath,[runner,mode],{encoding:'utf8'});if(child.status!==0)throw Error(child.stderr||child.stdout);results.push(JSON.parse(child.stdout));
 }
 const scalar=results[0].rows,compiled=results[1].rows;
 if(results.some(result=>result.rows.some(row=>row.sha256!==result.rows[0].sha256))||scalar.some((row,i)=>row.sha256!==compiled[i].sha256))throw Error('Equivalent output hashes differ');
+let baseline;
+if(includeTrails){const previous=await readFile('.cache/v2-source-surface-cost.json','utf8'),parsed=JSON.parse(previous);baseline={report:'.cache/v2-source-surface-cost.json',sha256:createHash('sha256').update(previous).digest('hex'),results:parsed.results};for(const old of parsed.results){const current=results.find(r=>r.mode===old.mode);if(old.rows[0].sha256!==current?.rows[0].sha256)throw Error('Previous heads/scalar output changed');}}
 const sourcePaths=['src/engine/domainSourceScalar.ts','src/engine/sourceSurfaceParticles.ts','src/scenes/sourceSurface.ts','src/engine/legacyImport.ts','src/engine/ordinarySourceCameraTimeline.ts','scripts/benchmark-source-surface.mjs'];
 const sources=Object.fromEntries(await Promise.all(sourcePaths.map(async path=>[path,createHash('sha256').update(await readFile(path)).digest('hex')])));
-const report={at:new Date().toISOString(),status:'passed',directory,sources,results,scope:'Scalar: 30000 three-formula evaluations, equal Float64 SHA256. Geometry: public import/save/reopen plus 20 fresh seeks, 40×20 CPU points, camera and colors. No renderer, Worker or video encoding.',measurement:'Compilation/module loading excluded. Each mode is a new child; no descendants during measured work. maxRSS is cumulative process high water, not allocation delta. Warm rows retain JIT/runtime only, not particle replay state.',unmeasured:['agent tokens','GPU/VRAM','original app cost','video export throughput','browser process-family memory'],originalRuntimeParity:false};
-await writeFile('.cache/v2-source-surface-cost.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report.results,null,2));
+const report={at:new Date().toISOString(),status:'passed',directory,sources,results,baseline,scope:'Scalar: 30000 three-formula evaluations, equal Float64 SHA256. Geometry: public import/save/reopen plus 20 fresh seeks, 40×20 CPU points, camera and colors. Optional geometry-trails also hashes full line geometry, topology, alpha and colors. No renderer, Worker or video encoding.',measurement:'Compilation/module loading excluded. Each mode is a new child; no descendants during measured work. maxRSS is cumulative process high water, not allocation delta. Warm rows retain JIT/runtime only, not particle replay state.',unmeasured:['agent tokens','GPU/VRAM','original app cost','video export throughput','browser process-family memory'],originalRuntimeParity:false};
+await writeFile(includeTrails?'.cache/v2-source-surface-trails-cost.json':'.cache/v2-source-surface-cost.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report.results,null,2));

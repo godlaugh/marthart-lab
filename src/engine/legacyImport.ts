@@ -255,9 +255,9 @@ function geometryMaterial(r:Reader,s:SceneDocument){
  const texture=r.str('settings.procedural_texture');if(texture!==undefined){const names:Record<string,string>={none:'none',checkerboard:'checker',check:'checker',checker:'checker',metal:'metal',ceramic:'ceramic',carbon:'carbon'},mapped=names[texture.toLowerCase()];if(!mapped)fail(`未知程序纹理 ${texture}`);s.settings.proceduralTexture=mapped;r.warnings.push('程序纹理使用独立 GPU 物体坐标算法；原版纹理参数和逐像素外观未对照。');}
 }
 function surface(r:Reader,s:SceneDocument){
- numberTo(r,s,'settings.line_weight','trailWidth',{min:0});
  for(const k of ['x','y','z'])equation(r,s,'equations.'+k,k);
  if(usesSourceSurfaceParticles(s)){ordinarySurfaceParticleGeometry(r,s);return;}
+ numberTo(r,s,'settings.line_weight','trailWidth',{min:0});
  const original=r.str('settings.surface_mode')??'POINTS';s.settings.renderMode=original==='MESH'?'mesh':'points';if(!['MESH','POINTS'].includes(original))r.warnings.push(`settings.surface_mode=${original} 尚无等价模式；当前显示点采样。`);
  for(const axis of ['u','v']){
   numberTo(r,s,`settings.${axis}_min`,axis+'Min');numberTo(r,s,`settings.${axis}_max`,axis+'Max');
@@ -913,7 +913,11 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  }
  for(const axis of ['x','y','z']){settings['scale'+axis.toUpperCase()]=Math.fround(r.domainDouble(['settings','scale_'+axis],55));settings['offset'+axis.toUpperCase()]=Math.fround(r.domainDouble(['settings','offset_'+axis],0));}
  settings.showTrails=r.domainBoolean(['settings','show_trails'],true);
- r.warnings.push('曲面 track 使用源 CPU 点状态、半开参数域和原版索引；拖尾、参数动画、GPU/网格跟踪仍待接入，调色与完整原版画面尚未验收。');
+ settings.fadeTrails=r.domainBoolean(['settings','fade_trails'],true);
+ settings.trailLifetime=Math.fround(r.domainDouble(['settings','trail_lifetime'],4));
+ settings.trailWidth=Math.fround(r.domainDouble(['settings','line_weight'],1));
+ settings.recordTrails=true; // Native constructor records even when display is hidden; no JSON record_trails read.
+ r.warnings.push('曲面 track 使用源 CPU 点状态、半开参数域和原版索引；拖尾按源断点、容量及顺序渐隐；参数动画、GPU/网格跟踪仍待接入，调色与完整原版画面尚未验收。');
 }
 /** Eager source setupTimeline dispatch. Preserve every native queue duration;
  * known but unimplemented animation children fail rather than become local

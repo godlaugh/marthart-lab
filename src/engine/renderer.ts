@@ -232,7 +232,9 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.trails){
       const trail=output.trails;
       const colors=trail.colors??vertexColors(trail.positions,document.palette,String(document.settings.colorMetric??'height'));
-      this.group.add(createThickTrails({...trail,colors},parseTrailAppearance(document.settings).width,Number(document.settings.opacity??1)));
+      const lines=createThickTrails({...trail,colors},trail.appearance?.width??parseTrailAppearance(document.settings).width,Number(document.settings.opacity??1));
+      if(trail.appearance?.overlay){lines.material.depthTest=false;lines.renderOrder=2;}
+      this.group.add(lines);
     }
     this.renderer.setClearColor(
       String(document.settings.background ?? "#111317"),

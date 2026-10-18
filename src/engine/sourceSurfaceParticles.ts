@@ -36,7 +36,9 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  if(!usesSourceSurfaceParticles(scene))fail('input','缺少原版曲面粒子版本');
  const s=scene.settings;
  if(s.renderMode!=='points'||s.computeBackend!=='cpu')fail('unsupported','原版曲面粒子当前只接入 CPU 点模式；GPU 与网格仍待接入');
- if(s.showTrails===true)fail('unsupported','原版曲面拖尾的边界分段尚未接入此粒子路径');
+ for(const key of ['showTrails','recordTrails','fadeTrails'])if(typeof s[key]!=='boolean')fail('input',`原版曲面 ${key} 缺少布尔值`);
+ if(scalar(s.trailWidth,'trailWidth')<0)fail('input','原版曲面拖尾线宽的本地呈现要求非负值');
+ const trails={show:s.showTrails===true,record:s.recordTrails!==false,fade:s.fadeTrails===true,lifetime:scalar(s.trailLifetime,'trailLifetime')};
  if(s.scale!==1||['rotateX','rotateY','rotateZ'].some(key=>Number(s[key]??0)!==0))fail('unsupported','原版曲面粒子使用分轴 scale 与 offset，不执行本地整体缩放或物体旋转');
  for(const track of scene.timeline.tracks){
   if(!track.enabled)continue;
@@ -57,9 +59,9 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  keys.forEach((key,i)=>{const value=scene.parameters[key];if(!Number.isFinite(value))fail('input',`原版曲面参数 ${key} 必须有限`);variables[i+2]=value;});
  const expressions=['x','y','z'].map(key=>{const parsed=prepareSourceRealExpression(scene.equations[key],names);if(!parsed.ok)fail(parsed.error.kind,`原版曲面公式 ${key}：${JSON.stringify(parsed.error)}`);return parsed.value;});
  const operations=expressions.reduce((sum,e)=>sum+e.operations,0);
- return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,scales,offsets,variables,expressions,operations},coverage,isCancelled)};
+ return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,scales,offsets,variables,expressions,operations,trails},coverage,isCancelled)};
 }
-interface Configuration {u:Axis;v:Axis;count:number;scales:number[];offsets:number[];variables:Float64Array;expressions:SourceRealExpression[];operations:number;}
+interface Configuration {u:Axis;v:Axis;count:number;scales:number[];offsets:number[];variables:Float64Array;expressions:SourceRealExpression[];operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
 function wrap(value:number,axis:Axis):number {
  const range=F(axis.max-axis.min);if(range<=0)return axis.min;
  let rest=F(F(value-axis.min)%range);if(rest<0)rest=F(rest+range);return F(axis.min+rest);
@@ -74,6 +76,8 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly ids:number[]=[];
  private readonly slots=new Map<number,number>();
  private readonly variables:Float64Array;
+ private readonly history?:SurfaceTrailHistory;
+ private readonly boundaryPoint=new Float32Array(3);
  private used=0;
  private failure:unknown;
  private failed=false;
@@ -81,6 +85,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  constructor(private readonly config:Configuration,private readonly coverage:'all'|'tracked',private readonly isCancelled?:()=>boolean){
   const capacity=coverage==='all'?config.count:Math.min(config.count,4096);
   this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.variables=config.variables.slice();
+  if(coverage==='all'&&config.trails.show&&config.trails.record)this.history=new SurfaceTrailHistory(config.count,config.trails.lifetime,config.trails.fade,()=>this.check());
   if(coverage==='all')for(let id=0;id<config.count;id++)this.ensure(id);
  }
  private check(){if(this.failed)throw this.failure;if(this.isCancelled?.())fail('cancelled','原版曲面粒子回放已取消');}
@@ -88,13 +93,20 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   try{this.check();return operation();}catch(error){this.failed=true;this.failure=error;throw error;}
  }
  private reserve(count=1){this.check();this.used+=count*(this.config.operations+24);if(this.used>MAX_WORK)fail('capacity','原版曲面粒子回放超过本地 2000 万工作单位预算');}
+ /** Shared expression/transform owner for heads and seam endpoints. Boundary
+  * nonfinite results become source break records; invalid heads still reject. */
+ private position(u:number,v:number,out:Float32Array,offset:number):boolean {
+  const c=this.config;this.variables[0]=u;this.variables[1]=v;let finite=true;
+  for(let k=0;k<3;k++){const value=F(F(F(c.expressions[k].evaluate(this.variables))*c.scales[k])+c.offsets[k]);out[offset+k]=value;finite&&=Number.isFinite(value);}
+  return finite;
+ }
  private calculate(slot:number){
-  const at=slot*4,to=slot*3,c=this.config;this.variables[0]=this.state[at];this.variables[1]=this.state[at+1];
-  for(let k=0;k<3;k++){
-   const value=F(F(F(c.expressions[k].evaluate(this.variables))*c.scales[k])+c.offsets[k]);
-   if(!Number.isFinite(value))fail('arithmetic',`原版曲面粒子 ${this.ids[slot]} 产生非有限坐标；没有替换成邻点或原点`);
-   this.positions[to+k]=value;
-  }
+  if(!this.position(this.state[slot*4],this.state[slot*4+1],this.positions,slot*3))fail('arithmetic',`原版曲面粒子 ${this.ids[slot]} 产生非有限坐标；没有替换成邻点或原点`);
+ }
+ private boundary(slot:number,u:number,v:number,time:number,invalidBreak:boolean){
+  this.reserve();const p=this.boundaryPoint;
+  if(this.position(u,v,p,0))this.history!.add(slot,p[0],p[1],p[2],time);
+  else if(invalidBreak)this.history!.add(slot,NaN,NaN,NaN,time);
  }
  private ensure(id:number):number {
   const existing=this.slots.get(id);if(existing!==undefined)return existing;
@@ -117,23 +129,109 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   this.check();if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
   this.lastFrame=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
   this.reserve(this.ids.length);
+  const u=this.config.u,v=this.config.v,time=F(frame.time);
   for(let slot=0;slot<this.ids.length;slot++){
    if((slot&255)===0)this.check();const at=slot*4;
-   for(let k=0;k<2;k++){
-    const axis=k===0?this.config.u:this.config.v;
-    let value=this.state[at+k];if(axis.periodic&&axis.flowing)value=wrap(value,axis);
-    value=F(value+F(dt*this.state[at+k+2]));
-    if(axis.periodic){
-     if(axis.flowing)value=wrap(value,axis);
-     else if(value<axis.min||value>axis.max){this.state[at+k+2]=-this.state[at+k+2];value=value<axis.min?axis.min:value>axis.max?axis.max:value;}
-    }
-    this.state[at+k]=value;
+   const oldU=u.periodic&&u.flowing?wrap(this.state[at],u):this.state[at],oldV=v.periodic&&v.flowing?wrap(this.state[at+1],v):this.state[at+1];
+   let nextU=F(oldU+F(dt*this.state[at+2])),nextV=F(oldV+F(dt*this.state[at+3]));
+   // Source detects STRICT crossings before the final wrap. Landing exactly
+   // on max wraps to min without creating seam records; do not repair this.
+   const crossU=u.periodic&&u.flowing?(nextU>u.max?1:nextU<u.min?-1:0):0,crossV=v.periodic&&v.flowing?(nextV>v.max?1:nextV<v.min?-1:0):0;
+   if(u.periodic&&!u.flowing&&(nextU<u.min||nextU>u.max)){this.state[at+2]=-this.state[at+2];nextU=nextU<u.min?u.min:u.max;}
+   if(v.periodic&&!v.flowing&&(nextV<v.min||nextV>v.max)){this.state[at+3]=-this.state[at+3];nextV=nextV<v.min?v.min:v.max;}
+   if(this.history&&(crossU||crossV)){
+    const fraction=(old:number,next:number,axis:Axis,direction:number)=>Math.max(0,Math.min(1,F(F((direction>0?axis.max:axis.min)-old)/F(next-old))));
+    const crossing=Math.min(crossU?fraction(oldU,nextU,u,crossU):1,crossV?fraction(oldV,nextV,v,crossV):1);
+    const edgeU=F(oldU+F(F(nextU-oldU)*crossing)),edgeV=F(oldV+F(F(nextV-oldV)*crossing));
+    this.boundary(slot,edgeU,edgeV,time,true);
+    this.history.add(slot,NaN,NaN,NaN,time);
+    // Both crossing axes reset, even if their first crossings had different
+    // fractions. One boundary pair per frame also preserves multi-wrap behavior.
+    this.boundary(slot,crossU?(crossU>0?u.min:u.max):edgeU,crossV?(crossV>0?v.min:v.max):edgeV,time,false);
    }
+   this.state[at]=u.periodic&&u.flowing?wrap(nextU,u):nextU;this.state[at+1]=v.periodic&&v.flowing?wrap(nextV,v):nextV;
    this.calculate(slot);
+   if(this.history){const to=slot*3;this.history.add(slot,this.positions[to],this.positions[to+1],this.positions[to+2],time);this.history.expire(slot,time);}
   }
  });}
- snapshot():{positions:Float32Array;particleIds:Uint32Array;workUnits:number} {return this.guarded(()=>{
+ snapshot():{positions:Float32Array;particleIds:Uint32Array;workUnits:number;trails?:SourceSurfaceTrails} {return this.guarded(()=>{
   if(this.coverage!=='all')fail('input','稀疏相机查询不能伪装成完整曲面输出');
-  return{positions:this.positions.slice(),particleIds:Uint32Array.from(this.ids),workUnits:this.used};
+  return{positions:this.positions.slice(),particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(this.history?{trails:this.history.snapshot()}: {})};
  });}
+}
+
+
+export interface SourceSurfaceTrails {
+ readonly positions:Float32Array;readonly alphas:Float32Array;readonly indices:Uint32Array;
+ readonly particleIds:Uint32Array;readonly records:number;readonly oldestTime:number;
+}
+const TRAIL_RECORDS=1_000_000,TRAIL_BLOCK=4096;
+/** Source Dot3D FIFO semantics with pooled typed storage. Native per-dot
+ * retention is preserved; lazy blocks replace thousands of mostly empty arrays.
+ * The 1M aggregate record bound includes NaN separators and precedes allocation.
+ * Known storage: <=20MB pool + 12 bytes/particle metadata, <=28MB snapshot;
+ * downstream color and renderer instance buffers have their own owner budgets. */
+class SurfaceTrailHistory {
+ private readonly heads:Uint32Array;private readonly tails:Uint32Array;private readonly counts:Uint32Array;
+ private readonly blocks:{values:Float32Array;next:Uint32Array}[]=[];
+ private readonly maximum:number;
+ private free=0;private fresh=1;private total=0;
+ constructor(particles:number,private readonly lifetime:number,private readonly fade:boolean,private readonly check:()=>void){
+  this.heads=new Uint32Array(particles);this.tails=new Uint32Array(particles);this.counts=new Uint32Array(particles);
+  const product=F(lifetime*60),integer=Math.max(-2147483648,Math.min(2147483647,Math.trunc(product)));
+  this.maximum=Math.max(0,(integer+120)|0); // JVM f2i then signed iadd.
+ }
+ private block(id:number){return this.blocks[Math.floor((id-1)/TRAIL_BLOCK)];}
+ private index(id:number){return(id-1)%TRAIL_BLOCK;}
+ private next(id:number){return this.block(id).next[this.index(id)];}
+ private link(id:number,next:number){this.block(id).next[this.index(id)]=next;}
+ private remove(slot:number){
+  const id=this.heads[slot];this.heads[slot]=this.next(id);if(--this.counts[slot]===0)this.tails[slot]=0;
+  this.link(id,this.free);this.free=id;this.total--;
+ }
+ add(slot:number,x:number,y:number,z:number,time:number){
+  if(!this.maximum)return;
+  if(this.counts[slot]===this.maximum)this.remove(slot);
+  let id=this.free;
+  if(id)this.free=this.next(id);
+  else{
+   if(this.fresh>TRAIL_RECORDS)fail('capacity','原版曲面拖尾超过本地 100 万记录预算（含断点）');
+   id=this.fresh++;
+   if(this.index(id)===0){this.check();const size=Math.min(TRAIL_BLOCK,TRAIL_RECORDS-id+1);this.blocks.push({values:new Float32Array(size*4),next:new Uint32Array(size)});}
+  }
+  const block=this.block(id),i=this.index(id),at=i*4;block.values[at]=x;block.values[at+1]=y;block.values[at+2]=z;block.values[at+3]=time;block.next[i]=0;
+  if(this.tails[slot])this.link(this.tails[slot],id);else this.heads[slot]=id;
+  this.tails[slot]=id;this.counts[slot]++;this.total++;
+ }
+ expire(slot:number,time:number){
+  while(this.heads[slot]){const id=this.heads[slot];if(!(F(time-this.block(id).values[this.index(id)*4+3])>this.lifetime))break;this.remove(slot);}
+ }
+ snapshot():SourceSurfaceTrails {
+  let vertices=0,segments=0,oldestTime=Infinity;
+  const finite=(data:Float32Array,i:number)=>Number.isFinite(data[i])&&Number.isFinite(data[i+1])&&Number.isFinite(data[i+2]);
+  for(let slot=0;slot<this.heads.length;slot++){
+   if((slot&255)===0)this.check();let previous=false;
+   for(let id=this.heads[slot];id;id=this.next(id)){
+    const data=this.block(id).values,i=this.index(id)*4,valid=finite(data,i);oldestTime=Math.min(oldestTime,data[i+3]);
+    if(valid){vertices++;if(previous)segments++;}previous=valid;
+   }
+  }
+  // Both counts are bounded by retained records. Finite points are compacted
+  // only after edge identity and original ordinal fade are known.
+  const positions=new Float32Array(vertices*3),alphas=new Float32Array(vertices),particleIds=new Uint32Array(vertices),indices=new Uint32Array(segments*2);
+  let vertex=0,edge=0;
+  for(let slot=0;slot<this.heads.length;slot++){
+   if((slot&255)===0)this.check();let previous=-1,ordinal=0;const denominator=Math.max(1,this.counts[slot]-1);
+   for(let id=this.heads[slot];id;id=this.next(id),ordinal++){
+    const data=this.block(id).values,i=this.index(id)*4;if(!finite(data,i)){previous=-1;continue;}
+    positions[vertex*3]=data[i];positions[vertex*3+1]=data[i+1];positions[vertex*3+2]=data[i+2];particleIds[vertex]=slot;
+    // PGraphics RGB/255: source stroke(alpha) normalizes and packs to an 8-bit
+    // channel before its GL vertex consumer. Separators count in the denominator.
+    const stroke=this.fade?F(255*F(ordinal/denominator)):255;
+    alphas[vertex]=F(Math.trunc(F(255*F(stroke/255)))/255);
+    if(previous>=0){indices[edge++]=previous;indices[edge++]=vertex;}previous=vertex++;
+   }
+  }
+  return{positions,alphas,indices,particleIds,records:this.total,oldestTime:Number.isFinite(oldestTime)?oldestTime:0};
+ }
 }
