@@ -1,3 +1,4 @@
+import {prepareSourceSurfaceMeshScene} from './sourceSurfaceMeshScene';
 import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceSurfaceParameterEdge,SOURCE_SURFACE_PARAMETER_EDGE_DEFAULT,type SourceSurfaceParameterResult} from './sourceSurfaceParameterConfig';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
 import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type SourceSurfaceGradientImportFacts} from './sourceSurfaceGradientConfig';
@@ -40,7 +41,9 @@ import {createRootsNativeMath,defaultRootNativeParameter,parseRootsMath} from '.
 import {prepareRootsSourceMemberOrder,prepareRootsSourceJsonInt,prepareRootsSourceJsonLong,prepareRootsSourceJsonString} from './rootsSourceOrder';
 import {isJavaBlank} from './sourceJavaText';
 import {prepareOrdinarySourceScalarScope,prepareSurfaceSourceStringField,type OrdinarySourceScalarScope,type OrdinarySourceScalarResult,type OrdinarySourceCameraFamily} from './ordinarySourceCameraImport';
-import {SOURCE_SURFACE_PARTICLES,prepareSourceSurfaceParticles,usesSourceSurfaceParticles} from './sourceSurfaceParticles';
+import {prepareSourceSurfaceParticles} from './sourceSurfaceParticles';
+import {SOURCE_SURFACE_PARTICLES,SOURCE_SURFACE_MESH,usesSourceSurfaceParticles,usesSourceSurfaceMesh,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+import {importSourceSurfaceMeshConfig} from './sourceSurfaceMeshConfig';
 import {ordinarySourceCameraGeometry} from './ordinarySourceCamera';
 import {ORDINARY_CAMERA_SEQUENCE} from './ordinarySourceCameraTimeline';
 
@@ -232,10 +235,10 @@ function commonLocalPalette(r:Reader,s:SceneDocument){
 }
 function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
- const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
- if(s.kind!=='roots'&&!usesSourceSurfaceParticles(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceParticles(s))commonLocalPalette(r,s);
- if(!usesSourceSurfaceParticles(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
+ const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceMesh(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
+ if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
+ if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s))commonLocalPalette(r,s);
+ if(!usesSourceSurfaceGeometry(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
@@ -260,6 +263,7 @@ function geometryMaterial(r:Reader,s:SceneDocument){
 }
 function surface(r:Reader,s:SceneDocument){
  for(const k of ['x','y','z'])equation(r,s,'equations.'+k,k);
+ if(usesSourceSurfaceMesh(s))return; // Canonical mesh settings were parsed once before common fields.
  if(usesSourceSurfaceParticles(s)){ordinarySurfaceParticleGeometry(r,s);return;}
  numberTo(r,s,'settings.line_weight','trailWidth',{min:0});
  const original=r.str('settings.surface_mode')??'POINTS';s.settings.renderMode=original==='MESH'?'mesh':'points';if(!['MESH','POINTS'].includes(original))r.warnings.push(`settings.surface_mode=${original} 尚无等价模式；当前显示点采样。`);
@@ -897,6 +901,22 @@ function ordinaryCamera(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope
  const accumulation=s.kind==='perlin'?r.domainBoolean(['settings','use_accumulation_buffer'],false,'default'):false;
  s.settings.sourceCameraProjection=accumulation?'scene-fade-orthographic':'perspective';
 }
+/** One source config owns mesh domain, transforms and appearance; generic UI
+ * settings stay neutral and never mirror editable copies of these values. */
+function ordinarySurfaceMeshGeometry(r:Reader,s:SceneDocument):void {
+ const parsed=importSourceSurfaceMeshConfig(r.peek(['settings']),{numberToken:path=>r.numberToken(['settings',...path])});
+ if(!parsed.ok)fail(`settings.${parsed.error.path.join('.')} 曲面源网格 ${parsed.error.kind}: ${parsed.error.reason}`);
+ const facts=parsed.value;
+ if(facts.configuration.nativeBackend!=='cpu')fail('原版 GPU 网格尚未接入；不能用 CPU 网格代替');
+ s.surfaceSourceMesh=facts.configuration;
+ for(const path of facts.consumedPaths)r.use(['settings',...path]);
+ for(const path of facts.numericPaths)r.retainNumberToken(['settings',...path]);
+ r.warnings.push(...facts.diagnostics);
+ Object.assign(s.settings,{surfaceGeometryVersion:SOURCE_SURFACE_MESH,renderMode:'mesh',computeBackend:'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1,
+  background:'#'+(facts.configuration.backgroundColor&0xffffff).toString(16).padStart(6,'0')});
+ s.surfaceSourcePalette=parseSourceSurfacePalette({colors:r.has('palette')?r.use('palette'):[...DEFAULT_SOURCE_SURFACE_COLORS]});
+ r.warnings.push('曲面使用源 CPU 网格、接缝、填充与线框规则；源参数和渐变动作保留原版对象语义；模式切换及 GPU 尚未接入，完整原版画面尚未验收。');
+}
 function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  const hasSettings=r.has(['settings']);if(hasSettings)r.object(['settings']);
  const render=(r.str(['settings','render_mode'])??'CPU').toUpperCase();
@@ -985,7 +1005,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
   r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
  };
  for(const {path,originalType,type,actions:sourceActions,surfaceParameterClip} of structure){
-  if(type==='trails'&&usesSourceSurfaceParticles(s)){
+  if(type==='trails'&&usesSourceSurfaceGeometry(s)){
    // JsonSurfaceConfig constructs InstantAction directly: duration/easing are
    // not read, even when malformed. Preserve them in source, never parse/clamp.
    const trailsEnabled=r.domainBoolean([...path,'enable'],true);
@@ -1066,6 +1086,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
  if(total>0)s.timeline.duration=total;
  validateTimelineCapacity(s.timeline.tracks);
  if(usesSourceSurfaceParticles(s))prepareSourceSurfaceParticles(s);
+ if(usesSourceSurfaceMesh(s))prepareSourceSurfaceMeshScene(s);
 }
 function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarScope,structure?:OrdinaryTimelineClip[]){
  if(s.sourceCamera&&ordinaryScope){ordinaryCameraTimeline(r,s,ordinaryScope,structure);return;}
@@ -1316,7 +1337,9 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  // Source geometry and queue share parsed dispatch facts. Select its owner
  // before common/local geometry reads, so fallback values are never reinterpreted.
  const ordinaryStructure=kind==='surface'?ordinaryTimelineStructure(r,true,ordinaryScope):undefined;
- if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
+ const surfaceMode=kind==='surface'?r.peek(['settings','surface_mode']):undefined;
+ if(typeof surfaceMode==='string'&&surfaceMode.toUpperCase()==='MESH')ordinarySurfaceMeshGeometry(r,scene);
+ else if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
  common(r,scene);

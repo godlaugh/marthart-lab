@@ -1,6 +1,9 @@
+import {SourceSurfaceMeshControls} from './components/SourceSurfaceMeshControls';
+import {usesSourceSurfaceGeometry,usesSourceSurfaceMesh,usesSourceSurfaceParticles} from './engine/sourceSurfaceIdentity';
+import {prepareSourceSurfaceMeshScene} from './engine/sourceSurfaceMeshScene';
 import {SourceSurfacePaletteEditor} from './components/SourceSurfacePaletteEditor';
 import {ordinarySourceViewport,ordinarySourceCameraInitial} from './engine/ordinarySourceCamera';
-import {usesSourceSurfaceParticles,prepareSourceSurfaceParticles} from './engine/sourceSurfaceParticles';
+import {prepareSourceSurfaceParticles} from './engine/sourceSurfaceParticles';
 import {OrdinarySourceCameraControls} from './components/OrdinarySourceCameraControls';
 import {version as appVersion} from '../package.json';
 import {TextPrompt,type TextPromptRequest} from "./components/TextPrompt";
@@ -266,7 +269,7 @@ export default function App() {
   }
   const rootsSessionId=useRef(crypto.randomUUID());
   function edit(next: SceneDocument) {
-    if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceMesh(next))prepareSourceSurfaceMeshScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     history.current.push(sceneRef.current);
     if (history.current.length > 40) history.current.shift();
     future.current=[];
@@ -1044,7 +1047,7 @@ export default function App() {
                   {scene.kind==='roots'&&<RootsMathControls key={`root-math:${scene.id}`} scene={scene} onChange={edit}/>}
                   {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={edit} onRestart={()=>{rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
                   <RootsDensityColorControls scene={scene} onChange={edit} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsColor:undefined}/>
-                  {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} section="formula"/>:<SettingsFields
+                  {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} section="formula"/>:!usesSourceSurfaceMesh(scene)&&<SettingsFields
                     controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls))).filter(control=>{
                       if(!isMeshMaterialControlVisible(scene,control.key)||!rootMathControlVisible(scene,control.key)||!rootsPresentationControlVisible(scene,control.key))return false;
                       if(usesSourceSurfaceParticles(scene)&&control.key==='colorMetric')return false;
@@ -1070,6 +1073,7 @@ export default function App() {
                     settings={meshAppearanceControlSettings(scene.kind==='bouncing'?bouncingControlSettings(scene.settings):scene.kind==='roots'?rootsControlSettings(scene.settings):scene.kind==='domain'?domainControlSettings(scene.settings):scene.kind==='surface'||scene.kind==='attractor'?{...scene.settings,trailWidth:parseTrailAppearance(scene.settings).width}:scene.kind==='samila'?samilaToneControlSettings(scene.settings):densityToneControlSettings(scene.kind,scene.settings))}
                     onChange={changeSetting}
                   />}
+                  <SourceSurfaceMeshControls key={`source-mesh:${scene.id}`} scene={scene} onChange={edit}/>
                   {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={edit} disabled={playing||recording}/>}
                   {scene.kind==='samila'&&<details open className="inspector-section"><summary>{t('Samila 相机')}</summary><div className="section-body">
                     <p className="muted">{t('启用后切换为持续批次、限幅历史与 XY 投影。相机旋转保留累积图像；编辑起始角会重新计算历史。')}</p>
@@ -1108,12 +1112,12 @@ export default function App() {
               ) : (
                 <>
                   <FractalControls scene={scene} onChange={edit} section="color"/>
-                  {!usesSourceSurfaceParticles(scene)&&<GeometryColorControls scene={scene} onChange={edit}/>}
+                  {!usesSourceSurfaceGeometry(scene)&&<GeometryColorControls scene={scene} onChange={edit}/>}
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceSurfaceParticles(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
-                      {!usesSourceSurfaceParticles(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
+                      {usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
+                      {!usesSourceSurfaceGeometry(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
                           label: t("着色依据"),
@@ -1134,7 +1138,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("画布与渲染")}</summary>
                     <div className="section-body">
-                      <label className="field">
+                      {!usesSourceSurfaceMesh(scene)&&<label className="field">
                         <span>{t("背景颜色")}</span>
                         <input
                           type="color"
@@ -1144,8 +1148,8 @@ export default function App() {
                             changeSetting("background", e.target.value)
                           }
                         />
-                      </label>
-                      {rootsAppearanceControlVisible(scene,'pointSize')&&<Control
+                      </label>}
+                      {!usesSourceSurfaceMesh(scene)&&rootsAppearanceControlVisible(scene,'pointSize')&&<Control
                         spec={{
                           key: "pointSize",
                           label: t(usesSourceSurfaceParticles(scene)?"点半径":"粒子大小"),
@@ -1158,7 +1162,7 @@ export default function App() {
                         value={scene.settings.pointSize}
                         onChange={(v) => changeSetting("pointSize", v)}
                       />}
-                      {bouncingCanvasControl(scene,'opacity')&&rootsAppearanceControlVisible(scene,'opacity')&&<Control
+                      {!usesSourceSurfaceMesh(scene)&&bouncingCanvasControl(scene,'opacity')&&rootsAppearanceControlVisible(scene,'opacity')&&<Control
                         spec={{
                           key: "opacity",
                           label: t("不透明度"),
@@ -1176,7 +1180,7 @@ export default function App() {
                         ["showGrid", t("辅助网格")],
                         ["showAxes", t("坐标轴")],
                           ["transparentBackground", t("透明背景")],
-                      ].filter(([key])=>bouncingCanvasControl(scene,key)&&rootsAppearanceControlVisible(scene,key)).map(([key, label]) => (
+                      ].filter(([key])=>(!usesSourceSurfaceMesh(scene)||key!=='wireframe')&&bouncingCanvasControl(scene,key)&&rootsAppearanceControlVisible(scene,key)).map(([key, label]) => (
                         <Control
                           key={key}
                           spec={{ key, label, group: "", type: "toggle" }}

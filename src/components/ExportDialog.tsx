@@ -1,4 +1,4 @@
-import {usesSourceSurfaceParticles} from '../engine/sourceSurfaceParticles';
+import {usesSourceSurfaceParticles} from '../engine/sourceSurfaceIdentity';
 import {ordinarySourceViewport} from '../engine/ordinarySourceCamera';
 import { useEffect, useRef, useState } from "react";
 import { Download, Image, Film, X } from "lucide-react";

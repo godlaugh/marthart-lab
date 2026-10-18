@@ -39,6 +39,9 @@ export interface OrdinarySourceCameraParticles {
   * Includes waits and frames with no target reads; stops when the queue was
   * already complete at frame start. This is not CameraController's raw dt. */
  update(frame:OrdinaryCameraParticleFrame):void;
+ /** Scene.display follows camera update on every rendered frame, including
+  * completed queues. Mesh seam/cache initialization belongs to this event. */
+ displayFrame?(frameIndex:number,final:boolean):void;
  /** Source InstantAction executes before this frame's Mobject update. It
   * changes recording only; history lifetime/display remain producer-owned. */
  setRecordingTrails?(enabled:boolean):void;
@@ -251,6 +254,7 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
    // CameraController copies tracking center before ambient component updates.
    if(replay.tracking)camera.center=point(replay.tracking);
    for(const [i,axis]of axes.entries())camera[axis]=finite(F(camera[axis]+F(replay.rates[i]*plan.dt)));
+   check(options);replay.particles?.displayFrame?.(frameIndex,frameIndex===target);
    replay.frameIndex=frameIndex;
   }
   check(options);

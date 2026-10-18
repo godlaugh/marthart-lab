@@ -40,12 +40,13 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    {name:'partial-alpha',packed:0x4055ddff,clearAlpha:0},{name:'duplicate-alpha',packed:0x4055ddff,clearAlpha:0,duplicate:true},
    {name:'mixed-nonfinite',fixture:'invalid'},{name:'display-opacity',displayOpacity:.37},{name:'wide-lines',lineWidth:13.25},
    {name:'over-16bit',large:true},
+   {name:'source-background',background:0x804080c0},{name:'source-background-gray',background:0x80},{name:'source-background-transparent',background:0x804080c0,transparentBackground:true},
   ];
   window.meshLineFrames=cases.map(c=>{
    const width=c.width??192,height=c.height??128,dpr=c.dpr??1;
    const angles=c.angles??(c.runtime?[.6,.3,0]:[0,0,0]);
    const doc=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Mesh line boundary',equations:{x:'u',y:'v',z:'0'},camera:{phi:angles[0],theta:angles[1],gamma:angles[2]},settings:{u_segments:2,v_segments:2,show_trails:false},timeline:[{type:'wait',duration:1}]})).scene;
-   doc.settings.sourceCameraProjection=c.projection??'perspective';doc.settings.opacity=c.displayOpacity??1;
+   doc.settings.sourceCameraProjection=c.projection??'perspective';doc.settings.opacity=c.displayOpacity??1;doc.settings.transparentBackground=!!c.transparentBackground;
    const camera={...ordinarySourceCameraInitial(doc),zoom:c.zoom??1};
    const frame={model:'mathart-1.7.8-v1',time:0,frameIndex:0,camera,viewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:128,target:c.target??'primary',projectionPass:doc.settings.sourceCameraProjection}},plan=prepareOrdinarySourceFrame(frame);
    let geometry={positions:new Float32Array(),triangles:new Uint32Array()},colors=new Uint32Array(),wire;
@@ -63,7 +64,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:
     if(c.large){positions=[];for(let i=0;i<16385;i++){const y=(i%91)-45;positions.push(-55,y,0,55,y+.125,0);}}
     wire={positions:new Float32Array(positions),packedColor:c.packed??0xff33ccff,lineWidth:c.lineWidth??2.75,mode:'coupled'};
    }
-   const output={type:'geometry',topology:'mesh',positions:geometry.positions,indices:geometry.triangles,sourceMeshColors:colors,sourceMeshAppearance:sourceSurfaceMeshAppearance(!!c.fill,.65),sourceMeshWireframe:wire,sourceCameraFrame:frame,stats:{samples:geometry.positions.length/3,generated:geometry.positions.length/3,invalid:0}};
+   const output={type:'geometry',topology:'mesh',positions:geometry.positions,indices:geometry.triangles,sourceMeshColors:colors,sourceMeshAppearance:sourceSurfaceMeshAppearance(!!c.fill,.65),sourceMeshWireframe:wire,...(c.background===undefined?{}:{sourceMeshBackgroundColor:c.background}),sourceCameraFrame:frame,stats:{samples:geometry.positions.length/3,generated:geometry.positions.length/3,invalid:0}};
    return{...c,width,height,dpr,doc,output,plan};
   });
   const encode=a=>{let s='';for(const b of new Uint8Array(a.buffer,a.byteOffset,a.byteLength))s+=String.fromCharCode(b);return btoa(s);};
@@ -121,7 +122,7 @@ print(json.dumps({'rows':rows,'oracleCost':{'elapsedMs':(time.perf_counter()-sta
     const differences=(a,b)=>{check(a.length===b.length,'buffer length mismatch '+c.name);let n=0;for(let j=0;j<a.length;j++)if(!Object.is(a[j],b[j])&&!(Number.isNaN(a[j])&&Number.isNaN(b[j])))n++;return n;};
     if(c.name==='near-plane'){const p=c.plan.projection.columnMajor;const clip=offset=>{const v=expectedVertices.subarray(offset,offset+4);const z=p[2]*v[0]+p[6]*v[1]+p[10]*v[2]+p[14]*v[3],w=p[3]*v[0]+p[7]*v[1]+p[11]*v[2]+p[15]*v[3];return z+w;};check(clip(0)*clip(8)<0,'near-plane fixture must cross the clipping plane');}
     const bufferDifferences={positions:differences(production.positions,expectedVertices),directions:differences(production.directions,expectedDirections),indices:differences(production.indices,expectedIndices)};
-    canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);gl.clearColor(0,0,0,c.clearAlpha??1);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);const bg=c.background,gray=bg!==undefined&&(bg>>>24)===0&&(bg&0xffffff)<=255;gl.clearColor(bg===undefined?0:(gray?bg&255:(bg>>>16)&255)/255,bg===undefined?0:(gray?bg&255:(bg>>>8)&255)/255,bg===undefined?0:(bg&255)/255,c.transparentBackground?0:bg===undefined?c.clearAlpha??1:gray?1:(bg>>>24)/255);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     if(c.fill){gl.bindVertexArray(fillVAO);gl.useProgram(fillProgram);attribute(fillProgram,'position',4,decode(ref.fillVertices));attribute(fillProgram,'color',4,decode(ref.fillColors));gl.uniformMatrix4fv(gl.getUniformLocation(fillProgram,'transformMatrix'),false,c.plan.projection.columnMajor);indexed(out.indices);}
     gl.bindVertexArray(lineVAO);gl.useProgram(lineProgram);attribute(lineProgram,'position',4,expectedVertices);attribute(lineProgram,'direction',4,expectedDirections);
     const colorAt=gl.getAttribLocation(lineProgram,'color');gl.disableVertexAttribArray(colorAt);gl.vertexAttrib4fv(colorAt,ref.rgba);
@@ -130,7 +131,8 @@ print(json.dumps({'rows':rows,'oracleCost':{'elapsedMs':(time.perf_counter()-sta
     const expected=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,expected);check(gl.getError()===0,'oracle GL error '+c.name);
     const rt=new THREE.WebGLRenderTarget(w,h),actual=new Uint8Array(expected.length);
     try{
-     art.setSize(c.width,c.height,c.dpr);art.setOutput(out,c.doc,false);art.renderer.setClearColor(0,c.clearAlpha??1);art.renderer.setRenderTarget(rt);art.render();art.renderer.readRenderTargetPixels(rt,0,0,w,h,actual);check(art.renderer.getContext().getError()===0,'production GL error '+c.name);
+     art.setSize(c.width,c.height,c.dpr);art.setOutput(out,c.doc,false);if(c.background===undefined)art.renderer.setClearColor(0,c.clearAlpha??1);art.renderer.setRenderTarget(rt);art.render();art.renderer.readRenderTargetPixels(rt,0,0,w,h,actual);check(art.renderer.getContext().getError()===0,'production GL error '+c.name);
+     if(c.background!==undefined){art.renderer.setRenderTarget(null);art.render();const screen=new Uint8Array(actual.length);art.renderer.getContext().readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,screen);for(let j=0;j<4;j++)check(screen[j]===expected[j],'raw source screen clear color mismatch '+c.name+' channel'+j);}
      if(c.name==='runtime-decoupled-fill'){art.renderer.setRenderTarget(null);art.render();window.meshLinePreview=art.renderer.domElement.toDataURL('image/png');}
     }finally{art.renderer.setRenderTarget(null);rt.dispose();}
     let different=0,maxDelta=0,lit=0;for(let j=0;j<actual.length;j++){const d=Math.abs(actual[j]-expected[j]);if(d){different++;maxDelta=Math.max(maxDelta,d);}if(j%4!==3&&actual[j])lit++;}

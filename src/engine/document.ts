@@ -1,5 +1,7 @@
+import {prepareSourceSurfaceMeshScene} from './sourceSurfaceMeshScene';
 import {parseSourceSurfacePalette} from './sourceSurfaceColor';
-import {usesSourceSurfaceParticles} from './sourceSurfaceParticles';
+import {usesSourceSurfaceParticles,usesSourceSurfaceMesh,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+import {parseSourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {parseFractalSourceColorProfile,parseFractalSourceColorConfiguration} from './fractalSourceColor';
 import type { SceneDefinition, SceneDocument, Preset } from "../types";
@@ -189,14 +191,29 @@ export function parseSceneValue(data: unknown): SceneDocument {
     if(data.kind!=='spirograph')fail('旋轮帧事件仅适用于旋轮场景');
     data.spirographFrameEvents=parseSpirographFrameEvents(data.spirographFrameEvents);
   }
-  if(data.kind==='surface'||data.kind==='implicit')geometryColorModel({kind:data.kind,settings:data.settings as Settings});
-  if(data.kind==='surface'||data.kind==='attractor')parseTrailAppearance(data.settings as Settings);
+  if(!usesSourceSurfaceMesh(data as unknown as SceneDocument)){
+    if(data.kind==='surface'||data.kind==='implicit')geometryColorModel({kind:data.kind,settings:data.settings as Settings});
+    if(data.kind==='surface'||data.kind==='attractor')parseTrailAppearance(data.settings as Settings);
+  }
+  if(data.surfaceSourceMesh!==undefined){
+    if(!usesSourceSurfaceMesh(data as unknown as SceneDocument))fail('曲面源网格配置仅适用于原版 CPU 网格');
+    const parsed=parseSourceSurfaceMeshConfiguration(data.surfaceSourceMesh);
+    if(!parsed.ok)fail(`曲面源网格配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
+    if(parsed.value.mode!=='mesh'||parsed.value.nativeBackend!=='cpu')fail('曲面源网格仅接入 CPU MESH，模式切换与 GPU 尚未接入');
+    data.surfaceSourceMesh=parsed.value;
+  }
+  if(usesSourceSurfaceMesh(data as unknown as SceneDocument)){
+    const settings=data.settings as Settings;
+    if(data.surfaceSourceMesh===undefined)fail('曲面源网格缺少配置');
+    if(settings.renderMode!=='mesh'||settings.computeBackend!=='cpu')fail('曲面源网格显示模式与后端不匹配');
+    if(data.surfaceSourcePalette===undefined)fail('曲面源网格缺少源色板');
+  }
   // Source-particle documents saved before the dedicated palette editor used
   // the local palette field. Migrate authored stops once at the file boundary;
   // never recover an older value from import provenance over later edits.
   if(data.surfaceSourcePalette===undefined&&usesSourceSurfaceParticles(data as unknown as SceneDocument))data.surfaceSourcePalette={colors:[...palette.stops]};
   if(data.surfaceSourcePalette!==undefined){
-    if(!usesSourceSurfaceParticles(data as unknown as SceneDocument))fail('曲面源色板仅适用于原版 CPU 点曲面');
+    if(!usesSourceSurfaceGeometry(data as unknown as SceneDocument))fail('曲面源色板仅适用于原版 CPU 曲面');
     data.surfaceSourcePalette=parseSourceSurfacePalette(data.surfaceSourcePalette);
   }
   if(data.rootsSourcePalette!==undefined){
@@ -237,11 +254,11 @@ export function parseSceneValue(data: unknown): SceneDocument {
       !["from", "to", "start", "duration"].every(
         (k) => typeof track[k] === "number" && Number.isFinite(track[k]),
       ) ||
-      (Number(track.duration) < 0 || Number(track.duration) === 0 && !['animate','spirograph_finish_wait'].includes(String(track.type)) && !(track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)) && !(track.type==='trails'&&usesSourceSurfaceParticles(data as unknown as SceneDocument))) ||
+      (Number(track.duration) < 0 || Number(track.duration) === 0 && !['animate','spirograph_finish_wait'].includes(String(track.type)) && !(track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)) && !(track.type==='trails'&&usesSourceSurfaceGeometry(data as unknown as SceneDocument))) ||
       Number(track.start) < 0
     )
       fail("动画轨道无效");
-    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],usesSourceSurfaceParticles(data as unknown as SceneDocument));
+    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],usesSourceSurfaceGeometry(data as unknown as SceneDocument));
     if(track.type==='fractal_zoom')track.keyframes=validateFractalKeyframes(track as unknown as AnimationTrack);
   }
   validateTimelineSchedule(data as unknown as SceneDocument);
@@ -250,6 +267,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     spirographSimulationFps(data as unknown as SceneDocument);
     spirographFrameClips(data as unknown as SceneDocument);
   }
+  if(usesSourceSurfaceMesh(data as unknown as SceneDocument))prepareSourceSurfaceMeshScene(data as unknown as SceneDocument);
   return data as unknown as SceneDocument;
 }
 export const STORAGE_KEY = "mathart-lab-v1";

@@ -31,7 +31,7 @@ describe('source Surface palette and alpha through authored document and product
   expect(()=>imported([])).toThrow('至少需要一种颜色');expect(()=>imported([1])).toThrow('必须是字符串');expect(()=>imported(null)).toThrow('colors 数组');
  });
  it('does not permit source palette payload on ordinary local surface documents',()=>{
-  const s=createScene(definition('surface'));s.surfaceSourcePalette={colors:['#FFFFFF']};expect(()=>parseScene(serializeScene(s))).toThrow('原版 CPU 点曲面');
+  const s=createScene(definition('surface'));s.surfaceSourcePalette={colors:['#FFFFFF']};expect(()=>parseScene(serializeScene(s))).toThrow('原版 CPU 曲面');
  });
  it('retains base alpha initially and on zero-dt actions, then multiplies both periodic edge fades',()=>{
   const s=imported(),p=prepareSourceSurfaceParticles(s).create('all');

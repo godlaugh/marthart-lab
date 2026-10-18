@@ -2,6 +2,9 @@ import {sourceSurfacePointAppearance} from '../engine/sourceSurfacePointAppearan
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {replaySourceSurface} from '../engine/sourceSurfaceParticles';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from '../engine/ordinarySourceCamera';
+import {usesSourceSurfaceMesh} from '../engine/sourceSurfaceIdentity';
+import {replaySourceSurfaceMesh} from '../engine/sourceSurfaceMeshScene';
+import {sourceSurfaceMeshAppearance} from '../engine/sourceSurfaceMeshRenderer';
 
 export function generateSourceSurface(scene:SceneDocument,context:GenerateContext):SceneOutput {
  const started=performance.now();
@@ -9,6 +12,20 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
  // are paired with positions from that SAME replay, not reevaluated by a view.
  const initial=ordinarySourceCameraInitial(scene)!;
  const initialFrame=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera:initial}},context);
+ if(usesSourceSurfaceMesh(scene)){
+  prepareOrdinarySourceFrame(initialFrame);
+  const {frame,mesh}=replaySourceSurfaceMesh(scene,context.time,'all',context.isCancelled),snapshot=mesh.snapshot();
+  const geometry=snapshot.geometry,positions=geometry?.positions??new Float32Array(),indices=geometry?.triangles??new Uint32Array();
+  return{type:'geometry',topology:'mesh',backend:'cpu',positions,indices,
+   sourceMeshColors:snapshot.packedColors,sourceMeshWireframe:snapshot.wireframe,
+   sourceMeshAppearance:sourceSurfaceMeshAppearance(snapshot.fillEnabled,snapshot.fillOpacity),
+   sourceMeshBackgroundColor:scene.surfaceSourceMesh!.backgroundColor,
+   sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),
+   temporal:{time:frame.time,windowStart:frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:0,cacheHits:0},
+   stats:{samples:scene.surfaceSourceMesh!.mesh.uSegments*scene.surfaceSourceMesh!.mesh.vSegments,generated:positions.length/3,invalid:0,elapsedMs:performance.now()-started},
+   warnings:[...snapshot.diagnostics,...frame.diagnostics.map(d=>d.message),'原版 CPU 网格按固定帧率回放；GPU、模式切换和原版完整画面一致性仍待完成。'],
+  };
+ }
  sourceSurfacePointAppearance(scene.settings.pointSize,prepareOrdinarySourceFrame(initialFrame),context.sourcePointPixelDensity);
  const {frame,particles}=replaySourceSurface(scene,context.time,'all',context.isCancelled),{positions,particleIds,trails,colors,pointAlphas,diagnostics}=particles.snapshot();
  let trailOutput;

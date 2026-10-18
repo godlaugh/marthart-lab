@@ -22,13 +22,13 @@ describe('legacy continuous geometry import',()=>{
  });
  it('imports independent source wire intervals as formula-sampled line counts',()=>{
   const result=parse('SURFACE',{equations:{x:'u',y:'v',z:'u*v'},settings:{surface_mode:'MESH',mesh_u_segments:2,mesh_v_segments:2,mesh_wireframe:true,wireframe_decoupled:true,wireframe_u_segments:4,wireframe_v_segments:0,mesh_line_weight:3,u_min:0,u_max:1,v_min:0,v_max:1}});
-  expect(result.scene.settings).toMatchObject({meshWireframeDecoupled:true,meshWireframeULines:5,meshWireframeVLines:0,meshWireframeWidth:3});
-  const output=generateScene(result.scene,context);if(output.type!=='geometry')throw new Error();expect(output.surfaceWireframe!.positions.length/3).toBe(5*128);expect(output.surfaceWireframe!.indices.length/2).toBe(5*127);
-  expect(result.warnings.join()).toContain('N+1');expect(result.warnings.join()).not.toMatch(/尚未映射[^。]*wireframe/);
+  expect(result.scene.surfaceSourceMesh!.mesh).toMatchObject({wireframeDecoupled:true,wireframeUSegments:4,wireframeVSegments:0,lineWeight:3});
+  const output=generateScene(result.scene,context);if(output.type!=='geometry')throw new Error();expect(output.sourceMeshWireframe!.mode).toBe('decoupled');expect(output.sourceMeshWireframe!.positions.length/6).toBe(5*128);
+  expect(result.scene.surfaceSourceMesh!.mesh.wireframeUSegments).toBe(4);expect(result.warnings.join()).not.toMatch(/尚未映射[^。]*wireframe/);
  });
  it('preserves the source zero-zero fallback to coupled grid edges',()=>{
   const result=parse('SURFACE',{equations:{x:'u',y:'v',z:'0'},settings:{surface_mode:'MESH',mesh_wireframe:true,wireframe_decoupled:true,wireframe_u_segments:0,wireframe_v_segments:0}});
-  expect(result.scene.settings.meshWireframeDecoupled).toBe(false);expect(result.warnings.join()).toContain('两轴均为 0');
+  expect(result.scene.surfaceSourceMesh!.mesh.wireframeDecoupled).toBe(true);const out=generateScene(result.scene,context);if(out.type!=='geometry')throw Error('geometry');expect(out.sourceMeshWireframe!.mode).toBe('coupled');
  });
 
 });

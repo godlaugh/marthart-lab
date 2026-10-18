@@ -1,0 +1,135 @@
+import {chromium} from '@playwright/test';
+import {createServer} from 'vite';
+import {readFile,writeFile,mkdtemp,readdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {inflateSync} from 'node:zlib';
+import {createServer as createTcpServer} from 'node:net';
+import {createExportServer} from '../server/index.mjs';
+
+const prefix='.cache/v2-source-surface-mesh-export';
+const check=(value,message)=>{if(!value)throw Error(message);};
+const sha=value=>createHash('sha256').update(value).digest('hex');
+// Independently parse the delivered PNG in Node. Canvas decode/re-encode would
+// premultiply alpha and could hide the exact loss this check must detect.
+function decodePng(bytes){
+ check(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),'not a PNG');
+ let width=0,height=0,ended=false;const compressed=[];
+ for(let at=8;at<bytes.length;){
+  check(at+12<=bytes.length,'truncated PNG chunk');const length=bytes.readUInt32BE(at),end=at+length+12;
+  check(end<=bytes.length,'truncated PNG payload');const type=bytes.toString('ascii',at+4,at+8),data=bytes.subarray(at+8,end-4);
+  let crc=-1;for(const value of bytes.subarray(at+4,end-4)){crc^=value;for(let bit=0;bit<8;bit++)crc=crc&1?(crc>>>1)^0xedb88320:crc>>>1;}
+  check(((crc^-1)>>>0)===bytes.readUInt32BE(end-4),'PNG CRC mismatch');
+  if(type==='IHDR'){check(length===13&&!width,'invalid PNG header');width=data.readUInt32BE(0);height=data.readUInt32BE(4);check(data.subarray(8).equals(Buffer.from([8,6,0,0,0])),'expected non-interlaced RGBA8 PNG');}
+  else if(type==='IDAT')compressed.push(data);
+  else if(type==='IEND'){check(length===0&&end===bytes.length,'invalid PNG end');ended=true;}
+  at=end;
+ }
+ check(width>0&&height>0&&ended&&compressed.length,'incomplete PNG');const stride=width*4,raw=inflateSync(Buffer.concat(compressed));check(raw.length===(stride+1)*height,'invalid PNG row length');const rgba=Buffer.alloc(stride*height);
+ const paeth=(a,b,c)=>{const p=a+b-c,pa=Math.abs(p-a),pb=Math.abs(p-b),pc=Math.abs(p-c);return pa<=pb&&pa<=pc?a:pb<=pc?b:c;};
+ for(let y=0;y<height;y++){const filter=raw[y*(stride+1)];check(filter<=4,'invalid PNG row filter');for(let x=0;x<stride;x++){const a=x>=4?rgba[y*stride+x-4]:0,b=y?rgba[(y-1)*stride+x]:0,c=y&&x>=4?rgba[(y-1)*stride+x-4]:0;rgba[y*stride+x]=(raw[y*(stride+1)+1+x]+[0,a,b,Math.floor((a+b)/2),paeth(a,b,c)][filter])&255;}}
+ return{width,height,rgba};
+}
+
+// Hash the complete production surface, not just the files expected to change.
+const hashes=async()=>{
+ const paths=(await Promise.all(['src','server'].map(async root=>(await readdir(root,{recursive:true,withFileTypes:true})).filter(e=>e.isFile()).map(e=>`${e.parentPath}/${e.name}`)))).flat();
+ paths.push('scripts/verify-source-surface-mesh-export.mjs');paths.sort();
+ return Object.fromEntries(await Promise.all(paths.map(async p=>[p,sha(await readFile(p))])));
+};
+const before=await hashes(),directory=await mkdtemp('.cache/mesh-export-service-');
+const port=await new Promise((resolve,reject)=>{
+ const listener=createTcpServer();listener.once('error',reject);listener.listen(0,'127.0.0.1',()=>{const port=listener.address().port;listener.close(error=>error?reject(error):resolve(port));});
+});
+const report={at:new Date().toISOString(),scope:'Actual App original CPU MESH import, canonical UI edits and save/reload, parameter/tracking/gradient timeline seeks, coupled and decoupled PNG through production service, compared against fresh Worker/ArtRenderer. Local integration consistency only; no original JVM/JOGL framebuffer comparison.',directory};
+let page,browser,server,exportServer;
+const errors=[],consoleErrors=[];
+try{
+ exportServer=await createExportServer({root:directory,allowedOrigins:[`http://127.0.0.1:${port}`]});const address=await exportServer.listen(0);
+ server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await server.listen();
+ browser=await chromium.launch({channel:'chrome',headless:true});
+ page=await browser.newPage({viewport:{width:1360,height:920},deviceScaleFactor:1,acceptDownloads:true});page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());});
+ await page.addInitScript(()=>{
+  const Native=window.Worker;window.__meshAudit={nextWorker:0,requests:[],completed:[],errors:[]};
+  window.Worker=class extends Native{
+   constructor(...args){super(...args);this.auditId=++window.__meshAudit.nextWorker;this.addEventListener('message',({data})=>{
+    if(data.operation==='generate'&&data.output){const o=data.output;window.__meshAudit.completed.push({worker:this.auditId,id:data.id,frame:o.sourceCameraFrame,positions:Array.from(o.positions??[]),indices:Array.from(o.indices??[]),packedColors:Array.from(o.sourceMeshColors??[]),appearance:o.sourceMeshAppearance,wire:o.sourceMeshWireframe?{...o.sourceMeshWireframe,positions:Array.from(o.sourceMeshWireframe.positions)}:undefined});}
+    if(data.error)window.__meshAudit.errors.push(data.error);
+   });}
+   postMessage(message,...args){if(message.operation==='generate')window.__meshAudit.requests.push({...structuredClone(message),worker:this.auditId});return super.postMessage(message,...args);}
+  };
+ });
+ const origin=server.resolvedUrls.local[0];await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));await page.goto(origin+'fixture');
+ await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const scene=createScene(definition('surface'));Object.assign(scene.settings,{uSegments:3,vSegments:3,showTrails:false});saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'low',frameRate:30}});});
+ await page.goto(origin);
+ const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
+ const settled=()=>page.waitForFunction(()=>{const r=window.__meshAudit.requests.at(-1);return r&&window.__meshAudit.completed.some(c=>c.worker===r.worker&&c.id===r.id);});
+ const snapshot=()=>page.evaluate(()=>{const r=window.__meshAudit.requests.at(-1),c=window.__meshAudit.completed.findLast(c=>c.worker===r.worker&&c.id===r.id);return{request:r,output:c};});
+ const seek=async time=>{
+  const actual=await page.getByRole('slider',{name:'Time position',exact:true}).evaluate((element,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(element,String(value));element.dispatchEvent(new Event('input',{bubbles:true}));element.dispatchEvent(new Event('change',{bubbles:true}));return Number(element.value);},time);
+  await page.waitForFunction(value=>{const r=window.__meshAudit.requests.at(-1);return Math.abs(r?.context.time-value)<1e-6&&window.__meshAudit.completed.some(c=>c.worker===r.worker&&c.id===r.id);},actual);await ready();return snapshot();
+ };
+ await ready();
+ const source={config_version:'1.0.0',type:'SURFACE',name:'CPU Mesh Public Export',parameters:{a:0},equations:{x:'u',y:'v',z:'u*v/10+a'},camera:{phi:0,theta:0,gamma:0},palette:['#FFEF6F32','#FF246FFF'],settings:{surface_mode:'MESH',render_mode:'CPU',u_segments:4,v_segments:3,mesh_u_segments:6,mesh_v_segments:5,u_min:0,u_max:6,v_min:0,v_max:4,scale_x:20,scale_y:20,scale_z:20,speed_u:.25,speed_v:-.125,mesh_fill:true,mesh_wireframe:true,mesh_fill_opacity:.8,mesh_line_weight:2,mesh_wireframe_color:'#FFDDEEFF',wireframe_u_segments:4,wireframe_v_segments:3,show_trails:false},timeline:[{type:'animate',duration:.25,easing:'LINEAR',actions:[{method:'track',args:[7]},{method:'gradientStart',args:{mode:'HUE_ROTATE',interpolation:'LINEAR',speed:90}},{method:'paramStart',args:{parameters:{a:{min:-2,max:2,step:.125}}}}]},{type:'wait',duration:1},{type:'animate',duration:.25,easing:'LINEAR',actions:[{method:'paramStop',args:{parameters:{a:{}}}}]},{type:'wait',duration:1}]};
+ await page.locator('input[type=file]').setInputFiles({name:'source-mesh.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source))});
+ const controls=page.getByTestId('source-surface-mesh-controls');await controls.waitFor();await ready();await settled();
+ let imported=await snapshot();check(imported.request.scene.settings.surfaceGeometryVersion==='mathart-1.7.8-mesh-v1','mesh source identity was not imported');check(imported.request.scene.surfaceSourceMesh?.mode==='mesh','canonical mesh configuration missing');
+ check(imported.output.positions.length===6*5*3&&imported.output.packedColors.length===6*5&&imported.output.wire?.positions.length>0,'public mesh geometry/color/wire missing');
+ const samples=page.getByTestId('source-mesh-uSegments');await samples.fill('513');await samples.blur();await ready();
+ await page.waitForFunction(()=>document.querySelector('[data-testid=source-mesh-uSegments]')?.value==='6');
+ check((await snapshot()).request.scene.surfaceSourceMesh.mesh.uSegments===6,'capacity rejection changed retained mesh configuration');
+ report.capacityRejection={attempted:513,retained:6,noClamping:true};
+ const opacity=page.getByTestId('source-mesh-fillOpacity');await opacity.fill('0.65');await opacity.blur();await ready();await settled();
+ const background=page.getByTestId('source-mesh-backgroundColor');await background.fill('#804080C0');await background.blur();await ready();await settled();
+ await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1')),s=w.drafts?.[w.active]?.surfaceSourceMesh;return s?.mesh.fillOpacity===.65&&s.backgroundColor===0x804080c0;});
+ await page.getByRole('button',{name:'Save',exact:true}).click();
+ await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.scenes?.some(s=>s.id===w.active&&s.surfaceSourceMesh?.mesh.fillOpacity===.65);});
+ await page.reload();await ready();await controls.waitFor();await settled();check(await opacity.inputValue()==='0.65','canonical fill opacity lost on reload');
+ check((await snapshot()).request.scene.surfaceSourceMesh.mesh.fillOpacity===.65,'saved mesh opacity was replaced by legacy settings');
+ check(await background.inputValue()==='#804080C0','canonical ARGB background lost on reload');
+ report.editing={fillOpacity:.65,background:'#804080C0',saved:true,reloaded:true};
+ const frames=[];
+ for(const time of [.25,.75,1.6,1.8,.25]){
+  const {request,output}=await seek(time);frames.push({time:request.context.time,positions:output.positions,colors:output.packedColors,wire:output.wire,camera:output.frame.camera});
+ }
+ check(JSON.stringify(frames[0].positions)!==JSON.stringify(frames[1].positions),'parameter animation did not change mesh vertices');
+ check(JSON.stringify(frames[2].positions)===JSON.stringify(frames[3].positions),'stopped parameter keeps changing mesh vertices');
+ check(frames.every(f=>f.positions.every(Number.isFinite)&&f.wire.positions.length>0),'mesh seek output missing or nonfinite');
+ check(frames.every(f=>JSON.stringify(f.colors)===JSON.stringify(frames[0].colors)),'CPU mesh incorrectly advanced gradientStart during update');
+ check(JSON.stringify(frames[0].camera.center)!==JSON.stringify(frames[1].camera.center),'source track did not move camera');
+ check(JSON.stringify(frames[0])===JSON.stringify(frames.at(-1)),'reverse seek changed mesh/gradient/tracking state');
+ report.seeks=frames;report.gradientObservation='HUE_ROTATE remains visually unchanged on CPU MeshSurface because its update does not advance gradient runtime; geometry and tracked camera still change.';
+ report.exports=[];
+ for(const decoupled of [false,true]){
+  if(decoupled){await page.getByTestId('source-mesh-wireframeDecoupled').check();await ready();await settled();await page.getByRole('button',{name:'Save',exact:true}).click();await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.scenes?.some(s=>s.id===w.active&&s.surfaceSourceMesh?.mesh.wireframeDecoupled===true);});await page.reload();await ready();await controls.waitFor();check(await page.getByTestId('source-mesh-wireframeDecoupled').isChecked(),'decoupled mesh state lost on reload');}
+  const preview=await seek(.75);check(preview.output.wire.mode===(decoupled?'decoupled':'coupled'),'wireframe mode not applied');
+  const healthResponse=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/health');await page.getByRole('button',{name:'Export artwork',exact:true}).click();const response=await healthResponse;check(response.ok(),'owned image service health failed');const health=await response.json();
+  await page.getByRole('button',{name:'Animation video',exact:true}).click();
+  if(health.ffmpeg)await page.waitForFunction(()=>document.querySelector('.export-modal .primary-button')?.disabled===false);
+  else await page.getByText('The video encoding service is unavailable. Run npm run server in the studio directory and make sure FFmpeg is available locally.',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'Still image',exact:true}).click();await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('257');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('193');
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();const download=await pending,path=`${prefix}-${decoupled?'decoupled':'coupled'}.png`;await download.saveAs(path);
+  const actual=await page.evaluate(()=>{const r=window.__meshAudit.requests.findLast(r=>r.context.quality==='export'),c=window.__meshAudit.completed.findLast(c=>c.worker===r.worker&&c.id===r.id);return{request:r,output:c};});
+  check(actual.request.context.sourceViewport.referenceLogicalHeight===preview.output.frame.viewport.logicalHeight,'preview reference height lost at export');check(actual.output.frame.viewport.target==='offscreen','export viewport does not use source offscreen plan');
+  const oracle=await page.evaluate(async request=>{
+   const{Generator}=await import('/src/engine/client.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),{sceneAtTime}=await import('/src/engine/timeline.ts');
+   const generator=new Generator(),renderer=new ArtRenderer(document.createElement('canvas'));const cleanup={generator:false,renderer:false,context:false};let result;
+   try{const output=await generator.generate(request.scene,request.context);renderer.setSize(request.context.width,request.context.height,1);renderer.setOutput(output,sceneAtTime(request.scene,output.sourceCameraFrame.time),false);const styles=[];renderer.scene.traverse(o=>{if(o.userData.sourceSurfaceMeshFill||o.userData.sourceSurfaceMeshLines)styles.push({fill:!!o.userData.sourceSurfaceMeshFill,wire:!!o.userData.sourceSurfaceMeshLines,visible:o.visible,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,renderOrder:o.renderOrder});});const gl=renderer.renderer.getContext(),width=gl.drawingBufferWidth,height=gl.drawingBufferHeight,raw=new Uint8Array(width*height*4),topDown=new Uint8Array(raw.length);renderer.render();gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,raw);if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw Error('cold renderer raw readback failed');for(let y=0;y<height;y++)topDown.set(raw.subarray((height-1-y)*width*4,(height-y)*width*4),y*width*4);const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(v=>v.toString(16).padStart(2,'0')).join('');const rawSha=await digest(topDown);const blob=await renderer.blob('image/png');result={sha:await digest(await blob.arrayBuffer()),rawSha,styles,cleanup};}
+   finally{generator.dispose();cleanup.generator=true;renderer.dispose();cleanup.renderer=true;renderer.renderer.forceContextLoss();cleanup.context=true;}return result;
+  },actual.request);
+  const png=await readFile(path),digest=sha(png),decoded=decodePng(png);check(decoded.width===257&&decoded.height===193,'wrong exported PNG dimensions');check(digest===oracle.sha,'actual service download differs from fresh Worker/Renderer');const rgbaSha=sha(decoded.rgba);check(rgbaSha===oracle.rawSha,'decoded service PNG differs from complete cold raw framebuffer');const corners=[0,decoded.width-1,(decoded.height-1)*decoded.width,decoded.width*decoded.height-1].map(i=>Array.from(decoded.rgba.subarray(i*4,i*4+4)));check(corners.every(c=>JSON.stringify(c)==='[64,128,192,128]'),'source background RGBA changed by clear, premultiplication or PNG export');check(oracle.styles.filter(s=>s.fill&&s.visible).length===1&&oracle.styles.filter(s=>s.wire&&s.visible).length===1,'dedicated source fill and wire renderer not active');
+  report.exports.push({decoupled,time:actual.request.context.time,path,sha:digest,bytes:png.length,width:257,height:193,rgbaSha,rawFramebufferMatches:true,cornerRgba:corners,styles:oracle.styles,cleanup:oracle.cleanup,coldRendererMatches:true,viewport:actual.output.frame.viewport,configuration:actual.request.scene.surfaceSourceMesh});
+  await page.getByRole('button',{name:'Close export',exact:true}).click();
+ }
+ // Dispose a live pending Worker, prove the promise terminates, then verify a
+ // fresh request succeeds. This does not assert native target cancellation.
+ report.cancellation=await page.evaluate(async()=>{
+  const {Generator}=await import('/src/engine/client.ts'),request=window.__meshAudit.requests.findLast(r=>r.context.quality==='export');const cancelled=new Generator();const promise=cancelled.generate(request.scene,request.context).then(()=>({rejected:false}),error=>({rejected:true,message:String(error)}));cancelled.dispose();const outcome=await promise;const recovery=new Generator();try{const out=await recovery.generate(request.scene,request.context);return{...outcome,recovery:!!out.sourceMeshAppearance&&out.positions.length>0,disposed:true};}finally{recovery.dispose();}
+ });check(report.cancellation.rejected&&report.cancellation.recovery,'pending Worker cancellation or fresh recovery failed');
+ const stored=await readdir(directory);check(stored.length===2&&stored.every(p=>p.endsWith('.png')),'expected exactly two production service PNG files');const serviceHashes=await Promise.all(stored.map(async name=>({name,sha:sha(await readFile(`${directory}/${name}`))})));
+ for(const image of report.exports)check(serviceHashes.some(s=>s.sha===image.sha),'download bytes differ from stored service image');check(report.exports[0].sha!==report.exports[1].sha,'coupled/decoupled wireframes produced identical pixels');report.serviceImages=serviceHashes;
+ const workerErrors=await page.evaluate(()=>window.__meshAudit.errors);check(!errors.length&&!workerErrors.length&&!consoleErrors.length,'App, Worker or console reported error');
+ await page.screenshot({path:`${prefix}-ui.png`});const after=await hashes();check(JSON.stringify(before)===JSON.stringify(after),'production source changed during test');Object.assign(report,{status:'passed',sourceStable:true,sources:after,pageErrors:errors,workerErrors,consoleErrors});
+}catch(error){Object.assign(report,{status:'failed',error:String(error),stack:error.stack,pageErrors:errors,consoleErrors});if(page){report.body=await page.locator('body').innerText().catch(()=>undefined);await page.screenshot({path:`${prefix}-failed.png`}).catch(()=>{});}process.exitCode=1;}
+finally{
+ const closed=await Promise.allSettled([browser?.close(),server?.close(),exportServer?.close()]);report.cleanup=closed.map((result,i)=>({resource:['browser','vite','export-server'][i],status:result.status,...(result.status==='rejected'?{error:String(result.reason)}:{})}));if(closed.some(r=>r.status==='rejected')){report.status='failed';process.exitCode=1;}await writeFile(`${prefix}.json`,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,error:report.error}));
+}

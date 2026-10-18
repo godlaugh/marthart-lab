@@ -57,8 +57,16 @@ describe('Surface source gradient public import and authoring',()=>{
   expect(scene.timeline.tracks).toHaveLength(1);expect(scene.timeline.tracks[0].actions!.map(a=>[a.method,a.enabled])).toEqual([['gradientStart',true],['gradientStop',true]]);
   expect(scene.timeline.tracks[0].actions![0].gradient!.speed).toBe(0);
  });
- it('does not silently route GPU or mesh gradient documents through CPU points',()=>{
-  for(const settings of [{render_mode:'GPU'},{surface_mode:'MESH'}])expect(()=>parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:[]}],settings)))).toThrow('CPU 点模式');
+ it('imports initial CPU mesh gradients into their own geometry model while rejecting GPU',()=>{
+  const actions=[{method:'gradientStart',args:{mode:'CROSS_FADE',interpolation:'OKLCH',speed:24}}];
+  for(const settings of [{render_mode:'GPU'},{surface_mode:'MESH',render_mode:'GPU'}])expect(()=>parseProjectFile(JSON.stringify(source(actions,settings)))).toThrow('GPU');
+  const original=source(actions,{surface_mode:'MESH'}),{scene}=parseProjectFile(JSON.stringify(original));
+  expect(scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-mesh-v1');
+  expect(scene.surfaceSourceMesh).toMatchObject({mode:'mesh',nativeBackend:'cpu',mesh:{uSegments:2,vSegments:2}});
+  expect(scene.surfaceSourcePalette).toEqual({colors:['#FF0000','#0000FF']});
+  expect(scene.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_SURFACE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:24});
+  const reopened=parseScene(serializeScene(scene));expect(reopened.surfaceSourceMesh).toEqual(scene.surfaceSourceMesh);expect(reopened.timeline).toEqual(scene.timeline);expect(reopened.provenance!.original).toEqual(original);
+  expect(gradientAnimationCapabilities(scene)).toMatchObject({localPalette:false,offsets:true,defaultAnimation:SOURCE_SURFACE_GRADIENT_DEFAULT});
  });
  it('offers all source modes and color interpolation without regional toggles or local palette controls',()=>{
   const value={...SOURCE_SURFACE_GRADIENT_DEFAULT},before=structuredClone(value),html=render(value);

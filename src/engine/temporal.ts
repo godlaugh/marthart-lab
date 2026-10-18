@@ -1,5 +1,5 @@
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera} from './ordinarySourceCamera';
-import {usesSourceSurfaceParticles} from './sourceSurfaceParticles';
+import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {generateSourceSurface} from '../scenes/sourceSurface';
 import {AttractorParticleSession} from '../scenes/attractorParticles';
 import {GenerationCleanupState,withGenerationCleanup} from './generationCleanup';
@@ -346,7 +346,7 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
 export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
-    if(usesSourceSurfaceParticles(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
+    if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or
     // simulation allocation. Progress frames may use an earlier scene time.

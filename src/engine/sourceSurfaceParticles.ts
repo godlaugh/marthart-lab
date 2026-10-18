@@ -9,13 +9,10 @@ import {prepareSourceSurfaceFunction,type PreparedSourceSurfaceFunction,type Sou
 import type {OrdinarySourceCameraParticles,OrdinaryCameraTargetRequest,OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding} from './ordinarySourceCameraTimeline';
 import {evaluateOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
+import {usesSourceSurfaceParticles,SOURCE_SURFACE_CLIP_TYPES,SOURCE_SURFACE_ACTION_METHODS} from './sourceSurfaceIdentity';
 
 /** Explicit version: existing local and ordinary-camera documents retain their
  * previous surface sampler until they opt into the source particle geometry. */
-export const SOURCE_SURFACE_CLIP_TYPES:readonly string[]=['wait','animate','align','trails','param'];
-export const SOURCE_SURFACE_ACTION_METHODS:readonly string[]=['rotatePhi','rotateTheta','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','track','stopTracking','gradientStart','gradientStop','paramStart','paramStop'];
-export const SOURCE_SURFACE_PARTICLES='mathart-1.7.8-points-v1';
-export const usesSourceSurfaceParticles=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='surface'&&scene.settings.surfaceGeometryVersion===SOURCE_SURFACE_PARTICLES;
 export function replaySourceSurface(scene:SceneDocument,time:number,coverage:'all'|'tracked',isCancelled?:()=>boolean){
  const initial=ordinarySourceCameraInitial(scene);if(!initial)throw new Error('原版曲面粒子需要对应的原版相机');
  const prepared=prepareSourceSurfaceParticles(scene);let particles:SourceSurfaceParticles|undefined;

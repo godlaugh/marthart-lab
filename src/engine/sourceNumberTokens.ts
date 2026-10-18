@@ -59,7 +59,11 @@ export function* rootsTimelineNumberTokenPaths(raw:readonly unknown[]):Iterable<
 }
 const ordinaryFamilies=new Set<SceneDocument['kind']>(['surface','implicit','attractor','perlin']);
 export const SOURCE_SURFACE_NUMBER_FIELDS=['u_segments','v_segments','u_min','u_max','v_min','v_max','speed_u','speed_v','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','trail_lifetime','line_weight','dot_size'] as const;
-const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_PARAMETER_EDGE_FIELDS.length;
+// Mesh config consumes numeric fallbacks too (e.g. a numeric boolean/color).
+// Retention preserves their lexemes without asserting those inputs were active.
+export const SOURCE_SURFACE_MESH_NUMBER_FIELDS=['mesh_u_segments','mesh_v_segments','mesh_fill','mesh_wireframe','mesh_fill_opacity','mesh_line_weight','mesh_wireframe_color','mesh_wrap_u','mesh_wrap_v','mesh_wrap_threshold','wireframe_decoupled','wireframe_u_segments','wireframe_v_segments','background_color','show_trails','fade_trails','periodic_u','periodic_v','flowing_u','flowing_v'] as const;
+const surfaceStaticFields=new Set<string>([...SOURCE_SURFACE_NUMBER_FIELDS,...SOURCE_SURFACE_MESH_NUMBER_FIELDS]);
+const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_MESH_NUMBER_FIELDS.length+SOURCE_SURFACE_PARAMETER_EDGE_FIELDS.length;
 // Every retained token requires at least one source JSON value node. Clip and
 // action bounds also constrain slots; taking the smaller bound does not grant
 // extra source capacity merely because paths repeat in persisted provenance.
@@ -78,7 +82,7 @@ function surfaceParameterPath(path:readonly unknown[]):boolean {
 }
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
  if(family==='surface'&&surfaceParameterPath(path))return true;
- if(family==='surface'&&path.length===2&&path[0]==='settings'&&SOURCE_SURFACE_NUMBER_FIELDS.some(key=>key===path[1]))return true;
+ if(family==='surface'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&surfaceStaticFields.has(path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
  if(family==='surface'&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));

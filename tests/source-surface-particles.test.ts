@@ -1,7 +1,8 @@
 import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
-import {prepareSourceSurfaceParticles,replaySourceSurface,usesSourceSurfaceParticles} from '../src/engine/sourceSurfaceParticles';
+import {prepareSourceSurfaceParticles,replaySourceSurface} from '../src/engine/sourceSurfaceParticles';
+import {usesSourceSurfaceParticles} from '../src/engine/sourceSurfaceIdentity';
 import {generateScene} from '../src/engine/temporal';
 import {sceneAtTime} from '../src/engine/timeline';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
@@ -54,7 +55,7 @@ describe('source CPU surface through public import, document and geometry',()=>{
   const raw=source();raw.timeline[0].actions[0].args=[];
   const s=scene(raw);expect(usesSourceSurfaceParticles(s)).toBe(false);expect(supportsParticleTracking(s)).toBe(false);
  });
- it.each([{render_mode:'GPU'},{surface_mode:'MESH'},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
+ it.each([{render_mode:'GPU'},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
   expect(()=>scene({...source(),settings:{...source().settings,...settings}})).toThrow(/尚未|待接入|1–512/);
  });
  it('rejects parameter actions without the source registry model during replay',()=>{

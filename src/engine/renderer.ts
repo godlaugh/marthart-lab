@@ -1,6 +1,7 @@
 import {createSourceSurfacePoints} from './sourceSurfacePointRenderer';
 import {createSourceSurfaceMeshFill} from './sourceSurfaceMeshRenderer';
 import {createSourceSurfaceMeshLines} from './sourceSurfaceLineRenderer';
+import {writeSourcePackedColor} from './sourceProcessingGeometry';
 import {prepareOrdinarySourceFrame} from './ordinarySourceCamera';
 import type {SourceCameraPlan} from './sourceCamera';
 import {implicitMeshPresentation,createImplicitWireframe} from './implicitMeshPresentation';
@@ -14,6 +15,9 @@ import {createSurfaceWireframe,createThickWireframe} from './thickWireframe';
 import {createThickTrails} from './thickTrails';
 import {parseTrailAppearance} from './trailAppearance';
 import {compositeFormulas} from './formulaCanvas';
+import {formulaLabels} from './formulas';
+import {encodeRgbaPng} from './rgbaPng';
+import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {fitGeometryCamera} from './cameraFit';
 export class ArtRenderer {
   readonly renderer: THREE.WebGLRenderer;
@@ -27,6 +31,7 @@ export class ArtRenderer {
   private raster = false;
   private cameraResolved = false;
   private sourceCameraPlan?:SourceCameraPlan;
+  private sourceClear?:readonly [number,number,number,number];
   private interactiveRequested=true;
   private planar = false;
   private roll = 0;
@@ -121,6 +126,7 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
     if(output.type==='geometry'&&output.sourcePointAppearance&&output.sourceMeshAppearance)throw new Error('源曲面点与网格外观不能混用');
     if(output.type==='geometry'&&output.sourceMeshWireframe&&!output.sourceMeshAppearance)throw new Error('源曲面线框缺少对应网格外观');
+    if(output.type==='geometry'&&output.sourceMeshBackgroundColor!==undefined&&(!output.sourceMeshAppearance||!Number.isInteger(output.sourceMeshBackgroundColor)||output.sourceMeshBackgroundColor<0||output.sourceMeshBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应网格和 uint32 颜色');
     const sourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
     const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
     if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
@@ -241,10 +247,18 @@ export class ArtRenderer {
       if(trail.appearance?.overlay){lines.material.depthTest=false;lines.renderOrder=2;}
       this.group.add(lines);
     }
-    this.renderer.setClearColor(
-      String(document.settings.background ?? "#111317"),
-      document.settings.transparentBackground?0:1,
-    );
+    const sourceBackground=output.type==='geometry'?output.sourceMeshBackgroundColor:undefined;
+    // Source shaders and P3D clear colors are already display channel values.
+    // Keep screen and offscreen clear paths in the same raw channel space.
+    this.renderer.outputColorSpace=sourceBackground===undefined?THREE.SRGBColorSpace:THREE.LinearSRGBColorSpace;
+    if(sourceBackground!==undefined){
+      const rgba=new Float32Array(4);writeSourcePackedColor(sourceBackground,rgba,0);
+      this.sourceClear=[rgba[0],rgba[1],rgba[2],document.settings.transparentBackground?0:rgba[3]];
+      this.renderer.setClearColor(new THREE.Color().setRGB(rgba[0],rgba[1],rgba[2]),this.sourceClear[3]);
+    }else{
+      this.sourceClear=undefined;
+      this.renderer.setClearColor(String(document.settings.background??'#111317'),document.settings.transparentBackground?0:1);
+    }
     this.grid.visible = !!document.settings.showGrid && !isRaster;
     this.axes.visible = !!document.settings.showAxes && !isRaster;
     if(sourcePlan){this.fitted=true;this.render();return;}
@@ -349,10 +363,36 @@ export class ArtRenderer {
       this.camera.lookAt(this.controls.target);
       if(this.roll)this.camera.rotateZ(this.roll);
     }
-    this.renderer.render(this.scene, this.camera);
+    if(this.sourceClear){
+      // Processing passes straight RGBA directly to glClearColor. Three's
+      // ordinary canvas clear premultiplies RGB, even for render targets.
+      // Use Three's state owner to preserve its cache and restore ordinary
+      // automatic clearing after this source-only render.
+      const state=this.renderer.state,autoClear=this.renderer.autoClear;
+      try{
+        state.buffers.color.setMask(true);state.buffers.depth.setMask(true);
+        state.buffers.color.setClear(...this.sourceClear,false);this.renderer.clear(true,true,true);
+        this.renderer.autoClear=false;this.renderer.render(this.scene,this.camera);
+      }finally{this.renderer.autoClear=autoClear;}
+    }else this.renderer.render(this.scene, this.camera);
   }
   async blob(type = "image/png", quality = 0.95): Promise<Blob> {
     this.render();
+    if(this.sourceClear&&type==='image/png'&&(!this.document||formulaLabels(this.document).length===0)){
+      // Canvas.toBlob would unpremultiply source framebuffer bytes. Reuse the
+      // existing lossless encoder for unannotated source PNGs, including hidden
+      // RGB at alpha zero. Annotated/non-PNG exports retain their compositor.
+      const gl=this.renderer.getContext(),width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
+      if(!Number.isSafeInteger(width*height)||width*height>MAX_RASTER_PIXELS)throw new Error('源网格 PNG 超过共享 RGBA 图像容量');
+      const pixels=new Uint8ClampedArray(width*height*4);
+      gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+      if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw new Error('源网格 PNG 像素回读失败');
+      const stride=width*4,row=new Uint8ClampedArray(stride);
+      for(let y=0;y<Math.floor(height/2);y++){
+        const a=y*stride,b=(height-1-y)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);
+      }
+      return encodeRgbaPng(pixels,width,height);
+    }
     const canvas=this.document?await compositeFormulas(this.renderer.domElement,this.document):this.renderer.domElement;
     return new Promise((resolve, reject) =>
       canvas.toBlob(

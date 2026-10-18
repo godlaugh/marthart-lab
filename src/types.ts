@@ -1,6 +1,7 @@
 import type {SourceSurfacePointAppearance} from './engine/sourceSurfacePointAppearance';
 import type {SourceSurfaceMeshAppearance} from './engine/sourceSurfaceMeshRenderer';
 import type {SourceSurfaceMeshWireframeFrame} from './engine/sourceSurfaceMeshWireframe';
+import type {SourceSurfaceMeshConfiguration} from './engine/sourceSurfaceMeshConfig';
 import type {SourceSurfacePalette} from './engine/sourceSurfaceColor';
 import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
 import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
@@ -192,6 +193,8 @@ export interface SceneDocument {
   fractalSourceColor?: FractalSourceColorConfiguration;
   rootsSourcePalette?: RootsSourcePalette;
   surfaceSourcePalette?: SourceSurfacePalette;
+  /** Canonical source mesh settings, independent of local mesh controls. */
+  surfaceSourceMesh?: SourceSurfaceMeshConfiguration;
   rootsMath?: RootsMathConfiguration;
   /** Optional authored presentation payload. Omission retains legacy rules;
    * local-v1 keeps this payload dormant without discarding its source values. */
@@ -302,6 +305,8 @@ export interface GeometryOutput {
   sourceMeshColors?: Uint32Array;
   /** Ordered native CPU line pairs, packed stroke color and resolved width. */
   sourceMeshWireframe?: SourceSurfaceMeshWireframeFrame;
+  /** Packed background passed to source P3D background(int), including alpha. */
+  sourceMeshBackgroundColor?:number;
   /** Parameter-grid provenance from the surface producer, before vertex compaction.
    * Each cell mask: bit 0 = (a,b,c), bit 1 = (a,c,d); omitted triangles stay holes. */
   surfaceGrid?: {

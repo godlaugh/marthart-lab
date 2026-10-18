@@ -25,6 +25,9 @@ export interface SourceSurfaceMeshRuntimeOptions {
  palette?:SourceSurfacePalette;
  reserve?:(units:number)=>void;
  isCancelled?:()=>boolean;
+ /** Camera-only queries retain particle identity and update order without
+  * generating unobserved display geometry. They cannot publish mesh snapshots. */
+ coverage?:'all'|'tracked';
 }
 export interface SourceSurfaceMeshRuntimeSnapshot {
  frameIndex:number;animationTime:number;geometry?:SourceSurfaceMeshGeometryFrame;
@@ -152,9 +155,10 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  });}
  /** Call after the frame's animation/update/camera work, even for dt=0 and
   * completed queues. snapshot never creates geometry or initializes U shift. */
- display(frameIndex:number,lineScale=1):void{this.guarded(()=>{
+ display(frameIndex:number,lineScale=1,publish=true):void{this.guarded(()=>{
   if(!Number.isInteger(frameIndex)||frameIndex<0||this.lastDisplay>=0&&frameIndex!==this.lastDisplay+1||frameIndex<this.lastUpdate||this.lastDisplay<0&&this.lastUpdate>=0&&frameIndex!==this.lastUpdate)fail('input','原版网格显示帧顺序无效');
   this.reserve(1);
+  if(this.options.coverage==='tracked'){this.lastDisplay=frameIndex;this.rendered=undefined;return;}
   const revision=this.options.surfaceFunction.revision;
   if(!Number.isSafeInteger(revision)||revision<0)fail('input','原版网格函数版本无效');
   const m=this.configuration.mesh,decoupled=m.wireframeDecoupled&&(m.wireframeUSegments>0||m.wireframeVSegments>0);
@@ -177,6 +181,9 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
    this.mappedColorCache={revision,colorRevision:this.colorRevision,packed};
   }
   const privateWire=this.wireCache?.frame,privateColors=this.mappedColorCache.packed;
+  // Intermediate source display still resolves geometry/shift state. Only the
+  // requested output frame needs public copies; private caches never escape.
+  if(!publish){this.lastDisplay=frameIndex;this.rendered=undefined;return;}
   // Private caches never escape. Public frames may be mutated or transferred;
   // charge every element before copying to keep both ownership and bounds.
   this.reserve(privateColors.length+(privateWire?.positions.length??0)+(privateGeometry?privateGeometry.positions.length+privateGeometry.normals.length+privateGeometry.triangles.length+privateGeometry.sourceColorIndices.length+privateGeometry.wireframeIndexedTriangles.length+privateGeometry.wireframeUSeamQuads.length:0));
