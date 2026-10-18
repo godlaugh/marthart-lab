@@ -1,3 +1,4 @@
+import {ordinarySourceCameraGeometry} from './ordinarySourceCamera';
 import {samilaCameraEnabled,initializeSamilaCameraFrame,refreshSamilaCameraSetting} from './samilaCamera';
 import type {CameraState,EvaluatedCamera,SceneDocument,Settings,SceneOutput} from '../types';
 import {numberSetting} from './expression';
@@ -5,14 +6,18 @@ export const isRaymarchScene=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scen
 export const hasContinuousDensity=(scene:Pick<SceneDocument,'kind'|'settings'>)=>['map','symmetry','samila'].includes(scene.kind)&&scene.settings.iteratedMode==='continuous';
 export const hasProgressiveRoots=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='roots'&&scene.settings.rootsMode==='progressive';
 export const hasMathematicalPlane=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='domain'||scene.kind==='fractal'&&scene.settings.formula!=='mandelbulb_3d'||scene.kind==='bouncing'&&scene.settings.bouncingPresentation==='raster'||hasContinuousDensity(scene)||hasProgressiveRoots(scene);
-export const supportsCameraActions=(scene:Pick<SceneDocument,'kind'|'settings'>)=>!hasMathematicalPlane(scene);
+type CameraCapabilities=Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'sourceCamera'>>;
+/** Explicit authored marker; never infer source semantics from a scene family. */
+export const usesOrdinarySourceCamera=(scene:CameraCapabilities)=>scene.sourceCamera!==undefined;
+const ordinaryMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking']);
+export const supportsCameraActions=(scene:CameraCapabilities)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene):!hasMathematicalPlane(scene);
 /** Scalar-camera families opt into specific components, never the full orbit. */
-export const supportsCameraAction=(scene:Pick<SceneDocument,'kind'|'settings'>,method:string)=>supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
-export const supportsCameraComponent=(scene:Pick<SceneDocument,'kind'|'settings'>,axis:string)=>supportsCameraActions(scene)||samilaCameraEnabled(scene)&&axis==='theta';
-export const supportsCameraTarget=(scene:Pick<SceneDocument,'kind'|'settings'>,target:string)=>!target.startsWith('camera.')||supportsCameraActions(scene)||samilaCameraEnabled(scene)&&target==='camera.theta';
+export const supportsCameraAction=(scene:CameraCapabilities,method:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&ordinaryMethods.has(method):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
+export const supportsCameraComponent=(scene:CameraCapabilities,axis:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&['phi','theta','gamma'].includes(axis):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&axis==='theta';
+export const supportsCameraTarget=(scene:CameraCapabilities,target:string)=>!target.startsWith('camera.')||!usesOrdinarySourceCamera(scene)&&(supportsCameraActions(scene)||samilaCameraEnabled(scene)&&target==='camera.theta');
 /** Indexed targets use mathematical identities, never compacted display indices
  * or coordinates inferred from a projected density image. */
-export const supportsParticleTracking=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='surface'||scene.kind==='attractor'&&scene.settings.simulationMode==='continuous'&&scene.settings.presentation!=='density';
+export const supportsParticleTracking=(scene:CameraCapabilities)=>!usesOrdinarySourceCamera(scene)&&(scene.kind==='surface'||scene.kind==='attractor'&&scene.settings.simulationMode==='continuous'&&scene.settings.presentation!=='density');
 const clamp=(v:number,a:number,b:number)=>Math.max(a,Math.min(b,v));
 const finite=(v:number,name:string)=>{if(!Number.isFinite(v))throw new Error(`${name} 必须有限`);return v;};
 const copy=(c:CameraState):CameraState=>({...c,position:[...c.position],target:[...c.target]});

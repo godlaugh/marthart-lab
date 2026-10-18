@@ -1,0 +1,127 @@
+{
+  "scope": "Independent Python struct Float32 evaluation of retained MoveCamera/ZoomCamera/SmoothFocalDistance lerp and AlignCamera.onStart/onUpdate instructions; queue times are exact four-frame 1-second fixtures. No original JVM execution.",
+  "classSha256": {
+    "MoveCamera": "f808684047ea37dfac632a4f5ae95c929aade5a84db3accf4f99682feccf127a",
+    "ZoomCamera": "ca145977bdf1cd5037c2d4b7958daaa6f6efeed6929fba506921df9dfccafdb6",
+    "SmoothFocalDistance": "43cede49da970c7d8de39061ce5c62cddab944dd33c2ae43a6755cdc9748ef94",
+    "AlignCamera": "6bf6710169c72b33bac6fe74ce2f97f819bd8ced20b5caca74dc5acd38168fc3",
+    "CameraAnimator": "39939dd4fc74166db9769d231e5196d3ac6fbd885644a541d64113de1923931b"
+  },
+  "initial": {
+    "phi": 0.3100000023841858,
+    "theta": -0.4000000059604645,
+    "gamma": 6.400000095367432,
+    "zoom": 1.100000023841858,
+    "focalDistance": 20.100000381469727
+  },
+  "absolute": {
+    "phi": 1.399999976158142,
+    "theta": -1.2000000476837158,
+    "gamma": 9.300000190734863,
+    "zoom": 2.299999952316284,
+    "focalDistance": 31.700000762939453
+  },
+  "alignOffsets": {
+    "phi": 0.1,
+    "theta": 0.2,
+    "gamma": -0.3
+  },
+  "frames": [
+    {
+      "kind": "move-optics",
+      "frameIndex": 0,
+      "time": 0.0,
+      "bits": {
+        "phi": "3f151eb8",
+        "theta": "bf19999a",
+        "gamma": "40e40000",
+        "zoom": "3fb33333",
+        "focalDistance": "41b80000"
+      }
+    },
+    {
+      "kind": "move-optics",
+      "frameIndex": 1,
+      "time": 0.25,
+      "bits": {
+        "phi": "3f5ae147",
+        "theta": "bf4cccce",
+        "gamma": "40fb3334",
+        "zoom": "3fd9999a",
+        "focalDistance": "41cf3334"
+      }
+    },
+    {
+      "kind": "move-optics",
+      "frameIndex": 2,
+      "time": 0.5,
+      "bits": {
+        "phi": "3f9051eb",
+        "theta": "bf800000",
+        "gamma": "41093334",
+        "zoom": "40000000",
+        "focalDistance": "41e66667"
+      }
+    },
+    {
+      "kind": "move-optics",
+      "frameIndex": 3,
+      "time": 0.75,
+      "bits": {
+        "phi": "3fb33332",
+        "theta": "bf99999a",
+        "gamma": "4114cccd",
+        "zoom": "40133333",
+        "focalDistance": "41fd999a"
+      }
+    },
+    {
+      "kind": "align",
+      "frameIndex": 0,
+      "time": 0.0,
+      "bits": {
+        "phi": "3fea059e",
+        "theta": "be800000",
+        "gamma": "40fbbb21",
+        "zoom": "3f8ccccd",
+        "focalDistance": "41a0cccd"
+      }
+    },
+    {
+      "kind": "align",
+      "frameIndex": 1,
+      "time": 0.25,
+      "bits": {
+        "phi": "40562e93",
+        "theta": "bdcccccc",
+        "gamma": "411554ba",
+        "zoom": "3f8ccccd",
+        "focalDistance": "41a0cccd"
+      }
+    },
+    {
+      "kind": "align",
+      "frameIndex": 2,
+      "time": 0.5,
+      "bits": {
+        "phi": "409bad2c",
+        "theta": "3d4cccd0",
+        "gamma": "412ccbe4",
+        "zoom": "3f8ccccd",
+        "focalDistance": "41a0cccd"
+      }
+    },
+    {
+      "kind": "align",
+      "frameIndex": 3,
+      "time": 0.75,
+      "bits": {
+        "phi": "40cc430e",
+        "theta": "3e4cccce",
+        "gamma": "4144430e",
+        "zoom": "3f8ccccd",
+        "focalDistance": "41a0cccd"
+      }
+    }
+  ]
+}

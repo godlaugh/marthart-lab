@@ -1,3 +1,5 @@
+import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
+import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
 import type {FractalSourceFrameFacts} from './engine/fractalSourceFrame';
 import type {FractalSourceColorConfiguration,FractalSourcePaletteRuntime} from './engine/fractalSourceColor';
 import type {PreparedSamilaView} from './engine/samilaCamera';
@@ -195,6 +197,8 @@ export interface SceneDocument {
   settings: Settings;
   palette: Palette;
   camera: CameraState;
+  sourceCamera?:SourceCameraInput;
+  evaluatedSourceCamera?:OrdinarySourceCameraEvaluation;
   timeline: {
     duration: number;
     fps: number;
@@ -204,7 +208,7 @@ export interface SceneDocument {
     /** Sequential profiles derive absolute positions through resolveTimeline.
      * Spirograph reads track.start as a pre-clip delay; Roots ignores it and
      * uses explicit waits. duration is the caller's minimum playback span. */
-    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1';
+    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1' | 'ordinary-camera-sequence-v1';
   };
   favorite: boolean;
   formulas?: FormulaConfig;
@@ -350,6 +354,7 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
   /** Immutable facts from the same replay state as the delivered pixels. */
   spirographFrame?:SpirographReplayFrame;
   cameraFrame?: CameraFrame;
+  sourceCameraFrame?:OrdinarySourceCameraFrame;
   dimension?: 2 | 3;
   backend?: 'cpu' | 'webgl2';
   density?: DensityStats;
@@ -367,6 +372,7 @@ export interface GenerateContext {
   time: number;
   spirographFrame?:SpirographFrameRequest;
   rootsViewport?:RootsViewportRequest;
+  sourceViewport?:SourceCameraViewport;
   /** Actual local logical canvas size, separate from preview sampling pixels.
    * Offscreen requests use the explicit export dimensions; neither proves
    * the original application's operating-system DPI or framebuffer scale. */
@@ -383,7 +389,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'spirographFrame'|'rootsViewport'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

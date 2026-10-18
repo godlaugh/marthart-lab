@@ -1,3 +1,5 @@
+import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
+import {evaluateOrdinarySourceCameraTimeline,resolveOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {inactiveFractalSourceColorTarget,usesFractalSourceColor,readFractalSourceColorAnimation,writeFractalSourceColorAnimation,FRACTAL_SOURCE_COLOR_ANIMATION_TARGETS} from './fractalSourceColorAuthoring';
 import {rootMathAnimationTargetEnabled} from './rootsMathConfig';
 import {validateTimelineCapacity} from './timelineCapacity';
@@ -84,6 +86,7 @@ export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument):string[]{
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,'复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。'];
  const genericWarning=genericParameterTimelineWarning(scene),messages:string[]=[...(genericWarning?[genericWarning]:[]),...parseSamilaCamera(scene).warnings];
+ if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!;messages.push(...evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0).diagnostics.map(d=>d.message),'原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&!rootMathAnimationTargetEnabled(scene,track.target)||track.type==='param'&&track.parameterAnimations?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&action.parameters?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))))))messages.push('源复根数学不使用通用参数或旧采样与求解字段；相关轨道保留时长但未执行。');
  const inactiveSourceParameters=(parameters:readonly ParameterAnimation[]|undefined)=>parameters?.some(p=>p.enabled&&inactiveFractalSourceColorTarget(scene,p.target));
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&inactiveFractalSourceColorTarget(scene,track.target)||track.type==='param'&&inactiveSourceParameters(track.parameterAnimations)||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&inactiveSourceParameters(action.parameters)))))messages.push('原版分形着色已停用；其偏移动画保留但不执行。');
@@ -149,7 +152,8 @@ export function clipDuration(track: AnimationTrack, scene: SceneDocument): numbe
 }
 export function validateTimelineSchedule(scene:SceneDocument):void {
   const schedule=scene.timeline.schedule;
-  if(schedule!==undefined&&!((schedule==='spirograph-sequence-v1'&&scene.kind==='spirograph')||((schedule==='roots-camera-sequence-v1'||schedule==='roots-scene-sequence-v1')&&scene.kind==='roots')))throw new Error('时间线顺序规则无效');
+  if(scene.sourceCamera&&schedule!=='ordinary-camera-sequence-v1')throw new Error('原版几何相机必须使用对应的顺序时间线');
+  if(schedule!==undefined&&!((schedule==='ordinary-camera-sequence-v1'&&!!scene.sourceCamera)||(schedule==='spirograph-sequence-v1'&&scene.kind==='spirograph')||((schedule==='roots-camera-sequence-v1'||schedule==='roots-scene-sequence-v1')&&scene.kind==='roots')))throw new Error('时间线顺序规则无效');
 }
 const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
 /** Resolve the explicit source queue against the current geometry. A source
@@ -159,6 +163,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
+  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps);const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
   if(usesRootsCameraTimeline(scene))return resolveRootsCameraTimeline(scene);
   if(scene.timeline.schedule==='roots-camera-sequence-v1'||scene.timeline.schedule==='roots-scene-sequence-v1')return {...scene.timeline,schedule:undefined};
   if(usesSpirographFrameClock(scene))return interactiveSpirographFrames.timeline(scene);
@@ -208,6 +213,8 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   delete copied.evaluatedSpirographRotationRadians;
   delete copied.evaluatedSpirographFrame;
   delete copied.evaluatedRootsCamera;
+  delete copied.evaluatedSourceCamera;
+  if(scene.sourceCamera){copied.sourceCamera=structuredClone(scene.sourceCamera);if(time!==undefined)copied.evaluatedSourceCamera=evaluateOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(copied)!,scene.timeline.tracks,scene.timeline.fps,time);}
   if(time!==undefined&&scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)==='mathart-1.7.8-v1'){
     copied.evaluatedSpirographRotationRadians=finite(spirographSourceRotationRate(scene.settings.rotationSpeed)*time,'旋轮运行时旋转');
   }
@@ -434,14 +441,15 @@ export function sceneAtTime(scene: SceneDocument, position: number): SceneDocume
   // this does not activate new presentation animation targets or render rules.
   const rootsPresentationIdentity=JSON.stringify(scene.rootsPresentation,(_key,value:unknown)=>typeof value==='number'?Object.is(value,-0)?{negativeZero:true}:finite(value,'时间线文档数值'):value);
   const fractalSourceColorIdentity=JSON.stringify(scene.fractalSourceColor,(_key,value:unknown)=>typeof value==='number'?Object.is(value,-0)?{negativeZero:true}:finite(value,'时间线文档数值'):value);
-  const key = JSON.stringify({ rootsMathIdentity, rootsPresentationIdentity, fractalSourceColorIdentity, kind: scene.kind, equations:scene.equations, parameters: scene.parameters, settings: scene.settings, palette: scene.palette, domainSourcePalette:scene.domainSourcePalette, rootsSourcePalette:scene.rootsSourcePalette, camera: scene.camera, timeline: scene.timeline }, (_key, value: unknown) => typeof value === 'number' ? finite(value, '时间线文档数值') : value);
+  const sourceCameraIdentity=JSON.stringify(scene.sourceCamera,(_key,value)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
+  const key = JSON.stringify({ sourceCameraIdentity, rootsMathIdentity, rootsPresentationIdentity, fractalSourceColorIdentity, kind: scene.kind, equations:scene.equations, parameters: scene.parameters, settings: scene.settings, palette: scene.palette, domainSourcePalette:scene.domainSourcePalette, rootsSourcePalette:scene.rootsSourcePalette, camera: scene.camera, timeline: scene.timeline }, (_key, value: unknown) => typeof value === 'number' ? finite(value, '时间线文档数值') : value);
   let evaluate = compiledTimelines.get(key);
   if (!evaluate) {
     const snapshot=JSON.parse(key);
     // Cache-only identities are not authored document fields. Their owning
     // payloads are copied explicitly below to preserve non-JSON numeric facts.
-    delete snapshot.rootsMathIdentity;delete snapshot.rootsPresentationIdentity;delete snapshot.fractalSourceColorIdentity;
-    evaluate = compileTimeline({ ...scene, ...snapshot, ...(scene.fractalSourceColor?{fractalSourceColor:structuredClone(scene.fractalSourceColor)}:{}), ...(scene.rootsMath?{rootsMath:structuredClone(scene.rootsMath)}:{}), ...(scene.rootsPresentation?{rootsPresentation:structuredClone(scene.rootsPresentation)}:{}) });
+    delete snapshot.sourceCameraIdentity;delete snapshot.rootsMathIdentity;delete snapshot.rootsPresentationIdentity;delete snapshot.fractalSourceColorIdentity;
+    evaluate = compileTimeline({ ...scene, ...snapshot, ...(scene.sourceCamera?{sourceCamera:structuredClone(scene.sourceCamera)}:{}), ...(scene.fractalSourceColor?{fractalSourceColor:structuredClone(scene.fractalSourceColor)}:{}), ...(scene.rootsMath?{rootsMath:structuredClone(scene.rootsMath)}:{}), ...(scene.rootsPresentation?{rootsPresentation:structuredClone(scene.rootsPresentation)}:{}) });
     if (key.length <= 1_000_000) {
       if (compiledTimelines.size >= 4) compiledTimelines.delete(compiledTimelines.keys().next().value!);
       compiledTimelines.set(key, evaluate);
@@ -460,6 +468,7 @@ export interface ParticleCameraPlan {
  * small timeline with those facts also resolves historical camera baselines for
  * later actions, without serializing closures or persisting runtime state. */
 export function prepareParticleCamera(scene:SceneDocument,position:number):ParticleCameraPlan|undefined{
+ if(scene.sourceCamera)return;
  if(scene.kind!=='attractor'||!supportsParticleTracking(scene)||!scene.timeline.tracks.some(track=>track.enabled&&track.start<=position&&track.actions?.some(action=>action.enabled!==false&&action.method==='track'&&action.args&&Object.hasOwn(action.args,'index'))))return;
  sceneAtTime(scene,position); // Reuse the public document/timeline validation.
  const snapshot=structuredClone(scene),time=clamp(position,0,scene.timeline.duration),requests=new Map<string,ParticleCameraRequest>();
@@ -610,6 +619,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
     } });
   }
   function action(track: AnimationTrack, item: AnimationAction, sourceStartup:SceneDocument) {
+    if(scene.sourceCamera&&isCameraAction(item.method))return;
     if (item.enabled === false || !supportsCameraAction(scene,item.method)&&isCameraAction(item.method)) return;
     if (!ACTIONS.some(([name]) => name === item.method)) throw new Error(`未知动画动作 ${item.method}`);
     if(item.domainParameters)return; // The group registry owner handles these together.
@@ -697,7 +707,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
   for (const { track } of tracks) {
     validateTrack(track, scene);
     const type = track.type ?? 'numeric', baseline = evaluate(track.start);
-    if (type === 'wait' || type === 'spirograph_finish_wait') continue;
+    if (type === 'wait' || type === 'spirograph_finish_wait'||scene.sourceCamera&&(type==='align'||type==='numeric'&&track.target.startsWith('camera.'))) continue;
     if(type==='align'&&!supportsCameraComponent(scene,'theta')||type==='numeric'&&!supportsCameraTarget(scene,track.target))continue;
     if (type === 'numeric') { numeric(track, baseline, track.target, track.to, track.fromCurrent ? undefined : track.from); continue; }
     if (type === 'animate') {

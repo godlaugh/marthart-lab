@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {parseLegacyScene} from '../src/engine/legacyImport';
-import {parseScene} from '../src/engine/document';
+import {parseScene,serializeScene,createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 const base=(type:string,extra:Record<string,unknown>={})=>({config_version:'1.0.0',type,name:'Imported test',parameters:{},settings:{},...extra});
 const parse=(value:unknown)=>parseLegacyScene(JSON.stringify(value));
@@ -46,7 +46,16 @@ describe('legacy scene import production contract',()=>{
  it('maps Newton convergence threshold separately from the escape radius',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'newton',parameters:{exponent:[3,0],relaxation:.5,bailout:.001}}}));expect(result.scene.settings.tolerance).toBe(.001);expect(result.scene.settings.bailout).toBeGreaterThan(1);expect(result.scene.settings.power).toBe(3);});
  it('maps Binocular and Spiral parameters without changing their formulas',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'binocular',parameters:{power:4,quad_coeff:[1,2],const_term:[3,4],z0_coeff:[-1,.2],denom_offset:2,bailout:.001,singularity_guard_eps:1e-10}}}));expect(result.scene.settings.formula).toBe('binocular');expect(result.scene.settings.quadImag).toBe(2);expect(result.scene.settings.constReal).toBe(3);expect(result.scene.settings.z0Imag).toBe(.2);expect(result.scene.settings.denomOffset).toBe(2);expect(result.scene.settings.singularityGuard).toBe(1e-10);});
  it('preserves an unsupported formula ID so generation fails explicitly',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'future_fractal'}}));expect(result.scene.settings.formula).toBe('future_fractal');expect(result.warnings.join()).toContain('未实现');expect(()=>definition('fractal').generate(result.scene,{time:0,quality:'preview',width:8,height:8})).toThrow();});
- it('maps waits, disabled clips and producer-owned surface indexed tracking',()=>{const result=parse({...fixtures[0],timeline:[{type:'wait',duration:2},{type:'animate',duration:3,actions:[{method:'track',args:[5]}]},{type:'wait',duration:9,enabled:false}]});expect(result.scene.timeline.duration).toBe(5);expect(result.scene.timeline.tracks).toHaveLength(3);expect(result.scene.timeline.tracks[0]).toMatchObject({type:'wait',start:0,duration:2});expect(result.scene.timeline.tracks[1]).toMatchObject({type:'animate',start:2,duration:3,actions:[{method:'track',args:{index:5}}]});expect(result.scene.timeline.tracks[2]).toMatchObject({type:'wait',enabled:false,duration:9});expect(result.warnings.join()).not.toContain('曲面以外的 track(index)');});
+ it('keeps legacy local tracking documents while rejecting source tracking without its native provider',()=>{
+  const local=createScene(definition('surface'));local.timeline.duration=5;local.timeline.tracks=[
+   {id:'wait',type:'wait',target:'timeline.wait',from:0,to:0,start:0,duration:2,easing:'linear',pingPong:false,enabled:true},
+   {id:'track',type:'animate',target:'camera.actions',from:0,to:0,start:2,duration:3,easing:'linear',pingPong:false,enabled:true,actions:[{id:'track-action',method:'track',args:{index:5}}]},
+   {id:'disabled',type:'wait',target:'timeline.wait',from:0,to:0,start:5,duration:9,easing:'linear',pingPong:false,enabled:false},
+  ];
+  const saved=serializeScene(local),reopened=parseScene(saved);expect(reopened.sourceCamera).toBeUndefined();expect(reopened.timeline.tracks).toEqual(local.timeline.tracks);expect(serializeScene(reopened)).toBe(saved);
+  expect(()=>parse({...fixtures[0],timeline:[{type:'wait',duration:2},{type:'animate',duration:3,actions:[{method:'track',args:[5]}]}]})).toThrow('provider');
+  expect(serializeScene(local)).toBe(saved);
+ });
  it('does not mutate input source through edits to the converted document',()=>{const result=parse({...fixtures[0],palette:['#112233','#445566']});result.scene.parameters.a=22;result.scene.palette.stops[0]='#ffffff';expect((result.source as any).parameters.a).toBeUndefined();expect((result.source as any).palette[0]).toBe('#112233');});
  it('copies layer palette data independently from original source',()=>{const result=parse(base('SPIROGRAPH',{settings:{layers:[{statorRadius:3,penDistance:1,rotors:[{radius:1,mode:'INSIDE'}],palette:['#112233','#445566']}]}}));result.scene.palette.stops[0]='#ffffff';expect((result.source as any).settings.layers[0].palette[0]).toBe('#112233');});
  it('maps the original constant a+bi and retains source viewport scale in its own units',()=>{const result=parse(base('DOMAIN_COLORING',{domainColoring:{formula:'z',formulaParams:{a:1,b:.5},viewport:{scale:.5},iteration:{enabled:true,seedMode:'CONSTANT_C',steps:2,nextFormula:'(w^3-1)/(3*w^2)+c'}}}));expect(result.scene.settings.constantReal).toBe(1);expect(result.scene.settings.constantImag).toBe(.5);expect(result.scene.settings.scale).toBe(.5);expect(result.scene.settings.domainViewportVersion).toBe('mathart-1.7.8-gpu');const output=definition('domain').generate(result.scene,{time:0,quality:'preview',width:16,height:12});expect(output.stats.generated).toBe(192);});

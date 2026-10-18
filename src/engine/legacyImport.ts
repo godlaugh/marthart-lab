@@ -35,6 +35,9 @@ import {parseSourceJson,type SourceJsonObjectMetadata} from './sourceJson';
 import {createRootsNativeMath,defaultRootNativeParameter,parseRootsMath} from './rootsMathConfig';
 import {prepareRootsSourceMemberOrder,prepareRootsSourceJsonInt,prepareRootsSourceJsonLong,prepareRootsSourceJsonString} from './rootsSourceOrder';
 import {isJavaBlank} from './sourceJavaText';
+import {prepareOrdinarySourceScalarScope,type OrdinarySourceScalarScope,type OrdinarySourceScalarResult,type OrdinarySourceCameraFamily} from './ordinarySourceCameraImport';
+import {ordinarySourceCameraGeometry} from './ordinarySourceCamera';
+import {ORDINARY_CAMERA_SEQUENCE} from './ordinarySourceCameraTimeline';
 
 type ObjectValue=Record<string,unknown>;
 type SourceMetadata=WeakMap<object,SourceJsonObjectMetadata>;
@@ -228,7 +231,7 @@ function common(r:Reader,s:SceneDocument){
  if(s.kind!=='roots')numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!['domain','roots','fractal'].includes(s.kind))commonLocalPalette(r,s);
  if(['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
- if(s.kind!=='samila'&&s.kind!=='roots'&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
+ if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
 function formulaAnnotations(r:Reader,s:SceneDocument){
@@ -397,7 +400,7 @@ function perlin(r:Reader,s:SceneDocument){
  const step=r.num('settings.step_size');if(step!==undefined){if(step<0||step>5)fail('噪声 step_size 超出范围');s.settings.particleSpeed=step*60;s.settings.stepSize=step;if(s.settings.style==='streams'&&step===0)fail('流线 step_size 必须为正数');}
  const respawn=r.num('settings.respawn_rate');if(respawn!==undefined){if(respawn<0||respawn>1)fail('respawn_rate 必须为 0 至 1');s.settings.respawnEveryStep=respawn===1;s.settings.respawnRate=respawn===1?0:-60*Math.log1p(-respawn);r.warnings.push('原版 respawn_rate 按 60 Hz 每帧概率转换为连续时间重生强度；独立随机序列不保证相同。');}
  numberTo(r,s,'settings.accumulation_fade_alpha','accumulationFade',{min:0,max:255});numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:3600});numberTo(r,s,'settings.dot_size','particleRadius',{min:0,max:8});booleanTo(r,s,'settings.fade_trails','fadeTrails');booleanTo(r,s,'settings.show_trails','showTrails');
- const accumulation=r.bool('settings.use_accumulation_buffer');s.settings.particleDisplay=accumulation?'accumulation':s.settings.showTrails===false?'heads':'trails';
+ const accumulation=r.domainBoolean(['settings','use_accumulation_buffer'],false,'default');s.settings.particleDisplay=accumulation?'accumulation':s.settings.showTrails===false?'heads':'trails';
  if(s.settings.style==='continuous')r.warnings.push('持续粒子采用固定 60 Hz 独立 CPU 推进、环绕、重生和衰减累积；拖尾每 5 步采样一次以限制历史内存，原版帧时序、栅格和噪声序列未逐像素校验。');
  r.warnings.push('流场与参数探索采用独立确定性算法，不声明原版噪声/随机选择逐值等效。');
 }
@@ -798,8 +801,8 @@ function domainTimeline(r:Reader,s:SceneDocument):void {
  if(s.timeline.tracks.some(t=>t.actions?.some(a=>a.domainParameters)))r.warnings.push('域参数使用持久注册表；具名配置按本地 JSON 键顺序执行，原版 HashMap 次序未复现。采用 60 Hz 确定回放，首次 dt=0 不改写参数；原版实时帧时钟与队列帧延迟未逐帧对照。');
 }
 // Original positional argument order comes from AnimationRegistry and the public guide.
-function legacyAction(r:Reader,s:SceneDocument,path:string,baseline:SceneDocument):AnimationAction|undefined {
- const method=r.str(path+'.method',true)!,enabled=r.bool(path+'.enabled')??true,raw=r.peek(path+'.args')??[];
+function legacyAction(r:Reader,s:SceneDocument,path:string,baseline:SceneDocument,ignoreActionEnabled=false):AnimationAction|undefined {
+ const method=r.str(path+'.method',true)!,enabled=ignoreActionEnabled?true:r.bool(path+'.enabled')??true,raw=r.peek(path+'.args')??[];
  if(!Array.isArray(raw))fail(`${path}.args 应为数组`);
  if(raw.length>128)fail(`${path}.args 超过128项`);
  const action:AnimationAction={id:crypto.randomUUID(),method,enabled};
@@ -869,7 +872,99 @@ function legacyZoomTarget(r:Reader,path:string,fallback:{centerX:number;centerY:
  if(zoom<=0||zoom>1e28)fail(`${path}.zoom 必须在 (0,1e28]`);
  return {centerX,centerY,centerXLow,centerYLow,zoom};
 }
-function timeline(r:Reader,s:SceneDocument){
+function ordinaryFamily(kind:SceneKind):kind is OrdinarySourceCameraFamily{return ['surface','implicit','attractor','perlin'].includes(kind);}
+function ordinaryResult<T>(result:OrdinarySourceScalarResult<T>):T {
+ if(!result.ok)fail(`原版相机标量 ${result.error.path}: ${JSON.stringify(result.error)}`);return result.value;
+}
+function ordinaryCamera(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope):void {
+ if(!ordinarySourceCameraGeometry(s)){
+  r.warnings.push('当前密度或噪声纹理显示模式尚未接入原版几何相机；保留本地显示和完整源相机数据，不声明原版相机一致。');return;
+ }
+ const parsed=ordinaryResult(scope.camera(r.peek(['camera'])));s.sourceCamera=parsed.camera;r.warnings.push(...parsed.diagnostics);
+ if(r.has(['camera'])){
+  const raw=r.object(['camera'])!;if(!Object.keys(raw).length)r.use(['camera']);
+  for(const axis of ['phi','theta','gamma']){r.retainNumberToken(['camera',axis]);r.use(['camera',axis]);}
+ }
+ // GenericScene passes isUseAccumulationBuffer to Scene. Scene.render calls
+ // ortho after applyPerspective only in that branch; show_trails is unrelated.
+ // Only Perlin exposes this override in these four retained JSON configs.
+ const accumulation=s.kind==='perlin'?r.domainBoolean(['settings','use_accumulation_buffer'],false,'default'):false;
+ s.settings.sourceCameraProjection=accumulation?'scene-fade-orthographic':'perspective';
+}
+/** Eager source setupTimeline dispatch. Preserve every native queue duration;
+ * known but unimplemented animation children fail rather than become local
+ * mathjs actions or silently disappear. Unknown native actions make Wait via
+ * CameraAnimator.build when no camera child was constructed. */
+function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope):void {
+ const clips=r.peek(['timeline']);s.timeline={...s.timeline,schedule:ORDINARY_CAMERA_SEQUENCE,tracks:[]};
+ if(clips===undefined)return;
+ if(!Array.isArray(clips)||clips.length>1000)fail('timeline 应为最多 1000 段的数组');
+ if(!clips.length)r.use(['timeline']);let total=0;
+ const field=(path:readonly string[],fallback:number)=>{
+  r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
+ };
+ for(let i=0;i<clips.length;i++){
+  const path=['timeline',String(i)];r.object(path);
+  if(!r.domainBoolean([...path,'enabled'])){r.acknowledge(path,'原版跳过禁用片段，不读取类型、时长或动作');continue;}
+  const originalType=r.str([...path,'type'],true)!,type=originalType.toLowerCase();
+  if(!['wait','animate','align'].includes(type)&&!(s.kind==='surface'&&type==='param')){
+   const nativeChild=(s.kind==='surface'&&['trails','surface_mode_transition'].includes(type))||(s.kind==='perlin'&&type==='trails');
+   if(nativeChild)fail(`${pathLabel(path)} ${type} 尚缺原版动画子项编译事实；不能丢弃或猜测其队列时长`);
+   if(s.kind==='attractor'){r.acknowledge(path,'原版 Attractor 不执行此片段类型，不占用队列时长');continue;}
+   r.warnings.push(`${pathLabel(path)} ${originalType} 按原版未识别类型分支保留为等待；原字段保留在 source。`);
+  }
+  const duration=field([...path,'duration'],1);
+  if(duration<=0||duration>86400)fail(`${pathLabel(path)}.duration 原版值 ${duration} 超出本地源相机队列支持的 (0,86400]；不会替换或丢时长`);
+  let easing='sine-in-out';if(type==='animate'||type==='align'){
+   const raw=r.use([...path,'easing']),mapped=lookupSourceEasing(raw);easing=mapped??'sine-in-out';
+   if(raw!=null&&!mapped)r.warnings.push(`${pathLabel(path)}.easing 未匹配源注册名，采用 SINE_IN_OUT；原值保留。`);
+  }
+  const track:AnimationTrack={id:crypto.randomUUID(),type:type==='animate'?'animate':type==='align'?'align':type==='param'&&s.kind==='surface'?'param':'wait',target:'timeline.wait',label:originalType,from:0,to:0,start:0,duration,easing,pingPong:false,enabled:true};
+  if(type==='param'&&s.kind==='surface'){
+   track.parameterClock='elapsed';track.replaceParameters=true;track.parameterAnimations=legacyOscillators(r,s,path.join('.'),s);track.target=track.parameterAnimations[0]?.target??'timeline.wait';
+   r.warnings.push(`${pathLabel(path)}：保留原版传入的片段时长；参数变化仍采用既有本地解析和振荡，不声明其标量、帧时钟与原版一致。`);
+  }else if(type==='align'){
+   track.target='camera.orientation';track.alignMode='next-turn';track.orientation={};
+   for(const axis of ['phi','theta','gamma'] as const)if(r.has([...path,'target_'+axis]))track.orientation[axis]=field([...path,'target_'+axis],0);
+  }else if(type==='animate'){
+   const actions=r.peek([...path,'actions']);if(actions!==undefined&&(!Array.isArray(actions)||actions.length>64))fail(`${pathLabel(path)}.actions 应为最多 64 个动作的数组`);
+   track.actions=[];track.target='camera.actions';if(Array.isArray(actions)&&!actions.length)r.use([...path,'actions']);
+   const actionList=(actions??[]) as unknown[];
+   for(let j=0;j<actionList.length;j++){
+    const actionPath=[...path,'actions',String(j)];r.object(actionPath);const method=r.str([...actionPath,'method'],true)!,raw=r.peek([...actionPath,'args']);
+    if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
+    const unimplementedTracking=method==='track'&&Array.isArray(raw)&&raw.length>0&&(s.kind==='surface'||s.kind==='attractor');
+    if(unimplementedTracking)fail(`${pathLabel(actionPath)} ${method} 尚无完整原版 provider/动画编译合同；未按本地动作代替`);
+    const noncamera=['paramStart','paramStop'].includes(method)&&s.kind!=='attractor'||['gradientStart','gradientStop'].includes(method)&&s.kind!=='implicit';
+    if(noncamera){
+     // Retained child constructors forward this same duration to Animation;
+     // their group therefore cannot lengthen the camera child's duration.
+     // Keep the existing local noncamera effect explicitly outside parity.
+     const local=Array.isArray(raw)||raw===undefined?legacyAction(r,s,actionPath.join('.'),s,true):undefined;
+     if(local)track.actions.push({...local,enabled:true});
+     r.warnings.push(`${pathLabel(actionPath)} ${method}：源子动画使用同一片段时长，队列时长已保留；${local?'非相机效果仍采用既有本地解析与动画，不声明原版标量或帧时钟一致':'此原版非相机参数形式尚未映射，效果未执行，完整字段保留在 source'}。`);continue;
+    }
+    const ignored=(reason:string)=>r.warnings.push(`${pathLabel(actionPath)} ${method}：${reason}；片段时长保留，原动作保留在 source。`);
+    if(!Array.isArray(raw)&&s.kind==='attractor'){ignored('原版仅向相机分派 JSONArray 参数');continue;}
+    const args=Array.isArray(raw)?raw:[];if(args.length>128)fail(`${pathLabel(actionPath)}.args 超过 128 项本地容量`);
+    const arg=(index:number)=>{const p=[...actionPath,'args',String(index)];r.retainNumberToken(p);const out=ordinaryResult(scope.argument(r.use(p),pathLabel(p)));r.warnings.push(...out.diagnostics);return out.value;};
+    let action:AnimationAction|undefined;
+    if(['rotatePhi','rotateTheta','zoom','focal'].includes(method))action={id:crypto.randomUUID(),method,args:{[method.startsWith('rotate')?'angle':'value']:arg(0)}};
+    else if(method==='rotateTo'&&s.kind!=='attractor'&&args.length>=3)action={id:crypto.randomUUID(),method,args:{phi:arg(0),theta:arg(1),gamma:arg(2)}};
+    else if((method==='ambient'||method==='setRates'&&s.kind==='attractor')&&args.length>=(s.kind==='attractor'?2:3))action={id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:arg(0),thetaSpeed:arg(1),gammaSpeed:args.length>=3?arg(2):0}};
+    else if(['stopTracking','stopAmbient'].includes(method)&&s.kind!=='implicit')action={id:crypto.randomUUID(),method,args:{}};
+    if(!action){ignored('原版此场景未分派该方法或参数数目不足');continue;}
+    if(Array.isArray(raw)&&!raw.length)r.use([...actionPath,'args']);
+    track.actions.push(action);
+   }
+  }
+  s.timeline.tracks.push(track);total+=duration;if(total>86400)fail('源相机队列超过 24 小时');
+ }
+ if(total>0)s.timeline.duration=total;
+ validateTimelineCapacity(s.timeline.tracks);
+}
+function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarScope){
+ if(s.sourceCamera&&ordinaryScope){ordinaryCameraTimeline(r,s,ordinaryScope);return;}
  if(s.kind==='domain'){domainTimeline(r,s);return;}
  if(s.kind==='spirograph'&&parseSpirographVersion(s.settings.spirographVersion)!=='local-v1'){spirographTimeline(r,s);return;}
  if(s.kind==='roots'){rootsCameraTimeline(r,s);return;}
@@ -1109,7 +1204,11 @@ function projectResolution(r:Reader,scene:SceneDocument):void {
 function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'legacy-v1'}={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
  const r=new Reader(source,metadata,sourceText),version=r.str('config_version',true);if(version!=='1.0.0'&&version!=='1.0')fail(`不支持 config_version=${version}`);
  const type=r.str('type',true)!,kind=TYPES[type.toUpperCase()];if(!kind)fail(`未知场景类型 ${type}`);const def=definitions.find(d=>d.kind===kind)!;const scene=createScene(def);
- const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;scene.parameters=kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ if(ordinaryFamily(kind))r.validateNativeObjects();
+ const ordinaryScope=ordinaryFamily(kind)?ordinaryResult(prepareOrdinarySourceScalarScope(kind,{parameters:r.peek(['parameters']),memberOrder:(kind==='surface'||kind==='implicit')&&r.has(['parameters'])?r.sourceKeys(['parameters']):undefined})):undefined;
+ if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
+ const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;scene.parameters=ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
  common(r,scene);
@@ -1120,7 +1219,8 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  let samilaTheta:number|undefined;
  if(kind==='samila'&&r.has('camera')){r.object('camera');samilaTheta=r.num('camera.theta',scene.parameters);}
  if(kind==='samila'&&samilaTheta!==undefined&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaCameraTheta:samilaTheta});
- formulaAnnotations(r,scene);timeline(r,scene);
+ if(ordinaryScope)ordinaryCamera(r,scene,ordinaryScope);
+ formulaAnnotations(r,scene);timeline(r,scene,ordinaryScope);
  if(kind==='samila'){
   const thetaAction=scene.timeline.tracks.some(t=>t.type==='align'&&t.orientation?.theta!==undefined||t.actions?.some(a=>['rotateTheta','rotateTo','ambient'].includes(a.method)));
   if(options.samilaCamera!=='legacy-v1'&&(samilaTheta!==undefined||thetaAction)){

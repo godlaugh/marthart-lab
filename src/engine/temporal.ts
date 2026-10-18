@@ -1,3 +1,4 @@
+import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera} from './ordinarySourceCamera';
 import {AttractorParticleSession} from '../scenes/attractorParticles';
 import {GenerationCleanupState,withGenerationCleanup} from './generationCleanup';
 import type { GenerateContext, GeometryOutput, SceneDocument, SceneOutput, ParticleCameraRequest } from '../types';
@@ -342,7 +343,17 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
 /** All public callers receive the same unsupported-timeline evidence. */
 export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
   const owner=session??new TemporalGenerationSession();
-  const generate=()=>{const output=generateSceneFrame(scene,context,owner),warnings=timelineWarnings(scene);
+  const generate=()=>{
+    ordinarySourceCameraInitial(scene);
+    // Validate requested projection and paired camera before any geometry or
+    // simulation allocation. Progress frames may use an earlier scene time.
+    if(scene.sourceCamera){
+      const state=sceneAtTime(scene,context.time);
+      ordinarySourceCameraFrame(state,context);
+    }
+    const bind=(output:SceneOutput)=>scene.sourceCamera?bindOrdinarySourceCamera(output,sceneAtTime(scene,output.temporal?.time??context.time),context):output;
+    const scoped=scene.sourceCamera&&context.onProgress?{...context,onProgress:(output:SceneOutput)=>context.onProgress!(bind(output))}:context;
+    const output=bind(generateSceneFrame(scene,scoped,owner)),warnings=timelineWarnings(scene);
     if(warnings.length)output.warnings=[...new Set([...(output.warnings??[]),...warnings])];
     return output;
   };

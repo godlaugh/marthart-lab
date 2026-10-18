@@ -2,6 +2,7 @@ import type {SceneDocument} from '../types';
 import {ROOTS_BATCH_SIZE_SOURCE_PATHS,ROOTS_PRESENTATION_INTEGER_PATHS,ROOTS_PRESENTATION_SCALAR_PATHS} from './rootsSourceFields';
 import {ROOTS_GRADIENT_SOURCE_FIELDS,rootsGradientSourcePayload} from './rootsGradientConfig';
 import {SOURCE_JSON_LIMITS} from './sourceJson';
+import {ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS} from './ordinarySourceCameraImport';
 export type SourceNumberToken=NonNullable<NonNullable<SceneDocument['provenance']>['sourceNumberTokens']>[number];
 export const MAX_SOURCE_NUMBER_TOKEN_TEXT=8*1024*1024;
 /** JSON primitive grammar only; no rounding or number-class guessing. */
@@ -14,7 +15,7 @@ const consumedFields = new Map<string,string>([
  ...[...ROOTS_PRESENTATION_SCALAR_PATHS,...ROOTS_PRESENTATION_INTEGER_PATHS].map(path=>[JSON.stringify(path),JSON.stringify(path)] as [string,string]),
 ]);
 /** These two exact paths apply to every source project family. All existing
- * field and timeline registrations below remain Roots-only. */
+ * Roots and ordinary camera registrations below remain family-specific. */
 export const PROJECT_RESOLUTION_SOURCE_NUMBER_PATHS=[['resolution','width'],['resolution','height']] as const;
 const projectFields=new Map(PROJECT_RESOLUTION_SOURCE_NUMBER_PATHS.map(path=>[JSON.stringify(path),JSON.stringify(path)]));
 const maxConsumedFields = new Set(consumedFields.values()).size;
@@ -54,27 +55,38 @@ export function* rootsTimelineNumberTokenPaths(raw:readonly unknown[]):Iterable<
   }
  }
 }
-/** Global resolution and consumed Roots background, seed, batch and spatial
- * lexemes, plus bounded Roots timeline slots (which may be dormant). This does not
+const ordinaryFamilies=new Set<SceneDocument['kind']>(['surface','implicit','attractor','perlin']);
+const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters;
+// Every retained token requires at least one source JSON value node. Clip and
+// action bounds also constrain slots; taking the smaller bound does not grant
+// extra source capacity merely because paths repeat in persisted provenance.
+const ordinaryMaximum=Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+maxTimelineClips*(4+maxTimelineActions*maxCameraArgs));
+function ordinaryField(path:readonly unknown[]):boolean {
+ if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
+ return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
+}
+/** Global resolution, Roots presentation/timeline slots and ordinary camera,
+ * parameter and timeline scalars. These family-specific registrations do not
  * assert lossless numeric lexemes for the whole source document. */
 export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kind']='roots'):SourceNumberToken[]{
- const roots=sceneKind==='roots',maximum=projectFields.size+(roots?maxConsumedFields+maxTimelineFields:0);
+ const roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),maximum=ordinary?ordinaryMaximum:projectFields.size+(roots?maxConsumedFields+maxTimelineFields:0);
  if(!Array.isArray(raw)||raw.length>maximum)throw new Error(`源数字词法记录必须是最多 ${maximum} 项的数组`);
- const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0;
+ const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0,parameterNameCharacters=0,parameterCount=0;
  // Preserve the existing independent static-field bound; timeline records do
  // not increase capacity for duplicate or unrelated spatial fields.
- if(raw.filter(value=>value&&typeof value==='object'&&Array.isArray(value.path)&&value.path[0]!=='timeline'&&!projectFields.has(JSON.stringify(value.path))).length>maxConsumedFields)
-  throw new Error(`源静态数字词法记录必须是最多 ${maxConsumedFields} 项的数组`);
+ if(raw.filter(value=>value&&typeof value==='object'&&Array.isArray(value.path)&&value.path[0]!=='timeline'&&!projectFields.has(JSON.stringify(value.path))).length>(ordinary?ordinaryStaticMaximum:maxConsumedFields))
+  throw new Error(`源静态数字词法记录必须是最多 ${ordinary?ordinaryStaticMaximum:maxConsumedFields} 项的数组`);
  return raw.map(value=>{
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('源数字词法记录无效');
   const {path,token}=value as {path?:unknown;token?:unknown};
-  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):undefined):undefined;
+  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):ordinary&&ordinaryField(path)?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效');
-  if(path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1])){
+  if(roots&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1])){
    const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify(path.slice(0,-1)),previous=gradientPayloads.get(action);
    if(previous!==undefined&&previous!==payload)throw new Error('一个源渐变动作只能保留首个对象的数字词法');
    gradientPayloads.set(action,payload);
   }
+  if(ordinary&&path[0]==='parameters'){if(++parameterCount>ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters)throw new Error('源参数数字词法超过参数成员容量');parameterNameCharacters+=(path[1] as string).length;if(parameterNameCharacters>ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters)throw new Error('源参数名总文本超过相机作用域输入容量');}
   if(seen.has(kind))throw new Error('源数字词法记录不得重复同一消费字段');seen.add(kind);
   if(typeof token!=='string'||token.length>MAX_SOURCE_NUMBER_TOKEN_TEXT||!sourceNumberTokenValid(token))throw new Error('源数字词法记录必须保留有效 JSON 数字且不超过 8 MiB');
   totalCharacters+=token.length;if(totalCharacters>MAX_SOURCE_NUMBER_TOKEN_TEXT)throw new Error('源数字词法记录总文本超过 8 MiB 输入容量');

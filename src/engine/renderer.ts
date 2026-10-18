@@ -1,3 +1,5 @@
+import {prepareOrdinarySourceFrame} from './ordinarySourceCamera';
+import type {SourceCameraPlan} from './sourceCamera';
 import {implicitMeshPresentation,createImplicitWireframe} from './implicitMeshPresentation';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -21,6 +23,8 @@ export class ArtRenderer {
   private controls: OrbitControls;
   private raster = false;
   private cameraResolved = false;
+  private sourceCameraPlan?:SourceCameraPlan;
+  private interactiveRequested=true;
   private planar = false;
   private roll = 0;
   private focalLength?:number;
@@ -77,6 +81,7 @@ export class ArtRenderer {
     this.render();
   }
   private updateCameraAspect() {
+    if(this.sourceCameraPlan)return;
     const [w, h] = this.size;
     if (this.camera instanceof THREE.PerspectiveCamera){
       this.camera.aspect = w / h;
@@ -108,6 +113,12 @@ export class ArtRenderer {
     }
   }
   setOutput(output: SceneOutput, document: SceneDocument, fit = false,optics?:{roll:number;focalLength:number;camera?:CameraState}) {
+    if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
+    if(output.sourceCameraFrame&&output.type!=='geometry')throw new Error('原版几何相机不能应用到已投影的像素图像');
+    const sourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
+    const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
+    if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
+    this.controls.enabled=this.interactiveRequested&&!sourcePlan;
     const implicitAppearance=document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
     if(implicitAppearance&&output.type==='geometry')implicitMeshPresentation(output,implicitAppearance.wireframe);
     this.document=document;
@@ -117,11 +128,11 @@ export class ArtRenderer {
     this.clear();
     this.ambientLight.color.set(0xffffff);this.ambientLight.intensity=.9;
     const isRaster = output.type === "raster",
-      planar = isRaster || output.dimension === 2;
+      planar = !sourcePlan&&(isRaster || output.dimension === 2);
     if (planar !== this.planar || isRaster !== this.raster) {
       this.raster = isRaster;
       this.planar = planar;
-      this.setProjection(planar || document.camera.orthographic);
+      this.setProjection(sourcePlan?false:planar || document.camera.orthographic);
       fit = true;
     }
     if (output.type === "raster") {
@@ -229,6 +240,7 @@ export class ArtRenderer {
     );
     this.grid.visible = !!document.settings.showGrid && !isRaster;
     this.axes.visible = !!document.settings.showAxes && !isRaster;
+    if(sourcePlan){this.fitted=true;this.render();return;}
     if(optics)this.configureCameraEffects(optics.roll,optics.focalLength);
     // A supplied final camera takes precedence over automatic fitting. Fitting
     // first would publish an intermediate OrbitControls change to the editor.
@@ -246,6 +258,7 @@ export class ArtRenderer {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.target.fromArray(state.target);
     this.controls.enableRotate = !this.planar;
+    this.controls.enabled=this.interactiveRequested&&!this.sourceCameraPlan;
     this.controls.addEventListener("change", () => {
       this.render();
       if(!this.programmatic)for (const fn of this.listeners) fn(this.cameraState());
@@ -253,7 +266,7 @@ export class ArtRenderer {
     this.updateCameraAspect();
   }
   setCamera(state: CameraState) {
-    if(this.cameraResolved)return;
+    if(this.cameraResolved||this.sourceCameraPlan)return;
     this.programmatic=true;
     try {
     if (state.orthographic !== this.camera instanceof THREE.OrthographicCamera)
@@ -276,6 +289,7 @@ export class ArtRenderer {
     this.render();
   }
   fit() {
+    if(this.sourceCameraPlan)return;
     const box = new THREE.Box3().setFromObject(this.group);
     if (box.isEmpty()) return;
     const center = box.getCenter(new THREE.Vector3()),
@@ -311,11 +325,23 @@ export class ArtRenderer {
     this.render();
   }
   setInteractive(enabled: boolean) {
-    this.controls.enabled = enabled;
+    this.interactiveRequested=enabled;
+    this.controls.enabled = enabled&&!this.sourceCameraPlan;
   }
   render() {
-    this.camera.lookAt(this.controls.target);
-    if(this.roll)this.camera.rotateZ(this.roll);
+    if(this.sourceCameraPlan){
+      const plan=this.sourceCameraPlan;
+      this.camera.matrixAutoUpdate=false;this.camera.matrixWorldAutoUpdate=false;
+      this.camera.projectionMatrix.fromArray(plan.projection.columnMajor);
+      this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
+      this.camera.matrixWorldInverse.fromArray(plan.modelView.columnMajor);
+      this.camera.matrixWorld.copy(this.camera.matrixWorldInverse).invert();
+      this.camera.matrix.copy(this.camera.matrixWorld);
+      this.camera.position.setFromMatrixPosition(this.camera.matrixWorld);
+    }else{
+      this.camera.lookAt(this.controls.target);
+      if(this.roll)this.camera.rotateZ(this.roll);
+    }
     this.renderer.render(this.scene, this.camera);
   }
   async blob(type = "image/png", quality = 0.95): Promise<Blob> {

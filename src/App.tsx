@@ -1,3 +1,5 @@
+import {ordinarySourceViewport,ordinarySourceCameraInitial} from './engine/ordinarySourceCamera';
+import {OrdinarySourceCameraControls} from './components/OrdinarySourceCameraControls';
 import {version as appVersion} from '../package.json';
 import {TextPrompt,type TextPromptRequest} from "./components/TextPrompt";
 import {ArtworkLibrary} from './components/ArtworkLibrary';
@@ -262,6 +264,7 @@ export default function App() {
   }
   const rootsSessionId=useRef(crypto.randomUUID());
   function edit(next: SceneDocument) {
+    if(next.sourceCamera)try{ordinarySourceCameraInitial(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     history.current.push(sceneRef.current);
     if (history.current.length > 40) history.current.shift();
     future.current=[];
@@ -530,7 +533,7 @@ export default function App() {
     if(generationScene.current?.id!==scene.id)setOutput(null);
     generationScene.current=scene;
     const profile=previewProfile(renderPreferences.quality),dimensions=previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1])}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
   },[scene,playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;playbackStartedAt.current=performance.now();setPlaying(true);}
@@ -1056,6 +1059,7 @@ export default function App() {
                     settings={meshAppearanceControlSettings(scene.kind==='bouncing'?bouncingControlSettings(scene.settings):scene.kind==='roots'?rootsControlSettings(scene.settings):scene.kind==='domain'?domainControlSettings(scene.settings):scene.kind==='surface'||scene.kind==='attractor'?{...scene.settings,trailWidth:parseTrailAppearance(scene.settings).width}:scene.kind==='samila'?samilaToneControlSettings(scene.settings):densityToneControlSettings(scene.kind,scene.settings))}
                     onChange={changeSetting}
                   />}
+                  {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={edit} disabled={playing||recording}/>}
                   {scene.kind==='samila'&&<details open className="inspector-section"><summary>{t('Samila 相机')}</summary><div className="section-body">
                     <p className="muted">{t('启用后切换为持续批次、限幅历史与 XY 投影。相机旋转保留累积图像；编辑起始角会重新计算历史。')}</p>
                     {!samilaCameraActive&&<button disabled={busy||playing} onClick={()=>edit({...scene,settings:initializeSamilaCamera(scene.settings)})}>{t('启用锚定 theta 相机')}</button>}
@@ -1243,7 +1247,7 @@ export default function App() {
           scene={{ ...scene, camera: camera.current }}
           time={time}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}
-          rootsReferenceHeight={viewportSize?.[1]}
+          previewLogicalHeight={viewportSize?.[1]}
           currentRootsCapture={usesRootsNativePresentation(scene)?{
             size:{width:output?.type==='raster'?output.width:1920,height:output?.type==='raster'?output.height:1080},
             ready:completedFrameReady,

@@ -1,0 +1,35 @@
+import {chromium} from '@playwright/test';
+import {createServer} from 'vite';
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const check=(v,m)=>{if(!v)throw Error(m);};
+const paths=['src/App.tsx','src/components/OrdinarySourceCameraControls.tsx','src/components/ExportDialog.tsx','src/components/Viewport.tsx','src/engine/client.ts','src/engine/legacyImport.ts','src/engine/ordinarySourceCameraImport.ts','src/engine/renderer.ts','src/engine/timeline.ts'];
+const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));
+const before=await hashes(),server=await createServer({server:{host:'127.0.0.1',port:0,strictPort:false,hmr:false},logLevel:'error'});await server.listen();
+const browser=await chromium.launch({channel:'chrome',headless:true}),report={at:new Date().toISOString(),scope:'Actual App imports original Surface JSON, edits source camera, reloads, exports PNG through ExportDialog and compares against cold Worker/Renderer. Not original app parity.'};let page;
+try{
+ page=await browser.newPage({viewport:{width:1360,height:920},acceptDownloads:true});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(()=>{
+  const Native=window.Worker;window.__cameraAudit={requests:[],completed:[],errors:[]};
+  window.Worker=class extends Native{constructor(...args){super(...args);this.addEventListener('message',({data})=>{if(data.operation==='generate'&&data.output)window.__cameraAudit.completed.push({id:data.id,frame:data.output.sourceCameraFrame});if(data.error)window.__cameraAudit.errors.push(data.error);});}postMessage(message,...args){if(message.operation==='generate')window.__cameraAudit.requests.push(structuredClone(message));return super.postMessage(message,...args);}};
+ });
+ const origin=server.resolvedUrls.local[0];await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));await page.goto(origin+'fixture');
+ await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const scene=createScene(definition('surface'));Object.assign(scene.settings,{uSegments:3,vSegments:3,showTrails:false});saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'low',frameRate:30}});});
+ await page.goto(origin);const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
+ await ready();
+ const source={config_version:'1.0.0',type:'SURFACE',name:'Source Camera Export',parameters:{},equations:{x:'u',y:'v',z:'u*v/10'},camera:{phi:0,theta:0,gamma:0},settings:{u_segments:6,v_segments:4,u_min:0,u_max:100,v_min:0,v_max:50,surface_mode:'POINTS',show_trails:false},timeline:[{type:'wait',duration:2}]};
+ await page.locator('input[type=file]').setInputFiles({name:'source-camera.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source))});await page.getByTestId('ordinary-source-camera').waitFor();await ready();
+ const panel=page.getByTestId('ordinary-source-camera');await panel.getByLabel('Theta · radians',{exact:true}).fill('0.3');await panel.getByRole('button',{name:'Apply initial camera',exact:true}).click();await ready();
+ await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.sourceCamera?.frame?.theta===.3;});
+ await page.reload();await ready();await panel.getByLabel('Theta · radians',{exact:true}).waitFor();check(await panel.getByLabel('Theta · radians',{exact:true}).inputValue()==='0.3','baseline lost on reload');
+ await page.waitForFunction(()=>window.__cameraAudit.completed.some(x=>x.frame));
+ const preview=await page.evaluate(()=>window.__cameraAudit.completed.findLast(x=>x.frame)?.frame);check(preview,'missing preview camera');
+ await page.getByRole('button',{name:'Export artwork',exact:true}).click();await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('257');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('193');
+ const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();const download=await pending;await download.saveAs('.cache/v2-ordinary-camera-export.png');
+ const actual=await page.evaluate(()=>{const request=window.__cameraAudit.requests.findLast(r=>r.context.quality==='export');return{request,completed:window.__cameraAudit.completed.findLast(r=>r.id===request?.id),errors:window.__cameraAudit.errors};});
+ check(actual.request?.context.sourceViewport.referenceLogicalHeight===preview.viewport.logicalHeight,'preview reference height lost');check(actual.completed?.frame?.viewport.target==='offscreen','export frame lacks offscreen viewport');check(actual.completed.frame.camera.theta===Math.fround(.3),'export camera baseline changed');
+ const oracle=await page.evaluate(async request=>{const{Generator}=await import('/src/engine/client.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),{sceneAtTime}=await import('/src/engine/timeline.ts');const g=new Generator(),r=new ArtRenderer(document.createElement('canvas'));try{const out=await g.generate(request.scene,request.context);r.setSize(request.context.width,request.context.height,1);r.setOutput(out,sceneAtTime(request.scene,out.sourceCameraFrame.time),false);const blob=await r.blob('image/png');return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()))).map(v=>v.toString(16).padStart(2,'0')).join('');}finally{g.dispose();r.dispose();r.renderer.forceContextLoss();}},actual.request);
+ const png=await readFile('.cache/v2-ordinary-camera-export.png'),sha=createHash('sha256').update(png).digest('hex');check(png.readUInt32BE(16)===257&&png.readUInt32BE(20)===193,'PNG dimensions');check(sha===oracle,'actual download differs from cold renderer');check(!errors.length&&!actual.errors.length,'app/worker error');
+ await page.screenshot({path:'.cache/v2-ordinary-camera-export-ui.png'});const after=await hashes();check(JSON.stringify(before)===JSON.stringify(after),'source changed during test');Object.assign(report,{status:'passed',sourceStable:true,sources:after,preview,actual,png:{sha,width:257,height:193,bytes:png.length},coldRendererMatches:true,pageErrors:errors});
+}catch(error){Object.assign(report,{status:'failed',error:String(error),stack:error.stack});if(page){report.body=await page.locator('body').innerText();await page.screenshot({path:'.cache/v2-ordinary-camera-export-failed.png'});}process.exitCode=1;}
+finally{await browser.close();await server.close();report.cleanup='Browser/server and cold Worker/renderer disposed.';await writeFile('.cache/v2-ordinary-camera-export.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,error:report.error}));}

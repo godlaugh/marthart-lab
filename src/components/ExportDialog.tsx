@@ -1,3 +1,4 @@
+import {ordinarySourceViewport} from '../engine/ordinarySourceCamera';
 import { useEffect, useRef, useState } from "react";
 import { Download, Image, Film, X } from "lucide-react";
 import type { SceneDocument,SceneOutput,GenerationStatus,RasterOutput } from "../types";
@@ -21,7 +22,7 @@ export function ExportDialog({
   scene,
   time,
   currentSpirographFrame,
-  rootsReferenceHeight,
+  previewLogicalHeight,
   currentRootsCapture,
   onClose,
   onDone,
@@ -29,7 +30,7 @@ export function ExportDialog({
   scene: SceneDocument;
   time: number;
   currentSpirographFrame?:number;
-  rootsReferenceHeight?:number;
+  previewLogicalHeight?:number;
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   onClose: () => void;
   onDone: (message: string) => void;
@@ -131,7 +132,8 @@ export function ExportDialog({
       }
       const exportScene=rootsFrames&&kind==='video'?withRootsFreshRecording(scene,recordingFps):scene;
       const timeline=sourceFrames?exportScene.timeline:resolveTimeline(exportScene);
-      const exportContext={quality:'export' as const,width,height,...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:rootsReferenceHeight??height,target:'offscreen' as const}}:{})};
+      if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
+      const exportContext={quality:'export' as const,width,height,...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!)}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const canvas = document.createElement('canvas');
       r=new ArtRenderer(canvas);
       r.setSize(width,height,1);
@@ -193,7 +195,7 @@ export function ExportDialog({
         }
         if(recording&&(!output.spirographFrame||output.spirographFrame.encodedFrameIndex!==frame||frame===frames-1&&!output.spirographFrame.recordingFinished))throw new Error('旋轮录制帧与已解析的队列终点不一致');
         if(rootsRecording&&(output.type!=='raster'||output.rootsPresentation?.cameraTimeline?.frame!==frame+1||output.rootsPresentation.autoRecording?.complete!==(frame===frames-1)))throw new Error('复根录制帧与实际完成状态不一致');
-        const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sceneAtTime(exportScene,frameTime);
+        const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
         const view=outputCamera(frameScene,output);
         r.setOutput(output, frameScene, false,view);
         const blob = await r.blob(

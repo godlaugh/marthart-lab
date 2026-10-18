@@ -67,6 +67,44 @@ export function parseDomainSourceDouble(text: string): DomainSourceDoubleResult 
  return value === undefined ? { ok: false, error: { kind: 'invalid-literal' } } : { ok: true, value, classification: classify(value) };
 }
 
+/** Float.parseFloat literal route. Decimal and hexadecimal literals are rounded
+ * directly to binary32, not via binary64 (which can double-round midpoints).
+ * The same text budget bounds BigInt work. Used by Surface/Implicit parseValue;
+ * ConfigUtils deliberately keeps Double.parseDouble followed by float. */
+export function parseDomainSourceFloat(text: string): DomainSourceDoubleResult {
+ if (text.length > DOMAIN_SOURCE_SCALAR_LIMITS.characters) return { ok:false,error:{kind:'capacity',resource:'characters',limit:DOMAIN_SOURCE_SCALAR_LIMITS.characters,actual:text.length} };
+ const s=javaTrim(text);
+ if (/^[+-]?NaN$/.test(s)) return {ok:true,value:NaN,classification:'nan'};
+ if (/^[+-]?Infinity$/.test(s)) {const value=s[0]==='-'?-Infinity:Infinity;return{ok:true,value,classification:classify(value)};}
+ const decimal=/^([+-]?)([0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE]([+-]?[0-9]+))?[fFdD]?$/.exec(s);
+ const hex=/^([+-]?)0[xX]([0-9a-fA-F]+(?:\.[0-9a-fA-F]*)?|\.[0-9a-fA-F]+)[pP]([+-]?[0-9]+)[fFdD]?$/.exec(s);
+ const match=decimal??hex;if(!match)return{ok:false,error:{kind:'invalid-literal'}};
+ const sign=match[1]==='-'?-1:1,point=match[2].indexOf('.'),fraction=point<0?0:match[2].length-point-1;
+ const digits=match[2].replace('.','').replace(/^0+/,'');
+ if(!digits)return{ok:true,value:sign*0,classification:'finite'};
+ let numerator:bigint,denominator=1n;
+ if(decimal){
+  const exponent=Number(match[3]??0)-fraction,order=digits.length-1+exponent;
+  if(order>39)return{ok:true,value:sign*Infinity,classification:classify(sign*Infinity)};
+  if(order< -46)return{ok:true,value:sign*0,classification:'finite'};
+  numerator=BigInt(digits);
+  if(exponent>=0)numerator*=10n**BigInt(exponent);else denominator=10n**BigInt(-exponent);
+ }else{
+  numerator=BigInt('0x'+digits);const exponent=Number(match[3])-4*fraction,order=numerator.toString(2).length-1+exponent;
+  if(order>128)return{ok:true,value:sign*Infinity,classification:classify(sign*Infinity)};
+  if(order< -150)return{ok:true,value:sign*0,classification:'finite'};
+  if(exponent>=0)numerator<<=BigInt(exponent);else denominator<<=BigInt(-exponent);
+ }
+ let exponent=numerator.toString(2).length-denominator.toString(2).length;
+ if(exponent>=0?numerator<(denominator<<BigInt(exponent)):(numerator<<BigInt(-exponent))<denominator)exponent--;
+ const quantum=Math.max(-149,exponent-23);
+ if(quantum>=0)denominator<<=BigInt(quantum);else numerator<<=BigInt(-quantum);
+ const whole=numerator/denominator,remainder=numerator%denominator,twice=remainder*2n;
+ const rounded=whole+(twice>denominator||twice===denominator&&(whole&1n)===1n?1n:0n);
+ const value=Math.fround(sign*Number(rounded)*2**quantum);
+ return{ok:true,value,classification:classify(value)};
+}
+
 const constants: Readonly<Record<string, number>> = Object.freeze({ PI: Math.PI, TWO_PI: 2 * Math.PI, TAU: 2 * Math.PI, HALF_PI: Math.PI / 2, E: Math.E });
 const functions = new Set(['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'arcsin', 'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 'sqrt', 'abs', 'log', 'ln', 'log10', 'exp', 'floor', 'ceil', 'round', 'sign', 'pow', 'min', 'max', 'atan2']);
 function normalize(text: string): string {
@@ -81,7 +119,7 @@ const letter = (char: string) => char !== '' && /\p{L}/u.test(char);
 const letterOrDigit = (char: string) => char !== '' && /[\p{L}\p{Nd}]/u.test(char);
 class Parser {
  private pos = 0; private nodes = 0; private depth = 0;
- constructor(private readonly source: string) {}
+ constructor(private readonly source: string, private readonly bindings?: ReadonlyMap<string, number>) {}
  private char() { return this.source[this.pos] ?? ''; }
  private skip() { while (this.char() === ' ') this.pos++; }
  private eat(char: string) { this.skip(); if (this.char() !== char) return false; this.pos++; return true; }
@@ -124,7 +162,9 @@ class Parser {
       if (!this.eat(')')) invalid();
       value = this.node({ kind: 'call', name: ({ arcsin: 'asin', arccos: 'acos', arctan: 'atan' } as Record<string,string>)[lower] ?? lower, args });
      } else {
-      const key = name.toUpperCase(); if (!Object.hasOwn(constants, key)) invalid(); value = this.node({ kind: 'number', value: constants[key] });
+      // Source parseFactor checks exact varMap membership before named constants.
+      if (this.bindings?.has(name)) value = this.node({ kind: 'number', value: this.bindings.get(name)! });
+      else { const key = name.toUpperCase(); if (!Object.hasOwn(constants, key)) invalid(); value = this.node({ kind: 'number', value: constants[key] }); }
      }
     } else return invalid();
    }
@@ -183,7 +223,7 @@ function evaluate(root: Node): number {
  }
  return values[0];
 }
-type ScalarOptions = { fallback: number; precision: 'float64' | 'float32' };
+type ScalarOptions = { fallback: number; precision: 'float64' | 'float32'; /** Exact source variable names; caller owns source binding construction. */ bindings?: ReadonlyMap<string, number> };
 function prepareScalar(raw: unknown, options: ScalarOptions, directStrings: boolean): DomainSourceScalarResult {
  let route: DomainSourceScalarFacts['route'] = 'direct', parsedValue: number, fallbackReason: DomainSourceScalarFacts['fallbackReason'];
  try {
@@ -194,7 +234,7 @@ function prepareScalar(raw: unknown, options: ScalarOptions, directStrings: bool
    if (direct !== undefined) parsedValue = direct;
    else {
     route = 'expression';
-    try { parsedValue = javaTrim(raw) === '' ? 0 : evaluate(new Parser(normalize(raw)).parse()); }
+    try { parsedValue = javaTrim(raw) === '' ? 0 : evaluate(new Parser(normalize(raw), options.bindings).parse()); }
     catch (error) { if (!(error instanceof InvalidExpression)) throw error; route = 'fallback'; fallbackReason = 'invalid-expression'; parsedValue = options.fallback; }
    }
   } else { route = 'fallback'; fallbackReason = raw == null ? 'missing' : 'unsupported-type'; parsedValue = options.fallback; }

@@ -1,0 +1,182 @@
+import type {AnimationAction,AnimationTrack} from '../types';
+import {resolveSourceCamera,SOURCE_CAMERA_MODEL,type SourceCameraScalars,type SourceCameraVec3} from './sourceCamera';
+import {RootsSceneClock,type RootsSceneClip,type RootsSceneFrame} from './rootsSceneClock';
+import {sourceEase,SOURCE_EASING_NAMES} from './sourceEasing';
+import {validateTimelineCapacity} from './timelineCapacity';
+
+/** Explicit source sequence only. Local orbit timelines must not use this owner.
+ * The Roots clock already owns the identical retained Scene/SceneManager/
+ * Animation queue arithmetic. Its scalar angles are not used here: ordinary
+ * MoveCamera writes components before CameraController adds ambient rotation.
+ */
+export const ORDINARY_CAMERA_SEQUENCE='ordinary-camera-sequence-v1' as const;
+export class OrdinarySourceCameraTimelineError extends Error {
+ constructor(readonly code:'input'|'unsupported'|'capacity'|'cancelled'|'arithmetic',message:string,readonly trackId?:string){super(message);this.name=code==='cancelled'?'AbortError':'OrdinarySourceCameraTimelineError';}
+}
+export interface OrdinaryCameraDiagnostic {readonly code:'sequence-start'|'sequence-repeat'|'action-enabled'|'noncamera-clock';readonly trackId:string;readonly message:string;}
+export interface OrdinaryCameraTargetRequest {
+ readonly action:AnimationAction;readonly trackId:string;readonly frameIndex:number;readonly time:number;
+ /** Animation reads the shared PVector before mobject update; controller reads
+  * it again after that update. The provider owns original build-time identity,
+  * particle updates and any shared tracked-dot selection side effects. */
+ readonly phase:'animation'|'camera-update';
+}
+export interface OrdinarySourceCameraTimelineOptions {
+ readonly isCancelled?:()=>boolean;
+ readonly targetProvider?:(request:OrdinaryCameraTargetRequest)=>SourceCameraVec3;
+}
+export interface OrdinarySourceCameraFrame {
+ readonly time:number;readonly camera:SourceCameraScalars;readonly frameIndex:number;
+ readonly sceneTime:number;readonly queueIndex:number;readonly queueComplete:boolean;
+ readonly diagnostics:readonly OrdinaryCameraDiagnostic[];
+}
+type Axis='phi'|'theta'|'gamma';
+type Targets=Partial<Record<Axis,number>>;
+type Tracking={readonly kind:'origin'}|{readonly kind:'provider';readonly action:AnimationAction;readonly trackId:string};
+interface Clip extends RootsSceneClip {readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly tracking?:Tracking;}
+interface Plan {initial:SourceCameraScalars;clips:Clip[];diagnostics:OrdinaryCameraDiagnostic[];fps:number;dt:number;}
+const F=Math.fround,axes=['phi','theta','gamma'] as const,TAU=F(2*Math.PI),names=new Set(SOURCE_EASING_NAMES);
+const WORK_LIMIT=2_000_000; // Bounded synchronous frames plus remaining-queue folds, as the existing source clock.
+const float=(v:unknown,label:string):number=>{if(typeof v!=='number'||!Number.isFinite(v)||!Number.isFinite(F(v)))throw new OrdinarySourceCameraTimelineError('input',`${label} 必须为有限 Float32 数值`);return F(v);};
+const finite=(v:number):number=>{if(!Number.isFinite(v))throw new OrdinarySourceCameraTimelineError('arithmetic','源相机运算产生非有限值');return v;};
+const lerp=(a:number,b:number,t:number)=>finite(F(a+F(F(b-a)*t)));
+const check=(options:OrdinarySourceCameraTimelineOptions)=>{if(options.isCancelled?.())throw new OrdinarySourceCameraTimelineError('cancelled','源相机回放已取消');};
+const noncameraMethods=new Set(['paramStart','paramStop','gradientStart','gradientStop']);
+function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number):Plan {
+ if(!initial||typeof initial!=='object'||['phi','theta','gamma','center','zoom','focalDistance'].some(key=>!Object.hasOwn(initial,key)))throw new OrdinarySourceCameraTimelineError('input','源相机初始标量必须完整');
+ const validated=resolveSourceCamera({model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:initial});
+ if(!validated.ok||validated.value.kind!=='known')throw new OrdinarySourceCameraTimelineError('input','源相机初始标量无效');
+ if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
+ if(!Array.isArray(tracks)||tracks.length>1000||tracks.some(t=>!t||typeof t!=='object'||Array.isArray(t)))throw new OrdinarySourceCameraTimelineError('capacity','源相机时间线要求最多 1000 个片段');
+ for(const track of tracks)if(track.actions!==undefined&&(!Array.isArray(track.actions)||track.actions.some((a:unknown)=>!a||typeof a!=='object')))throw new OrdinarySourceCameraTimelineError('input','源相机动作列表无效',track.id);
+ validateTimelineCapacity(tracks);
+ const base=validated.value.state.value,clips:Clip[]=[],diagnostics:OrdinaryCameraDiagnostic[]=[];
+ const warn=(track:AnimationTrack,code:OrdinaryCameraDiagnostic['code'],message:string)=>diagnostics.push({trackId:track.id,code,message});
+ for(const track of tracks){
+  if(!track.enabled)continue;
+  const duration=float(track.duration,'源片段时长');
+  // Generic Animation does not share Roots JSON's .001 clamp. Zero may yield
+  // 0/0, and instant trail children need their exact compiled group duration.
+  if(duration<=0)throw new OrdinarySourceCameraTimelineError('unsupported','普通源相机队列的零时长片段需要原始编译时长，不能替换为 .001 秒',track.id);
+  if(duration>86400)throw new OrdinarySourceCameraTimelineError('capacity','源片段时长超过 24 小时',track.id);
+  if(!names.has(track.easing))throw new OrdinarySourceCameraTimelineError('input',`未知源缓动 ${track.easing}`,track.id);
+  if(track.start!==0)warn(track,'sequence-start','源队列按保存顺序执行；绝对 start 不参与执行，延迟必须由等待片段表达。');
+  if(track.pingPong||(track.repeat??1)!==1)warn(track,'sequence-repeat','源队列不执行 repeat/pingPong；作者输入保留。');
+  const clip:{-readonly[K in keyof Clip]:Clip[K]}={duration,easing:track.easing,trackId:track.id};
+  if(track.type==='align'){
+   if(track.alignMode==='absolute')throw new OrdinarySourceCameraTimelineError('unsupported','源 AlignCamera 使用下一圈对齐，不支持本地 absolute 对齐',track.id);
+   const targets:Targets={};for(const axis of axes)if(track.orientation?.[axis]!==undefined)targets[axis]=float(track.orientation[axis],`align ${axis}`);clip.align=targets;
+  }else if(track.type==='animate'){
+   if(track.actions!==undefined&&(!Array.isArray(track.actions)||track.actions.length>64))throw new OrdinarySourceCameraTimelineError('capacity','源相机片段最多 64 个动作',track.id);
+   const targets:Targets={};
+   for(const action of track.actions??[]){
+    if(!action||typeof action!=='object')throw new OrdinarySourceCameraTimelineError('input','源相机动作无效',track.id);
+    if(action.enabled===false)warn(track,'action-enabled','源 CameraAnimator 不读取动作级 enabled；片段开关控制整个片段。');
+    const args=action.args??{},arg=(name:string)=>float(args[name]??0,`${action.method}.${name}`);
+    if(['rotatePhi','rotateTheta','rotateGamma'].includes(action.method)){
+     const axis=action.method.slice(6).toLowerCase() as Axis;targets[axis]=finite(F(base[axis]+arg('angle')));
+    }else if(action.method==='rotateTo'||action.method==='rotate'){
+     for(const axis of axes)targets[axis]=action.method==='rotateTo'?arg(axis):finite(F(base[axis]+arg(axis)));
+    }else if(action.method==='zoom')clip.zoom=arg('value');
+    else if(action.method==='focal')clip.focal=arg('value');
+    else if(action.method==='ambient')clip.rates=[arg('phiSpeed'),arg('thetaSpeed'),arg('gammaSpeed')];
+    else if(action.method==='stopAmbient')clip.rates=[0,0,0];
+    // CameraAnimator.stopTracking builds a transition to a fixed origin vector;
+    // it does not freeze the current local orbit center.
+    else if(action.method==='stopTracking')clip.tracking={kind:'origin'};
+    else if(action.method==='track')clip.tracking={kind:'provider',action:structuredClone(action),trackId:track.id};
+    else if(noncameraMethods.has(action.method))warn(track,'noncamera-clock',`${action.method} 仍由独立生产 owner 执行；其 native 参数/渐变帧时钟未在相机合同中验证。`);
+    else throw new OrdinarySourceCameraTimelineError('unsupported',`源相机不能解释动作 ${action.method}；需原始编译事实`,track.id);
+   }
+   if(Object.keys(targets).length)clip.targets=targets;
+  }else if(track.type!=='wait'){
+   if(track.type==='param'||track.type==='surface_mode_transition')warn(track,'noncamera-clock',`${track.type} 的时长保留为队列占位；非相机效果仍由独立 owner 执行，其 native 帧时钟未验证。`);
+   else throw new OrdinarySourceCameraTimelineError('unsupported',`片段 ${track.type??'numeric'} 的原始队列时长未解析，不能假设为本地 duration`,track.id);
+  }
+  clips.push(clip);
+ }
+ return{initial:base,clips,diagnostics,fps,dt:F(1/fps)};
+}
+function targetFrame(time:number,fps:number):number {if(!Number.isFinite(time)||time<0||time>86400)throw new OrdinarySourceCameraTimelineError('input','源相机时间必须在 0–86400 秒');const target=Math.floor(time*fps+1e-9);if(target+1>WORK_LIMIT)throw new OrdinarySourceCameraTimelineError('capacity','源相机超过本地逐帧工作预算');return target;}
+function budget(){let used=0;return(index:number,count:number)=>{used+=1+count-index;if(used>WORK_LIMIT)throw new OrdinarySourceCameraTimelineError('capacity','源相机超过本地逐帧与队列折叠工作预算');};}
+const copy=(camera:SourceCameraScalars)=>({...camera,center:[...camera.center] as [number,number,number]});
+/** Build all relative destinations against initial, then capture each child's
+ * runtime start. Time zero is source display frame zero, after one update(dt),
+ * matching Scene.draw and the existing retained Roots frame contract. */
+interface Replay {
+ plan:Plan;clock:RootsSceneClock;facts:RootsSceneFrame;camera:ReturnType<typeof copy>;start:ReturnType<typeof copy>;
+ targets:Targets;tracking?:Tracking;frameIndex:number;rates:[number,number,number];startRates:[number,number,number];
+}
+const replays=new Map<string,Replay>();
+type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
+const layouts=new Map<string,Layout>();
+function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number):string|undefined {
+ const key=JSON.stringify([initial,tracks,fps],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
+ return key.length<=1_000_000?key:undefined;
+}
+/** Four latest pure scalar sessions, one state each. Provider-backed particle
+ * histories deliberately bypass this cache because their identity/lifetime is
+ * external. Negative zero remains part of source scalar cache identity. */
+export function clearOrdinarySourceCameraTimelineCache():void {replays.clear();layouts.clear();}
+export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions={}):OrdinarySourceCameraFrame {
+ check(options);
+ if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
+ const target=targetFrame(time,fps),reserve=budget();
+ const key=options.targetProvider?undefined:inputKey(initial,tracks,fps);
+ let state=key===undefined?undefined:replays.get(key);
+ if(state&&state.frameIndex>target)state=undefined;
+ if(!state){
+  const plan=prepare(initial,tracks,fps);
+  if(plan.clips.some(c=>c.tracking?.kind==='provider')&&!options.targetProvider)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要生产粒子/中心 provider；不会回退到本地轨道相机');
+  // Only queue/zoom belong to the reused clock. Feeding it rates would evolve
+  // a hidden angle history without MoveCamera resets and can falsely overflow.
+  const clock=new RootsSceneClock(plan.initial,plan.clips.map(({rates:_rates,...clip})=>clip)),camera=copy(plan.initial);
+  state={plan,clock,facts:clock.snapshot(),camera,start:copy(camera),targets:{},frameIndex:-1,rates:[0,0,0],startRates:[0,0,0]};
+ }
+ const replay=state,{plan,clock}=replay;
+ const point=(binding:Tracking,frameIndex:number,phase:OrdinaryCameraTargetRequest['phase']):[number,number,number]=>{
+  const value=binding.kind==='origin'?[0,0,0]:options.targetProvider!({action:binding.action,trackId:binding.trackId,frameIndex,time:replay.facts.sceneTime,phase});
+  if(!Array.isArray(value)||value.length!==3)throw new OrdinarySourceCameraTimelineError('input','源跟踪 provider 必须返回三个世界坐标');return value.map((v,i)=>float(v,`tracked[${i}]`)) as [number,number,number];
+ };
+ try{
+  for(let frameIndex=replay.frameIndex+1;frameIndex<=target;frameIndex++){
+   check(options);reserve(replay.facts.queueIndex,plan.clips.length);
+   const before=replay.facts,index=before.queueIndex,clip=plan.clips[index],camera=replay.camera;
+   const facts=replay.facts=clock.step(plan.dt,{isCancelled:options.isCancelled});
+   if(clip){
+    if(facts.startedClip!==null){
+     replay.start=copy(camera);replay.targets={...clip.targets};replay.startRates=[...replay.rates];
+     if(clip.align)for(const axis of axes)if(clip.align[axis]!==undefined)replay.targets[axis]=finite(F(F(F(F(Math.floor(F(camera[axis]/TAU)))+1)*TAU)+clip.align[axis]!));
+     if(clip.tracking)replay.tracking=undefined;
+    }
+    const runtime=F((facts.startedClip!==null?0:before.clipRuntime)+facts.activeDt),eased=sourceEase(clip.easing,Math.max(0,Math.min(1,F(runtime/clip.duration))));
+    for(const axis of axes)if(replay.targets[axis]!==undefined)camera[axis]=lerp(replay.start[axis],replay.targets[axis]!,eased);
+    if(clip.focal!==undefined)camera.focalDistance=lerp(replay.start.focalDistance,clip.focal,eased);
+    if(clip.rates)replay.rates=clip.rates.map((value,i)=>lerp(replay.startRates[i],value,eased)) as [number,number,number];
+    // SetAmbientRotation alone snaps the target rates in onFinish.
+    if(clip.rates&&facts.finishedClip!==null)replay.rates=[...clip.rates];
+    if(clip.tracking){const to=point(clip.tracking,frameIndex,'animation');camera.center=to.map((v,i)=>lerp(replay.start.center[i],v,eased)) as [number,number,number];if(facts.finishedClip!==null)replay.tracking=clip.tracking;}
+   }
+   camera.zoom=facts.camera.zoom;
+   // CameraController copies tracking center before ambient component updates.
+   if(replay.tracking)camera.center=point(replay.tracking,frameIndex,'camera-update');
+   for(const [i,axis]of axes.entries())camera[axis]=finite(F(camera[axis]+F(replay.rates[i]*plan.dt)));
+   replay.frameIndex=frameIndex;
+  }
+  check(options);
+  if(key!==undefined){replays.delete(key);replays.set(key,replay);while(replays.size>4)replays.delete(replays.keys().next().value!);}
+  return{time:target/fps,camera:copy(replay.camera),frameIndex:target,sceneTime:replay.facts.sceneTime,queueIndex:replay.facts.queueIndex,queueComplete:replay.facts.queueComplete,diagnostics:plan.diagnostics.map(item=>({...item}))};
+ }catch(error){if(key!==undefined)replays.delete(key);throw error;}
+}
+/** Display layout facts only. Never feed rounded display durations back into
+ * the source clock: the retained source float duration remains authoritative. */
+export function resolveOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:Pick<OrdinarySourceCameraTimelineOptions,'isCancelled'>={}) {
+ check(options);const key=inputKey(initial,tracks,fps),cached=key===undefined?undefined:layouts.get(key);
+ if(cached){layouts.delete(key!);layouts.set(key!,cached);return structuredClone(cached);}
+ const plan=prepare(initial,tracks,fps),clock=new RootsSceneClock(plan.initial,plan.clips.map(c=>({duration:c.duration,easing:'linear'}))),reserve=budget();
+ let facts=clock.snapshot(),frame=0;const starts:number[]=[],durations:number[]=[];
+ while(!facts.queueComplete){check(options);reserve(facts.queueIndex,plan.clips.length);facts=clock.step(plan.dt,{isCancelled:options.isCancelled});if(facts.startedClip!==null)starts[facts.startedClip]=frame/fps;if(facts.finishedClip!==null)durations[facts.finishedClip]=(frame+1)/fps-starts[facts.finishedClip];frame++;}
+ const layout:Layout={schedule:ORDINARY_CAMERA_SEQUENCE,span:frame/fps,clips:plan.clips.map((c,i)=>({trackId:c.trackId,start:starts[i],duration:durations[i],sourceDuration:c.duration})),diagnostics:plan.diagnostics};
+ check(options);if(key!==undefined){layouts.set(key,layout);while(layouts.size>4)layouts.delete(layouts.keys().next().value!);}
+ return structuredClone(layout);
+}

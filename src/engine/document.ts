@@ -1,3 +1,4 @@
+import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {parseFractalSourceColorProfile,parseFractalSourceColorConfiguration} from './fractalSourceColor';
 import type { SceneDefinition, SceneDocument, Preset } from "../types";
 import { PALETTES, validatePalette } from "./palette";
@@ -163,6 +164,8 @@ export function parseSceneValue(data: unknown): SceneDocument {
       )
     )
       fail("相机无效");
+  if(data.sourceCamera!==undefined)ordinarySourceCameraInitial(data as unknown as SceneDocument);
+  delete data.evaluatedSourceCamera;
   const palette=validatePalette(data.palette);data.palette=palette;
   if(data.kind==='domain'){
     parseDomainRenderPolicy((data.settings as Settings).domainRenderPolicy);
@@ -251,7 +254,7 @@ export interface SavedWorkspace {
   recovered?: boolean;
   startupError?: string;
 }
-export function persistentScene(scene:SceneDocument):SceneDocument {const {evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
+export function persistentScene(scene:SceneDocument):SceneDocument {const {evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
 /** One owner for public project text and its readable-input budget. Preserve
  * the established indented output while it fits; whitespace alone must not
  * reject an otherwise saveable document. Neither branch drops provenance. */

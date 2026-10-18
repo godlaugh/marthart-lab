@@ -29,7 +29,7 @@ export class GenerationQueue {
     const previousNative=!!previous&&usesRootsNativePresentation(previous);
     const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
-    this.latest={scene,context:{...context,...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
+    this.latest={scene,context:{...context,...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
     if((sceneChanged&&!sameDomain&&!sameNativeRoots)||nativeIdentityChanged){this.running=null;this.generator.cancel();clearTimeout(this.timer);this.timer=undefined;}
     this.callbacks.busy(true);
     if(this.running||this.captureOwner||this.timer!==undefined)return;
