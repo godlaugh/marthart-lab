@@ -13,17 +13,35 @@ export const ORDINARY_CAMERA_SEQUENCE='ordinary-camera-sequence-v1' as const;
 export class OrdinarySourceCameraTimelineError extends Error {
  constructor(readonly code:'input'|'unsupported'|'capacity'|'cancelled'|'arithmetic',message:string,readonly trackId?:string){super(message);this.name=code==='cancelled'?'AbortError':'OrdinarySourceCameraTimelineError';}
 }
-export interface OrdinaryCameraDiagnostic {readonly code:'sequence-start'|'sequence-repeat'|'action-enabled'|'noncamera-clock';readonly trackId:string;readonly message:string;}
+export interface OrdinaryCameraDiagnostic {readonly code:'sequence-start'|'sequence-repeat'|'action-enabled'|'noncamera-clock'|'tracking-target-ignored';readonly trackId:string;readonly message:string;}
 export interface OrdinaryCameraTargetRequest {
- readonly action:AnimationAction;readonly trackId:string;readonly frameIndex:number;readonly time:number;
- /** Animation reads the shared PVector before mobject update; controller reads
-  * it again after that update. The provider owns original build-time identity,
-  * particle updates and any shared tracked-dot selection side effects. */
- readonly phase:'animation'|'camera-update';
+ readonly action:AnimationAction;readonly trackId:string;readonly actionIndex:number;
+}
+export type OrdinaryCameraTargetBinding=
+ /** Capture the actual producer object, not an index to resolve on every read.
+  * A producer may intentionally return the same target for multiple actions. */
+ | {readonly kind:'bound';readonly readPosition:()=>SourceCameraVec3}
+ /** Only a confirmed source no-op (e.g. Attractor's out-of-range slot). Missing
+  * producer facts must throw, never silently become an ignored action. */
+ | {readonly kind:'ignored';readonly reason:string};
+export interface OrdinaryCameraParticleFrame {
+ readonly frameIndex:number;readonly time:number;readonly deltaTime:number;
+}
+export interface OrdinarySourceCameraParticles {
+ /** Called once for EVERY track action, in build order, before playback. Even
+  * subsequently overwritten actions can mutate a shared tracked-dot selector. */
+ bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding;
+ /** One Mobject.update(time, activeDt) between animation and camera reads.
+  * Includes waits and frames with no target reads; stops when the queue was
+  * already complete at frame start. This is not CameraController's raw dt. */
+ update(frame:OrdinaryCameraParticleFrame):void;
 }
 export interface OrdinarySourceCameraTimelineOptions {
  readonly isCancelled?:()=>boolean;
- readonly targetProvider?:(request:OrdinaryCameraTargetRequest)=>SourceCameraVec3;
+ /** Fresh, synchronous, in-memory producer state per replay. No scalar cache
+  * may borrow its identity or history. CPU/GPU trajectory ownership belongs to
+  * the producer; local orbit samplers are not native particle implementations. */
+ readonly createParticles?:()=>OrdinarySourceCameraParticles;
 }
 export interface OrdinarySourceCameraFrame {
  readonly time:number;readonly camera:SourceCameraScalars;readonly frameIndex:number;
@@ -32,8 +50,9 @@ export interface OrdinarySourceCameraFrame {
 }
 type Axis='phi'|'theta'|'gamma';
 type Targets=Partial<Record<Axis,number>>;
-type Tracking={readonly kind:'origin'}|{readonly kind:'provider';readonly action:AnimationAction;readonly trackId:string};
-interface Clip extends RootsSceneClip {readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly tracking?:Tracking;}
+type Tracking={readonly kind:'origin'}|Extract<OrdinaryCameraTargetBinding,{kind:'bound'}>;
+type TrackingAction={readonly kind:'origin'}|{readonly kind:'bind';readonly request:OrdinaryCameraTargetRequest};
+interface Clip extends RootsSceneClip {readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];}
 interface Plan {initial:SourceCameraScalars;clips:Clip[];diagnostics:OrdinaryCameraDiagnostic[];fps:number;dt:number;}
 const F=Math.fround,axes=['phi','theta','gamma'] as const,TAU=F(2*Math.PI),names=new Set(SOURCE_EASING_NAMES);
 const WORK_LIMIT=2_000_000; // Bounded synchronous frames plus remaining-queue folds, as the existing source clock.
@@ -68,8 +87,8 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
    const targets:Targets={};for(const axis of axes)if(track.orientation?.[axis]!==undefined)targets[axis]=float(track.orientation[axis],`align ${axis}`);clip.align=targets;
   }else if(track.type==='animate'){
    if(track.actions!==undefined&&(!Array.isArray(track.actions)||track.actions.length>64))throw new OrdinarySourceCameraTimelineError('capacity','源相机片段最多 64 个动作',track.id);
-   const targets:Targets={};
-   for(const action of track.actions??[]){
+   const targets:Targets={},trackingActions:TrackingAction[]=[];
+   for(const [actionIndex,action] of (track.actions??[]).entries()){
     if(!action||typeof action!=='object')throw new OrdinarySourceCameraTimelineError('input','源相机动作无效',track.id);
     if(action.enabled===false)warn(track,'action-enabled','源 CameraAnimator 不读取动作级 enabled；片段开关控制整个片段。');
     const args=action.args??{},arg=(name:string)=>float(args[name]??0,`${action.method}.${name}`);
@@ -83,12 +102,13 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
     else if(action.method==='stopAmbient')clip.rates=[0,0,0];
     // CameraAnimator.stopTracking builds a transition to a fixed origin vector;
     // it does not freeze the current local orbit center.
-    else if(action.method==='stopTracking')clip.tracking={kind:'origin'};
-    else if(action.method==='track')clip.tracking={kind:'provider',action:structuredClone(action),trackId:track.id};
+    else if(action.method==='stopTracking')trackingActions.push({kind:'origin'});
+    else if(action.method==='track')trackingActions.push({kind:'bind',request:{action:structuredClone(action),trackId:track.id,actionIndex}});
     else if(noncameraMethods.has(action.method))warn(track,'noncamera-clock',`${action.method} 仍由独立生产 owner 执行；其 native 参数/渐变帧时钟未在相机合同中验证。`);
     else throw new OrdinarySourceCameraTimelineError('unsupported',`源相机不能解释动作 ${action.method}；需原始编译事实`,track.id);
    }
    if(Object.keys(targets).length)clip.targets=targets;
+   if(trackingActions.length)clip.trackingActions=trackingActions;
   }else if(track.type!=='wait'){
    if(track.type==='param'||track.type==='surface_mode_transition')warn(track,'noncamera-clock',`${track.type} 的时长保留为队列占位；非相机效果仍由独立 owner 执行，其 native 帧时钟未验证。`);
    else throw new OrdinarySourceCameraTimelineError('unsupported',`片段 ${track.type??'numeric'} 的原始队列时长未解析，不能假设为本地 duration`,track.id);
@@ -106,6 +126,22 @@ const copy=(camera:SourceCameraScalars)=>({...camera,center:[...camera.center] a
 interface Replay {
  plan:Plan;clock:RootsSceneClock;facts:RootsSceneFrame;camera:ReturnType<typeof copy>;start:ReturnType<typeof copy>;
  targets:Targets;tracking?:Tracking;frameIndex:number;rates:[number,number,number];startRates:[number,number,number];
+ clipTracking:readonly (Tracking|undefined)[];particles?:OrdinarySourceCameraParticles;
+}
+function bindTracking(plan:Plan,particles:OrdinarySourceCameraParticles|undefined,options:OrdinarySourceCameraTimelineOptions):(Tracking|undefined)[] {
+ return plan.clips.map(clip=>{
+  let target:Tracking|undefined;
+  for(const action of clip.trackingActions??[]){
+   check(options);
+   if(action.kind==='origin'){target=action;continue;}
+   const binding=particles!.bind(action.request);
+   if(binding?.kind==='bound'&&typeof binding.readPosition==='function')target=binding;
+   else if(binding?.kind==='ignored'&&typeof binding.reason==='string'&&binding.reason.length>0){
+    plan.diagnostics.push({code:'tracking-target-ignored',trackId:clip.trackId,message:binding.reason});
+   }else throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者返回了无效的构建期目标',clip.trackId);
+  }
+  return target;
+ });
 }
 const replays=new Map<string,Replay>();
 type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
@@ -122,32 +158,35 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
  check(options);
  if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
  const target=targetFrame(time,fps),reserve=budget();
- const key=options.targetProvider?undefined:inputKey(initial,tracks,fps);
+ const key=options.createParticles?undefined:inputKey(initial,tracks,fps);
  let state=key===undefined?undefined:replays.get(key);
  if(state&&state.frameIndex>target)state=undefined;
  if(!state){
   const plan=prepare(initial,tracks,fps);
-  if(plan.clips.some(c=>c.tracking?.kind==='provider')&&!options.targetProvider)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要生产粒子/中心 provider；不会回退到本地轨道相机');
+  if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
+  const particles=options.createParticles?.();
+  if(options.createParticles&&(!particles||typeof particles.bind!=='function'||typeof particles.update!=='function'))throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者缺少构建或逐帧更新入口');
+  const clipTracking=bindTracking(plan,particles,options);
   // Only queue/zoom belong to the reused clock. Feeding it rates would evolve
   // a hidden angle history without MoveCamera resets and can falsely overflow.
   const clock=new RootsSceneClock(plan.initial,plan.clips.map(({rates:_rates,...clip})=>clip)),camera=copy(plan.initial);
-  state={plan,clock,facts:clock.snapshot(),camera,start:copy(camera),targets:{},frameIndex:-1,rates:[0,0,0],startRates:[0,0,0]};
+  state={plan,clock,facts:clock.snapshot(),camera,start:copy(camera),targets:{},frameIndex:-1,rates:[0,0,0],startRates:[0,0,0],clipTracking,particles};
  }
  const replay=state,{plan,clock}=replay;
- const point=(binding:Tracking,frameIndex:number,phase:OrdinaryCameraTargetRequest['phase']):[number,number,number]=>{
-  const value=binding.kind==='origin'?[0,0,0]:options.targetProvider!({action:binding.action,trackId:binding.trackId,frameIndex,time:replay.facts.sceneTime,phase});
+ const point=(binding:Tracking):[number,number,number]=>{
+  const value=binding.kind==='origin'?[0,0,0]:binding.readPosition();
   if(!Array.isArray(value)||value.length!==3)throw new OrdinarySourceCameraTimelineError('input','源跟踪 provider 必须返回三个世界坐标');return value.map((v,i)=>float(v,`tracked[${i}]`)) as [number,number,number];
  };
  try{
   for(let frameIndex=replay.frameIndex+1;frameIndex<=target;frameIndex++){
    check(options);reserve(replay.facts.queueIndex,plan.clips.length);
-   const before=replay.facts,index=before.queueIndex,clip=plan.clips[index],camera=replay.camera;
+   const before=replay.facts,index=before.queueIndex,clip=plan.clips[index],tracking=replay.clipTracking[index],camera=replay.camera;
    const facts=replay.facts=clock.step(plan.dt,{isCancelled:options.isCancelled});
    if(clip){
     if(facts.startedClip!==null){
      replay.start=copy(camera);replay.targets={...clip.targets};replay.startRates=[...replay.rates];
      if(clip.align)for(const axis of axes)if(clip.align[axis]!==undefined)replay.targets[axis]=finite(F(F(F(F(Math.floor(F(camera[axis]/TAU)))+1)*TAU)+clip.align[axis]!));
-     if(clip.tracking)replay.tracking=undefined;
+     if(tracking)replay.tracking=undefined;
     }
     const runtime=F((facts.startedClip!==null?0:before.clipRuntime)+facts.activeDt),eased=sourceEase(clip.easing,Math.max(0,Math.min(1,F(runtime/clip.duration))));
     for(const axis of axes)if(replay.targets[axis]!==undefined)camera[axis]=lerp(replay.start[axis],replay.targets[axis]!,eased);
@@ -155,11 +194,14 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
     if(clip.rates)replay.rates=clip.rates.map((value,i)=>lerp(replay.startRates[i],value,eased)) as [number,number,number];
     // SetAmbientRotation alone snaps the target rates in onFinish.
     if(clip.rates&&facts.finishedClip!==null)replay.rates=[...clip.rates];
-    if(clip.tracking){const to=point(clip.tracking,frameIndex,'animation');camera.center=to.map((v,i)=>lerp(replay.start.center[i],v,eased)) as [number,number,number];if(facts.finishedClip!==null)replay.tracking=clip.tracking;}
+    if(tracking){const to=point(tracking);camera.center=to.map((v,i)=>lerp(replay.start.center[i],v,eased)) as [number,number,number];if(facts.finishedClip!==null)replay.tracking=tracking;}
    }
    camera.zoom=facts.camera.zoom;
+   // Scene.update PC132/183/225: animation, then Mobject, then camera. The
+   // queue's final frame still updates Mobject; later frames skip it entirely.
+   if(!before.queueComplete){check(options);replay.particles?.update({frameIndex,time:facts.sceneTime,deltaTime:facts.activeDt});check(options);}
    // CameraController copies tracking center before ambient component updates.
-   if(replay.tracking)camera.center=point(replay.tracking,frameIndex,'camera-update');
+   if(replay.tracking)camera.center=point(replay.tracking);
    for(const [i,axis]of axes.entries())camera[axis]=finite(F(camera[axis]+F(replay.rates[i]*plan.dt)));
    replay.frameIndex=frameIndex;
   }

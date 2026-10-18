@@ -40,10 +40,12 @@ describe('ordinary source scalar camera queue',()=>{
  it('transitions stopTracking to the actual fixed origin instead of freezing local orbit center',()=>{
   const tracks=[clip([action('stopTracking')])];expect(evaluate(initial,tracks,4,0).camera.center).toEqual([.75,1.5,2.25]);expect(evaluate(initial,tracks,4,.75).camera.center).toEqual([0,0,0]);expect(evaluate(initial,tracks,4,2).camera.center).toEqual([0,0,0]);
  });
- it('requires explicit production tracking and reads moving PVector before/after object update',()=>{
+ it('requires explicit production tracking and reads a bound PVector before/after object update',()=>{
   const tracks=[clip([action('track',{index:3})])];expect(errorCode(()=>evaluate(initial,tracks,4,0))).toBe('unsupported');
-  const calls:string[]=[];const frame=evaluate(initial,tracks,4,1,{targetProvider:r=>{calls.push(`${r.frameIndex}:${r.phase}`);return[r.frameIndex+(r.phase==='camera-update'?10:0),0,0];}});
-  expect(calls).toEqual(['0:animation','1:animation','2:animation','3:animation','3:camera-update','4:camera-update']);expect(frame.camera.center).toEqual([14,0,0]);
+  const calls:string[]=[];const frame=evaluate(initial,tracks,4,1,{createParticles:()=>{
+   let x=0;return{bind:r=>{calls.push(`bind:${r.action.args?.index}`);return{kind:'bound',readPosition:()=>{calls.push(`read:${x}`);return[x,0,0];}};},update:r=>{calls.push(`update:${r.frameIndex}`);x++;}};
+  }});
+  expect(calls).toEqual(['bind:3','read:0','update:0','read:1','update:1','read:2','update:2','read:3','update:3','read:4','read:4']);expect(frame.camera.center).toEqual([4,0,0]);
  });
  it('keeps source sequence display layout separate from authored starts/repeat/durations',()=>{
   const tracks=[clip([],{type:'wait',start:20,duration:.3,repeat:5,pingPong:true}),clip([],{type:'param',start:40,duration:.3})],before=JSON.stringify(tracks),out=layout(initial,tracks,4);
