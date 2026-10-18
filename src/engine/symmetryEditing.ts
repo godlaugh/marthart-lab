@@ -1,6 +1,15 @@
 import type {SceneDocument,ControlSpec} from '../types';
 import {SYMMETRY_DEFAULT_PARAMETERS,SYMMETRY_DEFAULT_SETTINGS} from '../scenes/symmetryParameters';
-import {hasSymmetryCustom} from './symmetryCustom';
+import {hasSymmetryCustom,prepareSymmetryCustomSource,symmetryCustomCompileDegree} from './symmetryCustom';
+
+/** Prepare one authored edit without changing caller-selected rendering settings.
+ * Language/type validity is subsequently checked by the real worker/GPU before
+ * the UI commits this document. The parser alone is not a GLSL compiler. */
+export function withSymmetryCustomSource(scene:SceneDocument,source:string):SceneDocument {
+ if(scene.kind!=='symmetry')throw new Error('只有 Symmetry 支持对称模板');
+ prepareSymmetryCustomSource(source,symmetryCustomCompileDegree(scene));
+ return {...scene,equations:{...scene.equations,glsl:source}};
+}
 
 /** Custom math has independent metrics and compile-time degree. Built-in-only
  * exploration and polynomial correction controls do not describe that source. */

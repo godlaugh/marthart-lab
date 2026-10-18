@@ -711,5 +711,11 @@
   "原始阈值保留，计算时按源规则派生下限；Nova 还使用逻辑画布尺寸与缩放。此实现未验证原版应用帧缓冲或 DPI 像素一致性。": "The authored tolerance is preserved; source rules derive its lower bound during calculation. Nova also uses logical canvas size and zoom. Original-application framebuffer and DPI pixel equivalence have not been verified.",
   "当前选择 CPU；源 Newton/Nova 需要 WebGL2。请选择自动或 WebGL2 后端，或切回本地数值规则。": "CPU is selected; source Newton/Nova requires WebGL2. Choose Auto or WebGL2, or return to local numeric rules.",
   "当前公式不是 Newton 或 Nova；源数值规则暂不参与计算，所选规则仍随文档保存。": "This formula is neither Newton nor Nova. The source numeric rules are inactive but remain saved in the document.",
-  "源规则只支持 low、medium、high；其他已保存精度保留，计算时明确报错。": "Source rules support low, medium and high. Other saved precision values are preserved and produce an explicit calculation error."
+  "源规则只支持 low、medium、high；其他已保存精度保留，计算时明确报错。": "Source rules support low, medium and high. Other saved precision values are preserved and produce an explicit calculation error.",
+  "草稿不会改变当前画面。验证首帧成功后应用；需要 GPU 持续批次模式。": "Drafts leave the current image unchanged. Apply after the first frame passes validation; GPU continuous batches are required.",
+  "正在验证 GLSL…": "Validating GLSL…",
+  "验证并应用 GLSL": "Validate and apply GLSL",
+  "取消验证": "Cancel validation",
+  "放弃源码草稿": "Discard source draft",
+  "尚未生成自定义 GLSL 的 GPU 首帧，请检查持续批次与 Replay 起点设置。": "The first custom GLSL GPU frame was not generated. Check continuous batches and the Replay start setting."
 }

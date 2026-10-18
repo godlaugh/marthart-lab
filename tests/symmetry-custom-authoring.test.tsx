@@ -3,7 +3,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {parseLegacyScene} from '../src/engine/legacyImport';
 import {parseScene,persistentScene,createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
-import {withSymmetryTemplate} from '../src/engine/symmetryEditing';
+import {withSymmetryTemplate,withSymmetryCustomSource} from '../src/engine/symmetryEditing';
 import {parameterEditingSpecs,parameterAnimationSuggestion,withParameterValue,withoutEditableParameter} from '../src/engine/parameterEditing';
 import {mainEquation,formulaLabels,defaultFormulas} from '../src/engine/formulas';
 import {SymmetryFormula} from '../src/components/SymmetryFormula';
@@ -19,6 +19,16 @@ const imported=()=>parseLegacyScene(JSON.stringify(legacy(source))).scene;
 const reload=(s:ReturnType<typeof imported>)=>parseScene(JSON.stringify(persistentScene(s)));
 
 describe('custom Symmetry imported authoring and persistence',()=>{
+ it('prepares exact editable source without changing parameters, rendering choices or source provenance',()=>{
+  const scene=imported(),before=JSON.stringify(scene),text=source.replace('pos.x*gain','sin(pos.x*gain)'),next=withSymmetryCustomSource(scene,text);
+  expect(JSON.stringify(scene)).toBe(before);expect(next.equations.glsl).toBe(text);expect(next.equations.formula).toBe(scene.equations.formula);
+  expect(next.settings).toEqual(scene.settings);expect(next.parameters).toEqual(scene.parameters);expect(next.provenance).toEqual(scene.provenance);
+  expect(reload(next).equations.glsl).toBe(text);expect(reload(scene).equations.glsl).toBe(source);
+  expect(()=>withSymmetryCustomSource(scene,'#define BAD 1')).toThrow('预处理');expect(()=>withSymmetryCustomSource(scene,'')).toThrow('为空');
+  // The owner parser deliberately leaves driver syntax/type checks to actual
+  // generation; callers cannot treat successful preparation as compilation.
+  expect(()=>withSymmetryCustomSource(scene,'void calculate_next(in vec3 pos,out vec3 nextPos,out float stepMetric){nextPos=pos stepMetric=1.;}')).not.toThrow();
+ });
  it('retains exact source, display text, parameters and caller backend through real import and project reload',()=>{
   const input=legacy(source),result=parseLegacyScene(JSON.stringify(input)),saved=reload(result.scene);
   expect(result.source).toEqual(input);expect(saved.equations).toEqual({glsl:source,formula:input.equation.formula});
@@ -94,9 +104,11 @@ describe('custom Symmetry imported authoring and persistence',()=>{
   for(const track of tracks){const scene=imported();scene.timeline.tracks=[track];const initial=JSON.stringify(scene);expect(()=>withoutEditableParameter(scene,'gain')).toThrow('仍被启用的动画引用');expect(JSON.stringify(scene)).toBe(initial);expect(Number.isFinite(sceneAtTime(scene,1).parameters.gain)).toBe(true);scene.timeline.tracks=[{...track,enabled:false}];const removed=withoutEditableParameter(scene,'gain');expect(()=>sceneAtTime(reload(removed),1)).not.toThrow();expect(removed.timeline.tracks).toEqual(scene.timeline.tracks);}
   const scene=imported();scene.settings.deltaPower=100;expect(()=>withSymmetryTemplate(scene,'standard')).toThrow('修正幂次');expect(scene.equations.glsl).toBe(source);
  });
- it('renders source as escaped read-only text and disables fixed-template exploration in custom mode',()=>{
+ it('renders an escaped source draft with explicit validation and disables fixed-template exploration in custom mode',()=>{
   const scene=imported();const html=renderToStaticMarkup(<SymmetryFormula scene={scene} onChange={()=>{}}/>);
   expect(html).toContain('Caller display: &lt;x&gt; &amp;');expect(html).toContain('自定义 GLSL 源码');expect(html).toContain('gain, delta');expect(html).toContain('使用模板公式');expect(html).not.toContain('data-symmetry-key');
+  expect(html).toContain('<textarea');expect(html).toContain('验证并应用 GLSL');expect(html).toContain('草稿不会改变当前画面');
+  expect(html).not.toContain('maxLength');expect(html).not.toContain('maxlength');
   const explore=renderToStaticMarkup(<ExplorePanel scene={scene} onChange={()=>{}}/>);expect(explore).toMatch(/class="apply-button" disabled=""/);expect(explore).toContain('不能使用内置模板');
   const builtin=withSymmetryTemplate(scene,'standard');expect(renderToStaticMarkup(<ExplorePanel scene={builtin} onChange={()=>{}}/>)).not.toMatch(/class="apply-button" disabled=""/);
  });

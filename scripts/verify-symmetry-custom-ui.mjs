@@ -15,6 +15,7 @@ const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.
 const saved=()=>page.evaluate(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]??w.scenes.find(s=>s.id===w.active);});
 const last=()=>page.evaluate(()=>window.__audit.completed.at(-1));
 const auditMark=()=>page.evaluate(()=>({issued:window.__audit.issued,completed:window.__audit.completionCount}));
+const canvasHash=async()=>createHash('sha256').update(await page.getByTestId('art-canvas').screenshot()).digest('hex');
 const freshRecovery=async(mark,expected)=>{
  await page.waitForFunction(({mark,expected})=>window.__audit.completed.some(x=>x.issuedSequence>mark.issued&&x.completionSequence>mark.completed&&x.request.scene.id===expected.id&&x.request.scene.equations.glsl===expected.source&&x.request.scene.settings.iteratedBackend==='gpu'&&x.output.backend==='webgl2'&&x.request.context.quality!=='export'),{mark,expected});
  await ready();
@@ -27,10 +28,22 @@ const waitValue=(name,value)=>page.waitForFunction(({name,value})=>{const w=JSON
 try{
  page=await browser.newPage({viewport:{width:1480,height:1000},acceptDownloads:true});page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{
-  const NativeWorker=window.Worker;window.__audit={completed:[],errors:[],issued:0,completionCount:0};
+  const NativeWorker=window.Worker;window.__audit={completed:[],errors:[],issued:0,completionCount:0,workers:[],gate:null};
   window.Worker=class extends NativeWorker{
    sent=new Map();
-   constructor(...args){super(...args);this.addEventListener('message',({data})=>{if(data.operation!=='generate')return;if(data.error)window.__audit.errors.push(data.error);if(!data.output||data.progress)return;const sent=this.sent.get(data.id);if(!sent)return;const {request,issuedSequence}=sent;const {pixels,...output}=data.output;let hash=2166136261;for(const v of pixels??[]){hash^=v;hash=Math.imul(hash,16777619);}window.__audit.completed.push({request,issuedSequence,completionSequence:++window.__audit.completionCount,output,pixelHash:hash>>>0});if(window.__audit.completed.length>64)window.__audit.completed.shift();});}
+   constructor(...args){super(...args);this.auditWorker={id:window.__audit.workers.length+1,terminated:false};window.__audit.workers.push(this.auditWorker);this.addEventListener('message',({data})=>{if(data.operation!=='generate')return;if(data.error)window.__audit.errors.push(data.error);if(!data.output||data.progress)return;const sent=this.sent.get(data.id);if(!sent)return;const {request,issuedSequence}=sent;const {pixels,...output}=data.output;let hash=2166136261;for(const v of pixels??[]){hash^=v;hash=Math.imul(hash,16777619);}window.__audit.completed.push({request,issuedSequence,completionSequence:++window.__audit.completionCount,workerId:this.auditWorker.id,output,pixelHash:hash>>>0});if(window.__audit.completed.length>64)window.__audit.completed.shift();});
+    // Controlled transport gate: retain one *actual completed GPU message* and
+    // later deliver that same event to the original client handler. The native
+    // Worker, shader execution, image and result are never replaced or forged.
+    this.addEventListener('message',event=>{
+     const gate=window.__audit.gate,data=event.data,sent=this.sent.get(data.id);
+     if(!gate||gate.held||!data.output||data.operation!=='generate'||sent?.request.context.width!==64||sent.request.scene.equations.glsl!==gate.source)return;
+     event.stopImmediatePropagation();const deliver=this.onmessage;gate.held=true;gate.workerId=this.auditWorker.id;gate.backend=data.output.backend;gate.issuedSequence=sent.issuedSequence;gate.heldAt=performance.now();
+     gate.release=()=>{if(gate.released)return;gate.released=true;gate.releasedAt=performance.now();clearTimeout(gate.timer);deliver?.call(this,event);};
+     gate.timer=setTimeout(()=>{gate.timedOut=true;gate.release();},10000);
+    });
+   }
+   terminate(){this.auditWorker.terminated=true;return super.terminate();}
    postMessage(message,...args){if(message.operation==='generate')this.sent.set(message.id,{request:structuredClone(message),issuedSequence:++window.__audit.issued});return super.postMessage(message,...args);}
   };
  });
@@ -41,6 +54,59 @@ try{
  await page.getByLabel('Custom GLSL source',{exact:true}).waitFor();await ready();
  await page.waitForFunction(source=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1')),s=w.drafts?.[w.active]??w.scenes.find(s=>s.id===w.active);return s.equations.glsl===source;},source);
  check((await last()).output.backend==='webgl2','import did not render with actual GPU');check((await saved()).equations.glsl===source,'import source changed');
+ const editor=page.getByRole('textbox',{name:'Custom GLSL source',exact:true}),applySource=page.getByRole('button',{name:'Validate and apply GLSL',exact:true});
+ const beforeEdit=await saved(),beforeEditFrame=await last();
+ const oversizedDraft=source+'/*'+'x'.repeat(65536)+'*/';await editor.fill(oversizedDraft);
+ check(await editor.inputValue()===oversizedDraft,'oversized draft was silently truncated');check(await applySource.isDisabled(),'oversized draft can be applied');check((await saved()).equations.glsl===source,'oversized draft changed committed source');
+ await editor.fill('#define DRAFT 1\n'+source);
+ check(await applySource.isDisabled(),'unsupported source draft can be applied');
+ check((await saved()).equations.glsl===source&&(await last()).pixelHash===beforeEditFrame.pixelHash,'invalid parser draft changed the document or image');
+ const invalidDraft='void calculate_next(in vec3 pos,out vec3 nextPos,out float stepMetric){nextPos=pos stepMetric=1.;}';
+ await editor.fill(invalidDraft);await applySource.click();
+ await page.locator('.symmetry-formula').getByRole('alert').filter({hasText:/compil|编译/i}).waitFor();
+ check((await saved()).equations.glsl===source&&(await last()).pixelHash===beforeEditFrame.pixelHash,'failed GPU validation replaced the valid document/image');
+ check(!(await page.locator('.error-card').count()),'draft compiler failure escaped into the live preview');
+ const editedSource=source.replace('sin(gain*pos.y)+_bias','0.5*sin(gain*pos.y)+_bias');
+ const cancelledSource=source.replace('sin(gain*pos.y)+_bias','0.75*sin(gain*pos.y)+_bias');
+ const beforeCancelDocument=JSON.stringify(await saved()),beforeCancelCanvas=await canvasHash();
+ await editor.fill(cancelledSource);await page.evaluate(source=>{window.__audit.gate={source,held:false,released:false,timedOut:false};},cancelledSource);await applySource.click();
+ await page.waitForFunction(()=>window.__audit.gate?.held);
+ check(await page.getByRole('button',{name:'Cancel validation',exact:true}).isVisible(),'real validation cannot be cancelled while completed message is gated');
+ await page.getByRole('button',{name:'Cancel validation',exact:true}).click();
+ check(await editor.inputValue()===cancelledSource,'cancel discarded authored draft');check(JSON.stringify(await saved())===beforeCancelDocument,'cancel changed committed document');check(await canvasHash()===beforeCancelCanvas,'cancel changed presented canvas');
+ const cancelledWorker=await page.evaluate(()=>{const gate=window.__audit.gate;return window.__audit.workers.find(w=>w.id===gate.workerId);});check(cancelledWorker?.terminated,'cancel did not terminate the owned validation worker');
+ await page.evaluate(()=>window.__audit.gate.release());
+ // Drain microtasks and rendering after explicitly delivering the old event.
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ check(await editor.inputValue()===cancelledSource&&JSON.stringify(await saved())===beforeCancelDocument,'released stale success committed a cancelled draft');check(await canvasHash()===beforeCancelCanvas,'released stale success changed the presented canvas');
+ const cancellation=await page.evaluate(()=>{const g=window.__audit.gate;return{mode:'controlled delivery gate on actual GPU completion',backend:g.backend,workerId:g.workerId,issuedSequence:g.issuedSequence,heldMilliseconds:g.releasedAt-g.heldAt,released:g.released,timedOut:g.timedOut,workerTerminated:window.__audit.workers.find(w=>w.id===g.workerId)?.terminated};});
+ check(cancellation.backend==='webgl2'&&cancellation.released&&!cancellation.timedOut,'controlled cancellation gate did not observe and release a genuine GPU result');await page.evaluate(()=>{window.__audit.gate=null;});
+ await editor.fill(editedSource);
+ check((await saved()).equations.glsl===source,'valid draft applied before explicit action');
+ const editedMark=await auditMark();await applySource.click();
+ await page.waitForFunction(source=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.equations.glsl===source;},editedSource);
+ await page.waitForFunction(({source,mark})=>window.__audit.completed.some(x=>x.issuedSequence>mark.issued&&x.request.scene.equations.glsl===source&&x.request.context.width!==64&&x.output.backend==='webgl2'),{source:editedSource,mark:editedMark});await ready();
+ const editedFrame=await last();check(editedFrame.pixelHash!==beforeEditFrame.pixelHash,'applied GLSL edit did not change actual pixels');
+ const checkedFrame=await page.evaluate(source=>window.__audit.completed.findLast(x=>x.request.scene.equations.glsl===source&&x.request.context.width===64),editedSource);
+ check(checkedFrame?.output.backend==='webgl2'&&checkedFrame.request.scene.settings.batchSize===beforeEdit.settings.batchSize,'source validation did not execute the unchanged workload on GPU');
+ const editedDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Export project JSON',exact:true}).click();
+ await(await editedDownload).saveAs('.cache/symmetry-edited-source.mathart.json');
+ const editedProject=JSON.parse(await readFile('.cache/symmetry-edited-source.mathart.json','utf8'));check(editedProject.equations.glsl===editedSource&&editedProject.provenance.original.equation.glsl===source,'edited export lost authored source or reference provenance');
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await page.waitForFunction(source=>document.querySelector('textarea[aria-label="Custom GLSL source"]')?.value===source,source);await ready();
+ await page.getByRole('button',{name:'Redo',exact:true}).click();await page.waitForFunction(source=>document.querySelector('textarea[aria-label="Custom GLSL source"]')?.value===source,editedSource);await ready();
+ await editor.fill(editedSource+'\n// unsaved draft');await page.getByRole('button',{name:'Discard source draft',exact:true}).click();check(await editor.inputValue()===editedSource,'discard did not restore committed source');
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await page.waitForFunction(source=>document.querySelector('textarea[aria-label="Custom GLSL source"]')?.value===source,source);await ready();
+ report.sourceEditing={oversizedDraftPreservedAndRejected:true,parserFailureRetainsImage:true,driverFailureRetainsImage:true,explicitApply:true,cancellation:{...cancellation,draftRetained:true,documentRetained:true,canvasSha256:beforeCancelCanvas,lateResultIgnored:true,newValidationSucceeded:true},actualGpuValidation:{backend:checkedFrame.output.backend,width:checkedFrame.request.context.width,count:checkedFrame.request.scene.settings.batchSize},changedPixels:true,undoRedo:true,discard:true,exactExportAndProvenance:true};
+ await page.locator('#control-iteratedStartTime').fill('1');
+ await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.settings.iteratedStartTime===1;});await ready();
+ await editor.fill(invalidDraft);await applySource.click();await page.locator('.symmetry-formula').getByRole('alert').filter({hasText:/compil|编译/i}).waitFor();
+ check((await saved()).equations.glsl===source,'delayed Replay accepted invalid source before its first GPU frame');
+ const delayedMark=await auditMark();await editor.fill(editedSource);await applySource.click();
+ await page.waitForFunction(source=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.equations.glsl===source;},editedSource);await ready();
+ const delayedCheck=await page.evaluate(({source,mark})=>window.__audit.completed.findLast(x=>x.issuedSequence>mark.issued&&x.request.scene.equations.glsl===source&&x.request.context.width===64),{source:editedSource,mark:delayedMark});
+ check(delayedCheck?.output.backend==='webgl2'&&delayedCheck.request.context.time===1,'delayed Replay source was not executed at its first GPU frame');report.sourceEditing.delayedReplayValidated=true;
+ await page.getByRole('button',{name:'Undo',exact:true}).click();await page.waitForFunction(source=>document.querySelector('textarea[aria-label="Custom GLSL source"]')?.value===source,source);await ready();
+ await page.locator('#control-iteratedStartTime').fill('0');await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.settings.iteratedStartTime===0;});await ready();
  check(await page.getByRole('button',{name:'Generate combination',exact:true}).isDisabled(),'custom builtin search still enabled');
  check(await page.getByRole('spinbutton',{name:'Parameter lambda',exact:true}).inputValue()==='9.123456789','custom lambda display rounded');
  check(await page.getByRole('spinbutton',{name:'Parameter delta',exact:true}).inputValue()==='.123456789'||await page.getByRole('spinbutton',{name:'Parameter delta',exact:true}).inputValue()==='0.123456789','custom delta hidden or rounded');
@@ -53,7 +119,7 @@ try{
  await page.getByRole('spinbutton',{name:'Parameter _bias',exact:true}).fill('.125');await waitValue('_bias',.125);await ready();
  await page.getByRole('button',{name:'Delete parameter lambda',exact:true}).click();await waitValue('lambda',undefined);await ready();
  const beforeTemplate=await saved();
- await page.getByRole('button',{name:'Use template formula',exact:true}).click();await page.getByLabel('Custom GLSL source',{exact:true}).waitFor({state:'detached'});await ready();await waitValue('lambda',-2.34);
+ await page.getByRole('button',{name:'Use template formula',exact:true}).click();await page.getByRole('textbox',{name:'Custom GLSL source',exact:true}).waitFor({state:'hidden'});await ready();await waitValue('lambda',-2.34);
  check((await saved()).parameters.lambda===-2.34,'template did not restore missing default');check((await saved()).parameters.gain===beforeTemplate.parameters.gain,'template changed retained custom parameter');
  await page.getByRole('button',{name:'Undo',exact:true}).click();await page.getByLabel('Custom GLSL source',{exact:true}).waitFor();await ready();await waitValue('lambda',undefined);check((await saved()).equations.glsl===source&&(await saved()).parameters.lambda===undefined,'template undo lost authored state');
  await page.getByRole('combobox',{name:'New clip type',exact:true}).selectOption('param');await page.getByRole('button',{name:'Add animation',exact:true}).click();
@@ -90,8 +156,17 @@ try{
  await page.locator('input[type=file]').setInputFiles({name:'restored.mathart.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(projectJson))});
  const compileRecovery=await freshRecovery(compileRecoveryMark,{id:projectJson.id,source});
  check(!cpuRecovery.rendering&&!cpuRecovery.error&&!compileRecovery.rendering&&!compileRecovery.error,'recovery UI was not settled');
+ await page.locator('input[type=file]').setInputFiles({name:'edited.mathart.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(editedProject))});
+ await page.waitForFunction(source=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.drafts?.[w.active]?.equations.glsl===source;},editedSource);await ready();await page.reload();
+ report.sourceEditing.reloadedFrame=await freshRecovery({issued:0,completed:0},{id:editedProject.id,source:editedSource});
+ check(await page.getByRole('textbox',{name:'Custom GLSL source',exact:true}).inputValue()===editedSource,'import/reload lost edited source');check((await saved()).provenance.original.equation.glsl===source,'import/reload rewrote reference provenance');report.sourceEditing.editedImportReload=true;
  await page.screenshot({path:'.cache/symmetry-custom-ui.png'});
  const after=await hashes();check(JSON.stringify(before)===JSON.stringify(after),'production source changed during App verification');check(!errors.length,'page errors');
  Object.assign(report,{status:'passed',checks:{originalJsonImport:true,gpuBackend:'webgl2',exactSourceAndPrecision:true,geometryParameterChangesPixels:true,authoredMetricChangesColors:true,underscoreParameterCreation:true,deleteBuiltinNamedParameter:true,templateUndoRetainsAllValues:true,customTimelineUniform:{time:animated.request.context.time,authoredGainFloat32:Math.fround(animated.request.scene.parameters.gain),values:uniforms},animatedWorkerOracle: animatedOracle,projectDownload:true,provenance:true,reload:true,coldGpuExportOracle:true,explicitCpuErrorWithoutReplacement:true,compileErrorWithoutReplacement:true,gpuRecoveryAfterError:{cpuRecovery,compileRecovery}},image:{width:257,height:193,bytes:bytes.length,pixelHash:exported.pixelHash,sha256:createHash('sha256').update(bytes).digest('hex')},pageErrors:errors,sourceSnapshots:after});
  await writeFile('.cache/symmetry-custom-ui.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 }catch(error){if(page){await page.screenshot({path:'.cache/symmetry-custom-ui-failure.png'});await writeFile('.cache/symmetry-custom-ui-failure.json',JSON.stringify({error:String(error),body:await page.locator('body').innerText(),audit:await page.evaluate(()=>window.__audit),errors},null,2));}throw error;}finally{await browser.close();await server.close();}
+
+report.cleanup={browserDisconnected:!browser.isConnected(),serverClosed:!server.httpServer?.listening};
+check(report.cleanup.browserDisconnected&&report.cleanup.serverClosed,'owned browser/server did not close');
+await writeFile('.cache/symmetry-custom-ui.json',JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify({status:report.status,cleanup:report.cleanup}));
