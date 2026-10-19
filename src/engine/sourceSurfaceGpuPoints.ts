@@ -1,5 +1,5 @@
 import type {SourceSurfaceFunction} from './sourceSurfaceFunction';
-import {prepareSourceSurfaceGpuFunction,type SourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
+import {type SourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
 import {createSourceSurfacePointRuntime,sourceSurfaceParticleStart,type SourceSurfacePointRuntimeOptions} from './sourceSurfaceParticles';
 import {prepareSourceSurfaceColors} from './sourceSurfaceColor';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
@@ -20,10 +20,6 @@ export interface SourceSurfaceGpuPointFrame {
  readonly uLimits:readonly [number,number];readonly vLimits:readonly [number,number];
  readonly periodic:readonly [number,number];readonly flowing:readonly [number,number];
  readonly fadePoints:boolean;
-}
-export function prepareSourceSurfaceGpuPoints(equations:Readonly<Record<string,string>>,parameters:Readonly<Record<string,number>>,configuration:SourceSurfacePointRuntimeOptions['configuration']):SourceSurfaceGpuFunction {
- const t=configuration.transform,result=prepareSourceSurfaceGpuFunction({equations,parameters,scales:[t.scaleX,t.scaleY,t.scaleZ],offsets:[t.offsetX,t.offsetY,t.offsetZ]});
- if(!result.ok)throw new Error(`原版 GPU 曲面公式 ${result.error.kind}: ${result.error.reason}`);return result.value;
 }
 /** GPU vertices use analytic shader time. Only the last setup-time tracked Dot
  * evolves by the CPU recurrence; older captured target vectors remain frozen.

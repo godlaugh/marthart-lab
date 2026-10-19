@@ -1,7 +1,9 @@
+import type {SourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
+import type {SourceSurfaceGpuMeshFrame} from './sourceSurfaceGpuMesh';
 import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding,OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
 import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import type {SourceSurfaceFunction} from './sourceSurfaceFunction';
-import {createSourceSurfaceMeshGeometry,type SourceSurfaceMeshGeometry,type SourceSurfaceMeshGeometryFrame,type SourceMeshVector} from './sourceSurfaceMeshGeometry';
+import {createSourceSurfaceMeshGeometry,type SourceSurfaceMeshGeometry,type SourceSurfaceMeshGeometryFrame,type SourceSurfaceGpuMeshGeometryFrame,type SourceMeshVector} from './sourceSurfaceMeshGeometry';
 import {createSourceSurfaceMeshWireframe,type SourceSurfaceMeshWireframeFrame} from './sourceSurfaceMeshWireframe';
 import {prepareSourceSurfaceColors,refreshSourceSurfaceColors,type PreparedSourceSurfaceColors,type SourceSurfacePalette} from './sourceSurfaceColor';
 import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,smoothSourceSurfacePalette,sourceSurfacePaletteTarget,type SourceSurfacePaletteState} from './sourceSurfaceGradient';
@@ -20,6 +22,7 @@ export interface SourceSurfaceMeshRuntimeOptions {
  /** Exact function object created for this native MeshSurface lifetime. A host
   * mode switch passes recreate(), leaving old animation bindings attached here. */
  surfaceFunction:SourceSurfaceFunction;
+ gpuFunction?:SourceSurfaceGpuFunction;
  operationsPerPosition:number;
  frameRate:number;
  palette?:SourceSurfacePalette;
@@ -30,7 +33,7 @@ export interface SourceSurfaceMeshRuntimeOptions {
  coverage?:'all'|'tracked';
 }
 export interface SourceSurfaceMeshRuntimeSnapshot {
- frameIndex:number;animationTime:number;geometry?:SourceSurfaceMeshGeometryFrame;
+ frameIndex:number;animationTime:number;geometry?:SourceSurfaceMeshGeometryFrame;gpuMesh?:SourceSurfaceGpuMeshFrame;
  /** Preserve native packed color through the renderer's PGraphics fill(int)
   * interpretation; early RGB conversion loses its low-byte grayscale branch. */
  packedColors:Uint32Array;fillEnabled:boolean;fillOpacity:number;
@@ -40,7 +43,7 @@ export interface SourceSurfaceMeshRuntimeSnapshot {
  diagnostics:readonly string[];workUnits:number;
 }
 
-/** One CPU MeshSurface, not a mode-switch host. update and display are separate
+/** One source MeshSurface, not a mode-switch host. update and display are separate
  * native lifecycle events: queue completion stops update but never display.
  * There is no gradient.update call in MeshSurface.update. */
 export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
@@ -49,7 +52,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  private readonly numU:number;private readonly numV:number;private readonly count:number;
  private initialUv:Float32Array;private initialPositions:Float32Array;
  private readonly geometry:SourceSurfaceMeshGeometry;
- private readonly wireframe:ReturnType<typeof createSourceSurfaceMeshWireframe>;
+ private readonly wireframe?:ReturnType<typeof createSourceSurfaceMeshWireframe>;
  private color?:PreparedSourceSurfaceColors;
  private readonly gradient:SourceGradientRuntime;
  private readonly parameters:SourceSurfaceParameterRuntime;
@@ -62,6 +65,9 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  private used=0;private failed=false;private failure:unknown;
  private rendered?:SourceSurfaceMeshRuntimeSnapshot;
  private colorRevision=0;
+ private gpuShapeRevision=-1;private gpuShapeGeneration=0;private gpuShapeFunctionRevision=0;
+ private gpuShape?:SourceSurfaceGpuMeshGeometryFrame;private gpuShapeColors?:Uint32Array;
+ private gpuSeamsCache?:{revision:number;seams:ReturnType<SourceSurfaceMeshGeometry['sampleSeams']>};
  private geometryCache?:{revision:number;frame:SourceSurfaceMeshGeometryFrame};
  private wireCache?:{revision:number;frame:SourceSurfaceMeshWireframeFrame};
  private mappedColorCache?:{revision:number;colorRevision:number;packed:Uint32Array};
@@ -70,7 +76,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   const parsed=parseSourceSurfaceMeshConfiguration(options.configuration);
   if(!parsed.ok)fail(parsed.error.kind==='capacity'?'capacity':'input',`原版网格配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
   this.configuration=parsed.value;
-  if(this.configuration.nativeBackend!=='cpu')fail('unsupported','此运行时只执行原版 CPU MeshSurface');
+  if((this.configuration.nativeBackend==='gpu')!==!!options.gpuFunction)fail('input','GPU 网格与编译函数必须匹配');
   if(!Number.isFinite(options.frameRate)||options.frameRate<1||options.frameRate>120)fail('input','原版网格帧率必须在 1–120');
   if(!Number.isInteger(options.operationsPerPosition)||options.operationsPerPosition<0)fail('input','原版网格公式工作量无效');
   this.numU=this.configuration.mesh.uSegments;this.numV=this.configuration.mesh.vSegments;this.count=this.numU*this.numV;
@@ -81,7 +87,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   const scratch=new Float32Array(3);
   this.geometry=createSourceSurfaceMeshGeometry({numU:this.numU,numV:this.numV,uMin:d.uMin,uMax:d.uMax,vMin:d.vMin,vMax:d.vMax,meshWrapU:m.wrapU,meshWrapV:m.wrapV,meshWrapThreshold:m.wrapThreshold,
    sample:(u,v,includeOffset)=>{this.position(u,v,scratch,0,includeOffset);return scratch as unknown as SourceMeshVector;},reserve:n=>this.reserve(n)});
-  this.wireframe=createSourceSurfaceMeshWireframe({numU:this.numU,numV:this.numV,uMin:d.uMin,uMax:d.uMax,vMin:d.vMin,vMax:d.vMax,
+  if(this.configuration.nativeBackend==='cpu')this.wireframe=createSourceSurfaceMeshWireframe({numU:this.numU,numV:this.numV,uMin:d.uMin,uMax:d.uMax,vMin:d.vMin,vMax:d.vMax,
    sample:(u,v,includeOffset)=>{this.position(u,v,scratch,0,includeOffset);return scratch as unknown as SourceMeshVector;},reserve:n=>this.reserve(n),parameterNormal:(u,v)=>this.geometry.sampleParameterNormal(u,v),
    ...this.configuration.transform,wireframeUSegments:m.wireframeDecoupled?m.wireframeUSegments:-1,wireframeVSegments:m.wireframeDecoupled?m.wireframeVSegments:-1,fillEnabled:m.fillEnabled,lineWeight:m.lineWeight,packedColor:m.wireframeColor});
   // initDots uses half-open U-major particles and zero mesh particle speeds;
@@ -110,7 +116,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   this.parameters=new SourceSurfaceParameterRuntime({read:name=>this.options.surfaceFunction.read(name),write:(name,value)=>{if(!this.options.surfaceFunction.write(name,value))this.ignoredNames.add(name);},reserve:n=>this.reserve(n)});
  }
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())fail('cancelled','原版曲面网格回放已取消');}
- private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;this.rendered=undefined;this.geometryCache=undefined;this.wireCache=undefined;this.mappedColorCache=undefined;throw error;}}
+ private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;this.rendered=undefined;this.geometryCache=undefined;this.wireCache=undefined;this.mappedColorCache=undefined;this.gpuShape=undefined;this.gpuShapeColors=undefined;this.gpuSeamsCache=undefined;throw error;}}
  private reserve(units:number){this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','原版曲面网格超过本地 2000 万工作单位预算');this.options.reserve?.(units);}
  private position(u:number,v:number,out:Float32Array,offset=0,includeOffset=true){this.reserve(this.options.operationsPerPosition+12);return this.options.surfaceFunction.position(u,v,out,offset,includeOffset);}
  private select(index:number){
@@ -128,7 +134,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  });}
  /** Keep the separate tracking vector and initial action/function identity;
   * detach display data when the host replaces the native main object. */
- retire():void{this.guarded(()=>{this.retired=true;this.initialUv=new Float32Array();this.initialPositions=new Float32Array();this.color=undefined;this.rendered=undefined;this.geometryCache=undefined;this.wireCache=undefined;this.mappedColorCache=undefined;});}
+ retire():void{this.guarded(()=>{this.retired=true;this.initialUv=new Float32Array();this.initialPositions=new Float32Array();this.color=undefined;this.rendered=undefined;this.geometryCache=undefined;this.wireCache=undefined;this.mappedColorCache=undefined;this.gpuShape=undefined;this.gpuShapeColors=undefined;this.gpuSeamsCache=undefined;});}
  setRecordingTrails(enabled:boolean):void{this.guarded(()=>{if(typeof enabled!=='boolean')fail('input','原版网格拖尾开关需要布尔值');});}
  beginGradientActions(actions:readonly SourceGradientAction[]):void{this.guarded(()=>this.gradient.begin(actions));}
  interpolateGradientActions(eased:number,finished:boolean):void{this.guarded(()=>this.gradient.interpolate(eased,finished));}
@@ -159,6 +165,39 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   }
   this.position(this.tracking[0],this.tracking[1],this.trackingPosition);
  });}
+ /** GPU shape is dirty only when palette/config changes, not when parameter
+  * slots move. Uniform wrap/twist is sampled from current function separately.
+  * Queue-complete displays still perform this lifecycle, as in drawMeshGPU. */
+ private displayGpu(frameIndex:number,publish:boolean,revision:number):void {
+  const {mesh:m,domain:d}=this.configuration;
+  const decoupled=m.wireframeDecoupled&&(m.wireframeUSegments>0||m.wireframeVSegments>0);
+  if(this.gpuShapeRevision!==this.colorRevision){
+   this.gpuShape=m.fillEnabled||m.wireframeEnabled&&!decoupled?this.geometry.renderGpu():undefined;
+   const ids=this.gpuShape?.sourceColorIndices;this.reserve(ids?.length??0);
+   this.gpuShapeColors=new Uint32Array(ids?.length??0);
+   if(ids)for(let i=0;i<ids.length;i++){if((i&255)===0)this.check();this.gpuShapeColors[i]=this.color!.packed[ids[i]];}
+   this.gpuSeamsCache=undefined;this.gpuShapeRevision=this.colorRevision;this.gpuShapeFunctionRevision=revision;this.gpuShapeGeneration++;
+  }
+  // Same function/config gives the same seam flags after a completed draw.
+  // Palette callbacks can mutate the geometry owner's twist state; resample
+  // before publication even when only the color revision changed above.
+  if(this.gpuSeamsCache?.revision!==revision)this.gpuSeamsCache={revision,seams:this.geometry.sampleSeams()};
+  this.lastDisplay=frameIndex;
+  if(!publish){this.rendered=undefined;return;}
+  const prepared=this.options.gpuFunction!,parameters=prepared.uniforms(name=>this.options.surfaceFunction.read(name));
+  if(!parameters.ok)fail(parameters.error.kind==='capacity'?'capacity':'input',parameters.error.reason);
+  const shape=this.gpuShape,colors=this.gpuShapeColors!;
+  this.reserve((shape?shape.seeds.length+shape.triangles.length:0)+colors.length+32);
+  const packedColors=colors.slice(),seams=this.gpuSeamsCache!.seams;
+  const gpuMesh:SourceSurfaceGpuMeshFrame={model:'surface-gpu-mesh-1.7.8',seeds:shape?.seeds.slice()??new Float32Array(),triangles:shape?.triangles.slice()??new Uint32Array(),packedColors,
+   shapeGeneration:this.gpuShapeGeneration,shapeFunctionRevision:this.gpuShapeFunctionRevision,
+   functionBody:prepared.functionBody,parameters:parameters.value,scale:prepared.scales,offset:prepared.offsets,time:this.animationTime,
+   uLimits:[F(d.uMin),F(d.uMax)],vLimits:[F(d.vMin),F(d.vMax)],periodic:[Number(seams.wrapU),Number(seams.wrapV)],flowing:[Number(d.flowingU),Number(d.flowingV)],twistedU:seams.twistedU,twistedV:seams.twistedV,
+   fillEnabled:m.fillEnabled,fillOpacity:Math.max(0,Math.min(1,F(m.fillOpacity))),wireframeEnabled:m.wireframeEnabled,wireframeDecoupled:decoupled,lineWeight:Math.max(F(.1),F(m.lineWeight)),wireframeColor:m.wireframeColor};
+  this.rendered={frameIndex,animationTime:this.animationTime,gpuMesh,packedColors,fillEnabled:m.fillEnabled,fillOpacity:m.fillOpacity,
+   gradient:this.gradient.snapshot(),paletteState:{...this.paletteState},tracked:{index:this.trackingIndex,u:this.tracking[0],v:this.tracking[1],speedU:this.tracking[2],speedV:this.tracking[3],position:[...this.trackingPosition] as unknown as SourceMeshVector},
+   diagnostics:[...this.color!.diagnostics,...(this.ignoredNames.size?[`原版曲面忽略 ${this.ignoredNames.size} 个未声明参数的写入。`]:[])],workUnits:this.used};
+ }
  /** Call after the frame's animation/update/camera work, even for dt=0 and
   * completed queues. snapshot never creates geometry or initializes U shift. */
  display(frameIndex:number,lineScale=1,publish=true):void{this.guarded(()=>{
@@ -168,6 +207,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   if(this.options.coverage==='tracked'){this.lastDisplay=frameIndex;this.rendered=undefined;return;}
   const revision=this.options.surfaceFunction.revision;
   if(!Number.isSafeInteger(revision)||revision<0)fail('input','原版网格函数版本无效');
+  if(this.configuration.nativeBackend==='gpu'){this.displayGpu(frameIndex,publish,revision);return;}
   const m=this.configuration.mesh,decoupled=m.wireframeDecoupled&&(m.wireframeUSegments>0||m.wireframeVSegments>0);
   // Decoupled-only wire curves must not initialize the fill U-shift cache.
   if((m.fillEnabled||m.wireframeEnabled&&!decoupled)&&this.geometryCache?.revision!==revision){
@@ -178,7 +218,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   // and fixed config, repeating closure detection is idempotent (including the
   // retained V-twist flag); first-display shift creation is never skipped.
   // A changed revision always runs native geometry against the same shift owner.
-  if(m.wireframeEnabled&&this.wireCache?.revision!==revision)this.wireCache={revision,frame:this.wireframe.render(privateGeometry,lineScale)};
+  if(m.wireframeEnabled&&this.wireCache?.revision!==revision)this.wireCache={revision,frame:this.wireframe!.render(privateGeometry,lineScale)};
   if(this.mappedColorCache?.revision!==revision||this.mappedColorCache.colorRevision!==this.colorRevision){
    const length=privateGeometry?.sourceColorIndices.length??0;this.reserve(length);
    const packed=new Uint32Array(length);
@@ -195,7 +235,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   // charge every element before copying to keep both ownership and bounds.
   this.reserve(privateColors.length+(privateWire?.positions.length??0)+(privateGeometry?privateGeometry.positions.length+privateGeometry.normals.length+privateGeometry.triangles.length+privateGeometry.sourceColorIndices.length+privateGeometry.wireframeIndexedTriangles.length+privateGeometry.wireframeUSeamQuads.length:0));
   const geometry=privateGeometry?{positions:privateGeometry.positions.slice(),normals:privateGeometry.normals.slice(),triangles:privateGeometry.triangles.slice(),sourceColorIndices:privateGeometry.sourceColorIndices.slice(),wireframeIndexedTriangles:privateGeometry.wireframeIndexedTriangles.slice(),wireframeUSeamQuads:privateGeometry.wireframeUSeamQuads.slice(),seams:{...privateGeometry.seams}}:undefined;
-  const wireframe=privateWire?{positions:privateWire.positions.slice(),packedColor:privateWire.packedColor,lineWidth:this.wireframe.resolveLineWidth(lineScale),mode:privateWire.mode}:undefined;
+  const wireframe=privateWire?{positions:privateWire.positions.slice(),packedColor:privateWire.packedColor,lineWidth:this.wireframe!.resolveLineWidth(lineScale),mode:privateWire.mode}:undefined;
   const packedColors=privateColors.slice();
   this.lastDisplay=frameIndex;
   this.rendered={frameIndex,animationTime:this.animationTime,geometry,packedColors,fillEnabled:m.fillEnabled,fillOpacity:m.fillOpacity,wireframe,

@@ -907,7 +907,6 @@ function ordinarySurfaceHostGeometry(r:Reader,s:SceneDocument):void {
  const parsed=importSourceSurfaceMeshConfig(r.peek(['settings']),{numberToken:path=>r.numberToken(['settings',...path])});
  if(!parsed.ok)fail(`settings.${parsed.error.path.join('.')} 曲面源网格 ${parsed.error.kind}: ${parsed.error.reason}`);
  const facts=parsed.value;
- if(facts.configuration.nativeBackend==='gpu'&&facts.configuration.mode==='mesh')fail('原版 GPU 网格尚未接入；不能用 CPU 网格代替');
  s.surfaceSource=facts.configuration;
  for(const path of facts.consumedPaths)r.use(['settings',...path]);
  for(const path of facts.numericPaths)r.retainNumberToken(['settings',...path]);
@@ -915,7 +914,7 @@ function ordinarySurfaceHostGeometry(r:Reader,s:SceneDocument):void {
  Object.assign(s.settings,{surfaceGeometryVersion:SOURCE_SURFACE_HOST,renderMode:facts.configuration.mode,computeBackend:facts.configuration.nativeBackend==='gpu'?'webgl2':'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1,
   background:'#'+(facts.configuration.backgroundColor&0xffffff).toString(16).padStart(6,'0')});
  s.surfaceSourcePalette=parseSourceSurfacePalette({colors:r.has('palette')?r.use('palette'):[...DEFAULT_SOURCE_SURFACE_COLORS]});
- r.warnings.push(facts.configuration.nativeBackend==='gpu'?'曲面使用源 GPU 点着色器；相机跟踪按源 CPU 状态推进，点颜色绑定初始色板，不显示拖尾。原版完整画面尚未验收。':'曲面使用源 CPU 点／网格与切换队列；参数、渐变和跟踪动作保留初始对象绑定。原版完整画面尚未验收。');
+ r.warnings.push(facts.configuration.nativeBackend==='gpu'&&facts.configuration.mode==='mesh'?'曲面使用源 GPU 网格着色器；参数更新不会重建三角拓扑，独立线框在此模式下不显示。原版完整画面尚未验收。':facts.configuration.nativeBackend==='gpu'?'曲面使用源 GPU 点着色器；相机跟踪按源 CPU 状态推进，点颜色绑定初始色板，不显示拖尾。原版完整画面尚未验收。':'曲面使用源 CPU 点／网格与切换队列；参数、渐变和跟踪动作保留初始对象绑定。原版完整画面尚未验收。');
 }
 function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  const hasSettings=r.has(['settings']);if(hasSettings)r.object(['settings']);

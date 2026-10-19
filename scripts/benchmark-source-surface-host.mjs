@@ -5,10 +5,10 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 
 const run=(command,args,options={})=>{const r=spawnSync(command,args,{encoding:'utf8',maxBuffer:64*1024*1024,...options});if(r.status!==0)throw Error(r.error?.message||String(r.stderr)||String(r.stdout));return r.stdout;};
-const directory=await mkdtemp('.cache/surface-host-cost-'),baseline=run('git',['rev-parse','47c3a15^{commit}']).trim();
+const directory=await mkdtemp('.cache/surface-host-cost-'),baseline=run('git',['rev-parse','9bd06d8^{commit}']).trim();
 run('tar',['-xf','-','-C',directory],{input:run('git',['archive',baseline,'src'],{encoding:null})});
 const common=`export {parseProjectFile} from './src/engine/legacyImport';export {parseScene,serializeScene} from './src/engine/document';export {generateScene} from './src/engine/temporal';export {ordinarySourceViewport} from './src/engine/ordinarySourceCamera';`;
-const host=`export {SourceSurfaceHost} from './src/engine/sourceSurfaceHost';export {importSourceSurfaceMeshConfig} from './src/engine/sourceSurfaceMeshConfig';export {evaluateOrdinarySourceCameraTimeline} from './src/engine/ordinarySourceCameraTimeline';`;
+const host=`export {createSourceSurfaceGpuMesh} from './src/engine/sourceSurfaceGpuMeshRenderer';export {prepareOrdinarySourceFrame} from './src/engine/ordinarySourceCamera';export {SourceSurfaceHost} from './src/engine/sourceSurfaceHost';export {importSourceSurfaceMeshConfig} from './src/engine/sourceSurfaceMeshConfig';export {evaluateOrdinarySourceCameraTimeline} from './src/engine/ordinarySourceCameraTimeline';`;
 const sources={};
 for(const variant of ['before','after']){
  const result=await build({stdin:{contents:common+(variant==='after'?host:''),resolveDir:variant==='before'?resolve(directory):process.cwd(),loader:'ts'},bundle:true,platform:'node',format:'esm',packages:'external',metafile:true,outfile:resolve(directory,variant+'.mjs')});
@@ -24,29 +24,31 @@ const equations={x:'(a+cos(v))*cos(u)',y:'(a+cos(v))*sin(u)',z:'sin(v)'},paramet
 const settings={u_segments:40,v_segments:20,mesh_u_segments:40,mesh_v_segments:20,u_min:0,u_max:'TWO_PI',v_min:0,v_max:'TWO_PI',speed_u:.3,speed_v:.2,periodic_u:true,periodic_v:true,show_trails:true,mesh_wireframe:true};
 function task(){
  if(mode!=='switch'){
-  const raw={config_version:'1.0.0',type:'SURFACE',name:'Host regression',equations,parameters,palette:['#FF0000','#0000FF'],settings:{...settings,surface_mode:mode==='mesh'?'MESH':'POINTS',...(mode==='gpu-points'?{render_mode:'GPU',u_segments:200,v_segments:200}:{})},timeline:[{type:'animate',duration:2,actions:[{method:'track',args:[410]}]}]};
+  const raw={config_version:'1.0.0',type:'SURFACE',name:'Host regression',equations,parameters,palette:['#FF0000','#0000FF'],settings:{...settings,surface_mode:mode==='mesh'||mode==='gpu-mesh'?'MESH':'POINTS',...(mode==='gpu-points'?{render_mode:'GPU',u_segments:200,v_segments:200}:mode==='gpu-mesh'?{render_mode:'GPU',mesh_u_segments:100,mesh_v_segments:100,mesh_wrap_u:true,mesh_wrap_v:true}:{})},timeline:[{type:'animate',duration:2,actions:[{method:'track',args:[410]}]}]};
   if(mode==='public-switch'){
    Object.assign(raw.settings,{surface_mode:'POINTS',u_segments:12,v_segments:12,mesh_u_segments:12,mesh_v_segments:12});
    raw.timeline=Array.from({length:6},(_,i)=>({type:'surface_mode_transition',to:i%2?'POINTS':'MESH',duration:.25,easing:'LINEAR'}));
   }
   const scene=api.parseScene(api.serializeScene(api.parseProjectFile(JSON.stringify(raw)).scene)),h=createHash('sha256');
-  const warnings=new Set(),observedModes=new Set();
+  const warnings=new Set(),observedModes=new Set();let rendererBufferBytes=0;
   for(let i=0;i<20;i++){
    const output=api.generateScene(scene,{time:i/10,width:320,height:240,quality:'preview',sourceViewport:api.ordinarySourceViewport(scene,320,240,'primary',240)});
    for(const warning of output.warnings??[])warnings.add(warning);delete output.warnings;
    observedModes.add(output.topology);
-   // Rename the old output field at this explicit comparison boundary.
-   // The new neutral transition metadata has no pre-feature equivalent.
-   if(mode!=='public-switch'&&mode!=='gpu-points'){
-    if(output.sourceMeshBackgroundColor!==undefined){output.sourceSurfaceBackgroundColor=output.sourceMeshBackgroundColor;delete output.sourceMeshBackgroundColor;}
-    if(output.sourceSurfaceOverlayAlpha!==undefined){if(output.sourceSurfaceOverlayAlpha!==0)throw Error('Non-neutral overlay in regression');delete output.sourceSurfaceOverlayAlpha;}
-    const transition=output.sourceCameraFrame?.surfaceTransition;
-    if(transition){if(transition.mode!==mode||transition.overlayAlpha!==0)throw Error('Unexpected transition in regression');delete output.sourceCameraFrame.surfaceTransition;}
-   }
    h.update(digest(output));
+   if(mode==='gpu-mesh'){
+    if(!output.sourceGpuMesh||output.positions.length)throw Error('Expected actual GPU mesh seeds');
+    const objects=api.createSourceSurfaceGpuMesh(output.sourceGpuMesh,api.prepareOrdinarySourceFrame(output.sourceCameraFrame));
+    let bytes=0;for(const object of Object.values(objects)){
+     for(const attribute of Object.values(object.geometry.attributes))bytes+=attribute.array.byteLength;
+     bytes+=object.geometry.index?.array.byteLength??0;
+     h.update(digest({position:object.geometry.attributes.position.array,color:object.geometry.attributes.color.array,index:object.geometry.index.array}));
+     object.geometry.dispose();object.material.dispose();
+    }rendererBufferBytes=Math.max(rendererBufferBytes,bytes);
+   }
   }
   if(mode==='public-switch'&&observedModes.size!==2)throw Error('Public switching did not produce both modes');
-  return{sha256:h.digest('hex'),requestedQueries:20,completedQueries:20,warnings:[...warnings],observedModes:[...observedModes]};
+  return{sha256:h.digest('hex'),requestedQueries:20,completedQueries:20,warnings:[...warnings],observedModes:[...observedModes],...(mode==='gpu-mesh'?{rendererBufferBytes}:{})};
  }
  const parsed=api.importSourceSurfaceMeshConfig({...settings,u_segments:12,v_segments:12,mesh_u_segments:12,mesh_v_segments:12});if(!parsed.ok)throw Error(JSON.stringify(parsed.error));
  const surface=new api.SourceSurfaceHost({configuration:parsed.value.configuration,equations,parameters,frameRate:60,coverage:'all'}),tracks=[];
@@ -60,15 +62,15 @@ for(let repeat=0;repeat<3;repeat++){const cpu=process.cpuUsage(),start=performan
 console.log(JSON.stringify({variant,mode,rows}));
 `);
 const results=[];
-for(const mode of ['points','mesh'])for(const variant of ['before','after'])results.push(JSON.parse(run(process.execPath,[runner,variant,mode])));
+for(const mode of ['points','mesh','gpu-points'])for(const variant of ['before','after'])results.push(JSON.parse(run(process.execPath,[runner,variant,mode])));
 results.push(JSON.parse(run(process.execPath,[runner,'after','switch'])));
 results.push(JSON.parse(run(process.execPath,[runner,'after','public-switch'])));
-results.push(JSON.parse(run(process.execPath,[runner,'after','gpu-points'])));
-const comparisons=[0,2].map(i=>({mode:results[i].mode,equal:results[i].rows.every((r,j)=>r.sha256===results[i+1].rows[j].sha256)}));
+results.push(JSON.parse(run(process.execPath,[runner,'after','gpu-mesh'])));
+const comparisons=[0,2,4].map(i=>({mode:results[i].mode,equal:results[i].rows.every((r,j)=>r.sha256===results[i+1].rows[j].sha256)}));
 const repeatStable=results.every(r=>r.rows.every(x=>x.sha256===r.rows[0].sha256));
 const sourceStable=(await Promise.all(Object.entries(sources).map(async([path,hash])=>createHash('sha256').update(await readFile(path)).digest('hex')===hash))).every(Boolean);
 const report={status:comparisons.every(r=>r.equal)&&repeatStable&&sourceStable?'passed':'failed',at:new Date().toISOString(),baseline,directory,sources,sourceStable,repeatStable,comparisons,results,
- scope:'Existing public CPU point/mesh import-save-reopen and 20 full generated frames compared with pinned baseline. New host runs 106 frames with six mode replacements; no pre-feature equivalent. Exact typed arrays and camera facts hashed; timing/work counts excluded. Explicit normalization: renamed source background output field; neutral mode/overlay fields checked then omitted for old-scene comparison; warning prose retained separately. Public transition import-save-reopen and 20 generated queries measured separately. New GPU points task imports/saves/reopens a 200x200 surface with tracking and produces 20 complete seed/uniform/camera deliveries; CPU-generation and hashing costs only, no GPU draw, no equivalent pre-feature path.',
+ scope:'Existing public CPU point/mesh and 200x200 GPU points import-save-reopen and 20 full generated frames compared with pinned baseline. New host runs 106 frames with six mode replacements; no pre-feature equivalent. Exact typed arrays and camera facts hashed; timing/work counts excluded. No geometry/camera field normalization; warning prose retained separately. Public transition import-save-reopen and 20 generated queries measured separately. New 100x100 GPU mesh task imports/saves/reopens a torus with tracking, prepares 20 complete seed/uniform/camera deliveries and creates/disposes expanded fill+wire renderer buffers. Reports actual host renderer buffer bytes; no GPU upload/draw or native equivalent measured.',
  measurement:'Serial independent process per variant/task, one cold then two fresh warm runs. Time/CPU include task and hashing, exclude build/module load; maxRSS includes module load and is process cumulative high-water. No children during measured task.',
  unmeasured:['agent tokens','GPU/rasterization/PNG','browser process-family memory','native JVM/JOGL costs','original full-frame parity'],nativeParity:false};
-await writeFile('.cache/v2-source-surface-host-cost.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,comparisons,results},null,2));if(report.status!=='passed')process.exitCode=1;
+await writeFile('.cache/v2-source-surface-gpu-mesh-cost.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,comparisons,results},null,2));if(report.status!=='passed')process.exitCode=1;

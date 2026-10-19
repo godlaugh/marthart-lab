@@ -1,3 +1,4 @@
+import {createSourceSurfaceGpuMesh} from './sourceSurfaceGpuMeshRenderer';
 import {createSourceSurfacePoints} from './sourceSurfacePointRenderer';
 import {createSourceSurfaceMeshFill} from './sourceSurfaceMeshRenderer';
 import {createSourceSurfaceMeshLines} from './sourceSurfaceLineRenderer';
@@ -133,13 +134,14 @@ export class ArtRenderer {
     }
   }
   setOutput(output: SceneOutput, document: SceneDocument, fit = false,optics?:{roll:number;focalLength:number;camera?:CameraState}) {
+    if(output.type==='geometry'&&output.sourceGpuMesh&&(output.backend!=='webgl2'||output.topology!=='mesh'||output.positions.length||output.sourcePointAppearance||output.sourceMeshAppearance||output.sourceGpuPoints))throw new Error('GPU 网格需要独立的种子缓冲与匹配后端');
     if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
     if(output.sourceCameraFrame&&output.type!=='geometry')throw new Error('原版几何相机不能应用到已投影的像素图像');
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
     if(output.type==='geometry'&&output.sourcePointAppearance&&output.sourceMeshAppearance)throw new Error('源曲面点与网格外观不能混用');
     if(output.type==='geometry'&&output.sourceMeshWireframe&&!output.sourceMeshAppearance)throw new Error('源曲面线框缺少对应网格外观');
-    if(output.type==='geometry'&&output.sourceSurfaceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance)||!Number.isInteger(output.sourceSurfaceBackgroundColor)||output.sourceSurfaceBackgroundColor<0||output.sourceSurfaceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
+    if(output.type==='geometry'&&output.sourceSurfaceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance||output.sourceGpuMesh)||!Number.isInteger(output.sourceSurfaceBackgroundColor)||output.sourceSurfaceBackgroundColor<0||output.sourceSurfaceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
     const overlayAlpha=output.type==='geometry'?output.sourceSurfaceOverlayAlpha:undefined;
     if(overlayAlpha!==undefined&&(output.type!=='geometry'||output.sourceSurfaceBackgroundColor===undefined||!Number.isInteger(overlayAlpha)||overlayAlpha<0||overlayAlpha>255))throw new Error('源曲面遮罩需要对应背景与 0–255 透明度');
     const sourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
@@ -183,6 +185,10 @@ export class ArtRenderer {
       );
       this.group.add(plane);
       this.controls.enableRotate = false;
+    } else if(output.sourceGpuMesh){
+      if(!sourcePlan)throw new Error('源 GPU 网格需要对应相机帧');
+      const {fill,wire}=createSourceSurfaceGpuMesh(output.sourceGpuMesh,sourcePlan,Number(document.settings.opacity??1));
+      if(fill)this.group.add(fill);if(wire)this.group.add(wire);this.controls.enableRotate=false;
     } else if(output.sourceMeshAppearance){
       if(!sourcePlan)throw new Error('源曲面网格需要对应的源相机帧');
       const opacity=Number(document.settings.opacity??1),fill=createSourceSurfaceMeshFill(output,sourcePlan,opacity);

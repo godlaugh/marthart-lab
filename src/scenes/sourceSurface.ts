@@ -30,7 +30,17 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
    };
   }
   if(snapshot.mode==='mesh'){
-   const mesh=snapshot.mesh,geometry=mesh.geometry,positions=geometry?.positions??new Float32Array(),indices=geometry?.triangles??new Uint32Array();
+   const mesh=snapshot.mesh;
+   if(mesh.gpuMesh){
+    const gpu=mesh.gpuMesh;
+    return{type:'geometry',topology:'mesh',backend:'webgl2',positions:new Float32Array(),sourceGpuMesh:{...gpu,referencePixelDensity:context.sourcePointPixelDensity},
+     sourceSurfaceBackgroundColor:configuration.backgroundColor,sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),
+     temporal:{time:frame.time,windowStart:frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:0,cacheHits:0},
+     stats:{samples:configuration.mesh.uSegments*configuration.mesh.vSegments,generated:gpu.seeds.length/4,invalid:0,elapsedMs:performance.now()-started},
+     warnings:[...mesh.diagnostics,...frame.diagnostics.map(d=>d.message),'原版 GPU 网格位置与法线由着色器计算；参数更新保留创建时三角拓扑，独立线框不产生可见几何。原版完整画面尚未验收。'],
+    };
+   }
+   const geometry=mesh.geometry,positions=geometry?.positions??new Float32Array(),indices=geometry?.triangles??new Uint32Array();
    return{type:'geometry',topology:'mesh',backend:'cpu',positions,indices,
     sourceMeshColors:mesh.packedColors,sourceMeshWireframe:mesh.wireframe,
     sourceMeshAppearance:sourceSurfaceMeshAppearance(mesh.fillEnabled,mesh.fillOpacity),

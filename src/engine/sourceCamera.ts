@@ -122,6 +122,9 @@ export interface SourceCameraPlan {
  readonly model:typeof SOURCE_CAMERA_MODEL;readonly camera:SourceCameraState;
  readonly viewport:SourceCameraViewport;readonly displayScale:number;
  readonly projection:SourceCameraMatrix;readonly modelView:SourceCameraMatrix;
+ /** Processing's independently maintained projmodelview, including the final
+  * center translate. It cannot be reconstructed from the final P and M. */
+ readonly transform:SourceCameraMatrix;
  readonly optics:Readonly<{halfSensorOverFocal:number;fov:number;cameraZ:number;aspect:number;near:number;far:number;orthographicFar:number|null}>;
  readonly arithmetic:'staged-float32-host-libm';
 }
@@ -218,9 +221,16 @@ export function prepareSourceCamera(input:unknown,viewportInput:unknown):SourceC
  // Apply each source operation in sequence: multiplying by the combined
  // rotation would reassociate Float32 sums and change low bits.
  rotate(modelViewValues,'z',-c.gamma);rotate(modelViewValues,'x',c.phi);rotate(modelViewValues,'z',c.theta);
- translate(modelViewValues,-c.center[0],-c.center[1],-c.center[2]);
+ // Scene.render's fade wrapper calls camera()+ortho(), then popMatrix().
+ // popMatrix restores modelview but not projection, so ortho is already active
+ // during the scene transform. Every rotateImpl rebuilds projmodelview=P*M;
+ // only the last rebuild survives to the draw, so earlier products need not
+ // be allocated. translateImpl then translates M and P*M independently.
  const ortho=projectionPass==='scene-fade-orthographic'?orthographic(w,h):null;
  const projectionValues=ortho?.values??perspective(fov,aspect,near,far);
- if(!finite([...modelViewValues,...projectionValues])||projectionValues[0]===0||projectionValues[5]===0||projectionValues[10]===0)throw new CameraBoundaryError('projection','singular-camera');
- return{kind:'known',plan:Object.freeze({model:SOURCE_CAMERA_MODEL,camera,viewport:Object.freeze({logicalWidth,logicalHeight,referenceLogicalHeight,target,projectionPass}),displayScale,projection:matrix(projectionValues),modelView:matrix(modelViewValues),optics:Object.freeze({halfSensorOverFocal,fov,cameraZ,aspect,near,far,orthographicFar:ortho?.far??null}),arithmetic:'staged-float32-host-libm'})};
+ const transformValues=[...projectionValues];apply(transformValues,modelViewValues);
+ translate(modelViewValues,-c.center[0],-c.center[1],-c.center[2]);
+ translate(transformValues,-c.center[0],-c.center[1],-c.center[2]);
+ if(!finite([...modelViewValues,...projectionValues,...transformValues])||projectionValues[0]===0||projectionValues[5]===0||projectionValues[10]===0)throw new CameraBoundaryError('projection','singular-camera');
+ return{kind:'known',plan:Object.freeze({model:SOURCE_CAMERA_MODEL,camera,viewport:Object.freeze({logicalWidth,logicalHeight,referenceLogicalHeight,target,projectionPass}),displayScale,projection:matrix(projectionValues),modelView:matrix(modelViewValues),transform:matrix(transformValues),optics:Object.freeze({halfSensorOverFocal,fov,cameraZ,aspect,near,far,orthographicFar:ortho?.far??null}),arithmetic:'staged-float32-host-libm'})};
 });}

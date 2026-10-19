@@ -1,3 +1,4 @@
+import type {SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {parseSourceRealExpression,type SourceRealExpressionNode} from './domainSourceScalar';
 import type {SourceSurfaceFunctionInput} from './sourceSurfaceFunction';
 
@@ -115,4 +116,9 @@ export function prepareSourceSurfaceGpuFunction(input:SourceSurfaceFunctionInput
   if(functionBody.length>SOURCE_SURFACE_GPU_EMISSION_LIMITS.characters)fail('capacity','GPU 曲面函数文本超过本地着色器容量');
   return{ok:true,value:Object.freeze({functionBody,parameterNames,scales,offsets,uniforms})};
  }catch(error){if(error instanceof Rejected)return{ok:false,error:{kind:error.kind,reason:error.message}};throw error;}
+}
+
+export function sourceSurfaceGpuFunction(equations:Readonly<Record<string,string>>,parameters:Readonly<Record<string,number>>,configuration:SourceSurfaceMeshConfiguration):SourceSurfaceGpuFunction {
+ const t=configuration.transform,result=prepareSourceSurfaceGpuFunction({equations,parameters,scales:[t.scaleX,t.scaleY,t.scaleZ],offsets:[t.offsetX,t.offsetY,t.offsetZ]});
+ if(!result.ok)throw new Error(`原版 GPU 曲面公式 ${result.error.kind}: ${result.error.reason}`);return result.value;
 }

@@ -53,9 +53,9 @@ describe('public native GPU point surface',()=>{
   expect(buffers).toContain(first.sourceGpuPoints!.seeds.buffer);expect(buffers).toContain(first.sourceGpuPoints!.tint.buffer);expect(buffers).toContain(first.sourceGpuPoints!.parameters.buffer);
   structuredClone(first,{transfer:buffers});expect(first.sourceGpuPoints!.seeds.byteLength).toBe(0);expect(output(s).sourceGpuPoints!.seeds).toEqual(baseline);
  });
- it('preserves explicit errors for cancellation, unsupported GPU mesh and incompatible saved backend',()=>{
+ it('preserves explicit errors for cancellation, incompatible saved backend',()=>{
   const s=read();expect(()=>replaySourceSurfaceHost(s,1,'all',()=>true)).toThrow('取消');
-  expect(()=>read(source({surface_mode:'MESH'}))).toThrow('GPU 网格');s.settings.computeBackend='cpu';expect(()=>parseScene(serializeScene(s))).toThrow();
+  expect(read(source({surface_mode:'MESH'})).surfaceSource!.mode).toBe('mesh');s.settings.computeBackend='cpu';expect(()=>parseScene(serializeScene(s))).toThrow();
  });
  it('rejects inactive GPU switch invocation instead of creating CPU geometry',()=>{expect(()=>host().switchMode('mesh')).toThrow('GPU');});
 });

@@ -55,7 +55,7 @@ describe('source CPU surface through public import, document and geometry',()=>{
   const raw=source();raw.timeline[0].actions[0].args=[];
   const s=scene(raw);expect(usesSourceSurfaceParticles(s)).toBe(false);expect(supportsParticleTracking(s)).toBe(false);
  });
- it.each([{render_mode:'GPU',surface_mode:'MESH'},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
+ it.each([{render_mode:'GPU',surface_mode:'MESH',mesh_u_segments:513},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
   expect(()=>scene({...source(),settings:{...source().settings,...settings}})).toThrow(/尚未|待接入|1–512/);
  });
  it('rejects parameter actions without the source registry model during replay',()=>{

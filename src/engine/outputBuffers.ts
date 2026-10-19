@@ -3,6 +3,7 @@ import type {SceneOutput} from '../types';
 /** One inventory owns transferable output storage and cache byte accounting. */
 export function outputBuffers(output:SceneOutput):ArrayBuffer[]{
   const arrays=output.type==='raster'?[output.pixels]:[
+    output.sourceGpuMesh?.seeds,output.sourceGpuMesh?.triangles,output.sourceGpuMesh?.packedColors,output.sourceGpuMesh?.parameters,
     output.sourceGpuPoints?.seeds,output.sourceGpuPoints?.tint,output.sourceGpuPoints?.parameters,
     output.positions,output.indices,output.meshEdges,output.colors,output.pointAlphas,output.particleIds,output.sourceMeshColors,output.sourceMeshWireframe?.positions,
     output.surfaceGrid?.vertexIndices,output.surfaceGrid?.cellTriangles,

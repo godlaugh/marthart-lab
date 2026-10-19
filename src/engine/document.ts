@@ -204,10 +204,9 @@ export function parseSceneValue(data: unknown): SceneDocument {
     if(data.kind==='surface'||data.kind==='attractor')parseTrailAppearance(data.settings as Settings);
   }
   if(data.surfaceSource!==undefined){
-    if(!usesSourceSurfaceHost(data as unknown as SceneDocument))fail('曲面源网格配置仅适用于原版 CPU 网格');
+    if(!usesSourceSurfaceHost(data as unknown as SceneDocument))fail('曲面源配置需要对应原版曲面宿主');
     const parsed=parseSourceSurfaceMeshConfiguration(data.surfaceSource);
     if(!parsed.ok)fail(`曲面源网格配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
-    if(parsed.value.nativeBackend==='gpu'&&parsed.value.mode!=='points')fail('曲面源 GPU 网格尚未接入');
     data.surfaceSource=parsed.value;
   }
   if(usesSourceSurfaceHost(data as unknown as SceneDocument)){
@@ -221,7 +220,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   // never recover an older value from import provenance over later edits.
   if(data.surfaceSourcePalette===undefined&&usesSourceSurfaceParticles(data as unknown as SceneDocument))data.surfaceSourcePalette={colors:[...palette.stops]};
   if(data.surfaceSourcePalette!==undefined){
-    if(!usesSourceSurfaceGeometry(data as unknown as SceneDocument))fail('曲面源色板仅适用于原版 CPU 曲面');
+    if(!usesSourceSurfaceGeometry(data as unknown as SceneDocument))fail('曲面源色板仅适用于原版曲面');
     data.surfaceSourcePalette=parseSourceSurfacePalette(data.surfaceSourcePalette);
   }
   if(data.rootsSourcePalette!==undefined){

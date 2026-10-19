@@ -150,9 +150,9 @@ describe('one native CPU MeshSurface runtime lifetime',()=>{
   const counted:SourceSurfaceFunction={...base,position:(...args)=>{samples++;return base.position(...args);}};
   expect(()=>setup({},undefined,{}, {surfaceFunction:counted,reserve:()=>{throw Error('shared budget');}})).toThrow('shared budget');expect(samples).toBe(0);
  });
- it('rejects unsupported backend and inconsistent update/display ordering without modifying other owners',()=>{
+ it('rejects missing GPU compiler and inconsistent update/display ordering without modifying other owners',()=>{
   const replacement=setup({surface_mode:'points'}).runtime;replacement.display(0);expect(replacement.snapshot().geometry).toBeDefined();
-  expect(()=>setup({render_mode:'GPU'})).toThrow('CPU');expect(()=>setup({mesh_u_segments:513})).toThrow('1–512');
+  expect(()=>setup({render_mode:'GPU'})).toThrow('编译函数');expect(()=>setup({mesh_u_segments:513})).toThrow('1–512');
   const a=setup().runtime;a.update(frame(0));a.display(0);expect(()=>a.update(frame(0))).toThrow('帧顺序');
   const b=setup().runtime;b.display(0);expect(()=>b.display(2)).toThrow('帧顺序');
   const c=setup().runtime;c.update(frame(0));expect(()=>c.update(frame(1))).toThrow('对应显示帧');

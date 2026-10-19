@@ -1,7 +1,17 @@
-/** CPU MeshSurface fill geometry, derived from the pinned MathArt 1.7.8 class
- * (a6e1da3…24018). This deliberately retains its discarded PVector.cross result.
- * GPU normals, wireframe sampling and material selection have separate owners. */
+/** MeshSurface parameter-grid and seam owner, derived from MathArt 1.7.8
+ * (a6e1da3…24018). CPU normals retain its discarded PVector.cross result;
+ * GPU positions/normals and wireframe shading belong to the shader owner. */
 export type SourceMeshVector=readonly [number,number,number];
+type SourceMeshUv=readonly [number,number];
+export interface SourceSurfaceMeshSeams {
+ wrapU:boolean;wrapV:boolean;twistedU:boolean;twistedV:boolean;shiftU:number;
+}
+export interface SourceSurfaceGpuMeshGeometryFrame {
+ /** Retained PShape parameters, never world positions: u, v, speedU, speedV.
+  * GenericSurfaceScene initializes both MeshSurface speeds to zero. */
+ seeds:Float32Array;triangles:Uint32Array;sourceColorIndices:Uint32Array;
+ seams:SourceSurfaceMeshSeams;
+}
 export interface SourceSurfaceMeshGeometryConfiguration {
  numU:number;numV:number;uMin:number;uMax:number;vMin:number;vMax:number;
  meshWrapU:boolean;meshWrapV:boolean;meshWrapThreshold:number;
@@ -19,7 +29,7 @@ export interface SourceSurfaceMeshGeometryFrame {
  wireframeIndexedTriangles:Uint32Array;wireframeUSeamQuads:Float32Array;
  /** U-major particle indices supplying each vertex's base color. */
  sourceColorIndices:Uint32Array;
- seams:{wrapU:boolean;wrapV:boolean;twistedU:boolean;twistedV:boolean;shiftU:number};
+ seams:SourceSurfaceMeshSeams;
 }
 const F=Math.fround,FLOAT_MAX=3.4028234663852886e38;
 const finite=(p:SourceMeshVector)=>p.every(Number.isFinite);
@@ -159,6 +169,34 @@ export function createSourceSurfaceMeshGeometry(config:SourceSurfaceMeshGeometry
   const best=Math.min(paletteShiftDistance(false),paletteShiftDistance(true));
   return Number.isFinite(best)&&best<=F(spacing*Math.max(threshold,F(.35)));
  }
+ function gridVertices(visit:(index:number,u:number,v:number,colorIndex:number)=>void){
+  for(let j=0;j<numV;j++)for(let i=0;i<numU;i++)visit(j*numU+i,atU(i),atV(j),i*numV+j);
+ }
+ function diagonal(points:readonly SourceMeshVector[]):boolean {
+  // GPU useACDiagonal/Param selects AC for an invalid corner; callers on the
+  // CPU path perform their separate omit-invalid admission before reaching here.
+  return !points.every(finite)||distance(points[0],points[2])<=distance(points[1],points[3]);
+ }
+ function quadIndices(a:number,b:number,c:number,d:number,points:readonly SourceMeshVector[]){
+  return diagonal(points)?[a,b,c,a,c,d]:[a,b,d,b,c,d];
+ }
+ /** The native main/U/V/UV traversals are shared by both retained GPU shapes
+  * and immediate CPU fill. Keep repeated closure calls and lazy shift search:
+  * closure mutates twist flags, while only the U-seam traversal owns ensureShift. */
+ function traverseQuads(indexed:(a:number,b:number,c:number,d:number)=>void,param:(uv:readonly SourceMeshUv[],uSeam:boolean)=>void):SourceSurfaceMeshSeams {
+  for(let j=0;j<stacks;j++)for(let i=0;i<slices;i++){const a=j*numU+i;indexed(a,a+1,a+numU+1,a+numU);}
+  const wrapU=shouldWrapU();
+  if(wrapU){ensureShift();for(let j=0;j<stacks;j++)param([[uMax,atV(j)],[uMin,mapV(j)],[uMin,mapV(j+1)],[uMax,atV(j+1)]],true);}
+  const wrapV=shouldWrapV();
+  if(wrapV)for(let i=0;i<slices;i++)indexed(stacks*numU+i,stacks*numU+i+1,twistedV?slices-i-1:i+1,twistedV?slices-i:i);
+  if(shouldWrapU()&&shouldWrapV())param([[uMax,vMax],[uMin,mapV(stacks)],[uMin,mapV(0)],[uMax,vMin]],false);
+  return{wrapU,wrapV,twistedU,twistedV,shiftU};
+ }
+ /** drawMeshGPU PC156–236 checks live closures for uniforms, without forcing
+  * shape reconstruction or the continuous-shift search. */
+ function sampleSeams():SourceSurfaceMeshSeams {
+  const wrapU=shouldWrapU(),wrapV=shouldWrapV();return{wrapU,wrapV,twistedU,twistedV,shiftU};
+ }
  function render():SourceSurfaceMeshGeometryFrame {
   if(numU<2||numV<2){reserve(1);return{positions:new Float32Array(),normals:new Float32Array(),triangles:new Uint32Array(),wireframeIndexedTriangles:new Uint32Array(),wireframeUSeamQuads:new Float32Array(),sourceColorIndices:new Uint32Array(),seams:{wrapU:false,wrapV:false,twistedU,twistedV,shiftU}};}
   const grid=numU*numV,maxVertices=grid+4*stacks+4,maxIndices=6*grid;
@@ -169,16 +207,14 @@ export function createSourceSurfaceMeshGeometry(config:SourceSurfaceMeshGeometry
   let vertices=grid,indexCount=0,indexedWireCount=0,uWireCount=0;
   const put=(index:number,p:SourceMeshVector,n:SourceMeshVector,color:number)=>{positions.set(p,index*3);normals.set(n,index*3);colors[index]=color;};
   const get=(i:number):SourceMeshVector=>[positions[i*3],positions[i*3+1],positions[i*3+2]];
-  for(let j=0;j<numV;j++)for(let i=0;i<numU;i++){
-   const u=atU(i),v=atV(j),p=position(u,v);put(j*numU+i,p,normal(u,v,p,false),i*numV+j);
-  }
+  gridVertices((index,u,v,color)=>{const p=position(u,v);put(index,p,normal(u,v,p,false),color);});
   function quad(a:number,b:number,c:number,d:number,indexed=true){
    reserve(1);const pa=get(a),pb=get(b),pc=get(c),pd=get(d);if(![pa,pb,pc,pd].every(finite))return;
-   const indices=distance(pa,pc)<=distance(pb,pd)?[a,b,c,a,c,d]:[a,b,d,b,c,d];
+   const indices=quadIndices(a,b,c,d,[pa,pb,pc,pd]);
    triangles.set(indices,indexCount);indexCount+=6;
    if(indexed){indexedWire.set(indices,indexedWireCount);indexedWireCount+=6;}
   }
-  function paramQuad(uv:readonly (readonly [number,number])[],uSeam=false){
+  function paramQuad(uv:readonly SourceMeshUv[],uSeam=false){
    reserve(1);const points=uv.map(([u,v])=>position(u,v));if(!points.every(finite))return;
    if(uSeam)for(const p of points){uWire.set(p,uWireCount);uWireCount+=3;}
    const first=vertices;
@@ -187,16 +223,34 @@ export function createSourceSurfaceMeshGeometry(config:SourceSurfaceMeshGeometry
    }
    quad(first,first+1,first+2,first+3,false);
   }
-  for(let j=0;j<stacks;j++)for(let i=0;i<slices;i++){const a=j*numU+i;quad(a,a+1,a+numU+1,a+numU);}
-  const wrapU=shouldWrapU();
-  if(wrapU){ensureShift();for(let j=0;j<stacks;j++)paramQuad([[uMax,atV(j)],[uMin,mapV(j)],[uMin,mapV(j+1)],[uMax,atV(j+1)]],true);}
-  const wrapV=shouldWrapV();
-  if(wrapV)for(let i=0;i<slices;i++)quad(stacks*numU+i,stacks*numU+i+1,twistedV?slices-i-1:i+1,twistedV?slices-i:i);
-  if(shouldWrapU()&&shouldWrapV())paramQuad([[uMax,vMax],[uMin,mapV(stacks)],[uMin,mapV(0)],[uMax,vMin]]);
-  return{positions:positions.slice(0,vertices*3),normals:normals.slice(0,vertices*3),triangles:triangles.slice(0,indexCount),wireframeIndexedTriangles:indexedWire.slice(0,indexedWireCount),wireframeUSeamQuads:uWire.slice(0,uWireCount),sourceColorIndices:colors.slice(0,vertices),seams:{wrapU,wrapV,twistedU,twistedV,shiftU}};
+  const seams=traverseQuads(quad,paramQuad);
+  return{positions:positions.slice(0,vertices*3),normals:normals.slice(0,vertices*3),triangles:triangles.slice(0,indexCount),wireframeIndexedTriangles:indexedWire.slice(0,indexedWireCount),wireframeUSeamQuads:uWire.slice(0,uWireCount),sourceColorIndices:colors.slice(0,vertices),seams};
+ }
+ function renderGpu():SourceSurfaceGpuMeshGeometryFrame {
+  if(numU<2||numV<2){reserve(1);return{seeds:new Float32Array(),triangles:new Uint32Array(),sourceColorIndices:new Uint32Array(),seams:{wrapU:false,wrapV:false,twistedU,twistedV,shiftU}};}
+  const grid=numU*numV,maxVertices=grid+4*stacks+4,maxIndices=6*grid;
+  // Includes independent result copies and CPU diagonal-sample storage. CPU
+  // evaluations choose topology only; no positioned geometry is published.
+  reserve(2*(5*maxVertices+maxIndices)+3*grid);
+  const seeds=new Float32Array(maxVertices*4),colors=new Uint32Array(maxVertices),triangles=new Uint32Array(maxIndices),samples=new Float32Array(grid*3);
+  let vertices=grid,indexCount=0;
+  const put=(index:number,u:number,v:number,color:number)=>{seeds[index*4]=u;seeds[index*4+1]=v;colors[index]=color;};
+  gridVertices((index,u,v,color)=>{put(index,u,v,color);samples.set(position(u,v),index*3);});
+  const get=(index:number):SourceMeshVector=>[samples[index*3],samples[index*3+1],samples[index*3+2]];
+  function emit(a:number,b:number,c:number,d:number,points:readonly SourceMeshVector[]){
+   reserve(1);triangles.set(quadIndices(a,b,c,d,points),indexCount);indexCount+=6;
+  }
+  function indexed(a:number,b:number,c:number,d:number){emit(a,b,c,d,[get(a),get(b),get(c),get(d)]);}
+  function param(uv:readonly SourceMeshUv[]){
+   const points=uv.map(([u,v])=>position(u,v)),first=vertices;
+   for(const [u,v] of uv)put(vertices++,u,v,nearestColor(u,v));
+   emit(first,first+1,first+2,first+3,points);
+  }
+  const seams=traverseQuads(indexed,param);
+  return{seeds:seeds.slice(0,vertices*4),triangles:triangles.slice(0,indexCount),sourceColorIndices:colors.slice(0,vertices),seams};
  }
  // An interrupted first shift search has changed native mutable state. Do not
  // permit a caller to reuse that partial state after a resource/cancel failure.
- return{render:()=>guarded(render),cyclicPaletteU:()=>guarded(cyclicPaletteU),invalidateWrapShift:()=>guarded(()=>{shiftDirty=true;}),sampleParameterNormal:(u:number,v:number)=>guarded(()=>normal(F(u),F(v),position(F(u),F(v)),true))};
+ return{render:()=>guarded(render),renderGpu:()=>guarded(renderGpu),sampleSeams:()=>guarded(sampleSeams),cyclicPaletteU:()=>guarded(cyclicPaletteU),invalidateWrapShift:()=>guarded(()=>{shiftDirty=true;}),sampleParameterNormal:(u:number,v:number)=>guarded(()=>normal(F(u),F(v),position(F(u),F(v)),true))};
 }
 export type SourceSurfaceMeshGeometry=ReturnType<typeof createSourceSurfaceMeshGeometry>;

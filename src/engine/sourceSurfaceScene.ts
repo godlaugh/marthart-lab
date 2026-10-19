@@ -1,4 +1,4 @@
-import {prepareSourceSurfaceGpuPoints} from './sourceSurfaceGpuPoints';
+import {sourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
 import type {SceneDocument} from '../types';
 import {usesSourceSurfaceHost,SOURCE_SURFACE_HOST_CLIP_TYPES,SOURCE_SURFACE_ACTION_METHODS} from './sourceSurfaceIdentity';
 import {parseSourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
@@ -16,7 +16,7 @@ export function prepareSourceSurfaceScene(scene:SceneDocument){
  if(!parsed.ok)throw new Error(`原版曲面 ${parsed.error.path.join('.')}：${parsed.error.reason}`);
  const configuration=parsed.value,s=scene.settings;
  if(s.computeBackend!==(configuration.nativeBackend==='gpu'?'webgl2':'cpu'))throw new Error('原版曲面宿主与所选后端不匹配');
- if(configuration.nativeBackend==='gpu'){if(configuration.mode!=='points')throw new Error('原版 GPU 网格尚未接入');prepareSourceSurfaceGpuPoints(scene.equations,scene.parameters,configuration);}
+ if(configuration.nativeBackend==='gpu')sourceSurfaceGpuFunction(scene.equations,scene.parameters,configuration);
  if(s.scale!==1||['rotateX','rotateY','rotateZ'].some(key=>Number(s[key]??0)!==0))throw new Error('原版曲面使用源分轴缩放与偏移，不执行本地整体变换');
  if(!Number.isFinite(scene.timeline.fps)||scene.timeline.fps<1||scene.timeline.fps>120)throw new Error('原版曲面帧率必须在 1–120');
  const modes=new Set([configuration.mode]);

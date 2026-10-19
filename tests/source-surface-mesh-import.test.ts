@@ -56,9 +56,9 @@ describe('public original CPU mesh import and saved document boundary',()=>{
   expect(scene.surfaceSource!.points.uSegments).toBe(-9);expect(scene.surfaceSource!.mesh.wireframeUSegments).toBe(-5);
   expect(parseScene(serializeScene(scene)).surfaceSource).toEqual(scene.surfaceSource);
  });
- it('rejects nonfinite scalars, malformed backend and unsupported GPU',()=>{
+ it('rejects nonfinite scalars and malformed backend while preserving GPU selection',()=>{
   expect(()=>read({render_mode:3})).toThrow('render_mode');
-  expect(()=>read({render_mode:'GPU'})).toThrow('GPU');
+  expect(read({render_mode:'GPU'}).surfaceSource!.nativeBackend).toBe('gpu');
   expect(()=>read({mesh_fill_opacity:'1e999'})).toThrow();
   expect(read({},[{type:'surface_mode_transition',duration:1,to:'POINTS'}]).timeline.tracks[0]).toMatchObject({type:'surface_mode_transition',surfaceMode:'points'});
   const scene=read({},[{enabled:false,type:'surface_mode_transition',duration:{bad:true}}]);expect(scene.timeline.tracks).toHaveLength(0);
