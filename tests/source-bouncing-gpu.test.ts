@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,sourceBouncingGpuDisplayLayout,SourceBouncingGpu,type SourceBouncingUpdate,type SourceBouncingGpuDisplay} from '../src/engine/sourceBouncingGpu';
+import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,sourceBouncingGpuDisplayLayout,SourceBouncingGpu,SOURCE_BOUNCING_GPU_LIMITS,type SourceBouncingUpdate,type SourceBouncingGpuDisplay} from '../src/engine/sourceBouncingGpu';
 import {importSourceBouncingVisualConfig} from '../src/engine/sourceBouncingVisualConfig';
 import {prepareSourceCamera,SOURCE_CAMERA_MODEL} from '../src/engine/sourceCamera';
 import cameraFixture from './fixtures/source-camera/transforms.json';
@@ -68,6 +68,17 @@ describe('Bouncing particle display admission before allocating GPU resources',(
  });
  it('rejects excessive point coverage without silently clamping dot size',()=>{
   const input=options();input.visualConfiguration.dotSize=1e6;rejects(input,'点片元');
+ });
+ it('rejects malformed boundary projection or over-capacity paths before GPU allocation',()=>{
+  rejects({...options(),boundary:{kind:'polygon',vertices:Array.from({length:65},()=>[0,0] as const)}},'64');
+  const input=options();rejects({...input,boundary:{kind:'circle',center:[0,0],radius:1},cameraPlan:{...input.cameraPlan,viewport:{...input.cameraPlan.viewport,projectionPass:'unknown'}}},'投影未知');
+ });
+ it('reserves boundary CPU and GPU buffers in the same total budget as particles and pixels',()=>{
+  const width=1920,height=4966,count=2000000;
+  expect(sourceBouncingGpuLayout(count).bytes+sourceBouncingGpuDisplayLayout(width,height).bytes).toBeLessThan(SOURCE_BOUNCING_GPU_LIMITS.bytes);
+  const gpu=new SourceBouncingGpu(new Float32Array(count*4));
+  try{expect(()=>gpu.render({...options(),width,height,boundary:{kind:'circle',center:[0,0],radius:1}})).toThrow('合计');expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,boundaryDraws:0});}
+  finally{gpu.dispose();}
  });
  it('accounts for the whole state and image together before opening a context',()=>{
   const gpu=new SourceBouncingGpu(new Float32Array(2000000*4));

@@ -21,6 +21,9 @@ def F(x):
  except OverflowError:return math.copysign(math.inf,x)
 def div(a,b):return a/b if b else (math.nan if not a else math.copysign(math.inf,a*math.copysign(1,b)))
 def jint(x):return (int(x)+2**31)%2**32-2**31
+def f2i(x):
+ # JVM f2i: NaN becomes zero, overflow saturates, otherwise truncate toward zero.
+ return 0 if math.isnan(x) else 2147483647 if x>=2147483647 else -2147483648 if x<=-2147483648 else int(x)
 class Obj(dict):
  def __init__(self,name):super().__init__();self.name=name
 class Random:
@@ -46,7 +49,7 @@ class VM:
   self.classes={};self.work=0;self.calls=collections.Counter()
   for p in (ROOT/'.cache/v2-bouncing-source').glob('*.json'):
    x=json.loads(p.read_text())
-   if 'methods' in x:
+   if 'methods' in x and x['entry'].startswith('mathart/'):
     actual=hashlib.sha256(ARCHIVE.read(x['entry'])).hexdigest()
     assert actual==x['classSha256'],f'Pinned class hash mismatch: {p}'
     EVIDENCE[str(p.relative_to(ROOT))]={'classEntry':x['entry'],'classSha256':actual,'instructionEvidenceSha256':hashlib.sha256(p.read_bytes()).hexdigest()}
@@ -60,6 +63,7 @@ class VM:
    else:i+=1
    args.append(s[start:i])
   return args,s[i+1:]
+ def static(self,ref):return ref.split(" ")[1]
  def call(self,name,method,desc,obj,args):
   self.calls[name+'.'+method]+=1
   if name=='java/lang/Object':return None
@@ -117,15 +121,20 @@ class VM:
    elif 0x4f<=op<=0x56:value=s.pop();index=s.pop();a=s.pop();a[index]=value
    elif op==0x57:s.pop()
    elif op==0x59:s.append(s[-1])
+   elif op==0x5a:a,b=s[-2:];s[-2:]=[b,a,b]
+   elif op==0x5b:a,b,c=s[-3:];s[-3:]=[c,a,b,c]
    elif op==0x5c:s.extend(s[-2:])
    elif 0x60<=op<=0x73:
     b=s.pop();a=s.pop();group=(op-0x60)//4;kind=(op-0x60)%4
     value=[lambda:a+b,lambda:a-b,lambda:a*b,lambda:div(a,b),lambda:math.fmod(a,b)][group]()
     s.append(F(value) if kind==2 else jint(value) if kind==0 else value)
    elif 0x74<=op<=0x77:s.append(-s.pop())
+   elif op in [0x78,0x7a,0x7c,0x7e,0x80,0x82]:
+    b=s.pop();a=s.pop();s.append(jint(a<<(b&31)) if op==0x78 else a>>(b&31) if op==0x7a else (a&0xffffffff)>>(b&31) if op==0x7c else a&b if op==0x7e else a|b if op==0x80 else a^b)
    elif op==0x84:locals[raw[0]]=jint(locals[raw[0]]+int.from_bytes(raw[1:],'big',signed=True))
    elif op in [0x85,0x86,0x87,0x8b,0x8c,0x8d,0x8e,0x8f,0x90]:
-    value=s.pop();s.append(F(value) if op in [0x86,0x90] else int(value) if op in [0x85,0x8b,0x8c,0x8e,0x8f] else float(value))
+    value=s.pop();s.append(F(value) if op in [0x86,0x90] else f2i(value) if op==0x8b else int(value) if op in [0x85,0x8b,0x8c,0x8e,0x8f] else float(value))
+   elif op==0x93:s.append((int(s.pop())+32768)%65536-32768)
    elif 0x94<=op<=0x98:
     b=s.pop();a=s.pop();s.append((-1 if op in [0x95,0x97] else 1) if math.isnan(a) or math.isnan(b) else (a>b)-(a<b))
    elif 0x99<=op<=0xa6:
@@ -147,7 +156,7 @@ class VM:
     nextpc=pc+target
    elif 0xac<=op<=0xb0:return s.pop()
    elif op==0xb1:return None
-   elif op==0xb2:s.append(ref.split(' ')[1])
+   elif op==0xb2:s.append(self.static(ref))
    elif op==0xb4:obj1=s.pop();key=ref.split(' ')[1];s.append(obj1.get(key,0))
    elif op==0xb5:value=s.pop();obj1=s.pop();obj1[ref.split(' ')[1]]=value
    elif op in [0xb6,0xb7,0xb8,0xb9]:
@@ -157,6 +166,7 @@ class VM:
    elif op in [0xbc,0xbd]:s.append([0]*s.pop())
    elif op==0xbe:s.append(len(s.pop()))
    elif op==0xc0:pass
+   elif op==0xc1:value=s.pop();s.append(int(isinstance(value,Obj) and value.name==ref))
    elif op in [0xc6,0xc7]:
     value=s.pop()
     if (value is None)==(op==0xc6):nextpc=pc+n(True)

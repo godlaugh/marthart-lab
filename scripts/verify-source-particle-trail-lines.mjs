@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import {createServer as createTcpServer} from 'node:net';
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const core='../.cache/mathart-investigation/MathArt.app/Contents/app/core-4.5.0-acdf3bce2932985b9d091c284407a54.jar';
-const paths=['src/engine/sourceProcessingLineRenderer.ts','src/engine/sourceProcessingGeometry.ts','src/engine/sourceCamera.ts','scripts/verify-source-particle-trail-lines.mjs'];
+const paths=['src/engine/sourceProcessingLineRenderer.ts','src/engine/sourceProcessingStroke.ts','src/engine/sourceProcessingGeometry.ts','src/engine/sourceCamera.ts','scripts/verify-source-particle-trail-lines.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));
 const report={at:new Date().toISOString(),scope:'Indexed CPU particle trail production boundary versus independent Python F32 tessellation and shipped Processing Line shaders; full RGBA8 frames, no MSAA. Shared prepared camera facts. No original JVM/JOGL/native app, public integration, history-owner or original complete-image claim.',unmeasured:['GPU time','Process-family memory','Agent tokens','Native runtime parity','Public playback/export']};
 let server,browser;

@@ -4,10 +4,15 @@ import {prepareSourceBouncingDisplay,type SourceBouncingVisualConfiguration} fro
 import type {SourceCameraPlan} from './sourceCamera';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
+import {prepareSourceBouncingBoundary,SOURCE_BOUNCING_BOUNDARY_LIMITS} from './sourceBouncingBoundary';
+import {sourceProcessingClosedStrokeBuffers,sourceProcessingLineDisplay,sourceProcessingLineVertex,sourceProcessingLineFragment,SOURCE_PROCESSING_CLOSED_STROKE_LIMITS} from './sourceProcessingStroke';
 
 export interface SourceBouncingGpuDisplay {
  readonly width:number;readonly height:number;readonly cameraPlan:SourceCameraPlan;
  readonly visualConfiguration:SourceBouncingVisualConfiguration;readonly initialSpeed:number;
+ /** Already translated world boundary from the seed/update owner. Omission
+  * retains the explicit particle-only diagnostic path. */
+ readonly boundary?:SourceBouncingBoundary;
 }
 export type SourceBouncingBoundary=
  |{readonly kind:'circle';readonly center:readonly[number,number];readonly radius:number}
@@ -60,6 +65,10 @@ function matrix(values:ArrayLike<number>|undefined):Float32Array{
 type Program={program:WebGLProgram;locations:Map<string,WebGLUniformLocation|null>};
 type Target={texture:WebGLTexture;framebuffer:WebGLFramebuffer};
 type DisplayTarget=Target&{width:number;height:number};
+type BoundaryResources={program:Program;vao:WebGLVertexArrayObject;vertices:WebGLBuffer;indices:WebGLBuffer;color:number};
+// Bounded source path (at most 200 points), CPU expanded buffers plus retained
+// GPU buffers. Driver allocations remain outside the representation budget.
+const BOUNDARY_BYTES=SOURCE_PROCESSING_CLOSED_STROKE_LIMITS.maxBufferBytes*2+SOURCE_BOUNCING_BOUNDARY_LIMITS.pathBytes;
 /** Owned motion and particle-drawing layer for the native Bouncing pipeline. Each advance is one
  * actual Mobject.update, independent of its ignored time/dt arguments. This
  * object intentionally does not select a timeline, seed generator or full-scene composition
@@ -68,12 +77,13 @@ export class SourceBouncingGpu {
  readonly layout:ReturnType<typeof sourceBouncingGpuLayout>;
  private initial?:Float32Array;private gl?:WebGL2RenderingContext;private updateProgram?:Program;private renderProgram?:Program;private vao?:WebGLVertexArrayObject;private pointVao?:WebGLVertexArrayObject;private output?:DisplayTarget;
  private targets:Target[]=[];private current=0;private initialized=false;private disposed=false;private failed=false;private failure:unknown;
+ private boundaryResources?:BoundaryResources;private boundaryDraws=0;
  private passes=0;private rendered=0;private readbackBytes=0;private work=0;private readonly cleanup=new Map<object,()=>void>();
  constructor(initial:Float32Array,private readonly isCancelled?:()=>boolean){
   if(!(initial instanceof Float32Array)||initial.length%4)throw new SourceBouncingGpuError('input','源弹跳状态需要 RGBA Float32Array');
   this.layout=sourceBouncingGpuLayout(initial.length/4);this.initial=initial.slice();
  }
- diagnostics(){return{...this.layout,contextOwned:!!this.gl,handles:this.cleanup.size,initialized:this.initialized,disposed:this.disposed,failed:this.failed,passes:this.passes,collisionEdgeWork:this.work,readbackBytes:this.readbackBytes,rendered:this.rendered,estimatedBytes:this.layout.bytes+(this.output?sourceBouncingGpuDisplayLayout(this.output.width,this.output.height).bytes:0)};}
+ diagnostics(){return{...this.layout,contextOwned:!!this.gl,handles:this.cleanup.size,initialized:this.initialized,disposed:this.disposed,failed:this.failed,passes:this.passes,collisionEdgeWork:this.work,readbackBytes:this.readbackBytes,rendered:this.rendered,boundaryDraws:this.boundaryDraws,estimatedBytes:this.layout.bytes+(this.output?sourceBouncingGpuDisplayLayout(this.output.width,this.output.height).bytes:0)+(this.boundaryResources?BOUNDARY_BYTES:0)};}
  private check(){if(this.disposed)throw new SourceBouncingGpuError('disposed','源弹跳 GPU 对象已释放');if(this.failed)throw this.failure;if(this.isCancelled?.())throw new SourceBouncingGpuError('cancelled','源弹跳 GPU 已取消');if(this.gl?.isContextLost())throw new SourceBouncingGpuError('context','源弹跳 GPU 上下文丢失');}
  private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}}
  private own<T extends object>(handle:T|null,release:(value:T)=>void):T{if(!handle)throw new SourceBouncingGpuError('capacity','源弹跳 GPU 资源分配失败');this.cleanup.set(handle,()=>release(handle));return handle;}
@@ -129,15 +139,21 @@ export class SourceBouncingGpu {
  /** Explicit diagnostic copy. Production presentation must consume the owned
   * texture directly instead of reading every particle through this method. */
  readState():Float32Array{return this.guarded(()=>{this.initialize();const gl=this.gl!,out=new Float32Array(this.layout.texels*4);gl.bindFramebuffer(gl.FRAMEBUFFER,this.targets[this.current].framebuffer);gl.readPixels(0,0,this.layout.size,this.layout.size,gl.RGBA,gl.FLOAT,out);this.checkGl();this.readbackBytes+=out.byteLength;return out;});}
- /** Draw the current state texture directly. This layer clears each frame and
-  * includes particles only: boundary stroke and optional scene accumulation
-  * belong to later scene composition. No particle readback occurs here. */
+ /** Draw the current state texture, then the optional source closed boundary
+  * into the same attachment. Each frame clears; scene accumulation and replay
+  * are separate policies. No particle readback occurs here. */
  render(options:SourceBouncingGpuDisplay):{width:number;height:number;pixels:Uint8ClampedArray}{return this.guarded(()=>{
   const d=sourceBouncingGpuDisplayLayout(options.width,options.height);
-  if(this.layout.bytes+d.bytes>SOURCE_BOUNCING_GPU_LIMITS.bytes)throw new SourceBouncingGpuError('capacity','源弹跳状态与绘制表示合计超过256 MiB预算');
+  if(this.layout.bytes+d.bytes+(options.boundary||this.boundaryResources?BOUNDARY_BYTES:0)>SOURCE_BOUNCING_GPU_LIMITS.bytes)throw new SourceBouncingGpuError('capacity','源弹跳状态与绘制表示合计超过256 MiB预算');
   const prepared=prepareSourceBouncingDisplay(options.visualConfiguration,{initialSpeed:options.initialSpeed},options.cameraPlan?.displayScale);
   if(!prepared.ok)throw new SourceBouncingGpuError(prepared.error.kind==='capacity'?'capacity':'input',prepared.error.reason);
   const u=prepared.value,projection=matrix(options.cameraPlan?.projection?.columnMajor),modelview=matrix(options.cameraPlan?.modelView?.columnMajor);
+  let boundary:{buffers:ReturnType<typeof sourceProcessingClosedStrokeBuffers>;color:number;display:ReturnType<typeof sourceProcessingLineDisplay>}|undefined;
+  if(options.boundary){
+   const path=prepareSourceBouncingBoundary(options.boundary,u,options.cameraPlan);
+   if(!path.ok)throw new SourceBouncingGpuError(path.error.kind==='capacity'?'capacity':'input',path.error.reason);
+   if(path.value.positions.length)boundary={buffers:sourceProcessingClosedStrokeBuffers(path.value.positions,path.value.lineWidth,options.cameraPlan),color:path.value.packedColor,display:sourceProcessingLineDisplay(options.cameraPlan)};
+  }
   const pointSize=Math.max(1,u.radius),fragments=this.layout.count*Math.ceil(pointSize)**2;
   if(!Number.isFinite(pointSize)||!Number.isSafeInteger(fragments)||fragments>SOURCE_BOUNCING_GPU_LIMITS.pointFragments||this.rendered>=SOURCE_BOUNCING_GPU_LIMITS.passes)throw new SourceBouncingGpuError('capacity','源弹跳点片元或绘制次数超出预算；不减少粒子或点大小');
   this.initialize();const gl=this.gl!,viewport=gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array,range=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array;
@@ -166,14 +182,36 @@ export class SourceBouncingGpu {
   gl.uniform1i(this.location(p,'paletteCount'),u.paletteCount);gl.uniform3fv(this.location(p,'palette[0]'),u.paletteRgb);
   gl.uniformMatrix4fv(this.location(p,'projection'),false,projection);gl.uniformMatrix4fv(this.location(p,'modelview'),false,modelview);
   gl.drawArrays(gl.POINTS,0,this.layout.count);gl.disable(gl.BLEND);this.checkGl();
+  if(boundary){this.drawBoundary(boundary,projection);this.checkGl();this.boundaryDraws++;}
   const pixels=new Uint8ClampedArray(d.width*d.height*4);gl.readPixels(0,0,d.width,d.height,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(pixels.buffer));this.checkGl();
   const stride=d.width*4,row=new Uint8ClampedArray(stride);for(let y=0;y<Math.floor(d.height/2);y++){const top=y*stride,bottom=(d.height-1-y)*stride;row.set(pixels.subarray(top,top+stride));pixels.copyWithin(top,bottom,bottom+stride);pixels.set(row,bottom);}
   this.rendered++;this.readbackBytes+=pixels.byteLength;return{width:d.width,height:d.height,pixels};
  });}
+ private drawBoundary(boundary:{buffers:ReturnType<typeof sourceProcessingClosedStrokeBuffers>;color:number;display:ReturnType<typeof sourceProcessingLineDisplay>},projection:Float32Array){
+  const gl=this.gl!,limit=SOURCE_PROCESSING_CLOSED_STROKE_LIMITS,offset=limit.maxVertices*16;
+  if(!this.boundaryResources){
+   const program=this.compile('#version 300 es\n'+sourceProcessingLineVertex,'#version 300 es\n'+sourceProcessingLineFragment),vao=this.own(gl.createVertexArray(),v=>gl.deleteVertexArray(v));gl.bindVertexArray(vao);
+   const vertices=this.own(gl.createBuffer(),b=>gl.deleteBuffer(b));gl.bindBuffer(gl.ARRAY_BUFFER,vertices);gl.bufferData(gl.ARRAY_BUFFER,offset*2,gl.DYNAMIC_DRAW);
+   for(const [name,position] of [['position',0],['direction',offset]] as const){const attribute=gl.getAttribLocation(program.program,name);if(attribute<0)throw new SourceBouncingGpuError('shader','源边界顶点属性缺失：'+name);gl.enableVertexAttribArray(attribute);gl.vertexAttribPointer(attribute,4,gl.FLOAT,false,0,position);}
+   const color=gl.getAttribLocation(program.program,'color');if(color<0)throw new SourceBouncingGpuError('shader','源边界颜色属性缺失');gl.disableVertexAttribArray(color);
+   const indices=this.own(gl.createBuffer(),b=>gl.deleteBuffer(b));gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indices);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,limit.maxIndices*4,gl.DYNAMIC_DRAW);
+   this.boundaryResources={program,vao,vertices,indices,color};
+  }
+  const resources=this.boundaryResources,p=resources.program,b=boundary.buffers;
+  gl.useProgram(p.program);gl.bindVertexArray(resources.vao);gl.bindBuffer(gl.ARRAY_BUFFER,resources.vertices);gl.bufferSubData(gl.ARRAY_BUFFER,0,b.positions);gl.bufferSubData(gl.ARRAY_BUFFER,offset,b.directions);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,resources.indices);gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER,0,b.indices);
+  const rgba=new Float32Array(4);writeSourcePackedColor(boundary.color,rgba,0);gl.vertexAttrib4fv(resources.color,rgba);
+  gl.uniformMatrix4fv(this.location(p,'lineModelview'),false,new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]));gl.uniformMatrix4fv(this.location(p,'projection'),false,projection);
+  gl.uniform4fv(this.location(p,'viewport'),boundary.display.viewport);gl.uniform1i(this.location(p,'perspective'),boundary.display.perspective);gl.uniform3fv(this.location(p,'scale'),boundary.display.scale);
+  // endPGL restores Processing BLEND before the boundary flush: RGB uses
+  // normal source alpha, alpha uses ONE+ONE. Depth is explicitly disabled by
+  // BouncingBoundaryMobject; this differs from the preceding particle pass.
+  gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
+  gl.drawElements(gl.TRIANGLES,b.indices.length,gl.UNSIGNED_INT,0);gl.disable(gl.BLEND);
+ }
  dispose():void{
   const gl=this.gl;if(gl){gl.bindVertexArray(null);gl.bindBuffer(gl.ARRAY_BUFFER,null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindTexture(gl.TEXTURE_2D,null);gl.useProgram(null);}
   for(const handle of this.cleanup.keys())this.release(handle);
   if(gl&&!gl.isContextLost()){const retire=gl.getExtension('WEBGL_lose_context');if(!retire)throw new SourceBouncingGpuError('context','源弹跳上下文释放能力缺失；保留所有权等待重试');retire.loseContext();}
-  this.gl=undefined;this.initial=undefined;this.targets=[];this.updateProgram=undefined;this.renderProgram=undefined;this.vao=undefined;this.pointVao=undefined;this.output=undefined;this.disposed=true;
+  this.gl=undefined;this.initial=undefined;this.targets=[];this.updateProgram=undefined;this.renderProgram=undefined;this.vao=undefined;this.pointVao=undefined;this.output=undefined;this.boundaryResources=undefined;this.disposed=true;
  }
 }
