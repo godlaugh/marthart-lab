@@ -2,7 +2,7 @@ import type {DomainSourceInterpolation} from './domainSourcePalette';
 import type {SourceSurfaceGradientMode} from './sourceSurfaceGradient';
 
 /** Shared native arithmetic for targets whose three starting offset getters
- * all return their primary offset (Roots, Surface and Attractor). Target application and
+ * all return their primary offset (Roots, Surface, Attractor and Perlin). Target application and
  * scene update scheduling remain with those owners. */
 export interface SourceGradientConfiguration {readonly mode:SourceSurfaceGradientMode;readonly interpolation:DomainSourceInterpolation;readonly speed:number;}
 export interface SourceGradientFrame {readonly palette:number;readonly inside:number;readonly outside:number;}
