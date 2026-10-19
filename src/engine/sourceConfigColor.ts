@@ -1,3 +1,6 @@
+import {javaTrim} from './sourceJavaText';
+import {sourceJavaDecimalDigit} from './rootsSourceCharacters';
+
 /** Shared successful ConfigUtils.parseColor/PApplet.unhex parsing. Recovery is
  * owned by each format adapter: Domain rejects invalid strings; Roots retains
  * them and reports the source white-color recovery. */
@@ -18,4 +21,26 @@ export function sourceConfigPackedColor(value:string):number {
  else if(value.startsWith('0x')){result=integer(value.slice(2),16,64);if((result&1095216660480n)===0n&&value.length<=8)result|=0xff000000n;}
  else result=integer(value,10,32);
  return Number(BigInt.asUintN(32,result));
+}
+
+/** BouncingBoundaryMobject.parseColor is a distinct source format: remove all
+ * hashes after Java trim, then Integer.parseInt(hex), not PApplet.unhex(long).
+ * Java radix-16 digits include BMP decimal digits and fullwidth A–F. Only this
+ * boundary uses those mappings; other color callers keep their existing scope.
+ * Invalid/overflow colors recover to source white. */
+export function sourceBouncingBoundaryPackedColor(value:string):number {
+ const raw=javaTrim(value).replaceAll('#','');
+ if(raw.length!==6&&raw.length!==8)return 0xffffffff;
+ let normalized='';
+ for(let i=0;i<raw.length;i++){
+  const c=raw.charCodeAt(i);
+  if(i===0&&(c===43||c===45)){normalized+=raw[i];continue;}
+  const decimal=sourceJavaDecimalDigit(raw[i]);
+  if(decimal>=0){normalized+=String(decimal);continue;}
+  const letter=c>=0xff21&&c<=0xff26?c-0xff21+10:c>=0xff41&&c<=0xff46?c-0xff41+10:c>=65&&c<=70?c-65+10:c>=97&&c<=102?c-97+10:-1;
+  if(letter<0)return 0xffffffff;
+  normalized+=letter.toString(16);
+ }
+ try{const parsed=integer(normalized,16,32);return Number(BigInt.asUintN(32,raw.length===6?parsed|0xff000000n:parsed));}
+ catch(error){if(error instanceof SourceConfigColorError)return 0xffffffff;throw error;}
 }

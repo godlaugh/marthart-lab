@@ -1,5 +1,8 @@
 import {describe,it,expect} from 'vitest';
-import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,SourceBouncingGpu,type SourceBouncingUpdate} from '../src/engine/sourceBouncingGpu';
+import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,sourceBouncingGpuDisplayLayout,SourceBouncingGpu,type SourceBouncingUpdate,type SourceBouncingGpuDisplay} from '../src/engine/sourceBouncingGpu';
+import {importSourceBouncingVisualConfig} from '../src/engine/sourceBouncingVisualConfig';
+import {prepareSourceCamera,SOURCE_CAMERA_MODEL} from '../src/engine/sourceCamera';
+import cameraFixture from './fixtures/source-camera/transforms.json';
 
 const input:SourceBouncingUpdate={subSteps:2,timeStep:.012,particleRadius:.006,boundary:{kind:'circle',center:[0,0],radius:.55}};
 describe('native Bouncing update uniform boundary',()=>{
@@ -34,5 +37,41 @@ describe('native Bouncing update uniform boundary',()=>{
   expect(owner.diagnostics()).toMatchObject({contextOwned:false,handles:0,passes:0});
   expect(()=>owner.advance(input)).toThrow('取消');owner.dispose();owner.dispose();expect(owner.diagnostics()).toMatchObject({contextOwned:false,handles:0,disposed:true});
   expect(()=>new SourceBouncingGpu(new Float32Array(3))).toThrow('RGBA');
+ });
+ it('includes polygon area and recovery edge scans in pre-context work admission',()=>{
+  const gpu=new SourceBouncingGpu(new Float32Array(200000*4));
+  try{
+   expect(()=>gpu.advance({...input,subSteps:16,boundary:{kind:'polygon',vertices:Array.from({length:64},(_,i)=>[Math.cos(i*Math.PI/32),Math.sin(i*Math.PI/32)] as const)}})).toThrow('碰撞边工作量');
+   expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,passes:0,collisionEdgeWork:0});
+  }finally{gpu.dispose();}
+ });
+});
+
+describe('Bouncing particle display admission before allocating GPU resources',()=>{
+ function options():SourceBouncingGpuDisplay{
+  const row=cameraFixture.cases[0],camera=prepareSourceCamera({model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:row.frame},row.viewport),visual=importSourceBouncingVisualConfig({});
+  if(!camera.ok||camera.value.kind!=='known'||!visual.ok)throw Error('Invalid retained fixture');
+  return{width:320,height:180,cameraPlan:camera.value.plan,visualConfiguration:visual.value.configuration,initialSpeed:1};
+ }
+ function rejects(input:SourceBouncingGpuDisplay,match:string){
+  const gpu=new SourceBouncingGpu(new Float32Array([0,0,1,0]));
+  try{expect(()=>gpu.render(input)).toThrow(match);expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,rendered:0,readbackBytes:0,failed:true});}
+  finally{gpu.dispose();}
+ }
+ it('rejects impossible raster requests without obtaining a browser context',()=>{
+  for(const width of [0,-1,.5,NaN,Infinity,16385])rejects({...options(),width},'画布');
+  rejects({...options(),width:16384,height:16384},'画布');
+  expect(sourceBouncingGpuDisplayLayout(1920,1080).bytes).toBeGreaterThan(1920*1080*8);
+ });
+ it('rejects corrupted camera upload arrays before initialization',()=>{
+  const input=options();input.cameraPlan.projection.columnMajor[5]=NaN;rejects(input,'Float32');
+ });
+ it('rejects excessive point coverage without silently clamping dot size',()=>{
+  const input=options();input.visualConfiguration.dotSize=1e6;rejects(input,'点片元');
+ });
+ it('accounts for the whole state and image together before opening a context',()=>{
+  const gpu=new SourceBouncingGpu(new Float32Array(2000000*4));
+  try{expect(()=>gpu.render({...options(),width:4096,height:4096})).toThrow('合计');expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,rendered:0});}
+  finally{gpu.dispose();}
  });
 });

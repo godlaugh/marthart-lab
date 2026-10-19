@@ -317,3 +317,72 @@ void main() {
   newState = vec4(pos, vel);
 }
 `;
+
+// Retained bouncing_particles_render.vert SHA256 9fe1cd5e0ef63f82e27350d9cce8edf52adb0ce3dd78ff8f4756aabfce56a92a.
+export const sourceBouncingRenderVertex=`#version 300 es
+precision highp float;
+precision highp int;
+
+uniform mat4 projection;
+uniform mat4 modelview;
+uniform sampler2D stateTex;
+uniform int texSize;
+uniform vec3 scale;
+uniform vec3 offset;
+uniform float radius;
+uniform int particleCount;
+
+out float vSpeed;
+out float vColorT;
+
+void main() {
+  int x = gl_VertexID % texSize;
+  int y = gl_VertexID / texSize;
+  vec4 state = texelFetch(stateTex, ivec2(x, y), 0);
+  vec3 world = vec3(state.xy, 0.0) * scale + offset;
+  gl_Position = projection * modelview * vec4(world, 1.0);
+  gl_PointSize = max(radius, 1.0);
+  vSpeed = length(state.zw);
+  vColorT = float(gl_VertexID) / float(max(particleCount - 1, 1));
+}
+`;
+
+// Retained bouncing_particles_render.frag SHA256 d8e8bdb55e7fcfecd2bd35f2b3a6645985237c2defb5048f3f63e50930456c30.
+export const sourceBouncingRenderFragment=`#version 300 es
+precision highp float;
+precision highp int;
+
+const int MAX_PALETTE_COLORS = 25;
+
+uniform int paletteCount;
+uniform vec3 palette[MAX_PALETTE_COLORS];
+uniform float speedScale;
+
+in float vSpeed;
+in float vColorT;
+out vec4 fragColor;
+
+vec3 samplePalette(float t) {
+  int count = clamp(paletteCount, 1, MAX_PALETTE_COLORS);
+  if (count <= 1) {
+    return palette[0];
+  }
+  float scaled = clamp(t, 0.0, 1.0) * float(count - 1);
+  int i0 = int(floor(scaled));
+  int i1 = min(i0 + 1, count - 1);
+  return mix(palette[i0], palette[i1], fract(scaled));
+}
+
+void main() {
+  vec2 p = gl_PointCoord * 2.0 - 1.0;
+  float r2 = dot(p, p);
+  if (r2 > 1.0) {
+    discard;
+  }
+  float speedTint = clamp(vSpeed * speedScale, 0.0, 1.0);
+  vec3 rgb = samplePalette(vColorT);
+  rgb = mix(rgb * 0.72, rgb, 0.55 + speedTint * 0.45);
+  float alpha = 1.0 - smoothstep(0.72, 1.0, r2);
+  fragColor = vec4(rgb, alpha);
+}
+`;

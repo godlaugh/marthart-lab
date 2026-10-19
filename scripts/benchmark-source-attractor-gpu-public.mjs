@@ -1,45 +1,16 @@
 import {chromium} from '@playwright/test';
 import {createServer} from 'vite';
 import {readFile,writeFile,readdir} from 'node:fs/promises';
-import {execFile} from 'node:child_process';
-import {promisify} from 'node:util';
+import {measureFamily} from './browser-process-cost.mjs';
 import {createHash} from 'node:crypto';
 
-const run=promisify(execFile),sha=data=>createHash('sha256').update(data).digest('hex');
+const sha=data=>createHash('sha256').update(data).digest('hex');
 const reportPath='.cache/v2-source-attractor-gpu-public-cost.json';
 const sourceHashes=async()=>{
  const paths=(await readdir('src',{recursive:true})).filter(path=>/\.(ts|tsx|json)$/.test(path)).map(path=>'src/'+path);
- paths.push('scripts/benchmark-source-attractor-gpu-public.mjs');paths.sort();
+ paths.push('scripts/benchmark-source-attractor-gpu-public.mjs','scripts/browser-process-cost.mjs');paths.sort();
  return Object.fromEntries(await Promise.all(paths.map(async path=>[path,sha(await readFile(path))])));
 };
-function cpuSeconds(text){
- const [daysPart,timePart]=text.includes('-')?text.split('-'):['0',text],parts=timePart.split(':').map(Number);
- if(parts.some(n=>!Number.isFinite(n))||!Number.isFinite(Number(daysPart)))throw Error('Unrecognized ps CPU time '+text);
- return Number(daysPart)*86400+parts.reverse().reduce((sum,n,i)=>sum+n*60**i,0);
-}
-async function familySnapshot(rootPid){
- const {stdout}=await run('ps',['-axo','pid=,ppid=,time=,rss=,lstart='],{maxBuffer:8*1024*1024});
- const rows=stdout.trim().split('\n').map(line=>{
-  const match=/^\s*(\d+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(.+)$/.exec(line);if(!match)throw Error('Unrecognized ps row');
-  return{pid:Number(match[1]),ppid:Number(match[2]),cpuSeconds:cpuSeconds(match[3]),rssKiB:Number(match[4]),identity:match[1]+':'+match[5]};
- });
- const included=new Set([rootPid]);let changed=true;while(changed){changed=false;for(const row of rows)if(included.has(row.ppid)&&!included.has(row.pid)){included.add(row.pid);changed=true;}}
- if(!rows.some(row=>row.pid===rootPid))throw Error('Owned browser root process disappeared');
- return rows.filter(row=>included.has(row.pid));
-}
-async function measureFamily(rootPid,task){
- const seen=new Map(),failures=[];let samples=0,peakRssKiB=0,maxProcesses=0,stopped=false,timer;
- const sample=async baseline=>{
-  try{
-   const rows=await familySnapshot(rootPid);samples++;peakRssKiB=Math.max(peakRssKiB,rows.reduce((n,r)=>n+r.rssKiB,0));maxProcesses=Math.max(maxProcesses,rows.length);
-   for(const row of rows){const old=seen.get(row.identity);if(old)old.maximum=Math.max(old.maximum,row.cpuSeconds);else seen.set(row.identity,{pid:row.pid,baseline:baseline?row.cpuSeconds:0,maximum:row.cpuSeconds});}
-  }catch(error){failures.push(String(error));}
- };
- await sample(true);
- const tick=async()=>{await sample(false);if(!stopped)timer=setTimeout(()=>{pending=tick();},250);};let pending=Promise.resolve();timer=setTimeout(()=>{pending=tick();},250);
- let result;try{result=await task();}finally{stopped=true;clearTimeout(timer);await pending;await sample(false);}
- return{...result,processFamily:{rootPid,samples,observedProcesses:seen.size,maxConcurrentProcesses:maxProcesses,sampledPeakRssKiB:failures.length?null:peakRssKiB,observedCpuMs:failures.length?null:1000*[...seen.values()].reduce((n,p)=>n+Math.max(0,p.maximum-p.baseline),0),samplingErrors:failures}};
-}
 const report={at:new Date().toISOString(),scope:'31 independent public generateScene queries at 30 FPS, each followed by actual sceneAtTime camera query, at 640x360; default source GPU 200000 particles, Lorenz, 5 substeps, source default variable dt and zero warmup. Complete RGBA8 readback, camera agreement and SHA256 included.',comparison:{baseline:null,comparable:false,reason:'No equivalent earlier native-style GPU public workflow baseline exists. CPU Euler/trails is a different task and is not used as a speed baseline.'},measurement:'One owned headless Chrome process family; first cold task then fresh warm task in the same page after module loading. Each task imports, serializes and reopens its input, then performs 31 independent requests with fresh GPU contexts; no evolving state is shared between queries. Chrome launch, Vite/module compilation and module import excluded from task elapsed. Cold does not mean flushed filesystem/GPU-driver caches. ps samples every 250ms plus boundaries; CPU is summed cumulative process time deltas keyed by PID and start time, including newly observed descendants. Exited processes between samples can make CPU an underestimate; sampled aggregate RSS is a lower bound on instantaneous peak, not peak VRAM. Sampling overhead is included; Node/Vite processes and unrelated Chrome instances excluded.',unmeasured:['Agent token usage','Native JVM/JOGL timing or image parity','GPU device time and VRAM','Browser launch and module loading elapsed','PNG/MP4 encoding','CPU consumed by browser children that start and exit entirely between ps snapshots'],nativeParity:false,results:[]};
 let browserServer,browser,server;
 try{
