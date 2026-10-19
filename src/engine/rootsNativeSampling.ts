@@ -1,7 +1,8 @@
+import {JavaSourceRandom48} from './javaSourceRandom';
 import type {RootNativeParameter,RootsMathConfiguration} from '../types';
 import {isJavaBlank,javaTrim} from './sourceJavaText';
 import {parseRootsSignedLongText} from './rootsSourceOrder';
-import {prepareRootsWorkerPartitions,RootsSourceRandom48,type RootsWorkerPartitionPlan} from './rootsSourceRandom';
+import {prepareRootsWorkerPartitions,type RootsWorkerPartitionPlan} from './rootsSourceRandom';
 import {RootsNativeError,rootsNativeAttempt,rootsNativeCheck,type RootsNativeResult,type RootsNativeScope,type RootsNativeWorkHooks} from './rootsNativeExpression';
 
 export interface RootsNativeSample {
@@ -57,7 +58,7 @@ export function prepareRootsNativeSampling(
     for(const row of definitions)bindings.set(row.name,Object.freeze({name:row.name,domain:row.domain,minRe:row.minRe,maxRe:row.maxRe,minIm:row.minIm,maxIm:row.maxIm,value:[...row.fixed] as [number,number]}));
     const filterText=sampling.filter.replaceAll(' ','').toLowerCase();
     const filter=filterText==='im(t2)>=0'||filterText==='t2.im>=0'?'t2-imaginary-nonnegative' as const:'all' as const;
-    let rng:RootsSourceRandom48|undefined,workerIndex=-1,nextOrdinal:number|null=null,disposed=false;
+    let rng:JavaSourceRandom48|undefined,workerIndex=-1,nextOrdinal:number|null=null,disposed=false;
     const reset=()=>{rng=undefined;workerIndex=-1;nextOrdinal=null;for(const row of definitions)row.out.fill(0);};
     return{
       partitions,drawsPerSample,names,bindings,filter,
@@ -68,7 +69,7 @@ export function prepareRootsNativeSampling(
           rootsNativeCheck(work);
           const partition=partitions.partitionForSample(ordinal);
           if(!rng||partition.index!==workerIndex||ordinal!==nextOrdinal){
-            rng=new RootsSourceRandom48(partition.seed);
+            rng=new JavaSourceRandom48(partition.seed);
             rng.skipDraws(BigInt(ordinal-partition.start)*BigInt(drawsPerSample));
             workerIndex=partition.index;
           }
