@@ -1,3 +1,4 @@
+import {retainsIteratedCompiler} from './iteratedIdentity';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
@@ -13,7 +14,7 @@ interface GeneratorPort {
 }
 interface Request {scene:SceneDocument;context:Context;}
 /** Coalesce time changes while retaining the latest requested frame. Domain
- * and native Roots edits retain their renderer instance; an
+ * native Roots and continuous Map/Symmetry edits retain their renderer instance; an
  * explicit cancel or a different document creates a new instance. */
 export class GenerationQueue {
   private latest:Request|null=null;
@@ -25,6 +26,7 @@ export class GenerationQueue {
   request(scene:SceneDocument,context:Context,delayMs=0){
     if(this.disposed)return;
     const previous=this.latest?.scene,sceneChanged=previous!==scene;
+    const sameIterated=!!previous&&previous.id===scene.id&&previous.kind===scene.kind&&retainsIteratedCompiler(previous)&&retainsIteratedCompiler(scene);
     const sameDomain=previous?.kind==='domain'&&scene.kind==='domain'&&previous.id===scene.id;
     const sameSourceBouncing=!!previous&&usesSourceBouncing(previous)&&usesSourceBouncing(scene)&&previous.id===scene.id;
     const native=usesRootsNativePresentation(scene),nativeIdentity=native?rootsPresentationRequestIdentity(scene,context.rootsSessionId):undefined;
@@ -32,7 +34,7 @@ export class GenerationQueue {
     const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
     this.latest={scene,context:{...context,...(context.sourceBouncingView!==undefined?{sourceBouncingView:{...context.sourceBouncingView}}:{}),...(context.sourceBouncingFrame?{sourceBouncingFrame:{...context.sourceBouncingFrame}}:{}),...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
-    if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing)||nativeIdentityChanged){this.running=null;this.generator.cancel();clearTimeout(this.timer);this.timer=undefined;}
+    if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing&&!sameIterated)||nativeIdentityChanged){this.running=null;this.generator.cancel();clearTimeout(this.timer);this.timer=undefined;}
     this.callbacks.busy(true);
     if(this.running||this.captureOwner||this.timer!==undefined)return;
     if(delayMs>0)this.timer=setTimeout(()=>{this.timer=undefined;this.start();},delayMs);

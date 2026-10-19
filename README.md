@@ -69,6 +69,8 @@ npm run desktop:test
 
 当前仍处于 2.0 场景补全阶段。曲面 CPU 点／网格的导入、统一配置编辑、保存重开、切换时间线和黑色淡入淡出已接通，并完成实际 PNG 与 MP4 导出验证；GPU 点与网格也已完成本地导入、回放及 PNG／MP4 验证。吸引子源 CPU／GPU 的导入、编辑、保存重开、回放、PNG／MP4 导出也已接通，其它剩余差异仍待完成。原版整图一致性验收仍为 0/11，现有 1.0 应用包未替换。具体行为和验证边界见[曲面中文验证记录](docs/source-surface-validation.zh-CN.md)。
 
+**Map／Symmetry 数值编辑（2026-10-19，M3）**：同作品的连续模式现保留 Worker 与 GPU 编译程序，仍按完整作者配置从种子重放。数值修改不重编译；公式修改仍按源码键编译。真实界面编辑、保存重开、PNG 和完整前后画面对照通过，见[中文验证记录](docs/iterated-edit-validation.zh-CN.md)。Perlin 剩余渐变要求也已按固定原包纠正，见[参考行为核对](docs/perlin-gradient-reference.zh-CN.md)；源动画仍待实现。
+
 **吸引子连续播放（2026-10-19，M3）**：源 CPU 预览与导出现在复用粒子、渐变、拖尾和相机队列，直接消费已交付的相机。修复实例累计快照耗尽预算的问题，仍对每次完整请求限制 2000 万工作单位；倒退、编辑和失败会正确重建。验证范围与成本见[吸引子连续播放中文记录](docs/source-attractor-stream-validation.zh-CN.md)。GPU 会话复用现已接通，验证与成本见[GPU 吸引子连续播放中文记录](docs/source-attractor-gpu-stream-validation.zh-CN.md)；原版整图一致性仍待完成。
 
 映射、对称混沌和 Samila 的持续批次模式保留粒子与密度历史，暂停不会重复累积；“从当前时间重新累积”会重置历史。计算后端以实际结果显示。GPU 使用 float32，与 CPU 的双精度混沌轨迹可能分离。

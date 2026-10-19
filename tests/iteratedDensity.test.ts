@@ -1,4 +1,5 @@
 import {describe,it,expect,vi} from 'vitest';
+import {GenerationCleanupError} from '../src/engine/generationCleanup';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import {IteratedDensitySession,generateIteratedDensity,iteratedUniform,normalizeStepMetric,visibleIteratedControls,prepareIteratedFrame,iteratedInitialChunk,type IteratedKind} from '../src/scenes/iteratedDensity';
@@ -54,4 +55,36 @@ describe('true continuous parallel iteration and independent random batches',()=
 describe('shared floating density presentation boundary',()=>{
  it('maps RGB mass with straight alpha and preserves zero pixels',()=>{const s=scene();Object.assign(s.settings,{paletteMode:'source',transparentBackground:true,toneMap:'linear',dynamicRange:2,gamma:1});const rgba=new Float64Array([1,0,0,1,0,0,0,0]);expect(Array.from(toneDensityRgba(2,1,rgba,s.palette,s.settings))).toEqual([255,0,0,128,0,0,0,0]);expect(()=>toneDensityRgba(2,1,new Float64Array(3),s.palette)).toThrow();rgba[3]=-1;expect(()=>toneDensityRgba(2,1,rgba,s.palette)).toThrow();expect(()=>toneDensityRgba(1,1,new Float64Array(4),s.palette,{},()=>true)).toThrow(/取消/);});
  it('shares viewport parsing independently of allocation budgets',()=>{const s=scene();Object.assign(s.settings,{densityCenterX:2,densityCenterY:3,densitySpan:4});expect(parseDensityViewport(s,100,50).bounds).toEqual({minX:-2,maxX:6,minY:1,maxY:5});expect(()=>parseDensityViewport(s,0,50)).toThrow();s.settings.densityProjection='bad';expect(()=>parseDensityViewport(s,100,50)).toThrow();});
+});
+
+// Scheduling ownership only; actual pixels and compile calls are checked by
+// benchmark-iterated-edits / verify-iterated-edit-ui in real Chrome.
+describe('iterated replay versus GPU compiler lifetime',()=>{
+ function device(){
+  const step=vi.spyOn(IteratedDensityGpu.prototype,'step').mockImplementation((job,options)=>({bounds:options.bounds!,steps:job.config.count,invalid:0,accepted:job.config.count,clipped:0,sampleInvalid:0}));
+  const present=vi.spyOn(IteratedDensityGpu.prototype,'present').mockReturnValue({pixels:new Uint8ClampedArray(11*11*4),occupiedPixels:1,maxCount:1,toneBackend:'webgl2',warnings:[]});
+  return{step,present};
+ }
+ it('replays edits and backward seeks on the same GPU owner, then retires on document replacement',()=>{
+  const {step,present}=device(),dispose=vi.spyOn(IteratedDensityGpu.prototype,'dispose'),owner=new IteratedDensitySession(),s=scene();s.settings.iteratedBackend='gpu';
+  try{
+   owner.generate(s,{...context,time:.2});const gpu=step.mock.instances[0];expect(step).toHaveBeenCalledTimes(3);
+   const edited={...s,parameters:{a:.2}};owner.generate(edited,{...context,time:.2});
+   expect(step).toHaveBeenCalledTimes(6);expect(step.mock.calls[3][1].resetParticles).toBe(true);expect(new Set(step.mock.instances).size).toBe(1);expect(dispose).not.toHaveBeenCalled();
+   owner.generate(edited,context);expect(step.mock.calls.at(-1)![1].resetParticles).toBe(true);expect(step.mock.instances.at(-1)).toBe(gpu);
+   owner.generate({...edited,id:edited.id+'-different'},context);expect(dispose).toHaveBeenCalledTimes(1);expect(step.mock.instances.at(-1)).not.toBe(gpu);
+  }finally{owner.reset();step.mockRestore();present.mockRestore();dispose.mockRestore();}
+ });
+ it('blocks further GPU work after failed retirement and makes its old ticket inert after recovery',()=>{
+  const {step,present}=device(),owner=new IteratedDensitySession(),s=scene();s.settings.iteratedBackend='gpu';let fail=false;
+  const dispose=vi.spyOn(IteratedDensityGpu.prototype,'dispose').mockImplementation(()=>{if(fail)throw Error('delete failed');});
+  try{
+   owner.generate(s,context);fail=true;let ticket:GenerationCleanupError|undefined;
+   try{owner.reset();}catch(e){if(!(e instanceof GenerationCleanupError))throw e;ticket=e;}
+   expect(ticket?.cleanupPending).toBe(true);const calls=step.mock.calls.length;
+   expect(()=>owner.generate(s,context)).toThrow('cleanup');expect(step).toHaveBeenCalledTimes(calls);
+   fail=false;owner.generate(s,context);expect(ticket?.cleanupPending).toBe(false);const retired=dispose.mock.calls.length;
+   ticket!.retryCleanup();expect(dispose).toHaveBeenCalledTimes(retired);
+  }finally{fail=false;owner.reset();step.mockRestore();present.mockRestore();dispose.mockRestore();}
+ });
 });

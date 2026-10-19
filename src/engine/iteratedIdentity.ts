@@ -8,3 +8,7 @@ export function identity(scene:SceneDocument,width:number,height:number){return 
 
 export function iteratedBaselineKey(scene:SceneDocument):string{return JSON.stringify({id:scene.id,input:facts(inputScene(scene),0,0)});}
 
+
+/** These continuous families can replay new authored values while their GPU
+ * owner retains programs keyed by shader source. Samila has a separate lifetime. */
+export function retainsIteratedCompiler(scene:Pick<SceneDocument,'kind'|'settings'>):boolean {return(scene.kind==='map'||scene.kind==='symmetry')&&scene.settings.iteratedMode==='continuous';}

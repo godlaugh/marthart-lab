@@ -1,4 +1,5 @@
-import {inputScene,identity} from '../engine/iteratedIdentity';
+import {GenerationCleanupState} from '../engine/generationCleanup';
+import {inputScene,identity,retainsIteratedCompiler} from '../engine/iteratedIdentity';
 import {applySamilaViewport,samilaViewportTransform,type PreparedSamilaViewport} from '../engine/samilaViewport';
 import {samilaCameraEnabled,samilaCameraFrame,prepareSamilaView,parseSamilaCamera,samilaSamplingRotation} from '../engine/samilaCamera';
 import {mapDimension} from '../engine/mapDimension';
@@ -114,8 +115,14 @@ function clearInk(s:State){s.ink.fill(0);s.accepted=0;s.clipped=0;s.deposited=0;
 export class IteratedDensitySession {
  private key='';private state?:State;private hits=0;private gpu?:IteratedDensityGpu;private fallback?:{key:string;reason:string};
  private samilaPrograms?:SamilaPrograms;
- private resetSimulation(){this.gpu?.dispose();this.gpu=undefined;this.key='';this.state=undefined;this.hits=0;this.fallback=undefined;}
- reset(){this.resetSimulation();this.samilaPrograms=undefined;}
+ private gpuScope?:string;
+ private readonly cleanup=new GenerationCleanupState();
+ /** Authored edits invalidate orbit/ink, but not a healthy same-document GPU
+  * compiler. The next frame carries resetParticles and overwrites seed state,
+  * counters and ink before publishing anything. Shader keys own recompilation. */
+ private clearReplay(){this.key='';this.state=undefined;this.hits=0;this.fallback=undefined;}
+ private resetSimulation(){this.gpu?.dispose();this.gpu=undefined;this.gpuScope=undefined;this.clearReplay();}
+ reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{this.resetSimulation();this.samilaPrograms=undefined;},failures);}
  /** Samila uses unrestricted, own-scope symbol lookup, including lazy branches.
   * Parameter names/values do not change compilation semantics. Never turn this
   * into compileReal(source, names): strict symbol validation is a different API.
@@ -126,11 +133,11 @@ export class IteratedDensitySession {
   const f1=compileReal(equations.f1),f2=compileReal(equations.f2);
   return this.samilaPrograms={f1,f2,source1:equations.f1,source2:equations.f2};
  }
- diagnostics(){return{retainedBytes:(this.state?stateBytes(this.state)+this.key.length*2:0)+(this.gpu?.diagnostics().retainedBytes??0),samilaCompiledExpressions:this.samilaPrograms?2:0,backend:this.gpu?'webgl2':'cpu',frame:this.state?.frame??null,cacheHits:this.hits,steps:this.state?.steps??0,deposited:this.state?.deposited??0,recordedPasses:this.state?.recordedPasses??0,lastBatchSize:this.state?.lastBatchSize??null,lastFramePasses:this.state?.lastFramePasses??0,lastFrameSamples:this.state?.lastFrameSamples??0,replays:this.state?.replays??0,clears:this.state?.clears??0,samilaAnchor:this.state?.samilaAnchor,bounds:this.state?{...this.state.bounds}:undefined};}
+ diagnostics(){return{retainedBytes:(this.state?stateBytes(this.state)+this.key.length*2:0)+(this.gpu?.diagnostics().retainedBytes??0),samilaCompiledExpressions:this.samilaPrograms?2:0,gpu:this.gpu?.diagnostics(),backend:this.gpu?'webgl2':'cpu',frame:this.state?.frame??null,cacheHits:this.hits,steps:this.state?.steps??0,deposited:this.state?.deposited??0,recordedPasses:this.state?.recordedPasses??0,lastBatchSize:this.state?.lastBatchSize??null,lastFramePasses:this.state?.lastFramePasses??0,lastFrameSamples:this.state?.lastFrameSamples??0,replays:this.state?.replays??0,clears:this.state?.clears??0,samilaAnchor:this.state?.samilaAnchor,bounds:this.state?{...this.state.bounds}:undefined};}
  /** Explicit copied raw-ink diagnostic; never a per-frame presentation copy. */
  snapshotInk():Float32Array|Float64Array {if(this.gpu)return this.gpu.readback();const state=this.state;if(!state)return new Float64Array();if(stateBytes(state)+state.ink.byteLength>MAX_LIVE_BYTES)throw new Error('持续密度诊断复制超过 768 MiB');return state.ink.slice();}
  generate(baseScene:SceneDocument,c:GenerateContext):SceneOutput {
-  const started=performance.now();
+  this.cleanup.prepare();const started=performance.now();
   try {
    const runtime=applySamilaViewport(baseScene,c.time);baseScene=runtime.scene;
    const current=runtime.atTime(c.time);
@@ -143,11 +150,11 @@ export class IteratedDensitySession {
    const wantsGpu=custom||requested==='gpu'||requested==='auto'&&Number(baseScene.settings.batchSize??4096)>=50000;
    const attemptKey=identity(inputScene(baseScene),c.width,c.height)+(runtime.key??''),prior=this.fallback?.key===attemptKey?this.fallback:undefined;
    let reason=prior?.reason;
-   if(wantsGpu&&!prior){try{return this.run(baseScene,c,'webgl2',current,tone,runtime);}catch(error){this.reset();if(error instanceof DOMException&&error.name==='AbortError')throw error;reason=error instanceof Error?error.message:String(error);if(custom)throw new Error(`自定义 Symmetry GLSL 无法在 GPU 上执行；未使用内建方程替代：${reason}`);}}
+   if(wantsGpu&&!prior){try{return this.run(baseScene,c,'webgl2',current,tone,runtime);}catch(error){this.reset([error]);if(error instanceof DOMException&&error.name==='AbortError')throw error;reason=error instanceof Error?error.message:String(error);if(custom)throw new Error(`自定义 Symmetry GLSL 无法在 GPU 上执行；未使用内建方程替代：${reason}`);}}
    const output=this.run(baseScene,c,'cpu',current,tone,runtime);
    if(wantsGpu&&reason){this.fallback={key:attemptKey,reason};output.warnings=[...(output.warnings??[]),`GPU 持续密度不可用，已完整重放 CPU：${reason}`];}
    output.stats.elapsedMs=performance.now()-started;return output;
-  }catch(error){this.reset();throw error;}
+  }catch(error){this.reset([error]);throw error;}
  }
  private run(baseScene:SceneDocument,c:GenerateContext,backend:'cpu'|'webgl2',current:SceneDocument,preparedTone:DensityToneJob,runtime:PreparedSamilaViewport):SceneOutput {
   const started=performance.now();if(!['map','symmetry','samila'].includes(baseScene.kind))throw new Error('持续批次密度仅支持 Map、Symmetry 和 Samila');
@@ -158,9 +165,15 @@ export class IteratedDensitySession {
   const [width,height]=rasterDimensions(c,1,backend,warnings),view=parseDensityViewport(current,width,height),bytes=backend==='webgl2'?iteratedGpuBytes(initial.count,width,height,2048,initial.samilaHistoryModel==='bounded-v2',hasSymmetryCustom(base))+width*height*4:(base.kind==='samila'?0:initial.count*33)+width*height*36;
   if(runtime.bounds)view.bounds=runtime.bounds;
   if(bytes>MAX_LIVE_BYTES)throw new Error('持续密度已知工作缓冲超过 768 MiB；请减少批次粒子数或画布尺寸');
-  validatePalette(current.palette);const key=backend+identity(base,width,height)+JSON.stringify({projection:view.projection,bounds:view.bounds,padding:view.padding,samilaViewport:runtime.key});if(key!==this.key){this.resetSimulation();this.key=key;}
+  validatePalette(current.palette);
+  const reusableCompiler=backend==='webgl2'&&retainsIteratedCompiler(base),scope=JSON.stringify([base.id,base.kind]);
+  const key=backend+identity(base,width,height)+JSON.stringify({projection:view.projection,bounds:view.bounds,padding:view.padding,samilaViewport:runtime.key});
+  if(key!==this.key||this.gpu&&this.gpuScope!==scope){
+   if(reusableCompiler&&this.gpu&&this.gpuScope===scope)this.clearReplay();else this.resetSimulation();
+   this.key=key;this.gpuScope=scope;
+  }
   if(base.kind!=='samila'||backend!=='cpu')this.samilaPrograms=undefined;
-  let state=this.state;this.hits=state&&state.frame<=target?1:0;if(state&&state.frame>target){state=undefined;this.gpu?.reset();}
+  let state=this.state;this.hits=state&&state.frame<=target?1:0;if(state&&state.frame>target){state=undefined;if(!reusableCompiler)this.gpu?.reset();}
   let work=0,pixelTests=0;
   const preflight=(steps:number)=>{work+=steps;if(!Number.isSafeInteger(work)||work>MAX_REQUEST_STEPS)throw new Error('持续密度单次重放超过 20 亿次数学求值；请缩短时间、减少预热或批次');};
   if(!state){state={completedSamila:initial.samilaHistoryModel==='bounded-v2'?samilaToneFacts(initial,width,height,0):undefined,lastFramePasses:0,lastFrameSamples:0,frame:-1,ink:new Float64Array(backend==='webgl2'?0:width*height*4),bounds:view.bounds??{minX:-width/height,maxX:width/height,minY:-1,maxY:1},fieldKey:'',structuralKey:'',steps:0,invalid:0,deposited:0,accepted:0,clipped:0,sampleInvalid:0,replays:0,clears:0,recordedPasses:0,lastBatchSize:initial.count};}
