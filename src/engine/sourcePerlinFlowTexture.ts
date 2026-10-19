@@ -1,4 +1,4 @@
-import { parseRootsSignedLongText } from './rootsSourceOrder';
+import { sourcePerlinSeed } from './sourcePerlinSeed';
 import { SourceProcessingNoise } from './sourceProcessingNoise';
 
 const F = Math.fround;
@@ -21,21 +21,6 @@ export interface SourcePerlinFlowTextureOptions {
  isCancelled?: () => boolean;
 }
 
-/** PerlinNoiseField constructor mix64, applied only outside signed int32 range. */
-export function sourcePerlinTextureSeed(seed: string | number): number {
- if (typeof seed !== 'string' && (typeof seed !== 'number' || !Number.isSafeInteger(seed))) throw new SourcePerlinFlowTextureError('input', 'Perlin seed requires exact Java long text or a safe integer.');
- const parsed = parseRootsSignedLongText(String(seed));
- if (!parsed.ok) throw new SourcePerlinFlowTextureError(parsed.error.kind === 'capacity' ? 'capacity' : 'input', 'Perlin seed must be a signed Java long.');
- let value = parsed.value;
- if (value < -2147483648n || value > 2147483647n) {
-  value = BigInt.asUintN(64, value);
-  value = BigInt.asUintN(64, (value ^ (value >> 33n)) * -49064778989728563n);
-  value = BigInt.asUintN(64, (value ^ (value >> 33n)) * -4265267296055464877n);
-  value ^= value >> 33n;
- }
- return Number(BigInt.asIntN(32, value));
-}
-
 /** Static-derived buildFlowTexture, no JVM/JOGL or whole-frame parity claim.
  * Every source style resets noiseSeed before its first sample; samples only read
  * the resulting immutable table. Generating a selected style therefore produces
@@ -54,7 +39,7 @@ export class SourcePerlinFlowTexture {
   if (!Number.isSafeInteger(this.size) || this.size < 1) throw new SourcePerlinFlowTextureError('input', 'Perlin flow size must be a positive integer.');
   if (this.size > Math.floor(Math.sqrt(SOURCE_PERLIN_FLOW_MAX_PIXELS))) throw new SourcePerlinFlowTextureError('capacity', 'Perlin flow image exceeds the local pixel allocation budget.');
   this.style = options.style;
-  this.textureSeed = sourcePerlinTextureSeed(options.seed);
+  this.textureSeed = sourcePerlinSeed(options.seed).textureSeed;
   this.noiseSeed = this.textureSeed ^ Math.imul(-1640531527, this.style + 1);
   this.isCancelled = options.isCancelled;
   this.checkCancelled();

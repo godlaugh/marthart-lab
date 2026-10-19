@@ -12,7 +12,7 @@ try{
  const bytes=await readFile(jar);if(hash(bytes)!=='a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018')throw Error('Pinned JAR changed');
  const reference=JSON.parse(execFileSync('python3',['-c',"import sys,zipfile,json;z=zipfile.ZipFile(sys.argv[1]);print(json.dumps({n:z.read('data/shader/perlin_noise_'+n+'.glsl').decode() for n in ['vert','frag']}))",jar],{encoding:'utf8'}));
  report.reference={jarSha256:hash(bytes),shaders:Object.fromEntries(Object.entries(reference).map(([k,v])=>[k,hash(v)]))};
- const paths=['src/engine/sourcePerlinGpu.ts','src/engine/sourcePerlinGpuShader.ts','src/engine/sourcePerlinFlowTexture.ts','src/engine/sourceProcessingNoise.ts','src/engine/sourcePerlinColorRuntime.ts','src/engine/sourcePerlinParameterRuntime.ts','src/engine/ordinarySourceCameraTimeline.ts','scripts/verify-source-perlin-gpu.mjs'];
+ const paths=['src/engine/sourcePerlinGpu.ts','src/engine/sourcePerlinGpuShader.ts','src/engine/sourcePerlinFlowTexture.ts','src/engine/sourcePerlinSeed.ts','src/engine/sourceProcessingNoise.ts','src/engine/sourcePerlinColorRuntime.ts','src/engine/sourcePerlinParameterRuntime.ts','src/engine/ordinarySourceCameraTimeline.ts','scripts/verify-source-perlin-gpu.mjs'];
  const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));const before=await hashes();
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();
  browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));

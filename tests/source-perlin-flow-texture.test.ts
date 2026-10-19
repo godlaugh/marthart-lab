@@ -1,7 +1,8 @@
+import {sourcePerlinSeed,SourcePerlinSeedError} from '../src/engine/sourcePerlinSeed';
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { SourceProcessingNoise } from '../src/engine/sourceProcessingNoise';
-import { SourcePerlinFlowTexture, SourcePerlinFlowTextureError, sourcePerlinTextureSeed, type SourcePerlinFlowStyle } from '../src/engine/sourcePerlinFlowTexture';
+import { SourcePerlinFlowTexture, SourcePerlinFlowTextureError, type SourcePerlinFlowStyle } from '../src/engine/sourcePerlinFlowTexture';
 import fixture from './fixtures/source-perlin/flow-textures.json';
 
 const argb = (gray: number): number => (0xff000000 | (gray << 16) | (gray << 8) | gray) >>> 0;
@@ -12,7 +13,7 @@ describe('source Perlin Processing flow texture', () => {
   expect(fixture.cases.filter(c => 'source512GraySha256' in c)).toHaveLength(1);
  });
  for (const c of fixture.seedCases) it(`preserves constructor seed mixing and all style seeds: ${c.seed}`, () => {
-  expect(sourcePerlinTextureSeed(c.seed)).toBe(c.textureSeed);
+  expect(sourcePerlinSeed(c.seed).textureSeed).toBe(c.textureSeed);
   for (let style = 0; style < 6; style++) expect(new SourcePerlinFlowTexture({ seed: c.seed, style: style as SourcePerlinFlowStyle }).noiseSeed).toBe(c.styleSeeds[style]);
  });
  for (const c of fixture.noiseCases) it(`matches independent Processing value noise for seed ${c.seed}`, () => {
@@ -48,8 +49,8 @@ describe('source Perlin Processing flow texture', () => {
   expect(flow.generate()[0]).toBe(original);
  });
  it('rejects seed precision loss and out-of-long inputs instead of silently changing them', () => {
-  for (const seed of [Number.MAX_SAFE_INTEGER + 1, NaN, Infinity, .5, '', '9223372036854775808', '-9223372036854775809', '1.5']) expect(() => sourcePerlinTextureSeed(seed)).toThrow(SourcePerlinFlowTextureError);
-  expect(sourcePerlinTextureSeed(12345)).toBe(sourcePerlinTextureSeed('12345'));
+  for (const seed of [Number.MAX_SAFE_INTEGER + 1, NaN, Infinity, .5, '', '9223372036854775808', '-9223372036854775809', '1.5']) expect(() => sourcePerlinSeed(seed)).toThrow(SourcePerlinSeedError);
+  expect(sourcePerlinSeed(12345)).toEqual(sourcePerlinSeed('12345'));
  });
  it('bounds allocations and validates style/coordinates', () => {
   expect(() => new SourcePerlinFlowTexture({ seed: 0, style: 0, size: 2049 })).toThrow(expect.objectContaining({ code: 'capacity' }));
