@@ -46,9 +46,12 @@ export interface OrdinarySourceCameraParticles {
   * completed queues. Mesh seam/cache initialization belongs to this event. */
  displayFrame?(frameIndex:number,final:boolean):void;
  switchMode?(mode:SourceSurfaceMode):void;
- /** Source InstantAction executes before this frame's Mobject update. It
+ /** Surface InstantAction executes before this frame's Mobject update. It
   * changes recording only; history lifetime/display remain producer-owned. */
  setRecordingTrails?(enabled:boolean):void;
+ /** Perlin InstantAction calls setShowTrails: both drawing existing trails and
+  * recording new trail points follow this value. Accumulation is separate. */
+ setShowTrails?(enabled:boolean):void;
  beginGradientActions?(actions:readonly SourceGradientAction[]):void;
  interpolateGradientActions?(eased:number,finished:boolean):void;
  beginParameterActions?(actions:readonly SourceSurfaceParameterAction[]):void;
@@ -59,7 +62,7 @@ export interface OrdinarySourceCameraParticles {
 export interface OrdinarySourceCameraTimelineOptions {
  readonly isCancelled?:()=>boolean;
  /** Explicit producer contract; other scene gradients keep their own clocks. */
- readonly particleActions?:'surface'|'attractor';
+ readonly particleActions?:'surface'|'attractor'|'perlin';
  /** Initial main-object mode, required for exact transition/skip scheduling. */
  readonly surfaceMode?:SourceSurfaceMode;
  /** Fresh, synchronous, in-memory producer state per replay. No scalar cache
@@ -77,7 +80,7 @@ type Axis='phi'|'theta'|'gamma';
 type Targets=Partial<Record<Axis,number>>;
 type Tracking={readonly kind:'origin'}|Extract<OrdinaryCameraTargetBinding,{kind:'bound'}>;
 type TrackingAction={readonly kind:'origin'}|{readonly kind:'bind';readonly request:OrdinaryCameraTargetRequest};
-interface Clip extends RootsSceneClip {readonly surfaceTransition?:{to:SourceSurfaceMode;fadeRatio:number};readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];readonly recordingTrails?:boolean;readonly gradientActions?:readonly SourceGradientAction[];readonly surfaceParameterActions?:readonly SourceSurfaceParameterAction[];readonly surfaceParameterClip?:readonly ({name:string}&SourceSurfaceParameterConfiguration)[];}
+interface Clip extends RootsSceneClip {readonly surfaceTransition?:{to:SourceSurfaceMode;fadeRatio:number};readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];readonly trailAction?:{readonly kind:'record'|'show';readonly enabled:boolean};readonly gradientActions?:readonly SourceGradientAction[];readonly surfaceParameterActions?:readonly SourceSurfaceParameterAction[];readonly surfaceParameterClip?:readonly ({name:string}&SourceSurfaceParameterConfiguration)[];}
 interface Plan {initial:SourceCameraScalars;clips:Clip[];diagnostics:OrdinaryCameraDiagnostic[];fps:number;dt:number;}
 const F=Math.fround,axes=['phi','theta','gamma'] as const,TAU=F(2*Math.PI),names=new Set(SOURCE_EASING_NAMES);
 const WORK_LIMIT=2_000_000; // Bounded synchronous frames plus remaining-queue folds, as the existing source clock.
@@ -88,7 +91,7 @@ const finite=(v:number):number=>{if(!Number.isFinite(v))throw new OrdinarySource
 const lerp=(a:number,b:number,t:number)=>F(a+F(F(b-a)*t));
 const check=(options:OrdinarySourceCameraTimelineOptions)=>{if(options.isCancelled?.())throw new OrdinarySourceCameraTimelineError('cancelled','源相机回放已取消');};
 const noncameraMethods=new Set(['paramStart','paramStop','gradientStart','gradientStop']);
-function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor',initialSurfaceMode?:SourceSurfaceMode):Plan {
+function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin',initialSurfaceMode?:SourceSurfaceMode):Plan {
  if(initialSurfaceMode!==undefined&&(particleActions!=='surface'||!['points','mesh'].includes(initialSurfaceMode)))throw new OrdinarySourceCameraTimelineError('input','源曲面初始模式需要曲面动作合同');
  let surfaceMode=initialSurfaceMode;
  if(!initial||typeof initial!=='object'||['phi','theta','gamma','center','zoom','focalDistance'].some(key=>!Object.hasOwn(initial,key)))throw new OrdinarySourceCameraTimelineError('input','源相机初始标量必须完整');
@@ -111,7 +114,7 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
   if(track.start!==0)warn(track,'sequence-start','源队列按保存顺序执行；绝对 start 不参与执行，延迟必须由等待片段表达。');
   if(track.pingPong||(track.repeat??1)!==1)warn(track,'sequence-repeat','源队列不执行 repeat/pingPong；作者输入保留。');
   const clip:{-readonly[K in keyof Clip]:Clip[K]}={duration,easing:track.easing,trackId:track.id};
-  if(instant){clip.instant=true;clip.recordingTrails=track.trailsEnabled;}
+  if(instant){clip.instant=true;clip.trailAction={kind:particleActions==='perlin'?'show':'record',enabled:track.trailsEnabled!};}
   else if(track.type==='surface_mode_transition'&&surfaceMode!==undefined){
    if(track.surfaceMode!=='points'&&track.surfaceMode!=='mesh')throw new OrdinarySourceCameraTimelineError('input','源曲面过渡目标缺失或无效',track.id);
    clip.duration=Math.max(F(.0001),duration);
@@ -127,6 +130,7 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
    for(const [actionIndex,action] of (track.actions??[]).entries()){
     if(!action||typeof action!=='object')throw new OrdinarySourceCameraTimelineError('input','源相机动作无效',track.id);
     if(action.enabled===false)warn(track,'action-enabled','源 CameraAnimator 不读取动作级 enabled；片段开关控制整个片段。');
+    if(particleActions==='perlin'&&['track','rotateGamma','rotate'].includes(action.method))throw new OrdinarySourceCameraTimelineError('unsupported',`原版 Perlin 不分派 ${action.method}，不能在规范化队列中执行`,track.id);
     const args=action.args??{},arg=(name:string)=>float(args[name]??0,`${action.method}.${name}`);
     if(['rotatePhi','rotateTheta','rotateGamma'].includes(action.method)){
      const axis=action.method.slice(6).toLowerCase() as Axis;targets[axis]=finite(F(base[axis]+arg('angle')));
@@ -144,8 +148,15 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
      if(action.parameters!==undefined||action.domainParameters!==undefined)throw new OrdinarySourceCameraTimelineError('input','曲面源参数动作不能混用其他参数模型',track.id);
      for(const operation of parseSourceSurfaceParameterActions(action.surfaceParameters,action.method))surfaceParameterActions.push({kind:action.method==='paramStart'?'start':'stop',scope:operation.scope,...(operation.configuration?{configuration:operation.configuration}:{})});
     }
-    else if(particleActions!==undefined&&action.method==='gradientStart')gradientActions.push({kind:'start',config:parseSourceParticleGradientConfiguration(action.gradient)});
-    else if(particleActions!==undefined&&action.method==='gradientStop')gradientActions.push({kind:'stop'});
+    else if(particleActions!==undefined&&action.method==='gradientStart'){
+     const config=parseSourceParticleGradientConfiguration(action.gradient);
+     // JsonPerlinConfig.setupTimeline PC364–371 retains one last successfully
+     // built gradient child. Surface/Attractor retain their ordered children.
+     if(particleActions==='perlin')gradientActions.length=0;
+     gradientActions.push({kind:'start',config});
+    }
+    else if(particleActions!==undefined&&action.method==='gradientStop'){if(particleActions==='perlin')gradientActions.length=0;gradientActions.push({kind:'stop'});}
+    else if(particleActions==='perlin'&&noncameraMethods.has(action.method))throw new OrdinarySourceCameraTimelineError('unsupported','Perlin 源参数动作尚未接入参数生产者，不能用本地动画替代',track.id);
     else if(particleActions==='attractor'&&noncameraMethods.has(action.method))throw new OrdinarySourceCameraTimelineError('unsupported','原版 ATTRACTOR 没有参数动画，规范化队列不能包含参数动作',track.id);
     else if(noncameraMethods.has(action.method))warn(track,'noncamera-clock',`${action.method} 仍由独立生产 owner 执行；其 native 参数/渐变帧时钟未在相机合同中验证。`);
     else throw new OrdinarySourceCameraTimelineError('unsupported',`源相机不能解释动作 ${action.method}；需原始编译事实`,track.id);
@@ -158,6 +169,7 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
    if(track.parameterAnimations!==undefined||track.parameterClock!==undefined||track.replaceParameters!==undefined)throw new OrdinarySourceCameraTimelineError('input','曲面源参数片段不能混用其他参数模型',track.id);
    clip.surfaceParameterClip=parseSourceSurfaceParameterClip(track.surfaceParameterClip).parameters;
   }else if(track.type!=='wait'){
+   if(particleActions==='perlin')throw new OrdinarySourceCameraTimelineError('unsupported',`源 Perlin 不支持规范化片段 ${track.type??'numeric'}`,track.id);
    if(particleActions==='attractor')throw new OrdinarySourceCameraTimelineError('unsupported',`源吸引子不支持片段 ${track.type??'numeric'}`,track.id);
    if(track.type==='param'||track.type==='surface_mode_transition')warn(track,'noncamera-clock',`${track.type} 的时长保留为队列占位；非相机效果仍由独立 owner 执行，其 native 帧时钟未验证。`);
    else throw new OrdinarySourceCameraTimelineError('unsupported',`片段 ${track.type??'numeric'} 的原始队列时长未解析，不能假设为本地 duration`,track.id);
@@ -196,7 +208,7 @@ function bindTracking(plan:Plan,particles:OrdinarySourceCameraParticles|undefine
 const replays=new Map<string,Replay>();
 type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
 const layouts=new Map<string,Layout>();
-function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor',surfaceMode?:SourceSurfaceMode):string|undefined {
+function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin',surfaceMode?:SourceSurfaceMode):string|undefined {
  const key=JSON.stringify([initial,tracks,fps,particleActions,surfaceMode],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
  return key.length<=1_000_000?key:undefined;
 }
@@ -232,7 +244,8 @@ function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationT
   if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
   const particles=options.createParticles?.();
   if(options.createParticles&&(!particles||typeof particles.bind!=='function'||typeof particles.update!=='function'))throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者缺少构建或逐帧更新入口');
-  if(plan.clips.some(c=>c.instant)&&typeof particles?.setRecordingTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源拖尾片段需要支持录制开关的粒子生产者');
+  if(plan.clips.some(c=>c.trailAction?.kind==='record')&&typeof particles?.setRecordingTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源拖尾片段需要支持录制开关的粒子生产者');
+  if(plan.clips.some(c=>c.trailAction?.kind==='show')&&typeof particles?.setShowTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源 Perlin 拖尾片段需要支持显示与记录开关的生产者');
   if(plan.clips.some(c=>c.gradientActions?.length)&&(typeof particles?.beginGradientActions!=='function'||typeof particles?.interpolateGradientActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源粒子渐变需要支持完整生命周期的粒子生产者');
   if(plan.clips.some(c=>c.surfaceParameterActions?.length)&&(typeof particles?.beginParameterActions!=='function'||typeof particles?.interpolateParameterActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源曲面参数动作需要支持完整生命周期的粒子生产者');
   if(plan.clips.some(c=>c.surfaceParameterClip)&&(typeof particles?.beginParameterClip!=='function'||typeof particles?.finishParameterClip!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源曲面参数片段需要支持替换及停止的粒子生产者');
@@ -268,7 +281,10 @@ function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationT
     }
     if(facts.finishedClip!==null)replay.overlayAlpha=0;
    }else if(clip?.instant){
-    if(facts.startedClip!==null){check(options);replay.particles!.setRecordingTrails!(clip.recordingTrails!);}
+    if(facts.startedClip!==null){
+     check(options);const action=clip.trailAction!;
+     if(action.kind==='show')replay.particles!.setShowTrails!(action.enabled);else replay.particles!.setRecordingTrails!(action.enabled);
+    }
    }else if(clip){
     if(facts.startedClip!==null){
      if(options.particleActions){

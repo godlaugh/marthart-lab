@@ -10,7 +10,7 @@ const object=(raw:unknown):raw is Record<string,unknown>=>raw!==null&&typeof raw
 const own=(raw:Readonly<Record<string,unknown>>,key:string):unknown=>Object.hasOwn(raw,key)?raw[key]:undefined;
 
 export interface SourceParticleGradientPayload {readonly value:Readonly<Record<string,unknown>>;readonly path:readonly string[];}
-/** JsonSurfaceConfig.extractFirstObjectPayload offsets 0–54: unlike Roots,
+/** JsonSurfaceConfig/JsonPerlinConfig.extractFirstObjectPayload offsets 0–54: unlike Roots,
  * only index zero is inspected. No traversal or interpretation of later slots. */
 export function sourceParticleGradientPayload(args:unknown):SourceParticleGradientPayload|undefined {
  if(object(args))return {value:args,path:[]};
@@ -59,9 +59,9 @@ function sourceSpeed(raw:unknown,diagnostics:string[]):number {
 }
 
 /** Shared 1.7.8 GradientActionConfig contract. Only Surface excludes
- * untrimmed, case-insensitive FRACTAL; both families force both flags true.
+ * untrimmed, case-insensitive FRACTAL; Surface, Attractor and Perlin force both flags true.
  * Expected skipped actions are tagged, resource failures never become defaults. */
-export function importSourceParticleGradient(args:unknown,family:'surface'|'attractor'):SourceParticleGradientImportFacts {
+export function importSourceParticleGradient(args:unknown,family:'surface'|'attractor'|'perlin'):SourceParticleGradientImportFacts {
  const payload=sourceParticleGradientPayload(args),raw=payload?.value??{},diagnostics:string[]=[];
  const facts={payloadPath:payload?.path??null,payloadEmpty:payload!==undefined&&Object.keys(raw).length===0};
  const target=family==='surface'?sourceText(own(raw,'targetDomain')):undefined;
