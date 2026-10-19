@@ -1,10 +1,11 @@
+import {sourceAttractorWorkBudget} from './sourceAttractorWork';
 import {sourceColorLerp,type DomainSourceInterpolation} from './domainSourcePalette';
 import {prepareSourceAttractorInitialColors,type SourceAttractorPalette} from './sourceAttractorVisualConfig';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
 import {SourceGradientRuntime,type SourceGradientAction,type SourceGradientFrame,type SourceGradientSnapshot} from './sourceGradientRuntime';
 import type {SourceSurfaceGradientMode} from './sourceSurfaceGradient';
 
-const F=Math.fround,MAX_WORK=20_000_000;
+const F=Math.fround;
 type PaletteState={primary:number;secondary:number;blend:number};
 const constrain=(v:number,lo:number,hi:number)=>v<lo?lo:v>hi?hi:v;
 const integer=(v:number)=>Number.isNaN(v)?0:Math.max(-2147483648,Math.min(2147483647,Math.trunc(v)));
@@ -52,6 +53,7 @@ export class SourceAttractorColorRuntime {
  private readonly options:SourceAttractorColorOptions;private readonly palette:readonly number[];
  private readonly gradient:SourceGradientRuntime;private readonly admitted:boolean;
  private readonly rgba=new Float32Array(4);private state:PaletteState={primary:0,secondary:0,blend:0};
+ private operationBudget=sourceAttractorWorkBudget();private operationDepth=0;
  private used=0;private failed=false;private failure:unknown;
  constructor(options:SourceAttractorColorOptions){
   this.options={...options};const {count,nativeBackend,showTrails,palette}=this.options;
@@ -69,9 +71,10 @@ export class SourceAttractorColorRuntime {
   }
   this.gradient=new SourceGradientRuntime(()=>this.state.primary,(frame,config)=>this.apply(target(frame,config.mode)));
  }
+ get retainedBytes():number{return this.packed.byteLength+this.colors.byteLength+this.alphas.byteLength+this.rgba.byteLength;}
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())throw new SourceAttractorColorError('cancelled','原版吸引子颜色更新已取消');}
- private reserve(n:number){this.check();if(!Number.isSafeInteger(n)||n<0||this.used+n>MAX_WORK)throw new SourceAttractorColorError('capacity','原版吸引子颜色超过本地 2000 万工作单位预算');this.used+=n;this.options.reserve?.(n);}
- private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}}
+ private reserve(n:number){this.check();this.operationBudget(n);this.options.reserve?.(n);this.used+=n;}
+ private guarded<T>(run:()=>T):T{if(this.operationDepth++===0)this.operationBudget=sourceAttractorWorkBudget();try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}finally{this.operationDepth--;}}
  private write(index:number,color:number){
   this.packed[index]=color;writeSourcePackedColor(color,this.rgba,0);
   this.colors.set(this.rgba.subarray(0,3),index*3);this.alphas[index]=this.rgba[3];

@@ -1,3 +1,4 @@
+import {sourceAttractorPresentedScene} from '../engine/sourceAttractorPresentation';
 import {sourceBouncingViewFromCamera,type SourceBouncingView,type SourceBouncingNavigationEvent} from '../engine/sourceBouncingNavigation';
 import type {SourceBouncingCheckpoint} from '../engine/sourceBouncingReplay';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
@@ -256,7 +257,7 @@ export const Viewport = forwardRef<
       const resolved=usesSourceBouncing(source)||hasMathematicalPlane(source)||source.kind==='fractal'&&source.settings.formula==='mandelbulb_3d'&&source.settings.bulbPresentation!=='points';
       let frameScene:SceneDocument,view:ReturnType<typeof outputCamera>;
       const authoredCamera=!output.sourceBouncingFrame&&!output.sourceCameraFrame&&applyPresentedCamera(presented.current.read(),source,!!output.cameraFrame,resolved);
-      try{frameScene=output.spirographFrame?withSpirographReplayFrame(source,output.spirographFrame):sceneAtTime(source,(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);view=outputCamera(frameScene,output);renderer.current?.setOutput(output, frameScene, changed,{roll:resolved?0:view.roll,focalLength:resolved?35:view.focalLength,...(authoredCamera?{camera:view.camera}:{})});setRenderError('');}catch(error){failed(error);return;}
+      try{frameScene=output.spirographFrame?withSpirographReplayFrame(source,output.spirographFrame):sourceAttractorPresentedScene(source,output)??sceneAtTime(source,(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);view=outputCamera(frameScene,output);renderer.current?.setOutput(output, frameScene, changed,{roll:resolved?0:view.roll,focalLength:resolved?35:view.focalLength,...(authoredCamera?{camera:view.camera}:{})});setRenderError('');}catch(error){failed(error);return;}
       renderer.current.setInteractive(!playing&&!managed&&!sourceBouncing);
       renderedScene.current=frameScene;
       lastId.current = source.id;

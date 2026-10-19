@@ -40,7 +40,7 @@ const hashes=async()=>{
 };
 const before=await hashes(),directory=await mkdtemp('.cache/attractor-public-service-');
 const port=await new Promise((resolve,reject)=>{const s=createTcpServer();s.once('error',reject);s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(e=>e?reject(e):resolve(p));});});
-const report={at:new Date().toISOString(),scope:'Actual public App source Attractor import/edit/save/reopen/forward and reverse seek; production export service PNG compared to fresh canonical source generation and raw RGBA renderer; every decoded MP4 frame versus its actual uploaded PNG. Local integration consistency only, not original JVM/JOGL runtime parity.',directory,nativeParity:false,exports:[],zeroDuration,ignoredParameters,gpu};
+const report={at:new Date().toISOString(),scope:'Actual public App source Attractor import/edit/save/reopen/play-pause-resume/forward and reverse seek; production export service PNG compared to fresh canonical source generation and raw RGBA renderer; every decoded MP4 frame versus its actual uploaded PNG. Local integration consistency only, not original JVM/JOGL runtime parity.',directory,nativeParity:false,exports:[],zeroDuration,ignoredParameters,gpu};
 let page,browser,server,exportServer;const errors=[],consoleErrors=[],contextWarnings=[];
 try{
  exportServer=await createExportServer({root:directory,allowedOrigins:[`http://127.0.0.1:${port}`]});const address=await exportServer.listen(0);
@@ -134,6 +134,25 @@ try{
   const count=await page.evaluate(()=>window.__attractorAudit.requests.length);await page.locator('input[type=file]').setInputFiles({name:'ignored-parameters-reopened.json',mimeType:'application/json',buffer:bytes});await page.waitForFunction(count=>window.__attractorAudit.requests.length>count,count);await settled();await ready();
   const reopened=(await snapshot()).request.scene;check(JSON.stringify(reopened.provenance.original)===JSON.stringify(source)&&withoutIds(reopened.timeline.tracks)===withoutIds(counterpartTracks),'project reimport changed ignored source or active queue');
   report.ignoredParameterRoundtrip={workspaceReopened:true,projectPath,projectSha:sha(bytes),projectReimported:true,originalAndWarningsPreserved:true};
+ }
+ if(!gpu&&!zeroDuration&&!ignoredParameters){
+  await seek(0);const from=await page.evaluate(()=>window.__attractorAudit.completed.length);
+  await page.getByRole('button',{name:'Play',exact:true}).click();
+  await page.waitForFunction(from=>window.__attractorAudit.completed.slice(from).some(o=>o.frame?.frameIndex>=8),from);
+  await page.getByRole('button',{name:'Pause',exact:true}).click();await settled();await ready();
+  const paused=await snapshot();await page.waitForTimeout(250);const still=await snapshot();
+  check(still.output.frame.frameIndex===paused.output.frame.frameIndex,'paused CPU replay advanced');
+  await page.getByRole('button',{name:'Play',exact:true}).click();
+  await page.waitForFunction(frame=>window.__attractorAudit.completed.at(-1)?.frame?.frameIndex>=frame+3,paused.output.frame.frameIndex);
+  await page.getByRole('button',{name:'Pause',exact:true}).click();await settled();await ready();
+  const resumed=await snapshot();
+  const matched=await page.evaluate(async state=>{
+   const {generateScene}=await import('/src/engine/temporal.ts');const fresh=generateScene(state.request.scene,state.request.context),out=state.output;
+   if(fresh.type!=='geometry')throw Error('CPU expected');
+   return JSON.stringify({positions:out.positions,colors:out.colors,alphas:out.alphas,camera:out.frame,trails:out.trails})===JSON.stringify({positions:Array.from(fresh.positions),colors:Array.from(fresh.colors),alphas:Array.from(fresh.pointAlphas),camera:fresh.sourceCameraFrame,trails:{positions:Array.from(fresh.trails.positions),colors:Array.from(fresh.trails.colors),alphas:Array.from(fresh.trails.alphas),indices:Array.from(fresh.trails.indices),appearance:fresh.trails.appearance}});
+  },resumed);
+  check(matched,'play/pause/resume differs from fresh motion/trails/gradient/camera');
+  report.playback={pausedFrame:paused.output.frame.frameIndex,resumedFrame:resumed.output.frame.frameIndex,pauseStable:true,freshFullOutputMatches:true};
  }
  const frames=[];for(const time of [.25,.75,1.5,.25]){const state=await seek(time);frames.push({time:state.request.context.time,output:state.output});}
  if(gpu){

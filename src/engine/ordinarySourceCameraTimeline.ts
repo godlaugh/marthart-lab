@@ -202,13 +202,29 @@ function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],f
  * histories deliberately bypass this cache because their identity/lifetime is
  * external. Negative zero remains part of source scalar cache identity. */
 export function clearOrdinarySourceCameraTimelineCache():void {replays.clear();layouts.clear();}
+/** Explicit provider lifetime; no global cache may retain a particle owner. */
+export class OrdinarySourceCameraTimelineSession {
+ private readonly cache=new Map<string,Replay>();
+ private readonly initial:SourceCameraScalars;
+ private readonly tracks:readonly AnimationTrack[];
+ private readonly options:OrdinarySourceCameraTimelineOptions;
+ constructor(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],private readonly fps:number,options:OrdinarySourceCameraTimelineOptions){
+  this.initial=structuredClone(initial);this.tracks=structuredClone(tracks);this.options={...options};
+ }
+ evaluate(time:number):OrdinarySourceCameraFrame{try{return evaluateTimeline(this.initial,this.tracks,this.fps,time,this.options,this.cache);}catch(error){this.reset();throw error;}}
+ reset():void{this.cache.clear();}
+}
 export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions={}):OrdinarySourceCameraFrame {
+ return evaluateTimeline(initial,tracks,fps,time,options);
+}
+function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions,ownedCache?:Map<string,Replay>):OrdinarySourceCameraFrame {
  check(options);
  if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
  const target=targetFrame(time,fps),reserve=budget();
- const key=options.createParticles?undefined:inputKey(initial,tracks,fps,options.particleActions,options.surfaceMode);
- let state=key===undefined?undefined:replays.get(key);
- if(state&&state.frameIndex>target)state=undefined;
+ const key=ownedCache?'owned':options.createParticles?undefined:inputKey(initial,tracks,fps,options.particleActions,options.surfaceMode);
+ const replayCache=ownedCache??replays;
+ let state=key===undefined?undefined:replayCache.get(key);
+ if(state&&state.frameIndex>target){if(key!==undefined)replayCache.delete(key);state=undefined;}
  if(!state){
   const plan=prepare(initial,tracks,fps,options.particleActions,options.surfaceMode);
   if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
@@ -289,9 +305,9 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
    replay.frameIndex=frameIndex;
   }
   check(options);
-  if(key!==undefined){replays.delete(key);replays.set(key,replay);while(replays.size>4)replays.delete(replays.keys().next().value!);}
+  if(key!==undefined){replayCache.delete(key);replayCache.set(key,replay);while(replayCache.size>(ownedCache?1:4))replayCache.delete(replayCache.keys().next().value!);}
   return{time:target/fps,camera:copy(replay.camera),frameIndex:target,sceneTime:replay.facts.sceneTime,queueIndex:replay.facts.queueIndex,queueComplete:replay.facts.queueComplete,diagnostics:plan.diagnostics.map(item=>({...item})),...(replay.surfaceMode?{surfaceTransition:{mode:replay.surfaceMode,overlayAlpha:replay.overlayAlpha}}:{})};
- }catch(error){if(key!==undefined)replays.delete(key);throw error;}
+ }catch(error){if(key!==undefined)replayCache.delete(key);throw error;}
 }
 /** Display layout facts only. Never feed rounded display durations back into
  * the source clock: sourceDuration is the authored child duration (a native

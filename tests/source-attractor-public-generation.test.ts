@@ -1,3 +1,4 @@
+import {sourceAttractorPresentedScene} from '../src/engine/sourceAttractorPresentation';
 import {describe,it,expect} from 'vitest';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
@@ -78,5 +79,72 @@ describe('public native CPU Attractor dispatch',()=>{
   expect(()=>validateTimelineExtensions(track,'attractor','ordinary-camera-sequence-v1',false,true)).toThrow();
   scene.timeline.tracks[0].actions=[{id:'p',method:'paramStart',parameters:[{target:'parameters.speed',min:0,max:10,step:1,enabled:true}]}];
   expect(()=>generateScene(scene,context)).toThrow();
+ });
+});
+
+describe('retained source CPU Attractor request lifetime',()=>{
+ it('presents the exact delivered camera without another replay or local gradient pass',()=>{
+  const scene=source(),out=generateScene(scene,context),presented=sourceAttractorPresentedScene(scene,out)!;
+  expect(presented.evaluatedSourceCamera).toBe(out.sourceCameraFrame);
+  expect(presented.evaluatedSourceCamera!.camera).toEqual(sceneAtTime(scene,context.time).evaluatedSourceCamera!.camera);
+  expect(presented.palette).toEqual(scene.palette);expect(presented.parameters).toEqual(scene.parameters);
+  expect(sourceAttractorPresentedScene(createScene(definition('surface')),out)).toBeUndefined();
+ });
+ it('shares motion and camera across forward/same-frame requests, with detached transferable outputs',()=>{
+  const scene=source(),session=new TemporalGenerationSession();
+  try{
+   for(const time of [0,.25,.25,.5,.75,1,2]){
+    const out=generateScene(scene,{...context,time},session);
+    expect(facts(out)).toEqual(facts(generateScene(scene,{...context,time})));
+    expect(session.diagnostics().sourceAttractor.constructions).toBe(1);
+    structuredClone(out,{transfer:outputBuffers(out)});
+   }
+   expect(session.diagnostics().sourceAttractor.retainedBytes).toBeGreaterThan(0);
+  }finally{session.reset();}
+  expect(session.diagnostics().sourceAttractor.retainedBytes).toBe(0);
+ });
+ it('reuses motion when only resolution/quality changes, rebuilding for reverse or edited author input',()=>{
+  const scene=source(),session=new TemporalGenerationSession();
+  try{
+   generateScene(scene,context,session);
+   const sized={...context,width:400,height:200,quality:'export' as const,sourcePointPixelDensity:2,sourceViewport:{...context.sourceViewport!,logicalWidth:400,logicalHeight:200}};
+   expect(facts(generateScene(scene,sized,session))).toEqual(facts(generateScene(scene,sized)));
+   expect(session.diagnostics().sourceAttractor.constructions).toBe(1);
+   generateScene(scene,{...context,time:0},session);expect(session.diagnostics().sourceAttractor.constructions).toBe(2);
+   for(const edit of [()=>scene.parameters.speed=2,()=>scene.equations.dx='speed*3',()=>scene.timeline.tracks[0].duration=0,()=>scene.id+='-copy',()=>scene.attractorSource!.visual.trails.lifetime=0]){
+    edit();expect(facts(generateScene(scene,context,session))).toEqual(facts(generateScene(scene,context)));
+    expect(session.diagnostics().sourceAttractor.constructions).toBe(1);
+   }
+  }finally{session.reset();}
+ });
+ it('discards partial cancelled state, rejects malformed edits and releases state on leaving the family',()=>{
+  const scene=source(),session=new TemporalGenerationSession();
+  try{
+   generateScene(scene,{...context,time:0},session);
+   let polls=0;expect(()=>generateScene(scene,{...context,time:.75,isCancelled:()=>++polls>12},session)).toThrow('取消');
+   expect(session.diagnostics().sourceAttractor.retainedBytes).toBe(0);
+   expect(facts(generateScene(scene,context,session))).toEqual(facts(generateScene(scene,context)));
+   scene.parameters.speed=Infinity;expect(()=>generateScene(scene,context,session)).toThrow();
+   expect(session.diagnostics().sourceAttractor.retainedBytes).toBe(0);
+   scene.parameters.speed=1;generateScene(scene,context,session);
+   session.select(createScene(definition('surface')),context);
+   expect(session.diagnostics().sourceAttractor.retainedBytes).toBe(0);
+  }finally{session.reset();}
+ });
+});
+
+describe('public source Attractor combined request capacity',()=>{
+ it('rejects a seek whose final snapshot exceeds the request budget, clears state and recovers',()=>{
+  const scene=source(),session=new TemporalGenerationSession(),settings={particle_count_cpu:1000,time_step:.005,sub_steps:5,show_trails:true,fade_trails:true,trail_lifetime:3};
+  const config=importSourceAttractorConfig(settings,{warmup_steps:200}),visual=importSourceAttractorVisualConfig(settings,['#ff0000','#00ff00','#0000ff']);
+  if(!config.ok||!visual.ok)throw Error('fixture');
+  scene.attractorSource={configuration:config.value.configuration,visual:visual.value.configuration,backgroundColor:0xff000000};
+  scene.equations={dx:'10*(y-x)',dy:'x*(28-z)-y',dz:'x*y-8/3*z'};scene.parameters={};
+  scene.timeline.fps=30;scene.timeline.tracks=[{...scene.timeline.tracks[1],duration:10}];
+  try{
+   expect(()=>generateScene(scene,{...context,time:61/30},session)).toThrow('2000 万');
+   expect(session.diagnostics().sourceAttractor.retainedBytes).toBe(0);
+   expect(facts(generateScene(scene,{...context,time:0},session))).toEqual(facts(generateScene(scene,{...context,time:0})));
+  }finally{session.reset();}
  });
 });

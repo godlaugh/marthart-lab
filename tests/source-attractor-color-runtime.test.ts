@@ -49,3 +49,20 @@ describe('source Attractor current color owner',()=>{
   let reject=false;const b=new SourceAttractorColorRuntime({count:3,nativeBackend:'cpu',showTrails:true,reserve:()=>{if(reject)throw Error('shared budget');}});b.beginGradientActions([start]);b.interpolateGradientActions(1,true);reject=true;expect(()=>b.update(.25)).toThrow('shared budget');reject=false;expect(()=>b.update(.25)).toThrow('shared budget');
  });
 });
+
+describe('source color operation budget scope',()=>{
+ it('allows long bounded color updates while retaining cumulative work statistics',()=>{
+  const owner=new SourceAttractorColorRuntime({count:1000,nativeBackend:'cpu',showTrails:true,palette});
+  owner.beginGradientActions([start]);owner.interpolateGradientActions(1,true);
+  const before=owner.packed.slice();
+  for(let i=0;i<700;i++)owner.update(1/30);
+  expect(owner.snapshot().workUnits).toBeGreaterThan(20_000_000);expect(owner.packed).not.toEqual(before);
+ });
+ it('includes nested gradient callbacks in one operation and latches rejection',()=>{
+  const owner=new SourceAttractorColorRuntime({count:625000,nativeBackend:'cpu',showTrails:true,palette});
+  owner.beginGradientActions([start]);owner.interpolateGradientActions(1,true);
+  // update's scalar charge plus the color callback exceeds20M; each alone fits.
+  expect(()=>owner.update(.25)).toThrow('2000 万');
+  expect(()=>owner.snapshot()).toThrow('2000 万');
+ });
+});

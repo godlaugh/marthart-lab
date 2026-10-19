@@ -1,7 +1,7 @@
 import {usesSourceAttractor} from './sourceAttractorDocument';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {SourceBouncingSession} from '../scenes/sourceBouncing';
-import {generateSourceAttractor} from '../scenes/sourceAttractor';
+import {generateSourceAttractor,SourceAttractorSession} from '../scenes/sourceAttractor';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera} from './ordinarySourceCamera';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {generateSourceSurface} from '../scenes/sourceSurface';
@@ -59,6 +59,7 @@ export class TemporalGenerationSession {
   readonly perlin = new PerlinParticleSession();
   readonly bouncing = new BouncingRasterSession();
   readonly sourceBouncing = new SourceBouncingSession();
+  readonly sourceAttractor = new SourceAttractorSession();
   readonly iterated = new IteratedDensitySession();
   readonly roots = new RootsDensitySession();
   readonly rootsNative = new RootsNativePresentationSession();
@@ -67,9 +68,10 @@ export class TemporalGenerationSession {
   readonly domain = new DomainRenderSession();
   readonly spirograph = new SpirographFrameSession();
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
-  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
+  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
     this.cleanup.prepare();
+    if(!usesSourceAttractor(scene))this.sourceAttractor.reset();
     if(!usesSourceBouncing(scene))this.sourceBouncing.reset();else this.bouncing.reset();
     if(!usesRootsNativePresentation(scene))this.rootsNative.reset();
     if(scene.kind==='domain')this.domain.select(scene.id);else this.domain.reset();
@@ -104,7 +106,7 @@ export class TemporalGenerationSession {
       const oldest = this.frames.keys().next().value!; this.bytes -= frameBytes(this.frames.get(oldest)!); this.frames.delete(oldest);
     }
   }
-  diagnostics() { return { retainedBytes: this.bytes + this.sourceBouncing.diagnostics().retainedBytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),bouncing:this.bouncing.diagnostics(),sourceBouncing:this.sourceBouncing.diagnostics(),iterated:this.iterated.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
+  diagnostics() { return { retainedBytes: this.bytes + this.sourceAttractor.diagnostics().retainedBytes + this.sourceBouncing.diagnostics().retainedBytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),bouncing:this.bouncing.diagnostics(),sourceBouncing:this.sourceBouncing.diagnostics(),sourceAttractor:this.sourceAttractor.diagnostics(),iterated:this.iterated.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
 }
 
 /** Grid is anchored at zero; arbitrary seek time adds one final exact-time sample. */
@@ -356,7 +358,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
   const generate=()=>{
     if(usesSourceBouncing(scene)){owner.select(scene,context);return owner.sourceBouncing.generate(scene,context);}
     if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
-    if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context);}
+    if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or
     // simulation allocation. Progress frames may use an earlier scene time.

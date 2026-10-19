@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import type {AnimationAction,AnimationTrack} from '../src/types';
-import {evaluateOrdinarySourceCameraTimeline as evaluate,resolveOrdinarySourceCameraTimeline as layout,type OrdinarySourceCameraParticles,type OrdinaryCameraParticleFrame} from '../src/engine/ordinarySourceCameraTimeline';
+import {OrdinarySourceCameraTimelineSession,evaluateOrdinarySourceCameraTimeline as evaluate,resolveOrdinarySourceCameraTimeline as layout,type OrdinarySourceCameraParticles,type OrdinaryCameraParticleFrame} from '../src/engine/ordinarySourceCameraTimeline';
 import type {SourceCameraScalars,SourceCameraVec3} from '../src/engine/sourceCamera';
 
 const initial:SourceCameraScalars={phi:0,theta:0,gamma:0,center:[0,0,0],zoom:1,focalDistance:20};
@@ -113,5 +113,24 @@ describe('source camera particle lifecycle boundary',()=>{
   const createParticles=():OrdinarySourceCameraParticles=>({bind:()=>({kind:'bound',readPosition:()=>{reads++;return[9,0,0];}}),update:()=>{cancelled=true;}});
   expect(()=>evaluate(initial,tracks,4,0,{createParticles,isCancelled:()=>cancelled})).toThrow('取消');expect(reads).toBe(1);
   cancelled=false;expect(evaluate(initial,tracks,4,0,{createParticles}).camera.center).toEqual([9,0,0]);expect(reads).toBe(3);
+ });
+});
+
+
+describe('owned ordinary source replay failure lifetime',()=>{
+ it.each(['construction','binding','cancel','invalid-time'])('discards retained state after %s failure',kind=>{
+  let made=0,fail=false,cancel=false;
+  const owner=new OrdinarySourceCameraTimelineSession(initial,[clip([action('track',0)],2)],4,{
+   isCancelled:()=>cancel,createParticles:()=>{
+    made++;if(fail&&kind==='construction')throw Error('construction');
+    let x=0;return{bind:()=>{if(fail&&kind==='binding')throw Error('binding');return{kind:'bound' as const,readPosition:()=>[x,0,0] as [number,number,number]};},update:()=>{x++;}};
+   },
+  });
+  const expected=owner.evaluate(1);expect(made).toBe(1);
+  fail=true;cancel=kind==='cancel';
+  expect(()=>owner.evaluate(kind==='invalid-time'?NaN:0)).toThrow();
+  const attempts=made;fail=false;cancel=false;
+  expect(owner.evaluate(1)).toEqual(expected);expect(made).toBe(attempts+1);
+  owner.reset();
  });
 });

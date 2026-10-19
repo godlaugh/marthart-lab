@@ -109,3 +109,35 @@ describe('source Attractor complete generated display frame',()=>{
   expect(()=>generateSourceAttractorCpu({...input(),viewport:{...viewport,projectionPass:'unknown'}})).toThrow('投影');
  });
 });
+
+
+describe('source Attractor operation and complete-request budgets',()=>{
+ function large(){
+  const input=options({particle_count_cpu:1000,sub_steps:5,time_step:.005,show_trails:true,fade_trails:true,trail_lifetime:3},200,['#FFCC2233','#FF44CC22','#FF2255EE']);
+  input.equation=value(prepareSourceAttractorEquation({equations:{dx:'10*(y-x)',dy:'x*(28-z)-y',dz:'x*y-8/3*z'},parameters:{}}));return input;
+ }
+ it('finishes 31 full trail snapshots without treating lifetime statistics as one request',()=>{
+  const owner=new SourceAttractorCpuParticles(large());
+  let last:ReturnType<typeof owner.snapshot>|undefined;
+  for(let i=0;i<31;i++){owner.update(frame(i,i/30,1/30));last=owner.snapshot();}
+  expect(last!.trails!.records).toBe(155000);expect(last!.workUnits).toBe(42087034);
+ });
+ it('charges warmup, all replay frames and final snapshot to one request, including a caller budget',()=>{
+  let charged=0;const small=options();
+  const replay=replaySourceAttractorCpu({...small,camera,tracks:[wait],fps:4,time:.5,reserve:n=>charged+=n});
+  expect(replay.particles.snapshot().workUnits).toBe(charged);
+  expect(()=>replaySourceAttractorCpu({...small,camera,tracks:[wait],fps:4,time:0,reserve:()=>{throw Error('caller capacity');}})).toThrow('caller capacity');
+  const input={...large(),camera,tracks:[{...wait,duration:10}],fps:30,time:3,viewport:{logicalWidth:200,logicalHeight:100,referenceLogicalHeight:100,target:'primary' as const,projectionPass:'perspective' as const},backgroundColor:0xff000000};
+  expect(()=>generateSourceAttractorCpu(input)).toThrow('2000 万');
+  // Construction + 62 updates fits, but adding the snapshot exceeds 20M.
+  const final=replaySourceAttractorCpu({...input,time:61/30});
+  expect(()=>final.particles.snapshot()).toThrow('2000 万');
+  expect(()=>final.particles.update(frame(62))).toThrow('2000 万');
+ });
+ it('keeps a single oversized constructor or update bounded and latches failed operations',()=>{
+  expect(()=>new SourceAttractorCpuParticles({...large(),equation:{operations:20000,create:()=>({compute:(_x,_y,_z,out)=>out.fill(0)})}})).toThrow('2000 万');
+  const input=options({particle_count_cpu:1000,sub_steps:1000},0),owner=new SourceAttractorCpuParticles(input);
+  expect(()=>owner.update(frame(0))).toThrow('2000 万');
+  expect(()=>owner.snapshot()).toThrow('2000 万');
+ });
+});

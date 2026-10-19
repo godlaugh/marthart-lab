@@ -20,6 +20,7 @@ export class SourceParticleTrailHistory {
   const product=F(lifetime*60),integer=Math.max(-2147483648,Math.min(2147483647,Math.trunc(product)));
   this.maximum=Math.max(0,(integer+120)|0); // JVM f2i then signed iadd.
  }
+ get retainedBytes():number{return this.heads.byteLength+this.tails.byteLength+this.counts.byteLength+this.blocks.reduce((n,b)=>n+b.values.byteLength+b.next.byteLength,0);}
  get recordCount():number{return this.total;}
  private block(id:number){return this.blocks[Math.floor((id-1)/TRAIL_BLOCK)];}
  private index(id:number){return(id-1)%TRAIL_BLOCK;}

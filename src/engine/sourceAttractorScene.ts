@@ -1,3 +1,4 @@
+import {sourceAttractorWorkBudget} from './sourceAttractorWork';
 import {SourceAttractorCpuParticles,type SourceAttractorCpuOptions} from './sourceAttractorCpuParticles';
 import {evaluateOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {SOURCE_CAMERA_MODEL,type SourceCameraScalars,type SourceCameraViewport} from './sourceCamera';
@@ -16,10 +17,11 @@ export interface SourceAttractorCpuReplayOptions extends SourceAttractorCpuOptio
  * This boundary does not import local Attractor documents or reinterpret their
  * simulationFps/seed/RK4 settings as native CPU settings. */
 export function replaySourceAttractorCpu(options:SourceAttractorCpuReplayOptions){
+ const reserve=sourceAttractorWorkBudget(options.reserve);
  let particles:SourceAttractorCpuParticles|undefined;
  const frame=evaluateOrdinarySourceCameraTimeline(options.camera,options.tracks,options.fps,options.time,{
   particleActions:'attractor',isCancelled:options.isCancelled,
-  createParticles:()=>particles=new SourceAttractorCpuParticles(options),
+  createParticles:()=>particles=new SourceAttractorCpuParticles({...options,reserve}),
  });
  return{frame,particles:particles!};
 }
@@ -37,11 +39,18 @@ export interface SourceAttractorCpuDisplayOptions extends SourceAttractorCpuRepl
  * palette and camera. Renderers consume only these delivered facts. */
 export function generateSourceAttractorCpu(options:SourceAttractorCpuDisplayOptions):Extract<SceneOutput,{type:'geometry'}> {
  const started=performance.now();
+ validateSourceAttractorCpuDisplay(options);
+ return composeSourceAttractorCpu(options,replaySourceAttractorCpu(options),started);
+}
+export function validateSourceAttractorCpuDisplay(options:SourceAttractorCpuDisplayOptions):void {
  if(options.visualConfiguration===undefined)throw new Error('源吸引子显示需要完整视觉配置');
  if(!Number.isInteger(options.backgroundColor)||options.backgroundColor<0||options.backgroundColor>0xffffffff)throw new Error('源吸引子背景需要 uint32 颜色');
  // Reject invalid projection before allocating a warmup/particle history.
  prepareOrdinarySourceFrame({model:SOURCE_CAMERA_MODEL,time:0,frameIndex:0,camera:options.camera,viewport:options.viewport});
- const {frame,particles}=replaySourceAttractorCpu(options),snapshot=particles.snapshot(),visual=snapshot.visualConfiguration!;
+}
+/** Consume one owned replay; never recompute a camera from separate particles. */
+export function composeSourceAttractorCpu(options:SourceAttractorCpuDisplayOptions,{frame,particles}:ReturnType<typeof replaySourceAttractorCpu>,started=performance.now()):Extract<SceneOutput,{type:'geometry'}>{
+ const snapshot=particles.snapshot(),visual=snapshot.visualConfiguration!;
  const sourceCameraFrame={model:SOURCE_CAMERA_MODEL,time:frame.time,frameIndex:frame.frameIndex,camera:structuredClone(frame.camera),viewport:{...options.viewport}};
  const plan=prepareOrdinarySourceFrame(sourceCameraFrame),scale=plan.displayScale,F=Math.fround;
  // StrangeAttractor.resolveTrailLineWeight ignores scale magnitude: a finite

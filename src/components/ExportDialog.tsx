@@ -1,3 +1,4 @@
+import {sourceAttractorPresentedScene} from '../engine/sourceAttractorPresentation';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
 import {prepareSourceBouncingExport,sourceBouncingExportContext,assertSourceBouncingExportFrame,type SourceBouncingPresentedExport} from '../engine/sourceBouncingExport';
 import {usesSourceSurfaceParticles} from '../engine/sourceSurfaceIdentity';
@@ -215,7 +216,7 @@ export function ExportDialog({
           assertSourceBouncingExportFrame(output,bouncing,bouncing.frames[frame]);
           blob=await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
         }else{
-          const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
+          const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceAttractorPresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
           blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png');
         }

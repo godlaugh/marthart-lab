@@ -1,3 +1,4 @@
+import {sourceAttractorWorkBudget} from './sourceAttractorWork';
 import {SourceParticleTrailHistory,type SourceParticleTrails} from './sourceParticleTrails';
 import {parseSourceAttractorVisualConfiguration,type SourceAttractorVisualConfiguration} from './sourceAttractorVisualConfig';
 import {SourceAttractorColorRuntime} from './sourceAttractorColorRuntime';
@@ -33,7 +34,7 @@ export interface SourceAttractorCpuSnapshot {
  readonly colors?:Float32Array;readonly pointAlphas?:Float32Array;readonly packedColors?:Uint32Array;
  readonly particleIds?:Uint32Array;readonly trails?:SourceParticleTrails;readonly diagnostics?:string[];
 }
-const F=Math.fround,MAX_WORK=20_000_000;
+const F=Math.fround;
 /** Motion owner for source CPU particles: displayed geometry and bound camera
  * targets read the same state. Optional source display owns live colors and
  * every substep trail; public document integration remains separate work. */
@@ -45,6 +46,7 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
  private readonly count:number;private readonly field;private readonly scratch=new Float32Array(3);
  private readonly operations:number;private readonly options:SourceAttractorCpuOptions;
  private readonly scales:number[];private readonly offsets:number[];
+ private operationBudget=sourceAttractorWorkBudget();private operationDepth=0;
  private frameIndex=-1;private used=0;private failed=false;private failure:unknown;
  constructor(options:SourceAttractorCpuOptions){
   this.options={...options};
@@ -89,10 +91,11 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
   }
  }
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())throw new SourceAttractorCpuError('cancelled','原版吸引子回放已取消');}
- private reserve(n:number){this.check();if(!Number.isSafeInteger(n)||n<0||this.used+n>MAX_WORK)throw new SourceAttractorCpuError('capacity','原版吸引子超过本地 2000 万工作单位预算');this.used+=n;this.options.reserve?.(n);}
- private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}}
+ private reserve(n:number){this.check();this.operationBudget(n);this.options.reserve?.(n);this.used+=n;}
+ private guarded<T>(run:()=>T):T{if(this.operationDepth++===0)this.operationBudget=sourceAttractorWorkBudget();try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}finally{this.operationDepth--;}}
  private integrate(index:number){sourceAttractorEulerStep(this.field,this.raw,index*3,this.dt[index],this.scratch);this.steps[index]++;}
  private transform(index:number){for(let axis=0;axis<3;axis++){const at=index*3+axis;this.positions[at]=F(F(this.raw[at]*this.scales[axis])+this.offsets[axis]);}}
+ diagnostics(){return{frameIndex:this.frameIndex,workUnits:this.used,retainedBytes:this.raw.byteLength+this.positions.byteLength+this.dt.byteLength+this.steps.byteLength+this.scratch.byteLength+(this.color?.retainedBytes??0)+(this.history?.retainedBytes??0)};}
  bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding{return this.guarded(()=>{
   if(this.frameIndex!==-1)throw new SourceAttractorCpuError('input','原版吸引子跟踪必须在播放前绑定');
   const index=request.action.args?.index;
