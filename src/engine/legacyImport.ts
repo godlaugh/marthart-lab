@@ -1,4 +1,4 @@
-import {usesSourceAttractor,prepareSourceAttractorScene,importSourceAttractorParameters,importSourceAttractorBackground} from './sourceAttractorDocument';
+import {SOURCE_ATTRACTOR_ACTION_METHODS,usesSourceAttractor,prepareSourceAttractorScene,importSourceAttractorParameters,importSourceAttractorBackground} from './sourceAttractorDocument';
 import {importSourceAttractorConfig} from './sourceAttractorConfig';
 import {importSourceAttractorVisualConfig} from './sourceAttractorVisualConfig';
 import {importSourceParticleGradient} from './sourceParticleGradientImport';
@@ -1039,7 +1039,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
   if(!['wait','animate','align'].includes(type)&&!(s.kind==='surface'&&type==='param')){
    const nativeChild=(s.kind==='surface'&&['trails','surface_mode_transition'].includes(type))||(s.kind==='perlin'&&type==='trails');
    if(nativeChild)fail(`${pathLabel(path)} ${type} 尚缺原版动画子项编译事实；不能丢弃或猜测其队列时长`);
-   if(s.kind==='attractor'){if(type==='param')fail(`${pathLabel(path)} 原版吸引子参数动画尚未接入，不能使用本地动画替代`);r.acknowledge(path,'原版 Attractor 不执行此片段类型，不占用队列时长');continue;}
+   if(s.kind==='attractor'){r.acknowledge(path,'原版 Attractor 不执行此片段类型，不读取其时长或参数，也不占用队列时长');continue;}
    r.warnings.push(`${pathLabel(path)} ${originalType} 按原版未识别类型分支保留为等待；原字段保留在 source。`);
   }
   const duration=field([...path,'duration'],1);
@@ -1058,7 +1058,6 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
    track.actions=[];track.target='camera.actions';
    for(const {path:actionPath,method,raw,surfaceGradient,surfaceParameters} of sourceActions){
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
-    if(usesSourceAttractor(s)&&['paramStart','paramStop'].includes(method))fail(`${pathLabel(actionPath)} ${method} 原版吸引子参数动画尚未接入，不能使用本地动作替代`);
     if(surfaceParameters){if(surfaceParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,surfaceParameters});continue;}
     if((s.kind==='surface'||usesSourceAttractor(s))&&(method==='gradientStart'||method==='gradientStop')){
      if(usesSourceAttractor(s)&&!s.attractorSource!.visual.trails.show){r.acknowledge(actionPath,'原版吸引子仅在 CPU 且显示拖尾时构造渐变；未解析动作参数');continue;}
@@ -1088,8 +1087,14 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
      r.warnings.push(`${pathLabel(actionPath)} ${method}：源子动画使用同一片段时长，队列时长已保留；${local?'非相机效果仍采用既有本地解析与动画，不声明原版标量或帧时钟一致':'此原版非相机参数形式尚未映射，效果未执行，完整字段保留在 source'}。`);continue;
     }
     const ignored=(reason:string)=>r.warnings.push(`${pathLabel(actionPath)} ${method}：${reason}；片段时长保留，原动作保留在 source。`);
-    if(!Array.isArray(raw)&&s.kind==='attractor'){ignored('原版仅向相机分派 JSONArray 参数');continue;}
-    const args=Array.isArray(raw)?raw:[];if(args.length>128)fail(`${pathLabel(actionPath)}.args 超过 128 项本地容量`);
+    if(s.kind==='attractor'){
+     // JsonAttractorConfig.applyAction has no parameter animator. Unknown
+     // methods never inspect their arguments; an empty builder becomes Wait.
+     if(!SOURCE_ATTRACTOR_ACTION_METHODS.includes(method)&&method!=='setRates'){ignored('原版 ATTRACTOR 未分派该方法，不读取参数或改变方程');continue;}
+     if(!Array.isArray(raw)){ignored('原版仅向相机分派 JSONArray 参数');continue;}
+    }
+    // Attractor reads only the named fixed argument slots, never the tail.
+    const args=Array.isArray(raw)?raw:[];if(s.kind!=='attractor'&&args.length>128)fail(`${pathLabel(actionPath)}.args 超过 128 项本地容量`);
     const arg=(index:number)=>{const p=[...actionPath,'args',String(index)];r.retainNumberToken(p);const out=ordinaryResult(scope.argument(r.use(p),pathLabel(p)));r.warnings.push(...out.diagnostics);return out.value;};
     let action:AnimationAction|undefined;
     if(method==='track'&&(s.kind==='surface'||usesSourceAttractor(s))&&args.length>0)action={id:crypto.randomUUID(),method,args:{index:arg(0)}};

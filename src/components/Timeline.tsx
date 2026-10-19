@@ -233,7 +233,7 @@ export function Timeline({ scene, time, playing, finalPreview=false, onTime, onP
       <button title={t("折叠时间线")} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button></div>
     {sequential&&!rootsCamera&&!ordinaryCamera&&<p className="muted">{t('顺序队列按列表顺序执行；前置等待是本地扩展。完成等待变化后，后续片段会重新排定。')} {!frameClock&&<button onClick={()=>{const current=latest.current;try{current.onChange({...current.scene,timeline:resolveTimeline(current.scene)});}catch(error){setCreationError(String(error));}}}>{t('转为绝对时间线')}</button>}</p>}
     {(rootsCamera||ordinaryCamera)&&<p className="muted">{t(rootsGradient?'场景片段按列表顺序执行；每个片段先启动相机及全部渐变动作，再按源顺序更新。预览使用固定帧率；循环和往返是本地策略。队列结束后环绕与已启动的渐变仍可继续。':'相机片段按列表顺序执行，片段起点不参与计算。预览使用固定帧率；循环和往返是本地预览策略，回到较早时间会重新采样。队列结束后环绕速率仍可继续，可延长最小播放跨度。')}</p>}
-    {usesSourceAttractor(scene)&&<p className="muted">{t('可添加相机与渐变动作；参数动画和 GPU 回放尚未开放。渐变在显示拖尾时生效。')}</p>}
+    {usesSourceAttractor(scene)&&<p className="muted">{t('可添加相机与渐变动作；原版普通吸引子没有参数动画。渐变在显示拖尾时生效。')}</p>}
     {frameClock&&<p className="muted">{t('逐帧预览在队列结束后继续推进；循环与往返设置不生效。逐帧视频录制会在队列完成时停止。')}</p>}
     {experience.continuous&&<p className="muted">{t('连续预览不在等待片段结束时重置；最多运行至场景时间 24 小时。录制按独立时长停止。')}</p>}
     {experience.compatibleTracks&&<p className="muted">{t('已有非等待动画保留并继续执行；切回兼容模式可创建其他动画。')}</p>}

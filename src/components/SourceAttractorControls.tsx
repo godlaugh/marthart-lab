@@ -23,7 +23,7 @@ export function SourceAttractorControls({scene,onChange}:Props){
  const toggle=(key:'show'|'fade',label:string)=><label className="field toggle-field"><span>{t(label)}</span><input data-testid={`source-attractor-trails-${key}`} aria-label={t(label)} type="checkbox" checked={v.trails[key]} onChange={event=>emit(c,{...v,trails:{...v.trails,[key]:event.target.checked}})}/></label>;
  return <div data-testid="source-attractor-controls">
   <details open className="inspector-section"><summary>{t('吸引子模拟')}</summary><div className="section-body">
-   <p className="muted">{t('当前支持原版 CPU 积分；GPU 与参数动画尚未开放。修改设置会从初始状态重新计算。')}</p>
+   <p className="muted">{t('当前支持原版 CPU 积分；原版普通吸引子没有参数动画，GPU 尚未接入。修改参数会从初始状态重新计算。')}</p>
    {c.nativeBackend==='gpu'&&<p role="alert">{t('已保留 GPU 配置，当前无法播放。')}</p>}
    {number('particleCountCPU','CPU 粒子数',c.particleCountCPU,n=>emit({...c,particleCountCPU:n}),true)}
    {number('stepsPerFrame','每帧积分次数',c.stepsPerFrame,n=>emit({...c,stepsPerFrame:n}),true)}

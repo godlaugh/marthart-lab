@@ -85,7 +85,7 @@ describe('source Attractor replay binds geometry, gradient and camera to one clo
   expect(run([wait]).particles.snapshot().colors).toBeUndefined();expect(()=>run([gradient])).toThrow('视觉配置');
  });
  it('rejects unsupported parameter animation rather than executing a silent placeholder',()=>{
-  const track={...gradient,actions:[{id:'p',method:'paramStart'}]};expect(()=>replaySourceAttractorCpu({...options(),camera,tracks:[track],fps:4,time:0})).toThrow('尚未接入');
+  const track={...gradient,actions:[{id:'p',method:'paramStart'}]};expect(()=>replaySourceAttractorCpu({...options(),camera,tracks:[track],fps:4,time:0})).toThrow('没有参数动画');
  });
 });
 

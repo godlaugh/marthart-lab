@@ -1,0 +1,887 @@
+{
+  "schemaVersion": 1,
+  "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "evidenceKind": "independent static-bytecode boundary witnesses; no target execution",
+  "sourceEvidence": [
+    {
+      "path": ".cache/v2-camera-source/JsonAttractorConfig.json",
+      "classSha256": "ec8b62dd7c0b7d2532035017254dc7edb5e3fd65f2ea566545aa1c013bfb27ed",
+      "evidenceSha256": "26797318fc0e62e3ee3bd6c22649f5429c818b2a88a5c1add163a37f4cc254d3"
+    },
+    {
+      "path": ".cache/v2-camera-source/GenericDifferentialEquation.json",
+      "classSha256": "a27bd8e101221dc76e7c37d871e22bc3f931358c0c55da6f9690a4db04bc1ecb",
+      "evidenceSha256": "b86870928c85738adb9953fe7dfffeb744d8f66f24505ba77e70b331aec6de5b"
+    },
+    {
+      "path": ".cache/v2-camera-source/StrangeAttractor.json",
+      "classSha256": "5c0d4359c63dc72190cc25cde783908b4294c52158092fb3813901416da6dcfc",
+      "evidenceSha256": "b147c93f3f8b9a03b40a8bc8463ff9713d5c41535895fe75684fec6b79e5d9c2"
+    },
+    {
+      "path": ".cache/v2-camera-source/GenericScene.json",
+      "classSha256": "aa1dc49a5375b773fee7732b77d70c3a7166c0e36ca5477f754567621c8905f0",
+      "evidenceSha256": "f6843d1027d66fbc3360b2ce7f601d029bdc7bf1e4e0b17ca700615cb65f713b"
+    },
+    {
+      "path": ".cache/v2-camera-source/CameraAnimator.json",
+      "classSha256": "39939dd4fc74166db9769d231e5196d3ac6fbd885644a541d64113de1923931b",
+      "evidenceSha256": "4d45ab2b112a49c5647e177637213396ca665104539bd906d92ad65fd06fa9b6"
+    },
+    {
+      "path": ".cache/v2-camera-source/EulerIntegrator.json",
+      "classSha256": "535e2db815d645d663cebd7e517f89bb794e9f195569a2c8a62a919950d85d1c",
+      "evidenceSha256": "fd192e185267086c299fff817a950d7191eddc8696679ec5e18a127cc372af0a"
+    }
+  ],
+  "attractorRecognizedCameraMethods": [
+    "rotateTheta",
+    "rotatePhi",
+    "zoom",
+    "focal",
+    "track",
+    "stopTracking",
+    "stopAmbient",
+    "setRates",
+    "ambient"
+  ],
+  "equationStaticReferences": [
+    "mathart/attractor/config/JsonAttractorConfig.class",
+    "mathart/attractor/math/GenericDifferentialEquation.class"
+  ],
+  "otherFamilyParameterAnimatorClasses": [
+    "mathart/mapattractor/animation/MapAttractorParameterAnimator$ParamConfig.class",
+    "mathart/mapattractor/animation/MapAttractorParameterAnimator$ParameterTarget.class",
+    "mathart/mapattractor/animation/MapAttractorParameterAnimator.class",
+    "mathart/mapattractor/animation/StartMapAttractorParamAnimation.class",
+    "mathart/mapattractor/animation/StopMapAttractorParamAnimation.class"
+  ],
+  "dispatch": [
+    {
+      "id": "param-start-array-is-wait",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 2,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": [
+                {
+                  "parameters": {
+                    "a": {
+                      "min": "bad",
+                      "max": {},
+                      "step": []
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "wait",
+            "duration": 2
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "param-stop-object-is-wait",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 1,
+          "actions": [
+            {
+              "method": "paramStop",
+              "args": {
+                "parameters": false
+              }
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "wait",
+            "duration": 1
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "unknown-array-129-not-inspected",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 3,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                {
+                  "malformed": {
+                    "a": []
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "wait",
+            "duration": 3
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "unknown-scalar-args-is-wait",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": "not numeric"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "wait",
+            "duration": 0
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "standalone-param-skips-all-payload",
+      "timeline": [
+        {
+          "type": "param",
+          "duration": "not numeric",
+          "easing": {},
+          "parameters": false,
+          "actions": 17
+        }
+      ],
+      "expected": {
+        "queue": [],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "standalone-param-does-not-consume-time",
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 1
+        },
+        {
+          "type": "PARAM",
+          "duration": 100,
+          "parameters": {}
+        },
+        {
+          "type": "wait",
+          "duration": 2
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "wait",
+            "duration": 1
+          },
+          {
+            "type": "wait",
+            "duration": 2
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "disabled-skips-even-type",
+      "timeline": [
+        {
+          "enabled": false,
+          "type": 17,
+          "duration": {},
+          "parameters": []
+        }
+      ],
+      "expected": {
+        "queue": [],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "ignored-action-does-not-erase-zoom",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 2,
+          "actions": [
+            {
+              "method": "zoom",
+              "args": [
+                3
+              ]
+            },
+            {
+              "method": "paramStart",
+              "args": [
+                {
+                  "parameters": {
+                    "a": {
+                      "min": "bad",
+                      "max": {},
+                      "step": []
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "animate",
+            "duration": 2,
+            "actions": [
+              {
+                "method": "zoom",
+                "args": {
+                  "value": 3
+                }
+              }
+            ]
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "known-zoom-ignores-long-tail",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 2,
+          "actions": [
+            {
+              "method": "zoom",
+              "args": [
+                3,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "animate",
+            "duration": 2,
+            "actions": [
+              {
+                "method": "zoom",
+                "args": {
+                  "value": 3
+                }
+              }
+            ]
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "set-rates-alias-reads-only-first-three",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 2,
+          "actions": [
+            {
+              "method": "setRates",
+              "args": [
+                1,
+                2,
+                3,
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {}
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "animate",
+            "duration": 2,
+            "actions": [
+              {
+                "method": "ambient",
+                "args": {
+                  "phiSpeed": 1,
+                  "thetaSpeed": 2,
+                  "gammaSpeed": 3
+                }
+              }
+            ]
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "empty-method-is-unknown",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 1,
+          "actions": [
+            {
+              "method": "",
+              "args": []
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [
+          {
+            "type": "wait",
+            "duration": 1
+          }
+        ],
+        "parameterWrites": 0,
+        "error": null
+      }
+    },
+    {
+      "id": "missing-method-still-errors",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 1,
+          "actions": [
+            {
+              "args": []
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [],
+        "parameterWrites": 0,
+        "error": "required-method-string"
+      }
+    },
+    {
+      "id": "nonstring-method-still-errors",
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 1,
+          "actions": [
+            {
+              "method": 7,
+              "args": []
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "queue": [],
+        "parameterWrites": 0,
+        "error": "required-method-string"
+      }
+    }
+  ],
+  "equationCaptures": [
+    {
+      "parameter": "a",
+      "initialDouble": 2.0,
+      "configMapAfterConstruction": {
+        "a": 1000.0
+      },
+      "equationDx": "a",
+      "compiledSlot": 3,
+      "initialX": 1,
+      "dt": 0.5,
+      "warmupSteps": 2,
+      "substepsPerActiveFrame": 3,
+      "expected": {
+        "capturedDouble": 2.0,
+        "derivativeFloat": 2.0,
+        "afterWarmupX": 3.0,
+        "frameX": [
+          6.0,
+          9.0
+        ]
+      }
+    },
+    {
+      "parameter": "x",
+      "initialDouble": 3.0,
+      "configMapAfterConstruction": {
+        "x": 1000.0
+      },
+      "equationDx": "x",
+      "compiledSlot": 3,
+      "initialX": 1,
+      "dt": 0.5,
+      "warmupSteps": 2,
+      "substepsPerActiveFrame": 3,
+      "expected": {
+        "capturedDouble": 3.0,
+        "derivativeFloat": 3.0,
+        "afterWarmupX": 4.0,
+        "frameX": [
+          8.5,
+          13.0
+        ]
+      }
+    },
+    {
+      "parameter": "a",
+      "initialDouble": 16777217.0,
+      "configMapAfterConstruction": {
+        "a": 1000.0
+      },
+      "equationDx": "a",
+      "compiledSlot": 3,
+      "initialX": 1,
+      "dt": 5.960464477539063e-08,
+      "warmupSteps": 2,
+      "substepsPerActiveFrame": 3,
+      "expected": {
+        "capturedDouble": 16777217.0,
+        "derivativeFloat": 16777216.0,
+        "afterWarmupX": 3.0,
+        "frameX": [
+          6.0,
+          9.0
+        ]
+      }
+    }
+  ],
+  "limits": [
+    "No ATTRACTOR parameter animation exists in the inspected dispatcher/runtime; no oscillator numeric oracle is claimed.",
+    "Expected wait normalizes a native empty CameraAnimator to its actual Wait; import may preserve an empty animate author representation.",
+    "Equation captures use one parameter and direct-variable dx, avoiding invented Java HashMap iteration order.",
+    "Static absence of a setter does not establish native UI rebuild behavior; no live UI or framebuffer was executed."
+  ]
+}

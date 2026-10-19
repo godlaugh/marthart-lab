@@ -51,9 +51,11 @@ describe('public source Attractor document and import owner',()=>{
   expect(gated.timeline.tracks[0].actions).toEqual([]);
   expect(importSourceParticleGradient({targetDomain:'FRACTAL'},'attractor').kind).toBe('start');expect(importSourceParticleGradient({targetDomain:'FRACTAL'},'surface').kind).toBe('skip');
  });
- it('never substitutes GPU or local parameter animation for unsupported native execution',()=>{
+ it('never substitutes local GPU or local parameter animation into a canonical source document',()=>{
   expect(()=>imported({settings:{render_mode:'GPU'}})).toThrow(/GPU.*尚未接入/);
-  for(const track of [{type:'param',parameters:{a:{min:0,max:1,step:.1}}},{type:'animate',duration:1,actions:[{method:'paramStart',args:[]}]}])expect(()=>imported({timeline:[track]})).toThrow('参数动画');
+  for(const edit of [(s:ReturnType<typeof imported>['scene'])=>{s.timeline.tracks[0].type='param';},(s:ReturnType<typeof imported>['scene'])=>{s.timeline.tracks[0].actions=[{id:'param',method:'paramStart',args:{}}];}]){
+   const s=imported({timeline:[{type:'animate',duration:1,actions:[]}]}).scene;edit(s);expect(()=>parseScene(serializeScene(s))).toThrow('没有参数动画');
+  }
   const {scene}=imported();scene.attractorSource!.configuration.nativeBackend='gpu';expect(()=>parseScene(serializeScene(scene))).toThrow('GPU');
  });
  it('fails closed on malformed canonical payload, camera, schedule and local effects',()=>{

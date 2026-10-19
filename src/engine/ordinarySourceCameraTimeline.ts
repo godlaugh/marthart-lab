@@ -144,7 +144,7 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
     }
     else if(particleActions!==undefined&&action.method==='gradientStart')gradientActions.push({kind:'start',config:parseSourceParticleGradientConfiguration(action.gradient)});
     else if(particleActions!==undefined&&action.method==='gradientStop')gradientActions.push({kind:'stop'});
-    else if(particleActions==='attractor'&&noncameraMethods.has(action.method))throw new OrdinarySourceCameraTimelineError('unsupported','源吸引子参数动画尚未接入，不能用队列占位代替',track.id);
+    else if(particleActions==='attractor'&&noncameraMethods.has(action.method))throw new OrdinarySourceCameraTimelineError('unsupported','原版 ATTRACTOR 没有参数动画，规范化队列不能包含参数动作',track.id);
     else if(noncameraMethods.has(action.method))warn(track,'noncamera-clock',`${action.method} 仍由独立生产 owner 执行；其 native 参数/渐变帧时钟未在相机合同中验证。`);
     else throw new OrdinarySourceCameraTimelineError('unsupported',`源相机不能解释动作 ${action.method}；需原始编译事实`,track.id);
    }

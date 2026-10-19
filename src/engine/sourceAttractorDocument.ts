@@ -80,7 +80,7 @@ export function prepareSourceAttractorScene(scene:SceneDocument){
  if(!Number.isFinite(scene.timeline.fps)||scene.timeline.fps<1||scene.timeline.fps>120)return fail('原版吸引子帧率必须在 1–120');
  for(const track of scene.timeline.tracks){
   if(!track.enabled)continue;
-  if(!SOURCE_ATTRACTOR_CLIP_TYPES.includes(track.type??'')||track.actions?.some(action=>!SOURCE_ATTRACTOR_ACTION_METHODS.includes(action.method))||track.parameterAnimations?.length||track.surfaceParameterClip||track.actions?.some(action=>action.parameters?.length||action.domainParameters?.length||action.surfaceParameters))return fail('原版吸引子参数动画或片段类型尚未接入，不能使用本地动画替代');
+  if(!SOURCE_ATTRACTOR_CLIP_TYPES.includes(track.type??'')||track.actions?.some(action=>!SOURCE_ATTRACTOR_ACTION_METHODS.includes(action.method))||track.parameterAnimations?.length||track.surfaceParameterClip||track.actions?.some(action=>action.parameters?.length||action.domainParameters?.length||action.surfaceParameters))return fail('源吸引子时间线包含不支持的动作或片段；原版 ATTRACTOR 没有参数动画，不能使用本地动画替代');
  }
  const equation=prepareSourceAttractorEquation({equations:scene.equations,parameters:scene.parameters});
  if(!equation.ok)throw new SourceAttractorDocumentError(equation.error.kind,`原版吸引子 ${equation.error.path.join('.')}：${equation.error.reason}`);

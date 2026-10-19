@@ -7,8 +7,9 @@ import {inflateSync} from 'node:zlib';
 import {createServer as createTcpServer} from 'node:net';
 import {createExportServer} from '../server/index.mjs';
 
-const zeroDuration=process.argv.includes('--zero-duration');
-const prefix=zeroDuration?'.cache/v2-source-zero-duration-public':'.cache/v2-source-attractor-public';
+const zeroDuration=process.argv.includes('--zero-duration'),ignoredParameters=process.argv.includes('--ignored-parameters');
+if(zeroDuration&&ignoredParameters)throw Error('Choose one verifier variant');
+const prefix=ignoredParameters?'.cache/v2-source-attractor-ignored-parameters-public':zeroDuration?'.cache/v2-source-zero-duration-public':'.cache/v2-source-attractor-public';
 const check=(value,message)=>{if(!value)throw Error(message);};
 const sha=value=>createHash('sha256').update(value).digest('hex');
 // Independently parse the delivered PNG in Node. Canvas decode/re-encode would
@@ -38,7 +39,7 @@ const hashes=async()=>{
 };
 const before=await hashes(),directory=await mkdtemp('.cache/attractor-public-service-');
 const port=await new Promise((resolve,reject)=>{const s=createTcpServer();s.once('error',reject);s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(e=>e?reject(e):resolve(p));});});
-const report={at:new Date().toISOString(),scope:'Actual public App source CPU Attractor import/edit/save/reopen/forward and reverse seek; production export service PNG compared to fresh canonical source generation and raw RGBA renderer; every decoded MP4 frame versus its actual uploaded PNG. Local integration consistency only, not original JVM/JOGL runtime parity.',directory,nativeParity:false,exports:[],zeroDuration};
+const report={at:new Date().toISOString(),scope:'Actual public App source CPU Attractor import/edit/save/reopen/forward and reverse seek; production export service PNG compared to fresh canonical source generation and raw RGBA renderer; every decoded MP4 frame versus its actual uploaded PNG. Local integration consistency only, not original JVM/JOGL runtime parity.',directory,nativeParity:false,exports:[],zeroDuration,ignoredParameters};
 let page,browser,server,exportServer;const errors=[],consoleErrors=[];
 try{
  exportServer=await createExportServer({root:directory,allowedOrigins:[`http://127.0.0.1:${port}`]});const address=await exportServer.listen(0);
@@ -66,10 +67,39 @@ try{
  await ready();
  const source={config_version:'1.0.0',type:'ATTRACTOR',name:'Lorenz Source CPU Public',equations:{dx:'10*(y-x)',dy:'x*(28-z)-y',dz:'x*y-8/3*z'},camera:{phi:Math.PI/2,theta:0,gamma:0},palette:['#FC6255','#FFCD62','#58C4DD','#9A72AC'],settings:{render_mode:'CPU',particle_count_cpu:128,time_step:.01,sub_steps:5,scale_x:6,scale_y:6,scale_z:6,offset_z:-150,dot_size:2,line_weight:.3,show_trails:true,fade_trails:true,trail_lifetime:3},initialization:{warmup_steps:200},timeline:[{type:'animate',duration:.25,easing:'LINEAR',actions:[{method:'track',args:[7]},{method:'gradientStart',args:[{mode:'HUE_ROTATE',interpolation:'LINEAR',speed:30}]}]},{type:'wait',duration:1.75}]};
  if(zeroDuration){source.name='Zero duration source queue';source.timeline[0].duration=0;source.timeline[1].duration=2;}
+ let counterpartTracks;
+ const withoutIds=value=>JSON.stringify(value,(key,value)=>key==='id'?undefined:value);
+ if(ignoredParameters){
+  source.parameters={sigma:10};source.equations.dx='sigma*(y-x)';
+  source.timeline=[{type:'animate',duration:.2,easing:'LINEAR',actions:[]},source.timeline[0],{type:'wait',duration:1.55}];
+  source.timeline[1].actions.push({method:'setRates',args:[.1,-.1,0]});
+  const counterpart={...structuredClone(source),name:'Ignored parameters clean counterpart'};
+  await page.locator('input[type=file]').setInputFiles({name:'attractor-counterpart.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(counterpart))});
+  await page.waitForFunction(()=>window.__attractorAudit.requests.at(-1)?.scene.name==='Ignored parameters clean counterpart');await settled();await ready();
+  counterpartTracks=(await snapshot()).request.scene.timeline.tracks;
+  source.name='Ignored source Attractor parameters';
+  source.timeline[0].actions=[{method:'paramStart',args:[{sigma:{min:'malformed',max:null,step:{bad:true}}}]},{method:'paramStop',args:'not an array'}];
+  source.timeline[1].actions.unshift({method:'paramStart',args:Array.from({length:129},()=>({sigma:{min:100,max:100,step:1}}))});
+  source.timeline[1].actions.push({method:'paramStop',args:{sigma:false}});
+  source.timeline.unshift({type:'param',duration:{invalid:'not read'},easing:['not read'],parameters:{sigma:{min:null,max:'bad',step:[]}}});
+ }
+
  await page.locator('input[type=file]').setInputFiles({name:'source-attractor.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(source))});
- const controls=page.getByTestId('source-attractor-controls');await controls.waitFor();await ready();await settled();
+ const controls=page.getByTestId('source-attractor-controls');await controls.waitFor();await page.waitForFunction(name=>window.__attractorAudit.requests.at(-1)?.scene.name===name,source.name);await ready();await settled();
  const imported=await snapshot();check(imported.request.scene.attractorSource?.configuration.model==='attractor-1.7.8','canonical source identity missing');check(imported.output.positions.length===128*3&&imported.output.backend==='cpu','source CPU particles missing');check(imported.output.pointAppearance?.model==='mathart-1.7.8-cpu-billboard-v1'&&imported.output.trails?.appearance.model==='processing-lines-1.7.8','source point/line contracts missing');
  check(imported.request.scene.timeline.tracks.some(t=>t.actions?.some(a=>a.method==='track')),'source track was dropped on import');check(imported.request.scene.timeline.tracks.some(t=>t.actions?.some(a=>a.method==='gradientStart')),'source gradient was dropped on import');
+ if(ignoredParameters){
+  check(withoutIds(imported.request.scene.timeline.tracks)===withoutIds(counterpartTracks),'ignored parameters changed active canonical queue');
+  check(imported.request.scene.timeline.tracks[1].actions.some(a=>a.method==='ambient'),'setRates alias missing from mixed action group');
+  check(imported.request.scene.timeline.tracks[0].type==='animate'&&imported.request.scene.timeline.tracks[0].duration===Math.fround(.2)&&imported.request.scene.timeline.tracks[0].actions.length===0,'param-only animate must retain empty group duration');
+  check(JSON.stringify(imported.request.scene.provenance.original)===JSON.stringify(source),'ignored source provenance changed on import');
+  const warnings=imported.request.scene.provenance.warnings;check(warnings.some(w=>w.includes('paramStart'))&&warnings.some(w=>w.includes('paramStop'))&&warnings.some(w=>w.includes('timeline[0]')||w.includes('timeline.0')),'ignored input diagnostics missing');
+  await page.locator('.track-clip').nth(1).click();
+  const options=await page.locator('select').evaluateAll(selects=>selects.map(s=>({label:s.getAttribute('aria-label'),values:Array.from(s.options,o=>o.value)})));
+  check(!options.some(s=>s.values.includes('param')||s.values.includes('paramStart')||s.values.includes('paramStop')),'UI advertises unsupported parameter animation');
+  check(options.some(s=>s.values.includes('gradientStart'))&&options.some(s=>s.values.includes('animate')),'UI action/clip selectors not examined');
+  report.ignoredParameterImport={warnings,canonicalTrackCount:counterpartTracks.length,emptyAnimateDuration:imported.request.scene.timeline.tracks[0].duration,unknownStandaloneNoQueue:true,uiParameterOptionsAbsent:true,originalPreserved:true};
+ }
  if(zeroDuration){
   check(imported.request.scene.timeline.tracks[0].duration===0,'import replaced zero duration');
   await page.locator('.track-clip').first().click();const duration=page.getByRole('spinbutton',{name:'Clip duration',exact:true});check(await duration.inputValue()==='0','zero source duration hidden in editor');
@@ -88,17 +118,20 @@ try{
  const background=page.getByTestId('source-attractor-backgroundColor');await background.fill('#FF101319');await background.blur();await canonical(['backgroundColor'],0xff101319);
  await page.getByRole('button',{name:'Save',exact:true}).click();await page.waitForFunction(()=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1')),s=w.scenes.find(s=>s.id===w.active)?.attractorSource;return s?.visual.points.dotRadius===3&&s.backgroundColor===0xff101319;});
  await page.reload();await ready();await settled();await page.locator('.inspector-tabs button').nth(0).click();await controls.waitFor();check(await radius.inputValue()==='3','radius lost on reopen');check((await snapshot()).request.scene.attractorSource.backgroundColor===0xff101319,'background lost on reopen');check((await snapshot()).request.scene.attractorSource.visual.palette.colors[0]==='#80FC6255','palette ARGB lost on reopen');if(zeroDuration)check((await snapshot()).request.scene.timeline.tracks[0].duration===0,'saved zero duration was normalized');report.editing={dotRadius:3,background:'#FF101319',firstPaletteColor:'#80FC6255',saved:true,reopened:true};
+ if(ignoredParameters){
+  const saved=(await snapshot()).request.scene;check(JSON.stringify(saved.provenance.original)===JSON.stringify(source),'ignored provenance lost on workspace reopen');check(withoutIds(saved.timeline.tracks)===withoutIds(counterpartTracks),'ignored queue changed on reopen');
+  const projectPending=page.waitForEvent('download');await page.getByTitle('Export project JSON',{exact:true}).click();const downloaded=await projectPending,projectPath=`${prefix}-project.json`;await downloaded.saveAs(projectPath);const bytes=await readFile(projectPath),project=JSON.parse(bytes);
+  check(JSON.stringify(project.provenance.original)===JSON.stringify(source),'downloaded project lost ignored source');check(JSON.stringify(project.provenance.warnings)===JSON.stringify(saved.provenance.warnings),'downloaded project lost diagnostics');
+  const count=await page.evaluate(()=>window.__attractorAudit.requests.length);await page.locator('input[type=file]').setInputFiles({name:'ignored-parameters-reopened.json',mimeType:'application/json',buffer:bytes});await page.waitForFunction(count=>window.__attractorAudit.requests.length>count,count);await settled();await ready();
+  const reopened=(await snapshot()).request.scene;check(JSON.stringify(reopened.provenance.original)===JSON.stringify(source)&&withoutIds(reopened.timeline.tracks)===withoutIds(counterpartTracks),'project reimport changed ignored source or active queue');
+  report.ignoredParameterRoundtrip={workspaceReopened:true,projectPath,projectSha:sha(bytes),projectReimported:true,originalAndWarningsPreserved:true};
+ }
  const frames=[];for(const time of [.25,.75,1.5,.25]){const state=await seek(time);frames.push({time:state.request.context.time,output:state.output});}
  const stable=o=>JSON.stringify({positions:o.positions,colors:o.colors,alphas:o.alphas,trails:o.trails,camera:o.frame.camera});
  check(stable(frames[0].output)===stable(frames[3].output),'reverse seek changed source motion/colors/trails/camera');check(JSON.stringify(frames[0].output.positions)!==JSON.stringify(frames[1].output.positions),'source particles did not advance');check(JSON.stringify(frames[0].output.colors)!==JSON.stringify(frames[1].output.colors),'gradient did not advance');check(JSON.stringify(frames[0].output.frame.camera.center)!==JSON.stringify(frames[1].output.frame.camera.center),'tracking did not advance');check(frames.every(f=>f.output.positions.every(Number.isFinite)&&f.output.trails.indices.length>0),'missing or nonfinite motion/trail frame');
  report.seeks=frames.map(f=>({time:f.time,frameIndex:f.output.frame.frameIndex,particles:f.output.stats.generated,trailSegments:f.output.trails.indices.length/2,camera:f.output.frame.camera,hash:sha(stable(f.output))}));
- const exportImage=async(time,label=String(time))=>{
-  const preview=await seek(time),healthPromise=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/health');await page.getByRole('button',{name:'Export artwork',exact:true}).click();check((await healthPromise).ok(),'export service health');
-  await page.getByRole('button',{name:'Still image',exact:true}).click();await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('257');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('193');
-  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();const download=await pending,path=`${prefix}-${label}.png`;await download.saveAs(path);
-  const actual=await page.evaluate(()=>{const r=window.__attractorAudit.requests.findLast(r=>r.context.quality==='export'),output=window.__attractorAudit.completed.findLast(c=>c.worker===r.worker&&c.id===r.id);return{request:r,output};});
-  check(actual.output.frame.viewport.target==='offscreen','source offscreen camera missing');check(actual.request.context.sourceViewport.referenceLogicalHeight===preview.output.frame.viewport.logicalHeight,'preview reference scale lost');
-  const oracle=await page.evaluate(async request=>{
+ const directRender=request=>page.evaluate(async ({request,counterpartTracks})=>{
+   if(counterpartTracks)request.scene.timeline.tracks=counterpartTracks;
    const {prepareSourceAttractorScene}=await import('/src/engine/sourceAttractorDocument.ts'),{generateSourceAttractorCpu}=await import('/src/engine/sourceAttractorScene.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),{sceneAtTime}=await import('/src/engine/timeline.ts');
    const renderer=new ArtRenderer(document.createElement('canvas')),cleanup={renderer:false,context:false};let result;
    try{
@@ -108,23 +141,33 @@ try{
     const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(v=>v.toString(16).padStart(2,'0')).join(''),blob=await renderer.blob('image/png');
     result={sha:await digest(await blob.arrayBuffer()),rawSha:await digest(topDown),styles,cleanup,positions:Array.from(output.positions),colors:Array.from(output.colors),camera:output.sourceCameraFrame.camera,trailIndices:Array.from(output.trails.indices)};
    }finally{renderer.dispose();cleanup.renderer=true;renderer.renderer.forceContextLoss();cleanup.context=true;}return result;
-  },actual.request);
+  },{request,counterpartTracks});
+ const exportImage=async(time,label=String(time))=>{
+  const preview=await seek(time),healthPromise=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/health');await page.getByRole('button',{name:'Export artwork',exact:true}).click();check((await healthPromise).ok(),'export service health');
+  await page.getByRole('button',{name:'Still image',exact:true}).click();await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('257');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('193');
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();const download=await pending,path=`${prefix}-${label}.png`;await download.saveAs(path);
+  const actual=await page.evaluate(()=>{const r=window.__attractorAudit.requests.findLast(r=>r.context.quality==='export'),output=window.__attractorAudit.completed.findLast(c=>c.worker===r.worker&&c.id===r.id);return{request:r,output};});
+  check(actual.output.frame.viewport.target==='offscreen','source offscreen camera missing');check(actual.request.context.sourceViewport.referenceLogicalHeight===preview.output.frame.viewport.logicalHeight,'preview reference scale lost');
+  const oracle=await directRender(actual.request);
   const bytes=await readFile(path),decoded=decodePng(bytes),rgbaSha=sha(decoded.rgba);check(decoded.width===257&&decoded.height===193,'export dimensions');check(sha(bytes)===oracle.sha&&rgbaSha===oracle.rawSha,'PNG or complete RGBA differs from direct canonical source generation');
   check(JSON.stringify(actual.output.positions)===JSON.stringify(oracle.positions)&&JSON.stringify(actual.output.colors)===JSON.stringify(oracle.colors)&&JSON.stringify(actual.output.frame.camera)===JSON.stringify(oracle.camera)&&JSON.stringify(actual.output.trails.indices)===JSON.stringify(oracle.trailIndices),'Worker dispatch differs from direct motion/color/camera/trail owner');
   check(oracle.styles.some(s=>s.points&&s.visible)&&oracle.styles.some(s=>s.trails&&s.visible&&!s.depthTest&&!s.depthWrite),'dedicated source point or overlay LINES renderer missing');
   let changed=0;for(let i=0;i<decoded.rgba.length;i+=4)if(decoded.rgba[i]!==16||decoded.rgba[i+1]!==19||decoded.rgba[i+2]!==25)changed++;check(changed>(['all-zero','negative-zero','positive-zero','negative-duration'].includes(label)?0:100),'PNG lacks visible particles/trails');
-  report.exports.push({time,actualTime:actual.request.context.time,label,path,sha:sha(bytes),rgbaSha,bytes:bytes.length,width:decoded.width,height:decoded.height,changedPixels:changed,rawFramebufferMatches:true,directCanonicalGenerationMatches:true,styles:oracle.styles,cleanup:oracle.cleanup,viewport:actual.output.frame.viewport});await page.getByRole('button',{name:'Close export',exact:true}).click();
+  report.exports.push({time,actualTime:actual.request.context.time,label,path,sha:sha(bytes),rgbaSha,bytes:bytes.length,width:decoded.width,height:decoded.height,changedPixels:changed,rawFramebufferMatches:true,directCanonicalGenerationMatches:true,...(ignoredParameters?{removedUnknownActionsCounterpartMatches:true}:{}),styles:oracle.styles,cleanup:oracle.cleanup,viewport:actual.output.frame.viewport});await page.getByRole('button',{name:'Close export',exact:true}).click();
  };
  for(const time of [.25,1.25])await exportImage(time);
  check(report.exports[0].sha!==report.exports[1].sha,'distinct seek exports identical');
+ const videoRequestStart=await page.evaluate(()=>window.__attractorAudit.requests.length);
  const uploads=[],capture=request=>{const url=new URL(request.url());if(request.method()==='POST'&&/^\/api\/exports\/[^/]+\/frames$/.test(url.pathname))uploads.push({index:Number(url.searchParams.get('index')),png:request.postDataBuffer()});};page.on('request',capture);
  const healthPromise=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/health');await page.getByRole('button',{name:'Export artwork',exact:true}).click();check((await(await healthPromise).json()).ffmpeg,'FFmpeg unavailable for public video verification');
  await page.getByRole('button',{name:'Animation video',exact:true}).click();await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('256');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('192');await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill('6');await page.getByRole('spinbutton',{name:'Export duration',exact:true}).fill('2');
  const pending=page.waitForEvent('download',{timeout:120000});await page.getByRole('button',{name:'Start export',exact:true}).click();const download=await pending,path=`${prefix}.mp4`;await download.saveAs(path);page.off('request',capture);
  const metadata=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate','-of','json',path],{encoding:'utf8'})).streams[0];check(metadata.width===256&&metadata.height===192&&Number(metadata.nb_read_frames)===12&&metadata.r_frame_rate==='6/1','video frame count/dimensions/fps');check(uploads.length===12&&uploads.every((u,i)=>u.index===i),'video input order/count');
+ const videoRequests=ignoredParameters?await page.evaluate(start=>window.__attractorAudit.requests.slice(start).filter(r=>r.context.quality==='export'),videoRequestStart):[];
+ if(ignoredParameters)check(videoRequests.length===12,'counterpart video request count');
  const rgb=execFileSync('ffmpeg',['-v','error','-i',path,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{maxBuffer:32*1024*1024}),stride=256*192*3;check(rgb.length===12*stride,'decoded frame count');const comparisons=[];
  for(let i=0;i<uploads.length;i++){
-  const decoded=decodePng(uploads[i].png);check(decoded.width===256&&decoded.height===192,'uploaded dimensions');let total=0,max=0;for(let j=0;j<stride;j++){const d=Math.abs(rgb[i*stride+j]-decoded.rgba[Math.floor(j/3)*4+j%3]);total+=d;max=Math.max(max,d);}const mean=total/stride;check(mean<6,'decoded video error beyond lossy tolerance '+i+': '+mean);comparisons.push({index:i,inputSha:sha(uploads[i].png),encodedRgbSha:sha(rgb.subarray(i*stride,(i+1)*stride)),meanAbsoluteRgbError:mean,maxAbsoluteRgbError:max});
+  const decoded=decodePng(uploads[i].png);check(decoded.width===256&&decoded.height===192,'uploaded dimensions');let counterpartRawSha;if(ignoredParameters){const expected=await directRender(videoRequests[i]);counterpartRawSha=expected.rawSha;check(sha(decoded.rgba)===counterpartRawSha,'video input differs from removed-unknown-action counterpart '+i);}let total=0,max=0;for(let j=0;j<stride;j++){const d=Math.abs(rgb[i*stride+j]-decoded.rgba[Math.floor(j/3)*4+j%3]);total+=d;max=Math.max(max,d);}const mean=total/stride;check(mean<6,'decoded video error beyond lossy tolerance '+i+': '+mean);comparisons.push({index:i,...(counterpartRawSha?{counterpartRawSha,counterpartMatches:true}:{}),inputSha:sha(uploads[i].png),encodedRgbSha:sha(rgb.subarray(i*stride,(i+1)*stride)),meanAbsoluteRgbError:mean,maxAbsoluteRgbError:max});
  }
  check(new Set(comparisons.map(f=>f.inputSha)).size>=10,'video did not evolve');report.video={path,sha:sha(await readFile(path)),metadata,frames:comparisons,comparison:'Every decoded MP4 RGB frame versus its uploaded PNG; mean absolute RGB error <6 is a lossy H.264 allowance, not native parity.'};await page.getByRole('button',{name:'Close export',exact:true}).click();
  report.cancellation=await page.evaluate(async()=>{const {Generator}=await import('/src/engine/client.ts'),request=window.__attractorAudit.requests.findLast(r=>r.context.quality==='export'),cancelled=new Generator(),promise=cancelled.generate(request.scene,request.context).then(()=>({rejected:false}),error=>({rejected:true,message:String(error)}));cancelled.dispose();const outcome=await promise,recovery=new Generator();try{const output=await recovery.generate(request.scene,request.context);return{...outcome,recovery:output.backend==='cpu'&&output.positions.length===128*3&&output.trails?.indices.length>0,disposed:true};}finally{recovery.dispose();}});check(report.cancellation.rejected&&report.cancellation.recovery,'pending Worker cancellation/recovery');
