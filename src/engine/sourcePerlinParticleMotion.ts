@@ -96,6 +96,10 @@ export class SourcePerlinParticleMotion{
    }
   }catch(error){this.failed=true;throw error;}
  }
+ /** Read-only scalar delivery avoids a full detached motion copy per trail update. */
+ visitParticles(visit:(index:number,x:number,y:number,vx:number,vy:number,step:number,flags:number)=>void):void{
+  this.usable();for(let i=0;i<this.count;i++){if((i&255)===0)this.check();visit(i,this.positions[i*2],this.positions[i*2+1],this.velocities[i*2],this.velocities[i*2+1],this.steps[i],this.flags[i]);}
+ }
  snapshot(){this.usable();return{positions:this.positions.slice(),velocities:this.velocities.slice(),actualSteps:this.steps.slice(),flags:this.flags.slice(),randomState48:this.random.state48.toString(),width:this.width,height:this.height};}
  diagnostics(){this.usable();return{count:this.count,particleStateBytes:this.count*21,retainedBytes:this.count*21+(this.ownsNoise?4096*4:0),randomState48:this.random.state48.toString()};}
 }

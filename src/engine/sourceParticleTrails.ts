@@ -48,6 +48,22 @@ export class SourceParticleTrailHistory {
   let removed=0;
   while(this.heads[slot]){if((removed++&1023)===0)this.check();const id=this.heads[slot];if(!(F(time-this.block(id).values[this.index(id)*4+3])>this.lifetime))break;this.remove(slot);}
  }
+ /** Parsed FIFO facts for consumers with distinct source drawing contracts.
+  * The callback must not mutate this history. Separators retain their ordinal. */
+ visitRecords(slot:number,visit:(x:number,y:number,z:number,time:number,ordinal:number,count:number)=>void):void {
+  if(!Number.isInteger(slot)||slot<0||slot>=this.heads.length)throw new RangeError('Particle trail slot is out of range.');
+  let ordinal=0;const count=this.counts[slot];
+  for(let id=this.heads[slot];id;id=this.next(id)){
+   if((ordinal&1023)===0)this.check();const b=this.block(id),at=this.index(id)*4;
+   visit(b.values[at],b.values[at+1],b.values[at+2],b.values[at+3],ordinal++,count);
+  }
+ }
+ /** Caller-owned scratch avoids allocating one object per particle per frame. */
+ readLast(slot:number,out:{x:number;y:number;z:number;time:number}):boolean {
+  if(!Number.isInteger(slot)||slot<0||slot>=this.heads.length)throw new RangeError('Particle trail slot is out of range.');
+  const id=this.tails[slot];if(!id)return false;const b=this.block(id),at=this.index(id)*4;
+  out.x=b.values[at];out.y=b.values[at+1];out.z=b.values[at+2];out.time=b.values[at+3];return true;
+ }
  snapshot(dynamicColor?:(particleId:number,recordTime:number,baseColor:number)=>number):SourceParticleTrails {
   let vertices=0,segments=0,oldestTime=Infinity;
   const finite=(data:Float32Array,i:number)=>Number.isFinite(data[i])&&Number.isFinite(data[i+1])&&Number.isFinite(data[i+2]);

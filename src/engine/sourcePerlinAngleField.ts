@@ -1,4 +1,5 @@
 import type {SourceProcessingNoise} from './sourceProcessingNoise';
+import {sourcePerlinFbm} from './sourcePerlinFbm';
 
 const F=Math.fround,PI=F(Math.PI),TAU=F(2*Math.PI),ANGLE_FACTOR=F(.7);
 const clamp=(v:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,v));
@@ -51,19 +52,10 @@ export class SourcePerlinAngleField {
   if(this.nx>Math.floor(SOURCE_PERLIN_ANGLE_MAX_CELLS/this.ny))throw new SourcePerlinAngleFieldError('capacity','Perlin angle grid exceeds the local cell budget.');
   const angles=new Float32Array(this.nx*this.ny);
   const sx=F(F((options.textureSeed&65535)/F(65535))*10),sy=F(F(((options.textureSeed>>>16)&65535)/F(65535))*10);
-  const octaves=clamp(options.curveNoiseOctaves,1,6);
-  const fbm=(x:number,y:number)=>{
-   let sum=0,weight=0,amplitude=1,frequency=1;
-   for(let i=0;i<octaves;i++){
-    sum=F(sum+F(finite(options.noise.sample(F(x*frequency),F(y*frequency)))*amplitude));
-    weight=F(weight+amplitude);amplitude=F(amplitude*.5);frequency=F(frequency*2);
-   }
-   return F(sum/weight);
-  };
   for(let x=0;x<this.nx;x++)for(let y=0;y<this.ny;y++){
    if((y&127)===0)this.check();
    const u=F(F(x)/F(this.nx-1)),v=F(F(y)/F(this.ny-1));
-   const n=fbm(F(sx+F(u*scale)),F(sy+F(v*scale)));
+   const n=sourcePerlinFbm(options.noise,F(sx+F(u*scale)),F(sy+F(v*scale)),options.curveNoiseOctaves);
    angles[x*this.ny+y]=finite(F(F(F(F(offset+n)*PI)*ANGLE_FACTOR)*this.angleScale));
   }
   this.check();this.angles=angles;

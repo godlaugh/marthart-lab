@@ -166,7 +166,11 @@ class Runtime:
         for action in actions:
             if action['kind'] == 'start':
                 self.mode, self.space = action['mode'], action['interpolation']
-                self.base, self.progress, self.scale, self.speed, self.running = self.state['primary'], 0., 0., action.get('speed', 90.), True
+                # RuntimeState.start PC10-11 invokes config.sanitize; negative
+                # and nonfinite speeds become zero even for direct records.
+                speed = action.get('speed', 60.)
+                speed = speed if math.isfinite(speed) and speed >= 0 else 0.
+                self.base, self.progress, self.scale, self.speed, self.running = self.state['primary'], 0., 0., speed, True
                 self.apply()  # GradientAnimator.start immediately applies frame.
                 self.apply()  # StartGradientAnimation.onStart setSpeedScale(0).
                 self.children.append(['start', False, 0.])

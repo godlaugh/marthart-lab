@@ -1,5 +1,6 @@
 import {prepareDomainSourceScalar} from './domainSourceScalar';
-import {DEFAULT_DOMAIN_SOURCE_COLORS,sourceColorLerp} from './domainSourcePalette';
+import {DEFAULT_DOMAIN_SOURCE_COLORS} from './domainSourcePalette';
+import {sourceManimGradientColor} from './sourceManimGradient';
 import {SOURCE_COLOR_TEXT_BUDGET,SourceConfigColorError,sourceConfigPackedColor} from './sourceConfigColor';
 import type {SourceAttractorError,SourceAttractorResult} from './sourceAttractorConfig';
 
@@ -136,16 +137,8 @@ export function prepareSourceAttractorInitialColors(input:SourceAttractorPalette
  const packedPalette=Object.freeze(effective.map((text,index)=>{
   try{return sourceConfigPackedColor(text);}catch(error){if(!(error instanceof SourceConfigColorError))throw error;diagnostics.push(`palette.${index}: 源颜色解析失败，采用白色；原字符串已保留。`);return 0xffffffff;}
  }));
- const n=packedPalette.length;
  return Object.freeze({count,packedPalette,diagnostics:Object.freeze(diagnostics),colorAt(index:number){return attempt(()=>{
   if(!Number.isInteger(index)||index<0||index>=count)fail('input',['index'],'初始颜色索引超出粒子数量');
-  if(n===1)return packedPalette[0];
-  // Source multiplies before dividing; normalizing index first changes low bits.
-  const position=count===1?0:F(F(F(n-1)*F(index))/F(count-1));
-  let segment=Math.trunc(position),fraction=F(position%1);
-  // Includes count=1: its only slot is also the final slot and takes last color.
-  if(index===count-1){fraction=1;segment=n-2;}
-  segment=Math.max(0,Math.min(n-2,segment));
-  return sourceColorLerp(packedPalette[segment],packedPalette[segment+1],fraction,'rgb');
+  return sourceManimGradientColor(packedPalette,count,index);
  });}});
 });}

@@ -2,6 +2,7 @@ import {sourceColorLerp,type DomainSourceInterpolation} from './domainSourcePale
 import {SourceGradientRuntime,type SourceGradientAction,type SourceGradientSnapshot} from './sourceGradientRuntime';
 import {sourceGradientPaletteState,type SourceGradientPaletteState} from './sourceGradientPaletteState';
 import {parseSourceParticleGradientConfiguration} from './sourceParticleGradientConfig';
+import {sourceManimGradientColor} from './sourceManimGradient';
 
 const F=Math.fround;
 const integer=(v:number)=>Math.max(-2147483648,Math.min(2147483647,Math.trunc(v)));
@@ -9,6 +10,9 @@ const phase=(v:number)=>F(v-F(integer(Math.floor(v))));
 const constrain=(v:number,lo:number,hi:number)=>v<lo?lo:v>hi?hi:v;
 /** Local retained palette budget (256 KiB packed), not a source color limit. */
 export const SOURCE_PERLIN_COLOR_LIMIT=65_536;
+/** Local maximum initial packed output: 4 MiB. Scene particle/work owners may
+ * impose a smaller count; this is not a source palette or particle limit. */
+export const SOURCE_PERLIN_INITIAL_COLOR_LIMIT=1_048_576;
 /** ManimColors.DEFAULT_PALETTE used by PerlinNoiseField.cachePalette. */
 export const SOURCE_PERLIN_DEFAULT_PALETTE=Object.freeze([0xfffc6255,0xffff862f,0xffffcd62,0xff83c167,0xff58c4dd,0xff9a72ac]);
 export class SourcePerlinColorError extends Error {
@@ -123,6 +127,21 @@ export class SourcePerlinColorRuntime {
   this.gradient.update(F(dt));
  });}
  sampleCurrent(coordinate:number):number {return this.guarded(()=>sample(this.palette,this.recipe(),coordinate));}
+ /** Detached ManimColors.gradient output from this owner's effective palette.
+  * Construction uses this once; later CPU refreshes use the captured sampler. */
+ initialParticleColors(count:number):Uint32Array {return this.guarded(()=>{
+  if(!Number.isInteger(count)||count<0||count>2147483647)throw new SourcePerlinColorError('input','原版 Perlin 初始颜色数量须为非负 Java int');
+  if(count>SOURCE_PERLIN_INITIAL_COLOR_LIMIT)throw new SourcePerlinColorError('capacity','原版 Perlin 初始颜色超过本地 4 MiB 输出预算');
+  const result=new Uint32Array(count);
+  for(let i=0;i<count;i++){if((i&255)===0)this.check();result[i]=sourceManimGradientColor(this.palette,count,i);}
+  return result;
+ });}
+ /** Direct source sampleShiftedPalette; seed-space construction supplies zero
+  * offset and fixes the returned blob color independently of later gradients. */
+ sampleShifted(coordinate:number,offset:number):number {return this.guarded(()=>{
+  if(!Number.isFinite(F(coordinate))||!Number.isFinite(F(offset)))throw new SourcePerlinColorError('input','原版 Perlin 颜色坐标须为有限单精度数值');
+  const recipe=this.recipe();return shifted(this.palette,F(coordinate),F(offset),recipe.running,recipe.interpolation);
+ });}
  /** Undefined before the first refresh: do not replace initial particle colors
   * with the shifted sampler's wrapped endpoint. */
  sampleRefreshed(coordinate:number):number|undefined {return this.guarded(()=>this.refreshed?sample(this.palette,this.refreshed,coordinate):undefined);}
