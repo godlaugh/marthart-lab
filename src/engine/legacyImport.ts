@@ -1,3 +1,4 @@
+import {importSourceBouncingDocument} from './sourceBouncingDocument';
 import {SOURCE_ATTRACTOR_ACTION_METHODS,usesSourceAttractor,prepareSourceAttractorScene,importSourceAttractorParameters,importSourceAttractorBackground} from './sourceAttractorDocument';
 import {importSourceAttractorConfig} from './sourceAttractorConfig';
 import {importSourceAttractorVisualConfig} from './sourceAttractorVisualConfig';
@@ -9,7 +10,6 @@ import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type S
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
 import {FRACTAL_SOURCE_COLOR_PROFILE,prepareFractalSourceColorImport} from './fractalSourceColor';
 import {initializeSamilaCamera} from './samilaCamera';
-import {recordingDurationError} from './recordingContract';
 import {resolveFractalParameterBinding} from './fractalParameterBindings';
 import {DEFAULT_EDGE_EASING,parseOscillationEdge} from './oscillation';
 import type {AnimationAction,AnimationTrack,DomainParameterAction,GradientAnimation,OscillationEdgeEasing,ParameterAnimation,SceneDocument,SceneKind,Settings} from '../types';
@@ -242,7 +242,7 @@ function common(r:Reader,s:SceneDocument){
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s))commonLocalPalette(r,s);
- if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
+ if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
@@ -466,31 +466,18 @@ function spirograph(r:Reader,s:SceneDocument){
  r.warnings.push('新导入使用 60 FPS 离线逐帧算法参考；这是本地可保存的模拟时钟选择，不是原应用实时帧率。旧本地作品不会自动升级。');
 }
 
-function bouncing(r:Reader,s:SceneDocument){
- // Import policy is selected after all original timeline actions are parsed.
- s.settings.bouncingPlaybackModel='timeline-v1';
- const recordDuration=r.num('settings.record_duration',s.parameters);
- if(recordDuration!==undefined){s.settings.bouncingRecordDuration=recordDuration;if(recordingDurationError(recordDuration))r.warnings.push(`record_duration=${recordDuration} 超出本地实时录制的 0.1–3600 秒范围；原值已保留，请修改独立录制时长后录制。`);}
- stringTo(r,s,'settings.container_shape','boundary',{CIRCLE:'circle',ELLIPSE:'ellipse',POLYGON:'polygon'});
- const radius=firstPath(r,s.settings.boundary==='circle'?['settings.circle_radius','settings.boundary_radius']:['settings.boundary_radius','settings.circle_radius']);if(radius)numberTo(r,s,radius,'radius',{min:.01,max:1000});if(s.settings.boundary==='ellipse'){numberTo(r,s,'settings.ellipse_semi_major_axis','radius',{min:.01,max:1000});numberTo(r,s,'settings.ellipse_semi_minor_axis','ellipseY',{min:.01,max:1000});}
- if(s.settings.boundary==='polygon'){const polygon=r.use('polygon');if(!Array.isArray(polygon))fail('多边形边界缺少 polygon 数组');s.settings.polygon=JSON.stringify(polygon);}
- for(const axis of ['x','y']){const path=firstPath(r,s.settings.boundary==='circle'?[`settings.circle_center_${axis}`,`settings.boundary_center_${axis}`]:[`settings.boundary_center_${axis}`,`settings.circle_center_${axis}`]);if(path)numberTo(r,s,path,'boundaryCenter'+axis.toUpperCase());numberTo(r,s,`settings.initial_circle_center_${axis}`,'shapeCenter'+axis.toUpperCase());numberTo(r,s,`settings.velocity_center_${axis}`,'velocityCenter'+axis.toUpperCase());}
- stringTo(r,s,'settings.initial_position_mode','shape',{BOX:'box',CIRCLE:'circle',RING:'ring',SPIRAL:'spiral',ARCHIMEDEAN_SPIRAL:'archimedean',STAR:'star',HEART:'heart',INFINITY:'infinity',LISSAJOUS:'lissajous',ROSE:'rose',SUPERELLIPSE:'superellipse',HYPOCYCLOID:'hypocycloid',EPICYCLOID:'epicycloid',FORMULA:'formula'});
- if(s.settings.shape==='archimedean')r.warnings.push('原包配置接受 ARCHIMEDEAN_SPIRAL，但形状工厂未见专用分支；此处实现标准阿基米德曲线，不声明等同原版未验证分支行为。');
- numberTo(r,s,'settings.initial_circle_radius','initialRadius',{min:0,max:1000});numberTo(r,s,'settings.initial_speed','speed',{min:0,max:100});numberTo(r,s,'settings.initial_angle','angle');numberTo(r,s,'settings.initial_angle_spread','spread',{min:0,max:Math.PI*2});numberTo(r,s,'settings.velocity_noise','velocityNoise',{min:0,max:1});count(r,s,'settings.particle_count','count',5000000);
- stringTo(r,s,'settings.initial_velocity_mode','velocity',{UNIFORM:'uniform',RANDOM:'random',RADIAL_OUT:'out',RADIAL_IN:'in',TANGENTIAL_CW:'cw',TANGENTIAL_CCW:'ccw'});
- const formula=r.str('settings.shape_formula');if(formula?.trim())s.equations.mask=formula;const fill=r.str('settings.shape_fill_mode');if(fill){if(!['FILL','OUTLINE'].includes(fill))fail('未知 shape_fill_mode');s.settings.fill=fill==='FILL';}
- const fields:Record<string,[string,number,number,boolean?]>={shape_inner_ratio:['shapeInnerRatio',0,1],shape_num_points:['shapeDegree',2,64,true],shape_num_turns:['shapeTurns',.01,100],shape_tightness:['shapeTightness',0,100],shape_line_width:['shapeLineWidth',0,1000],shape_lissajous_a:['shapeLissajousA',1,64,true],shape_lissajous_b:['shapeLissajousB',1,64,true],shape_lissajous_delta:['shapeLissajousDelta',-10000,10000],shape_rose_k:['shapeRoseK',1,64,true],shape_superellipse_n:['shapeSuperellipseN',.1,100],shape_k:['shapeK',2,64,true]};
- for(const [old,[key,min,max,integer]]of Object.entries(fields))numberTo(r,s,'settings.'+old,key,{min,max,integer});
- if(s.settings.shape==='box'){s.settings.shapeBoxBounds=true;for(const axis of ['x','y'])for(const edge of ['min','max'])numberTo(r,s,`settings.${axis}0_${edge}`,`box${edge==='min'?'Min':'Max'}${axis.toUpperCase()}`);}
- const boundaryColor=r.str('settings.boundary_color');if(boundaryColor!==undefined)s.settings.boundaryColor=boundaryColor;booleanTo(r,s,'settings.show_boundary','showBoundary');
- const backend=r.str('settings.render_mode');if(backend){if(!['CPU','GPU'].includes(backend.toUpperCase()))fail('未知弹跳 render_mode');s.settings.bouncingBackend=backend.toUpperCase()==='CPU'?'cpu':'auto';if(backend.toUpperCase()==='GPU'){s.settings.bouncingPresentation='raster';s.settings.bouncingHistoryFps=30;r.warnings.push('原版 GPU 选择已映射为最多 500 万粒子的直接图像与固定 30 Hz 有限历史，初始随机序列、混合和色调独立实现；不保证原版像素相同。');}}
- seed(r,s,'settings.seed');booleanTo(r,s,'settings.show_trails','trails');numberTo(r,s,'settings.trail_lifetime','trailDuration',{min:.001,max:60});
- if(s.settings.shape==='formula'){s.settings.formulaDomain='disc';s.settings.formulaCoordinates='world';s.settings.formulaResolution=256;if(s.settings.shapeLineWidth!==undefined)s.settings.shapeLineWidth=Number(s.settings.shapeLineWidth)/2;r.warnings.push('公式按原版世界坐标和圆盘采样域导入；轮廓采用独立网格边界和弧长带宽采样，分布不保证等同原版随机筛选。');}
- numberTo(r,s,'settings.particle_radius','collisionRadius',{min:0,max:1000});
- if(r.has('settings.time_step')){numberTo(r,s,'settings.time_step','bouncingTimeStep',{min:.0001,max:.25});s.settings.bouncingClock='fixed-step';s.settings.bouncingFps=60;r.warnings.push('每帧 time_step 已映射到固定每秒 60 仿真帧，保证预览/导出/跳转一致；原版实时帧率并未作为可重现时钟验证。');}
- if(r.has('settings.sub_steps')){numberTo(r,s,'settings.sub_steps','bouncingSubsteps',{min:1,max:16,integer:true});r.warnings.push('sub_steps 保留为仿真来源；精确弹道解对步长细分不敏感，未伪造精度控件。');}
- r.warnings.push('弹跳形状、初始速度噪声与各中心已导入；CPU 曲线填充采用采样轮廓的奇偶内部规则，随机分布与原版不保证一致。碰撞半径已映射到圆/椭圆轴缩减或凸多边形内缩；CPU 使用精确镜面反射，GPU 弹道更新已独立实现并保留 CPU 回退；图像历史按有限寿命从种子重放，不声称原版无限时长累积或实时性能。');
+/** Native Bouncing owns its entire execution payload. No local equations,
+ * parameter scope, queue, annotation or physical-clock conversion is applied. */
+function sourceBouncing(r:Reader,s:SceneDocument):void {
+ const prepared=importSourceBouncingDocument(r.root,{numberToken:path=>r.numberToken(path)});
+ if(!prepared.ok)fail(`${prepared.error.path.join('.')}: ${prepared.error.reason}`);
+ const facts=prepared.value;
+ for(const path of facts.consumedPaths)r.use(path);
+ for(const path of facts.numericPaths)r.retainNumberToken(path);
+ r.warnings.push(...facts.diagnostics);
+ s.bouncingSource=facts.payload;s.settings={};s.equations={};s.parameters={};
+ s.timeline={duration:10,fps:30,loop:false,tracks:[]};
+ r.warnings.push('已使用 MathArt 1.7.8 弹跳初始化、GPU 更新与显示规则；空队列持续更新，timeline、animations、参数和公式标注均不执行。10 秒时间轴仅为本地浏览范围，录制时长由源 record_duration 持有。原版 JVM/JOGL 完整画面尚未验收。');
 }
 
 function samila(r:Reader,s:SceneDocument){
@@ -1359,7 +1346,12 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  if(ordinaryFamily(kind))r.validateNativeObjects();
  const ordinaryScope=ordinaryFamily(kind)?ordinaryResult(prepareOrdinarySourceScalarScope(kind,{parameters:r.peek(['parameters']),memberOrder:(kind==='surface'||kind==='implicit')&&r.has(['parameters'])?r.sourceKeys(['parameters']):undefined})):undefined;
  if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
- const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;scene.parameters=kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;
+ if(kind==='bouncing'){
+  r.validateNativeObjects();sourceBouncing(r,scene);projectResolution(r,scene);r.remaining();
+  return{scene,warnings:r.warnings,source,...(r.sourceNumberTokens.length?{sourceNumberTokens:r.sourceNumberTokens}:{})};
+ }
+ scene.parameters=kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
  if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
  if(kind==='attractor'){for(const key of Object.keys(scene.parameters)){r.use(['parameters',key]);r.retainNumberToken(['parameters',key]);}if(r.has(['parameters'])&&!Object.keys(scene.parameters).length)r.use(['parameters']);ordinaryAttractorGeometry(r,scene);}
  // Source geometry and queue share parsed dispatch facts. Select its owner
@@ -1372,7 +1364,7 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
  common(r,scene);
- ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin,spirograph,bouncing,samila,roots} as Record<SceneKind,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);
+ ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin,spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);
  // A finite explicit source theta is consumed only by the Samila scalar owner.
  // Validate the owned container even when keeping legacy behavior; never silently
  // substitute a guessed angle for malformed authored camera data.
@@ -1391,10 +1383,5 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
   if(r.has('camera'))r.acknowledge('camera','仅已启用的 Samila 锚定模型消费 theta；其他相机字段未应用');
  }
 
- const sourceTimeline=kind==='bouncing'?r.use('timeline'):undefined;
- if(kind==='bouncing'&&(sourceTimeline===undefined||Array.isArray(sourceTimeline)&&sourceTimeline.every(track=>isObject(track)&&typeof track.type==='string'&&track.type.toLowerCase()==='wait'))){
-  scene.settings.bouncingPlaybackModel='continuous-v2';
-  r.warnings.push('仅等待的弹跳时间线已采用连续预览；等待片段保留为导出范围，录制使用独立时长。场景时钟与原版实时帧率未作等价声明。');
- }
  r.remaining();return{scene,warnings:r.warnings,source,...(r.sourceNumberTokens.length?{sourceNumberTokens:r.sourceNumberTokens}:{})};
 }

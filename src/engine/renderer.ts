@@ -1,3 +1,4 @@
+import {usesSourceBouncing} from './sourceBouncingDocument';
 import {createSourceParticleTrailLines} from './sourceProcessingLineRenderer';
 import {createSourceSurfaceGpuMesh} from './sourceSurfaceGpuMeshRenderer';
 import {createSourceParticlePoints} from './sourceParticlePointRenderer';
@@ -137,6 +138,7 @@ export class ArtRenderer {
   setOutput(output: SceneOutput, document: SceneDocument, fit = false,optics?:{roll:number;focalLength:number;camera?:CameraState}) {
     if(output.type==='geometry'&&output.sourceGpuMesh&&(output.backend!=='webgl2'||output.topology!=='mesh'||output.positions.length||output.sourcePointAppearance||output.sourceMeshAppearance||output.sourceGpuPoints))throw new Error('GPU 网格需要独立的种子缓冲与匹配后端');
     if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
+    if(usesSourceBouncing(document)!==!!output.sourceBouncingFrame||output.sourceBouncingFrame&&(output.type!=='raster'||!output.cameraResolved))throw new Error('源弹跳需要与文档配对的已投影图像');
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
     if(output.sourceCameraFrame&&output.type==='raster'&&!output.cameraResolved)throw new Error('源相机像素图像必须已完成投影');
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
@@ -185,7 +187,7 @@ export class ArtRenderer {
         // Native Roots pixels already contain a complete background-composited
         // framebuffer. Its GL alpha records point blending, not another layer
         // opacity. Copy RGB opaquely to avoid blending the background twice.
-        new THREE.MeshBasicMaterial({ map: texture, transparent:!output.rootsPresentation }),
+        new THREE.MeshBasicMaterial({ map: texture, transparent:!output.rootsPresentation&&!output.sourceBouncingFrame }),
       );
       this.group.add(plane);
       this.controls.enableRotate = false;

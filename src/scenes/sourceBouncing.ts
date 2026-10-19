@@ -1,5 +1,5 @@
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
-import {prepareSourceBouncingScene,sourceBouncingCameraInput} from '../engine/sourceBouncingDocument';
+import {prepareSourceBouncingScene,sourceBouncingCameraInput,sourceBouncingInitializationKey} from '../engine/sourceBouncingDocument';
 import {parseSourceBouncingCheckpoint,sourceBouncingSeedCheckpoint,type SourceBouncingCheckpoint} from '../engine/sourceBouncingReplay';
 import {prepareSourceBouncingSeeds,type SourceBouncingSeedDiagnostics} from '../engine/sourceBouncingSeeds';
 import {SourceBouncingGpu,SourceBouncingGpuError,sourceBouncingGpuFrameLayout,sourceBouncingGpuUpdateWork,SOURCE_BOUNCING_GPU_LIMITS,type SourceBouncingUpdate} from '../engine/sourceBouncingGpu';
@@ -50,7 +50,7 @@ export class SourceBouncingSession {
    sourceBouncingGpuFrameLayout(payload.configuration.particleCount,context.width,context.height);
    // The canonical source owner already interpreted inputs. This key preserves
    // signed zero and omits display, camera and metadata edits deliberately.
-   const key=JSON.stringify(payload.configuration,(_key,value:unknown)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
+   const key=sourceBouncingInitializationKey(payload.configuration);
    if(key!==this.key||checkpoint.simulationUpdates<this.updates)this.reset();
    this.isCancelled=context.isCancelled;
    if(this.isCancelled?.())throw new SourceBouncingGpuError('cancelled','源弹跳生成已取消');

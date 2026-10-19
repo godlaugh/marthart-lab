@@ -65,6 +65,27 @@ export const SOURCE_SURFACE_MESH_NUMBER_FIELDS=['mesh_u_segments','mesh_v_segmen
 /** Attractor ConfigUtils integer/float reads and source visual fields. GPU
  * authoring remains registered even while the production entry is CPU only. */
 export const SOURCE_ATTRACTOR_SETTING_NUMBER_FIELDS=['particle_count','particle_count_cpu','particle_count_gpu','time_step','time_step_min','time_step_max','sub_steps','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','dot_size','line_weight','trail_lifetime','show_trails','fade_trails','background_color','gpu_exposure','gpu_contrast','gpu_gamma','gpu_saturation','gpu_density_scale','integration_method'] as const;
+/** Exact native Bouncing getter slots. The import owner supplies the actual
+ * numericPaths; this registry only validates persisted token provenance. String
+ * getters can also consume numeric JSON inputs, so their slots remain covered. */
+export const SOURCE_BOUNCING_SETTING_NUMBER_FIELDS=[
+ 'particle_count','sub_steps','time_step','particle_radius','container_shape',
+ 'circle_center_x','circle_center_y','circle_radius','ellipse_semi_major_axis','ellipse_semi_minor_axis','boundary_center_x','boundary_center_y',
+ 'initial_position_mode','initial_circle_center_x','initial_circle_center_y','initial_circle_radius','x0_min','x0_max','y0_min','y0_max',
+ 'initial_speed','initial_velocity_mode','velocity_center_x','velocity_center_y','velocity_noise','initial_angle','initial_angle_spread','seed',
+ 'shape_inner_ratio','shape_num_points','shape_num_turns','shape_tightness','shape_fill_mode','shape_line_width','shape_lissajous_a','shape_lissajous_b','shape_lissajous_delta','shape_rose_k','shape_superellipse_n','shape_k','shape_formula',
+ 'dot_size','line_weight','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','background_color','boundary_color','record_duration',
+] as const;
+const bouncingSettingFields=new Set<string>(SOURCE_BOUNCING_SETTING_NUMBER_FIELDS);
+// One selected polygon, at most 64 examined vertices and two coordinates.
+const bouncingStaticMaximum=bouncingSettingFields.size+3+64*2;
+function bouncingPolygonPath(path:readonly unknown[]):readonly unknown[]|undefined {
+ const parts=path[0]==='polygon'?path.slice(1):path[0]==='settings'&&path[1]==='polygon'?path.slice(2):undefined;
+ return parts?.length===2&&index(parts[0],64)&&typeof parts[1]==='string'&&['0','1','x','y'].includes(parts[1])?parts:undefined;
+}
+function bouncingField(path:readonly unknown[]):boolean {
+ return path.length===2&&(path[0]==='settings'&&typeof path[1]==='string'&&bouncingSettingFields.has(path[1])||path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1]))||!!bouncingPolygonPath(path);
+}
 const attractorSettingFields=new Set<string>(SOURCE_ATTRACTOR_SETTING_NUMBER_FIELDS);
 const attractorWarmupFields=new Set(['warmup_steps','warmup_stagger_min','warmup_stagger_max']);
 const attractorBoundsFields=new Set(['min_x','max_x','min_y','max_y','min_z','max_z']);
@@ -99,18 +120,27 @@ function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boo
  * parameter and timeline scalars. These family-specific registrations do not
  * assert lossless numeric lexemes for the whole source document. */
 export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kind']='roots'):SourceNumberToken[]{
- const roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),maximum=ordinary?ordinaryMaximum:projectFields.size+(roots?maxConsumedFields+maxTimelineFields:0);
+ const roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=bouncing?bouncingStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=ordinary?ordinaryMaximum:projectFields.size+(bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
  if(!Array.isArray(raw)||raw.length>maximum)throw new Error(`源数字词法记录必须是最多 ${maximum} 项的数组`);
- const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0,parameterNameCharacters=0,parameterCount=0;
+ const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0,parameterNameCharacters=0,parameterCount=0;let bouncingPolygonSource:string|undefined;const bouncingVertexForms=new Map<string,string>();
  // Preserve the existing independent static-field bound; timeline records do
  // not increase capacity for duplicate or unrelated spatial fields.
- if(raw.filter(value=>value&&typeof value==='object'&&Array.isArray(value.path)&&value.path[0]!=='timeline'&&!projectFields.has(JSON.stringify(value.path))).length>(ordinary?ordinaryStaticMaximum:maxConsumedFields))
-  throw new Error(`源静态数字词法记录必须是最多 ${ordinary?ordinaryStaticMaximum:maxConsumedFields} 项的数组`);
+ if(raw.filter(value=>value&&typeof value==='object'&&Array.isArray(value.path)&&value.path[0]!=='timeline'&&!projectFields.has(JSON.stringify(value.path))).length>staticMaximum)
+  throw new Error(`源静态数字词法记录必须是最多 ${staticMaximum} 项的数组`);
  return raw.map(value=>{
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('源数字词法记录无效');
   const {path,token}=value as {path?:unknown;token?:unknown};
-  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):ordinary&&ordinaryField(path,sceneKind)?JSON.stringify(path):undefined):undefined;
+  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):(bouncing?bouncingField(path):ordinary&&ordinaryField(path,sceneKind))?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效');
+  if(bouncing){
+   const polygon=bouncingPolygonPath(path);
+   if(polygon){
+    const source=path[0]==='polygon'?'root':'settings',vertex=String(polygon[0]),form=polygon[1]==='x'||polygon[1]==='y'?'object':'array';
+    if(bouncingPolygonSource!==undefined&&bouncingPolygonSource!==source)throw new Error('源弹跳数字词法只能保留一个已选 polygon');
+    if(bouncingVertexForms.has(vertex)&&bouncingVertexForms.get(vertex)!==form)throw new Error('源弹跳顶点数字词法不能混用数组和对象坐标');
+    bouncingPolygonSource=source;bouncingVertexForms.set(vertex,form);
+   }
+  }
   if((roots||sceneKind==='surface'||sceneKind==='attractor')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
    const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify((sceneKind==='surface'||sceneKind==='attractor')?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
    if(previous!==undefined&&previous!==payload)throw new Error('一个源动画动作只能保留首个对象的数字词法');

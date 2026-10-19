@@ -10,6 +10,10 @@ export interface SourceBouncingDocumentPayload {
  camera:SourceBouncingCameraAngles;
  recordDuration:number;
 }
+/** Shared simulation identity; visual/camera edits do not replace particles. */
+export function sourceBouncingInitializationKey(configuration:SourceBouncingConfiguration):string{
+ return JSON.stringify(configuration,(_key,value:unknown)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
+}
 export interface SourceBouncingDocumentImportFacts {
  payload:SourceBouncingDocumentPayload;
  /** Consumed fields from the component owners, not an exception-order trace

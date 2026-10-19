@@ -1,3 +1,7 @@
+import {SourceBouncingControls} from './components/SourceBouncingControls';
+import {SourceBouncingTransport} from './components/SourceBouncingTransport';
+import {usesSourceBouncing,sourceBouncingInitializationKey,prepareSourceBouncingScene} from './engine/sourceBouncingDocument';
+import {sourceBouncingSeedCheckpoint,stepSourceBouncingRealtime,planSourceBouncingFixedReplay,type SourceBouncingCheckpoint} from './engine/sourceBouncingReplay';
 import {SourceAttractorControls,SourceAttractorBackground} from './components/SourceAttractorControls';
 import {SourceAttractorPaletteEditor} from './components/SourceAttractorPaletteEditor';
 import {usesSourceAttractor,prepareSourceAttractorScene} from './engine/sourceAttractorDocument';
@@ -172,6 +176,7 @@ export default function App() {
     [category, setCategory] = useState<
       SceneKind | "all" | "saved" | "favorites"
     >("all");
+  const [bouncingCheckpoint,setBouncingCheckpoint]=useState(sourceBouncingSeedCheckpoint);
   const [output, setOutput] = useState<SceneOutput | null>(null),
     [outputScene,setOutputScene]=useState<SceneDocument|null>(null),
     [presentedSource,setPresentedSource]=useState<SceneDocument|null>(null),
@@ -216,6 +221,9 @@ export default function App() {
     generationQueue=useRef<GenerationQueue|null>(null),
     generationScene=useRef<SceneDocument|null>(null),
     generationPending=useRef(false),
+    bouncingFrame=useRef(bouncingCheckpoint),
+    bouncingLastFrameAt=useRef<number|undefined>(undefined),
+    bouncingPresented=useRef(false),
     file = useRef<HTMLInputElement>(null),
     camera = useRef<CameraState>(scene.camera),
     sceneRef = useRef(scene),
@@ -234,8 +242,19 @@ export default function App() {
   playingRef.current = playing;
   // Event handlers and worker callbacks share one current document boundary,
   // including multiple inputs queued before React commits its next render.
+  function showBouncingCheckpoint(checkpoint:SourceBouncingCheckpoint){
+    bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
+    bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
+  }
   function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument)) {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
+    if(usesSourceBouncing(next)){
+      bouncingPresented.current=false;
+      if(!usesSourceBouncing(current)||sourceBouncingInitializationKey(current.bouncingSource!.configuration)!==sourceBouncingInitializationKey(next.bouncingSource!.configuration)){
+        playingRef.current=false;setPlaying(false);autoPlayPending.current=false;
+        showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
+      }
+    }
     if(!sameProjectResolution(current.projectResolution,next.projectResolution)){
       // ProjectState render dimensions recreate the sketch. This differs from
       // fitting the existing canvas after a host window resize, which stays hot.
@@ -245,6 +264,7 @@ export default function App() {
       playingRef.current=false;setPlaying(false);
       generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
+      if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
       setPreviewCancelled(false);
     }
@@ -256,7 +276,7 @@ export default function App() {
   const libraryDrafts=useMemo(()=>Object.values({...drafts.current,[scene.id]:scene}),[scene,saved]);
   const def = definition(scene.kind),
     Icon = icons[scene.kind];
-  const experience=bouncingExperience(scene);
+  const experience=bouncingExperience(scene),sourceBouncing=usesSourceBouncing(scene);
   const samilaCameraActive=samilaCameraEnabled(scene),samilaNavigationLocked=samilaCameraActive||!!(output?.type==='raster'&&output.samilaView);
   const equationBasis=useRef({id:scene.id,equations:scene.equations});
   const perlinPreset=useMemo(()=>matchingPerlinPreset(scene,def),[scene,def]);
@@ -272,6 +292,7 @@ export default function App() {
   }
   const rootsSessionId=useRef(crypto.randomUUID());
   function edit(next: SceneDocument) {
+    if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     history.current.push(sceneRef.current);
     if (history.current.length > 40) history.current.shift();
@@ -300,6 +321,7 @@ export default function App() {
     return current.id===item.id?{...current,camera:camera.current}:drafts.current[item.id]??item;
   }
   function load(next: SceneDocument, source: 'library' | 'document') {
+    showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
     rootsSessionId.current=crypto.randomUUID();
     // A file/new document is a new renderer instance even when its saved id
     // matches the open work. Ordinary edits retain the current failure latch.
@@ -383,6 +405,14 @@ export default function App() {
     const next=future.current.pop();
     if(next){history.current.push(sceneRef.current);setScene(next);notify(t("已重做"));}
   }
+  function seekBouncingUpdates(updates:number){
+    const planned=planSourceBouncingFixedReplay({updates,fps:sceneRef.current.timeline.fps});
+    if(!planned.ok){setError(planned.error.reason);return;}
+    playingRef.current=false;setPlaying(false);autoPlayPending.current=false;
+    setError('');generationPending.current=true;showBouncingCheckpoint(planned.value.checkpoint);
+    // Same-index retry must still trigger a request after cancellation/error.
+    setGenerationRevision(value=>value+1);
+  }
   function seek(value:number) {
     autoPlayPending.current=false;
     playbackClock.current=value;
@@ -391,6 +421,11 @@ export default function App() {
   function play(value:boolean) {
     if(value&&experience.error){setToast(t(experience.error));return;}
     autoPlayPending.current=false;
+    if(sourceBouncing){
+      playingRef.current=value;
+      bouncingLastFrameAt.current=value&&bouncingFrame.current.simulationUpdates>0?performance.now():undefined;
+      setPlaying(value);return;
+    }
     if(value)playbackStartedAt.current=performance.now();
     if(value)setPickingJulia(false);
     if(value&&finalPreview){playbackClock.current=0;timeRef.current=0;setTime(0);}
@@ -462,6 +497,7 @@ export default function App() {
     function key(event: KeyboardEvent) {
       const target = event.target as HTMLElement;
       if(recording){if(event.key==='Escape')setRecording(false);return;}
+      if(exporting){if(event.key==='Escape')setExporting(false);return;}
       if(target.closest('dialog[open]'))return;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
@@ -496,7 +532,7 @@ export default function App() {
     }
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, [scene,language,recording,finalPreview]);
+  }, [scene,language,recording,exporting,finalPreview]);
   useEffect(() => {
     let id: number,
       prev = playbackStartedAt.current??performance.now();
@@ -506,6 +542,14 @@ export default function App() {
       // Start/resume/recording anchors use performance.now(). RAF's frame
       // timestamp can precede those anchors, so use RAF only for scheduling.
       const now=performance.now();
+      if(usesSourceBouncing(sceneRef.current)){
+        const last=bouncingLastFrameAt.current;
+        if(generationPending.current||!bouncingPresented.current||last!==undefined&&now-last<1000/renderPreferences.frameRate){id=requestAnimationFrame(tick);return;}
+        const next=stepSourceBouncingRealtime(bouncingFrame.current,{paused:false,deltaTime:last===undefined?0:(now-last)/1000});
+        if(!next.ok){playingRef.current=false;setPlaying(false);setError(next.error.reason);return;}
+        bouncingLastFrameAt.current=now;generationPending.current=true;showBouncingCheckpoint(next.value);
+        id=requestAnimationFrame(tick);return;
+      }
       if(rootSamplingFps!==undefined){
         const step=readyPlaybackStep(playbackClock.current,prev,now,rootSamplingFps,renderPreferences.frameRate,generationPending.current);
         if(!step.advanced){id=requestAnimationFrame(tick);return;}
@@ -522,7 +566,7 @@ export default function App() {
     }
     if (playing) {id = requestAnimationFrame(tick);}
     return () => cancelAnimationFrame(id);
-  }, [playing, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous]);
+  }, [playing, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
       output:(output,time,source)=>{setOutput(output);setOutputScene(source);setRenderTime(time);setError('');},
@@ -540,9 +584,10 @@ export default function App() {
     const changed=generationScene.current!==scene;
     if(generationScene.current?.id!==scene.id)setOutput(null);
     generationScene.current=scene;
+    if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),dimensions=previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
-  },[scene,playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
+  },[scene,sourceBouncing?bouncingCheckpoint:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;playbackStartedAt.current=performance.now();setPlaying(true);}
   },[output,outputScene,presentedSource,scene,generationActive,error,recording,previewCancelled]);
@@ -577,7 +622,7 @@ export default function App() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  const completedFrameReady=!playing&&!recording&&!generationActive&&!previewCancelled&&!error&&output!==null&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&renderTime===time;
+  const completedFrameReady=!playing&&!recording&&!generationActive&&!previewCancelled&&!error&&output!==null&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&renderTime===time&&(!sourceBouncing||output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingCheckpoint.simulationUpdates);
   return (
     <I18nProvider language={language}><div className="app-shell">
       <header className="app-header">
@@ -607,11 +652,11 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button className="text-button" title={t("实时录制")} onClick={()=>{autoPlayPending.current=false;setPlaying(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":"实时录制")} onClick={()=>{autoPlayPending.current=false;setPlaying(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
-            autoPlayPending.current=false;
+            autoPlayPending.current=false;playingRef.current=false;
             setPlaying(false);
             setExporting(true);
           }}
@@ -813,7 +858,7 @@ export default function App() {
               {output?.backend==='webgl2'?'GPU · WebGL 2':output?.backend==='cpu'?'CPU':t('WebGL 2 画布')}
             </span>
             {scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'&&<button disabled={busy||playing} aria-pressed={pickingJulia} onClick={()=>setPickingJulia(v=>!v)}>{t(pickingJulia?'取消点选':'点选 Julia 种子')}</button>}
-            <button title={t("适合画布")} disabled={samilaNavigationLocked} onClick={() => viewport.current?.fit()}>
+            <button title={t("适合画布")} disabled={samilaNavigationLocked||sourceBouncing} onClick={() => viewport.current?.fit()}>
               <Maximize size={15} />
             </button>
             <button title={t("撤销")} aria-label={t("撤销")} disabled={!history.current.length} onClick={undo}>
@@ -837,7 +882,10 @@ export default function App() {
               ref={viewport}
               output={output}
               outputScene={outputScene}
-              onPresented={frame=>{setPresentedSource(frame?.source??null);setPresentedOutput(frame?output:null);}}
+              onPresented={frame=>{
+                setPresentedSource(frame?.source??null);setPresentedOutput(frame?output:null);
+                if(usesSourceBouncing(sceneRef.current))bouncingPresented.current=!!frame&&frame.source===sceneRef.current&&outputScene===sceneRef.current&&output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingFrame.current.simulationUpdates&&output?.sourceBouncingFrame?.checkpoint.sceneTime===bouncingFrame.current.sceneTime;
+              }}
               onRenderError={message=>{autoPlayPending.current=false;setPlaying(false);setError(message);}}
               scene={scene}
               playing={playing}
@@ -884,8 +932,8 @@ export default function App() {
               </div>
             )}
             <div className="viewport-bottom">
-              <span className="interaction-hint">{t(pickingJulia&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>
-              <div className="view-chips">
+              <span className="interaction-hint">{t(sourceBouncing?"右侧调整源相机 · 空格播放／暂停":pickingJulia&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>
+              {!sourceBouncing&&<div className="view-chips">
                 <button
                   className={scene.settings.showGrid ? "active" : ""}
                   onClick={() =>
@@ -904,10 +952,10 @@ export default function App() {
                 >
                   XYZ
                 </button>
-              </div>
+              </div>}
             </div>
           </div>
-          <Timeline
+          {sourceBouncing?<SourceBouncingTransport checkpoint={bouncingCheckpoint} playing={playing} ready={completedFrameReady} fps={scene.timeline.fps} onPlay={play} onSeek={seekBouncingUpdates}/>:<Timeline
             scene={scene}
             time={time}
             finalPreview={finalPreviewTime!==null}
@@ -915,7 +963,7 @@ export default function App() {
             onTime={seek}
             onPlay={play}
             onChange={edit}
-          />
+          />}
         </main>
         {inspector && (
           <aside className="inspector">
@@ -975,7 +1023,7 @@ export default function App() {
                   </div>
                 </details>
               )}
-              {tab === "geometry" ? (
+              {sourceBouncing?<SourceBouncingControls key={`source-bouncing:${scene.id}:${tab}`} scene={scene} tab={tab} onChange={edit}/>:tab === "geometry" ? (
                 <>
                   <SymmetryFormula scene={scene} onChange={edit}/>
                   {scene.kind==='perlin'&&<PerlinPresetControls scene={scene} preset={perlinPreset} onChange={edit}/>}
@@ -1266,6 +1314,7 @@ export default function App() {
         <ExportDialog
           scene={{ ...scene, camera: camera.current }}
           time={time}
+          currentSourceBouncingFrame={output?.sourceBouncingFrame?{ready:completedFrameReady,frame:output.sourceBouncingFrame}:undefined}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}
           previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
           previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourcePointAppearance?.referencePixelDensity:undefined}

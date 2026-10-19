@@ -1,3 +1,4 @@
+import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
 import {samilaCameraEnabled,SAMILA_CAMERA_NAVIGATION_NOTICE} from '../engine/samilaCamera';
 import {captureSamilaViewport,navigateSamilaViewport,type SamilaViewportCommit} from '../engine/samilaViewport';
 import {PresentedFrameOwner,applyPresentedCamera,type PresentedFrame} from '../engine/presentedFrame';
@@ -48,6 +49,7 @@ export const Viewport = forwardRef<
   const [renderError,setRenderError]=useState('');
   const [navigationNotice,setNavigationNotice]=useState('');
   useEffect(()=>setNavigationNotice(''),[scene]);
+  const sourceBouncing=usesSourceBouncing(scene);
   const bulb=scene.kind==='fractal'&&scene.settings.formula==='mandelbulb_3d'&&scene.settings.bulbPresentation!=='points';
   const plane=hasMathematicalPlane(scene),managed=bulb||plane;
   const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
@@ -79,14 +81,14 @@ export const Viewport = forwardRef<
   }
   useImperativeHandle(ref, () => ({
     fit: () => {
-      if(usesRootsNativePresentation(scene)||scene.sourceCamera)return;
+      if(usesRootsNativePresentation(scene)||scene.sourceCamera||sourceBouncing)return;
       if(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)return;
       const needsFrame=scene.kind==='domain'||scene.kind==='fractal'&&!bulb,completed=needsFrame?completedPlaneNavigation():undefined;
       if(needsFrame&&!completed)return;
       renderer.current?.fit();presented.current.appearance();
       if(bulb)onViewSettings?.({bulbCameraYaw:0,bulbCameraPitch:.78,zoom:1,bulbCameraRadius:3.2,bulbRayScale:3});else if(plane)onViewSettings?.(fitPlane(completed?.evaluated??scene,completed?.output.domainRender?.view));
     },
-    camera: () => scene.sourceCamera?scene.camera:renderer.current?.cameraState() ?? scene.camera,
+    camera: () => scene.sourceCamera||sourceBouncing?scene.camera:renderer.current?.cameraState() ?? scene.camera,
     frame:()=>{const frame=presented.current.read();return canvas.current&&frame?{canvas:canvas.current,...frame}:null;},
   }));
   useEffect(() => {
@@ -101,7 +103,7 @@ export const Viewport = forwardRef<
         if(configured){Object.assign(element.style,{width:fit.width+'px',height:fit.height+'px',left:fit.left+'px',top:fit.top+'px',right:'auto',bottom:'auto'});}
         else {for(const property of ['width','height','left','top','right','bottom'])element.style.removeProperty(property);}
         const width=Math.round(fit.width),height=Math.round(fit.height);
-        const sourceCamera=!!interaction.current.scene.sourceCamera;
+        const sourceCamera=!!interaction.current.scene.sourceCamera||usesSourceBouncing(interaction.current.scene);
         r.setSize(sourceCamera?width:fit.width,sourceCamera?height:fit.height,ratio.current);presented.current.appearance();
         if(width>0&&height>0)sizeCallback.current?.(width,height,configured,r.renderer.getPixelRatio());
       }catch(error){failed(error);}
@@ -112,7 +114,7 @@ export const Viewport = forwardRef<
       available={width,height};resize();
     });
     ro.observe(canvas.current!.parentElement!);
-    r.onCamera((c) => {if(!interaction.current.managed&&!interaction.current.scene.sourceCamera){const frame=presented.current.read();if(frame)presented.current.appearance({...frame.scene,camera:c});callback.current?.(c);}});
+    r.onCamera((c) => {if(!interaction.current.managed&&!interaction.current.scene.sourceCamera&&!usesSourceBouncing(interaction.current.scene)){const frame=presented.current.read();if(frame)presented.current.appearance({...frame.scene,camera:c});callback.current?.(c);}});
     return () => {
       ro.disconnect();
       refit.current=null;
@@ -218,26 +220,26 @@ export const Viewport = forwardRef<
   },[]);
   // Report every authored configuration change, even if its aspect is unchanged.
   // App binds a measurement to this exact pair before starting a new instance.
-  useEffect(()=>{refit.current?.();},[pixelRatio,scene.projectResolution?.width,scene.projectResolution?.height,!!scene.sourceCamera]);
+  useEffect(()=>{refit.current?.();},[pixelRatio,scene.projectResolution?.width,scene.projectResolution?.height,!!scene.sourceCamera,sourceBouncing]);
   useEffect(() => {
     if (output&&renderer.current) {
       const changed = lastId.current !== source.id;
-      const resolved=hasMathematicalPlane(source)||source.kind==='fractal'&&source.settings.formula==='mandelbulb_3d'&&source.settings.bulbPresentation!=='points';
+      const resolved=usesSourceBouncing(source)||hasMathematicalPlane(source)||source.kind==='fractal'&&source.settings.formula==='mandelbulb_3d'&&source.settings.bulbPresentation!=='points';
       let frameScene:SceneDocument,view:ReturnType<typeof outputCamera>;
-      const authoredCamera=!output.sourceCameraFrame&&applyPresentedCamera(presented.current.read(),source,!!output.cameraFrame,resolved);
-      try{frameScene=output.spirographFrame?withSpirographReplayFrame(source,output.spirographFrame):sceneAtTime(source,(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);view=outputCamera(frameScene,output);renderer.current?.setOutput(output, frameScene, changed,{roll:resolved?0:view.roll,focalLength:resolved?35:view.focalLength,...(authoredCamera?{camera:view.camera}:{})});setRenderError('');}catch(error){failed(error);return;}
-      renderer.current.setInteractive(!playing&&!managed);
+      const authoredCamera=!output.sourceBouncingFrame&&!output.sourceCameraFrame&&applyPresentedCamera(presented.current.read(),source,!!output.cameraFrame,resolved);
+      try{frameScene=output.spirographFrame?withSpirographReplayFrame(source,output.spirographFrame):sceneAtTime(source,(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);view=outputCamera(frameScene,output);renderer.current?.setOutput(output, frameScene, changed,{roll:resolved?0:view.roll,focalLength:resolved?35:view.focalLength,...(authoredCamera?{camera:view.camera}:{})});setRenderError('');}catch(error){failed(error);return;}
+      renderer.current.setInteractive(!playing&&!managed&&!sourceBouncing);
       renderedScene.current=frameScene;
       lastId.current = source.id;
       deliveredOutput.current={source,output};
-      presented.current.present(source,output.sourceCameraFrame?{...frameScene,evaluatedSourceCamera:output.sourceCameraFrame}:{...frameScene,camera:renderer.current.cameraState()},(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);
+      presented.current.present(source,output.sourceCameraFrame?{...frameScene,evaluatedSourceCamera:output.sourceCameraFrame}:{...frameScene,camera:renderer.current.cameraState()},(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);
       presentationCallbacks.current.onPresented?.(presented.current.read());
     }
     else {deliveredOutput.current=null;presented.current.clear();presentationCallbacks.current.onPresented?.(null);}
   }, [output, source, time]);
   useEffect(() => {
-    renderer.current?.setInteractive(!playing&&!managed);
-  }, [playing,managed]);
+    renderer.current?.setInteractive(!playing&&!managed&&!sourceBouncing);
+  }, [playing,managed,sourceBouncing]);
   return (
     <><canvas
       ref={canvas}
@@ -245,6 +247,6 @@ export const Viewport = forwardRef<
       style={pickingJulia?{cursor:'crosshair'}:undefined}
       aria-label={t("数学艺术画布")}
       data-testid="art-canvas"
-    />{scene.sourceCamera&&<div className="viewport-note" role="status">{t("当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
+    />{sourceBouncing&&<div className="viewport-note" role="status">{t("源弹跳视角由右侧相机角度控制。")}</div>}{scene.sourceCamera&&<div className="viewport-note" role="status">{t("当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
   );
 });
