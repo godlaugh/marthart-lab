@@ -308,7 +308,10 @@ export function prepareSourceRealExpression(raw:unknown,variableNames:readonly s
   return{ok:true,value:{operations:instructions.length,evaluate(variables){
    if(!variables||variables.length!==slots)throw new Error('Source formula variable slot count differs from its compiled layout');
    let top=0;
-   for(const {node,count} of instructions){
+   // This hot loop also serves every particle substep. Indexed iteration reduces
+   // transient allocation measured in complete Attractor replays.
+   for(let instruction=0;instruction<instructions.length;instruction++){
+    const {node,count}=instructions[instruction];
     if(node.kind==='number'){stack[top++]=node.value;continue;}
     if(node.kind==='variable'){stack[top++]=variables[node.slot];continue;}
     const at=top-count,a=stack[at],b=stack[at+1];
