@@ -135,20 +135,21 @@ try{
   const reopened=(await snapshot()).request.scene;check(JSON.stringify(reopened.provenance.original)===JSON.stringify(source)&&withoutIds(reopened.timeline.tracks)===withoutIds(counterpartTracks),'project reimport changed ignored source or active queue');
   report.ignoredParameterRoundtrip={workspaceReopened:true,projectPath,projectSha:sha(bytes),projectReimported:true,originalAndWarningsPreserved:true};
  }
- if(!gpu&&!zeroDuration&&!ignoredParameters){
+ if(!zeroDuration&&!ignoredParameters){
   await seek(0);const from=await page.evaluate(()=>window.__attractorAudit.completed.length);
   await page.getByRole('button',{name:'Play',exact:true}).click();
   await page.waitForFunction(from=>window.__attractorAudit.completed.slice(from).some(o=>o.frame?.frameIndex>=8),from);
   await page.getByRole('button',{name:'Pause',exact:true}).click();await settled();await ready();
   const paused=await snapshot();await page.waitForTimeout(250);const still=await snapshot();
-  check(still.output.frame.frameIndex===paused.output.frame.frameIndex,'paused CPU replay advanced');
+  check(still.output.frame.frameIndex===paused.output.frame.frameIndex,'paused source replay advanced');
   await page.getByRole('button',{name:'Play',exact:true}).click();
   await page.waitForFunction(frame=>window.__attractorAudit.completed.at(-1)?.frame?.frameIndex>=frame+3,paused.output.frame.frameIndex);
   await page.getByRole('button',{name:'Pause',exact:true}).click();await settled();await ready();
   const resumed=await snapshot();
   const matched=await page.evaluate(async state=>{
    const {generateScene}=await import('/src/engine/temporal.ts');const fresh=generateScene(state.request.scene,state.request.context),out=state.output;
-   if(fresh.type!=='geometry')throw Error('CPU expected');
+   if(fresh.type==='raster'){const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',fresh.pixels))).map(v=>v.toString(16).padStart(2,'0')).join('');return hash===out.pixelSha&&JSON.stringify(fresh.sourceCameraFrame)===JSON.stringify(out.frame);}
+   if(fresh.type!=='geometry')throw Error('Attractor output expected');
    return JSON.stringify({positions:out.positions,colors:out.colors,alphas:out.alphas,camera:out.frame,trails:out.trails})===JSON.stringify({positions:Array.from(fresh.positions),colors:Array.from(fresh.colors),alphas:Array.from(fresh.pointAlphas),camera:fresh.sourceCameraFrame,trails:{positions:Array.from(fresh.trails.positions),colors:Array.from(fresh.trails.colors),alphas:Array.from(fresh.trails.alphas),indices:Array.from(fresh.trails.indices),appearance:fresh.trails.appearance}});
   },resumed);
   check(matched,'play/pause/resume differs from fresh motion/trails/gradient/camera');

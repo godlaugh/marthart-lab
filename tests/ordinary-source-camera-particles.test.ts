@@ -42,6 +42,14 @@ describe('source camera particle lifecycle boundary',()=>{
   };
   expect(Array.from({length:5},(_,i)=>evaluate(initial,tracks,4,i/4,{createParticles}).camera.center[0])).toEqual(expected);
  });
+ it('finishes all eager bindings once before any read or update',()=>{
+  const calls:string[]=[],tracks=[clip([action('track',0)]),clip([action('track',1)])];
+  const owner=new OrdinarySourceCameraTimelineSession(initial,tracks,4,{createParticles:()=>({
+   bind(r){calls.push('bind:'+r.action.args!.index);return{kind:'bound',readPosition:()=>{calls.push('read');return[0,0,0];}};},
+   finishBindings(){calls.push('finish');},update(){calls.push('update');},
+  })});
+  owner.evaluate(0);owner.evaluate(.25);expect(calls.slice(0,3)).toEqual(['bind:0','bind:1','finish']);expect(calls.filter(x=>x==='finish')).toHaveLength(1);owner.reset();
+ });
  it('binds even overwritten actions, preserves the last effective target, and ignores disabled clips',()=>{
   const disabled=clip([action('track',99)]);disabled.enabled=false;
   const last={...action('track',3),enabled:false};
@@ -118,12 +126,12 @@ describe('source camera particle lifecycle boundary',()=>{
 
 
 describe('owned ordinary source replay failure lifetime',()=>{
- it.each(['construction','binding','cancel','invalid-time'])('discards retained state after %s failure',kind=>{
+ it.each(['construction','binding','finalization','cancel','invalid-time'])('discards retained state after %s failure',kind=>{
   let made=0,fail=false,cancel=false;
   const owner=new OrdinarySourceCameraTimelineSession(initial,[clip([action('track',0)],2)],4,{
    isCancelled:()=>cancel,createParticles:()=>{
     made++;if(fail&&kind==='construction')throw Error('construction');
-    let x=0;return{bind:()=>{if(fail&&kind==='binding')throw Error('binding');return{kind:'bound' as const,readPosition:()=>[x,0,0] as [number,number,number]};},update:()=>{x++;}};
+    let x=0;return{bind:()=>{if(fail&&kind==='binding')throw Error('binding');return{kind:'bound' as const,readPosition:()=>[x,0,0] as [number,number,number]};},finishBindings:()=>{if(fail&&kind==='finalization')throw Error('finalization');},update:()=>{x++;}};
    },
   });
   const expected=owner.evaluate(1);expect(made).toBe(1);

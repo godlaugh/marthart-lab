@@ -36,6 +36,8 @@ export interface OrdinarySourceCameraParticles {
  /** Called once for EVERY track action, in build order, before playback. Even
   * subsequently overwritten actions can mutate a shared tracked-dot selector. */
  bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding;
+ /** Complete eagerly captured bindings before any animation/read/update. */
+ finishBindings?():void;
  /** One Mobject.update(time, activeDt) between animation and camera reads.
   * Includes waits and frames with no target reads; stops when the queue was
   * already complete at frame start. This is not CameraController's raw dt. */
@@ -236,6 +238,7 @@ function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationT
   if(plan.clips.some(c=>c.surfaceParameterClip)&&(typeof particles?.beginParameterClip!=='function'||typeof particles?.finishParameterClip!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源曲面参数片段需要支持替换及停止的粒子生产者');
   if(plan.clips.some(c=>c.surfaceTransition)&&typeof particles?.switchMode!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','曲面切换需要原版主对象宿主');
   const clipTracking=bindTracking(plan,particles,options);
+  check(options);particles?.finishBindings?.();check(options);
   // Only queue/zoom belong to the reused clock. Feeding it rates would evolve
   // a hidden angle history without MoveCamera resets and can falsely overflow.
   const clock=new RootsSceneClock(plan.initial,plan.clips.map(({rates:_rates,...clip})=>clip)),camera=copy(plan.initial);
