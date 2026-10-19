@@ -1,3 +1,4 @@
+import {initialSourceBouncingNavigation} from '../src/engine/sourceBouncingNavigation';
 import {describe,it,expect,vi} from 'vitest';
 import {createScene,serializeScene,parseScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
@@ -51,6 +52,33 @@ describe('source Bouncing canonical/public boundary',()=>{
   expect(()=>generateScene(scene,{...context,width:100000},owner)).toThrow('容量');
   expect(owner.diagnostics().sourceBouncing).toMatchObject({retainedBytes:0,simulationUpdates:0});
   owner.reset();
+ });
+ it('rejects malformed runtime views before creating GPU state or interpreting them as author values',()=>{
+  const owner=new TemporalGenerationSession(),scene=source();
+  const initial=initialSourceBouncingNavigation(scene.bouncingSource!.camera);if(!initial.ok)throw Error('view');
+  for(const view of [{...initial.value.view,zoom:0},{...initial.value.view,phi:.1},{...initial.value.view,center:[1,0,0]}]){
+   expect(()=>generateScene(scene,{...context,sourceBouncingView:view},owner)).toThrow();
+   expect(owner.diagnostics().sourceBouncing.retainedBytes).toBe(0);
+  }
+  owner.reset();
+ });
+ it('drops stale same-scene view success and failure while preserving the latest detached request',async()=>{
+  for(const fail of [false,true]){
+   const requests:{context:GenerateContext;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}[]=[];
+   const port={generate:vi.fn((_scene:unknown,c:GenerateContext)=>new Promise<SceneOutput>((resolve,reject)=>requests.push({context:c,resolve,reject}))),cancel:vi.fn(),dispose:vi.fn()};
+   const callbacks={output:vi.fn(),error:vi.fn(),busy:vi.fn()},queue=new GenerationQueue(port,callbacks),scene=source();
+   const initial=initialSourceBouncingNavigation(scene.bouncingSource!.camera);if(!initial.ok)throw Error('view');
+   queue.request(scene,{...context,sourceBouncingView:initial.value.view});
+   const next={...initial.value.view,theta:1};queue.request(scene,{...context,sourceBouncingView:next});next.theta=2;
+   const image:SceneOutput={type:'raster',width:1,height:1,pixels:new Uint8ClampedArray(4),stats:{samples:0,generated:0,invalid:0}};
+   if(fail)requests[0].reject(Error('stale failure'));else requests[0].resolve(image);
+   for(let i=0;i<5;i++)await Promise.resolve();
+   expect(callbacks.output).not.toHaveBeenCalled();expect(callbacks.error).not.toHaveBeenCalled();
+   expect(requests).toHaveLength(2);expect(requests[1].context.sourceBouncingView?.theta).toBe(1);
+   expect(port.cancel).toHaveBeenCalledTimes(1);
+   requests[1].resolve(image);for(let i=0;i<5;i++)await Promise.resolve();
+   expect(callbacks.output).toHaveBeenCalledTimes(1);expect(callbacks.busy).toHaveBeenLastCalledWith(false);queue.dispose();
+  }
  });
  it('retires the old local owner when switching model within the bouncing family',()=>{
   const owner=new TemporalGenerationSession(),local=createScene(definition('bouncing'));

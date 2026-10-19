@@ -1,3 +1,4 @@
+import {initialSourceBouncingNavigation,setSourceBouncingPaused,editSourceBouncingAngles,navigateSourceBouncing,sourceBouncingViewMatches,sourceBouncingViewsEqual,type SourceBouncingNavigationState} from './engine/sourceBouncingNavigation';
 import {SourceBouncingControls} from './components/SourceBouncingControls';
 import {SourceBouncingTransport} from './components/SourceBouncingTransport';
 import {usesSourceBouncing,sourceBouncingInitializationKey,prepareSourceBouncingScene} from './engine/sourceBouncingDocument';
@@ -177,6 +178,11 @@ export default function App() {
       SceneKind | "all" | "saved" | "favorites"
     >("all");
   const [bouncingCheckpoint,setBouncingCheckpoint]=useState(sourceBouncingSeedCheckpoint);
+  const [bouncingGestureEpoch,setBouncingGestureEpoch]=useState(0);
+  const [bouncingNavigation,setBouncingNavigationState]=useState(()=>{
+    const result=initialSourceBouncingNavigation(scene.bouncingSource?.camera??{phi:0,theta:0,gamma:0});
+    if(!result.ok)throw new Error(result.error.reason);return result.value;
+  });
   const [output, setOutput] = useState<SceneOutput | null>(null),
     [outputScene,setOutputScene]=useState<SceneDocument|null>(null),
     [presentedSource,setPresentedSource]=useState<SceneDocument|null>(null),
@@ -222,6 +228,8 @@ export default function App() {
     generationScene=useRef<SceneDocument|null>(null),
     generationPending=useRef(false),
     bouncingFrame=useRef(bouncingCheckpoint),
+    bouncingGestureEpochRef=useRef(0),
+    bouncingNavigationRef=useRef(bouncingNavigation),
     bouncingLastFrameAt=useRef<number|undefined>(undefined),
     bouncingPresented=useRef(false),
     file = useRef<HTMLInputElement>(null),
@@ -242,6 +250,26 @@ export default function App() {
   playingRef.current = playing;
   // Event handlers and worker callbacks share one current document boundary,
   // including multiple inputs queued before React commits its next render.
+  function retireBouncingGesture(){
+    bouncingGestureEpochRef.current++;setBouncingGestureEpoch(bouncingGestureEpochRef.current);
+  }
+  function setBouncingNavigation(next:SourceBouncingNavigationState){
+    const previous=bouncingNavigationRef.current;
+    // Keep one view identity for equal facts so pause alone does not redraw.
+    if(sourceBouncingViewsEqual(previous.view,next.view))next={...next,view:previous.view};
+    else {bouncingPresented.current=false;generationPending.current=true;}
+    bouncingNavigationRef.current=next;setBouncingNavigationState(next);
+  }
+  function interruptSourceBouncingInteraction(){
+    if(!usesSourceBouncing(sceneRef.current))return;
+    retireBouncingGesture();playingRef.current=false;setPlaying(false);bouncingPresented.current=false;
+    setBouncingNavigation(setSourceBouncingPaused(bouncingNavigationRef.current,true));
+  }
+  function resetBouncingNavigation(next:SceneDocument){
+    retireBouncingGesture();
+    const result=initialSourceBouncingNavigation(next.bouncingSource!.camera);
+    if(!result.ok)throw new Error(result.error.reason);setBouncingNavigation(result.value);
+  }
   function showBouncingCheckpoint(checkpoint:SourceBouncingCheckpoint){
     bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
@@ -252,7 +280,9 @@ export default function App() {
       bouncingPresented.current=false;
       if(!usesSourceBouncing(current)||sourceBouncingInitializationKey(current.bouncingSource!.configuration)!==sourceBouncingInitializationKey(next.bouncingSource!.configuration)){
         playingRef.current=false;setPlaying(false);autoPlayPending.current=false;
-        showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
+        showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);
+      }else if((['phi','theta','gamma'] as const).some(key=>!Object.is(current.bouncingSource!.camera[key],next.bouncingSource!.camera[key]))){
+        const edited=editSourceBouncingAngles(bouncingNavigationRef.current,next.bouncingSource!.camera);if(!edited.ok)throw new Error(edited.error.reason);setBouncingNavigation(edited.value);
       }
     }
     if(!sameProjectResolution(current.projectResolution,next.projectResolution)){
@@ -264,7 +294,7 @@ export default function App() {
       playingRef.current=false;setPlaying(false);
       generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
-      if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;}
+      if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
       setPreviewCancelled(false);
     }
@@ -333,6 +363,7 @@ export default function App() {
     // Library navigation resumes work; an explicit file or new document owns
     // its contents even when its identity matches an existing draft.
     if(source==='library')next=workingDocument(next);
+    if(usesSourceBouncing(next))resetBouncingNavigation(next);
     autoPlayPending.current=continuousBouncing(next);
     playingRef.current=false;
     setPlaying(false);
@@ -406,9 +437,11 @@ export default function App() {
     if(next){history.current.push(sceneRef.current);setScene(next);notify(t("已重做"));}
   }
   function seekBouncingUpdates(updates:number){
+    retireBouncingGesture();
     const planned=planSourceBouncingFixedReplay({updates,fps:sceneRef.current.timeline.fps});
     if(!planned.ok){setError(planned.error.reason);return;}
     playingRef.current=false;setPlaying(false);autoPlayPending.current=false;
+    setBouncingNavigation(setSourceBouncingPaused(bouncingNavigationRef.current,true));
     setError('');generationPending.current=true;showBouncingCheckpoint(planned.value.checkpoint);
     // Same-index retry must still trigger a request after cancellation/error.
     setGenerationRevision(value=>value+1);
@@ -422,6 +455,8 @@ export default function App() {
     if(value&&experience.error){setToast(t(experience.error));return;}
     autoPlayPending.current=false;
     if(sourceBouncing){
+      retireBouncingGesture();
+      setBouncingNavigation(setSourceBouncingPaused(bouncingNavigationRef.current,!value));
       playingRef.current=value;
       bouncingLastFrameAt.current=value&&bouncingFrame.current.simulationUpdates>0?performance.now():undefined;
       setPlaying(value);return;
@@ -533,6 +568,10 @@ export default function App() {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, [scene,language,recording,exporting,finalPreview]);
+  useEffect(()=>{
+    // Errors/cancellation may stop playback outside the transport handler.
+    if(sourceBouncing&&bouncingNavigationRef.current.paused===playing){retireBouncingGesture();setBouncingNavigation(setSourceBouncingPaused(bouncingNavigationRef.current,!playing));}
+  },[playing,sourceBouncing]);
   useEffect(() => {
     let id: number,
       prev = playbackStartedAt.current??performance.now();
@@ -570,7 +609,7 @@ export default function App() {
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
       output:(output,time,source)=>{setOutput(output);setOutputScene(source);setRenderTime(time);setError('');},
-      error:error=>{autoPlayPending.current=false;setError(error.message);setPlaying(false);},
+      error:error=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();setError(error.message);setPlaying(false);},
       busy:value=>{generationPending.current=value;setGenerationActive(value);setBusy(value&&!playingRef.current);},
     });
     generationQueue.current=queue;
@@ -586,8 +625,8 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),dimensions=previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
-  },[scene,sourceBouncing?bouncingCheckpoint:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
+  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;playbackStartedAt.current=performance.now();setPlaying(true);}
   },[output,outputScene,presentedSource,scene,generationActive,error,recording,previewCancelled]);
@@ -622,7 +661,7 @@ export default function App() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  const completedFrameReady=!playing&&!recording&&!generationActive&&!previewCancelled&&!error&&output!==null&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&renderTime===time&&(!sourceBouncing||output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingCheckpoint.simulationUpdates);
+  const completedFrameReady=!playing&&!recording&&!generationActive&&!previewCancelled&&!error&&output!==null&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&renderTime===time&&(!sourceBouncing||output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingCheckpoint.simulationUpdates&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view));
   return (
     <I18nProvider language={language}><div className="app-shell">
       <header className="app-header">
@@ -656,8 +695,8 @@ export default function App() {
         <button
           className="primary-button"
           onClick={() => {
-            autoPlayPending.current=false;playingRef.current=false;
-            setPlaying(false);
+            autoPlayPending.current=false;
+            if(sourceBouncing)play(false);else {playingRef.current=false;setPlaying(false);}
             setExporting(true);
           }}
         >
@@ -884,9 +923,9 @@ export default function App() {
               outputScene={outputScene}
               onPresented={frame=>{
                 setPresentedSource(frame?.source??null);setPresentedOutput(frame?output:null);
-                if(usesSourceBouncing(sceneRef.current))bouncingPresented.current=!!frame&&frame.source===sceneRef.current&&outputScene===sceneRef.current&&output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingFrame.current.simulationUpdates&&output?.sourceBouncingFrame?.checkpoint.sceneTime===bouncingFrame.current.sceneTime;
+                if(usesSourceBouncing(sceneRef.current))bouncingPresented.current=!!frame&&frame.source===sceneRef.current&&outputScene===sceneRef.current&&output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingFrame.current.simulationUpdates&&output?.sourceBouncingFrame?.checkpoint.sceneTime===bouncingFrame.current.sceneTime&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view);
               }}
-              onRenderError={message=>{autoPlayPending.current=false;setPlaying(false);setError(message);}}
+              onRenderError={message=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();setPlaying(false);setError(message);}}
               scene={scene}
               playing={playing}
               renderPending={generationActive}
@@ -896,6 +935,13 @@ export default function App() {
               onCamera={cameraChanged}
               onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
               onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}))}
+              sourceBouncingInteractionEpoch={bouncingGestureEpoch}
+              onSourceBouncingNavigate={(expected,view,checkpoint,event,begin,epoch)=>{
+                if(epoch!==bouncingGestureEpochRef.current||playingRef.current||exporting||recording||sceneRef.current!==expected||!usesSourceBouncing(expected)||!bouncingNavigationRef.current.paused||!sourceBouncingViewsEqual(view,bouncingNavigationRef.current.view)||checkpoint.simulationUpdates!==bouncingFrame.current.simulationUpdates||checkpoint.sceneTime!==bouncingFrame.current.sceneTime||begin&&(!bouncingPresented.current||generationPending.current))return;
+                const next=navigateSourceBouncing(bouncingNavigationRef.current,event);
+                if(!next.ok){interruptSourceBouncingInteraction();setError(next.error.reason);return;}
+                setBouncingNavigation(next.value);return next.value.view;
+              }}
               onSamilaViewport={(expected,view,begin)=>{
                 if(playingRef.current)return;
                 const next=commitSamilaViewport(sceneRef.current,expected,view);if(!next)return;
@@ -920,7 +966,7 @@ export default function App() {
             {busy && (
               <div className="rendering-badge">
                 <span className="spinner" />{t("计算几何…")}
-                <button onClick={()=>{generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
+                <button onClick={()=>{interruptSourceBouncingInteraction();generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
               </div>
             )}
             {previewCancelled&&<div className="rendering-badge" role="status"><span>{t('计算已取消；当前画布保留取消前的预览。')}</span><button onClick={()=>setGenerationRevision(value=>value+1)}>{t('重新计算')}</button></div>}
@@ -932,7 +978,7 @@ export default function App() {
               </div>
             )}
             <div className="viewport-bottom">
-              <span className="interaction-hint">{t(sourceBouncing?"右侧调整源相机 · 空格播放／暂停":pickingJulia&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>
+              <span className="interaction-hint">{t(sourceBouncing?"暂停时拖动旋转、滚轮缩放 · 播放恢复旋转角度":pickingJulia&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>
               {!sourceBouncing&&<div className="view-chips">
                 <button
                   className={scene.settings.showGrid ? "active" : ""}

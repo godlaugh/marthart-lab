@@ -1,3 +1,4 @@
+import type {SourceBouncingView} from './engine/sourceBouncingNavigation';
 import type {SourceSurfaceGpuMeshFrame} from './engine/sourceSurfaceGpuMesh';
 import type {SourceSurfaceGpuPointFrame} from './engine/sourceSurfaceGpuPoints';
 import type {SourceParticlePointAppearance} from './engine/sourceParticlePointAppearance';
@@ -424,6 +425,8 @@ export type GenerationStatus = {kind:'roots';attemptedSamples:number;targetSampl
 export interface GenerateContext {
   time: number;
   sourceBouncingFrame?:SourceBouncingCheckpoint;
+  /** Runtime view, separate from saved author angles and physics checkpoint. */
+  sourceBouncingView?:SourceBouncingView;
   spirographFrame?:SpirographFrameRequest;
   rootsViewport?:RootsViewportRequest;
   sourceViewport?:SourceCameraViewport;
@@ -445,7 +448,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

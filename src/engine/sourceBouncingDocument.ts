@@ -1,7 +1,8 @@
 import {importSourceBouncingConfig,parseSourceBouncingConfiguration,type SourceBouncingConfiguration,type SourceBouncingError,type SourceBouncingResult,type SourceBouncingImportOptions} from './sourceBouncingConfig';
 import {importSourceBouncingVisualConfig,parseSourceBouncingVisualConfiguration,type SourceBouncingVisualConfiguration} from './sourceBouncingVisualConfig';
 import {prepareDomainSourceScalar} from './domainSourceScalar';
-import {SOURCE_CAMERA_MODEL,type SourceCameraInput} from './sourceCamera';
+import type {SourceCameraInput} from './sourceCamera';
+import {SOURCE_BOUNCING_VIEW_MODEL,sourceBouncingViewInput} from './sourceBouncingNavigation';
 
 export interface SourceBouncingCameraAngles {phi:number;theta:number;gamma:number;}
 export interface SourceBouncingDocumentPayload {
@@ -81,7 +82,7 @@ export function parseSourceBouncingDocument(raw:unknown):SourceBouncingResult<So
  * Passing all scalars prevents the shared Scene default phi=PI/2 leaking in.
  * Interactive camera changes belong to the replay owner, not JSON import. */
 export function sourceBouncingCameraInput(payload:SourceBouncingDocumentPayload):SourceCameraInput{
- return{model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:{phi:payload.camera.phi,theta:payload.camera.theta,gamma:payload.camera.gamma,center:[0,0,0],zoom:1,focalDistance:20}};
+ return sourceBouncingViewInput({model:SOURCE_BOUNCING_VIEW_MODEL,...payload.camera,zoom:1});
 }
 
 /** Public generation gate. These documents have an empty native queue and no

@@ -1,3 +1,4 @@
+import {parseSourceBouncingView,sourceBouncingViewInput} from '../engine/sourceBouncingNavigation';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareSourceBouncingScene,sourceBouncingCameraInput,sourceBouncingInitializationKey} from '../engine/sourceBouncingDocument';
 import {parseSourceBouncingCheckpoint,sourceBouncingSeedCheckpoint,type SourceBouncingCheckpoint} from '../engine/sourceBouncingReplay';
@@ -43,7 +44,8 @@ export class SourceBouncingSession {
    if(context.time!==checkpoint.sceneTime)throw new SourceBouncingGpuError('input','源弹跳需要与场景时间配对的显式更新检查点；不能由秒数推算粒子状态');
    const viewport=context.sourceViewport;
    if(!viewport||viewport.projectionPass!=='perspective')throw new SourceBouncingGpuError('input','源弹跳需要明确的逻辑画布尺寸与透视投影');
-   const camera=prepareSourceCamera(sourceBouncingCameraInput(payload),viewport);
+   const view=context.sourceBouncingView===undefined?undefined:unwrap(parseSourceBouncingView(context.sourceBouncingView));
+   const camera=prepareSourceCamera(view?sourceBouncingViewInput(view):sourceBouncingCameraInput(payload),viewport);
    if(!camera.ok)throw camera.error;
    if(camera.value.kind!=='known')throw new SourceBouncingGpuError('input','源弹跳相机投影未知');
    const plan=camera.value.plan;

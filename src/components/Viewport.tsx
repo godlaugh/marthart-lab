@@ -1,3 +1,5 @@
+import {sourceBouncingViewFromCamera,type SourceBouncingView,type SourceBouncingNavigationEvent} from '../engine/sourceBouncingNavigation';
+import type {SourceBouncingCheckpoint} from '../engine/sourceBouncingReplay';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
 import {samilaCameraEnabled,SAMILA_CAMERA_NAVIGATION_NOTICE} from '../engine/samilaCamera';
 import {captureSamilaViewport,navigateSamilaViewport,type SamilaViewportCommit} from '../engine/samilaViewport';
@@ -39,20 +41,22 @@ export const Viewport = forwardRef<
     onCamera?: (c: CameraState) => void;
     onSize?:(width:number,height:number,resolution?:ProjectResolution,pixelRatio?:number)=>void;
     onViewSettings?: (values:Settings)=>void;
+    sourceBouncingInteractionEpoch?:number;
+    onSourceBouncingNavigate?:(expected:SceneDocument,view:SourceBouncingView,checkpoint:SourceBouncingCheckpoint,event:SourceBouncingNavigationEvent,begin:boolean,epoch:number)=>SourceBouncingView|undefined;
     onSamilaViewport?:SamilaViewportCommit;
     onRootsPresentation?:RootsPresentationCommit;
     pickingJulia?:boolean;
     onPickJulia?:(values:Settings)=>void;
   }
->(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia }, ref) {
+>(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia }, ref) {
   const {t}=useI18n();
   const [renderError,setRenderError]=useState('');
   const [navigationNotice,setNavigationNotice]=useState('');
   useEffect(()=>setNavigationNotice(''),[scene]);
   const sourceBouncing=usesSourceBouncing(scene);
   const bulb=scene.kind==='fractal'&&scene.settings.formula==='mandelbulb_3d'&&scene.settings.bulbPresentation!=='points';
-  const plane=hasMathematicalPlane(scene),managed=bulb||plane;
-  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
+  const plane=hasMathematicalPlane(scene),managed=bulb||plane||sourceBouncing;
+  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
   const canvas = useRef<HTMLCanvasElement>(null),
     renderer = useRef<ArtRenderer | null>(null),
     lastId = useRef("");
@@ -128,7 +132,16 @@ export const Viewport = forwardRef<
     type NavigationDrag={id:number;x:number;y:number;camera:{yaw:number;pitch:number}|PlaneNavigation;mode:'bulb'|'plane';scale:number};
     type SamilaDrag={id:number;x:number;y:number;mode:'samila';scale:number;width:number;height:number;view:SamilaCapture;expected:SceneDocument;began:boolean;lastX:number;lastY:number};
     type RootsDrag={id:number;x:number;y:number;mode:'roots';expected:SceneDocument;view:RootsPresentationConfiguration;began:boolean;width:number;height:number};
-    let drag:NavigationDrag|SamilaDrag|RootsDrag|undefined,revision=0;
+    type BouncingCapture={epoch:number;view:SourceBouncingView;expected:SceneDocument;checkpoint:SourceBouncingCheckpoint};
+    type BouncingDrag=BouncingCapture&{id:number;x:number;y:number;mode:'bouncing';began:boolean};
+    let drag:NavigationDrag|SamilaDrag|RootsDrag|BouncingDrag|undefined,revision=0;
+    let bouncingWheel:(BouncingCapture&{last:number})|undefined;
+    const captureBouncing=():BouncingCapture|undefined=>{
+      const current=interaction.current,frame=presented.current.read(),delivered=deliveredOutput.current;
+      if(current.renderPending||current.planeFrameReady===false||!frame||frame.source!==current.scene||delivered?.source!==current.scene||!delivered.output.sourceBouncingFrame)return;
+      const facts=delivered.output.sourceBouncingFrame,view=sourceBouncingViewFromCamera(facts.camera);
+      if(!view.ok)return;return{epoch:current.sourceBouncingInteractionEpoch??0,view:view.value,expected:current.scene,checkpoint:facts.checkpoint};
+    };
     let wheelGesture:{expected:SceneDocument;view:SamilaCapture;last:number}|undefined;
     const active=()=>interaction.current.managed&&!interaction.current.playing;
     const samila=()=>samilaCameraEnabled(interaction.current.scene);
@@ -151,9 +164,12 @@ export const Viewport = forwardRef<
       return{view:planeNavigation(interaction.current.scene,width,height,output?.density?.bounds),rect:rasterPresentationRect(element.clientWidth,element.clientHeight,width,height)};
     };
     const down=(event:PointerEvent)=>{
-      if(!active()||event.button!==0)return;
-      try{const current=interaction.current;wheelGesture=undefined;
-        if(usesRootsNativePresentation(current.scene)){
+      if(!active()||event.button!==0&&!usesSourceBouncing(interaction.current.scene))return;
+      try{const current=interaction.current;wheelGesture=undefined;bouncingWheel=undefined;
+        if(usesSourceBouncing(current.scene)){
+          const captured=captureBouncing();if(!captured||!current.onSourceBouncingNavigate)return;
+          drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'bouncing',began:false};
+        }else if(usesRootsNativePresentation(current.scene)){
           const frame=presented.current.read();
           if(current.renderPending||frame?.source!==current.scene||!current.onRootsPresentation)return;
           drag={id:event.pointerId,x:event.clientX,y:event.clientY,mode:'roots',expected:current.scene,view:current.scene.rootsPresentation!,began:false,width:element.clientWidth,height:element.clientHeight};
@@ -171,9 +187,13 @@ export const Viewport = forwardRef<
       }catch(error){setRenderError(error instanceof Error?error.message:String(error));}
     };
     const move=(event:PointerEvent)=>{
-      if(!drag||event.pointerId!==drag.id||!active())return;
+      if(!active()){drag=undefined;return;}if(!drag||event.pointerId!==drag.id)return;
       try{
-        if(drag.mode==='roots'){
+        if(drag.mode==='bouncing'){
+          const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!dx&&!dy)return;
+          const accepted=interaction.current.onSourceBouncingNavigate?.(drag.expected,drag.view,drag.checkpoint,{kind:'drag',dx,dy},!drag.began,drag.epoch);
+          if(!accepted){drag=undefined;return;}drag.view=accepted;drag.x=event.clientX;drag.y=event.clientY;drag.began=true;
+        }else if(drag.mode==='roots'){
           const next=navigateRootsPresentation(drag.view,{kind:'rotate',dx:event.clientX-drag.x,dy:event.clientY-drag.y,width:drag.width,height:drag.height});
           const accepted=interaction.current.onRootsPresentation?.(drag.expected,next,!drag.began);
           if(!accepted){drag=undefined;return;}drag.expected=accepted;drag.began=true;
@@ -189,10 +209,17 @@ export const Viewport = forwardRef<
     };
     const end=()=>{drag=undefined;};
     const wheel=(event:WheelEvent)=>{
-      if(!active()||drag?.mode==='samila')return;event.preventDefault();
+      if(!active()){bouncingWheel=undefined;return;}if(drag?.mode==='samila'||drag?.mode==='bouncing')return;event.preventDefault();
       try{
         const current=interaction.current,pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?element.clientHeight:1);
-        if(usesRootsNativePresentation(current.scene)){
+        if(usesSourceBouncing(current.scene)){
+          if(!pixels)return;const now=performance.now(),continuing=!!bouncingWheel&&now-bouncingWheel.last<250;
+          const captured=continuing?bouncingWheel:captureBouncing();if(!captured)return;
+          // Local DOM mapping: a line is one count; pixel events use 16 px.
+          // Native Processing receives integer counts, not browser deltas.
+          const accepted=current.onSourceBouncingNavigate?.(captured.expected,captured.view,captured.checkpoint,{kind:'wheel',count:pixels/16},!continuing,captured.epoch);
+          bouncingWheel=accepted?{...captured,view:accepted,last:now}:undefined;
+        }else if(usesRootsNativePresentation(current.scene)){
           if(current.renderPending||presented.current.read()?.source!==current.scene||!pixels)return;
           const next=navigateRootsPresentation(current.scene.rootsPresentation!,{kind:'zoom',deltaPixels:pixels});
           current.onRootsPresentation?.(current.scene,next,true);
@@ -215,8 +242,10 @@ export const Viewport = forwardRef<
         }
       }catch(error){setRenderError(error instanceof Error?error.message:String(error));}
     };
-    element.addEventListener('pointerdown',down);element.addEventListener('pointermove',move);element.addEventListener('pointerup',end);element.addEventListener('pointercancel',end);element.addEventListener('wheel',wheel,{passive:false});
-    return()=>{element.removeEventListener('pointerdown',down);element.removeEventListener('pointermove',move);element.removeEventListener('pointerup',end);element.removeEventListener('pointercancel',end);element.removeEventListener('wheel',wheel);};
+    const contextMenu=(event:MouseEvent)=>{if(usesSourceBouncing(interaction.current.scene))event.preventDefault();};
+    element.addEventListener('contextmenu',contextMenu);
+    element.addEventListener('pointerdown',down);element.addEventListener('pointermove',move);element.addEventListener('pointerup',end);element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('wheel',wheel,{passive:false});
+    return()=>{element.removeEventListener('contextmenu',contextMenu);element.removeEventListener('pointerdown',down);element.removeEventListener('pointermove',move);element.removeEventListener('pointerup',end);element.removeEventListener('pointercancel',end);element.removeEventListener('lostpointercapture',end);element.removeEventListener('wheel',wheel);};
   },[]);
   // Report every authored configuration change, even if its aspect is unchanged.
   // App binds a measurement to this exact pair before starting a new instance.
@@ -247,6 +276,6 @@ export const Viewport = forwardRef<
       style={pickingJulia?{cursor:'crosshair'}:undefined}
       aria-label={t("数学艺术画布")}
       data-testid="art-canvas"
-    />{sourceBouncing&&<div className="viewport-note" role="status">{t("源弹跳视角由右侧相机角度控制。")}</div>}{scene.sourceCamera&&<div className="viewport-note" role="status">{t("当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
+    />{sourceBouncing&&<div className="viewport-note" role="status">{t("暂停时可拖动旋转、滚轮缩放；恢复播放会还原旋转角度，保留缩放。")}</div>}{scene.sourceCamera&&<div className="viewport-note" role="status">{t("当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
   );
 });

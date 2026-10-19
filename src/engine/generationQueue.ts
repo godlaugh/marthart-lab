@@ -31,7 +31,7 @@ export class GenerationQueue {
     const previousNative=!!previous&&usesRootsNativePresentation(previous);
     const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
-    this.latest={scene,context:{...context,...(context.sourceBouncingFrame?{sourceBouncingFrame:{...context.sourceBouncingFrame}}:{}),...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
+    this.latest={scene,context:{...context,...(context.sourceBouncingView!==undefined?{sourceBouncingView:{...context.sourceBouncingView}}:{}),...(context.sourceBouncingFrame?{sourceBouncingFrame:{...context.sourceBouncingFrame}}:{}),...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
     if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing)||nativeIdentityChanged){this.running=null;this.generator.cancel();clearTimeout(this.timer);this.timer=undefined;}
     this.callbacks.busy(true);
     if(this.running||this.captureOwner||this.timer!==undefined)return;
@@ -42,7 +42,9 @@ export class GenerationQueue {
     if(this.disposed||this.running||this.captureOwner||!this.latest)return;
     const request=this.latest;this.running=request;
     const current=()=>!this.disposed&&this.running===request;
-    const publishable=()=>current()&&this.latest?.scene===request.scene;
+    // Source Bouncing can change only its runtime view while scene/time stay
+    // identical. Retain its GPU work, but publish only the latest request.
+    const publishable=()=>current()&&this.latest?.scene===request.scene&&(!usesSourceBouncing(request.scene)||this.latest===request);
     const publish=(output:SceneOutput,time=request.context.time)=>{if(publishable())this.callbacks.output(output,time,request.scene);};
     void this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time)).then(output=>publish(output)).catch((error:Error)=>{
       if(publishable()&&error.name!=='AbortError')this.callbacks.error(error);

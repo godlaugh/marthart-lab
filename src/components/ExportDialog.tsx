@@ -44,7 +44,7 @@ export function ExportDialog({
 }) {
   const {t}=useI18n();
   const sourceBouncing=usesSourceBouncing(scene);
-  const [bouncingStart,setBouncingStart]=useState<'current'|'seed'>('current');
+  const [bouncingStart,setBouncingStart]=useState<'current'|'seed'>('seed');
   const sourceFrames=usesSpirographFrameClock(scene);
   const [rootsImageMode,setRootsImageMode]=useState<'current'|'replay'>(()=>usesRootsNativePresentation(scene)?'current':'replay');
   const [rootsImageScale,setRootsImageScale]=useState<1|3|5>(1);
@@ -389,9 +389,9 @@ export function ExportDialog({
             </label>
             {usesRootsCameraTimeline(scene)&&<label className="field"><span>{t('复根视频模式')}</span><select aria-label={t('复根视频模式')} disabled={working} value={rootsVideoMode} onChange={event=>setRootsVideoMode(event.target.value as 'duration'|'source')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源完成条件录制')}</option></select></label>}
             {sourceBouncing?<>
-              <label className="field"><span>{t('弹跳录制起点')}</span><select aria-label={t('弹跳录制起点')} disabled={working} value={bouncingStart} onChange={event=>setBouncingStart(event.target.value as 'current'|'seed')}><option value="current">{t('当前已呈现状态')}</option><option value="seed">{t('初始种子状态')}</option></select></label>
+              <label className="field"><span>{t('弹跳录制起点')}</span><select aria-label={t('弹跳录制起点')} disabled={working} value={bouncingStart} onChange={event=>setBouncingStart(event.target.value as 'current'|'seed')}><option value="seed">{t('重建初始状态')}</option><option value="current">{t('当前状态（本地扩展）')}</option></select></label>
               <p className="muted" data-testid="source-bouncing-export-duration">{t('源录制时长（秒）')}：{scene.bouncingSource!.recordDuration}。{t('修改场景的源录制时长可改变停止条件。')}</p>
-              <p className="muted">{t('保留所选起点的粒子状态，将录制时钟清零。先推进并绘制 1 帧预热但不编码，再逐帧录制到源时长阈值；帧率同时用于模拟时钟和视频编码。')}</p>
+              <p className="muted">{t('重建初始状态会按当前场景配置生成粒子、恢复作者相机角度并将缩放重置为 1；当前状态选项保留已呈现的粒子与视角。两种方式均将录制时钟清零，先推进并绘制 1 帧预热但不编码，再录制到源时长阈值；帧率同时用于模拟时钟和视频编码。')}</p>
               {sourceVideoFrames!==null&&<p className="muted">{t('本次录制 {frames} 帧',{frames:sourceVideoFrames})}</p>}
             </>:sourceFrames||rootsFrames?<>
               {sourceFrames&&<label className="field"><span>{t('录制起点')}</span><select aria-label={t('录制起点')} disabled={working} value={recordingStart} onChange={event=>setRecordingStart(event.target.value as 'fresh'|'current')}><option value="fresh">{t('从初始状态')}</option><option value="current" disabled={currentSpirographFrame===undefined}>{t('从当前已呈现帧')}</option></select></label>}
