@@ -117,7 +117,7 @@ RSS 是包含模块加载及先前冷任务的进程累计高水位，任务期�
 
 耗时与 CPU 为三轮中位数，RSS 为最大高水位，包含模块加载和先前冷任务；测量期间无子进程。GC 记录显示高峰主要为可回收 JS 堆和驻留页，分配采样估计累计分配从约 4.18 GB 降至 1.88 GB；累计分配不等于存活内存。该对照固定历史提交以隔离循环改动，不代表浏览器、GPU、长视频或原版性能；agent token 未测。前述同一粒子对象长时间快照触及预算的问题仍未关闭。
 
-本次全套 **252 个测试文件／4,803 项测试通过**，类型检查和 Web 构建通过；原有大 chunk 提示仍在。
+本次全套 **252 个测试文件／4,803 项测试通过**，类型检查和 Web 构建通过；原有大 chunk 提示仍在。曲面切换的 6 张 PNG／33 帧 MP4 回归通过。复根密度与点云的改色、播放暂停、倒退跳转、保存重开及两张 PNG 回归也通过。复根旧验证脚本在上一提交同样失败：未发布的点批次没有可比较图像，暂停也不必产生新 Worker 请求；现改为先确认实际绘制的完整点批次，并匹配暂停时已呈现帧的时间与 Worker 身份，原有像素差异及冷回放比较仍保留。
 
 复验新增 `python3 scripts/source-zero-duration-oracle.py --check`、`node scripts/verify-source-attractor-public.mjs --zero-duration`、`node scripts/diagnose-source-attractor-memory.mjs --equivalent --indexed-evaluator`。本机详细记录为 `.cache/v2-source-zero-duration-public.json` 与 `.cache/v2-source-attractor-memory-audit.json`。**当前仍为 M3，原版 JVM/JOGL 整图验收 0/11，1.0 应用包未重新打包。**
 

@@ -142,9 +142,12 @@ try{
  });
  await page.goto(origin);await fresh({issued:0,completed:0},{id:startup.id});await installRendererAudit();
 
+ // Each polynomial below has two roots. Publish that complete point batch in
+ // the first local sample step so gradient checks observe drawn ink, not an
+ // unfinished native queue builder. Larger partial batches have separate tests.
  const fixtures=[['density',4,[0,0,.8]],['point-cloud',12,[.3,.4,.5]]].map(([mode,fps,rates])=>({
   mode,fps,rates,initial:{phi:mode==='density'?0:Math.fround(.2),theta:mode==='density'?0:Math.fround(.15),gamma:0,zoom:1},
-  native:{config_version:'1.0.0',type:'COMPLEX_ROOTS',name:`Roots ${mode} source scene queue`,polynomial:{variable:'x',coefficients:{2:'1',0:'-0.04*t2'}},root_parameters:{t2:{domain:'UNIT_CIRCLE'}},sampling:{sample_count:100,batch_size:10,seed:'91'},palette:['#FF1050F0','#FFFF6020','#FF20FF90'],camera:{phi:mode==='density'?0:.2,theta:mode==='density'?0:.15,gamma:0},settings:{render_mode:mode==='density'?'GPU_DENSITY':'GPU_3D',worker_count:1,solver_max_iterations:180,solver_tolerance:1e-9,scale_x:240,scale_y:160,scale_z:35,offset_x:2,offset_y:-3,offset_z:0,rotation:15,dot_size:.08,color_metric:'im(t2)',brightness:.9,contrast:1,gamma:1,dynamic_range:.9,saturation:1,background_color:'#000000'},timeline:[
+  native:{config_version:'1.0.0',type:'COMPLEX_ROOTS',name:`Roots ${mode} source scene queue`,polynomial:{variable:'x',coefficients:{2:'1',0:'-0.04*t2'}},root_parameters:{t2:{domain:'UNIT_CIRCLE'}},sampling:{sample_count:100,batch_size:2,seed:'91'},palette:['#FF1050F0','#FFFF6020','#FF20FF90'],camera:{phi:mode==='density'?0:.2,theta:mode==='density'?0:.15,gamma:0},settings:{render_mode:mode==='density'?'GPU_DENSITY':'GPU_3D',worker_count:1,solver_max_iterations:180,solver_tolerance:1e-9,scale_x:240,scale_y:160,scale_z:35,offset_x:2,offset_y:-3,offset_z:0,rotation:15,dot_size:.08,color_metric:'im(t2)',brightness:.9,contrast:1,gamma:1,dynamic_range:.9,saturation:1,background_color:'#000000'},timeline:[
    {type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'ambient',args:rates},{method:'gradientStart',args:{mode:'HUE_ROTATE',interpolation:'LINEAR',speed:360}}]},
    {type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'zoom',args:[.75]}]},
    {type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'stopAmbient'},{method:'gradientStop'}]},
@@ -193,6 +196,10 @@ try{
   before=await mark();await page.getByRole('button',{name:label('重新开始空间采样'),exact:true}).click();row=await fresh(before,{id,time:0});await rendered(row);verifyFrame(row,fixture);
   result.initial=row;
   check(row.output.rootsPresentation.attemptedSamples===1&&row.output.rootsPresentation.newRawPoints===2,'first local sample step did not submit one two-root polynomial');
+  const firstPending=row.output.rootsPresentation.pending;
+  check(firstPending.publishedPoints===2&&firstPending.drainedPoints===2&&firstPending.builderPoints===0,'first two-root batch was not published and drained before image assertions');
+  check(fixture.mode==='density'?firstPending.consumedPoints===2:row.output.rootsPresentation.pointCloud.drawnPoints===2,'first two-root batch did not reach its density/cloud display consumer');
+  check(row.distinctRgbUpTo16>1,'first source frame has no visible ink for the gradient image checks');
   await page.locator('.track-labels button').nth(0).click();
   const methods=await page.getByRole('combobox',{name:label('动画动作'),exact:true}).first().locator('option').evaluateAll(options=>options.map(o=>o.value));
   check(JSON.stringify([...methods].sort())===JSON.stringify(['ambient','stopAmbient','zoom','gradientStart','gradientStop'].sort()),'full source authoring does not expose exactly the five supported actions');
@@ -205,6 +212,7 @@ try{
   check(JSON.stringify((await phaseSelect.locator('option').evaluateAll(rows=>rows.map(x=>x.value))).sort())===JSON.stringify(['rgb','linear','oklab','oklch'].sort()),'missing source gradient phase choices');
   for(const mode of ['offset_cycle','palette_morph','cross_fade','hue_rotate']){before=await mark();await modeSelect.selectOption(mode);row=await fresh(before,{id});await rendered(row);check(row.request.scene.timeline.tracks[0].actions[1].gradient.mode===mode&&fact(row).gradient.config.mode===mode,'mode edit did not reach Worker and gradient state');gradientEdits.push(row);}
   for(const interpolation of ['rgb','oklab','oklch','linear']){before=await mark();await phaseSelect.selectOption(interpolation);row=await fresh(before,{id});await rendered(row);check(row.request.scene.timeline.tracks[0].actions[1].gradient.interpolation===interpolation&&fact(row).gradient.config.interpolation===interpolation,'phase edit did not reach Worker and gradient state');gradientEdits.push(row);}
+  check(row.distinctRgbUpTo16>1&&row.output.rootsPresentation.pending.drainedPoints>0,'gradient comparison baseline contains no drawn source points');
   const speed=page.getByRole('spinbutton',{name:label('渐变速度 °/s'),exact:true}),beforeSpeed=row;
   before=await mark();await speed.fill('60');row=await fresh(before,{id});await rendered(row);check(row.pixelHash!==beforeSpeed.pixelHash&&fact(row).gradient.targetSpeed===60,'source gradient speed edit failed to change the actual displayed image');gradientEdits.push(row);
   before=await mark();await speed.fill('360');row=await fresh(before,{id});await rendered(row);verifyFrame(row,fixture);result.gradientEdits=gradientEdits;
@@ -244,9 +252,14 @@ try{
    return rows.some((a,i)=>rows.slice(i+1).some(b=>b.request.context.time>a.request.context.time));
   },{id,playStart});
   const pauseStart=await mark();await page.getByRole('button',{name:label('暂停'),exact:true}).click();
-  row=await fresh(pauseStart,{id,workerId:playWorkerId});await rendered(row);verifyFrame(row,fixture);
-  check(await page.getByRole('button',{name:label('播放'),exact:true}).isVisible(),'Play/Pause did not settle in paused state');
+  await page.getByRole('button',{name:label('播放'),exact:true}).waitFor();await ready();
   const selectedTimeText=await page.getByRole('slider',{name:'Time position',exact:true}).inputValue(),selectedTime=Number(selectedTimeText);
+  // Progressive Roots can pause on its already completed display frame without
+  // another generation request. Bind the actual presented frame to the paused
+  // UI time and live playback worker, whether it completed before or after click.
+  await page.waitForFunction(({id,workerId,time,playStart})=>window.__audit.completed.some(x=>x.issuedSequence>playStart.issued&&window.__audit.matches(x,{id,workerId})&&Math.abs(x.request.context.time-time)<1e-9&&window.__renderAudit.outputs.some(y=>y.issuedSequence===x.issuedSequence&&y.completionSequence===x.completionSequence&&y.workerId===x.workerId)),{id,workerId:playWorkerId,time:selectedTime,playStart});
+  row=await page.evaluate(({id,workerId,time,playStart})=>window.__audit.completed.findLast(x=>x.issuedSequence>playStart.issued&&window.__audit.matches(x,{id,workerId})&&Math.abs(x.request.context.time-time)<1e-9&&window.__renderAudit.outputs.some(y=>y.issuedSequence===x.issuedSequence&&y.completionSequence===x.completionSequence&&y.workerId===x.workerId)),{id,workerId:playWorkerId,time:selectedTime,playStart});
+  await rendered(row);verifyFrame(row,fixture);
   check(Math.abs(row.request.context.time-selectedTime)<1e-9,'paused completion does not belong to the selected timeline time');
   const playingRows=await page.evaluate(({id,playStart,pauseStart})=>window.__audit.completed.filter(x=>x.request.scene.id===id&&x.request.context.quality!=='export'&&x.issuedSequence>playStart.issued&&x.issuedSequence<=pauseStart.issued&&x.request.context.time>0&&window.__renderAudit.outputs.some(y=>y.issuedSequence===x.issuedSequence&&y.completionSequence===x.completionSequence&&y.workerId===x.workerId)),{id,playStart,pauseStart});
   check(playingRows.some((a,i)=>playingRows.slice(i+1).some(b=>b.request.context.time>a.request.context.time)),'playback evidence lost the two increasing presented times');
