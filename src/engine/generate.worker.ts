@@ -16,12 +16,13 @@ self.onmessage = (
   event: MessageEvent<GenerationRequest>,
 ) => {
   const { id, operation, sessionId } = event.data;
-  if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
   const send = (payload: GenerationPayload, transfer: Transferable[] = []) => self.postMessage({ ...payload, sessionId }, { transfer });
   const start = performance.now();
   let captureSource:typeof completed;
   let captureRendered=false;
   try {
+    // A failed release keeps the old owner and must still answer this request.
+    if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
     if(event.data.operation==='roots-paused-capture'){
       const source=captureSource=completed;
       if(!source||source.id!==event.data.sourceId)throw new Error('暂停截图对应的预览已过期');

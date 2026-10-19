@@ -1,4 +1,5 @@
 import {usesSourceAttractor,parseSourceAttractorDocument,prepareSourceAttractorScene} from './sourceAttractorDocument';
+import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
 import {parseSourceSurfacePalette} from './sourceSurfaceColor';
 import {SOURCE_SURFACE_HOST,usesSourceSurfaceParticles,usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -283,6 +284,12 @@ export function parseSceneValue(data: unknown): SceneDocument {
   }
   if(usesSourceSurfaceHost(data as unknown as SceneDocument))prepareSourceSurfaceScene(data as unknown as SceneDocument);
   if(usesSourceAttractor(data as unknown as SceneDocument))prepareSourceAttractorScene(data as unknown as SceneDocument);
+  if(data.bouncingSource!==undefined){
+    if(!usesSourceBouncing(data))fail('源弹跳配置只能用于弹跳场景');
+    const prepared=prepareSourceBouncingScene(data as unknown as SceneDocument);
+    if(!prepared.ok)fail(`源弹跳 ${prepared.error.path.join('.')}：${prepared.error.reason}`);
+    data.bouncingSource=prepared.value;
+  }
   return data as unknown as SceneDocument;
 }
 export const STORAGE_KEY = "mathart-lab-v1";

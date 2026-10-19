@@ -92,7 +92,7 @@ export function createSourceBouncingSeedStream(input:unknown,options:SourceBounc
  const c=parsed.value,count=c.particleCount,workLimit=options.workLimit??SOURCE_BOUNCING_SEED_LIMITS.work;
  if(!Number.isSafeInteger(workLimit)||workLimit<0||workLimit>SOURCE_BOUNCING_SEED_LIMITS.work)return{ok:false,error:{kind:'input',path:['workLimit'],reason:'初始化工作预算必须是允许范围内的非负整数'}};
  if(count<1)return{ok:false,error:{kind:'input',path:['particleCount'],reason:'源初始化需要正整数粒子数'}};
- const boundary=boundarySnapshot(c),boundaryWork=boundary.kind==='polygon'?boundary.vertices.length:1;
+ const boundary=Object.freeze(boundarySnapshot(c)),boundaryWork=boundary.kind==='polygon'?boundary.vertices.length:1;
  // Reserve the minimum complete workload before starting, then charge actual
  // nested sampler/predicate and outer boundary work before each operation.
  // Pathological rejection stops with a capacity result, never partial success.
@@ -122,16 +122,39 @@ export function createSourceBouncingSeedStream(input:unknown,options:SourceBounc
   }catch(error){if(error instanceof SeedFailure){failure=error.detail;return{ok:false,error:failure};}throw error;}
  }}};
 }
-/** Packed XY/VX/VY upload input. Padding belongs to the GPU texture owner; this
- * allocation contains every requested particle, including center fallbacks. */
-export function generateSourceBouncingSeeds(input:unknown,options:SourceBouncingSeedOptions={}):SourceBouncingResult<{state:Float32Array;update:SourceBouncingUpdate;diagnostics:SourceBouncingSeedDiagnostics}>{
- const stream=createSourceBouncingSeedStream(input,options);if(!stream.ok)return stream;
- if(stream.value.count*16>SOURCE_BOUNCING_SEED_LIMITS.bytes)return{ok:false,error:{kind:'capacity',path:['particleCount'],reason:'源弹跳初始状态超过128 MiB预算；不减少粒子数量'}};
+export interface SourceBouncingGeneratedSeeds {
+ readonly state:Float32Array;readonly update:SourceBouncingUpdate;readonly diagnostics:SourceBouncingSeedDiagnostics;
+}
+export interface SourceBouncingPreparedSeeds {
+ readonly count:number;readonly update:SourceBouncingUpdate;
+ /** Exactly one attempt, including failure/cancellation. No packed-state cache. */
+ generate():SourceBouncingResult<SourceBouncingGeneratedSeeds>;
+}
+/** Prepare one detached configuration, sampler, RNG and translated boundary.
+ * No particles are sampled and no packed state array is allocated here. The
+ * session can admit its complete collision workload using count/update before
+ * invoking generate. The same stream owns all later random/work consumption. */
+export function prepareSourceBouncingSeeds(input:unknown,options:SourceBouncingSeedOptions={}):SourceBouncingResult<SourceBouncingPreparedSeeds>{
  if(options.isCancelled?.())return{ok:false,error:{kind:'cancelled',path:[],reason:'源弹跳初始化已取消'}};
- const state=new Float32Array(stream.value.count*4);
- for(let i=0;i<stream.value.count;i++){
-  const next=stream.value.next();if(!next.ok)return next;if(next.value===null)throw new Error('Source Bouncing seed stream ended before its declared count');
-  const {position,velocity:v}=next.value;state[i*4]=position[0];state[i*4+1]=position[1];state[i*4+2]=v[0];state[i*4+3]=v[1];
- }
- return{ok:true,value:{state,update:stream.value.update,diagnostics:stream.value.diagnostics()}};
+ const stream=createSourceBouncingSeedStream(input,options);if(!stream.ok)return stream;
+ const owner=stream.value;
+ if(owner.count*16>SOURCE_BOUNCING_SEED_LIMITS.bytes)return{ok:false,error:{kind:'capacity',path:['particleCount'],reason:'源弹跳初始状态超过128 MiB预算；不减少粒子数量'}};
+ let attempted=false;
+ return{ok:true,value:Object.freeze({count:owner.count,update:owner.update,generate():SourceBouncingResult<SourceBouncingGeneratedSeeds>{
+  if(attempted)return{ok:false,error:{kind:'input',path:['generate'],reason:'源弹跳种子生成计划只能执行一次；请重新准备计划'}};
+  attempted=true;
+  if(options.isCancelled?.())return{ok:false,error:{kind:'cancelled',path:[],reason:'源弹跳初始化已取消'}};
+  // Packed XY/VX/VY includes every requested particle and center fallback.
+  // Texture padding belongs to the GPU owner; this array has no padding.
+  const state=new Float32Array(owner.count*4);
+  for(let i=0;i<owner.count;i++){
+   const next=owner.next();if(!next.ok)return next;if(next.value===null)throw new Error('Source Bouncing seed stream ended before its declared count');
+   const {position,velocity:v}=next.value;state[i*4]=position[0];state[i*4+1]=position[1];state[i*4+2]=v[0];state[i*4+3]=v[1];
+  }
+  return{ok:true,value:{state,update:owner.update,diagnostics:owner.diagnostics()}};
+ }})};
+}
+/** Compatibility entry point: the same admission and one-shot generator owner. */
+export function generateSourceBouncingSeeds(input:unknown,options:SourceBouncingSeedOptions={}):SourceBouncingResult<SourceBouncingGeneratedSeeds>{
+ const prepared=prepareSourceBouncingSeeds(input,options);return prepared.ok?prepared.value.generate():prepared;
 }

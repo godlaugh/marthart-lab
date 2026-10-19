@@ -69,6 +69,18 @@ type BoundaryResources={program:Program;vao:WebGLVertexArrayObject;vertices:WebG
 // Bounded source path (at most 200 points), CPU expanded buffers plus retained
 // GPU buffers. Driver allocations remain outside the representation budget.
 const BOUNDARY_BYTES=SOURCE_PROCESSING_CLOSED_STROKE_LIMITS.maxBufferBytes*2+SOURCE_BOUNCING_BOUNDARY_LIMITS.pathBytes;
+/** Admission before seed allocation; render uses the same representation sum. */
+export function sourceBouncingGpuFrameLayout(count:number,width:number,height:number,boundary=true){
+ const state=sourceBouncingGpuLayout(count),display=sourceBouncingGpuDisplayLayout(width,height);
+ const bytes=state.bytes+display.bytes+(boundary?BOUNDARY_BYTES:0);
+ if(bytes>SOURCE_BOUNCING_GPU_LIMITS.bytes)throw new SourceBouncingGpuError('capacity','源弹跳状态与绘制表示合计超过256 MiB预算');
+ return{state,display,bytes};
+}
+/** Collision upper bound shared by single-pass and whole-request admission. */
+export function sourceBouncingGpuUpdateWork(count:number,input:SourceBouncingUpdate):number{
+ return updateWork(sourceBouncingGpuLayout(count).texels,prepareSourceBouncingUpdate(input));
+}
+function updateWork(texels:number,u:SourceBouncingUpdate):number{return texels*Math.max(1,Math.min(16,u.subSteps))*(u.boundary.kind==='polygon'?8*Math.max(1,u.boundary.vertices.length):4);}
 /** Owned motion and particle-drawing layer for the native Bouncing pipeline. Each advance is one
  * actual Mobject.update, independent of its ignored time/dt arguments. This
  * object intentionally does not select a timeline, seed generator or full-scene composition
@@ -126,7 +138,7 @@ export class SourceBouncingGpu {
   // Polygon: one initial area scan, up to four collision scans, then at most
   // one inside test plus area/nearest-edge recovery scans before returning.
   // Circle/ellipse have four bounded collision iterations and no edge scans.
-  const units=this.layout.texels*Math.max(1,Math.min(16,u.subSteps))*(boundary.kind==='polygon'?8*Math.max(1,boundary.vertices.length):4);
+  const units=updateWork(this.layout.texels,u);
   if(this.passes>=SOURCE_BOUNCING_GPU_LIMITS.passes||units>SOURCE_BOUNCING_GPU_LIMITS.collisionEdgeWork)throw new SourceBouncingGpuError('capacity','源弹跳更新超过本地碰撞边工作量或绘制次数预算；不减少子步或粒子');
   this.initialize();const gl=this.gl!,p=this.updateProgram!;gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.useProgram(p.program);gl.bindVertexArray(this.vao!);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.targets[this.current].texture);gl.bindFramebuffer(gl.FRAMEBUFFER,this.targets[1-this.current].framebuffer);gl.viewport(0,0,this.layout.size,this.layout.size);
   gl.uniform1i(this.location(p,'stateTex'),0);gl.uniform1i(this.location(p,'subSteps'),u.subSteps);gl.uniform1f(this.location(p,'timeStep'),u.timeStep);gl.uniform1f(this.location(p,'particleRadius'),u.particleRadius);
@@ -143,8 +155,7 @@ export class SourceBouncingGpu {
   * into the same attachment. Each frame clears; scene accumulation and replay
   * are separate policies. No particle readback occurs here. */
  render(options:SourceBouncingGpuDisplay):{width:number;height:number;pixels:Uint8ClampedArray}{return this.guarded(()=>{
-  const d=sourceBouncingGpuDisplayLayout(options.width,options.height);
-  if(this.layout.bytes+d.bytes+(options.boundary||this.boundaryResources?BOUNDARY_BYTES:0)>SOURCE_BOUNCING_GPU_LIMITS.bytes)throw new SourceBouncingGpuError('capacity','源弹跳状态与绘制表示合计超过256 MiB预算');
+  const {display:d}=sourceBouncingGpuFrameLayout(this.layout.count,options.width,options.height,!!(options.boundary||this.boundaryResources));
   const prepared=prepareSourceBouncingDisplay(options.visualConfiguration,{initialSpeed:options.initialSpeed},options.cameraPlan?.displayScale);
   if(!prepared.ok)throw new SourceBouncingGpuError(prepared.error.kind==='capacity'?'capacity':'input',prepared.error.reason);
   const u=prepared.value,projection=matrix(options.cameraPlan?.projection?.columnMajor),modelview=matrix(options.cameraPlan?.modelView?.columnMajor);

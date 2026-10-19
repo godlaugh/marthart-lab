@@ -1,3 +1,4 @@
+import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
 import {usesSourceAttractor} from './sourceAttractorDocument';
 import {replaySourceAttractorCamera} from './sourceAttractorReplay';
 import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceSurfaceParameterConfig';
@@ -213,6 +214,7 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   if(scene.domainSourcePalette)copied.domainSourcePalette={...scene.domainSourcePalette,colors:[...scene.domainSourcePalette.colors]};
   if(scene.surfaceSource)copied.surfaceSource=structuredClone(scene.surfaceSource);
   if(scene.attractorSource)copied.attractorSource=structuredClone(scene.attractorSource);
+  if(scene.bouncingSource)copied.bouncingSource=structuredClone(scene.bouncingSource);
   if(scene.surfaceSourcePalette)copied.surfaceSourcePalette={colors:[...scene.surfaceSourcePalette.colors]};
   if(scene.rootsSourcePalette)copied.rootsSourcePalette={colors:[...scene.rootsSourcePalette.colors]};
   if(scene.rootsMath)copied.rootsMath=structuredClone(scene.rootsMath);
@@ -433,6 +435,10 @@ const compiledTimelines = new Map<string, TimelineEvaluator>();
 /** Pure evaluation: starts are ordered chronologically, ties follow document order. */
 export function sceneAtTime(scene: SceneDocument, position: number): SceneDocument {
   finite(position, '时间位置');
+  if(usesSourceBouncing(scene)){
+    const prepared=prepareSourceBouncingScene(scene);if(!prepared.ok)throw new Error(prepared.error.reason);
+    return copyState(scene); // Display snapshot only; explicit checkpoints own physics.
+  }
   if(usesRootsCameraTimeline(scene)){
     const copied=copyState(scene),facts=rootsCameraAtTime(scene,position);
     copied.evaluatedRootsCamera=facts;

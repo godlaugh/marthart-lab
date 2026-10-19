@@ -3,6 +3,7 @@ import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
 import type {RootsPausedCaptureResult,RootsPausedCaptureSize} from './generationProtocol';
 import {RootsPausedCaptureError} from './generationProtocol';
+import {usesSourceBouncing} from './sourceBouncingDocument';
 type Context=GenerationInput;
 interface GeneratorPort {
   generate(scene:SceneDocument,context:Context,onProgress?:(output:SceneOutput)=>void):Promise<SceneOutput>;
@@ -25,12 +26,13 @@ export class GenerationQueue {
     if(this.disposed)return;
     const previous=this.latest?.scene,sceneChanged=previous!==scene;
     const sameDomain=previous?.kind==='domain'&&scene.kind==='domain'&&previous.id===scene.id;
+    const sameSourceBouncing=!!previous&&usesSourceBouncing(previous)&&usesSourceBouncing(scene)&&previous.id===scene.id;
     const native=usesRootsNativePresentation(scene),nativeIdentity=native?rootsPresentationRequestIdentity(scene,context.rootsSessionId):undefined;
     const previousNative=!!previous&&usesRootsNativePresentation(previous);
     const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
-    this.latest={scene,context:{...context,...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
-    if((sceneChanged&&!sameDomain&&!sameNativeRoots)||nativeIdentityChanged){this.running=null;this.generator.cancel();clearTimeout(this.timer);this.timer=undefined;}
+    this.latest={scene,context:{...context,...(context.sourceBouncingFrame?{sourceBouncingFrame:{...context.sourceBouncingFrame}}:{}),...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
+    if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing)||nativeIdentityChanged){this.running=null;this.generator.cancel();clearTimeout(this.timer);this.timer=undefined;}
     this.callbacks.busy(true);
     if(this.running||this.captureOwner||this.timer!==undefined)return;
     if(delayMs>0)this.timer=setTimeout(()=>{this.timer=undefined;this.start();},delayMs);

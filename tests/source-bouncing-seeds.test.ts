@@ -1,6 +1,6 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
 import {importSourceBouncingConfig,type SourceBouncingConfiguration} from '../src/engine/sourceBouncingConfig';
-import {createSourceBouncingSeedStream,generateSourceBouncingSeeds,SOURCE_BOUNCING_SEED_LIMITS} from '../src/engine/sourceBouncingSeeds';
+import {createSourceBouncingSeedStream,generateSourceBouncingSeeds,prepareSourceBouncingSeeds,SOURCE_BOUNCING_SEED_LIMITS} from '../src/engine/sourceBouncingSeeds';
 import {JavaSourceRandom48} from '../src/engine/javaSourceRandom';
 
 function config(settings:Record<string,unknown>={}):SourceBouncingConfiguration{
@@ -55,5 +55,52 @@ describe('source Bouncing ordered seed owner',()=>{
   const result=generateSourceBouncingSeeds(c,{workLimit:100});expect(result).toMatchObject({ok:false,error:{kind:'capacity'}});
   expect(createSourceBouncingSeedStream({...c,particleCount:2147483647})).toMatchObject({ok:false,error:{kind:'capacity'}});
   expect(createSourceBouncingSeedStream(c,{workLimit:SOURCE_BOUNCING_SEED_LIMITS.work+1})).toMatchObject({ok:false,error:{kind:'input'}});
+ });
+});
+
+describe('source Bouncing pre-allocation seed admission',()=>{
+ it('exposes the detached count and shared boundary without allocating particles or consuming RNG',()=>{
+  const c=config({container_shape:'CIRCLE',boundary_center_x:2,boundary_center_y:3}),baseline=generated(c);
+  const draws=vi.spyOn(JavaSourceRandom48.prototype,'nextFloat'),Original=Float32Array;
+  let allocations=0;
+  vi.stubGlobal('Float32Array',new Proxy(Original,{construct(target,args){allocations++;return Reflect.construct(target,args);}}));
+  try{
+   const prepared=prepareSourceBouncingSeeds(c);if(!prepared.ok)throw Error(JSON.stringify(prepared.error));
+   expect(allocations).toBe(0);expect(draws).not.toHaveBeenCalled();expect(prepared.value.count).toBe(3);
+   expect(prepared.value.update).toEqual(baseline.update);expect(Object.isFrozen(prepared.value.update)).toBe(true);
+   expect(Object.isFrozen(prepared.value.update.boundary)).toBe(true);expect(Reflect.set(prepared.value.update.boundary,'radius',0)).toBe(false);
+   c.initialXMin=99;c.boundaryCenterX=99;c.particleCount=100;
+   const result=prepared.value.generate();if(!result.ok)throw Error(JSON.stringify(result.error));
+   expect(allocations).toBe(1);expect(result.value.state).toEqual(baseline.state);expect(result.value.diagnostics).toEqual(baseline.diagnostics);
+   expect(result.value.update).toBe(prepared.value.update);
+   expect(prepared.value.generate()).toMatchObject({ok:false,error:{kind:'input',path:['generate']}});
+   expect(allocations).toBe(1);
+  }finally{vi.unstubAllGlobals();draws.mockRestore();}
+ });
+ it('rejects oversized uploads and pre-cancellation before sampling or array allocation',()=>{
+  const c=config({container_shape:'CIRCLE'}),draws=vi.spyOn(JavaSourceRandom48.prototype,'nextFloat'),Original=Float32Array;
+  let allocations=0;
+  vi.stubGlobal('Float32Array',new Proxy(Original,{construct(target,args){allocations++;return Reflect.construct(target,args);}}));
+  try{
+   expect(prepareSourceBouncingSeeds({...c,particleCount:SOURCE_BOUNCING_SEED_LIMITS.bytes/16+1})).toMatchObject({ok:false,error:{kind:'capacity',reason:expect.stringContaining('128 MiB')}});
+   expect(prepareSourceBouncingSeeds(null,{isCancelled:()=>true})).toMatchObject({ok:false,error:{kind:'cancelled'}});
+   expect(draws).not.toHaveBeenCalled();expect(allocations).toBe(0);
+  }finally{vi.unstubAllGlobals();draws.mockRestore();}
+ });
+ it('checks cancellation again immediately before one-shot allocation',()=>{
+  let cancelled=false;
+  const prepared=prepareSourceBouncingSeeds(config(),{isCancelled:()=>cancelled});if(!prepared.ok)throw Error('prepare');
+  const Original=Float32Array;let allocations=0;
+  vi.stubGlobal('Float32Array',new Proxy(Original,{construct(target,args){allocations++;return Reflect.construct(target,args);}}));
+  try{
+   cancelled=true;expect(prepared.value.generate()).toMatchObject({ok:false,error:{kind:'cancelled'}});
+   cancelled=false;expect(prepared.value.generate()).toMatchObject({ok:false,error:{kind:'input'}});expect(allocations).toBe(0);
+  }finally{vi.unstubAllGlobals();}
+ });
+ it('consumes the generation attempt on work-budget failure and never returns cached partial state',()=>{
+  const c=config({initial_position_mode:'FORMULA',shape_formula:'0',container_shape:'CIRCLE',boundary_center_x:3,boundary_center_y:3,circle_radius:.01});
+  const prepared=prepareSourceBouncingSeeds(c,{workLimit:100});if(!prepared.ok)throw Error('prepare');
+  expect(prepared.value.generate()).toMatchObject({ok:false,error:{kind:'capacity'}});
+  expect(prepared.value.generate()).toMatchObject({ok:false,error:{kind:'input'}});
  });
 });

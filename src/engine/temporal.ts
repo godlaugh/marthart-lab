@@ -1,4 +1,6 @@
 import {usesSourceAttractor} from './sourceAttractorDocument';
+import {usesSourceBouncing} from './sourceBouncingDocument';
+import {SourceBouncingSession} from '../scenes/sourceBouncing';
 import {generateSourceAttractor} from '../scenes/sourceAttractor';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera} from './ordinarySourceCamera';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -56,6 +58,7 @@ export class TemporalGenerationSession {
   simulation?: Simulation;
   readonly perlin = new PerlinParticleSession();
   readonly bouncing = new BouncingRasterSession();
+  readonly sourceBouncing = new SourceBouncingSession();
   readonly iterated = new IteratedDensitySession();
   readonly roots = new RootsDensitySession();
   readonly rootsNative = new RootsNativePresentationSession();
@@ -64,9 +67,10 @@ export class TemporalGenerationSession {
   readonly domain = new DomainRenderSession();
   readonly spirograph = new SpirographFrameSession();
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
-  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.bouncing.reset();this.iterated.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
+  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
     this.cleanup.prepare();
+    if(!usesSourceBouncing(scene))this.sourceBouncing.reset();else this.bouncing.reset();
     if(!usesRootsNativePresentation(scene))this.rootsNative.reset();
     if(scene.kind==='domain')this.domain.select(scene.id);else this.domain.reset();
     if(!usesSpirographFrameClock(scene))this.spirograph.reset();
@@ -100,7 +104,7 @@ export class TemporalGenerationSession {
       const oldest = this.frames.keys().next().value!; this.bytes -= frameBytes(this.frames.get(oldest)!); this.frames.delete(oldest);
     }
   }
-  diagnostics() { return { retainedBytes: this.bytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),bouncing:this.bouncing.diagnostics(),iterated:this.iterated.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
+  diagnostics() { return { retainedBytes: this.bytes + this.sourceBouncing.diagnostics().retainedBytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),bouncing:this.bouncing.diagnostics(),sourceBouncing:this.sourceBouncing.diagnostics(),iterated:this.iterated.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
 }
 
 /** Grid is anchored at zero; arbitrary seek time adds one final exact-time sample. */
@@ -346,8 +350,11 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
 
 /** All public callers receive the same unsupported-timeline evidence. */
 export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
+  if(context.sourceBouncingFrame!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳检查点只能用于带源弹跳配置的场景');
+  if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
+    if(usesSourceBouncing(scene)){owner.select(scene,context);return owner.sourceBouncing.generate(scene,context);}
     if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context);}
     ordinarySourceCameraInitial(scene);

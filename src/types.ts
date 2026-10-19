@@ -6,6 +6,9 @@ import type {SourceSurfaceMeshWireframeFrame} from './engine/sourceSurfaceMeshWi
 import type {SourceSurfaceMeshConfiguration} from './engine/sourceSurfaceMeshConfig';
 import type {SourceSurfacePalette} from './engine/sourceSurfaceColor';
 import type {SourceAttractorDocumentPayload} from './engine/sourceAttractorDocument';
+import type {SourceBouncingDocumentPayload} from './engine/sourceBouncingDocument';
+import type {SourceBouncingCheckpoint} from './engine/sourceBouncingReplay';
+import type {SourceBouncingPresentationFrame} from './scenes/sourceBouncing';
 import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
 import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
 import type {FractalSourceFrameFacts} from './engine/fractalSourceFrame';
@@ -201,6 +204,8 @@ export interface SceneDocument {
   surfaceSource?: SourceSurfaceMeshConfiguration;
   /** Canonical native Attractor authoring. Omission keeps the local model. */
   attractorSource?: SourceAttractorDocumentPayload;
+  /** Explicit source identity; omission preserves the existing local model. */
+  bouncingSource?: SourceBouncingDocumentPayload;
   rootsMath?: RootsMathConfiguration;
   /** Optional authored presentation payload. Omission retains legacy rules;
    * local-v1 keeps this payload dormant without discarding its source values. */
@@ -397,6 +402,8 @@ export interface DensityStats {
   toneBackend?: 'cpu' | 'webgl2';
 }
 export type SceneOutput = (GeometryOutput | RasterOutput) & {
+  /** Absolute update identity and camera paired with the delivered raster. */
+  sourceBouncingFrame?:SourceBouncingPresentationFrame;
   /** Immutable facts from the same replay state as the delivered pixels. */
   spirographFrame?:SpirographReplayFrame;
   cameraFrame?: CameraFrame;
@@ -416,6 +423,7 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
 export type GenerationStatus = {kind:'roots';attemptedSamples:number;targetSamples:number;totalSamples:number};
 export interface GenerateContext {
   time: number;
+  sourceBouncingFrame?:SourceBouncingCheckpoint;
   spirographFrame?:SpirographFrameRequest;
   rootsViewport?:RootsViewportRequest;
   sourceViewport?:SourceCameraViewport;
@@ -437,7 +445,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;
