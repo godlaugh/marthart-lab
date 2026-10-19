@@ -407,6 +407,9 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
  });
 }
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceSurface=false,sourceAttractor=false):void{
+ // A Perlin source document/geometry owner is not yet published. Reject this
+ // internal queue payload here so a saved local scene cannot silently ignore it.
+ if(Array.isArray(track.actions)&&track.actions.some(a=>a?.perlinParameters!==undefined))throw new Error('Perlin 源参数作品入口尚未接入；不能用本地参数时间线替代');
  if(track.spirographWait!==undefined&&(track.spirographWait!=='visual-or-deadline-v1'||track.type!=='spirograph_finish_wait'||sceneKind!==undefined&&sceneKind!=='spirograph'))throw new Error('旋轮完成等待规则无效');
  if(track.surfaceFadeOutRatio!==undefined&&(track.type!=='surface_mode_transition'||typeof track.surfaceFadeOutRatio!=='number'||!Number.isFinite(track.surfaceFadeOutRatio)||!Number.isFinite(Math.fround(track.surfaceFadeOutRatio))))throw new Error('曲面淡出比例无效');
  if(track.gradient!==undefined)validateGradientConfig(track.gradient);

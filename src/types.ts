@@ -1,4 +1,5 @@
 import type {SourceBouncingView} from './engine/sourceBouncingNavigation';
+import type {SourcePerlinParameterAction} from './engine/sourcePerlinParameterConfig';
 import type {SourceSurfaceGpuMeshFrame} from './engine/sourceSurfaceGpuMesh';
 import type {SourceSurfaceGpuPointFrame} from './engine/sourceSurfaceGpuPoints';
 import type {SourceParticlePointAppearance} from './engine/sourceParticlePointAppearance';
@@ -145,6 +146,8 @@ export interface AnimationAction {
   /** Ordered source operations within this action; All is one registry operation. */
   domainParameters?:DomainParameterAction[];
   surfaceParameters?:SourceSurfaceParameterAction[];
+  /** Dedicated source Perlin child; admitted only by its source queue. */
+  perlinParameters?:SourcePerlinParameterAction;
 }
 export interface AnimationTrack {
   id: string;
