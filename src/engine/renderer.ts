@@ -138,14 +138,17 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.sourceGpuMesh&&(output.backend!=='webgl2'||output.topology!=='mesh'||output.positions.length||output.sourcePointAppearance||output.sourceMeshAppearance||output.sourceGpuPoints))throw new Error('GPU 网格需要独立的种子缓冲与匹配后端');
     if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
-    if(output.sourceCameraFrame&&output.type!=='geometry')throw new Error('原版几何相机不能应用到已投影的像素图像');
+    if(output.sourceCameraFrame&&output.type==='raster'&&!output.cameraResolved)throw new Error('源相机像素图像必须已完成投影');
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
     if(output.type==='geometry'&&output.sourcePointAppearance&&output.sourceMeshAppearance)throw new Error('源曲面点与网格外观不能混用');
     if(output.type==='geometry'&&output.sourceMeshWireframe&&!output.sourceMeshAppearance)throw new Error('源曲面线框缺少对应网格外观');
     if(output.type==='geometry'&&output.sourceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance||output.sourceGpuMesh)||!Number.isInteger(output.sourceBackgroundColor)||output.sourceBackgroundColor<0||output.sourceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
     const overlayAlpha=output.type==='geometry'?output.sourceSurfaceOverlayAlpha:undefined;
     if(overlayAlpha!==undefined&&(output.type!=='geometry'||output.sourceBackgroundColor===undefined||!Number.isInteger(overlayAlpha)||overlayAlpha<0||overlayAlpha>255))throw new Error('源曲面遮罩需要对应背景与 0–255 透明度');
-    const sourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
+    // A source raster carries its camera as provenance; its producer already
+    // projected the pixels. Validate the frame without applying it twice.
+    const deliveredSourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
+    const sourcePlan=output.type==='geometry'?deliveredSourcePlan:undefined;
     const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
     if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
     this.controls.enabled=this.interactiveRequested&&!sourcePlan;

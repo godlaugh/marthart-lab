@@ -2,6 +2,8 @@ import type {SceneDocument} from '../types';
 import {parseSourceAttractorConfiguration,type SourceAttractorConfiguration,type SourceAttractorResult} from './sourceAttractorConfig';
 import {parseSourceAttractorVisualConfiguration,type SourceAttractorVisualConfiguration} from './sourceAttractorVisualConfig';
 import {prepareSourceAttractorEquation} from './sourceAttractorEquation';
+import {prepareSourceAttractorGpuFunction} from './sourceAttractorGpuFunction';
+import {sourceAttractorGpuLayout} from './sourceAttractorGpu';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {ORDINARY_CAMERA_SEQUENCE} from './ordinarySourceCameraTimeline';
 import {parseDomainSourceDouble} from './domainSourceScalar';
@@ -72,8 +74,8 @@ export function prepareSourceAttractorScene(scene:SceneDocument){
  const parsed=parseSourceAttractorDocument(scene.attractorSource);
  if(!parsed.ok)throw new SourceAttractorDocumentError(parsed.error.kind==='capacity'?'capacity':'input',`原版吸引子 ${parsed.error.path.join('.')}：${parsed.error.reason}`);
  const {configuration,visual,backgroundColor}=parsed.value;
- if(configuration.nativeBackend!=='cpu')return fail('原版吸引子 GPU 生产路径尚未接入；不能改用 CPU 或本地 GPU 模型');
- if(configuration.particleCountCPU<0||configuration.particleCountCPU>10000)return fail('原版吸引子 CPU 粒子数量必须在 0–10000，不截断作者配置');
+ if(configuration.nativeBackend==='cpu'&&(configuration.particleCountCPU<0||configuration.particleCountCPU>10000))return fail('原版吸引子 CPU 粒子数量必须在 0–10000，不截断作者配置');
+ if(configuration.nativeBackend==='gpu')sourceAttractorGpuLayout(configuration.particleCountGPU);
  if(scene.settings.presentation==='density'||scene.settings.scale!==1||['rotateX','rotateY','rotateZ'].some(key=>Number(scene.settings[key]??0)!==0))return fail('原版吸引子使用源点与拖尾及分轴变换，不执行本地密度或整体变换');
  const camera=ordinarySourceCameraInitial(scene);if(!camera)return fail('原版吸引子需要源相机');
  if(scene.timeline.schedule!==ORDINARY_CAMERA_SEQUENCE)return fail('原版吸引子需要原版顺序时间线');
@@ -82,7 +84,12 @@ export function prepareSourceAttractorScene(scene:SceneDocument){
   if(!track.enabled)continue;
   if(!SOURCE_ATTRACTOR_CLIP_TYPES.includes(track.type??'')||track.actions?.some(action=>!SOURCE_ATTRACTOR_ACTION_METHODS.includes(action.method))||track.parameterAnimations?.length||track.surfaceParameterClip||track.actions?.some(action=>action.parameters?.length||action.domainParameters?.length||action.surfaceParameters))return fail('源吸引子时间线包含不支持的动作或片段；原版 ATTRACTOR 没有参数动画，不能使用本地动画替代');
  }
+ if(configuration.nativeBackend==='gpu'){
+  const shader=prepareSourceAttractorGpuFunction({equations:scene.equations,parameters:scene.parameters});
+  if(!shader.ok)throw new SourceAttractorDocumentError(shader.error.kind==='capacity'?'capacity':'input',`原版 GPU 吸引子 ${shader.error.path.join('.')}：${shader.error.reason}`);
+  return{backend:'gpu' as const,configuration,visualConfiguration:visual,shader:shader.value,backgroundColor,camera};
+ }
  const equation=prepareSourceAttractorEquation({equations:scene.equations,parameters:scene.parameters});
  if(!equation.ok)throw new SourceAttractorDocumentError(equation.error.kind,`原版吸引子 ${equation.error.path.join('.')}：${equation.error.reason}`);
- return{configuration,visualConfiguration:visual,equation:equation.value,backgroundColor,camera};
+ return{backend:'cpu' as const,configuration,visualConfiguration:visual,equation:equation.value,backgroundColor,camera};
 }

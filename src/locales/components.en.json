@@ -793,8 +793,6 @@
   "拖尾寿命": "Trail lifetime",
   "先淡出到黑色，再切换曲面并淡入；参数和跟踪动作仍绑定初始曲面。": "Fade to black, switch surface mode, then fade in. Parameter and tracking actions remain bound to the initial surface.",
   "吸引子模拟": "Attractor simulation",
-  "当前支持原版 CPU 积分；原版普通吸引子没有参数动画，GPU 尚未接入。修改参数会从初始状态重新计算。": "Source CPU integration is available. The original ordinary Attractor has no parameter animation; GPU is not integrated yet. Parameter edits replay from the initial state.",
-  "已保留 GPU 配置，当前无法播放。": "The GPU configuration is retained but cannot be played yet.",
   "CPU 粒子数": "CPU particle count",
   "每帧积分次数": "Integration steps per frame",
   "积分步长下限": "Minimum integration step",
@@ -826,5 +824,16 @@
   "Y 初始下限": "Initial Y minimum",
   "Y 初始上限": "Initial Y maximum",
   "Z 初始下限": "Initial Z minimum",
-  "Z 初始上限": "Initial Z maximum"
+  "Z 初始上限": "Initial Z maximum",
+  "原版普通吸引子没有参数动画。修改参数会从初始状态重新计算。": "The original ordinary Attractor has no parameter animation. Parameter edits replay from the initial state.",
+  "吸引子计算后端": "Attractor compute backend",
+  "GPU 粒子数": "GPU particle count",
+  "GPU 按当前帧叠加粒子密度，不绘制拖尾，也不执行渐变动画。CPU 的拖尾设置仍保留。": "GPU accumulates particle density for the current frame without trails or gradient animation. CPU trail settings are preserved.",
+  "GPU 色调": "GPU tone mapping",
+  "GPU 曝光": "GPU exposure",
+  "GPU 对比度": "GPU contrast",
+  "GPU 伽马": "GPU gamma",
+  "GPU 饱和度": "GPU saturation",
+  "GPU 密度比例": "GPU density scale",
+  "色调数值按原版范围限制。密度比例控制当前帧的叠加亮度，不延长轨迹。": "Tone values use the original limits. Density scale controls the current frame’s accumulated brightness, not trail duration."
 }

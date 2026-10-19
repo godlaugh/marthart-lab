@@ -299,7 +299,7 @@ function surface(r:Reader,s:SceneDocument){
  numberTo(r,s,'settings.mesh_wrap_threshold','wrapThreshold',{min:0,max:1});
  booleanTo(r,s,'settings.twisted_u','twistedU');
 }
-/** Native CPU configuration is the only owner of imported Attractor state.
+/** Native configuration is the only owner of imported Attractor state.
  * Local scene defaults are discarded; saved local documents never enter here. */
 function attractor(r:Reader,s:SceneDocument){
  for(const key of ['dx','dy','dz']){
@@ -307,8 +307,9 @@ function attractor(r:Reader,s:SceneDocument){
   if(value.length>8192)fail(`equations.${key} 超过 8192 字符`); // Native blank expression is Constant(0).
   s.equations[key]=value;
  }
- if(r.has(['settings','integration_method']))r.acknowledge(['settings','integration_method'],'原版 CPU 入口对所有名称使用 Euler，包括 RK4；未使用本地积分器');
- r.warnings.push('吸引子使用源 CPU Euler、Random(12345)、固定帧子步与当前色板拖尾；原版完整画面尚未完成一致性验收。');
+ const gpu=s.attractorSource!.configuration.nativeBackend==='gpu';
+ if(r.has(['settings','integration_method']))r.acknowledge(['settings','integration_method'],gpu?'原版 GPU 入口固定使用 RK4；此字段不改变积分器':'原版 CPU 入口对所有名称使用 Euler，包括 RK4；未使用本地积分器');
+ r.warnings.push(gpu?'吸引子使用源 GPU RK4、浮点密度绘制与初始位置相机跟踪；原版完整画面尚未完成一致性验收。':'吸引子使用源 CPU Euler、Random(12345)、固定帧子步与当前色板拖尾；原版完整画面尚未完成一致性验收。');
 }
 function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
  const numeric=importSourceAttractorConfig(r.peek(['settings']),r.peek(['initialization']),{numberToken:path=>r.numberToken(path)});
@@ -328,7 +329,6 @@ function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
  s.attractorSource={configuration:numeric.value.configuration,visual:visual.value.configuration,backgroundColor:background.color};
  // Only common presentation controls remain outside the canonical source facts.
  s.settings={scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1,showGrid:false,showAxes:false,background:'#000000'};
- if(numeric.value.configuration.nativeBackend==='gpu')fail('原版吸引子 GPU 生产路径尚未接入；不会替换成 CPU 或本地 GPU');
 }
 
 function iteratedLegacy(r:Reader,s:SceneDocument){
@@ -1060,7 +1060,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
     if(surfaceParameters){if(surfaceParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,surfaceParameters});continue;}
     if((s.kind==='surface'||usesSourceAttractor(s))&&(method==='gradientStart'||method==='gradientStop')){
-     if(usesSourceAttractor(s)&&!s.attractorSource!.visual.trails.show){r.acknowledge(actionPath,'原版吸引子仅在 CPU 且显示拖尾时构造渐变；未解析动作参数');continue;}
+     if(usesSourceAttractor(s)&&(s.attractorSource!.configuration.nativeBackend==='gpu'||!s.attractorSource!.visual.trails.show)){r.acknowledge(actionPath,'原版吸引子仅在 CPU 且显示拖尾时构造渐变；未解析动作参数');continue;}
      if(method==='gradientStop'){track.actions.push({id:crypto.randomUUID(),method,enabled:true});continue;}
      const facts=usesSourceAttractor(s)?importSourceParticleGradient(raw,'attractor'):surfaceGradient!,argsPath=[...actionPath,'args'];
      if(facts.payloadPath!==null){

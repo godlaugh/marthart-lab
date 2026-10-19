@@ -1267,7 +1267,7 @@ export default function App() {
           scene={{ ...scene, camera: camera.current }}
           time={time}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}
-          previewLogicalHeight={scene.sourceCamera?(presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
+          previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
           previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourcePointAppearance?.referencePixelDensity:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{
             size:{width:output?.type==='raster'?output.width:1920,height:output?.type==='raster'?output.height:1080},

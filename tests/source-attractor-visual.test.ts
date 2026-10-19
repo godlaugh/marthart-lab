@@ -40,6 +40,30 @@ describe('source Attractor visual configuration',()=>{
   expect(importSourceAttractorVisualConfig({dot_size:'1/0'},undefined)).toMatchObject({ok:false,error:{kind:'nonfinite'}});
   expect(importSourceAttractorVisualConfig({line_weight:'x'.repeat(65537)},undefined)).toMatchObject({ok:false,error:{kind:'capacity'}});
  });
+ it('imports GPU tone with source defaults, ConfigUtils expressions, Float32 clamps and consumed paths',()=>{
+  const defaults={exposure:8,contrast:1,gamma:Math.fround(2.2),saturation:Math.fround(.82),densityScale:1};
+  for(const settings of [undefined,{}, {gpu_exposure:null,gpu_gamma:null}])expect(visual(settings).configuration.gpuTone).toEqual(defaults);
+  const imported=visual({gpu_exposure:'128/2',gpu_contrast:-1,gpu_gamma:'PI',gpu_saturation:3,gpu_density_scale:'1/4',density_scale:99});
+  expect(imported.configuration.gpuTone).toEqual({exposure:64,contrast:Math.fround(.1),gamma:Math.fround(Math.PI),saturation:2,densityScale:.25});
+  expect(imported.consumedPaths).toEqual(['gpu_exposure','gpu_contrast','gpu_gamma','gpu_saturation','gpu_density_scale'].map(key=>['settings',key]));
+  expect(imported.numericPaths).toEqual([['settings','gpu_contrast'],['settings','gpu_saturation']]);
+  expect(visual({gpu_exposure:'bad',gpu_contrast:[],gpu_gamma:true,gpu_saturation:'-1',gpu_density_scale:99}).configuration.gpuTone).toEqual({exposure:Math.fround(.1),contrast:Math.fround(.1),gamma:Math.fround(.1),saturation:0,densityScale:4});
+ });
+ it('uses the lower bound for nonfinite source tone, while leaving nonfinite CPU radius rejected',()=>{
+  const fields=['gpu_exposure','gpu_contrast','gpu_gamma','gpu_saturation','gpu_density_scale'];
+  for(const value of ['1/0','-1/0','0/0',1e300])expect(visual(Object.fromEntries(fields.map(key=>[key,value]))).configuration.gpuTone).toEqual({exposure:Math.fround(.1),contrast:Math.fround(.1),gamma:Math.fround(.1),saturation:0,densityScale:Math.fround(.1)});
+  expect(importSourceAttractorVisualConfig({dot_size:'1/0'},undefined)).toMatchObject({ok:false,error:{kind:'nonfinite'}});
+  expect(importSourceAttractorVisualConfig({gpu_gamma:'x'.repeat(65537)},undefined)).toMatchObject({ok:false,error:{kind:'capacity',path:['settings','gpu_gamma']}});
+ });
+ it('migrates only omitted saved GPU tone once and owns strict finite normalized copies',()=>{
+  const current=visual({}).configuration,{gpuTone,...legacy}=current;
+  const migrated=parseSourceAttractorVisualConfiguration(legacy);expect(migrated).toEqual({ok:true,value:current});expect(legacy).not.toHaveProperty('gpuTone');
+  if(!migrated.ok)throw Error('migration');expect(parseSourceAttractorVisualConfiguration(migrated.value)).toEqual(migrated);
+  const input={...current,gpuTone:{...gpuTone,exposure:100,gamma:2.1,saturation:-0}},parsed=parseSourceAttractorVisualConfiguration(input);expect(parsed.ok).toBe(true);if(!parsed.ok)throw Error('tone');
+  expect(parsed.value.gpuTone).toEqual({...gpuTone,exposure:64,gamma:Math.fround(2.1),saturation:0});expect(Object.is(parsed.value.gpuTone.saturation,0)).toBe(true);
+  input.gpuTone.gamma=9;expect(parsed.value.gpuTone.gamma).toBe(Math.fround(2.1));
+  for(const tone of [undefined,null,{}, {...gpuTone,extra:1},{...gpuTone,gamma:'2.2'},{...gpuTone,gamma:Infinity},{...gpuTone,gamma:NaN}])expect(parseSourceAttractorVisualConfiguration({...current,gpuTone:tone}).ok).toBe(false);
+ });
  it('enforces explicit input budgets before preparing or allocating palette data',()=>{
   for(const input of [new Array(SOURCE_ATTRACTOR_PALETTE_LIMITS.colors+1).fill('#000000'),['x'.repeat(SOURCE_ATTRACTOR_PALETTE_LIMITS.characters+1)]])expect(importSourceAttractorVisualConfig(undefined,input)).toMatchObject({ok:false,error:{kind:'capacity'}});
   expect(prepareSourceAttractorInitialColors({kind:'colors',colors:new Array(SOURCE_ATTRACTOR_PALETTE_LIMITS.colors+1).fill('#000000')},1)).toMatchObject({ok:false,error:{kind:'capacity'}});

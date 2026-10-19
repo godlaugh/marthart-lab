@@ -36,9 +36,9 @@ describe('public source Attractor document and import owner',()=>{
  });
  it('uses getDouble parameter literals and exact keys, including coordinate shadowing',()=>{
   const {scene}=imported({equations:{dx:'x',dy:'constructor',dz:'0'},parameters:{x:'0x1.2p3',constructor:4,'unused.key':2}});
-  const prepared=prepareSourceAttractorScene(scene),out=new Float32Array(3);prepared.equation.create().compute(100,200,300,out);expect(Array.from(out)).toEqual([9,4,0]);
+  const prepared=prepareSourceAttractorScene(scene),out=new Float32Array(3);(prepared.backend==='cpu'?prepared.equation:(()=>{throw Error('CPU expected');})()).create().compute(100,200,300,out);expect(Array.from(out)).toEqual([9,4,0]);
   expect(parseScene(serializeScene(scene)).parameters).toEqual(scene.parameters);
-  const blank=prepareSourceAttractorScene(imported({equations:{dx:'',dy:'   ',dz:'0'}}).scene);blank.equation.create().compute(1,2,3,out);expect(Array.from(out)).toEqual([0,0,0]);
+  const blank=prepareSourceAttractorScene(imported({equations:{dx:'',dy:'   ',dz:'0'}}).scene);(blank.backend==='cpu'?blank.equation:(()=>{throw Error('CPU expected');})()).create().compute(1,2,3,out);expect(Array.from(out)).toEqual([0,0,0]);
   for(const value of ['8/3','a+1',true,null,'Infinity'])expect(()=>imported({parameters:{a:value}})).toThrow(/double/);
  });
  it('supports source track and gradient grouping with Attractor-specific admission',()=>{
@@ -52,11 +52,12 @@ describe('public source Attractor document and import owner',()=>{
   expect(importSourceParticleGradient({targetDomain:'FRACTAL'},'attractor').kind).toBe('start');expect(importSourceParticleGradient({targetDomain:'FRACTAL'},'surface').kind).toBe('skip');
  });
  it('never substitutes local GPU or local parameter animation into a canonical source document',()=>{
-  expect(()=>imported({settings:{render_mode:'GPU'}})).toThrow(/GPU.*尚未接入/);
+  const gpu=imported({settings:{render_mode:'GPU'}}).scene;expect(prepareSourceAttractorScene(gpu).backend).toBe('gpu');expect(gpu.attractorSource!.configuration.particleCountGPU).toBe(200000);
   for(const edit of [(s:ReturnType<typeof imported>['scene'])=>{s.timeline.tracks[0].type='param';},(s:ReturnType<typeof imported>['scene'])=>{s.timeline.tracks[0].actions=[{id:'param',method:'paramStart',args:{}}];}]){
    const s=imported({timeline:[{type:'animate',duration:1,actions:[]}]}).scene;edit(s);expect(()=>parseScene(serializeScene(s))).toThrow('没有参数动画');
   }
-  const {scene}=imported();scene.attractorSource!.configuration.nativeBackend='gpu';expect(()=>parseScene(serializeScene(scene))).toThrow('GPU');
+  const {scene}=imported();scene.attractorSource!.configuration.nativeBackend='gpu';expect(parseScene(serializeScene(scene)).attractorSource).toEqual(scene.attractorSource);
+  scene.parameters['invalid.key']=1;expect(()=>parseScene(serializeScene(scene))).toThrow('GPU');
  });
  it('fails closed on malformed canonical payload, camera, schedule and local effects',()=>{
   const {scene}=imported();

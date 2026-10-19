@@ -30,6 +30,16 @@ describe('canonical source Attractor authoring',()=>{
   field(tree,'显示拖尾').onChange({target:{checked:false}});expect(onChange.mock.lastCall![0].attractorSource.visual.trails.show).toBe(false);
   onChange.mockClear();field(tree,'CPU 粒子数').onChange({target:{value:'2.5'}});expect(onChange).not.toHaveBeenCalled();expect(setters).toHaveBeenLastCalledWith(expect.stringContaining('int32'));
  });
+ it('keeps GPU count and tone separate from CPU trails, when switching native backend',()=>{
+  const initial=scene();initial.attractorSource!.configuration.nativeBackend='gpu';const before=structuredClone(initial),onChange=vi.fn(),tree=<SourceAttractorControls scene={initial} onChange={onChange}/>;
+  expect(field(tree,'吸引子计算后端').disabled).toBeUndefined();expect(field(tree,'吸引子计算后端').value).toBe('gpu');
+  field(tree,'GPU 粒子数').onChange({target:{value:'54321'}});expect(onChange.mock.lastCall![0].attractorSource.configuration).toMatchObject({nativeBackend:'gpu',particleCountGPU:54321,particleCountCPU:4});
+  field(tree,'GPU 曝光').onChange({target:{value:'100'}});expect(onChange.mock.lastCall![0].attractorSource.visual.gpuTone.exposure).toBe(64);
+  field(tree,'GPU 密度比例').onChange({target:{value:'-1'}});const next=onChange.mock.lastCall![0] as SceneDocument;expect(next.attractorSource!.visual.gpuTone.densityScale).toBe(Math.fround(.1));expect(next.attractorSource!.visual.trails).toEqual(before.attractorSource!.visual.trails);expect(next.settings).toEqual(before.settings);
+  const html=renderToStaticMarkup(tree);expect(html).toContain('不绘制拖尾，也不执行渐变动画');expect(html).not.toContain('source-attractor-trails-show');expect(html).not.toContain('source-attractor-particleCountCPU');expect(initial).toEqual(before);
+  field(tree,'吸引子计算后端').onChange({target:{value:'cpu'}});expect(onChange.mock.lastCall![0].attractorSource.configuration).toMatchObject({nativeBackend:'cpu',particleCountGPU:777,particleCountCPU:4});
+  const cpu=renderToStaticMarkup(<SourceAttractorControls scene={scene()} onChange={()=>{}}/>);expect(cpu).toContain('source-attractor-trails-show');expect(cpu).not.toContain('source-attractor-gpuTone-exposure');
+ });
  it('normalizes integer-gray picker display with the shared color owner while retaining raw palette text',()=>{
   const initial=scene(),onChange=vi.fn(),tree=<SourceAttractorPaletteEditor scene={initial} onChange={onChange}/>;
   expect(field(tree,'吸引子颜色 RGB').value).toBe('#808080');expect(field(tree,'吸引子颜色原文').value).toBe('128');
