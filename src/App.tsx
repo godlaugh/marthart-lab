@@ -327,7 +327,7 @@ export default function App() {
   function save(favorite?: boolean) {
     try {
     const builtin=def.presets.some(p=>scene.id===`preset:${def.kind}:${p.id}`);
-    const item = parseScene(JSON.stringify({ ...scene,id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
+    const item = parseScene(serializeScene({ ...scene,id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
     if(builtin)drafts.current[scene.id]=scene;
     setScene(retainSamilaViewportOnSave(scene,item));camera.current=item.camera;
     setSaved((current) => {

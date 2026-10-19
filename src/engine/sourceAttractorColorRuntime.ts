@@ -95,7 +95,7 @@ export class SourceAttractorColorRuntime {
  });}
  interpolateGradientActions(eased:number,finished:boolean):void{this.guarded(()=>{
   if(!this.admitted)return;
-  if(!Number.isFinite(F(eased))||typeof finished!=='boolean')throw new SourceAttractorColorError('input','原版吸引子渐变进度无效');
+  if(typeof eased!=='number'||typeof finished!=='boolean')throw new SourceAttractorColorError('input','原版吸引子渐变进度无效');
   this.reserve(1);this.gradient.interpolate(F(eased),finished);
  });}
  update(dt:number):void{this.guarded(()=>{

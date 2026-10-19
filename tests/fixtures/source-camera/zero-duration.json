@@ -1,0 +1,5461 @@
+{
+  "schemaVersion": 1,
+  "kind": "independent-retained-bytecode-oracle",
+  "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "sourceEvidence": [
+    {
+      "path": ".cache/v2-camera-source/Easings.json",
+      "entry": "mathart/animation/Easings.class",
+      "classSha256": "956efb0fc896eabb5ffaf995e719abf421a2c736cc3c68882db521914a84f1cb",
+      "evidenceSha256": "ee39a0e9b5e7cbe432d131c354fc30439436fa045b0220c5a0f7cee7313f9769"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-1.json",
+      "entry": "mathart/animation/Easings$1.class",
+      "classSha256": "15345c6396196c1b75805e273c8fb8e1ccd7f6b696a48fa2a1906ec0902bb162",
+      "evidenceSha256": "6a60af022fc87778a83dfa5c74d4e0e8ea82a616dfc99540707adf4c025b3703"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-2.json",
+      "entry": "mathart/animation/Easings$2.class",
+      "classSha256": "1db81b478d9b220d6a8e2f2f699f16e185424cdc2f62bdfa235b0262d286b365",
+      "evidenceSha256": "ab9237c03110f7289d50f1434f167cc2ae13f0f376c0851a596e5d4bf44c6b3f"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-3.json",
+      "entry": "mathart/animation/Easings$3.class",
+      "classSha256": "8b25fd79d016fe55d35b805c0304656c0ae4ce3474f8e182dc0ba36bb94e379f",
+      "evidenceSha256": "a6db910214fef8df6ce143a8d1908da183e03a0d262fa499facb56ae08e24547"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-4.json",
+      "entry": "mathart/animation/Easings$4.class",
+      "classSha256": "d5750d2685056b35bdf219f56f1b5941480dd78216b889de43351530a9115783",
+      "evidenceSha256": "378b91f3d561731904b2b8205c94966f98b1a32e6465a608fee6047d8da89b61"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-5.json",
+      "entry": "mathart/animation/Easings$5.class",
+      "classSha256": "450a7620f9f586daa56f9948135bfb496d0d2c2ac49ca197f4c1052368b70e15",
+      "evidenceSha256": "d259a068fe1177ec9e18c5b42c9eb6306cffa3d5c70a3d5690382038b9abc99a"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-6.json",
+      "entry": "mathart/animation/Easings$6.class",
+      "classSha256": "b0c2d29d6b3d6d744795608484ce9ae25c8b9b4be7d3efb9b990a321e3e67016",
+      "evidenceSha256": "507eeea316fe5cd8f31db38676e328a651ef3cc8019e18357629b4fe93661fbc"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-7.json",
+      "entry": "mathart/animation/Easings$7.class",
+      "classSha256": "0e9ebb6ef17ed273f881360072c6d3e6fc4bceeee0cfbefd93d20a1ff22f31a5",
+      "evidenceSha256": "8219c86228848ceb4eca13514975ac5583169e899b1cbaf010224aebf367b93a"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-8.json",
+      "entry": "mathart/animation/Easings$8.class",
+      "classSha256": "5bc67dcb5f210719a249ffd4b10d185169136699a0315b552f62703d5859761f",
+      "evidenceSha256": "39270bfb1aa721b1b7aa0a605c778683b180f25c66d6649d0bda0d654f3dc8a0"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-9.json",
+      "entry": "mathart/animation/Easings$9.class",
+      "classSha256": "abfe8cab91861c45706b1823963807bf6400632c2730c1aa40dda4a340cb909d",
+      "evidenceSha256": "127e02d2fde80274324438d2bbf2efdcde95836beceade608d3aac18968a1ecc"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-10.json",
+      "entry": "mathart/animation/Easings$10.class",
+      "classSha256": "ab76e22f6ca3ddcdc323d0504132ac4d8567d2d8a707bda0b6cf86d4f3e4f435",
+      "evidenceSha256": "68d0786997ab9b93ef530564040841c73626005fe10d145afcb1c48be8cff294"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-11.json",
+      "entry": "mathart/animation/Easings$11.class",
+      "classSha256": "faf762324c4abea6d8396396035f99e603a4d8f32b6c14791f6c626e043e69b6",
+      "evidenceSha256": "19e628ace256eaad55f102740b267e78dc34b02e504d1edb383212f735c37c9a"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-12.json",
+      "entry": "mathart/animation/Easings$12.class",
+      "classSha256": "eb2088cdf5430d63931d21e6fdbd36dcd86fb2506425c3c8c130cc3d47c658b5",
+      "evidenceSha256": "6e08c3fd345bec72cd693ebe0fd7a03d12590db589142f9446a1100d7a704daf"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-13.json",
+      "entry": "mathart/animation/Easings$13.class",
+      "classSha256": "b90da2aca9434635c2ab3f44aec5b12ee9cd628a5508e79bd45abbe87ba5e9e6",
+      "evidenceSha256": "1143ed3a45b9dca71e4277c5b8a432c0a27ef25133ca2c8b650a288d517c2aec"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-14.json",
+      "entry": "mathart/animation/Easings$14.class",
+      "classSha256": "a383d7ae65883a7bede67876817885da493ba2b161688f02efe001a29fa560bc",
+      "evidenceSha256": "a33df83853e5714c21c6bd30fb4343413cbe9cc4c02a125d1acd79e554493b7f"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-15.json",
+      "entry": "mathart/animation/Easings$15.class",
+      "classSha256": "c2616e1bdf53326d0c305e18442f2248996f7e62dfed43bd037da716cc705566",
+      "evidenceSha256": "7e742531cdce25e140071f2214f36906ac68dcf5bb070ef8b7c280ff49a1ce48"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-16.json",
+      "entry": "mathart/animation/Easings$16.class",
+      "classSha256": "4fb67deace3193b93b3d70be8cb348db9a8d6e2127eaeef6ae1e91903dd3f2df",
+      "evidenceSha256": "8f84224a74a667c91aaa2bca0ed4fc36bf78a6f578f504896f19335dd202056c"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-17.json",
+      "entry": "mathart/animation/Easings$17.class",
+      "classSha256": "731e099ca94bf8eb46dd4e4875593a614cac201ed634c3c9ef23207d720cded5",
+      "evidenceSha256": "6cd29052a3854f1836e7ad92b12b8ceb4a400f3e6cfb509e2088c7cab4e216cf"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-18.json",
+      "entry": "mathart/animation/Easings$18.class",
+      "classSha256": "bab5158a2702fc0a8f621d1ef3f4cb0362e01c199f1484f03fdbeeea5af6be26",
+      "evidenceSha256": "df3931ef378087ac12c1bc82fc2dfab036def781d2ce151b52b1a901adf5e216"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-19.json",
+      "entry": "mathart/animation/Easings$19.class",
+      "classSha256": "f7ab8e2a1ec368877a4d376fb51baee868e2fd3ee5869648ea07dc8d6857a8bf",
+      "evidenceSha256": "e70044dca80cfaa2cfefbdc22e2d8b71cc9bb4270bf81ba7a281b6d2dbbd3b99"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-20.json",
+      "entry": "mathart/animation/Easings$20.class",
+      "classSha256": "3ef2a92fa2388477c2ce037df8ed149fb1f980944fca058a5b514833475ee66c",
+      "evidenceSha256": "86472b33b89026cbf52900498180667f758ebdbe1ccd70ccd645016f05e68fd1"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-21.json",
+      "entry": "mathart/animation/Easings$21.class",
+      "classSha256": "cffd44e97027d99b6a5200987b1ed7f53ab98aac23328c7422ed63bf7046c005",
+      "evidenceSha256": "a3d9629c3fb0d3c1a08fdf33db2faf7351618220081365347b5d5f490dc0704d"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-22.json",
+      "entry": "mathart/animation/Easings$22.class",
+      "classSha256": "0b06c3b58642a182f0968da2ff7906e415ddac1d714e35cf447063bfcb94ed2d",
+      "evidenceSha256": "d5f9242d1371b20e3e2fa44b5b728f2d9e07711a5994726609091a72481a9328"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-23.json",
+      "entry": "mathart/animation/Easings$23.class",
+      "classSha256": "4cabfe49855f9f1867cd00f45a7cef08bed4030df2ad238e878fd209bc3f8b2e",
+      "evidenceSha256": "887dde814f5f12536836242e5a7335fc64030dd0fa5aa5f0fe9745dc277779f6"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-24.json",
+      "entry": "mathart/animation/Easings$24.class",
+      "classSha256": "ba455768b399568da741820b40830049cfd4d8b16d3396fb06bdd433be4afbbc",
+      "evidenceSha256": "52ccfad1c98132f5c5c7db22d58bb89fe5e86d75df434767904ba675f4c5ff5f"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-25.json",
+      "entry": "mathart/animation/Easings$25.class",
+      "classSha256": "21ba8c304b94f113a64c77010b206846632c78f7dbe59c12fe378505a9d42686",
+      "evidenceSha256": "9e35ce162362b8d3fae87fa17db68d0767f1ef53c03a18c3b19f4909948d022c"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-26.json",
+      "entry": "mathart/animation/Easings$26.class",
+      "classSha256": "d91a0fd1f98180e82a4a658f1bd890ed84c2839a4ae78601a895f6e3981ac6e5",
+      "evidenceSha256": "a7ecdb29c5681600316d0f3f39a865a65c7ee51df3e1bc82e0437701b9a30fe5"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-27.json",
+      "entry": "mathart/animation/Easings$27.class",
+      "classSha256": "4eb14b327ae98a0b2201e5c7ac3cd79938e7b4a2e9808f9d54ed9cfff9c864ed",
+      "evidenceSha256": "f3a1fcdc9b28f8b1397ddf8bf265b541c8e32d0ba5bb253f31cae84a9442b3ca"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-28.json",
+      "entry": "mathart/animation/Easings$28.class",
+      "classSha256": "603bc32f55d9aaa0701ee8ea27ef6d72b50729aa258d078f96dc05008f0b2d76",
+      "evidenceSha256": "b7d403500deb8d372b7416f5028ea978e7f900395e084df843dfe96d49025843"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-29.json",
+      "entry": "mathart/animation/Easings$29.class",
+      "classSha256": "2956ba713a2070f43d4d258dde74d399de2247338d36d69134a6c3419241d383",
+      "evidenceSha256": "79fca2d5b9b659337efc70ac53b4cec8251fc14e7400498fa3946b38cc5de1e8"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-30.json",
+      "entry": "mathart/animation/Easings$30.class",
+      "classSha256": "e9c204210a0c7cb631a6050b9fd81e60aa75a526edded2af5d5789e24fd6c844",
+      "evidenceSha256": "328f7cf119d43efe64170e5229fb743642c383a7e3232ff61338e020d4f6b72a"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-31.json",
+      "entry": "mathart/animation/Easings$31.class",
+      "classSha256": "6467586d5b0eae1d76703b19120e9b386ff6aeb392b2fbab252165bf1a670329",
+      "evidenceSha256": "26df557434518dd0735b34b0958ec54b99d8cd4d31bfb3eeebc4d13f122e128c"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-32.json",
+      "entry": "mathart/animation/Easings$32.class",
+      "classSha256": "13de3e490aa113a1971891c6f18033e2cc2942b2b2761231c2bcf0f70a45bfba",
+      "evidenceSha256": "0efb57f6f293d10d36185956ab97a60e36d0de0e4403421a5d679d4510c5224e"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-33.json",
+      "entry": "mathart/animation/Easings$33.class",
+      "classSha256": "2b983d27224fe39ec58abd0aaf462ae53f7c164505e338bf59284327f6d518e1",
+      "evidenceSha256": "b1bf3907627ab8b84e55660d877f4e15e786971ef920c464587049dec56ef8fe"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-34.json",
+      "entry": "mathart/animation/Easings$34.class",
+      "classSha256": "f686f162ae36319028246fe203d536ba4b10fd9bb3f77280b3b104bdaf770a02",
+      "evidenceSha256": "6c47f3f396bc8188dae57f17fb81f8ee93bd197065b161c88c721f7f495bc1b1"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-35.json",
+      "entry": "mathart/animation/Easings$35.class",
+      "classSha256": "2cf25447a66eb527f8e37c37bd078b2ea017c8eee9ecfe98aa356a8b25e098d9",
+      "evidenceSha256": "6e2d9b5e4c144d267f8ee60e60314c4c3c02874ae08507c7f334f583ec66eb4f"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-36.json",
+      "entry": "mathart/animation/Easings$36.class",
+      "classSha256": "1df7e09ad26d179947d5f22e7dd3977cb6579d2a498911b04bd7f8d3aa189393",
+      "evidenceSha256": "5dd78eec3642cc75043eb8ad116a0e56c1d9248d60965b7ffcc62f1f8fb2ef81"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-37.json",
+      "entry": "mathart/animation/Easings$37.class",
+      "classSha256": "adcb3bb3db335e5b0a2bb659a2ba6c57c384c3df579119562539d7032392bfd5",
+      "evidenceSha256": "49fca48ea3e0a66d67da63e6b1157d50b0c2aca0bf84a996b7293c9ab795a2e5"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-38.json",
+      "entry": "mathart/animation/Easings$38.class",
+      "classSha256": "f6adaf0e37608d620882c6814674d805936de0d1735376c887d4e5a4c44d57ae",
+      "evidenceSha256": "12ac9be4747c973df3b56598f6545499e7ea5377fb12af53243454642b70ba1c"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-39.json",
+      "entry": "mathart/animation/Easings$39.class",
+      "classSha256": "e36cada23103ea1b7ebb32ab93484030ab6355bb77a7434b4c137c2975f82759",
+      "evidenceSha256": "c2ebcd52cba0238f553057f60b4c65041feec1c03eabead2af9dbb3a168acd92"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-40.json",
+      "entry": "mathart/animation/Easings$40.class",
+      "classSha256": "b7ac6bba2f77680cd289b4e09fce37396050056ef819224b41391a80d4d316a0",
+      "evidenceSha256": "fdbc4042dcb12efd499762fca86b86836e0eb4e59c7c5c83f24b78c40323024e"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-41.json",
+      "entry": "mathart/animation/Easings$41.class",
+      "classSha256": "7573485d472a86750ad5627c75f4411408784e289ccd2c2daf24f99332ddf111",
+      "evidenceSha256": "51cf68987d6ff51f2184f0296d76a66e24f96bb49e364ddae277c66ee5968df1"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-42.json",
+      "entry": "mathart/animation/Easings$42.class",
+      "classSha256": "5116e0bd1969bed70a24a0bef5f32c52fffada5564cebabbc29350699630540c",
+      "evidenceSha256": "3c5065ca3f58d118539095e470f1930240335a4bd0168bab6d55c45fd64121e8"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-43.json",
+      "entry": "mathart/animation/Easings$43.class",
+      "classSha256": "2d3dd8cf0f4b8a6f9b54a50fcd824282cababde6baa4ba707d0c58a65f4328fe",
+      "evidenceSha256": "708400860497d6258e859e75685169c80595a4a96f6c679bdebc2066589b6591"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-44.json",
+      "entry": "mathart/animation/Easings$44.class",
+      "classSha256": "c6a5e71f89058f3e48a13cd49f61e3aac8f5312b451189673358b0f678ae704f",
+      "evidenceSha256": "748544bb082c73b7a7c45b793f939bdd5be564535d5f315ec64fe96745aad44f"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-45.json",
+      "entry": "mathart/animation/Easings$45.class",
+      "classSha256": "46b0e3dd4547248ae707a33f39f08c6c3ca11bb2de58728bccd8a0d3858038ea",
+      "evidenceSha256": "f1cefeb6af520c75a6dbdd3b9239f64674e1549d6f688ca78ca22b48865f82cb"
+    },
+    {
+      "path": ".cache/spirograph-easings-complete/Easings-46.json",
+      "entry": "mathart/animation/Easings$46.class",
+      "classSha256": "04886b2a282114cfe6776289a2e138474385bc96f2b896fab69537add37c0147",
+      "evidenceSha256": "8492dbd47a627288aac550fae1e8922d75899b087582c4d3be07a43ed61d0881"
+    },
+    {
+      "path": ".cache/v2-camera-source/Animation.json",
+      "entry": "mathart/animation/Animation.class",
+      "classSha256": "63b961d5b29c2b70c7b6ddb7e10af117d586a8c408592f4ab1a5cbb238f68212",
+      "evidenceSha256": "1a2b27475779823dd04b670af0a9f6e02c49f44f429980d1c6b00d82e20d0c99"
+    },
+    {
+      "path": ".cache/v2-camera-source/AnimationGroup.json",
+      "entry": "mathart/animation/AnimationGroup.class",
+      "classSha256": "2b31113da7c66415bf723cbbea37e9fe601144a8de9be91a2a236d04971324d8",
+      "evidenceSha256": "f672a6b0dffe012e5c5c0a03fbeccdfbaef4ead7b5f01ebb65ab9ac02bb5be69"
+    },
+    {
+      "path": ".cache/v2-camera-source/SceneManager.json",
+      "entry": "mathart/scene/SceneManager.class",
+      "classSha256": "973ee64fef4c06b615eab028ae0668db1917ac1b7db47a62b0a73fc278b760e7",
+      "evidenceSha256": "263676ac8117514233aaad98b3967a93087d4295619c06efa1d5988117ed07c1"
+    },
+    {
+      "path": ".cache/v2-camera-source/Scene.json",
+      "entry": "mathart/scene/Scene.class",
+      "classSha256": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "evidenceSha256": "75efa39c9c4f059aedeb16e66a661356d0962bbcf3ddd1c0869fd70411af01a5"
+    },
+    {
+      "path": ".cache/v2-camera-source/CameraAnimator.json",
+      "entry": "mathart/animation/camera/CameraAnimator.class",
+      "classSha256": "39939dd4fc74166db9769d231e5196d3ac6fbd885644a541d64113de1923931b",
+      "evidenceSha256": "4d45ab2b112a49c5647e177637213396ca665104539bd906d92ad65fd06fa9b6"
+    },
+    {
+      "path": ".cache/v2-camera-source/CameraController.json",
+      "entry": "mathart/scene/CameraController.class",
+      "classSha256": "80a478f361fdcbca2d8aeda2cc96f55e500a3527fa889ffd69765d815d0be9dd",
+      "evidenceSha256": "d083496bd9ae66ba53206a5719cf1fc194f2cfa33c20fc47a78916fa4cb45ce7"
+    },
+    {
+      "path": ".cache/v2-camera-source/MoveCamera.json",
+      "entry": "mathart/animation/camera/MoveCamera.class",
+      "classSha256": "f808684047ea37dfac632a4f5ae95c929aade5a84db3accf4f99682feccf127a",
+      "evidenceSha256": "cd898b30516a32d42032dc5ccbe0903a3e2f3fd5aeb890cb7c4481ae483edd4a"
+    },
+    {
+      "path": ".cache/v2-camera-source/ZoomCamera.json",
+      "entry": "mathart/animation/camera/ZoomCamera.class",
+      "classSha256": "ca145977bdf1cd5037c2d4b7958daaa6f6efeed6929fba506921df9dfccafdb6",
+      "evidenceSha256": "8ecd378eff63bd2f6086893f0585798d4be358d30ac1d5146896aed552391b0a"
+    },
+    {
+      "path": ".cache/v2-camera-source/SmoothFocalDistance.json",
+      "entry": "mathart/animation/camera/SmoothFocalDistance.class",
+      "classSha256": "43cede49da970c7d8de39061ce5c62cddab944dd33c2ae43a6755cdc9748ef94",
+      "evidenceSha256": "a30ad5c4b4b39835994832d434664d1cefa8b029807be539afff2b00df251e3f"
+    },
+    {
+      "path": ".cache/v2-camera-source/SetAmbientRotation.json",
+      "entry": "mathart/animation/camera/SetAmbientRotation.class",
+      "classSha256": "4ccacc6a8f94a735f2aac67882093e2ba153796a4458a24a68dfa9d623e46b28",
+      "evidenceSha256": "2f9c4426b0c56e3196eadba4baba586c25f344f5129fc7cd0f04c78b9ced39be"
+    },
+    {
+      "path": ".cache/v2-camera-source/CameraTrackTransition.json",
+      "entry": "mathart/animation/camera/CameraTrackTransition.class",
+      "classSha256": "d3cc1e1dedf81f69162e0b1763f1882db8fc5df3b3fb1baf39c09db67b885afd",
+      "evidenceSha256": "552d2aa5b4860c3c9c55ce736aec0012f8744ddc73e403d826854e99c595bfd7"
+    },
+    {
+      "path": ".cache/v2-camera-source/AlignCamera.json",
+      "entry": "mathart/animation/AlignCamera.class",
+      "classSha256": "6bf6710169c72b33bac6fe74ce2f97f819bd8ced20b5caca74dc5acd38168fc3",
+      "evidenceSha256": "1b249ac4edfe76c142f6a1d400564687f0aae8874f05c795ad4e3d10b5e787f8"
+    },
+    {
+      "path": ".cache/v2-camera-source/StartGradientAnimation.json",
+      "entry": "mathart/animation/gradient/StartGradientAnimation.class",
+      "classSha256": "5b97472084686f6f8d8fb534d15b501647b84cd065d4adf1fe60d7f2993f604c",
+      "evidenceSha256": "2e93e41f0b58fdb520e74dd36e0b9c85ae366d7e60d243481a4226e7a3c75e0f"
+    },
+    {
+      "path": ".cache/v2-camera-source/StopGradientAnimation.json",
+      "entry": "mathart/animation/gradient/StopGradientAnimation.class",
+      "classSha256": "3bfc37ed28b22475e438de93a89e8947f7142d1202bf46d9e2795d4f42601cb8",
+      "evidenceSha256": "d1f62916c079c78adabd7052403978ed594d16a88065bea16ad13dd8e9bba644"
+    },
+    {
+      "path": ".cache/v2-camera-source/GradientAnimator.json",
+      "entry": "mathart/animation/gradient/GradientAnimator.class",
+      "classSha256": "fdff4ef0cfaa79d38aa51e577b4075d2257db143d709b6b0b156584be63c7095",
+      "evidenceSha256": "48b7eb36774de403edc61bd04eacc95786071dbe8ed98ab0ba3d1a51e1d45a54"
+    },
+    {
+      "path": ".cache/v2-camera-source/GradientRuntimeState.json",
+      "entry": "mathart/animation/gradient/GradientRuntimeState.class",
+      "classSha256": "cf5739c2cd51f12404776a7aa475a3f07b7157b4b9d617fae1f72649c7b8f9d5",
+      "evidenceSha256": "02591a5dcec127ade20c1359bdcb15c080e06011e3f6f13975db7cea5ffe7e1b"
+    },
+    {
+      "path": ".cache/v2-camera-source/JsonAttractorConfig.json",
+      "entry": "mathart/attractor/config/JsonAttractorConfig.class",
+      "classSha256": "ec8b62dd7c0b7d2532035017254dc7edb5e3fd65f2ea566545aa1c013bfb27ed",
+      "evidenceSha256": "26797318fc0e62e3ee3bd6c22649f5429c818b2a88a5c1add163a37f4cc254d3"
+    },
+    {
+      "path": ".cache/v2-camera-source/StrangeAttractor.json",
+      "entry": "mathart/attractor/StrangeAttractor.class",
+      "classSha256": "5c0d4359c63dc72190cc25cde783908b4294c52158092fb3813901416da6dcfc",
+      "evidenceSha256": "b147c93f3f8b9a03b40a8bc8463ff9713d5c41535895fe75684fec6b79e5d9c2"
+    },
+    {
+      "path": ".cache/v2-camera-source/SurfaceParameterAnimator.json",
+      "entry": "mathart/surface/SurfaceParameterAnimator.class",
+      "classSha256": "d83136d45146b9fad86fe0a9fa79390d02d6e8f6020e09b2207d25e41d8705df",
+      "evidenceSha256": "6ac70425ad1ef3a97551de22f4c008495466ad62c0042a4446ca030a9c3d1af6"
+    },
+    {
+      "path": ".cache/v2-camera-source/StartSurfaceParamAnimation.json",
+      "entry": "mathart/animation/StartSurfaceParamAnimation.class",
+      "classSha256": "4a155cbcee0d6a9afabf4d45e90c881e59eed889446b967877a26b64aa95cab1",
+      "evidenceSha256": "2a5fd528dee228863dd9c0889f6d53123b521bed49b1051b8eff06fab29f790f"
+    },
+    {
+      "path": ".cache/v2-camera-source/StopSurfaceParamAnimation.json",
+      "entry": "mathart/animation/StopSurfaceParamAnimation.class",
+      "classSha256": "1bff503a1d335e8b3e7be3f0d85d00025c4504ce0e3f1d5731da1cdb19708da6",
+      "evidenceSha256": "c75944c2f2927d0d3e16a947024147d0c037fecd77acad5425349f8e780b6737"
+    },
+    {
+      "path": ".cache/v2-camera-source/AnimateSurfaceParam.json",
+      "entry": "mathart/animation/AnimateSurfaceParam.class",
+      "classSha256": "30697e2fcfba4e6164cf4e8e312fb454631b25a34057208ef4a99766a93f6c0e",
+      "evidenceSha256": "574db80da7cd8061bcc68b12ffd281855e1751189943b05beab8cbdd31c8a0aa"
+    },
+    {
+      "path": ".cache/spirograph-clock-Wait-bytecode.json",
+      "entry": "mathart/animation/Wait.class",
+      "classSha256": "1732a0ef18674f93ad7b744f9c71a5ccb19017c8f6f7d15f9f2fbe679d70965a",
+      "evidenceSha256": "1ba885c2139452fe55dd932a3f09144d345fc08b6a5e9fc6bdad1411bb700881"
+    }
+  ],
+  "initialCamera": {
+    "phi": 1.0,
+    "theta": 2.0,
+    "gamma": 3.0,
+    "zoom": 1.0,
+    "focal": 20.0,
+    "center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rates": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "easings": [
+    {
+      "name": "LINEAR",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "SINE_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "SINE_OUT",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "SINE_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": "-0",
+      "one": 1.0
+    },
+    {
+      "name": "QUAD_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUAD_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUAD_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "CUBIC_IN",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "CUBIC_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "CUBIC_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUART_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUART_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUART_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUINT_IN",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUINT_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "QUINT_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "EXPO_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "EXPO_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "EXPO_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "CIRC_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "CIRC_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "CIRC_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "BACK_IN",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "BACK_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "BACK_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": "-0",
+      "one": 1.0
+    },
+    {
+      "name": "ELASTIC_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "ELASTIC_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "ELASTIC_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "BOUNCE_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "BOUNCE_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "BOUNCE_IN_OUT",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "SMOOTH",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "SMOOTH_STEP",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "SMOOTHER_STEP",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "SMOOTHERER_STEP",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "RUSH_IN",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "RUSH_FROM",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "DOUBLE_SMOOTH",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "THERE_AND_BACK",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 0.0
+    },
+    {
+      "name": "THERE_AND_BACK_WITH_PAUSE",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 0.0
+    },
+    {
+      "name": "RUNNING_START",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "WIGGLE",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 0.0
+    },
+    {
+      "name": "LINGERING",
+      "nan": "NaN",
+      "negativeZero": "-0",
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "EXPONENTIAL_DECAY",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 0.9999545812606812
+    },
+    {
+      "name": "SLOW_INTO",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 1.0
+    },
+    {
+      "name": "NOT_QUITE_THERE",
+      "nan": "NaN",
+      "negativeZero": 0.0,
+      "zero": 0.0,
+      "one": 0.699999988079071
+    }
+  ],
+  "surfaceParameterScales": [
+    {
+      "duration": 0.0,
+      "activeDt": 0.0,
+      "eased": "NaN",
+      "start": {
+        "onStart": 0.0,
+        "onUpdate": "NaN",
+        "onFinish": 1.0
+      },
+      "stopWhileRunning": {
+        "captured": 1.0,
+        "onUpdate": "NaN",
+        "onFinish": 0.0
+      },
+      "stopWhileNotRunning": {
+        "finishedOnStart": true,
+        "updateCalled": false,
+        "finishCalled": false
+      }
+    },
+    {
+      "duration": 0.0,
+      "activeDt": 0.25,
+      "eased": 1.0,
+      "start": {
+        "onStart": 0.0,
+        "onUpdate": 1.0,
+        "onFinish": 1.0
+      },
+      "stopWhileRunning": {
+        "captured": 1.0,
+        "onUpdate": 0.0,
+        "onFinish": 0.0
+      },
+      "stopWhileNotRunning": {
+        "finishedOnStart": true,
+        "updateCalled": false,
+        "finishCalled": false
+      }
+    },
+    {
+      "duration": -1.0,
+      "activeDt": 0.0,
+      "eased": "-0",
+      "start": {
+        "onStart": 0.0,
+        "onUpdate": 0.0,
+        "onFinish": 1.0
+      },
+      "stopWhileRunning": {
+        "captured": 1.0,
+        "onUpdate": 1.0,
+        "onFinish": 0.0
+      },
+      "stopWhileNotRunning": {
+        "finishedOnStart": true,
+        "updateCalled": false,
+        "finishCalled": false
+      }
+    },
+    {
+      "duration": -1.0,
+      "activeDt": 0.25,
+      "eased": 0.0,
+      "start": {
+        "onStart": 0.0,
+        "onUpdate": 0.0,
+        "onFinish": 1.0
+      },
+      "stopWhileRunning": {
+        "captured": 1.0,
+        "onUpdate": 1.0,
+        "onFinish": 0.0
+      },
+      "stopWhileNotRunning": {
+        "finishedOnStart": true,
+        "updateCalled": false,
+        "finishCalled": false
+      }
+    },
+    {
+      "duration": "-0",
+      "activeDt": 0.0,
+      "eased": "NaN",
+      "start": {
+        "onStart": 0.0,
+        "onUpdate": "NaN",
+        "onFinish": 1.0
+      },
+      "stopWhileRunning": {
+        "captured": 1.0,
+        "onUpdate": "NaN",
+        "onFinish": 0.0
+      },
+      "stopWhileNotRunning": {
+        "finishedOnStart": true,
+        "updateCalled": false,
+        "finishCalled": false
+      }
+    },
+    {
+      "duration": "-0",
+      "activeDt": 0.25,
+      "eased": 0.0,
+      "start": {
+        "onStart": 0.0,
+        "onUpdate": 0.0,
+        "onFinish": 1.0
+      },
+      "stopWhileRunning": {
+        "captured": 1.0,
+        "onUpdate": 1.0,
+        "onFinish": 0.0
+      },
+      "stopWhileNotRunning": {
+        "finishedOnStart": true,
+        "updateCalled": false,
+        "finishCalled": false
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "zero-wait-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": []
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-phi-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "phi"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "phi",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-alignPhi-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "alignPhi"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "alignPhi",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-zoom-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-focal-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "focal"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": "NaN",
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "focal",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": "NaN",
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-rates-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "rates"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "rates",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": [
+                "NaN",
+                "NaN",
+                "NaN"
+              ],
+              "afterFinish": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.25,
+            "theta": 2.5,
+            "gamma": 3.75,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-track-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "track"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              "NaN",
+              "NaN",
+              "NaN"
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "track",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": false
+              },
+              "afterFinish": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": true
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              4.0,
+              5.0,
+              6.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-gradientStart-initial-zero-dt",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "gradientStart"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-zoom-positive-raw-all-remaining-zero",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zero-zoom-positive-following-wait",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "zoom"
+          ]
+        },
+        {
+          "duration": 1.0
+        }
+      ],
+      "rawDts": [
+        0.25,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.25,
+          "remaining": 1.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 2.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": 1.0,
+              "eased": 1.0,
+              "afterOnUpdate": 2.0,
+              "afterFinish": 2.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.25,
+          "remaining": 1.0,
+          "sceneTime": 0.5,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 2.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": 0.25,
+              "eased": 0.25,
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "negative-wait-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": []
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-phi-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "phi"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "phi",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-alignPhi-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "alignPhi"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "alignPhi",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zoom-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-focal-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "focal"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "focal",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": 20.0,
+              "afterFinish": 20.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-rates-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "rates"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "rates",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "afterFinish": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.25,
+            "theta": 2.5,
+            "gamma": 3.75,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-track-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "track"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "track",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": {
+                "center": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "tracking": false
+              },
+              "afterFinish": {
+                "center": [
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "tracking": true
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              4.0,
+              5.0,
+              6.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-gradientStart-initial-zero-dt",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "gradientStart"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "-0",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zoom-positive-raw-all-remaining-zero",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "negative-zoom-positive-following-wait",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "zoom"
+          ]
+        },
+        {
+          "duration": 1.0
+        }
+      ],
+      "rawDts": [
+        0.25,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.25,
+          "remaining": 1.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": 0.0,
+              "eased": 0.0,
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.25,
+          "remaining": 1.0,
+          "sceneTime": 0.5,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": 0.25,
+              "eased": 0.25,
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-wait-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": []
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-phi-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "phi"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "phi",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-alignPhi-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "alignPhi"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "alignPhi",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": "NaN",
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-zoom-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-focal-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "focal"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": "NaN",
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "focal",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": "NaN",
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-rates-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "rates"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "rates",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": [
+                "NaN",
+                "NaN",
+                "NaN"
+              ],
+              "afterFinish": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.25,
+            "theta": 2.5,
+            "gamma": 3.75,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-track-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "track"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              "NaN",
+              "NaN",
+              "NaN"
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "track",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": false
+              },
+              "afterFinish": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": true
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              4.0,
+              5.0,
+              6.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-gradientStart-initial-zero-dt",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "gradientStart"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-zoom-positive-raw-all-remaining-zero",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "negative-zero-zoom-positive-following-wait",
+      "clips": [
+        {
+          "duration": "-0",
+          "actions": [
+            "zoom"
+          ]
+        },
+        {
+          "duration": 1.0
+        }
+      ],
+      "rawDts": [
+        0.25,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.25,
+          "remaining": 1.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": 0.0,
+              "eased": 0.0,
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.25,
+          "remaining": 1.0,
+          "sceneTime": 0.5,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": 0.25,
+              "eased": 0.25,
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zero-waits-one-per-frame",
+      "clips": [
+        {
+          "duration": 0.0
+        },
+        {
+          "duration": 0.0
+        }
+      ],
+      "rawDts": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-track-post-mobject-reference",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "track"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25,
+        0.25
+      ],
+      "targetDeltaPerActiveFrame": 1.0,
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              5.0,
+              6.0,
+              7.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            5.0,
+            6.0,
+            7.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "track",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": false
+              },
+              "afterFinish": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": true
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              5.0,
+              6.0,
+              7.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            5.0,
+            6.0,
+            7.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-track-mixed-zoom-final-invalid",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "track",
+            "zoom",
+            "rates"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.25,
+            "theta": 2.5,
+            "gamma": 3.75,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              4.0,
+              5.0,
+              6.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": true,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "track",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": false
+              },
+              "afterFinish": {
+                "center": [
+                  "NaN",
+                  "NaN",
+                  "NaN"
+                ],
+                "tracking": true
+              }
+            },
+            {
+              "action": "zoom",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            },
+            {
+              "action": "rates",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": [
+                "NaN",
+                "NaN",
+                "NaN"
+              ],
+              "afterFinish": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zero-gradient-start-stop",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "gradientStart",
+            "gradientStop"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            },
+            {
+              "action": "gradientStop",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": false,
+                "speedScale": 0.0,
+                "targetSpeed": 0.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-gradient-stop-start",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "gradientStop",
+            "gradientStart"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-gradient-stop-running",
+      "clips": [
+        {
+          "duration": 1.0,
+          "actions": [
+            "gradientStart"
+          ]
+        },
+        {
+          "duration": 0.0,
+          "actions": [
+            "gradientStop"
+          ]
+        }
+      ],
+      "rawDts": [
+        1.0,
+        0.0,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 1.0,
+          "activeDt": 1.0,
+          "remaining": 1.0,
+          "sceneTime": 1.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.5
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": 1.0,
+              "eased": 1.0,
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": 1.0,
+              "eased": 1.0,
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 1.0,
+          "cameraFinite": true,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.5
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStop",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.5
+              },
+              "afterFinish": {
+                "running": false,
+                "speedScale": 0.0,
+                "targetSpeed": 0.0,
+                "progress": 0.5
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 1.25,
+          "cameraFinite": true,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.5
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-gradient-active-only-attractor",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "gradientStart"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25,
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.0
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-gradient-active-and-raw-root-policy",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "gradientStart"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25,
+        0.25
+      ],
+      "rawGradientPhase": true,
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.125
+          },
+          "events": [
+            {
+              "action": "wait",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": null,
+              "afterFinish": null
+            },
+            {
+              "action": "gradientStart",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": {
+                "running": true,
+                "speedScale": "NaN",
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              },
+              "afterFinish": {
+                "running": true,
+                "speedScale": 1.0,
+                "targetSpeed": 180.0,
+                "progress": 0.0
+              }
+            }
+          ]
+        },
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.25,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": true,
+            "speedScale": 1.0,
+            "targetSpeed": 180.0,
+            "progress": 0.25
+          },
+          "events": []
+        }
+      ]
+    },
+    {
+      "id": "zero-zoom-then-positive-zoom-cannot-repair-nan-start",
+      "clips": [
+        {
+          "duration": 0.0,
+          "actions": [
+            "zoom"
+          ]
+        },
+        {
+          "duration": 1.0,
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        1.0
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 1.0,
+          "sceneTime": 0.0,
+          "cameraFinite": false,
+          "queueIndex": 1,
+          "queueComplete": false,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "NaN",
+              "eased": "NaN",
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        },
+        {
+          "rawDt": 1.0,
+          "activeDt": 1.0,
+          "remaining": 1.0,
+          "sceneTime": 1.0,
+          "cameraFinite": false,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": "NaN",
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": 1.0,
+              "eased": 1.0,
+              "afterOnUpdate": "NaN",
+              "afterFinish": "NaN"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "negative-multi-child-clamped-group-duration",
+      "clips": [
+        {
+          "duration": -1.0,
+          "actions": [
+            "zoom",
+            "rates"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.25
+      ],
+      "expected": [
+        {
+          "rawDt": 0.25,
+          "activeDt": 0.0,
+          "remaining": 0.0,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.25,
+            "theta": 2.5,
+            "gamma": 3.75,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              1.0,
+              2.0,
+              3.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            },
+            {
+              "action": "rates",
+              "alpha": "-0",
+              "eased": "-0",
+              "afterOnUpdate": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "afterFinish": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "roots-positive-duration-preserved",
+      "clips": [
+        {
+          "duration": 0.0010000000474974513,
+          "actions": [
+            "zoom"
+          ]
+        }
+      ],
+      "rawDts": [
+        0.0,
+        0.01666666753590107
+      ],
+      "expected": [
+        {
+          "rawDt": 0.0,
+          "activeDt": 0.0,
+          "remaining": 0.0010000000474974513,
+          "sceneTime": 0.0,
+          "cameraFinite": true,
+          "queueIndex": 0,
+          "queueComplete": false,
+          "activeObjectUpdates": 1,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 1.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": 0.0,
+              "eased": 0.0,
+              "afterOnUpdate": 1.0,
+              "afterFinish": 1.0
+            }
+          ]
+        },
+        {
+          "rawDt": 0.01666666753590107,
+          "activeDt": 0.0010000000474974513,
+          "remaining": 0.0010000000474974513,
+          "sceneTime": 0.0010000000474974513,
+          "cameraFinite": true,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "activeObjectUpdates": 2,
+          "camera": {
+            "phi": 1.0,
+            "theta": 2.0,
+            "gamma": 3.0,
+            "zoom": 2.0,
+            "focal": 20.0,
+            "center": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rates": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "tracking": false,
+          "target": [
+            4.0,
+            5.0,
+            6.0
+          ],
+          "gradient": {
+            "running": false,
+            "speedScale": 0.0,
+            "targetSpeed": 0.0,
+            "progress": 0.0
+          },
+          "events": [
+            {
+              "action": "zoom",
+              "alpha": 1.0,
+              "eased": 1.0,
+              "afterOnUpdate": 2.0,
+              "afterFinish": 2.0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "No target JVM/app/framebuffer execution; native parity is not established.",
+    "Camera and HUE_ROTATE gradient scalar lifecycle only, not a particle-motion or palette pixel oracle.",
+    "Active object counts establish dispatch only; CPU Attractor fixed substeps are tested by its motion owner.",
+    "targetDeltaPerActiveFrame is an explicit synthetic mutable-target fixture, not a native particle equation.",
+    "Root rawGradientPhase is an explicit family caller policy; ordinary CPU Attractor advances only during active object update.",
+    "Host libm last bits are not guaranteed identical to Java Math."
+  ]
+}

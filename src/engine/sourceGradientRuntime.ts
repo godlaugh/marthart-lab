@@ -46,7 +46,7 @@ export class SourceGradientRuntime {
  snapshot():SourceGradientSnapshot{return Object.freeze({running:this.active,progress:this.progress,speedScale:this.speedScale,targetSpeed:this.targetSpeed,base:this.base,config:this.configuration});}
  private applyFrame(){if(this.active)this.apply(sourceGradientFrame(this.base,this.configuration!,this.progress),this.configuration!);}
  private scale(value:number){
-  if(!Number.isFinite(value))throw new Error('源渐变速度倍率产生非有限值');
+  // Native setters retain NaN until the same-frame finish callback restores it.
   this.speedScale=value<0?0:value;this.applyFrame();
  }
  begin(actions:readonly SourceGradientAction[]):void {

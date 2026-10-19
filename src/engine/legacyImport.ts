@@ -1043,7 +1043,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
    r.warnings.push(`${pathLabel(path)} ${originalType} 按原版未识别类型分支保留为等待；原字段保留在 source。`);
   }
   const duration=field([...path,'duration'],1);
-  if(duration<=0||duration>86400)fail(`${pathLabel(path)}.duration 原版值 ${duration} 超出本地源相机队列支持的 (0,86400]；不会替换或丢时长`);
+  if(duration>86400)fail(`${pathLabel(path)}.duration 超过本地源相机队列 86400 秒（24 小时）容量`);
   let easing='sine-in-out';if(type==='animate'||type==='align'||type==='param'&&s.kind==='surface'){
    const raw=r.use([...path,'easing']),mapped=lookupSourceEasing(raw);easing=mapped??'sine-in-out';
    if(raw!=null&&!mapped)r.warnings.push(`${pathLabel(path)}.easing 未匹配源注册名，采用 SINE_IN_OUT；原值保留。`);
@@ -1102,7 +1102,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
     track.actions.push(action);
    }
   }
-  s.timeline.tracks.push(track);total+=duration;if(total>86400)fail('源相机队列超过 24 小时');
+  s.timeline.tracks.push(track);total+=Math.max(0,duration);if(total>86400)fail('源相机队列超过 24 小时');
  }
  if(total>0)s.timeline.duration=total;
  validateTimelineCapacity(s.timeline.tracks);

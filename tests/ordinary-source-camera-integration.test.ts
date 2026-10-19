@@ -65,7 +65,9 @@ describe('source project file through production ordinary camera timeline',()=>{
  it('defaults missing duration to one but retains source-specific malformed handling',()=>{
   expect(parse('SURFACE',{timeline:[{type:'wait'}]}).scene.timeline.tracks[0].duration).toBe(1);
   expect(parse('ATTRACTOR',{timeline:[{type:'wait',duration:'unknown'}]}).scene.timeline.tracks[0].duration).toBe(1);
-  for(const duration of [0,-1,'unknown',null])expect(()=>parse('SURFACE',{timeline:[{type:'wait',duration}]})).toThrow();
+  for(const [duration,expected]of [[0,0],[-1,-1],['unknown',0]])expect(parse('SURFACE',{timeline:[{type:'wait',duration}]}).scene.timeline.tracks[0].duration).toBe(expected);
+  expect(()=>parse('SURFACE',{timeline:[{type:'wait',duration:null}]})).toThrow('field-string-required');
+  for(const duration of ['NaN','Infinity'])expect(()=>parse('SURFACE',{timeline:[{type:'wait',duration}]})).toThrow('nonfinite');
  });
  it('does not treat trails as projection, nor claim camera support for Perlin accumulation raster',()=>{
   for(const show_trails of [true,false])expect(parse('PERLIN',{settings:{show_trails,use_accumulation_buffer:false}}).scene.settings.sourceCameraProjection).toBe('perspective');

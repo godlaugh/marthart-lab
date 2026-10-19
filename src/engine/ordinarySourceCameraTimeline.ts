@@ -81,7 +81,9 @@ const F=Math.fround,axes=['phi','theta','gamma'] as const,TAU=F(2*Math.PI),names
 const WORK_LIMIT=2_000_000; // Bounded synchronous frames plus remaining-queue folds, as the existing source clock.
 const float=(v:unknown,label:string):number=>{if(typeof v!=='number'||!Number.isFinite(v)||!Number.isFinite(F(v)))throw new OrdinarySourceCameraTimelineError('input',`${label} 必须为有限 Float32 数值`);return F(v);};
 const finite=(v:number):number=>{if(!Number.isFinite(v))throw new OrdinarySourceCameraTimelineError('arithmetic','源相机运算产生非有限值');return v;};
-const lerp=(a:number,b:number,t:number)=>finite(F(a+F(F(b-a)*t)));
+// A zero-duration child can write transient NaN before onFinish restores its
+// target (tracking/rates). Validate the final frame after those callbacks.
+const lerp=(a:number,b:number,t:number)=>F(a+F(F(b-a)*t));
 const check=(options:OrdinarySourceCameraTimelineOptions)=>{if(options.isCancelled?.())throw new OrdinarySourceCameraTimelineError('cancelled','源相机回放已取消');};
 const noncameraMethods=new Set(['paramStart','paramStop','gradientStart','gradientStop']);
 function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor',initialSurfaceMode?:SourceSurfaceMode):Plan {
@@ -99,10 +101,9 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
  for(const track of tracks){
   if(!track.enabled)continue;
   const instant=track.type==='trails',duration=float(track.duration,'源片段时长');
-  // Generic Animation does not share Roots JSON's .001 clamp. Zero may yield
-  // 0/0, and instant trail children need their exact compiled group duration.
+  // Generic Animation keeps zero duration. Its queue consumes one update,
+  // using the full remaining-queue dt; 0/0 is retained through child finish.
   if(instant&&(duration!==0||typeof track.trailsEnabled!=='boolean'))throw new OrdinarySourceCameraTimelineError('input','源拖尾片段必须为零时长并指定录制开关',track.id);
-  if(duration<0||duration===0&&!instant)throw new OrdinarySourceCameraTimelineError('unsupported','普通源相机队列的零时长片段需要原始编译时长，不能替换为 .001 秒',track.id);
   if(duration>86400)throw new OrdinarySourceCameraTimelineError('capacity','源片段时长超过 24 小时',track.id);
   if(!names.has(track.easing))throw new OrdinarySourceCameraTimelineError('input',`未知源缓动 ${track.easing}`,track.id);
   if(track.start!==0)warn(track,'sequence-start','源队列按保存顺序执行；绝对 start 不参与执行，延迟必须由等待片段表达。');
@@ -272,9 +273,9 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
     if(tracking){const to=point(tracking);camera.center=to.map((v,i)=>lerp(replay.start.center[i],v,eased)) as [number,number,number];if(facts.finishedClip!==null)replay.tracking=tracking;}
    }
    if(particleEased!==undefined&&options.particleActions){
-    replay.particles?.interpolateGradientActions?.(particleEased,facts.finishedClip!==null);
+    if(clip.gradientActions?.length)replay.particles?.interpolateGradientActions?.(particleEased,facts.finishedClip!==null);
     if(clip.surfaceParameterClip){if(facts.finishedClip!==null)replay.particles!.finishParameterClip!();}
-    else replay.particles?.interpolateParameterActions?.(particleEased,facts.finishedClip!==null);
+    else if(clip.surfaceParameterActions?.length)replay.particles?.interpolateParameterActions?.(particleEased,facts.finishedClip!==null);
    }
    camera.zoom=facts.camera.zoom;
    // Scene.update PC132/183/225: animation, then Mobject, then camera. The
@@ -283,6 +284,7 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
    // CameraController copies tracking center before ambient component updates.
    if(replay.tracking)camera.center=point(replay.tracking);
    for(const [i,axis]of axes.entries())camera[axis]=finite(F(camera[axis]+F(replay.rates[i]*plan.dt)));
+   finite(camera.focalDistance);finite(camera.zoom);camera.center.forEach(finite);
    check(options);replay.particles?.displayFrame?.(frameIndex,frameIndex===target);
    replay.frameIndex=frameIndex;
   }
@@ -292,7 +294,8 @@ export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars
  }catch(error){if(key!==undefined)replays.delete(key);throw error;}
 }
 /** Display layout facts only. Never feed rounded display durations back into
- * the source clock: the retained source float duration remains authoritative. */
+ * the source clock: sourceDuration is the authored child duration (a native
+ * multi-child group may compile a negative duration to zero). */
 export function resolveOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:Pick<OrdinarySourceCameraTimelineOptions,'isCancelled'|'particleActions'|'surfaceMode'>={}) {
  check(options);const key=inputKey(initial,tracks,fps,options.particleActions,options.surfaceMode),cached=key===undefined?undefined:layouts.get(key);
  if(cached){layouts.delete(key!);layouts.set(key!,cached);return structuredClone(cached);}

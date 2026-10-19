@@ -100,7 +100,7 @@ describe('source camera particle lifecycle boundary',()=>{
  });
  it('validates the full plan and work capacity before creating a producer',()=>{
   let creations=0;const createParticles=():OrdinarySourceCameraParticles=>{creations++;throw Error('unexpected creation');};
-  expect(()=>evaluate(initial,[clip([action('track',0)]),clip([],0)],4,0,{createParticles})).toThrow('零时长');
+  expect(()=>evaluate(initial,[clip([action('track',0)]),clip([],NaN)],4,0,{createParticles})).toThrow('有限');
   expect(()=>evaluate(initial,[],120,86400,{createParticles})).toThrow('预算');expect(creations).toBe(0);
  });
  it('does not hide missing identity or invalid coordinates as source no-ops',()=>{

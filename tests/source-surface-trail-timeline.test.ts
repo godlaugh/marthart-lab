@@ -75,12 +75,13 @@ describe('source Surface instant recording through public import, clock and geom
   const scene=parseScene(serializeScene(fixture().scene));const run=(time:number)=>{const out=generateScene(scene,{time,width:96,height:64,quality:'preview',sourceViewport:ordinarySourceViewport(scene,96,64,'primary',64)});if(out.type!=='geometry')throw Error('Expected geometry');return out;};
   const first=run(.75);run(2);const again=run(.75);expect(again.positions).toEqual(first.positions);expect(again.trails).toEqual(first.trails);expect(again.sourceCameraFrame).toEqual(first.sourceCameraFrame);
  });
- it('authors explicit instantaneous recording clips without changing the generic tween zero-duration contract',()=>{
+ it('distinguishes explicit instant recording from ordinary zero-duration interpolation',()=>{
   const {scene}=fixture();const authored=createAnimationTrack(scene,'trails');expect(authored.duration).toBe(0);expect(authored.trailsEnabled).toBe(true);
   const initial=ordinarySourceCameraInitial(scene)!;
   expect(()=>evaluateOrdinarySourceCameraTimeline(initial,[authored],4,0)).toThrow('粒子生产者');
   expect(()=>evaluateOrdinarySourceCameraTimeline(initial,[{...authored,trailsEnabled:undefined}],4,0)).toThrow('录制开关');
-  expect(()=>new RootsSceneClock(initial,[{duration:0,easing:'linear'}])).toThrow('大于 0');
+  expect(new RootsSceneClock(initial,[{duration:0,easing:'linear'}]).step(0)).toMatchObject({queueComplete:true,sceneTime:0});
+  expect(()=>new RootsSceneClock(initial,[{duration:0,easing:'linear',zoom:2}]).step(0)).toThrow('非有限');
   expect(()=>new RootsSceneClock(initial,[{duration:0,easing:'linear',instant:true,zoom:2}])).toThrow('没有插值');
  });
  it('poisons the same producer when a recording switch is cancelled',()=>{

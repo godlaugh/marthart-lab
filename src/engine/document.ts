@@ -260,13 +260,15 @@ export function parseSceneValue(data: unknown): SceneDocument {
   )
     fail("时间线无效");
   for (const track of t.tracks) {
+    const ordinaryDuration=record(track)&&data.sourceCamera!==undefined&&t.schedule==='ordinary-camera-sequence-v1'&&['wait','animate','align','param'].includes(String(track.type));
+    const zeroDuration=record(track)&&(ordinaryDuration||['animate','spirograph_finish_wait'].includes(String(track.type))||track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)||track.type==='trails'&&usesSourceSurfaceGeometry(data as unknown as SceneDocument));
     if (
       !record(track) ||
       typeof track.target !== "string" ||
       !["from", "to", "start", "duration"].every(
         (k) => typeof track[k] === "number" && Number.isFinite(track[k]),
       ) ||
-      (Number(track.duration) < 0 || Number(track.duration) === 0 && !['animate','spirograph_finish_wait'].includes(String(track.type)) && !(track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)) && !(track.type==='trails'&&usesSourceSurfaceGeometry(data as unknown as SceneDocument))) ||
+      (Number(track.duration)<0&&!ordinaryDuration || Number(track.duration)===0&&!zeroDuration) ||
       Number(track.start) < 0
     )
       fail("动画轨道无效");
@@ -296,13 +298,26 @@ export interface SavedWorkspace {
   startupError?: string;
 }
 export function persistentScene(scene:SceneDocument):SceneDocument {const {evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
+/** JSON numbers retain negative zero on parse, but stringify ordinarily loses it.
+ * Source animation division observes that sign. Keep the standard serializer
+ * and inject only the standard raw numeric token, never a shadow field. */
+function stringifyDocument(value:unknown,space?:number):string {
+  const rawJSON=(JSON as typeof JSON&{rawJSON?:(text:string)=>unknown}).rawJSON;
+  return JSON.stringify(value,(_key,item:unknown)=>{
+    if(typeof item==='number'&&Object.is(item,-0)){
+      if(!rawJSON)throw new Error('当前运行环境不支持保留负零的项目保存，请使用新版 MathArt Lab');
+      return rawJSON('-0');
+    }
+    return item;
+  },space);
+}
 /** One owner for public project text and its readable-input budget. Preserve
  * the established indented output while it fits; whitespace alone must not
  * reject an otherwise saveable document. Neither branch drops provenance. */
 export function serializeScene(scene:SceneDocument):string {
-  const document=persistentScene(scene),pretty=JSON.stringify(document,null,2);
+  const document=persistentScene(scene),pretty=stringifyDocument(document,2);
   if(pretty.length<=MAX_SCENE_TEXT_LENGTH)return pretty;
-  const compact=JSON.stringify(document);
+  const compact=stringifyDocument(document);
   if(compact.length>MAX_SCENE_TEXT_LENGTH)throw new SceneDocumentCapacityError(compact.length);
   return compact;
 }
@@ -312,14 +327,20 @@ export function saveWorkspace(storage: Storage, data: SavedWorkspace): void {
     try { decodeWorkspace(old); storage.setItem(STORAGE_KEY + "-backup", old); }
     catch { storage.setItem(STORAGE_KEY + "-recovery", old); }
   }
-  storage.setItem(STORAGE_KEY, JSON.stringify({...data,scenes:data.scenes.map(persistentScene),...(data.drafts?{drafts:Object.fromEntries(Object.entries(data.drafts).map(([id,scene])=>[id,persistentScene(scene)]))}:{})}));
+  storage.setItem(STORAGE_KEY, stringifyDocument({...data,scenes:data.scenes.map(persistentScene),...(data.drafts?{drafts:Object.fromEntries(Object.entries(data.drafts).map(([id,scene])=>[id,persistentScene(scene)]))}:{})}));
+}
+function parseWorkspaceScene(value:unknown):SceneDocument {
+  // Enforce the same per-document input budget before mutating parsed values.
+  const text=stringifyDocument(value);
+  if(text.length>MAX_SCENE_TEXT_LENGTH)throw new SceneDocumentCapacityError(text.length);
+  return parseSceneValue(value);
 }
 function decodeWorkspace(raw: string): SavedWorkspace {
   const data = JSON.parse(raw);
   if (!record(data) || !Array.isArray(data.scenes)) throw new Error("工作区格式无效");
   const drafts: Record<string,SceneDocument>=Object.create(null);
-  if(data.drafts){if(!record(data.drafts))throw new Error('草稿列表无效');for(const [id,doc] of Object.entries(data.drafts))drafts[id]=parseScene(JSON.stringify(doc));}
-  const scenes:SceneDocument[]=data.scenes.map((s: unknown) => parseScene(JSON.stringify(s)));
+  if(data.drafts){if(!record(data.drafts))throw new Error('草稿列表无效');for(const [id,doc] of Object.entries(data.drafts))drafts[id]=parseWorkspaceScene(doc);}
+  const scenes:SceneDocument[]=data.scenes.map((s: unknown) => parseWorkspaceScene(s));
   return {
     scenes,
     drafts,

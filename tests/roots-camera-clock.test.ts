@@ -125,8 +125,12 @@ describe('Roots camera clock ownership and failure boundaries',()=>{
     expect(Object.is(clock.step(-0).camera.phi,-0)).toBe(true);
     expect(clock.step(1).camera.zoom).toBe(.6666666865348816);
   });
-  it.each([0,-1,NaN,Infinity,1e40,1e-50])('rejects invalid or underflowed duration %s explicitly',duration=>{
+  it.each([NaN,Infinity,-Infinity,1e40])('rejects nonfinite or overflowed duration %s explicitly',duration=>{
     expect(errorCode(()=>new RootsSceneClock(initial,[linear(duration)]))).toBe('input');
+  });
+  it.each([0,-1,1e-50,-1e-50])('retains source nonpositive or Float32-underflowed duration %s',duration=>{
+    const clock=new RootsSceneClock(initial,[linear(duration)]);
+    expect(clock.step(0)).toMatchObject({queueComplete:true,sceneTime:0,camera:initial});
   });
   it('rejects malformed fields/canonical names and the queue allocation bound',()=>{
     expect(errorCode(()=>new RootsSceneClock({...initial,phi:1e40},[]))).toBe('input');

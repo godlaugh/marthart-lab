@@ -201,7 +201,11 @@ try{
   const before=(await snapshot()).request.scene.timeline.tracks.length;
   await page.getByRole('combobox',{name:'New clip type',exact:true}).selectOption('surface_mode_transition');await page.getByRole('button',{name:'Add animation',exact:true}).click();await ready();await settled();
   await page.getByRole('combobox',{name:'Surface transition target',exact:true}).selectOption('mesh');await ready();await settled();
-  await page.getByRole('spinbutton',{name:'Clip duration',exact:true}).fill('0.5');await ready();await settled();await page.getByRole('button',{name:'Save',exact:true}).click();
+  const transitionDuration=page.getByRole('spinbutton',{name:'Clip duration',exact:true}),retainedDuration=(await snapshot()).request.scene.timeline.tracks.at(-1).duration;
+  check(Number(await transitionDuration.getAttribute('min'))>0,'source mode transition editor must require positive duration');
+  report.rejectedTransitionDurations=[];
+  for(const attempted of ['0','-0','-.25']){await transitionDuration.fill(attempted);await transitionDuration.blur();await ready();await settled();const retained=(await snapshot()).request.scene.timeline.tracks.at(-1).duration;check(retained===retainedDuration,'nonpositive transition edit entered canonical document');report.rejectedTransitionDurations.push({attempted,retained});}
+  await transitionDuration.fill('0.5');await ready();await settled();await page.getByRole('button',{name:'Save',exact:true}).click();
   await page.waitForFunction(count=>{const w=JSON.parse(localStorage.getItem('mathart-lab-v1'));return w.scenes?.find(s=>s.id===w.active)?.timeline.tracks.length===count;},before+1);
   await page.reload();await ready();await settled();const authored=(await snapshot()).request.scene.timeline.tracks.at(-1);check(authored.type==='surface_mode_transition'&&authored.surfaceMode==='mesh'&&authored.duration===.5,'authored transition lost on reload');report.authoredTransition={saved:true,reloaded:true,type:authored.type,target:authored.surfaceMode,duration:authored.duration};
   }

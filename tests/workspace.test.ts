@@ -1,11 +1,22 @@
 import {describe,it,expect} from 'vitest';
-import {createScene,parseScene,loadWorkspace,saveWorkspace,STORAGE_KEY} from '../src/engine/document';
+import {createScene,parseScene,loadWorkspace,saveWorkspace,STORAGE_KEY,serializeScene} from '../src/engine/document';
+import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseRenderPreferences,previewProfile} from '../src/engine/preferences';
 import type {SceneDefinition} from '../src/types';
 import {vertexColors,PALETTES} from '../src/engine/palette';
 const def:SceneDefinition={kind:'surface',name:'测试',englishName:'Test',description:'',dimension:3,equations:[],controls:[],presets:[],defaults:{equations:{x:'u'},parameters:{a:2},settings:{pointSize:3}},generate:()=>{throw new Error('not used');}};
 function storage():Storage{const map=new Map<string,string>();return {getItem:k=>map.get(k)??null,setItem:(k,v)=>{map.set(k,v);},removeItem:k=>{map.delete(k);},clear:()=>map.clear(),key:i=>[...map.keys()][i]??null,get length(){return map.size;}};}
 describe('workspace persistence',()=>{
+ it('retains authored negative zero through project text, workspaces, drafts and recovery',()=>{
+  const doc=parseProjectFile('{"config_version":"1.0","type":"ATTRACTOR","name":"Signed zero","equations":{"dx":"0","dy":"0","dz":"0"},"timeline":[{"type":"animate","duration":-0,"actions":[{"method":"rotatePhi","args":[0.5]}]},{"type":"wait","duration":1}]}').scene;
+  doc.parameters.signed=-0;
+  const text=serializeScene(doc),reopened=parseScene(text);
+  expect(Object.is(reopened.timeline.tracks[0].duration,-0)).toBe(true);expect(Object.is(reopened.parameters.signed,-0)).toBe(true);
+  const s=storage(),workspace={scenes:[doc],drafts:{[doc.id]:doc},active:doc.id,theme:'dark' as const,language:'zh' as const};
+  saveWorkspace(s,workspace);saveWorkspace(s,workspace);
+  const check=()=>{const saved=loadWorkspace(s)!;expect(Object.is(saved.scenes[0].timeline.tracks[0].duration,-0)).toBe(true);expect(Object.is(saved.drafts![doc.id].timeline.tracks[0].duration,-0)).toBe(true);};
+  check();s.setItem(STORAGE_KEY,'{damaged');check();expect(loadWorkspace(s)?.recovered).toBe(true);
+ });
  it('preserves explicit preset choices and stable preset draft identity',()=>{const preset={id:'sphere',name:'球',settings:{pointSize:4,colorMetric:'index'}};const a=createScene(def,preset),b=createScene(def,preset);expect(a.id).toBe(b.id);expect(a.settings.pointSize).toBe(4);expect(a.settings.colorMetric).toBe('index');expect(createScene(def).id).not.toBe(createScene(def).id);});
  it('round trips saved works, independent drafts, camera and provenance',()=>{const s=storage(),doc=createScene(def);doc.camera.position=[1,2,3];doc.provenance={kind:'MathArt Studio',original:{unknownField:[4]},warnings:['unsupported']};const workspace={scenes:[doc],drafts:{[doc.id]:doc},active:doc.id,theme:'dark' as const,language:'zh' as const};saveWorkspace(s,workspace);expect(loadWorkspace(s)).toEqual(workspace);});
  it('recovers the last valid backup without erasing damaged source',()=>{const s=storage(),doc=createScene(def),state={scenes:[doc],active:doc.id,theme:'dark' as const,language:'zh' as const};saveWorkspace(s,state);saveWorkspace(s,state);s.setItem(STORAGE_KEY,'{damaged');expect(loadWorkspace(s)?.recovered).toBe(true);saveWorkspace(s,state);expect(s.getItem(STORAGE_KEY+'-recovery')).toBe('{damaged');expect(s.getItem(STORAGE_KEY+'-backup')).toContain(doc.id);});

@@ -40,8 +40,12 @@ describe('original timeline Reader to real scene evaluator',()=>{
   const aligned=local([localClip(0,2,[],{type:'align',orientation:{gamma:Math.PI/2},alignMode:'next-turn'})]);expect(sceneAtTime(aligned,2).settings.cameraGamma).toBeCloseTo(2*Math.PI+Math.PI/2);
   const omitted=local([localClip(0,2,[],{type:'align',orientation:{},alignMode:'next-turn'})]);expect(sceneAtTime(omitted,2).camera).toEqual(omitted.camera);
  });
- it('keeps zero-duration starts/stops in version-1 local projects and rejects ambiguous native zero duration',()=>{
-  const raw=surface([animate(0,[action('ambient',0,.3,0)]),wait(2),animate(0,[action('stopAmbient')]),wait(3)]);expect(()=>parse(raw)).toThrow('duration');
+ it('retains local starts/stops and native zero-duration children with separate clocks',()=>{
+  const raw=surface([animate(0,[action('ambient',0,.3,0)]),wait(2),animate(0,[action('stopAmbient')]),wait(3)]),native=parse(raw).scene;
+  native.timeline.fps=4;expect(native.timeline.tracks.map(track=>track.duration)).toEqual([0,2,0,3]);
+  expect(resolveTimeline(native).tracks.map(track=>track.start)).toEqual([0,.25,2.25,2.5]);
+  const nativeStopped=sceneAtTime(native,2.25).evaluatedSourceCamera!.camera;
+  expect(sceneAtTime(native,4).evaluatedSourceCamera!.camera).toEqual(nativeStopped);
   const scene=local([localClip(0,0,[localAction('ambient',{phiSpeed:0,thetaSpeed:.3,gammaSpeed:0})]),localClip(0,2,[],{type:'wait'}),localClip(2,0,[localAction('stopAmbient')]),localClip(2,3,[],{type:'wait'})],raw);
   expect(scene.timeline.tracks[0].duration).toBe(0);expect(parseScene(JSON.stringify(scene)).timeline.tracks[0].duration).toBe(0);
   const initial=sceneAtTime(scene,0),moving=sceneAtTime(scene,1),stopped=sceneAtTime(scene,2);expect(moving.camera.position).not.toEqual(initial.camera.position);expect(sceneAtTime(scene,4).camera.position).toEqual(stopped.camera.position);expect(scene.provenance!.original).toEqual(raw);

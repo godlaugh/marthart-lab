@@ -64,7 +64,7 @@ export class SourceSurfaceParameterRuntime {
   this.active=true;
  }
  private setScale(name:string,scale:number):void {
-  this.spend();const entry=this.entries.get(name);if(entry)entry.scale=Math.max(0,finite(scale,'速度倍率'));
+  this.spend();const entry=this.entries.get(name);if(entry)entry.scale=Math.max(0,scale);
  }
  private setAll(scale:number):void {for(const name of this.entries.keys())this.setScale(name,scale);}
  private scopedScale(scope:SourceSurfaceParameterScope,scale:number):void {if(scope.kind==='all')this.setAll(scale);else this.setScale(scope.name,scale);}
@@ -94,7 +94,7 @@ export class SourceSurfaceParameterRuntime {
   });
  }
  interpolate(eased:number,finished:boolean):void {
-  eased=finite(F(eased),'动作缓动');
+  eased=F(eased); // onFinish restores transient 0/0 before parameter updates.
   for(const child of this.children){
    this.spend();if(child.finished)continue;
    if(child.action.kind==='start'){

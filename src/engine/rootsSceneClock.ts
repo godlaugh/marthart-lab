@@ -107,7 +107,7 @@ function applyGradientFrame(gradient:GradientState):void {
   if(Number.isFinite(candidate)&&candidate!==gradient.offset)gradient.offset=candidate;
 }
 function setGradientScale(gradient:GradientState,value:number):void {
-  gradient.speedScale=finiteResult(value<0?0:value,'渐变速度倍率');
+  gradient.speedScale=value<0?0:value; // onFinish may replace transient NaN before progress advances.
   if(gradient.running)applyGradientFrame(gradient);
 }
 function startGradientChildren(state:State,actions:readonly RootsSceneGradientAction[],check?:()=>boolean):void {
@@ -189,13 +189,12 @@ export class RootsSceneClock {
     this.clips=clips.map((clip:RootsSceneClip,index)=>{
       if(!clip||typeof clip!=='object')throw new RootsSceneClockError('input',`Roots 相机片段 ${index} 无效`);
       const duration=finiteFloat(clip.duration,`片段 ${index} 时长`);
-      // Roots JSON clamps to .001F. Ordinary scenes can explicitly compile an
-      // InstantAction whose onUpdate ignores even 0/0; never allow a tween here.
+      // Roots JSON clamps to .001F at import. Generic Animation retains signed
+      // zero and negative durations; explicit InstantAction ignores interpolation.
       if(clip.instant!==undefined&&clip.instant!==true)throw new RootsSceneClockError('input','即时片段标记无效');
       if(clip.finishOnStart!==undefined&&clip.finishOnStart!==true)throw new RootsSceneClockError('input','开始即完成标记无效');
       if(clip.finishOnStart&&(clip.instant||clip.zoom!==undefined||clip.rates!==undefined||clip.gradientActions?.length))throw new RootsSceneClockError('input','开始即完成片段不能含其它插值子项');
       if(clip.instant&&(duration!==0||clip.zoom!==undefined||clip.rates!==undefined||clip.gradientActions?.length))throw new RootsSceneClockError('input','即时片段必须零时长且没有插值子项');
-      if(duration<0||duration===0&&!clip.instant)throw new RootsSceneClockError('input','Roots 相机片段时长必须大于 0');
       if(!names.has(clip.easing))throw new RootsSceneClockError('input',`Roots 相机片段缓动未知：${String(clip.easing)}`);
       if(clip.rates!==undefined&&(!Array.isArray(clip.rates)||clip.rates.length!==3))
         throw new RootsSceneClockError('input','Roots 相机角速度必须为三个数值');
