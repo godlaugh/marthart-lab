@@ -1,3 +1,4 @@
+import type {SourceSurfaceGpuPointFrame} from './engine/sourceSurfaceGpuPoints';
 import type {SourceSurfacePointAppearance} from './engine/sourceSurfacePointAppearance';
 import type {SourceSurfaceMeshAppearance} from './engine/sourceSurfaceMeshRenderer';
 import type {SourceSurfaceMeshWireframeFrame} from './engine/sourceSurfaceMeshWireframe';
@@ -301,6 +302,8 @@ export interface GeometryOutput {
   /** Producer-owned normalized alpha per point, multiplied by display opacity. */
   pointAlphas?: Float32Array;
   sourcePointAppearance?: SourceSurfacePointAppearance;
+  /** GPU-owned formula/seed transport, never CPU world positions. */
+  sourceGpuPoints?:SourceSurfaceGpuPointFrame;
   sourceMeshAppearance?: SourceSurfaceMeshAppearance;
   /** Original packed colors per mesh vertex, before native fill(int) semantics. */
   sourceMeshColors?: Uint32Array;

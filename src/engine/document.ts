@@ -1,7 +1,7 @@
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
 import {parseSourceSurfacePalette} from './sourceSurfaceColor';
 import {SOURCE_SURFACE_HOST,usesSourceSurfaceParticles,usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
-import {parseSourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
+import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {parseFractalSourceColorProfile,parseFractalSourceColorConfiguration} from './fractalSourceColor';
 import type { SceneDefinition, SceneDocument, Preset } from "../types";
@@ -207,13 +207,13 @@ export function parseSceneValue(data: unknown): SceneDocument {
     if(!usesSourceSurfaceHost(data as unknown as SceneDocument))fail('曲面源网格配置仅适用于原版 CPU 网格');
     const parsed=parseSourceSurfaceMeshConfiguration(data.surfaceSource);
     if(!parsed.ok)fail(`曲面源网格配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
-    if(parsed.value.nativeBackend!=='cpu')fail('曲面源宿主仅接入 CPU，GPU 尚未接入');
+    if(parsed.value.nativeBackend==='gpu'&&parsed.value.mode!=='points')fail('曲面源 GPU 网格尚未接入');
     data.surfaceSource=parsed.value;
   }
   if(usesSourceSurfaceHost(data as unknown as SceneDocument)){
     const settings=data.settings as Settings;
     if(data.surfaceSource===undefined)fail('曲面源网格缺少配置');
-    if(settings.computeBackend!=='cpu')fail('曲面源宿主后端不匹配');
+    if(settings.computeBackend!==((data.surfaceSource as SourceSurfaceMeshConfiguration).nativeBackend==='gpu'?'webgl2':'cpu'))fail('曲面源宿主后端不匹配');
     if(data.surfaceSourcePalette===undefined)fail('曲面源网格缺少源色板');
   }
   // Source-particle documents saved before the dedicated palette editor used

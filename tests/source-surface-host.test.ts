@@ -16,7 +16,7 @@ function setup(settings:Record<string,unknown>={},overrides:Partial<SourceSurfac
 const request=(index:number):OrdinaryCameraTargetRequest=>({trackId:'track',actionIndex:0,action:{id:'target',method:'track',args:{index}}});
 function step(host:SourceSurfaceHost,frameIndex:number,final=true,dt=.25){host.update({frameIndex,time:F((frameIndex+1)*.25),deltaTime:dt});host.displayFrame(frameIndex,final);}
 function bound(host:SourceSurfaceHost,index:number){const binding=host.bind(request(index));if(binding.kind!=='bound')throw Error('Expected source target');return binding;}
-function coordinates(host:SourceSurfaceHost){const snapshot=host.snapshot();return Array.from(snapshot.mode==='mesh'?snapshot.mesh.geometry!.positions:snapshot.points.positions);}
+function coordinates(host:SourceSurfaceHost){const snapshot=host.snapshot();if('gpuPoints' in snapshot)throw Error('CPU coordinates expected');return Array.from(snapshot.mode==='mesh'?snapshot.mesh.geometry!.positions:snapshot.points.positions);}
 
 describe('native CPU surface main-object lifecycle',()=>{
  it('changes points → mesh → points and updates each fresh object on its creation frame',()=>{
@@ -29,7 +29,7 @@ describe('native CPU surface main-object lifecycle',()=>{
   host.switchMode('points');step(host,2);
   expect(host.snapshot()).toMatchObject({mode:'points',generation:2,frameIndex:2});
   expect(coordinates(host)).toEqual([.25,0,0,.25,1,0,1.25,0,0,1.25,1,0]);
-  const snapshot=host.snapshot();if(snapshot.mode!=='points')throw Error('points');
+  const snapshot=host.snapshot();if(!('points' in snapshot))throw Error('points');
   expect(snapshot.points.trails!.records).toBe(4);expect(snapshot.points.trails!.oldestTime).toBe(.75);
   expect(options.configuration).toEqual(saved);
  });
@@ -67,13 +67,13 @@ describe('native CPU surface main-object lifecycle',()=>{
   host.setRecordingTrails(false);step(host,2);const after=host.snapshot();
   if(before.mode!=='mesh'||after.mode!=='mesh')throw Error('mesh');
   expect(after.mesh.gradient).toEqual(before.mesh.gradient);expect(after.mesh.packedColors).toEqual(before.mesh.packedColors);
-  host.switchMode('points');step(host,3);const points=host.snapshot();if(points.mode!=='points')throw Error('points');
+  host.switchMode('points');step(host,3);const points=host.snapshot();if(!('points' in points))throw Error('points');
   expect(points.points.trails!.records).toBe(4);
  });
  it('same-mode requests retain particle history and object generation',()=>{
   const {host}=setup();step(host,0);host.switchMode('points');step(host,1);
   const frame=host.snapshot();expect(frame.generation).toBe(0);expect(coordinates(host)[0]).toBe(.5);
-  if(frame.mode!=='points')throw Error('points');expect(frame.points.trails!.records).toBe(8);
+  if(!('points' in frame))throw Error('points');expect(frame.points.trails!.records).toBe(8);
  });
  it('runs the same tracked recurrence for camera-only queries across both directions',()=>{
   const full=setup().host,tracked=setup({}, {coverage:'tracked'}).host;

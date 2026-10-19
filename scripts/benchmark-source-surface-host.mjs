@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 
 const run=(command,args,options={})=>{const r=spawnSync(command,args,{encoding:'utf8',maxBuffer:64*1024*1024,...options});if(r.status!==0)throw Error(r.error?.message||String(r.stderr)||String(r.stdout));return r.stdout;};
-const directory=await mkdtemp('.cache/surface-host-cost-'),baseline=run('git',['rev-parse','72ad17c^{commit}']).trim();
+const directory=await mkdtemp('.cache/surface-host-cost-'),baseline=run('git',['rev-parse','47c3a15^{commit}']).trim();
 run('tar',['-xf','-','-C',directory],{input:run('git',['archive',baseline,'src'],{encoding:null})});
 const common=`export {parseProjectFile} from './src/engine/legacyImport';export {parseScene,serializeScene} from './src/engine/document';export {generateScene} from './src/engine/temporal';export {ordinarySourceViewport} from './src/engine/ordinarySourceCamera';`;
 const host=`export {SourceSurfaceHost} from './src/engine/sourceSurfaceHost';export {importSourceSurfaceMeshConfig} from './src/engine/sourceSurfaceMeshConfig';export {evaluateOrdinarySourceCameraTimeline} from './src/engine/ordinarySourceCameraTimeline';`;
@@ -24,7 +24,7 @@ const equations={x:'(a+cos(v))*cos(u)',y:'(a+cos(v))*sin(u)',z:'sin(v)'},paramet
 const settings={u_segments:40,v_segments:20,mesh_u_segments:40,mesh_v_segments:20,u_min:0,u_max:'TWO_PI',v_min:0,v_max:'TWO_PI',speed_u:.3,speed_v:.2,periodic_u:true,periodic_v:true,show_trails:true,mesh_wireframe:true};
 function task(){
  if(mode!=='switch'){
-  const raw={config_version:'1.0.0',type:'SURFACE',name:'Host regression',equations,parameters,palette:['#FF0000','#0000FF'],settings:{...settings,surface_mode:mode==='mesh'?'MESH':'POINTS'},timeline:[{type:'animate',duration:2,actions:[{method:'track',args:[410]}]}]};
+  const raw={config_version:'1.0.0',type:'SURFACE',name:'Host regression',equations,parameters,palette:['#FF0000','#0000FF'],settings:{...settings,surface_mode:mode==='mesh'?'MESH':'POINTS',...(mode==='gpu-points'?{render_mode:'GPU',u_segments:200,v_segments:200}:{})},timeline:[{type:'animate',duration:2,actions:[{method:'track',args:[410]}]}]};
   if(mode==='public-switch'){
    Object.assign(raw.settings,{surface_mode:'POINTS',u_segments:12,v_segments:12,mesh_u_segments:12,mesh_v_segments:12});
    raw.timeline=Array.from({length:6},(_,i)=>({type:'surface_mode_transition',to:i%2?'POINTS':'MESH',duration:.25,easing:'LINEAR'}));
@@ -37,7 +37,7 @@ function task(){
    observedModes.add(output.topology);
    // Rename the old output field at this explicit comparison boundary.
    // The new neutral transition metadata has no pre-feature equivalent.
-   if(mode!=='public-switch'){
+   if(mode!=='public-switch'&&mode!=='gpu-points'){
     if(output.sourceMeshBackgroundColor!==undefined){output.sourceSurfaceBackgroundColor=output.sourceMeshBackgroundColor;delete output.sourceMeshBackgroundColor;}
     if(output.sourceSurfaceOverlayAlpha!==undefined){if(output.sourceSurfaceOverlayAlpha!==0)throw Error('Non-neutral overlay in regression');delete output.sourceSurfaceOverlayAlpha;}
     const transition=output.sourceCameraFrame?.surfaceTransition;
@@ -63,11 +63,12 @@ const results=[];
 for(const mode of ['points','mesh'])for(const variant of ['before','after'])results.push(JSON.parse(run(process.execPath,[runner,variant,mode])));
 results.push(JSON.parse(run(process.execPath,[runner,'after','switch'])));
 results.push(JSON.parse(run(process.execPath,[runner,'after','public-switch'])));
+results.push(JSON.parse(run(process.execPath,[runner,'after','gpu-points'])));
 const comparisons=[0,2].map(i=>({mode:results[i].mode,equal:results[i].rows.every((r,j)=>r.sha256===results[i+1].rows[j].sha256)}));
 const repeatStable=results.every(r=>r.rows.every(x=>x.sha256===r.rows[0].sha256));
 const sourceStable=(await Promise.all(Object.entries(sources).map(async([path,hash])=>createHash('sha256').update(await readFile(path)).digest('hex')===hash))).every(Boolean);
 const report={status:comparisons.every(r=>r.equal)&&repeatStable&&sourceStable?'passed':'failed',at:new Date().toISOString(),baseline,directory,sources,sourceStable,repeatStable,comparisons,results,
- scope:'Existing public CPU point/mesh import-save-reopen and 20 full generated frames compared with pinned baseline. New host runs 106 frames with six mode replacements; no pre-feature equivalent. Exact typed arrays and camera facts hashed; timing/work counts excluded. Explicit normalization: renamed source background output field; neutral mode/overlay fields checked then omitted for old-scene comparison; warning prose retained separately. Public transition import-save-reopen and 20 generated queries measured separately with no pre-feature equivalent.',
+ scope:'Existing public CPU point/mesh import-save-reopen and 20 full generated frames compared with pinned baseline. New host runs 106 frames with six mode replacements; no pre-feature equivalent. Exact typed arrays and camera facts hashed; timing/work counts excluded. Explicit normalization: renamed source background output field; neutral mode/overlay fields checked then omitted for old-scene comparison; warning prose retained separately. Public transition import-save-reopen and 20 generated queries measured separately. New GPU points task imports/saves/reopens a 200x200 surface with tracking and produces 20 complete seed/uniform/camera deliveries; CPU-generation and hashing costs only, no GPU draw, no equivalent pre-feature path.',
  measurement:'Serial independent process per variant/task, one cold then two fresh warm runs. Time/CPU include task and hashing, exclude build/module load; maxRSS includes module load and is process cumulative high-water. No children during measured task.',
  unmeasured:['agent tokens','GPU/rasterization/PNG','browser process-family memory','native JVM/JOGL costs','original full-frame parity'],nativeParity:false};
 await writeFile('.cache/v2-source-surface-host-cost.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,comparisons,results},null,2));if(report.status!=='passed')process.exitCode=1;

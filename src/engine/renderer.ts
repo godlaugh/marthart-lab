@@ -37,6 +37,7 @@ export class ArtRenderer {
   private surfaceOverlay?:ReturnType<typeof createSourceSurfaceOverlay>;
   private interactiveRequested=true;
   private planar = false;
+  private shaderFailure:Error|undefined;
   private roll = 0;
   private focalLength?:number;
   private programmatic = false;
@@ -51,6 +52,13 @@ export class ArtRenderer {
       preserveDrawingBuffer: true,
       alpha: true,
     });
+    this.renderer.debug.onShaderError=(gl,program,vertex,fragment)=>{
+      this.shaderFailure=new Error(`渲染着色器编译或链接失败：${gl.getProgramInfoLog(program)??''} ${gl.getShaderInfoLog(vertex)??''} ${gl.getShaderInfoLog(fragment)??''}`);
+      // Three r180 calls this before deleting its two shader objects. Abort
+      // before it queries uniforms or draws an invalid program, completing
+      // that cleanup here. The material/program cache still owns the program.
+      gl.deleteShader(vertex);gl.deleteShader(fragment);throw this.shaderFailure;
+    };
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.camera = new THREE.PerspectiveCamera(40, 1, 0.001, 100000);
@@ -107,6 +115,7 @@ export class ArtRenderer {
     this.camera.updateProjectionMatrix();
   }
   private clear() {
+    this.shaderFailure=undefined;
     for (const obj of [...this.group.children]) {
       this.group.remove(obj);
       const item = obj as THREE.Mesh;
@@ -124,6 +133,7 @@ export class ArtRenderer {
     }
   }
   setOutput(output: SceneOutput, document: SceneDocument, fit = false,optics?:{roll:number;focalLength:number;camera?:CameraState}) {
+    if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
     if(output.sourceCameraFrame&&output.type!=='geometry')throw new Error('原版几何相机不能应用到已投影的像素图像');
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
@@ -357,6 +367,7 @@ export class ArtRenderer {
     this.controls.enabled = enabled&&!this.sourceCameraPlan;
   }
   render() {
+    if(this.shaderFailure)throw this.shaderFailure;
     if(this.sourceCameraPlan){
       const plan=this.sourceCameraPlan;
       this.camera.matrixAutoUpdate=false;this.camera.matrixWorldAutoUpdate=false;

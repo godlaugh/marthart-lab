@@ -57,9 +57,9 @@ describe('Surface source gradient public import and authoring',()=>{
   expect(scene.timeline.tracks).toHaveLength(1);expect(scene.timeline.tracks[0].actions!.map(a=>[a.method,a.enabled])).toEqual([['gradientStart',true],['gradientStop',true]]);
   expect(scene.timeline.tracks[0].actions![0].gradient!.speed).toBe(0);
  });
- it('imports initial CPU mesh gradients into their own geometry model while rejecting GPU',()=>{
+ it('imports initial CPU mesh gradients into their own geometry model while rejecting GPU mesh',()=>{
   const actions=[{method:'gradientStart',args:{mode:'CROSS_FADE',interpolation:'OKLCH',speed:24}}];
-  for(const settings of [{render_mode:'GPU'},{surface_mode:'MESH',render_mode:'GPU'}])expect(()=>parseProjectFile(JSON.stringify(source(actions,settings)))).toThrow('GPU');
+  for(const settings of [{surface_mode:'MESH',render_mode:'GPU'}])expect(()=>parseProjectFile(JSON.stringify(source(actions,settings)))).toThrow('GPU');
   const original=source(actions,{surface_mode:'MESH'}),{scene}=parseProjectFile(JSON.stringify(original));
   expect(scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-surface-v1');
   expect(scene.surfaceSource).toMatchObject({mode:'mesh',nativeBackend:'cpu',mesh:{uSegments:2,vSegments:2}});

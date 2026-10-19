@@ -907,15 +907,15 @@ function ordinarySurfaceHostGeometry(r:Reader,s:SceneDocument):void {
  const parsed=importSourceSurfaceMeshConfig(r.peek(['settings']),{numberToken:path=>r.numberToken(['settings',...path])});
  if(!parsed.ok)fail(`settings.${parsed.error.path.join('.')} 曲面源网格 ${parsed.error.kind}: ${parsed.error.reason}`);
  const facts=parsed.value;
- if(facts.configuration.nativeBackend!=='cpu')fail('原版 GPU 网格尚未接入；不能用 CPU 网格代替');
+ if(facts.configuration.nativeBackend==='gpu'&&facts.configuration.mode==='mesh')fail('原版 GPU 网格尚未接入；不能用 CPU 网格代替');
  s.surfaceSource=facts.configuration;
  for(const path of facts.consumedPaths)r.use(['settings',...path]);
  for(const path of facts.numericPaths)r.retainNumberToken(['settings',...path]);
  r.warnings.push(...facts.diagnostics);
- Object.assign(s.settings,{surfaceGeometryVersion:SOURCE_SURFACE_HOST,renderMode:facts.configuration.mode,computeBackend:'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1,
+ Object.assign(s.settings,{surfaceGeometryVersion:SOURCE_SURFACE_HOST,renderMode:facts.configuration.mode,computeBackend:facts.configuration.nativeBackend==='gpu'?'webgl2':'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1,
   background:'#'+(facts.configuration.backgroundColor&0xffffff).toString(16).padStart(6,'0')});
  s.surfaceSourcePalette=parseSourceSurfacePalette({colors:r.has('palette')?r.use('palette'):[...DEFAULT_SOURCE_SURFACE_COLORS]});
- r.warnings.push('曲面使用源 CPU 点／网格与切换队列；参数、渐变和跟踪动作保留初始对象绑定。GPU 和原版完整画面尚未验收。');
+ r.warnings.push(facts.configuration.nativeBackend==='gpu'?'曲面使用源 GPU 点着色器；相机跟踪按源 CPU 状态推进，点颜色绑定初始色板，不显示拖尾。原版完整画面尚未验收。':'曲面使用源 CPU 点／网格与切换队列；参数、渐变和跟踪动作保留初始对象绑定。原版完整画面尚未验收。');
 }
 function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  const hasSettings=r.has(['settings']);if(hasSettings)r.object(['settings']);
@@ -1008,6 +1008,10 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
   if(type==='surface_mode_transition'&&usesSourceSurfaceHost(s)){
    const durationValue=field([...path,'duration'],1),duration=durationValue<=0?1:durationValue;
    if(duration>86400)fail(`${pathLabel(path)}.duration 超过本地 24 小时容量`);
+   if(s.surfaceSource!.nativeBackend==='gpu'){
+    s.timeline.tracks.push({id:crypto.randomUUID(),type:'wait',target:'timeline.wait',from:0,to:0,start:0,duration,easing:'linear',pingPong:false,enabled:true,label:originalType});
+    r.warnings.push(`${pathLabel(path)}：原版 GPU 模式切换按相同时长等待处理，目标与缓动原文保留。`);total+=duration;if(total>86400)fail('源相机队列超过 24 小时');continue;
+   }
    const rawTarget=r.use([...path,'to']);
    // JSONObject.getString(key, default) only accepts a string. Java trim removes
    // U+0000..U+0020; unknown/empty names follow the source POINTS fallback.
@@ -1351,7 +1355,8 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  // before common/local geometry reads, so fallback values are never reinterpreted.
  const ordinaryStructure=kind==='surface'?ordinaryTimelineStructure(r,true,ordinaryScope):undefined;
  const surfaceMode=kind==='surface'?r.peek(['settings','surface_mode']):undefined;
- if(typeof surfaceMode==='string'&&surfaceMode.toUpperCase()==='MESH'||ordinaryStructure?.some(clip=>clip.type==='surface_mode_transition'))ordinarySurfaceHostGeometry(r,scene);
+ const surfaceBackend=kind==='surface'?r.peek(['settings','render_mode']):undefined;
+ if(typeof surfaceMode==='string'&&surfaceMode.toUpperCase()==='MESH'||typeof surfaceBackend==='string'&&surfaceBackend.toUpperCase()==='GPU'||ordinaryStructure?.some(clip=>clip.type==='surface_mode_transition'))ordinarySurfaceHostGeometry(r,scene);
  else if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);

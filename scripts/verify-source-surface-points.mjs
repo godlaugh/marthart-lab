@@ -1,6 +1,6 @@
 import {chromium} from '@playwright/test';
 import {createServer} from 'vite';
-import {readFile,writeFile} from 'node:fs/promises';
+import {readFile,writeFile,readdir} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 
@@ -9,7 +9,7 @@ import {createHash} from 'node:crypto';
 // path executes the original JVM/JOGL renderer or establishes its framebuffer.
 const jar='../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar';
 const hash=b=>createHash('sha256').update(b).digest('hex');
-const paths=['src/engine/sourceSurfacePointAppearance.ts','src/engine/sourceSurfacePointRenderer.ts','src/engine/sourceSurfacePointShaders.ts','src/scenes/sourceSurface.ts','scripts/verify-source-surface-points.mjs'];
+const paths=(await readdir('src',{recursive:true})).filter(p=>/\.(ts|tsx)$/.test(p)).map(p=>'src/'+p).concat('scripts/verify-source-surface-points.mjs').sort();
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));
 const before=await hashes(),jarHash=hash(await readFile(jar));
 if(jarHash!=='a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018')throw Error('Reference JAR identity changed');
@@ -27,7 +27,18 @@ for y in range(64):
 with zipfile.ZipFile(sys.argv[1]) as z:
  print(json.dumps(dict(vertex=z.read('data/shader/point_vert.glsl').decode(),fragment=z.read('data/shader/point_frag.glsl').decode(),sprite=list(p))))
 `,jar],{encoding:'utf8'}));
-const report={at:new Date().toISOString(),scope:'Retained desktop shaders adapted to WebGL2 versus production instanced material, complete RGBA8 frames without MSAA. Real Worker inputs. Shared delivered camera/uniforms; camera and scalar derivation are separately tested. Not original JVM/native app parity.',reference:{jar,jarHash,vertexHash:hash(source.vertex),fragmentHash:hash(source.fragment),spriteHash:hash(Buffer.from(source.sprite))},adapter:'GLSL 150 -> 300 es; highp float/int to preserve desktop precision intent; identity texMatrix; no arithmetic changes; zero optional lighting uniforms. Native mipmap availability, driver, MSAA and blending remain unverified.'};
+const report={at:new Date().toISOString(),scope:'Retained desktop shaders adapted to WebGL2 versus production instanced material, complete RGBA8 frames without MSAA. Real Worker inputs. Shared delivered camera/uniforms; camera and scalar derivation are separately tested. Not original JVM/native app parity.',reference:{jar,jarHash,vertexHash:hash(source.vertex),fragmentHash:hash(source.fragment),spriteHash:hash(Buffer.from(source.sprite))},adapter:'GLSL 150 -> 300 es; highp float/int to preserve desktop precision intent; identity texMatrix; no arithmetic changes; zero optional lighting uniforms. Processing BLEND uses SRC_ALPHA/ONE_MINUS_SRC_ALPHA for RGB and ONE/ONE for alpha. Native mipmap availability, driver and MSAA remain unverified.'};
+// Independent blend-state provenance: bundled Processing BLEND branch,
+// PGraphicsOpenGL.blendModeImpl byte offsets 95,98,101,104 -> call at 107.
+const core='../.cache/mathart-investigation/MathArt.app/Contents/app/core-4.5.0-acdf3bce2932985b9d091c284407a54.jar';
+const coreHash=hash(await readFile(core));
+if(coreHash!=='89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a')throw Error('Processing artifact identity changed');
+const blendEvidence=JSON.parse(await readFile('.cache/v2-camera-source/PGraphicsOpenGL.json','utf8'));
+const blendClassHash=hash(execFileSync('python3',['-c',"import zipfile,sys;sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read('processing/opengl/PGraphicsOpenGL.class'))",core]));
+if(blendClassHash!==blendEvidence.classSha256||blendClassHash!=='a0129d4660d76f8f881dd867bef85f3bfab547f10db63616d482b7f8881c736c')throw Error('Processing blend evidence identity mismatch');
+const branch=blendEvidence.methods.find(m=>m.name==='blendModeImpl').constant_references.filter(r=>[95,98,101,104,107].includes(r.offset));
+if(branch.map(r=>r.reference.split(' ')[1]).join(',')!=='SRC_ALPHA,ONE_MINUS_SRC_ALPHA,ONE,ONE,blendFuncSeparate')throw Error('Retained native blend branch differs');
+report.blendReference={core,coreHash,entry:blendEvidence.entry,classHash:blendClassHash,method:'blendModeImpl',branch};
 let browser,server;
 try{
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();
@@ -54,12 +65,15 @@ try{
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.generateMipmap(gl.TEXTURE_2D);
    const attribute=(name,size,data)=>{const b=gl.createBuffer();buffers.push(b);gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);const location=gl.getAttribLocation(program,name);check(location>=0,'missing attribute '+name);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
-   const frames=[],cases=[
+   const frames=[],generationDiagnostics=[],cases=[
     {name:'primary',radius:12},{name:'primary-dpr2',radius:12,dpr:2,density:2},
     {name:'export-same-size',radius:12,target:'offscreen'},
     {name:'export-large-density2',radius:12,target:'offscreen',height:256,density:2},
     {name:'export-small',radius:12,target:'offscreen',height:64},
     {name:'negative-radius',radius:-12},{name:'zero-radius',radius:0},
+    {name:'translucent-background',radius:12,clearAlpha:.25},
+    {name:'translucent-overlap',radius:12,clearAlpha:.25,equations:{x:'0',y:'0',z:'0'}},
+    {name:'partially-nonfinite-formula',radius:12,generationFailure:true,equations:{x:'sqrt(u)',y:'v',z:'0'}},
     {name:'small-mipmapped',radius:1.68},{name:'large-overlap',radius:32},
     {name:'orthographic',radius:12,projection:'scene-fade-orthographic'},
     {name:'orthographic-negative',radius:-12,projection:'scene-fade-orthographic'},
@@ -67,13 +81,13 @@ try{
    ];
    for(const c of cases){
     const height=c.height??128,width=height*1.5,dpr=c.dpr??1,target=c.target??'primary';
-    const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Point oracle',equations:{x:'u',y:'v',z:'u*2'},camera:{phi:0,theta:0,gamma:0},palette:['#6011CC33','#C04020E0'],settings:{u_segments:3,v_segments:3,u_min:-35,u_max:35,v_min:-25,v_max:25,scale_x:1,scale_y:1,scale_z:1,dot_size:c.radius,surface_mode:'POINTS',render_mode:'CPU',show_trails:false},timeline:[{type:'trails',enable:false},{type:'wait',duration:1}]})).scene;
+    const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Point oracle',equations:c.equations??{x:'u',y:'v',z:'u*2'},camera:{phi:0,theta:0,gamma:0},palette:['#6011CC33','#C04020E0'],settings:{u_segments:3,v_segments:3,u_min:-35,u_max:35,v_min:-25,v_max:25,scale_x:1,scale_y:1,scale_z:1,dot_size:c.radius,surface_mode:'POINTS',render_mode:'CPU',show_trails:false},timeline:[{type:'trails',enable:false},{type:'wait',duration:1}]})).scene;
     scene.settings.sourceCameraProjection=c.projection??'perspective';
-    const output=await generator.generate(scene,{time:0,width,height,quality:'preview',sourcePointPixelDensity:c.density??1,sourceViewport:ordinarySourceViewport(scene,width,height,target,128)});
+    let output;try{output=await generator.generate(scene,{time:0,width,height,quality:'preview',sourcePointPixelDensity:c.density??1,sourceViewport:ordinarySourceViewport(scene,width,height,target,128)});}catch(error){if(!c.generationFailure)throw error;const message=String(error);check(message.includes('非有限'),'nonfinite CPU diagnostic missing');generationDiagnostics.push({name:c.name,message,scope:'Current CPU generation rejects nonfinite coordinates before rendering; no nonfinite CPU shader parity established.'});continue;}check(!c.generationFailure,'CPU nonfinite fixture unexpectedly succeeded');
     check(output.type==='geometry'&&output.sourcePointAppearance,'missing appearance');const plan=prepareOrdinarySourceFrame(output.sourceCameraFrame),a=output.sourcePointAppearance;
     canvas.width=width*dpr;canvas.height=height*dpr;gl.viewport(0,0,canvas.width,canvas.height);
-    gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-    gl.clearColor(0,0,0,1);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
+    gl.clearColor(0,0,0,c.clearAlpha??1);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     const vertices=[],colors=[],uvs=[],quad=[[0,0],[1,0],[1,1],[0,0],[1,1],[0,1]];
     for(let i=0;i<output.positions.length/3;i++)for(const uv of quad){vertices.push(...output.positions.slice(i*3,i*3+3),1);colors.push(...output.colors.slice(i*3,i*3+3),output.pointAlphas[i]);uvs.push(...uv);}
     attribute('vertex',4,vertices);attribute('color',4,colors);attribute('texCoord',2,uvs);
@@ -82,13 +96,14 @@ try{
     gl.drawArrays(gl.TRIANGLES,0,vertices.length/4);const expected=new Uint8Array(canvas.width*canvas.height*4);gl.readPixels(0,0,canvas.width,canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,expected);check(gl.getError()===0,'reference GL error');
     const mesh=createSourceSurfacePoints(output,plan,1),world=new THREE.Scene(),rt=new THREE.WebGLRenderTarget(canvas.width,canvas.height);world.add(mesh);
     const actual=new Uint8Array(expected.length);
-    try{renderer.setSize(canvas.width,canvas.height,false);renderer.setRenderTarget(rt);renderer.render(world,new THREE.Camera());renderer.readRenderTargetPixels(rt,0,0,canvas.width,canvas.height,actual);check(renderer.getContext().getError()===0,'production GL error');}
+    try{renderer.setClearColor(0,c.clearAlpha??1);renderer.setSize(canvas.width,canvas.height,false);renderer.setRenderTarget(rt);renderer.render(world,new THREE.Camera());renderer.readRenderTargetPixels(rt,0,0,canvas.width,canvas.height,actual);check(renderer.getContext().getError()===0,'production GL error');}
     finally{renderer.setRenderTarget(null);rt.dispose();mesh.geometry.dispose();mesh.material.dispose();}
     let different=0,maxDelta=0,lit=0;for(let i=0;i<actual.length;i++){const delta=Math.abs(actual[i]-expected[i]);if(delta){different++;maxDelta=Math.max(delta,maxDelta);}if(i%4!==3&&actual[i])lit++;}
     frames.push({name:c.name,width:canvas.width,height:canvas.height,particles:output.positions.length/3,appearance:a,litChannels:lit,differentChannels:different,maxDelta,actualHash:await digest(actual),referenceHash:await digest(expected)});
     check(c.radius===0?lit===0:lit>0,'unexpected blank/nonblank frame '+c.name);
+    if(c.name==='translucent-overlap'){const center=(Math.floor(canvas.height/2)*canvas.width+Math.floor(canvas.width/2))*4;check(expected[center+3]===255,'native additive alpha must saturate for overlapping points');}
    }
-   return{frames,identical:frames.every(f=>f.differentChannels===0),renderer:gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION),nativeAppParity:false};
+   return{frames,generationDiagnostics,identical:frames.every(f=>f.differentChannels===0),renderer:gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION),nativeAppParity:false};
   }finally{generator.dispose();renderer.dispose();renderer.forceContextLoss();for(const b of buffers)gl.deleteBuffer(b);for(const s of shaders)gl.deleteShader(s);if(program)gl.deleteProgram(program);if(texture)gl.deleteTexture(texture);gl.getExtension('WEBGL_lose_context')?.loseContext();}
  },source);
  report.errors=errors;report.sources=await hashes();report.sourceStable=JSON.stringify(before)===JSON.stringify(report.sources);

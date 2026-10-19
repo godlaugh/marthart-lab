@@ -65,7 +65,7 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  const operations=surfaceFunction.operations;
  return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,surfaceFunction:surfaceFunction.create(),frameRate:F(scene.timeline.fps),operations,trails,palette,fadePoints},coverage,isCancelled)};
 }
-interface Configuration {reserve?:(units:number)=>void;surfaceFunction:SourceSurfaceFunction;frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
+interface Configuration {gpu?:boolean;reserve?:(units:number)=>void;surfaceFunction:SourceSurfaceFunction;frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
 export interface SourceSurfacePointRuntimeOptions {
  configuration:SourceSurfaceMeshConfiguration;surfaceFunction:SourceSurfaceFunction;
  operationsPerPosition:number;frameRate:number;palette?:SourceSurfacePalette;
@@ -78,13 +78,15 @@ export function createSourceSurfacePointRuntime(options:SourceSurfacePointRuntim
  const parsed=parseSourceSurfaceMeshConfiguration(options.configuration);
  if(!parsed.ok)fail('input',`原版点配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
  const c=parsed.value,p=c.points,d=c.domain;
- if(c.nativeBackend!=='cpu')fail('unsupported','此运行时只执行原版 CPU ParametricSurface');
+ if(c.nativeBackend==='gpu'&&options.coverage!=='tracked')fail('unsupported','GPU 位置由着色器产生，CPU 运行时只提供跟踪事实');
  if(!Number.isFinite(options.frameRate)||options.frameRate<1||options.frameRate>120)fail('input','原版点帧率必须在 1–120');
  if(!Number.isInteger(options.operationsPerPosition)||options.operationsPerPosition<0)fail('input','原版点公式工作量无效');
  if(![p.uSegments,p.vSegments].every(n=>Number.isInteger(n)&&n>=1&&n<=512))fail('capacity','原版点每轴采样数必须在 1–512');
  const axis=(name:'U'|'V'):Axis=>({min:scalar(d[name==='U'?'uMin':'vMin'],name+'Min'),max:scalar(d[name==='U'?'uMax':'vMax'],name+'Max'),count:p[name==='U'?'uSegments':'vSegments'],speed:scalar(c.tracking[`speed${name}`],'speed'+name),periodic:d[`periodic${name}`],flowing:d[`flowing${name}`]});
- return new SourceSurfaceParticles({u:axis('U'),v:axis('V'),count:p.uSegments*p.vSegments,surfaceFunction:options.surfaceFunction,frameRate:F(options.frameRate),operations:options.operationsPerPosition,palette:options.palette,fadePoints:p.fadePoints,trails:{show:p.showTrails,record:true,fade:p.fadeTrails,lifetime:scalar(p.trailLifetime,'trailLifetime')},reserve:options.reserve},options.coverage,options.isCancelled);
+ return new SourceSurfaceParticles({gpu:c.nativeBackend==='gpu',u:axis('U'),v:axis('V'),count:p.uSegments*p.vSegments,surfaceFunction:options.surfaceFunction,frameRate:F(options.frameRate),operations:options.operationsPerPosition,palette:options.palette,fadePoints:p.fadePoints,trails:{show:c.nativeBackend==='cpu'&&p.showTrails,record:true,fade:p.fadeTrails,lifetime:scalar(p.trailLifetime,'trailLifetime')},reserve:options.reserve},options.coverage,options.isCancelled);
 }
+/** initDots uses count, not count-1; shared by GPU seeds and CPU targets. */
+export function sourceSurfaceParticleStart(min:number,max:number,index:number,count:number):number {return F(min+F(F(index)*F(F(max-min)/F(count))));}
 function wrap(value:number,axis:Axis):number {
  const range=F(axis.max-axis.min);if(range<=0)return axis.min;
  let rest=F(F(value-axis.min)%range);if(rest<0)rest=F(rest+range);return F(axis.min+rest);
@@ -122,6 +124,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private lastFrame=-1;
  private retired=false;
  private readonly targets=new Map<number,Float32Array>();
+ private trackedSlot=0;
  constructor(private readonly config:Configuration,private readonly coverage:'all'|'tracked',private readonly isCancelled?:()=>boolean){
   const capacity=coverage==='all'?config.count:Math.min(config.count,4096);
   this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.surfaceFunction=config.surfaceFunction;
@@ -147,6 +150,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
    reserve:units=>this.reserveWork(units),
   });
   if(coverage==='all')for(let id=0;id<config.count;id++)this.ensure(id);
+  if(config.gpu)this.trackedSlot=this.ensure(Math.floor(config.count/2));
  }
  private check(){if(this.failed)throw this.failure;if(this.isCancelled?.())fail('cancelled','原版曲面粒子回放已取消');}
  private guarded<T>(operation:()=>T):T {
@@ -155,12 +159,14 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private reserve(count=1){this.reserveWork(count*(this.config.operations+24));}
  private reserveWork(units:number){this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','原版曲面粒子回放超过本地 2000 万工作单位预算');this.config.reserve?.(units);}
  /** Shared expression/transform owner for heads and seam endpoints. Boundary
-  * nonfinite results become source break records; invalid heads still reject. */
+  * nonfinite results become source break records; CPU invalid heads reject.
+  * GPU retains native nonfinite tracking facts; the camera validates only
+  * when it actually consumes a target. The shader owns visible GPU vertices. */
  private position(u:number,v:number,out:Float32Array,offset:number):boolean {
   return this.surfaceFunction.position(u,v,out,offset);
  }
  private calculate(slot:number){
-  if(!this.position(this.state[slot*4],this.state[slot*4+1],this.positions,slot*3))fail('arithmetic',`原版曲面粒子 ${this.ids[slot]} 产生非有限坐标；没有替换成邻点或原点`);
+  if(!this.position(this.state[slot*4],this.state[slot*4+1],this.positions,slot*3)&&!this.config.gpu)fail('arithmetic',`原版曲面粒子 ${this.ids[slot]} 产生非有限坐标；没有替换成邻点或原点`);
   this.targets.get(slot)?.set(this.positions.subarray(slot*3,slot*3+3));
  }
  private boundary(slot:number,u:number,v:number,time:number,invalidBreak:boolean){
@@ -173,8 +179,8 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   const slot=this.ids.length;if((slot+1)*4>this.state.length)fail('capacity','原版曲面跟踪超过独立目标容量');
   this.reserve();const {u,v}=this.config,at=slot*4,i=Math.floor(id/v.count),j=id%v.count;
   this.ids.push(id);this.slots.set(id,slot);
-  this.state[at]=F(u.min+F(F(i)*F(F(u.max-u.min)/F(u.count))));
-  this.state[at+1]=F(v.min+F(F(j)*F(F(v.max-v.min)/F(v.count))));
+  this.state[at]=sourceSurfaceParticleStart(u.min,u.max,i,u.count);
+  this.state[at+1]=sourceSurfaceParticleStart(v.min,v.max,j,v.count);
   this.state[at+2]=u.speed;this.state[at+3]=v.speed;this.calculate(slot);if(this.pointAlphas)this.pointAlphas[slot]=(this.color!.packed[id]>>>24)/255;return slot;
  }
  bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding {return this.guarded(()=>{
@@ -183,6 +189,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   if(typeof raw!=='number'||!Number.isFinite(raw))fail('input','原版曲面跟踪索引必须有限');
   // JVM f2i then setTrackedDot clamp, not local row-major or survivor index.
   const id=Math.max(0,Math.min(this.config.count-1,Math.trunc(F(raw)))),slot=this.ensure(id);
+  this.trackedSlot=slot;
   let target=this.targets.get(slot);if(!target){target=this.positions.slice(slot*3,slot*3+3);this.targets.set(slot,target);}
   const captured=target;return{kind:'bound',readPosition:()=>this.guarded(()=>[captured[0],captured[1],captured[2]])};
  });}
@@ -204,9 +211,10 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   this.check();if(this.retired)fail('input','已移出的曲面不再执行粒子更新');if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
   this.lastFrame=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
   this.animationTime=F(frame.time);this.parameters.update(dt,this.config.frameRate);this.gradient.update(dt);
-  this.reserve(this.ids.length);
+  this.reserve(this.config.gpu?1:this.ids.length);
   const u=this.config.u,v=this.config.v,time=F(frame.time);
   for(let slot=0;slot<this.ids.length;slot++){
+   if(this.config.gpu&&slot!==this.trackedSlot)continue;
    if((slot&255)===0)this.check();const at=slot*4;
    const oldU=u.periodic&&u.flowing?wrap(this.state[at],u):this.state[at],oldV=v.periodic&&v.flowing?wrap(this.state[at+1],v):this.state[at+1];
    let nextU=F(oldU+F(dt*this.state[at+2])),nextV=F(oldV+F(dt*this.state[at+3]));
@@ -237,12 +245,14 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
    if(this.history){const to=slot*3;if(this.recording)this.history.add(slot,this.positions[to],this.positions[to+1],this.positions[to+2],time);this.history.expire(slot,time);}
   }
  });}
+ get currentAnimationTime():number{return this.animationTime;}
+ get parameterDiagnostics():string[]{return this.ignoredParameterNames.size?[`原版曲面忽略 ${this.ignoredParameterNames.size} 个未声明参数的写入；参数名已保留在时间线。`]:[];}
  snapshot():{positions:Float32Array;particleIds:Uint32Array;colors:Float32Array;pointAlphas:Float32Array;diagnostics:string[];workUnits:number;trails?:SourceSurfaceTrails} {return this.guarded(()=>{
   if(this.retired)fail('input','已移出的曲面没有可交付画面');
   if(this.coverage!=='all')fail('input','稀疏相机查询不能伪装成完整曲面输出');
   const dynamic=this.history&&this.gradient.running?createSourceSurfaceTrailGradient({palette:this.color!.palette,runtime:this.gradient,time:this.animationTime,numU:this.config.u.count,numV:this.config.v.count,reserve:units=>this.reserveWork(units)}):undefined;
   const trails=this.history?.snapshot(dynamic);
-  return{positions:this.positions.slice(),colors:this.color!.colors.slice(),pointAlphas:this.pointAlphas!.slice(),diagnostics:[...this.color!.diagnostics,...(this.ignoredParameterNames.size?[`原版曲面忽略 ${this.ignoredParameterNames.size} 个未声明参数的写入；参数名已保留在时间线。`]:[])],particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(trails?{trails}: {})};
+  return{positions:this.positions.slice(),colors:this.color!.colors.slice(),pointAlphas:this.pointAlphas!.slice(),diagnostics:[...this.color!.diagnostics,...this.parameterDiagnostics],particleIds:Uint32Array.from(this.ids),workUnits:this.used,...(trails?{trails}: {})};
  });}
 }
 

@@ -10,7 +10,7 @@ export function SourceSurfacePaletteEditor({scene,onChange}:{scene:SceneDocument
  const packed=prepareSourceSurfaceColors({colors:[current]},1,1,false).packed[0],rgb='#'+(packed&0xffffff).toString(16).padStart(6,'0');
  const emit=(next:readonly string[])=>{try{onChange({...scene,surfaceSourcePalette:parseSourceSurfacePalette({colors:[...next]})});setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
  return <div data-testid="source-surface-palette" style={{display:'grid',gap:10}}>
-  <p className="muted">{t(usesSourceSurfaceHost(scene)?'网格颜色沿 U 方向排列；闭合接缝会平滑颜色。填充透明度由网格外观控制。':'颜色沿 U 方向排列，并跟随各自的粒子。支持带透明度的 #AARRGGBB 颜色。')}</p>
+  <p className="muted">{t(scene.surfaceSource?.nativeBackend==='gpu'?'颜色沿 U 方向排列。修改色板会重新生成点云；时间线渐变不会改变已生成的点颜色。':usesSourceSurfaceHost(scene)&&scene.surfaceSource?.mode==='mesh'?'网格颜色沿 U 方向排列；闭合接缝会平滑颜色。填充透明度由网格外观控制。':'颜色沿 U 方向排列，并跟随各自的粒子。支持带透明度的 #AARRGGBB 颜色。')}</p>
   <label className="field"><span>{t('选择颜色')}</span><input aria-label={t('曲面源颜色序号')} type="number" min={1} max={colors.length} step={1} value={index+1} onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=1&&n<=colors.length)setSelected(n-1);}}/></label>
   <div style={{display:'flex',gap:8,alignItems:'center'}}>
    <input aria-label={t('曲面源颜色')} type="color" value={rgb} onChange={e=>emit(colors.map((c,i)=>i===index?'#'+(packed>>>24).toString(16).padStart(2,'0')+e.target.value.slice(1):c))}/>

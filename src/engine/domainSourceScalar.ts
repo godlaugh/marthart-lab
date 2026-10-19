@@ -114,7 +114,8 @@ function normalize(text: string): string {
  const replacements: Readonly<Record<string, string>> = { '−': '-', '–': '-', '—': '-', '－': '-', '＋': '+', '×': '*', '·': '*', '⋅': '*', '÷': '/', '（': '(', '）': ')', '，': ',', '［': '[', '］': ']', 'π': 'pi' };
  return text.replace(/[−–—－＋×·⋅÷（），［］π]/g, char => replacements[char]);
 }
-type Node = { kind: 'number'; value: number } | {kind:'variable';slot:number} | { kind: 'unary'; op: string; argument: Node } | { kind: 'binary'; op: string; left: Node; right: Node } | { kind: 'call'; name: string; args: Node[] };
+export type SourceRealExpressionNode = { readonly kind: 'number'; readonly value: number; /** NamedConstant retains its distinct GLSL identity. */ readonly name?:string } | {readonly kind:'variable';readonly slot:number} | { readonly kind: 'unary'; readonly op: string; readonly argument: Node } | { readonly kind: 'binary'; readonly op: string; readonly left: Node; readonly right: Node } | { readonly kind: 'call'; readonly name: string; readonly args: readonly Node[] };
+type Node=SourceRealExpressionNode;
 const letter = (char: string) => char !== '' && /\p{L}/u.test(char);
 const letterOrDigit = (char: string) => char !== '' && /[\p{L}\p{Nd}]/u.test(char);
 class Parser {
@@ -165,7 +166,7 @@ class Parser {
       // Source parseFactor checks exact varMap membership before named constants.
       if(this.slots?.has(name))value=this.node({kind:'variable',slot:this.slots.get(name)!});
       else if (this.bindings?.has(name)) value = this.node({ kind: 'number', value: this.bindings.get(name)! });
-      else { const key = name.toUpperCase(); if (!Object.hasOwn(constants, key)) invalid(); value = this.node({ kind: 'number', value: constants[key] }); }
+      else { const key = name.toUpperCase(); if (!Object.hasOwn(constants, key)) invalid(); value = this.node({ kind: 'number', value: constants[key], name:key }); }
      }
     } else return invalid();
    }
@@ -271,7 +272,10 @@ export type SourceRealExpressionResult={readonly ok:true;readonly value:SourceRe
  * slots as used by JsonSurfaceFunction/GenericDifferentialEquation. Repeated
  * names intentionally use the last slot: source parameters may shadow u/v or
  * built-in constants. Formula syntax errors are NOT scalar fallback zero. */
-export function prepareSourceRealExpression(raw:unknown,variableNames:readonly string[]):SourceRealExpressionResult {
+export type SourceRealExpressionAstResult={readonly ok:true;readonly value:SourceRealExpressionNode}|Extract<SourceRealExpressionResult,{ok:false}>;
+/** Shared source grammar owner. Consumers must retain named constants and every
+ * call argument: native GLSL emission and CPU evaluation intentionally differ. */
+export function parseSourceRealExpression(raw:unknown,variableNames:readonly string[]):SourceRealExpressionAstResult {
  try{
   if(typeof raw!=='string'||!Array.isArray(variableNames)||variableNames.some(name=>typeof name!=='string'))return{ok:false,error:{kind:'input',reason:'Expected formula text and variable slot names'}};
   if(raw.length>DOMAIN_SOURCE_SCALAR_LIMITS.characters)throw new Capacity('characters',raw.length);
@@ -279,6 +283,17 @@ export function prepareSourceRealExpression(raw:unknown,variableNames:readonly s
   if(characters>DOMAIN_SOURCE_SCALAR_LIMITS.characters)throw new Capacity('characters',characters);
   if(variableNames.length>8194)return{ok:false,error:{kind:'capacity',resource:'variables',limit:8194,actual:variableNames.length}};
   const root=javaTrim(raw)===''?{kind:'number',value:0} as const:new Parser(normalize(raw),undefined,new Map(variableNames.map((name,slot)=>[name,slot]))).parse();
+  return{ok:true,value:root};
+ }catch(error){
+  if(error instanceof InvalidExpression)return{ok:false,error:{kind:'input',reason:'Invalid source formula'}};
+  if(error instanceof Capacity)return{ok:false,error:{kind:'capacity',resource:error.resource,limit:DOMAIN_SOURCE_SCALAR_LIMITS[error.resource],actual:error.actual}};
+  throw error;
+ }
+}
+export function prepareSourceRealExpression(raw:unknown,variableNames:readonly string[]):SourceRealExpressionResult {
+ const parsed=parseSourceRealExpression(raw,variableNames);if(!parsed.ok)return parsed;
+ const root=parsed.value;
+ try{
   type Instruction={node:Node;count:number};
   const instructions:Instruction[]=[],pending:{node:Node;expanded:boolean}[]=[{node:root,expanded:false}];
   while(pending.length){
@@ -304,7 +319,6 @@ export function prepareSourceRealExpression(raw:unknown,variableNames:readonly s
   }}};
  }catch(error){
   if(error instanceof InvalidExpression)return{ok:false,error:{kind:'input',reason:'Invalid source formula'}};
-  if(error instanceof Capacity)return{ok:false,error:{kind:'capacity',resource:error.resource,limit:DOMAIN_SOURCE_SCALAR_LIMITS[error.resource],actual:error.actual}};
   throw error;
  }
 }

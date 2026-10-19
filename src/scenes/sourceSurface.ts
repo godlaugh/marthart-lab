@@ -19,6 +19,16 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
  if(configuration){
   prepareOrdinarySourceFrame(initialFrame);
   const replay=replaySourceSurfaceHost(scene,context.time,'all',context.isCancelled),snapshot=replay.host.snapshot();frame=replay.frame;
+  if('gpuPoints' in snapshot){
+   const sourceCameraFrame=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),gpu=snapshot.gpuPoints;
+   return{type:'geometry',topology:'points',backend:'webgl2',positions:new Float32Array(),sourceGpuPoints:gpu.frame,
+    sourcePointAppearance:sourceSurfacePointAppearance(configuration.points.dotRadius,prepareOrdinarySourceFrame(sourceCameraFrame),context.sourcePointPixelDensity),sourceCameraFrame,
+    sourceSurfaceBackgroundColor:configuration.backgroundColor,
+    temporal:{time:frame.time,windowStart:frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:0,cacheHits:0},
+    stats:{samples:gpu.frame.seeds.length/4,generated:gpu.frame.seeds.length/4,invalid:0,elapsedMs:performance.now()-started},
+    warnings:[...gpu.diagnostics,...frame.diagnostics.map(d=>d.message),'原版 GPU 点由着色器计算位置；跟踪点独立按 CPU 时钟更新。GPU 不绘制拖尾，创建时的点颜色不随渐变动作重建。原版完整画面尚未验收。'],
+   };
+  }
   if(snapshot.mode==='mesh'){
    const mesh=snapshot.mesh,geometry=mesh.geometry,positions=geometry?.positions??new Float32Array(),indices=geometry?.triangles??new Uint32Array();
    return{type:'geometry',topology:'mesh',backend:'cpu',positions,indices,

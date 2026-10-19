@@ -1,3 +1,4 @@
+import {SourceSurfaceGpuPoints,prepareSourceSurfaceGpuPoints} from './sourceSurfaceGpuPoints';
 import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
 import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {prepareSourceSurfaceFunction,type SourceSurfaceFunction} from './sourceSurfaceFunction';
@@ -16,7 +17,7 @@ export interface SourceSurfaceHostOptions {
 export class SourceSurfaceHostError extends Error {
  constructor(readonly code:'input'|'unsupported'|'capacity'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceSurfaceHostError';}
 }
-type Surface={mode:'points';runtime:SourceSurfaceParticles;function:SourceSurfaceFunction}|{mode:'mesh';runtime:SourceSurfaceMeshRuntime;function:SourceSurfaceFunction};
+type Surface={mode:'points';runtime:SourceSurfaceParticles|SourceSurfaceGpuPoints;function:SourceSurfaceFunction}|{mode:'mesh';runtime:SourceSurfaceMeshRuntime;function:SourceSurfaceFunction};
 const MAX_WORK=20_000_000;
 function fail(code:SourceSurfaceHostError['code'],message:string):never{throw new SourceSurfaceHostError(code,message);}
 
@@ -31,6 +32,7 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
  private readonly initial:Surface;
  private current:Surface;
  private readonly prepared:ReturnType<typeof prepareSourceSurfaceFunction>;
+ private readonly gpuFunction?:ReturnType<typeof prepareSourceSurfaceGpuPoints>;
  private readonly palette?:SourceSurfacePalette;
  private readonly options:Pick<SourceSurfaceHostOptions,'frameRate'|'coverage'|'isCancelled'>;
  private used=0;private failed=false;private failure:unknown;
@@ -40,11 +42,12 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
   const parsed=parseSourceSurfaceMeshConfiguration(options.configuration);
   if(!parsed.ok)fail('input',`原版曲面宿主配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
   this.configuration=parsed.value;
-  if(this.configuration.nativeBackend!=='cpu')fail('unsupported','曲面宿主尚未接入 GPU 对象');
+  if(this.configuration.nativeBackend==='gpu'&&this.configuration.mode!=='points')fail('unsupported','GPU 网格宿主尚未接入');
   if(!Number.isFinite(options.frameRate)||options.frameRate<1||options.frameRate>120)fail('input','曲面宿主帧率必须在 1–120');
   if(options.coverage!=='all'&&options.coverage!=='tracked')fail('input','曲面宿主查询范围无效');
   const t=this.configuration.transform;
   this.prepared=prepareSourceSurfaceFunction({equations:options.equations,parameters:options.parameters,scales:[t.scaleX,t.scaleY,t.scaleZ],offsets:[t.offsetX,t.offsetY,t.offsetZ]});
+  if(this.configuration.nativeBackend==='gpu')this.gpuFunction=prepareSourceSurfaceGpuPoints(options.equations,options.parameters,this.configuration);
   this.palette=options.palette?{colors:[...options.palette.colors]}:undefined;
   this.initial=this.current=this.construct(this.configuration.mode,this.prepared.create());
  }
@@ -53,6 +56,7 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
  private reserve=(units:number)=>{this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','曲面模式切换累计超过本地 2000 万工作单位预算');};
  private construct(mode:SourceSurfaceMode,surfaceFunction:SourceSurfaceFunction):Surface {
   const common={configuration:this.configuration,surfaceFunction,operationsPerPosition:this.prepared.operations,frameRate:this.options.frameRate,palette:this.palette,coverage:this.options.coverage,isCancelled:this.options.isCancelled,reserve:this.reserve};
+  if(this.gpuFunction)return{mode:'points',runtime:new SourceSurfaceGpuPoints(common,this.gpuFunction),function:surfaceFunction};
   return mode==='mesh'?{mode,runtime:createSourceSurfaceMeshRuntime(common),function:surfaceFunction}:{mode,runtime:createSourceSurfacePointRuntime(common),function:surfaceFunction};
  }
  get mode():SourceSurfaceMode{return this.current.mode;}
@@ -63,6 +67,7 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
   * first; a local capacity/cancellation failure cannot publish a partial switch. */
  switchMode(mode:SourceSurfaceMode):void{this.guarded(()=>{
   if(mode!=='points'&&mode!=='mesh')fail('input','未知曲面模式');
+  if(this.gpuFunction)fail('unsupported','原版 GPU 曲面不执行模式切换；导入应保留为等待');
   if(mode===this.current.mode)return;
   if(this.lastUpdate>this.lastDisplay)fail('input','曲面切换必须先于当前帧的对象更新');
   const replacement=this.construct(mode,this.current.function.recreate());
@@ -88,6 +93,7 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
   if(this.lastDisplay<0||this.lastUpdate>this.lastDisplay)fail('input','曲面宿主需要完成显示帧后才能交付');
   if(this.options.coverage!=='all')fail('input','相机查询不能交付完整曲面画面');
   const facts={generation:this.replacements,frameIndex:this.lastDisplay,workUnits:this.used};
+  if(this.current.runtime instanceof SourceSurfaceGpuPoints)return{...facts,mode:'points' as const,gpuPoints:this.current.runtime.snapshot()};
   return this.current.mode==='mesh'?{...facts,mode:'mesh' as const,mesh:this.current.runtime.snapshot()}:{...facts,mode:'points' as const,points:this.current.runtime.snapshot()};
  });}
 }
