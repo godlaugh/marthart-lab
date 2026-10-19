@@ -23,7 +23,8 @@ describe('ordinary camera numeric provenance admission',()=>{
   const base=['timeline','0','actions','0','args'];
   for(const path of [[...base,'speed'],[...base,'0','mode'],base])expect(parseSourceNumberTokens([token(path,'1e999')],'surface')).toEqual([token(path,'1e999')]);
   for(const suffix of [['1','speed'],['00','speed'],['0','unknown'],['0','speed','nested']])expect(()=>parseSourceNumberTokens([token([...base,...suffix])],'surface')).toThrow('字段路径');
-  for(const family of ['implicit','attractor','perlin'] as const)expect(()=>parseSourceNumberTokens([token([...base,'speed'])],family)).toThrow('字段路径');
+  for(const family of ['implicit','perlin'] as const)expect(()=>parseSourceNumberTokens([token([...base,'speed'])],family)).toThrow('字段路径');
+  expect(parseSourceNumberTokens([token([...base,'speed'])],'attractor')).toHaveLength(1);
   // Roots retains its distinct scan-for-first-object contract.
   expect(parseSourceNumberTokens([token([...base,'2','speed'])],'roots')).toHaveLength(1);
  });

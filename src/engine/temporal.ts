@@ -1,3 +1,5 @@
+import {usesSourceAttractor} from './sourceAttractorDocument';
+import {generateSourceAttractor} from '../scenes/sourceAttractor';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera} from './ordinarySourceCamera';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {generateSourceSurface} from '../scenes/sourceSurface';
@@ -76,7 +78,7 @@ export class TemporalGenerationSession {
       if(this.selectedKind!=='bouncing'||scene.kind!=='bouncing')this.bouncing.reset();
       if(!this.selectedDensity||!hasContinuousDensity(scene)||this.selectedKind!==scene.kind)this.iterated.reset();
       if(!this.selectedRoots||!hasProgressiveRoots(scene)||usesRootsNativePresentation(scene))this.roots.reset();
-      if(this.selectedKind!=='attractor'||scene.kind!=='attractor'||scene.settings.simulationMode!=='continuous')this.attractor.reset();
+      if(this.selectedKind!=='attractor'||scene.kind!=='attractor'||usesSourceAttractor(scene)||scene.settings.simulationMode!=='continuous')this.attractor.reset();
       this.key=key;this.selectedKind=scene.kind;this.selectedDensity=hasContinuousDensity(scene);
       this.selectedRoots=hasProgressiveRoots(scene);
     }
@@ -347,6 +349,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
     if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
+    if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context);}
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or
     // simulation allocation. Progress frames may use an earlier scene time.

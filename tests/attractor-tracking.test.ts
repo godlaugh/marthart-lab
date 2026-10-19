@@ -49,7 +49,11 @@ describe('producer-owned continuous Attractor indexed camera',()=>{
  });
  it('retains source float-to-int lookup and preserves the existing Surface clamp separately',()=>{
   expect(attractorParticleId(1.9,3)).toBe(1);expect(attractorParticleId(-.4,3)).toBe(0);expect(attractorParticleId(.999999999,3)).toBe(1);for(const index of [-1,3,1e30])expect(attractorParticleId(index,3)).toBeUndefined();
-  const r=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'ATTRACTOR',name:'Track',equations:{dx:'1',dy:'0',dz:'0'},settings:{render_mode:'CPU',particle_count_cpu:3,burn_in:0},timeline:[{type:'animate',duration:0,actions:[{method:'track',args:[1.9]}]},{type:'wait',duration:2}]}));expect(r.scene.timeline.tracks[0].actions![0].args).toEqual({index:1.9});expect(r.warnings.join()).not.toContain('动态粒子采样合同');
+  const source={config_version:'1.0.0',type:'ATTRACTOR',name:'Track',equations:{dx:'1',dy:'0',dz:'0'},settings:{render_mode:'CPU',particle_count_cpu:3},timeline:[{type:'animate',duration:1,actions:[{method:'track',args:[1.9]}]},{type:'wait',duration:2}]};
+  const r=parseLegacyScene(JSON.stringify(source));expect(r.scene.timeline.tracks[0].actions![0].args).toEqual({index:Math.fround(1.9)});expect(r.warnings.join()).not.toContain('动态粒子采样合同');
+  // Native permits zero and can evaluate 0/0 before finishing. The ordinary
+  // local replay currently admits positive durations only; never replace zero.
+  source.timeline[0].duration=0;expect(()=>parseLegacyScene(JSON.stringify(source))).toThrow('本地源相机队列支持');
  });
  it('keeps density/static unsupported, returns camera paired with the output, and clears cancellation ownership',()=>{
   const s=make();expect(supportsParticleTracking(s)).toBe(true);const out=render(s,1);expect(outputCamera(sceneAtTime(s,3),out)).toBe(out.cameraFrame);

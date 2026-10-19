@@ -62,8 +62,15 @@ export const SOURCE_SURFACE_NUMBER_FIELDS=['u_segments','v_segments','u_min','u_
 // Mesh config consumes numeric fallbacks too (e.g. a numeric boolean/color).
 // Retention preserves their lexemes without asserting those inputs were active.
 export const SOURCE_SURFACE_MESH_NUMBER_FIELDS=['mesh_u_segments','mesh_v_segments','mesh_fill','mesh_wireframe','mesh_fill_opacity','mesh_line_weight','mesh_wireframe_color','mesh_wrap_u','mesh_wrap_v','mesh_wrap_threshold','wireframe_decoupled','wireframe_u_segments','wireframe_v_segments','background_color','show_trails','fade_trails','periodic_u','periodic_v','flowing_u','flowing_v'] as const;
+/** Attractor ConfigUtils integer/float reads and source visual fields. GPU
+ * authoring remains registered even while the production entry is CPU only. */
+export const SOURCE_ATTRACTOR_SETTING_NUMBER_FIELDS=['particle_count','particle_count_cpu','particle_count_gpu','time_step','time_step_min','time_step_max','sub_steps','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','dot_size','line_weight','trail_lifetime','show_trails','fade_trails','background_color','gpu_exposure','gpu_contrast','gpu_gamma','gpu_saturation','gpu_density_scale','integration_method'] as const;
+const attractorSettingFields=new Set<string>(SOURCE_ATTRACTOR_SETTING_NUMBER_FIELDS);
+const attractorWarmupFields=new Set(['warmup_steps','warmup_stagger_min','warmup_stagger_max']);
+const attractorBoundsFields=new Set(['min_x','max_x','min_y','max_y','min_z','max_z']);
+const attractorStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+attractorSettingFields.size+attractorWarmupFields.size+attractorBoundsFields.size;
 const surfaceStaticFields=new Set<string>([...SOURCE_SURFACE_NUMBER_FIELDS,...SOURCE_SURFACE_MESH_NUMBER_FIELDS]);
-const ordinaryStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_MESH_NUMBER_FIELDS.length+SOURCE_SURFACE_PARAMETER_EDGE_FIELDS.length;
+const ordinaryStaticMaximum=Math.max(attractorStaticMaximum,3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_MESH_NUMBER_FIELDS.length+SOURCE_SURFACE_PARAMETER_EDGE_FIELDS.length);
 // Every retained token requires at least one source JSON value node. Clip and
 // action bounds also constrain slots; taking the smaller bound does not grant
 // extra source capacity merely because paths repeat in persisted provenance.
@@ -81,10 +88,11 @@ function surfaceParameterPath(path:readonly unknown[]):boolean {
  return tail[0]==='parameters'&&surfaceParameterName(tail[1])&&(tail.length===2||tail.length===3&&surfaceParameterField(tail[2])||tail.length===4&&tail[2]==='edgeEasing'&&surfaceEdgeField(tail[3]));
 }
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
+ if(family==='attractor'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&attractorSettingFields.has(path[1])||path.length===2&&path[0]==='initialization'&&typeof path[1]==='string'&&attractorWarmupFields.has(path[1])||path.length===3&&path[0]==='initialization'&&path[1]==='bounds'&&typeof path[2]==='string'&&attractorBoundsFields.has(path[2])))return true;
  if(family==='surface'&&surfaceParameterPath(path))return true;
  if(family==='surface'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&surfaceStaticFields.has(path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
- if(family==='surface'&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
+ if((family==='surface'||family==='attractor')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
 }
 /** Global resolution, Roots presentation/timeline slots and ordinary camera,
@@ -103,8 +111,8 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
   const {path,token}=value as {path?:unknown;token?:unknown};
   const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):ordinary&&ordinaryField(path,sceneKind)?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效');
-  if((roots||sceneKind==='surface')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
-   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify(sceneKind==='surface'?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
+  if((roots||sceneKind==='surface'||sceneKind==='attractor')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
+   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify((sceneKind==='surface'||sceneKind==='attractor')?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
    if(previous!==undefined&&previous!==payload)throw new Error('一个源动画动作只能保留首个对象的数字词法');
    gradientPayloads.set(action,payload);
   }

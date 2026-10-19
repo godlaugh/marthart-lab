@@ -11,14 +11,16 @@ describe('legacy continuous geometry import',()=>{
   expect(result.warnings.join()).not.toContain('不模拟随帧衰减');expect((result.source as any).settings).toEqual(input.settings);
  });
  it('keeps independent initialization bounds, dt range, substeps, stagger and actual particle counts',()=>{
-  const result=parse('ATTRACTOR',{equations:{dx:'1',dy:'0',dz:'0'},settings:{particle_count:300,time_step_min:.01,time_step_max:.02,sub_steps:2,show_trails:true,fade_trails:true,trail_lifetime:.5},initialization:{mode:'RANDOM_BOX',warmup_steps:0,warmup_stagger_min:0,warmup_stagger_max:0,bounds:{min_x:0,max_x:0,min_y:2,max_y:2,min_z:3,max_z:3}}});
-  expect(result.scene.settings).toMatchObject({simulationMode:'continuous',particleCount:300,variableTimeStep:true,dtMin:.01,dtMax:.02,subSteps:2,useInitialBounds:true,initialMinX:0,initialMaxX:0,initialMinY:2,initialMaxY:2});
-  const out=generateScene(result.scene,context);if(out.type!=='geometry')throw new Error('geometry');expect(out.particleIds).toHaveLength(300);expect(out.positions[0]).toBeGreaterThanOrEqual(.6);expect(out.positions[0]).toBeLessThanOrEqual(1.2);expect(out.positions[1]).toBe(2);expect(out.positions[2]).toBe(3);expect(out.trails!.indices!.length).toBe(9000);
+  const result=parse('ATTRACTOR',{equations:{dx:'1',dy:'0',dz:'0'},timeline:[{type:'wait',duration:2}],settings:{particle_count:300,time_step_min:.01,time_step_max:.02,sub_steps:2,show_trails:true,fade_trails:true,trail_lifetime:.5},initialization:{mode:'RANDOM_BOX',warmup_steps:0,warmup_stagger_min:0,warmup_stagger_max:0,bounds:{min_x:0,max_x:0,min_y:2,max_y:2,min_z:3,max_z:3}}});
+  expect(result.scene.attractorSource!.configuration).toMatchObject({particleCountCPU:300,dtRange:{min:Math.fround(.01),max:Math.fround(.02)},stepsPerFrame:2,bounds:{minX:0,maxX:0,minY:2,maxY:2}});
+  const out=generateScene(result.scene,context);if(out.type!=='geometry')throw new Error('geometry');expect(out.particleIds).toHaveLength(300);expect(out.positions[0]).toBeGreaterThanOrEqual(.6);expect(out.positions[0]).toBeLessThanOrEqual(1.25);expect(out.positions[1]).toBe(2);expect(out.positions[2]).toBe(3);expect(out.trails!.indices!.length).toBeGreaterThan(9000);
   expect(result.warnings.join()).not.toContain('统一最大半径');expect(result.warnings.join()).not.toContain('所有轨迹使用');
  });
- it('rejects malformed temporal ranges instead of inventing samples',()=>{
-  for(const settings of [{trail_lifetime:0},{time_step_min:.1,time_step_max:.01},{sub_steps:1.2}])expect(()=>parse('ATTRACTOR',{equations:{dx:'1',dy:'0',dz:'0'},settings})).toThrow();
-  expect(()=>parse('ATTRACTOR',{equations:{dx:'1',dy:'0',dz:'0'},initialization:{bounds:{min_x:0}}})).toThrow('上下限');
+ it('keeps source temporal coercion/defaults while rejecting malformed native sections',()=>{
+  const result=parse('ATTRACTOR',{equations:{dx:'1',dy:'0',dz:'0'},settings:{trail_lifetime:0,time_step_min:.1,time_step_max:.01,sub_steps:1.2},initialization:{bounds:{min_x:0}}});
+  expect(result.scene.attractorSource!.configuration).toMatchObject({stepsPerFrame:1,dtRange:{min:Math.fround(.01),max:Math.fround(.1)},bounds:{minX:0,maxX:1,minY:-1,maxY:1}});
+  expect(result.scene.attractorSource!.visual.trails.lifetime).toBe(0);
+  for(const extra of [{settings:null},{initialization:[]},{settings:{show_trails:17}}])expect(()=>parse('ATTRACTOR',{equations:{dx:'1',dy:'0',dz:'0'},...extra})).toThrow();
  });
  it('imports independent source wire intervals as formula-sampled line counts',()=>{
   const result=parse('SURFACE',{equations:{x:'u',y:'v',z:'u*v'},settings:{surface_mode:'MESH',mesh_u_segments:2,mesh_v_segments:2,mesh_wireframe:true,wireframe_decoupled:true,wireframe_u_segments:4,wireframe_v_segments:0,mesh_line_weight:3,u_min:0,u_max:1,v_min:0,v_max:1}});

@@ -5,6 +5,7 @@ import type {SourceSurfaceMeshAppearance} from './engine/sourceSurfaceMeshRender
 import type {SourceSurfaceMeshWireframeFrame} from './engine/sourceSurfaceMeshWireframe';
 import type {SourceSurfaceMeshConfiguration} from './engine/sourceSurfaceMeshConfig';
 import type {SourceSurfacePalette} from './engine/sourceSurfaceColor';
+import type {SourceAttractorDocumentPayload} from './engine/sourceAttractorDocument';
 import type {SourceCameraInput,SourceCameraViewport} from './engine/sourceCamera';
 import type {OrdinarySourceCameraEvaluation,OrdinarySourceCameraFrame} from './engine/ordinarySourceCamera';
 import type {FractalSourceFrameFacts} from './engine/fractalSourceFrame';
@@ -198,6 +199,8 @@ export interface SceneDocument {
   surfaceSourcePalette?: SourceSurfacePalette;
   /** Canonical source mesh settings, independent of local mesh controls. */
   surfaceSource?: SourceSurfaceMeshConfiguration;
+  /** Canonical native Attractor authoring. Omission keeps the local model. */
+  attractorSource?: SourceAttractorDocumentPayload;
   rootsMath?: RootsMathConfiguration;
   /** Optional authored presentation payload. Omission retains legacy rules;
    * local-v1 keeps this payload dormant without discarding its source values. */

@@ -1,3 +1,4 @@
+import {usesSourceAttractor,parseSourceAttractorDocument,prepareSourceAttractorScene} from './sourceAttractorDocument';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
 import {parseSourceSurfacePalette} from './sourceSurfaceColor';
 import {SOURCE_SURFACE_HOST,usesSourceSurfaceParticles,usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -154,7 +155,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   if(domainExecution==='mathart-1.7.8-cpu'||domainExecution==='mathart-1.7.8-gpu')data.parameters=parseDomainNativeParameters(data.parameters);
   else for (const [k, v] of Object.entries(data.parameters as object))
     if (
-      (data.kind==='symmetry'?!!symmetryCustomParameterNameError(k):!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(k)) ||
+      (!usesSourceAttractor(data as unknown as SceneDocument)&&(data.kind==='symmetry'?!!symmetryCustomParameterNameError(k):!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(k))) ||
       typeof v !== "number" ||
       !Number.isFinite(v)
     )
@@ -201,7 +202,11 @@ export function parseSceneValue(data: unknown): SceneDocument {
   }
   if(!usesSourceSurfaceHost(data as unknown as SceneDocument)){
     if(data.kind==='surface'||data.kind==='implicit')geometryColorModel({kind:data.kind,settings:data.settings as Settings});
-    if(data.kind==='surface'||data.kind==='attractor')parseTrailAppearance(data.settings as Settings);
+    if(data.kind==='surface'||data.kind==='attractor'&&!usesSourceAttractor(data as unknown as SceneDocument))parseTrailAppearance(data.settings as Settings);
+  }
+  if(data.attractorSource!==undefined){
+    if(!usesSourceAttractor(data as unknown as SceneDocument))fail('源吸引子配置只能用于吸引子场景');
+    const parsed=parseSourceAttractorDocument(data.attractorSource);if(!parsed.ok)fail(`源吸引子 ${parsed.error.path.join('.')}：${parsed.error.reason}`);data.attractorSource=parsed.value;
   }
   if(data.surfaceSource!==undefined){
     if(!usesSourceSurfaceHost(data as unknown as SceneDocument))fail('曲面源配置需要对应原版曲面宿主');
@@ -265,7 +270,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
       Number(track.start) < 0
     )
       fail("动画轨道无效");
-    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],usesSourceSurfaceGeometry(data as unknown as SceneDocument));
+    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],usesSourceSurfaceGeometry(data as unknown as SceneDocument),usesSourceAttractor(data as unknown as SceneDocument));
     if(track.type==='fractal_zoom')track.keyframes=validateFractalKeyframes(track as unknown as AnimationTrack);
   }
   validateTimelineSchedule(data as unknown as SceneDocument);
@@ -275,6 +280,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     spirographFrameClips(data as unknown as SceneDocument);
   }
   if(usesSourceSurfaceHost(data as unknown as SceneDocument))prepareSourceSurfaceScene(data as unknown as SceneDocument);
+  if(usesSourceAttractor(data as unknown as SceneDocument))prepareSourceAttractorScene(data as unknown as SceneDocument);
   return data as unknown as SceneDocument;
 }
 export const STORAGE_KEY = "mathart-lab-v1";

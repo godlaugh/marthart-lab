@@ -1,3 +1,7 @@
+import {usesSourceAttractor,prepareSourceAttractorScene,importSourceAttractorParameters,importSourceAttractorBackground} from './sourceAttractorDocument';
+import {importSourceAttractorConfig} from './sourceAttractorConfig';
+import {importSourceAttractorVisualConfig} from './sourceAttractorVisualConfig';
+import {importSourceParticleGradient} from './sourceParticleGradientImport';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
 import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceSurfaceParameterEdge,SOURCE_SURFACE_PARAMETER_EDGE_DEFAULT,type SourceSurfaceParameterResult} from './sourceSurfaceParameterConfig';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
@@ -34,7 +38,7 @@ import {withRootsPresentation} from './rootsPresentationAuthoring';
 import {prepareRootsCameraTimeline,withRootsSceneTimeline} from './rootsCameraTimeline';
 import {prepareRootsGradientImport} from './rootsGradientConfig';
 import {lookupSourceEasing} from './sourceEasing';
-import {PROJECT_RESOLUTION_SOURCE_NUMBER_PATHS,rootsTimelineNumberTokenPaths,SOURCE_SURFACE_NUMBER_FIELDS,type SourceNumberToken} from './sourceNumberTokens';
+import {PROJECT_RESOLUTION_SOURCE_NUMBER_PATHS,rootsTimelineNumberTokenPaths,SOURCE_SURFACE_NUMBER_FIELDS,SOURCE_ATTRACTOR_SETTING_NUMBER_FIELDS,type SourceNumberToken} from './sourceNumberTokens';
 import {prepareSourceProjectResolution} from './projectResolution';
 import {parseSourceJson,type SourceJsonObjectMetadata} from './sourceJson';
 import {createRootsNativeMath,defaultRootNativeParameter,parseRootsMath} from './rootsMathConfig';
@@ -235,10 +239,10 @@ function commonLocalPalette(r:Reader,s:SceneDocument){
 }
 function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
- const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
- if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s))commonLocalPalette(r,s);
- if(!usesSourceSurfaceGeometry(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
+ const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
+ if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
+ if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s))commonLocalPalette(r,s);
+ if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','bouncing','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
@@ -295,37 +299,38 @@ function surface(r:Reader,s:SceneDocument){
  numberTo(r,s,'settings.mesh_wrap_threshold','wrapThreshold',{min:0,max:1});
  booleanTo(r,s,'settings.twisted_u','twistedU');
 }
+/** Native CPU configuration is the only owner of imported Attractor state.
+ * Local scene defaults are discarded; saved local documents never enter here. */
 function attractor(r:Reader,s:SceneDocument){
- numberTo(r,s,'settings.line_weight','trailWidth',{min:0});
- for(const k of ['dx','dy','dz'])equation(r,s,'equations.'+k,k);
- s.settings.simulationMode='continuous';s.settings.renderMode='points';s.settings.colorMetric='index';
- stringTo(r,s,'settings.integration_method','integrator',{EULER:'euler',RK4:'rk4',RUNGE_KUTTA_4:'rk4'});
- const dt=firstPath(r,['settings.time_step','settings.time_step_min']);if(dt)numberTo(r,s,dt,'dt',{min:1e-6,max:1});
- const min=r.num('settings.time_step_min'),max=r.num('settings.time_step_max');
- if(min!==undefined||max!==undefined){const lo=min??Number(s.settings.dt),hi=max??lo;if(lo<1e-6||hi>1||hi<lo)fail('time_step_min/max 必须在 [0.000001,1] 且上限不小于下限');Object.assign(s.settings,{dtMin:lo,dtMax:hi,variableTimeStep:lo!==hi});}
- count(r,s,'settings.sub_steps','subSteps',1000);
- const sourceBackend=r.str('settings.render_mode'),gpu=sourceBackend?.toUpperCase()==='GPU';
- s.settings.attractorBackend=gpu?'gpu':'cpu';
- if(sourceBackend!==undefined&&!['CPU','GPU'].includes(sourceBackend.toUpperCase()))r.warnings.push(`原版吸引子 render_mode=${sourceBackend} 按其非 GPU 分支使用 CPU；原值保留在 source。`);
- // JsonAttractorConfig.parseConfig: specific counts win; generic GPU fallback
- // applies only when particle_count_cpu is absent. The unselected count remains
- // source evidence, not an extra interpretation by the generator.
- const countPath=gpu?(r.has('settings.particle_count_gpu')?'settings.particle_count_gpu':!r.has('settings.particle_count_cpu')&&r.has('settings.particle_count')?'settings.particle_count':undefined):firstPath(r,['settings.particle_count_cpu','settings.particle_count']);
- if(countPath)numberTo(r,s,countPath,'particleCount',{min:1,max:gpu?2000000:10000,integer:true});else s.settings.particleCount=gpu?200000:2000;
- for(const path of ['settings.particle_count','settings.particle_count_cpu','settings.particle_count_gpu'])if(path!==countPath&&r.has(path))r.acknowledge(path,'当前后端未选用此粒子数；按原版后端字段优先级保留在 source');
- if(gpu){s.settings.integrator='rk4';r.warnings.push('原版 GPU 更新使用 RK4，与 CPU integration_method 字段无关；已选择独立 GPU RK4 实现。');}
- count(r,s,'initialization.warmup_steps','burnIn',100000,0);
- count(r,s,'initialization.warmup_stagger_min','staggerMin',100000,0);count(r,s,'initialization.warmup_stagger_max','staggerMax',100000,0);
- if(Number(s.settings.staggerMax)<Number(s.settings.staggerMin))fail('随机预热上限小于下限');
- let bounds=0;
- for(const axis of ['x','y','z']){const lo=r.num(`initialization.bounds.min_${axis}`),hi=r.num(`initialization.bounds.max_${axis}`);if(lo!==undefined||hi!==undefined){if(lo===undefined||hi===undefined||hi<lo)fail('初始范围必须提供有序的每轴上下限');s.settings['initialMin'+axis.toUpperCase()]=lo;s.settings['initialMax'+axis.toUpperCase()]=hi;bounds++;}}
- if(bounds){s.settings.useInitialBounds=true;if(bounds!==3)r.warnings.push('初始盒未提供全部三轴；缺失轴保留当前默认边界，原值保留在 source。');}
- const initialization=r.str('initialization.mode');if(initialization!==undefined&&initialization!=='RANDOM_BOX')r.warnings.push(`初始化模式 ${initialization} 尚未等效，当前使用初始盒/坐标；原值保留在 source。`);
- for(const [old,key]of [['show_trails','showTrails'],['fade_trails','fadeTrails'],['record_trails','recordTrails']] as const)booleanTo(r,s,'settings.'+old,key);
- numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:60});seed(r,s,'settings.seed');
- if(gpu&&s.settings.showTrails===true){s.settings.showTrails=false;r.warnings.push('原版 GPU 模式不绘制历史拖尾；show_trails 原值保留在 source，当前 GPU 点云关闭拖尾。');}
- r.warnings.push('连续粒子按固定 30 模拟帧/秒重放；dt 范围、子步、独立初始盒和预热已保留，原版实际帧节奏与随机序列未对照。');
+ for(const key of ['dx','dy','dz']){
+  const value=r.str(['equations',key],true)!;
+  if(value.length>8192)fail(`equations.${key} 超过 8192 字符`); // Native blank expression is Constant(0).
+  s.equations[key]=value;
+ }
+ if(r.has(['settings','integration_method']))r.acknowledge(['settings','integration_method'],'原版 CPU 入口对所有名称使用 Euler，包括 RK4；未使用本地积分器');
+ r.warnings.push('吸引子使用源 CPU Euler、Random(12345)、固定帧子步与当前色板拖尾；原版完整画面尚未完成一致性验收。');
 }
+function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
+ const numeric=importSourceAttractorConfig(r.peek(['settings']),r.peek(['initialization']),{numberToken:path=>r.numberToken(path)});
+ const visual=importSourceAttractorVisualConfig(r.peek(['settings']),r.peek(['palette']));
+ if(!numeric.ok)fail(`原版吸引子 ${numeric.error.path.join('.')}：${numeric.error.reason}`);
+ if(!visual.ok)fail(`原版吸引子 ${visual.error.path.join('.')}：${visual.error.reason}`);
+ const consumed=new Map<string,string[]>(),numbers=new Map<string,string[]>();
+ for(const facts of [numeric.value,visual.value]){
+  for(const path of facts.consumedPaths)consumed.set(JSON.stringify(path),path);
+  for(const path of facts.numericPaths)numbers.set(JSON.stringify(path),path);
+  r.warnings.push(...facts.diagnostics);
+ }
+ for(const path of consumed.values())r.use(path);for(const path of numbers.values())r.retainNumberToken(path);
+ for(const key of SOURCE_ATTRACTOR_SETTING_NUMBER_FIELDS)if(!numbers.has(JSON.stringify(['settings',key]))&&key!=='background_color')r.retainNumberToken(['settings',key]);
+ const background=importSourceAttractorBackground(r.use(['settings','background_color']),r.numberToken(['settings','background_color']));
+ r.retainNumberToken(['settings','background_color']);r.warnings.push(...background.diagnostics);
+ s.attractorSource={configuration:numeric.value.configuration,visual:visual.value.configuration,backgroundColor:background.color};
+ // Only common presentation controls remain outside the canonical source facts.
+ s.settings={scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1,showGrid:false,showAxes:false,background:'#000000'};
+ if(numeric.value.configuration.nativeBackend==='gpu')fail('原版吸引子 GPU 生产路径尚未接入；不会替换成 CPU 或本地 GPU');
+}
+
 function iteratedLegacy(r:Reader,s:SceneDocument){
  s.settings.iteratedMode='continuous';s.settings.iteratedFps=60;s.settings.paletteMode='source';s.settings.iteratedColor=s.kind==='samila'?'noise':'step';
  count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);seed(r,s,'settings.seed');
@@ -1034,7 +1039,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
   if(!['wait','animate','align'].includes(type)&&!(s.kind==='surface'&&type==='param')){
    const nativeChild=(s.kind==='surface'&&['trails','surface_mode_transition'].includes(type))||(s.kind==='perlin'&&type==='trails');
    if(nativeChild)fail(`${pathLabel(path)} ${type} 尚缺原版动画子项编译事实；不能丢弃或猜测其队列时长`);
-   if(s.kind==='attractor'){r.acknowledge(path,'原版 Attractor 不执行此片段类型，不占用队列时长');continue;}
+   if(s.kind==='attractor'){if(type==='param')fail(`${pathLabel(path)} 原版吸引子参数动画尚未接入，不能使用本地动画替代`);r.acknowledge(path,'原版 Attractor 不执行此片段类型，不占用队列时长');continue;}
    r.warnings.push(`${pathLabel(path)} ${originalType} 按原版未识别类型分支保留为等待；原字段保留在 source。`);
   }
   const duration=field([...path,'duration'],1);
@@ -1053,12 +1058,12 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
    track.actions=[];track.target='camera.actions';
    for(const {path:actionPath,method,raw,surfaceGradient,surfaceParameters} of sourceActions){
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
-    const unimplementedTracking=method==='track'&&Array.isArray(raw)&&raw.length>0&&s.kind==='attractor';
-    if(unimplementedTracking)fail(`${pathLabel(actionPath)} ${method} 尚无完整原版 provider/动画编译合同；未按本地动作代替`);
+    if(usesSourceAttractor(s)&&['paramStart','paramStop'].includes(method))fail(`${pathLabel(actionPath)} ${method} 原版吸引子参数动画尚未接入，不能使用本地动作替代`);
     if(surfaceParameters){if(surfaceParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,surfaceParameters});continue;}
-    if(s.kind==='surface'&&(method==='gradientStart'||method==='gradientStop')){
+    if((s.kind==='surface'||usesSourceAttractor(s))&&(method==='gradientStart'||method==='gradientStop')){
+     if(usesSourceAttractor(s)&&!s.attractorSource!.visual.trails.show){r.acknowledge(actionPath,'原版吸引子仅在 CPU 且显示拖尾时构造渐变；未解析动作参数');continue;}
      if(method==='gradientStop'){track.actions.push({id:crypto.randomUUID(),method,enabled:true});continue;}
-     const facts=surfaceGradient!,argsPath=[...actionPath,'args'];
+     const facts=usesSourceAttractor(s)?importSourceParticleGradient(raw,'attractor'):surfaceGradient!,argsPath=[...actionPath,'args'];
      if(facts.payloadPath!==null){
       // Retention records source numeric evidence even when applicability skips
       // execution. Consumption remains limited to the parser's named fields.
@@ -1087,7 +1092,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
     const args=Array.isArray(raw)?raw:[];if(args.length>128)fail(`${pathLabel(actionPath)}.args 超过 128 项本地容量`);
     const arg=(index:number)=>{const p=[...actionPath,'args',String(index)];r.retainNumberToken(p);const out=ordinaryResult(scope.argument(r.use(p),pathLabel(p)));r.warnings.push(...out.diagnostics);return out.value;};
     let action:AnimationAction|undefined;
-    if(method==='track'&&s.kind==='surface'&&args.length>0)action={id:crypto.randomUUID(),method,args:{index:arg(0)}};
+    if(method==='track'&&(s.kind==='surface'||usesSourceAttractor(s))&&args.length>0)action={id:crypto.randomUUID(),method,args:{index:arg(0)}};
     else if(['rotatePhi','rotateTheta','zoom','focal'].includes(method))action={id:crypto.randomUUID(),method,args:{[method.startsWith('rotate')?'angle':'value']:arg(0)}};
     else if(method==='rotateTo'&&s.kind!=='attractor'&&args.length>=3)action={id:crypto.randomUUID(),method,args:{phi:arg(0),theta:arg(1),gamma:arg(2)}};
     else if((method==='ambient'||method==='setRates'&&s.kind==='attractor')&&args.length>=(s.kind==='attractor'?2:3))action={id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:arg(0),thetaSpeed:arg(1),gammaSpeed:args.length>=3?arg(2):0}};
@@ -1103,6 +1108,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
  validateTimelineCapacity(s.timeline.tracks);
  if(usesSourceSurfaceParticles(s))prepareSourceSurfaceParticles(s);
  if(usesSourceSurfaceHost(s))prepareSourceSurfaceScene(s);
+ if(usesSourceAttractor(s))prepareSourceAttractorScene(s);
 }
 function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarScope,structure?:OrdinaryTimelineClip[]){
  if(s.sourceCamera&&ordinaryScope){ordinaryCameraTimeline(r,s,ordinaryScope,structure);return;}
@@ -1348,8 +1354,9 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  if(ordinaryFamily(kind))r.validateNativeObjects();
  const ordinaryScope=ordinaryFamily(kind)?ordinaryResult(prepareOrdinarySourceScalarScope(kind,{parameters:r.peek(['parameters']),memberOrder:(kind==='surface'||kind==='implicit')&&r.has(['parameters'])?r.sourceKeys(['parameters']):undefined})):undefined;
  if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
- const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;scene.parameters=ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;scene.parameters=kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
  if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
+ if(kind==='attractor'){for(const key of Object.keys(scene.parameters)){r.use(['parameters',key]);r.retainNumberToken(['parameters',key]);}if(r.has(['parameters'])&&!Object.keys(scene.parameters).length)r.use(['parameters']);ordinaryAttractorGeometry(r,scene);}
  // Source geometry and queue share parsed dispatch facts. Select its owner
  // before common/local geometry reads, so fallback values are never reinterpreted.
  const ordinaryStructure=kind==='surface'?ordinaryTimelineStructure(r,true,ordinaryScope):undefined;

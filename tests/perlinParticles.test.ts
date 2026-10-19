@@ -3,6 +3,7 @@ import {generatePerlinParticles,PerlinParticleSession,perlinParticleDefaults,per
 import {visiblePerlinControls} from '../src/scenes/perlin';
 import {definitions} from '../src/scenes/particles';
 import {generateScene,TemporalGenerationSession} from '../src/engine/temporal';
+import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
 import {parseLegacyScene} from '../src/engine/legacyImport';
 import type {SceneDocument,SceneOutput,Settings,AnimationTrack} from '../src/types';
 
@@ -132,7 +133,7 @@ describe('continuous production boundaries',()=>{
  it('preserves long trail lifetimes while bounding the actual requested history, not an unvisited future',()=>{
   const s=scene({particleDisplay:'trails',particleCount:1,simulationFps:2,trailLifetime:120,trailStride:2});const out=geometry(generatePerlinParticles(s,{...context,time:120}));expect(out.trails!.positions.length/3).toBe(121);expect(out.trails!.alphas![0]).toBe(0);expect(out.trails!.alphas![120]).toBe(1);
   expect(geometry(generatePerlinParticles(scene({particleDisplay:'trails',particleCount:20000,simulationFps:120,trailLifetime:3600,trailStride:1}),{...context,time:0})).positions.length/3).toBe(20000);
-  const {scene:imported}=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'long',settings:{trail_lifetime:120,particle_count:4}}));expect(imported.settings.trailLifetime).toBe(120);expect(generateScene(imported,context).type).toBe('geometry');
+  const {scene:imported}=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'long',settings:{trail_lifetime:120,particle_count:4}}));expect(imported.settings.trailLifetime).toBe(120);const importedOutput=geometry(generateScene(imported,{...context,sourceViewport:ordinarySourceViewport(imported,context.width,context.height,'primary',context.height)}));expect(importedOutput.positions.length).toBe(4*3);expect(importedOutput.sourceCameraFrame).toBeDefined();
  });
  it('preserves zero-size/zero-speed source controls and high finite respawn probabilities',()=>{
   const {scene:s}=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'zero',settings:{particle_count:15000,step_size:0,noise_scale:0,dot_size:0,respawn_rate:1-Number.EPSILON,use_accumulation_buffer:true}}));
