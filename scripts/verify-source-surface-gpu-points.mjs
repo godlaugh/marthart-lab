@@ -102,7 +102,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:print(json.dumps(dict(vertex=z.read('data
     const {program}=programFor(gpu.functionBody);gl.useProgram(program);const vao=gl.createVertexArray();vaos.push(vao);gl.bindVertexArray(vao);
     canvas.width=width*dpr;canvas.height=height*dpr;gl.viewport(0,0,canvas.width,canvas.height);
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
-    const bg=output.sourceSurfaceBackgroundColor,gray=(bg>>>24)===0&&(bg&0xffffff)<=255;gl.clearColor((gray?bg&255:(bg>>>16)&255)/255,(gray?bg&255:(bg>>>8)&255)/255,(bg&255)/255,gray?1:(bg>>>24)/255);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+    const bg=output.sourceBackgroundColor,gray=(bg>>>24)===0&&(bg&0xffffff)<=255;gl.clearColor((gray?bg&255:(bg>>>16)&255)/255,(gray?bg&255:(bg>>>8)&255)/255,(bg&255)/255,gray?1:(bg>>>24)/255);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     const clear=new Uint8Array(4);gl.readPixels(0,0,1,1,gl.RGBA,gl.UNSIGNED_BYTE,clear);
     const vertices=[],normals=[],colors=[],uvs=[],quad=[[0,0],[1,0],[1,1],[0,0],[1,1],[0,1]];
     for(let i=0;i<gpu.seeds.length;i+=4)for(const uv of quad){vertices.push(gpu.seeds[i],gpu.seeds[i+1],gpu.seeds[i+2],1);normals.push(gpu.seeds[i+3],0,0);colors.push(...gpu.tint.slice(i,i+4));uvs.push(...uv);}

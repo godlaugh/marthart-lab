@@ -1,6 +1,6 @@
 import type {SourceSurfaceGpuMeshFrame} from './engine/sourceSurfaceGpuMesh';
 import type {SourceSurfaceGpuPointFrame} from './engine/sourceSurfaceGpuPoints';
-import type {SourceSurfacePointAppearance} from './engine/sourceSurfacePointAppearance';
+import type {SourceParticlePointAppearance} from './engine/sourceParticlePointAppearance';
 import type {SourceSurfaceMeshAppearance} from './engine/sourceSurfaceMeshRenderer';
 import type {SourceSurfaceMeshWireframeFrame} from './engine/sourceSurfaceMeshWireframe';
 import type {SourceSurfaceMeshConfiguration} from './engine/sourceSurfaceMeshConfig';
@@ -302,7 +302,7 @@ export interface GeometryOutput {
   colors?: Float32Array;
   /** Producer-owned normalized alpha per point, multiplied by display opacity. */
   pointAlphas?: Float32Array;
-  sourcePointAppearance?: SourceSurfacePointAppearance;
+  sourcePointAppearance?: SourceParticlePointAppearance;
   /** GPU-owned formula/seed transport, never CPU world positions. */
   sourceGpuMesh?:SourceSurfaceGpuMeshFrame;
   sourceGpuPoints?:SourceSurfaceGpuPointFrame;
@@ -312,7 +312,7 @@ export interface GeometryOutput {
   /** Ordered native CPU line pairs, packed stroke color and resolved width. */
   sourceMeshWireframe?: SourceSurfaceMeshWireframeFrame;
   /** Packed background passed to source P3D background(int), including alpha. */
-  sourceSurfaceBackgroundColor?:number;
+  sourceBackgroundColor?:number;
   /** Final source full-scene black overlay, already quantized to a byte. */
   sourceSurfaceOverlayAlpha?:number;
   /** Parameter-grid provenance from the surface producer, before vertex compaction.
@@ -332,7 +332,7 @@ export interface GeometryOutput {
     alphas: Float32Array;
     indices?: Uint32Array;
     /** Optional producer-owned logical-pixel line style paired with this frame. */
-    appearance?: {width:number;overlay:boolean};
+    appearance?: {width:number;overlay:boolean;model?:'processing-lines-1.7.8'};
   };
   topology: "points" | "lines" | "segments" | "mesh";
 }

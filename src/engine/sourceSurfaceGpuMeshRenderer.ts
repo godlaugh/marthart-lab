@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type {SourceSurfaceGpuMeshFrame} from './sourceSurfaceGpuMesh';
 import type {SourceCameraPlan} from './sourceCamera';
 import {SOURCE_SURFACE_MESH_MATERIAL_DEFAULTS as defaults} from './sourceSurfaceMeshConfig';
-import {sourceSurfaceLineScale} from './sourceSurfacePointAppearance';
+import {sourceParticleLineScale} from './sourceParticlePointAppearance';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
 import {sourceSurfaceGpuMeshVertex,sourceSurfaceGpuMeshFragment} from './sourceSurfaceGpuMeshShader';
 
@@ -30,7 +30,7 @@ function validate(frame:SourceSurfaceGpuMeshFrame,opacity:number):void {
 export function createSourceSurfaceGpuMesh(frame:SourceSurfaceGpuMeshFrame,plan:SourceCameraPlan,displayOpacity=1):SourceSurfaceGpuMeshObjects {
  validate(frame,displayOpacity);const objects:SourceSurfaceGpuMeshObjects={};
  if(!frame.triangles.length)return objects;
- const {displayScale}=sourceSurfaceLineScale(plan,frame.referencePixelDensity),thickness=Math.max(F(.1),F(F(frame.lineWeight)*displayScale));
+ const {displayScale}=sourceParticleLineScale(plan,frame.referencePixelDensity),thickness=Math.max(F(.1),F(F(frame.lineWeight)*displayScale));
  const wireColor=uniformRgba(frame.wireframeColor,displayOpacity),ambient=uniformRgba(defaults.materialAmbientColor),specular=uniformRgba(defaults.materialSpecularColor);
  const make=(wire:boolean):SourceGpuMesh=>{
   const geometry=new THREE.BufferGeometry();let material:THREE.RawShaderMaterial|undefined;

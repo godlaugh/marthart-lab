@@ -16,7 +16,7 @@ describe('public CPU surface mode transition workflow',()=>{
   const original=scene(),saved=serializeScene(original),s=parseScene(saved);
   expect(s.surfaceSource).toMatchObject({mode:'points',points:{uSegments:2},mesh:{uSegments:3}});
   for(const [time,mode,alpha]of [[0,'points',128],[.25,'mesh',255],[.5,'mesh',128],[.75,'mesh',0],[1,'points',255],[1.25,'points',0],[.25,'mesh',255]] as const){
-   const out=output(s,time);expect(out.topology).toBe(mode);expect(out.sourceSurfaceOverlayAlpha).toBe(alpha);expect(out.sourceSurfaceBackgroundColor).toBe(0x804080c0);
+   const out=output(s,time);expect(out.topology).toBe(mode);expect(out.sourceSurfaceOverlayAlpha).toBe(alpha);expect(out.sourceBackgroundColor).toBe(0x804080c0);
    expect(out.sourceCameraFrame!.camera).toEqual(sceneAtTime(s,time).evaluatedSourceCamera!.camera);
    expect(mode==='mesh'?out.sourceMeshAppearance:out.sourcePointAppearance).toBeDefined();
    structuredClone(out,{transfer:outputBuffers(out)});

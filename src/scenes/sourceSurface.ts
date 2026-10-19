@@ -1,4 +1,4 @@
-import {sourceSurfacePointAppearance} from '../engine/sourceSurfacePointAppearance';
+import {sourceParticlePointAppearance} from '../engine/sourceParticlePointAppearance';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {replaySourceSurface,type SourceSurfaceParticles} from '../engine/sourceSurfaceParticles';
 import type {OrdinarySourceCameraFrame} from '../engine/ordinarySourceCameraTimeline';
@@ -22,8 +22,8 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
   if('gpuPoints' in snapshot){
    const sourceCameraFrame=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),gpu=snapshot.gpuPoints;
    return{type:'geometry',topology:'points',backend:'webgl2',positions:new Float32Array(),sourceGpuPoints:gpu.frame,
-    sourcePointAppearance:sourceSurfacePointAppearance(configuration.points.dotRadius,prepareOrdinarySourceFrame(sourceCameraFrame),context.sourcePointPixelDensity),sourceCameraFrame,
-    sourceSurfaceBackgroundColor:configuration.backgroundColor,
+    sourcePointAppearance:sourceParticlePointAppearance(configuration.points.dotRadius,prepareOrdinarySourceFrame(sourceCameraFrame),context.sourcePointPixelDensity),sourceCameraFrame,
+    sourceBackgroundColor:configuration.backgroundColor,
     temporal:{time:frame.time,windowStart:frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:0,cacheHits:0},
     stats:{samples:gpu.frame.seeds.length/4,generated:gpu.frame.seeds.length/4,invalid:0,elapsedMs:performance.now()-started},
     warnings:[...gpu.diagnostics,...frame.diagnostics.map(d=>d.message),'原版 GPU 点由着色器计算位置；跟踪点独立按 CPU 时钟更新。GPU 不绘制拖尾，创建时的点颜色不随渐变动作重建。原版完整画面尚未验收。'],
@@ -34,7 +34,7 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
    if(mesh.gpuMesh){
     const gpu=mesh.gpuMesh;
     return{type:'geometry',topology:'mesh',backend:'webgl2',positions:new Float32Array(),sourceGpuMesh:{...gpu,referencePixelDensity:context.sourcePointPixelDensity},
-     sourceSurfaceBackgroundColor:configuration.backgroundColor,sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),
+     sourceBackgroundColor:configuration.backgroundColor,sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),
      temporal:{time:frame.time,windowStart:frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:0,cacheHits:0},
      stats:{samples:configuration.mesh.uSegments*configuration.mesh.vSegments,generated:gpu.seeds.length/4,invalid:0,elapsedMs:performance.now()-started},
      warnings:[...mesh.diagnostics,...frame.diagnostics.map(d=>d.message),'原版 GPU 网格位置与法线由着色器计算；参数更新保留创建时三角拓扑，独立线框不产生可见几何。原版完整画面尚未验收。'],
@@ -44,7 +44,7 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
    return{type:'geometry',topology:'mesh',backend:'cpu',positions,indices,
     sourceMeshColors:mesh.packedColors,sourceMeshWireframe:mesh.wireframe,
     sourceMeshAppearance:sourceSurfaceMeshAppearance(mesh.fillEnabled,mesh.fillOpacity),
-    sourceSurfaceBackgroundColor:configuration.backgroundColor,sourceSurfaceOverlayAlpha:frame.surfaceTransition!.overlayAlpha,
+    sourceBackgroundColor:configuration.backgroundColor,sourceSurfaceOverlayAlpha:frame.surfaceTransition!.overlayAlpha,
     sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),
     temporal:{time:frame.time,windowStart:frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:0,cacheHits:0},
     stats:{samples:configuration.mesh.uSegments*configuration.mesh.vSegments,generated:positions.length/3,invalid:0,elapsedMs:performance.now()-started},
@@ -53,7 +53,7 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
   }
   points=snapshot.points;pointRadius=configuration.points.dotRadius;trailWidth=configuration.points.lineWeight;
  }else{
-  sourceSurfacePointAppearance(pointRadius,prepareOrdinarySourceFrame(initialFrame),context.sourcePointPixelDensity);
+  sourceParticlePointAppearance(pointRadius,prepareOrdinarySourceFrame(initialFrame),context.sourcePointPixelDensity);
   const replay=replaySourceSurface(scene,context.time,'all',context.isCancelled);frame=replay.frame;points=replay.particles.snapshot();
  }
  const {positions,particleIds,trails,colors,pointAlphas,diagnostics}=points;
@@ -62,9 +62,9 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
   trailOutput={positions:trails.positions,indices:trails.indices,alphas:trails.alphas,colors:trails.colors,appearance:{width:Math.max(Math.fround(.1),Math.fround(Math.fround(trailWidth)*Math.fround(.95))),overlay:true}};
  }
  const sourceCameraFrame=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context);
- const sourcePointAppearance=sourceSurfacePointAppearance(pointRadius,prepareOrdinarySourceFrame(sourceCameraFrame),context.sourcePointPixelDensity);
+ const sourcePointAppearance=sourceParticlePointAppearance(pointRadius,prepareOrdinarySourceFrame(sourceCameraFrame),context.sourcePointPixelDensity);
  return{type:'geometry',topology:'points',backend:'cpu',positions,particleIds,colors,pointAlphas,...(trailOutput?{trails:trailOutput}:{}),
-  sourceCameraFrame,sourcePointAppearance,...(configuration?{sourceSurfaceBackgroundColor:configuration.backgroundColor,sourceSurfaceOverlayAlpha:frame.surfaceTransition!.overlayAlpha}:{}),
+  sourceCameraFrame,sourcePointAppearance,...(configuration?{sourceBackgroundColor:configuration.backgroundColor,sourceSurfaceOverlayAlpha:frame.surfaceTransition!.overlayAlpha}:{}),
   temporal:{time:frame.time,windowStart:trails?Math.min(frame.time,trails.oldestTime):frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:trails?.records??0,cacheHits:0},
   stats:{samples:particleIds.length,generated:particleIds.length,invalid:0,elapsedMs:performance.now()-started},
   warnings:[...diagnostics,...frame.diagnostics.map(d=>d.message),'原版曲面粒子采用固定帧率、源索引与 Float32 运动；静态色板与边界点渐隐已按源规则接入；圆形光照点与纹理采用保留着色器规则；动态渐变按源回调顺序和历史年龄采样；原版应用完整画面尚未一致性验收。'],

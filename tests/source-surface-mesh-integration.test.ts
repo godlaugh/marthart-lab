@@ -21,7 +21,7 @@ describe('public source mesh replay and publication',()=>{
   let original:Float32Array|undefined;
   for(const time of [.25,1,0,.25]){
    const out=output(s,time);expect(out.topology).toBe('mesh');expect(out.sourceMeshWireframe?.mode).toBe('coupled');
-   expect(out.sourceSurfaceBackgroundColor).toBe(0x804080c0);expect(out.positions.length).toBe(45);
+   expect(out.sourceBackgroundColor).toBe(0x804080c0);expect(out.positions.length).toBe(45);
    expect(Array.from(out.positions.slice(0,9))).toEqual([0,0,0,3,0,3,6,0,6]);
    if(original)expect(out.positions).toEqual(original);original=out.positions.slice();
    expect(out.sourceCameraFrame?.camera.center).toEqual(time===0?[1,2,3]:[3,3.5,6.5]);

@@ -1,5 +1,5 @@
 import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceSurfaceParameterConfig';
-import {parseSourceSurfaceGradientConfiguration} from './sourceSurfaceGradientConfig';
+import {parseSourceParticleGradientConfiguration} from './sourceParticleGradientConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {replaySourceSurfaceCamera} from './sourceSurfaceReplay';
 import {usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -414,7 +414,7 @@ export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:Scene
   // Authored full-scene configuration has one contract even while its clip is
   // disabled. Camera-only markers retain the older generic validation rules.
   if(sceneKind==='roots'&&schedule==='roots-scene-sequence-v1'&&action.method==='gradientStart')parseRootsGradientConfiguration(action.gradient);
-  else if(sourceSurface&&action.method==='gradientStart')parseSourceSurfaceGradientConfiguration(action.gradient);
+  else if(sourceSurface&&action.method==='gradientStart')parseSourceParticleGradientConfiguration(action.gradient);
   else validateGradientConfig(action.gradient);
  }}}
 }

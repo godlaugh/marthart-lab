@@ -1,5 +1,6 @@
+import {createSourceParticleTrailLines} from './sourceProcessingLineRenderer';
 import {createSourceSurfaceGpuMesh} from './sourceSurfaceGpuMeshRenderer';
-import {createSourceSurfacePoints} from './sourceSurfacePointRenderer';
+import {createSourceParticlePoints} from './sourceParticlePointRenderer';
 import {createSourceSurfaceMeshFill} from './sourceSurfaceMeshRenderer';
 import {createSourceSurfaceMeshLines} from './sourceSurfaceLineRenderer';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
@@ -141,9 +142,9 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
     if(output.type==='geometry'&&output.sourcePointAppearance&&output.sourceMeshAppearance)throw new Error('源曲面点与网格外观不能混用');
     if(output.type==='geometry'&&output.sourceMeshWireframe&&!output.sourceMeshAppearance)throw new Error('源曲面线框缺少对应网格外观');
-    if(output.type==='geometry'&&output.sourceSurfaceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance||output.sourceGpuMesh)||!Number.isInteger(output.sourceSurfaceBackgroundColor)||output.sourceSurfaceBackgroundColor<0||output.sourceSurfaceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
+    if(output.type==='geometry'&&output.sourceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance||output.sourceGpuMesh)||!Number.isInteger(output.sourceBackgroundColor)||output.sourceBackgroundColor<0||output.sourceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
     const overlayAlpha=output.type==='geometry'?output.sourceSurfaceOverlayAlpha:undefined;
-    if(overlayAlpha!==undefined&&(output.type!=='geometry'||output.sourceSurfaceBackgroundColor===undefined||!Number.isInteger(overlayAlpha)||overlayAlpha<0||overlayAlpha>255))throw new Error('源曲面遮罩需要对应背景与 0–255 透明度');
+    if(overlayAlpha!==undefined&&(output.type!=='geometry'||output.sourceBackgroundColor===undefined||!Number.isInteger(overlayAlpha)||overlayAlpha<0||overlayAlpha>255))throw new Error('源曲面遮罩需要对应背景与 0–255 透明度');
     const sourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
     const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
     if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
@@ -199,7 +200,7 @@ export class ArtRenderer {
       this.controls.enableRotate=false;
     } else if(output.sourcePointAppearance){
       if(!sourcePlan)throw new Error('源曲面点外观需要对应的源相机帧');
-      this.group.add(createSourceSurfacePoints(output,sourcePlan,Number(document.settings.opacity??1)));
+      this.group.add(createSourceParticlePoints(output,sourcePlan,Number(document.settings.opacity??1)));
       this.controls.enableRotate=false;
     } else {
       const colors=output.colors??vertexColors(output.positions,document.palette,String(document.settings.colorMetric??'height'));
@@ -266,11 +267,14 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.trails){
       const trail=output.trails;
       const colors=trail.colors??vertexColors(trail.positions,document.palette,String(document.settings.colorMetric??'height'));
-      const lines=createThickTrails({...trail,colors},trail.appearance?.width??parseTrailAppearance(document.settings).width,Number(document.settings.opacity??1));
+      const native=trail.appearance?.model==='processing-lines-1.7.8';
+      if(native&&(!sourcePlan||!output.sourcePointAppearance||!trail.indices||!trail.colors||!trail.appearance?.overlay))throw new Error('源粒子拖尾需要相机、点外观、索引、颜色和叠加样式');
+      const width=trail.appearance?.width??parseTrailAppearance(document.settings).width,opacity=Number(document.settings.opacity??1);
+      const lines=native?createSourceParticleTrailLines({positions:trail.positions,colors:trail.colors!,alphas:trail.alphas,indices:trail.indices!},width,sourcePlan!,opacity):createThickTrails({...trail,colors},width,opacity);
       if(trail.appearance?.overlay){lines.material.depthTest=false;lines.renderOrder=2;}
       this.group.add(lines);
     }
-    const sourceBackground=output.type==='geometry'?output.sourceSurfaceBackgroundColor:undefined;
+    const sourceBackground=output.type==='geometry'?output.sourceBackgroundColor:undefined;
     // Source shaders and P3D clear colors are already display channel values.
     // Keep screen and offscreen clear paths in the same raw channel space.
     this.renderer.outputColorSpace=sourceBackground===undefined?THREE.SRGBColorSpace:THREE.LinearSRGBColorSpace;

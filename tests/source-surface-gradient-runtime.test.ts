@@ -1,5 +1,5 @@
 import {prepareSourceSurfaceParticles} from '../src/engine/sourceSurfaceParticles';
-import {SOURCE_SURFACE_GRADIENT_DEFAULT} from '../src/engine/sourceSurfaceGradientConfig';
+import {SOURCE_PARTICLE_GRADIENT_DEFAULT} from '../src/engine/sourceParticleGradientConfig';
 import {describe,expect,it} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
@@ -78,7 +78,7 @@ describe('source Surface gradient lifecycle through imported documents and gener
   const {scene}=imported('HUE_ROTATE',[['start'],[]]);let checks=0,limit=Infinity;
   const particles=prepareSourceSurfaceParticles(scene).create('all',()=>++checks>limit);
   limit=checks+3;
-  expect(()=>particles.beginGradientActions([{kind:'start',config:SOURCE_SURFACE_GRADIENT_DEFAULT}])).toThrow('已取消');
+  expect(()=>particles.beginGradientActions([{kind:'start',config:SOURCE_PARTICLE_GRADIENT_DEFAULT}])).toThrow('已取消');
   limit=Infinity;
   expect(()=>particles.snapshot()).toThrow('已取消');
   expect(()=>particles.interpolateGradientActions(.5,false)).toThrow('已取消');

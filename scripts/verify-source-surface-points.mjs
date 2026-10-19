@@ -49,7 +49,7 @@ try{
   const THREE=await import('/node_modules/three/build/three.module.js');
   const {Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts');
   const {ordinarySourceViewport,prepareOrdinarySourceFrame}=await import('/src/engine/ordinarySourceCamera.ts');
-  const {createSourceSurfacePoints}=await import('/src/engine/sourceSurfacePointRenderer.ts');
+  const {createSourceParticlePoints}=await import('/src/engine/sourceParticlePointRenderer.ts');
   const check=(v,m)=>{if(!v)throw Error(m);};
   const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
   const canvas=document.createElement('canvas'),gl=canvas.getContext('webgl2',{antialias:false,alpha:true,premultipliedAlpha:false,preserveDrawingBuffer:true});check(gl,'WebGL2 unavailable');
@@ -94,7 +94,7 @@ try{
     for(const [name,value] of [['projection',plan.projection.columnMajor],['modelview',plan.modelView.columnMajor],['texMatrix',[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]]])gl.uniformMatrix4fv(gl.getUniformLocation(program,name),false,value);
     gl.uniform1f(gl.getUniformLocation(program,'radius'),a.radius);gl.uniform1f(gl.getUniformLocation(program,'focalLength'),a.focalLength);
     gl.drawArrays(gl.TRIANGLES,0,vertices.length/4);const expected=new Uint8Array(canvas.width*canvas.height*4);gl.readPixels(0,0,canvas.width,canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,expected);check(gl.getError()===0,'reference GL error');
-    const mesh=createSourceSurfacePoints(output,plan,1),world=new THREE.Scene(),rt=new THREE.WebGLRenderTarget(canvas.width,canvas.height);world.add(mesh);
+    const mesh=createSourceParticlePoints(output,plan,1),world=new THREE.Scene(),rt=new THREE.WebGLRenderTarget(canvas.width,canvas.height);world.add(mesh);
     const actual=new Uint8Array(expected.length);
     try{renderer.setClearColor(0,c.clearAlpha??1);renderer.setSize(canvas.width,canvas.height,false);renderer.setRenderTarget(rt);renderer.render(world,new THREE.Camera());renderer.readRenderTargetPixels(rt,0,0,canvas.width,canvas.height,actual);check(renderer.getContext().getError()===0,'production GL error');}
     finally{renderer.setRenderTarget(null);rt.dispose();mesh.geometry.dispose();mesh.material.dispose();}

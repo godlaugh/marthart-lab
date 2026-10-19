@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {createHash} from 'node:crypto';
-import {sourceSurfacePointAppearance,sourceSurfacePointSprite} from '../src/engine/sourceSurfacePointAppearance';
-import {createSourceSurfacePoints} from '../src/engine/sourceSurfacePointRenderer';
+import {sourceParticlePointAppearance,sourceParticlePointSprite} from '../src/engine/sourceParticlePointAppearance';
+import {createSourceParticlePoints} from '../src/engine/sourceParticlePointRenderer';
 import {prepareSourceCamera,type SourceCameraPlan} from '../src/engine/sourceCamera';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
@@ -16,22 +16,22 @@ function plan(target:'primary'|'offscreen'='primary',height=100):SourceCameraPla
 function imported(settings?:unknown){return parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Point appearance',equations:{x:'u',y:'v',z:'0'},...(settings===undefined?{}:{settings}),timeline:[{type:'trails'},{type:'wait',duration:1}]}));}
 describe('source CPU point appearance ownership',()=>{
  it('matches independently transcribed full 64×64 sprite bytes including the outer transparent black ring',()=>{
-  const a=sourceSurfacePointSprite();expect(createHash('sha256').update(a).digest('hex')).toBe(golden.sha256);
+  const a=sourceParticlePointSprite();expect(createHash('sha256').update(a).digest('hex')).toBe(golden.sha256);
   for(const {xy:[x,y],value} of golden.rgba)expect(Array.from(a.slice((y*64+x)*4,(y*64+x)*4+4))).toEqual(value);
-  a.fill(0);expect(sourceSurfacePointSprite()[(32*64+32)*4]).toBe(255);
+  a.fill(0);expect(sourceParticlePointSprite()[(32*64+32)*4]).toBe(255);
  });
  it('uses primary line scale one regardless of density and retains signed radius',()=>{
-  expect(sourceSurfacePointAppearance(2,plan(),2)).toMatchObject({radius:F(1.6),focalLength:50,displayScale:1,referencePixelDensity:2,densityOrigin:'request'});
-  expect(sourceSurfacePointAppearance(-2,plan()).radius).toBe(F(-1.6));expect(sourceSurfacePointAppearance(0,plan()).radius).toBe(0);
-  expect(sourceSurfacePointAppearance(2,plan(),17).referencePixelDensity).toBe(17);
+  expect(sourceParticlePointAppearance(2,plan(),2)).toMatchObject({radius:F(1.6),focalLength:50,displayScale:1,referencePixelDensity:2,densityOrigin:'request'});
+  expect(sourceParticlePointAppearance(-2,plan()).radius).toBe(F(-1.6));expect(sourceParticlePointAppearance(0,plan()).radius).toBe(0);
+  expect(sourceParticlePointAppearance(2,plan(),17).referencePixelDensity).toBe(17);
  });
  it.each(golden.scales)('matches independently derived export scale for density=$density ratio=$ratio',({density,ratio,scale,radiusForTwo})=>{
-  expect(sourceSurfacePointAppearance(2,plan('offscreen',ratio*100),density)).toMatchObject({displayScale:scale,radius:radiusForTwo});
+  expect(sourceParticlePointAppearance(2,plan('offscreen',ratio*100),density)).toMatchObject({displayScale:scale,radius:radiusForTwo});
  });
- it.each([0,-1,NaN,Infinity,-Infinity])('rejects invalid local density %s',density=>expect(()=>sourceSurfacePointAppearance(2,plan(),density)).toThrow('像素密度'));
+ it.each([0,-1,NaN,Infinity,-Infinity])('rejects invalid local density %s',density=>expect(()=>sourceParticlePointAppearance(2,plan(),density)).toThrow('像素密度'));
  it('labels legacy density omission and rejects nonfinite scalar expansion',()=>{
-  expect(sourceSurfacePointAppearance(2,plan())).toMatchObject({referencePixelDensity:1,densityOrigin:'legacy-default-1'});
-  for(const size of [NaN,Infinity,1e40,'2'])expect(()=>sourceSurfacePointAppearance(size,plan())).toThrow('半径');
+  expect(sourceParticlePointAppearance(2,plan())).toMatchObject({referencePixelDensity:1,densityOrigin:'legacy-default-1'});
+  for(const size of [NaN,Infinity,1e40,'2'])expect(()=>sourceParticlePointAppearance(size,plan())).toThrow('半径');
  });
  it('distinguishes absent settings defaults and accepts original numeric conversion without local size clamps',()=>{
   expect(imported().scene.settings.pointSize).toBe(F(1.68));expect(imported({}).scene.settings.pointSize).toBe(2);
@@ -52,10 +52,10 @@ describe('source CPU point appearance ownership',()=>{
   const s=imported({u_segments:2,v_segments:2,show_trails:false}).scene;
   const out=generateScene(s,{time:0,width:100,height:100,quality:'preview',sourceViewport:ordinarySourceViewport(s,100,100,'primary',100),sourcePointPixelDensity:2});
   if(out.type!=='geometry')throw Error('geometry');expect(out.sourcePointAppearance).toMatchObject({referencePixelDensity:2,densityOrigin:'request'});
-  const mesh=createSourceSurfacePoints(out,plan(),1),g=mesh.geometry,m=mesh.material;
+  const mesh=createSourceParticlePoints(out,plan(),1),g=mesh.geometry,m=mesh.material;
   expect(g.instanceCount).toBe(4);expect(g.getAttribute('particlePosition').array).toBe(out.positions);expect(g.getAttribute('particleAlpha').array).toBe(out.pointAlphas);expect(g.index!.count).toBe(6);
   expect(mesh.frustumCulled).toBe(false);expect(m.uniforms.lightDir.value.toArray()).toEqual([0,0,0]);expect(m.uniforms.materialShininess.value).toBe(0);
   let disposed=0;m.uniforms.sprite.value.addEventListener('dispose',()=>disposed++);m.dispose();g.dispose();expect(disposed).toBe(1);
-  expect(()=>createSourceSurfacePoints({...out,pointAlphas:new Float32Array([NaN])},plan(),1)).toThrow('缓冲');
+  expect(()=>createSourceParticlePoints({...out,pointAlphas:new Float32Array([NaN])},plan(),1)).toThrow('缓冲');
  });
 });

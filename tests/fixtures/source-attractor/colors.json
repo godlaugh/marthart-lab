@@ -1,0 +1,2836 @@
+{
+  "provenance": {
+    "kind": "independent-static-instruction-transcription",
+    "nativeExecution": false,
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "methods": [
+      "StrangeAttractor.applyGradientFrame PC5-163",
+      "applyGradientState PC0-123",
+      "sampleShiftedPalette PC78-251",
+      "sampleGradientPalette PC0-75",
+      "GradientRuntimeState/GradientAnimator/StartGradientAnimation/StopGradientAnimation"
+    ]
+  },
+  "palette": [
+    1627324416,
+    2684419840,
+    3758096639
+  ],
+  "cases": [
+    {
+      "name": "hue_rotate-rgb",
+      "mode": "hue_rotate",
+      "interpolation": "rgb",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627128320,
+            3221257601,
+            1627128320
+          ],
+          "state": {
+            "primary": 0.00286865234375,
+            "secondary": 0.00286865234375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1693192704,
+            3288362130,
+            1693192704
+          ],
+          "state": {
+            "primary": 0.02471923828125,
+            "secondary": 0.02471923828125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1825321472,
+            3422571953,
+            1825321472
+          ],
+          "state": {
+            "primary": 0.06561279296875,
+            "secondary": 0.06561279296875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2007063808,
+            3607110109,
+            2007063808
+          ],
+          "state": {
+            "primary": 0.12261962890625,
+            "secondary": 0.12261962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122676480,
+            3724543481,
+            2122676480
+          ],
+          "state": {
+            "primary": 0.15911865234375,
+            "secondary": 0.15911865234375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2188675584,
+            3658088692,
+            2188675584
+          ],
+          "state": {
+            "primary": 0.18096923828125,
+            "secondary": 0.18096923828125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2320869632,
+            3391750356,
+            2320869632
+          ],
+          "state": {
+            "primary": 0.22186279296875,
+            "secondary": 0.22186279296875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2502546688,
+            3025469609,
+            2502546688
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.27886962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2502546688,
+            3025469609,
+            2502546688
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.27886962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        }
+      ]
+    },
+    {
+      "name": "hue_rotate-linear",
+      "mode": "hue_rotate",
+      "interpolation": "linear",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1726420736,
+            3321915287,
+            1726420736
+          ],
+          "state": {
+            "primary": 0.03125,
+            "secondary": 0.03125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1924613888,
+            3523229639,
+            1924613888
+          ],
+          "state": {
+            "primary": 0.09375,
+            "secondary": 0.09375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2321000192,
+            3425108183,
+            2321000192
+          ],
+          "state": {
+            "primary": 0.21875,
+            "secondary": 0.21875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.25,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.25,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.25,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.25,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2519193344,
+            3025600679,
+            2519193344
+          ],
+          "state": {
+            "primary": 0.28125,
+            "secondary": 0.28125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            2717972231,
+            2626093175,
+            2717972231
+          ],
+          "state": {
+            "primary": 0.34375,
+            "secondary": 0.34375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            2919286583,
+            2226585671,
+            2919286583
+          ],
+          "state": {
+            "primary": 0.40625,
+            "secondary": 0.40625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            3120600935,
+            1827078167,
+            3120600935
+          ],
+          "state": {
+            "primary": 0.46875,
+            "secondary": 0.46875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            3120600935,
+            1827078167,
+            3120600935
+          ],
+          "state": {
+            "primary": 0.46875,
+            "secondary": 0.46875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25
+        }
+      ]
+    },
+    {
+      "name": "offset_cycle-rgb",
+      "mode": "offset_cycle",
+      "interpolation": "rgb",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627063040,
+            3221257346,
+            1627063040
+          ],
+          "state": {
+            "primary": 0.00409386632964015,
+            "secondary": 0.00409386632964015,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1709774080,
+            3305138581,
+            1709774080
+          ],
+          "state": {
+            "primary": 0.028347797691822052,
+            "secondary": 0.028347797691822052,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1841837568,
+            3439347894,
+            1841837568
+          ],
+          "state": {
+            "primary": 0.07150524854660034,
+            "secondary": 0.07150524854660034,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2040226560,
+            3640663011,
+            2040226560
+          ],
+          "state": {
+            "primary": 0.13054955005645752,
+            "secondary": 0.13054955005645752,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2139127296,
+            3741319677,
+            2139127296
+          ],
+          "state": {
+            "primary": 0.16508883237838745,
+            "secondary": 0.16508883237838745,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2139127296,
+            3741319677,
+            2139127296
+          ],
+          "state": {
+            "primary": 0.16508883237838745,
+            "secondary": 0.16508883237838745,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2139127296,
+            3741319677,
+            2139127296
+          ],
+          "state": {
+            "primary": 0.16508883237838745,
+            "secondary": 0.16508883237838745,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2139127296,
+            3741319677,
+            2139127296
+          ],
+          "state": {
+            "primary": 0.16508883237838745,
+            "secondary": 0.16508883237838745,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2155708672,
+            3741384957,
+            2155708672
+          ],
+          "state": {
+            "primary": 0.1691827028989792,
+            "secondary": 0.1691827028989792,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.16508883237838745
+        },
+        {
+          "packed": [
+            2238419712,
+            3574857962,
+            2238419712
+          ],
+          "state": {
+            "primary": 0.1934366226196289,
+            "secondary": 0.1934366226196289,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.16508883237838745
+        },
+        {
+          "packed": [
+            2370483200,
+            3308585161,
+            2370483200
+          ],
+          "state": {
+            "primary": 0.2365940809249878,
+            "secondary": 0.2365940809249878,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.16508883237838745
+        },
+        {
+          "packed": [
+            2552029696,
+            2925658268,
+            2552029696
+          ],
+          "state": {
+            "primary": 0.29563838243484497,
+            "secondary": 0.29563838243484497,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.16508883237838745
+        },
+        {
+          "packed": [
+            2552029696,
+            2925658268,
+            2552029696
+          ],
+          "state": {
+            "primary": 0.29563838243484497,
+            "secondary": 0.29563838243484497,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.16508883237838745
+        }
+      ]
+    },
+    {
+      "name": "offset_cycle-linear",
+      "mode": "offset_cycle",
+      "interpolation": "linear",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1726355456,
+            3321915032,
+            1726355456
+          ],
+          "state": {
+            "primary": 0.03247521445155144,
+            "secondary": 0.03247521445155144,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1924418048,
+            3523229129,
+            1924418048
+          ],
+          "state": {
+            "primary": 0.09737855195999146,
+            "secondary": 0.09737855195999146,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2139257856,
+            3741320187,
+            2139257856
+          ],
+          "state": {
+            "primary": 0.16214245557785034,
+            "secondary": 0.16214245557785034,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2337385728,
+            3358392529,
+            2337385728
+          ],
+          "state": {
+            "primary": 0.22667992115020752,
+            "secondary": 0.22667992115020752,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2436417024,
+            3158704312,
+            2436417024
+          ],
+          "state": {
+            "primary": 0.25883883237838745,
+            "secondary": 0.25883883237838745,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2436417024,
+            3158704312,
+            2436417024
+          ],
+          "state": {
+            "primary": 0.25883883237838745,
+            "secondary": 0.25883883237838745,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2436417024,
+            3158704312,
+            2436417024
+          ],
+          "state": {
+            "primary": 0.25883883237838745,
+            "secondary": 0.25883883237838745,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2436417024,
+            3158704312,
+            2436417024
+          ],
+          "state": {
+            "primary": 0.25883883237838745,
+            "secondary": 0.25883883237838745,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2535513600,
+            2959016095,
+            2535513600
+          ],
+          "state": {
+            "primary": 0.291314035654068,
+            "secondary": 0.291314035654068,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.25883883237838745
+        },
+        {
+          "packed": [
+            2751524113,
+            2542862445,
+            2751524113
+          ],
+          "state": {
+            "primary": 0.3562173843383789,
+            "secondary": 0.3562173843383789,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.25883883237838745
+        },
+        {
+          "packed": [
+            2952837955,
+            2126643260,
+            2952837955
+          ],
+          "state": {
+            "primary": 0.4209812879562378,
+            "secondary": 0.4209812879562378,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.25883883237838745
+        },
+        {
+          "packed": [
+            3170929268,
+            1710424075,
+            3170929268
+          ],
+          "state": {
+            "primary": 0.48551875352859497,
+            "secondary": 0.48551875352859497,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25883883237838745
+        },
+        {
+          "packed": [
+            3170929268,
+            1710424075,
+            3170929268
+          ],
+          "state": {
+            "primary": 0.48551875352859497,
+            "secondary": 0.48551875352859497,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25883883237838745
+        }
+      ]
+    },
+    {
+      "name": "cross_fade-rgb",
+      "mode": "cross_fade",
+      "interpolation": "rgb",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1643513600,
+            3238033286,
+            1643513600
+          ],
+          "state": {
+            "primary": 0.00286865234375,
+            "secondary": 0.08210006356239319,
+            "blend": 0.09031089395284653
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1709643264,
+            3305138070,
+            1709643264
+          ],
+          "state": {
+            "primary": 0.02471924014389515,
+            "secondary": 0.09797802567481995,
+            "blend": 0.07876754552125931
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1825125376,
+            3422571187,
+            1825125376
+          ],
+          "state": {
+            "primary": 0.06561279296875,
+            "secondary": 0.12783560156822205,
+            "blend": 0.05890170484781265
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2006932992,
+            3607109598,
+            2006932992
+          ],
+          "state": {
+            "primary": 0.12261962890625,
+            "secondary": 0.1704232394695282,
+            "blend": 0.036368340253829956
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122741504,
+            3707766518,
+            2122741504
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.19625000655651093,
+            "blend": 0.02607104368507862
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122741504,
+            3707766518,
+            2122741504
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.19625000655651093,
+            "blend": 0.02607104368507862
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122741504,
+            3707766518,
+            2122741504
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.19625000655651093,
+            "blend": 0.02607104368507862
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122741504,
+            3707766518,
+            2122741504
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.19625000655651093,
+            "blend": 0.02607104368507862
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2139061760,
+            3674473716,
+            2139061760
+          ],
+          "state": {
+            "primary": 0.15911865234375,
+            "secondary": 0.2383500635623932,
+            "blend": 0.0903109461069107
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2205126144,
+            3608019183,
+            2205126144
+          ],
+          "state": {
+            "primary": 0.18096923828125,
+            "secondary": 0.25422802567481995,
+            "blend": 0.07876760512590408
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2320673536,
+            3358326993,
+            2320673536
+          ],
+          "state": {
+            "primary": 0.22186279296875,
+            "secondary": 0.28408560156822205,
+            "blend": 0.05890170484781265
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2502415872,
+            3008757927,
+            2502415872
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.3266732394695282,
+            "blend": 0.036368340253829956
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2502415872,
+            3008757927,
+            2502415872
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.3266732394695282,
+            "blend": 0.036368340253829956
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        }
+      ]
+    },
+    {
+      "name": "cross_fade-linear",
+      "mode": "cross_fade",
+      "interpolation": "linear",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1742873088,
+            3338691486,
+            1742873088
+          ],
+          "state": {
+            "primary": 0.03125,
+            "secondary": 0.11048141121864319,
+            "blend": 0.09031089395284653
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1941130496,
+            3540006348,
+            1941130496
+          ],
+          "state": {
+            "primary": 0.09375,
+            "secondary": 0.16700878739356995,
+            "blend": 0.07876760512590408
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2139454208,
+            3708028917,
+            2139454208
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.21847280859947205,
+            "blend": 0.05890170484781265
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2320934912,
+            3408462038,
+            2320934912
+          ],
+          "state": {
+            "primary": 0.21875,
+            "secondary": 0.2665536105632782,
+            "blend": 0.036368340253829956
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420031488,
+            3225419966,
+            2420031488
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.28999999165534973,
+            "blend": 0.026071039959788322
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420031488,
+            3225419966,
+            2420031488
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.28999999165534973,
+            "blend": 0.026071039959788322
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420031488,
+            3225419966,
+            2420031488
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.28999999165534973,
+            "blend": 0.026071039959788322
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420031488,
+            3225419966,
+            2420031488
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.28999999165534973,
+            "blend": 0.026071039959788322
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2535840002,
+            2975793315,
+            2535840002
+          ],
+          "state": {
+            "primary": 0.28125,
+            "secondary": 0.3604814112186432,
+            "blend": 0.0903109461069107
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            2734748434,
+            2592866420,
+            2734748434
+          ],
+          "state": {
+            "primary": 0.34375,
+            "secondary": 0.41700878739356995,
+            "blend": 0.07876760512590408
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            2936063291,
+            2210005061,
+            2936063291
+          ],
+          "state": {
+            "primary": 0.40625,
+            "secondary": 0.46847280859947205,
+            "blend": 0.05890170484781265
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            3120600681,
+            1827078166,
+            3120600681
+          ],
+          "state": {
+            "primary": 0.46875,
+            "secondary": 0.5165536403656006,
+            "blend": 0.03636835888028145
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            3120600681,
+            1827078166,
+            3120600681
+          ],
+          "state": {
+            "primary": 0.46875,
+            "secondary": 0.5165536403656006,
+            "blend": 0.03636835888028145
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25
+        }
+      ]
+    },
+    {
+      "name": "palette_morph-rgb",
+      "mode": "palette_morph",
+      "interpolation": "rgb",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627062784,
+            3221257345,
+            1627062784
+          ],
+          "state": {
+            "primary": 0.00286865234375,
+            "secondary": 0.045709528028964996,
+            "blend": 0.023409627377986908
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1693127168,
+            3288361874,
+            1693127168
+          ],
+          "state": {
+            "primary": 0.02471923828125,
+            "secondary": 0.05352116748690605,
+            "blend": 0.011028050445020199
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1825255936,
+            3422571697,
+            1825255936
+          ],
+          "state": {
+            "primary": 0.06561279296875,
+            "secondary": 0.07789536565542221,
+            "blend": 0.002101253718137741
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1990286336,
+            3590332892,
+            1990286336
+          ],
+          "state": {
+            "primary": 0.12261962890625,
+            "secondary": 0.11732508987188339,
+            "blend": 0.00039796423516236246
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2106029568,
+            3707766774,
+            2106029568
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.14224328100681305,
+            "blend": 0.002719588577747345
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2106029568,
+            3707766774,
+            2106029568
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.14224328100681305,
+            "blend": 0.002719588577747345
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2106029568,
+            3707766774,
+            2106029568
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.14224328100681305,
+            "blend": 0.002719588577747345
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2106029568,
+            3707766774,
+            2106029568
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.14224328100681305,
+            "blend": 0.002719588577747345
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122610944,
+            3707766008,
+            2122610944
+          ],
+          "state": {
+            "primary": 0.15911865234375,
+            "secondary": 0.2019595354795456,
+            "blend": 0.023409610614180565
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2188610048,
+            3641311475,
+            2188610048
+          ],
+          "state": {
+            "primary": 0.18096923828125,
+            "secondary": 0.20977117121219635,
+            "blend": 0.011028061620891094
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2320804096,
+            3374973139,
+            2320804096
+          ],
+          "state": {
+            "primary": 0.22186279296875,
+            "secondary": 0.2341453731060028,
+            "blend": 0.0021012555807828903
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2485769216,
+            3025404073,
+            2485769216
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.273575097322464,
+            "blend": 0.00039796254714019597
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2485769216,
+            3025404073,
+            2485769216
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.273575097322464,
+            "blend": 0.00039796254714019597
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        }
+      ]
+    },
+    {
+      "name": "palette_morph-linear",
+      "mode": "palette_morph",
+      "interpolation": "linear",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1726355456,
+            3321915032,
+            1726355456
+          ],
+          "state": {
+            "primary": 0.03125,
+            "secondary": 0.074090875685215,
+            "blend": 0.023409627377986908
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1924613888,
+            3523229639,
+            1924613888
+          ],
+          "state": {
+            "primary": 0.09375,
+            "secondary": 0.12255192548036575,
+            "blend": 0.011028056032955647
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.1685325801372528,
+            "blend": 0.0021012555807828903
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2321000192,
+            3425108183,
+            2321000192
+          ],
+          "state": {
+            "primary": 0.21875,
+            "secondary": 0.2134554535150528,
+            "blend": 0.0003979647590313107
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.23599328100681305,
+            "blend": 0.002719591371715069
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.23599328100681305,
+            "blend": 0.002719591371715069
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.23599328100681305,
+            "blend": 0.002719591371715069
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2420096768,
+            3225354431,
+            2420096768
+          ],
+          "state": {
+            "primary": 0.25,
+            "secondary": 0.23599328100681305,
+            "blend": 0.002719591371715069
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2519193600,
+            3025666214,
+            2519193600
+          ],
+          "state": {
+            "primary": 0.28125,
+            "secondary": 0.3240908682346344,
+            "blend": 0.023409605026245117
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            2717972231,
+            2626093175,
+            2717972231
+          ],
+          "state": {
+            "primary": 0.34375,
+            "secondary": 0.37255191802978516,
+            "blend": 0.011028050445020199
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            2919286583,
+            2226585671,
+            2919286583
+          ],
+          "state": {
+            "primary": 0.40625,
+            "secondary": 0.4185325801372528,
+            "blend": 0.0021012555807828903
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            3120600935,
+            1827078167,
+            3120600935
+          ],
+          "state": {
+            "primary": 0.46875,
+            "secondary": 0.463455468416214,
+            "blend": 0.00039796254714019597
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25
+        },
+        {
+          "packed": [
+            3120600935,
+            1827078167,
+            3120600935
+          ],
+          "state": {
+            "primary": 0.46875,
+            "secondary": 0.463455468416214,
+            "blend": 0.00039796254714019597
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.25
+        }
+      ]
+    },
+    {
+      "name": "cyclic-rgb-oklab",
+      "mode": "hue_rotate",
+      "interpolation": "oklab",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627128320,
+            3221257601,
+            1627128320
+          ],
+          "state": {
+            "primary": 0.00286865234375,
+            "secondary": 0.00286865234375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1693192704,
+            3288362130,
+            1693192704
+          ],
+          "state": {
+            "primary": 0.02471923828125,
+            "secondary": 0.02471923828125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1825321472,
+            3422571953,
+            1825321472
+          ],
+          "state": {
+            "primary": 0.06561279296875,
+            "secondary": 0.06561279296875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2007063808,
+            3607110109,
+            2007063808
+          ],
+          "state": {
+            "primary": 0.12261962890625,
+            "secondary": 0.12261962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122807040,
+            3724543991,
+            2122807040
+          ],
+          "state": {
+            "primary": 0.15625,
+            "secondary": 0.15625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2122676480,
+            3724543481,
+            2122676480
+          ],
+          "state": {
+            "primary": 0.15911865234375,
+            "secondary": 0.15911865234375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2188675584,
+            3658088692,
+            2188675584
+          ],
+          "state": {
+            "primary": 0.18096923828125,
+            "secondary": 0.18096923828125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2320869632,
+            3391750356,
+            2320869632
+          ],
+          "state": {
+            "primary": 0.22186279296875,
+            "secondary": 0.22186279296875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2502546688,
+            3025469609,
+            2502546688
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.27886962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        },
+        {
+          "packed": [
+            2502546688,
+            3025469609,
+            2502546688
+          ],
+          "state": {
+            "primary": 0.27886962890625,
+            "secondary": 0.27886962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.15625
+        }
+      ]
+    },
+    {
+      "name": "cyclic-rgb-oklch",
+      "mode": "hue_rotate",
+      "interpolation": "oklch",
+      "groups": [
+        [
+          "start"
+        ],
+        [],
+        [
+          "stop"
+        ],
+        [],
+        [
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627258880,
+            3221258111,
+            1627258880
+          ],
+          "state": {
+            "primary": 0.0002910494804382324,
+            "secondary": 0.0002910494804382324,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1643709696,
+            3238034052,
+            1643709696
+          ],
+          "state": {
+            "primary": 0.007124483585357666,
+            "secondary": 0.007124483585357666,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1709708800,
+            3305138326,
+            1709708800
+          ],
+          "state": {
+            "primary": 0.029765069484710693,
+            "secondary": 0.029765069484710693,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1858484224,
+            3456124855,
+            1858484224
+          ],
+          "state": {
+            "primary": 0.07333403825759888,
+            "secondary": 0.07333403825759888,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1940868864,
+            3540005070,
+            1940868864
+          ],
+          "state": {
+            "primary": 0.103515625,
+            "secondary": 0.103515625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.25,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1940868864,
+            3540005070,
+            1940868864
+          ],
+          "state": {
+            "primary": 0.103515625,
+            "secondary": 0.103515625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1940868864,
+            3540005070,
+            1940868864
+          ],
+          "state": {
+            "primary": 0.103515625,
+            "secondary": 0.103515625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1940868864,
+            3540005070,
+            1940868864
+          ],
+          "state": {
+            "primary": 0.103515625,
+            "secondary": 0.103515625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.25,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1940868864,
+            3540005070,
+            1940868864
+          ],
+          "state": {
+            "primary": 0.10380667448043823,
+            "secondary": 0.10380667448043823,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.103515625
+        },
+        {
+          "packed": [
+            1974096896,
+            3573557972,
+            1974096896
+          ],
+          "state": {
+            "primary": 0.11064010858535767,
+            "secondary": 0.11064010858535767,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.103515625
+        },
+        {
+          "packed": [
+            2040096000,
+            3640662501,
+            2040096000
+          ],
+          "state": {
+            "primary": 0.1332806944847107,
+            "secondary": 0.1332806944847107,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.103515625
+        },
+        {
+          "packed": [
+            2172094208,
+            3691446519,
+            2172094208
+          ],
+          "state": {
+            "primary": 0.17684966325759888,
+            "secondary": 0.17684966325759888,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.103515625
+        },
+        {
+          "packed": [
+            2172094208,
+            3691446519,
+            2172094208
+          ],
+          "state": {
+            "primary": 0.17684966325759888,
+            "secondary": 0.17684966325759888,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.103515625
+        }
+      ]
+    },
+    {
+      "name": "idle-stop-start",
+      "mode": "hue_rotate",
+      "interpolation": "rgb",
+      "groups": [
+        [
+          "stop",
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627128320,
+            3221257601,
+            1627128320
+          ],
+          "state": {
+            "primary": 0.00286865234375,
+            "secondary": 0.00286865234375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1693192704,
+            3288362130,
+            1693192704
+          ],
+          "state": {
+            "primary": 0.02471923828125,
+            "secondary": 0.02471923828125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1825321472,
+            3422571953,
+            1825321472
+          ],
+          "state": {
+            "primary": 0.06561279296875,
+            "secondary": 0.06561279296875,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.15625,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2007063808,
+            3607110109,
+            2007063808
+          ],
+          "state": {
+            "primary": 0.12261962890625,
+            "secondary": 0.12261962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            2007063808,
+            3607110109,
+            2007063808
+          ],
+          "state": {
+            "primary": 0.12261962890625,
+            "secondary": 0.12261962890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.21875,
+          "speedScale": 1.0,
+          "base": 0.0
+        }
+      ]
+    },
+    {
+      "name": "idle-start-stop",
+      "mode": "hue_rotate",
+      "interpolation": "rgb",
+      "groups": [
+        [
+          "start",
+          "stop"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        }
+      ]
+    },
+    {
+      "name": "running-stop-start",
+      "mode": "hue_rotate",
+      "interpolation": "rgb",
+      "groups": [
+        [
+          "start"
+        ],
+        [
+          "stop",
+          "start"
+        ],
+        []
+      ],
+      "rows": [
+        {
+          "packed": [
+            1627324416,
+            2684419840,
+            3758096639
+          ],
+          "state": {
+            "primary": 0.0,
+            "secondary": 0.0,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.0,
+          "speedScale": 0.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1627128320,
+            3221257601,
+            1627128320
+          ],
+          "state": {
+            "primary": 0.00286865234375,
+            "secondary": 0.00286865234375,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1693192704,
+            3288362130,
+            1693192704
+          ],
+          "state": {
+            "primary": 0.02471923828125,
+            "secondary": 0.02471923828125,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.09375,
+          "speedScale": 1.0,
+          "base": 0.0
+        },
+        {
+          "packed": [
+            1709774080,
+            3305138836,
+            1709774080
+          ],
+          "state": {
+            "primary": 0.027587890625,
+            "secondary": 0.027587890625,
+            "blend": 0.0
+          },
+          "running": true,
+          "progress": 0.03125,
+          "speedScale": 0.5,
+          "base": 0.02471923828125
+        },
+        {
+          "packed": [
+            1709774080,
+            3305138836,
+            1709774080
+          ],
+          "state": {
+            "primary": 0.027587890625,
+            "secondary": 0.027587890625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.03125,
+          "speedScale": 1.0,
+          "base": 0.02471923828125
+        },
+        {
+          "packed": [
+            1709774080,
+            3305138836,
+            1709774080
+          ],
+          "state": {
+            "primary": 0.027587890625,
+            "secondary": 0.027587890625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.03125,
+          "speedScale": 1.0,
+          "base": 0.02471923828125
+        },
+        {
+          "packed": [
+            1709774080,
+            3305138836,
+            1709774080
+          ],
+          "state": {
+            "primary": 0.027587890625,
+            "secondary": 0.027587890625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.03125,
+          "speedScale": 1.0,
+          "base": 0.02471923828125
+        },
+        {
+          "packed": [
+            1709774080,
+            3305138836,
+            1709774080
+          ],
+          "state": {
+            "primary": 0.027587890625,
+            "secondary": 0.027587890625,
+            "blend": 0.0
+          },
+          "running": false,
+          "progress": 0.03125,
+          "speedScale": 1.0,
+          "base": 0.02471923828125
+        }
+      ]
+    }
+  ]
+}

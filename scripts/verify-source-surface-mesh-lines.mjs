@@ -10,7 +10,7 @@ import {createServer as createTcpServer} from 'node:net';
 // Processing CPU tessellation, F32 matrix scale, and fill/stroke(int) colors.
 const core='../.cache/mathart-investigation/MathArt.app/Contents/app/core-4.5.0-acdf3bce2932985b9d091c284407a54.jar';
 const hash=b=>createHash('sha256').update(b).digest('hex');
-const paths=['src/engine/sourceSurfaceOverlay.ts','src/engine/sourceProcessingGeometry.ts','src/engine/sourceSurfaceLineRenderer.ts','src/engine/sourceSurfaceMeshRenderer.ts','src/engine/sourceSurfaceFunction.ts','src/engine/sourceSurfaceMeshGeometry.ts','src/engine/sourceSurfaceMeshRuntime.ts','src/engine/sourceSurfaceMeshConfig.ts','src/engine/sourceSurfaceMeshWireframe.ts','src/engine/sourceSurfaceColor.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceCamera.ts','src/engine/ordinarySourceCamera.ts','src/engine/renderer.ts','src/types.ts','scripts/verify-source-surface-mesh-lines.mjs'];
+const paths=['src/engine/sourceSurfaceOverlay.ts','src/engine/sourceProcessingGeometry.ts','src/engine/sourceSurfaceLineRenderer.ts','src/engine/sourceProcessingLineRenderer.ts','src/engine/sourceSurfaceMeshRenderer.ts','src/engine/sourceSurfaceFunction.ts','src/engine/sourceSurfaceMeshGeometry.ts','src/engine/sourceSurfaceMeshRuntime.ts','src/engine/sourceSurfaceMeshConfig.ts','src/engine/sourceSurfaceMeshWireframe.ts','src/engine/sourceSurfaceColor.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceCamera.ts','src/engine/ordinarySourceCamera.ts','src/engine/renderer.ts','src/types.ts','scripts/verify-source-surface-mesh-lines.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));
 const report={at:new Date().toISOString(),scope:'CPU mesh runtime and explicit boundary fixtures through ArtRenderer versus shipped Processing Line/Color shaders. Shared geometry and camera inputs; independent Python CPU tessellation and packed color interpretation; complete RGBA8 frames, no MSAA. No public import, native app, JOGL/driver or GPU mesh parity.',unmeasured:['Original native framebuffer','Native MSAA and compositor','GPU time','Agent tokens','Full process-family memory','Public import/playback/export'],adapter:'GLSL 300 es syntax; retained fragment precision; original shader arithmetic unchanged. Default surface hint state: perspective=0, depth bias scale=.9990000128746033; logical viewport dimensions.'};
 let server,browser;
@@ -65,7 +65,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:
     if(c.large){positions=[];for(let i=0;i<16385;i++){const y=(i%91)-45;positions.push(-55,y,0,55,y+.125,0);}}
     wire={positions:new Float32Array(positions),packedColor:c.packed??0xff33ccff,lineWidth:c.lineWidth??2.75,mode:'coupled'};
    }
-   const output={type:'geometry',topology:'mesh',positions:geometry.positions,indices:geometry.triangles,sourceMeshColors:colors,sourceMeshAppearance:sourceSurfaceMeshAppearance(!!c.fill,.65),sourceMeshWireframe:wire,...(c.background===undefined?{}:{sourceSurfaceBackgroundColor:c.background}),...(c.overlay===undefined?{}:{sourceSurfaceOverlayAlpha:c.overlay}),sourceCameraFrame:frame,stats:{samples:geometry.positions.length/3,generated:geometry.positions.length/3,invalid:0}};
+   const output={type:'geometry',topology:'mesh',positions:geometry.positions,indices:geometry.triangles,sourceMeshColors:colors,sourceMeshAppearance:sourceSurfaceMeshAppearance(!!c.fill,.65),sourceMeshWireframe:wire,...(c.background===undefined?{}:{sourceBackgroundColor:c.background}),...(c.overlay===undefined?{}:{sourceSurfaceOverlayAlpha:c.overlay}),sourceCameraFrame:frame,stats:{samples:geometry.positions.length/3,generated:geometry.positions.length/3,invalid:0}};
    return{...c,width,height,dpr,doc,output,plan};
   });
   const encode=a=>{let s='';for(const b of new Uint8Array(a.buffer,a.byteOffset,a.byteLength))s+=String.fromCharCode(b);return btoa(s);};
@@ -103,7 +103,7 @@ for c in json.load(sys.stdin):
 print(json.dumps({'rows':rows,'oracleCost':{'elapsedMs':(time.perf_counter()-started)*1000,'cpuMs':(time.process_time()-cpu)*1000,'maxRSS':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'maxRSSUnit':'bytes on macOS; KiB on Linux','scope':'Independent Python tessellation plus binary serialization only; includes all fixtures; process peak RSS, no descendants; not production renderer or GPU performance'}}))`],{input:JSON.stringify(inputs),encoding:'utf8',maxBuffer:64*1024*1024}));
  report.oracleCost=baked.oracleCost;
  report.results=await page.evaluate(async({source,baked})=>{
-  const THREE=await import('/node_modules/three/build/three.module.js'),{ArtRenderer}=await import('/src/engine/renderer.ts'),{sourceSurfaceLineBuffers}=await import('/src/engine/sourceSurfaceLineRenderer.ts');
+  const THREE=await import('/node_modules/three/build/three.module.js'),{ArtRenderer}=await import('/src/engine/renderer.ts'),{sourceProcessingLineBuffers}=await import('/src/engine/sourceProcessingLineRenderer.ts');
   const check=(v,m)=>{if(!v)throw Error(m);},decode=(s,T=Float32Array)=>{const a=Uint8Array.from(atob(s),c=>c.charCodeAt(0));return new T(a.buffer);};
   const digest=async b=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b))).map(n=>n.toString(16).padStart(2,'0')).join('');
   const canvas=document.createElement('canvas'),gl=canvas.getContext('webgl2',{antialias:false,alpha:true,premultipliedAlpha:false,preserveDrawingBuffer:true});check(gl,'WebGL2 unavailable');
@@ -124,7 +124,7 @@ print(json.dumps({'rows':rows,'oracleCost':{'elapsedMs':(time.perf_counter()-sta
    for(let i=0;i<window.meshLineFrames.length;i++){
     const c=window.meshLineFrames[i],ref=baked.rows[i],out=c.output,wire=out.sourceMeshWireframe,w=c.width*c.dpr,h=c.height*c.dpr;
     const expectedVertices=decode(ref.vertices),expectedDirections=decode(ref.directions),expectedIndices=decode(ref.indices,Uint32Array);
-    const begin=performance.now(),production=sourceSurfaceLineBuffers(wire,c.plan),bufferMs=performance.now()-begin;
+    const begin=performance.now(),production=sourceProcessingLineBuffers(wire.positions,wire.lineWidth,c.plan),bufferMs=performance.now()-begin;
     const differences=(a,b)=>{check(a.length===b.length,'buffer length mismatch '+c.name);let n=0;for(let j=0;j<a.length;j++)if(!Object.is(a[j],b[j])&&!(Number.isNaN(a[j])&&Number.isNaN(b[j])))n++;return n;};
     if(c.name==='near-plane'){const p=c.plan.projection.columnMajor;const clip=offset=>{const v=expectedVertices.subarray(offset,offset+4);const z=p[2]*v[0]+p[6]*v[1]+p[10]*v[2]+p[14]*v[3],w=p[3]*v[0]+p[7]*v[1]+p[11]*v[2]+p[15]*v[3];return z+w;};check(clip(0)*clip(8)<0,'near-plane fixture must cross the clipping plane');}
     const bufferDifferences={positions:differences(production.positions,expectedVertices),directions:differences(production.directions,expectedDirections),indices:differences(production.indices,expectedIndices)};

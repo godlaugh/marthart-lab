@@ -1,0 +1,1626 @@
+{
+  "kind": "independent-python-retained-bytecode-transcription",
+  "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "sourceEvidence": [
+    {
+      "entry": "mathart/config/AbstractVisualConfig.class",
+      "classSha256": "d14010da3a23da71e35b92a5217fd9466f3547c1ed09d20fddf842afe66dfd1c",
+      "evidenceSha256": "25240a8ad3c4028ce3d7de8a0f8b17220e8d6fe741e7eca867c7910d0fcb315e"
+    },
+    {
+      "entry": "mathart/attractor/config/JsonAttractorConfig.class",
+      "classSha256": "ec8b62dd7c0b7d2532035017254dc7edb5e3fd65f2ea566545aa1c013bfb27ed",
+      "evidenceSha256": "26797318fc0e62e3ee3bd6c22649f5429c818b2a88a5c1add163a37f4cc254d3"
+    },
+    {
+      "entry": "mathart/attractor/StrangeAttractor.class",
+      "classSha256": "5c0d4359c63dc72190cc25cde783908b4294c52158092fb3813901416da6dcfc",
+      "evidenceSha256": "b147c93f3f8b9a03b40a8bc8463ff9713d5c41535895fe75684fec6b79e5d9c2"
+    },
+    {
+      "entry": "mathart/mobject/ParticleSystemMobject.class",
+      "classSha256": "b62b1bed37bb557af50d2386136555889a52ec421085680f8602e6694cec1a8d",
+      "evidenceSha256": "60a0cdac19d7e491cc79dcd369c727616cba9fd9cd895b6171545ca7d024800b"
+    },
+    {
+      "entry": "mathart/utils/ManimColors.class",
+      "classSha256": "a4da46f892de65a559dfc117164c79bb5a4a22988abc24772a1eb2af7edc286e",
+      "evidenceSha256": "a5dacdd6138ad2bc23288f932e79f3250e833b6215847ce36ac48a8bb32b6ed5"
+    },
+    {
+      "entry": "mathart/utils/ConfigUtils.class",
+      "classSha256": "ab0847601571bd0469e73cad05d415df2373fa2eef0196db2258a86d631a0278",
+      "evidenceSha256": "1123be268e857ee7c17ebdb02e9d2399ffc930697b1ae55f4f4553d90767b1d7"
+    }
+  ],
+  "defaults": {
+    "settingsAbsent": {
+      "dotRadius": 2,
+      "lineWeight": 1,
+      "lifetime": 4,
+      "show": true,
+      "fade": false,
+      "fadePoints": false
+    },
+    "settingsPresent": {
+      "dotRadius": 2,
+      "lineWeight": 0.800000011920929,
+      "lifetime": 3,
+      "show": true,
+      "fade": false,
+      "fadePoints": false
+    }
+  },
+  "cases": [
+    {
+      "id": "default-0",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 0,
+      "samples": []
+    },
+    {
+      "id": "default-1",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 1,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-2",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 2,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-3",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 3,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4290889572
+        },
+        {
+          "index": 2,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-7",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 7,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4294869045
+        },
+        {
+          "index": 2,
+          "packed": 4294948177
+        },
+        {
+          "index": 3,
+          "packed": 4290889572
+        },
+        {
+          "index": 4,
+          "packed": 4285842062
+        },
+        {
+          "index": 5,
+          "packed": 4284659412
+        },
+        {
+          "index": 6,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-31",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 31,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4294731854
+        },
+        {
+          "index": 2,
+          "packed": 4294798920
+        },
+        {
+          "index": 3,
+          "packed": 4294800450
+        },
+        {
+          "index": 4,
+          "packed": 4294867515
+        },
+        {
+          "index": 5,
+          "packed": 4294869045
+        },
+        {
+          "index": 6,
+          "packed": 4294936111
+        },
+        {
+          "index": 7,
+          "packed": 4294938935
+        },
+        {
+          "index": 8,
+          "packed": 4294942016
+        },
+        {
+          "index": 9,
+          "packed": 4294945096
+        },
+        {
+          "index": 10,
+          "packed": 4294948177
+        },
+        {
+          "index": 11,
+          "packed": 4294951257
+        },
+        {
+          "index": 12,
+          "packed": 4294954338
+        },
+        {
+          "index": 13,
+          "packed": 4293577570
+        },
+        {
+          "index": 14,
+          "packed": 4292200803
+        },
+        {
+          "index": 15,
+          "packed": 4290889572
+        },
+        {
+          "index": 16,
+          "packed": 4289512805
+        },
+        {
+          "index": 17,
+          "packed": 4288136038
+        },
+        {
+          "index": 18,
+          "packed": 4286824807
+        },
+        {
+          "index": 19,
+          "packed": 4286300538
+        },
+        {
+          "index": 20,
+          "packed": 4285842062
+        },
+        {
+          "index": 21,
+          "packed": 4285383330
+        },
+        {
+          "index": 22,
+          "packed": 4284924853
+        },
+        {
+          "index": 23,
+          "packed": 4284466121
+        },
+        {
+          "index": 24,
+          "packed": 4284007645
+        },
+        {
+          "index": 25,
+          "packed": 4284659412
+        },
+        {
+          "index": 26,
+          "packed": 4285442252
+        },
+        {
+          "index": 27,
+          "packed": 4286159812
+        },
+        {
+          "index": 28,
+          "packed": 4286811580
+        },
+        {
+          "index": 29,
+          "packed": 4287594420
+        },
+        {
+          "index": 30,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-255",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 255,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4294730324
+        },
+        {
+          "index": 85,
+          "packed": 4294948177
+        },
+        {
+          "index": 127,
+          "packed": 4290889572
+        },
+        {
+          "index": 253,
+          "packed": 4288181164
+        },
+        {
+          "index": 254,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-256",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 256,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4294730324
+        },
+        {
+          "index": 85,
+          "packed": 4294948177
+        },
+        {
+          "index": 128,
+          "packed": 4290758244
+        },
+        {
+          "index": 254,
+          "packed": 4288181164
+        },
+        {
+          "index": 255,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-511",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 511,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4294730324
+        },
+        {
+          "index": 170,
+          "packed": 4294948177
+        },
+        {
+          "index": 255,
+          "packed": 4290889572
+        },
+        {
+          "index": 509,
+          "packed": 4288246444
+        },
+        {
+          "index": 510,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "default-2147483647",
+      "colors": [
+        "#FFFC6255",
+        "#FFFF862F",
+        "#FFFFCD62",
+        "#FF83C167",
+        "#FF58C4DD",
+        "#FF9A72AC"
+      ],
+      "count": 2147483647,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294730325
+        },
+        {
+          "index": 1,
+          "packed": 4294730325
+        },
+        {
+          "index": 715827882,
+          "packed": 4294948177
+        },
+        {
+          "index": 1073741823,
+          "packed": 4290889572
+        },
+        {
+          "index": 2147483645,
+          "packed": 4284007645
+        },
+        {
+          "index": 2147483646,
+          "packed": 4288311980
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-0",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 0,
+      "samples": []
+    },
+    {
+      "id": "one-alpha-1",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 1,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-2",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 2,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-3",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 3,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        },
+        {
+          "index": 2,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-7",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 7,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        },
+        {
+          "index": 2,
+          "packed": 302055939
+        },
+        {
+          "index": 3,
+          "packed": 302055939
+        },
+        {
+          "index": 4,
+          "packed": 302055939
+        },
+        {
+          "index": 5,
+          "packed": 302055939
+        },
+        {
+          "index": 6,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-31",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 31,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        },
+        {
+          "index": 2,
+          "packed": 302055939
+        },
+        {
+          "index": 3,
+          "packed": 302055939
+        },
+        {
+          "index": 4,
+          "packed": 302055939
+        },
+        {
+          "index": 5,
+          "packed": 302055939
+        },
+        {
+          "index": 6,
+          "packed": 302055939
+        },
+        {
+          "index": 7,
+          "packed": 302055939
+        },
+        {
+          "index": 8,
+          "packed": 302055939
+        },
+        {
+          "index": 9,
+          "packed": 302055939
+        },
+        {
+          "index": 10,
+          "packed": 302055939
+        },
+        {
+          "index": 11,
+          "packed": 302055939
+        },
+        {
+          "index": 12,
+          "packed": 302055939
+        },
+        {
+          "index": 13,
+          "packed": 302055939
+        },
+        {
+          "index": 14,
+          "packed": 302055939
+        },
+        {
+          "index": 15,
+          "packed": 302055939
+        },
+        {
+          "index": 16,
+          "packed": 302055939
+        },
+        {
+          "index": 17,
+          "packed": 302055939
+        },
+        {
+          "index": 18,
+          "packed": 302055939
+        },
+        {
+          "index": 19,
+          "packed": 302055939
+        },
+        {
+          "index": 20,
+          "packed": 302055939
+        },
+        {
+          "index": 21,
+          "packed": 302055939
+        },
+        {
+          "index": 22,
+          "packed": 302055939
+        },
+        {
+          "index": 23,
+          "packed": 302055939
+        },
+        {
+          "index": 24,
+          "packed": 302055939
+        },
+        {
+          "index": 25,
+          "packed": 302055939
+        },
+        {
+          "index": 26,
+          "packed": 302055939
+        },
+        {
+          "index": 27,
+          "packed": 302055939
+        },
+        {
+          "index": 28,
+          "packed": 302055939
+        },
+        {
+          "index": 29,
+          "packed": 302055939
+        },
+        {
+          "index": 30,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-255",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 255,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        },
+        {
+          "index": 85,
+          "packed": 302055939
+        },
+        {
+          "index": 127,
+          "packed": 302055939
+        },
+        {
+          "index": 253,
+          "packed": 302055939
+        },
+        {
+          "index": 254,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-256",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 256,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        },
+        {
+          "index": 85,
+          "packed": 302055939
+        },
+        {
+          "index": 128,
+          "packed": 302055939
+        },
+        {
+          "index": 254,
+          "packed": 302055939
+        },
+        {
+          "index": 255,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-511",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 511,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        },
+        {
+          "index": 170,
+          "packed": 302055939
+        },
+        {
+          "index": 255,
+          "packed": 302055939
+        },
+        {
+          "index": 509,
+          "packed": 302055939
+        },
+        {
+          "index": 510,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "one-alpha-2147483647",
+      "colors": [
+        "#12010203"
+      ],
+      "count": 2147483647,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 302055939
+        },
+        {
+          "index": 1,
+          "packed": 302055939
+        },
+        {
+          "index": 715827882,
+          "packed": 302055939
+        },
+        {
+          "index": 1073741823,
+          "packed": 302055939
+        },
+        {
+          "index": 2147483645,
+          "packed": 302055939
+        },
+        {
+          "index": 2147483646,
+          "packed": 302055939
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-0",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 0,
+      "samples": []
+    },
+    {
+      "id": "transparent-rgb-1",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 1,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-2",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 2,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-3",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 3,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 1610645375
+        },
+        {
+          "index": 2,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-7",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 7,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 545226496
+        },
+        {
+          "index": 2,
+          "packed": 1073807104
+        },
+        {
+          "index": 3,
+          "packed": 1610645375
+        },
+        {
+          "index": 4,
+          "packed": 2147483903
+        },
+        {
+          "index": 5,
+          "packed": 3212804095
+        },
+        {
+          "index": 6,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-31",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 31,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 115677440
+        },
+        {
+          "index": 2,
+          "packed": 214708992
+        },
+        {
+          "index": 3,
+          "packed": 330451968
+        },
+        {
+          "index": 4,
+          "packed": 429483520
+        },
+        {
+          "index": 5,
+          "packed": 545226496
+        },
+        {
+          "index": 6,
+          "packed": 644258048
+        },
+        {
+          "index": 7,
+          "packed": 743223808
+        },
+        {
+          "index": 8,
+          "packed": 859032576
+        },
+        {
+          "index": 9,
+          "packed": 957998336
+        },
+        {
+          "index": 10,
+          "packed": 1073807104
+        },
+        {
+          "index": 11,
+          "packed": 1174463769
+        },
+        {
+          "index": 12,
+          "packed": 1275120435
+        },
+        {
+          "index": 13,
+          "packed": 1392554572
+        },
+        {
+          "index": 14,
+          "packed": 1493211493
+        },
+        {
+          "index": 15,
+          "packed": 1610645375
+        },
+        {
+          "index": 16,
+          "packed": 1711302297
+        },
+        {
+          "index": 17,
+          "packed": 1811958962
+        },
+        {
+          "index": 18,
+          "packed": 1929393099
+        },
+        {
+          "index": 19,
+          "packed": 2030049765
+        },
+        {
+          "index": 20,
+          "packed": 2147483903
+        },
+        {
+          "index": 21,
+          "packed": 2350455295
+        },
+        {
+          "index": 22,
+          "packed": 2570269695
+        },
+        {
+          "index": 23,
+          "packed": 2790018303
+        },
+        {
+          "index": 24,
+          "packed": 2993055487
+        },
+        {
+          "index": 25,
+          "packed": 3212804095
+        },
+        {
+          "index": 26,
+          "packed": 3432552703
+        },
+        {
+          "index": 27,
+          "packed": 3635589887
+        },
+        {
+          "index": 28,
+          "packed": 3855338495
+        },
+        {
+          "index": 29,
+          "packed": 4075152895
+        },
+        {
+          "index": 30,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-255",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 255,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 16450304
+        },
+        {
+          "index": 85,
+          "packed": 1073806593
+        },
+        {
+          "index": 127,
+          "packed": 1610645375
+        },
+        {
+          "index": 253,
+          "packed": 4261149695
+        },
+        {
+          "index": 254,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-256",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 256,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 16515840
+        },
+        {
+          "index": 85,
+          "packed": 1073807104
+        },
+        {
+          "index": 128,
+          "packed": 1610645121
+        },
+        {
+          "index": 254,
+          "packed": 4261149695
+        },
+        {
+          "index": 255,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-511",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 511,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 16580864
+        },
+        {
+          "index": 170,
+          "packed": 1073807104
+        },
+        {
+          "index": 255,
+          "packed": 1610645375
+        },
+        {
+          "index": 509,
+          "packed": 4278058495
+        },
+        {
+          "index": 510,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "transparent-rgb-2147483647",
+      "colors": [
+        "#00FF0000",
+        "#4000FF00",
+        "#800000FF",
+        "#FFFFFFFF"
+      ],
+      "count": 2147483647,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 16711680
+        },
+        {
+          "index": 1,
+          "packed": 16711680
+        },
+        {
+          "index": 715827882,
+          "packed": 1073807104
+        },
+        {
+          "index": 1073741823,
+          "packed": 1610645375
+        },
+        {
+          "index": 2147483645,
+          "packed": 2147483903
+        },
+        {
+          "index": 2147483646,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-0",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 0,
+      "samples": []
+    },
+    {
+      "id": "alternating-1",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 1,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-2",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 2,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-3",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 3,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4286545791
+        },
+        {
+          "index": 2,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-7",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 7,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4286545791
+        },
+        {
+          "index": 2,
+          "packed": 4294967295
+        },
+        {
+          "index": 3,
+          "packed": 4286545791
+        },
+        {
+          "index": 4,
+          "packed": 4278190080
+        },
+        {
+          "index": 5,
+          "packed": 4286545791
+        },
+        {
+          "index": 6,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-31",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 31,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4279834905
+        },
+        {
+          "index": 2,
+          "packed": 4281545523
+        },
+        {
+          "index": 3,
+          "packed": 4283190348
+        },
+        {
+          "index": 4,
+          "packed": 4284900966
+        },
+        {
+          "index": 5,
+          "packed": 4286545791
+        },
+        {
+          "index": 6,
+          "packed": 4288256409
+        },
+        {
+          "index": 7,
+          "packed": 4289901234
+        },
+        {
+          "index": 8,
+          "packed": 4291611852
+        },
+        {
+          "index": 9,
+          "packed": 4293256677
+        },
+        {
+          "index": 10,
+          "packed": 4294967295
+        },
+        {
+          "index": 11,
+          "packed": 4293256677
+        },
+        {
+          "index": 12,
+          "packed": 4291546059
+        },
+        {
+          "index": 13,
+          "packed": 4289901234
+        },
+        {
+          "index": 14,
+          "packed": 4288256409
+        },
+        {
+          "index": 15,
+          "packed": 4286545791
+        },
+        {
+          "index": 16,
+          "packed": 4284900966
+        },
+        {
+          "index": 17,
+          "packed": 4283190348
+        },
+        {
+          "index": 18,
+          "packed": 4281545523
+        },
+        {
+          "index": 19,
+          "packed": 4279834905
+        },
+        {
+          "index": 20,
+          "packed": 4278190080
+        },
+        {
+          "index": 21,
+          "packed": 4279834905
+        },
+        {
+          "index": 22,
+          "packed": 4281545523
+        },
+        {
+          "index": 23,
+          "packed": 4283190348
+        },
+        {
+          "index": 24,
+          "packed": 4284900966
+        },
+        {
+          "index": 25,
+          "packed": 4286545791
+        },
+        {
+          "index": 26,
+          "packed": 4288190616
+        },
+        {
+          "index": 27,
+          "packed": 4289901234
+        },
+        {
+          "index": 28,
+          "packed": 4291546059
+        },
+        {
+          "index": 29,
+          "packed": 4293256677
+        },
+        {
+          "index": 30,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-255",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 255,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4278387459
+        },
+        {
+          "index": 85,
+          "packed": 4294835709
+        },
+        {
+          "index": 127,
+          "packed": 4286545791
+        },
+        {
+          "index": 253,
+          "packed": 4294704123
+        },
+        {
+          "index": 254,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-256",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 256,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4278387459
+        },
+        {
+          "index": 85,
+          "packed": 4294967295
+        },
+        {
+          "index": 128,
+          "packed": 4286479998
+        },
+        {
+          "index": 254,
+          "packed": 4294704123
+        },
+        {
+          "index": 255,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-511",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 511,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4278255873
+        },
+        {
+          "index": 170,
+          "packed": 4294967295
+        },
+        {
+          "index": 255,
+          "packed": 4286545791
+        },
+        {
+          "index": 509,
+          "packed": 4294835709
+        },
+        {
+          "index": 510,
+          "packed": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "alternating-2147483647",
+      "colors": [
+        "#FF000000",
+        "#FFFFFFFF",
+        "#FF000000",
+        "#FFFFFFFF"
+      ],
+      "count": 2147483647,
+      "samples": [
+        {
+          "index": 0,
+          "packed": 4278190080
+        },
+        {
+          "index": 1,
+          "packed": 4278190080
+        },
+        {
+          "index": 715827882,
+          "packed": 4294967295
+        },
+        {
+          "index": 1073741823,
+          "packed": 4286545791
+        },
+        {
+          "index": 2147483645,
+          "packed": 4278190080
+        },
+        {
+          "index": 2147483646,
+          "packed": 4294967295
+        }
+      ]
+    }
+  ],
+  "operationOrderWitness": {
+    "colors": [
+      "#FF000000",
+      "#FFFFFFFF",
+      "#FF000000",
+      "#FFFFFFFF"
+    ],
+    "count": 6,
+    "index": 3,
+    "packed": 4281545523,
+    "normalizedFirst": 4281479730
+  },
+  "limits": [
+    "No original JVM/JOGL runtime or original pixels.",
+    "Initial/applyPalette ManimColors.gradient only; later gradient-animation callbacks have different sampling semantics."
+  ]
+}

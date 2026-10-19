@@ -1,3 +1,7 @@
+import {SourceParticleTrailHistory,type SourceParticleTrails} from './sourceParticleTrails';
+import {parseSourceAttractorVisualConfiguration,type SourceAttractorVisualConfiguration} from './sourceAttractorVisualConfig';
+import {SourceAttractorColorRuntime} from './sourceAttractorColorRuntime';
+import type {SourceGradientAction} from './sourceGradientRuntime';
 import {parseSourceAttractorConfiguration,type SourceAttractorConfiguration} from './sourceAttractorConfig';
 import {createSourceAttractorSeedStream} from './sourceAttractorSeeds';
 import {sourceAttractorEulerStep,type PreparedSourceAttractorEquation} from './sourceAttractorEquation';
@@ -10,6 +14,8 @@ export class SourceAttractorCpuError extends Error {
 export interface SourceAttractorCpuOptions {
  readonly configuration:SourceAttractorConfiguration;
  readonly equation:PreparedSourceAttractorEquation;
+ /** Explicit opt-in to source display state; numerical-only callers retain their cost. */
+ readonly visualConfiguration?:SourceAttractorVisualConfiguration;
  readonly isCancelled?:()=>boolean;
  /** Shared request owner may charge additional consumers to the same budget. */
  readonly reserve?:(units:number)=>void;
@@ -23,13 +29,18 @@ export interface SourceAttractorCpuSnapshot {
  /** Counts remain per slot; nonfinite slots are never removed or reseeded. */
  readonly integrationSteps:Float64Array;
  readonly workUnits:number;
+ readonly visualConfiguration?:SourceAttractorVisualConfiguration;
+ readonly colors?:Float32Array;readonly pointAlphas?:Float32Array;readonly packedColors?:Uint32Array;
+ readonly particleIds?:Uint32Array;readonly trails?:SourceParticleTrails;readonly diagnostics?:string[];
 }
 const F=Math.fround,MAX_WORK=20_000_000;
 /** Motion owner for source CPU particles: displayed geometry and bound camera
- * targets must read this same state. Rendering/color/trails and public document
- * integration are separate work; this is not a complete Mobject renderer. */
+ * targets read the same state. Optional source display owns live colors and
+ * every substep trail; public document integration remains separate work. */
 export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticles {
  readonly configuration:SourceAttractorConfiguration;
+ readonly visualConfiguration?:SourceAttractorVisualConfiguration;
+ private readonly color?:SourceAttractorColorRuntime;private readonly history?:SourceParticleTrailHistory;
  private readonly raw:Float32Array;private readonly positions:Float32Array;private readonly dt:Float32Array;private readonly steps:Float64Array;
  private readonly count:number;private readonly field;private readonly scratch=new Float32Array(3);
  private readonly operations:number;private readonly options:SourceAttractorCpuOptions;
@@ -37,6 +48,13 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
  private frameIndex=-1;private used=0;private failed=false;private failure:unknown;
  constructor(options:SourceAttractorCpuOptions){
   this.options={...options};
+  if(options.visualConfiguration!==undefined){
+   const visual=parseSourceAttractorVisualConfiguration(options.visualConfiguration);
+   if(!visual.ok)throw new SourceAttractorCpuError(visual.error.kind==='capacity'?'capacity':'input',visual.error.reason);
+   this.visualConfiguration=visual.value;
+   if(visual.value.palette.kind==='colors')Object.freeze(visual.value.palette.colors);
+   Object.freeze(visual.value.palette);Object.freeze(visual.value.points);Object.freeze(visual.value.trails);Object.freeze(visual.value);
+  }
   const parsed=parseSourceAttractorConfiguration(options.configuration);
   if(!parsed.ok)throw new SourceAttractorCpuError(parsed.error.kind==='capacity'?'capacity':'input',parsed.error.reason);
   this.configuration=parsed.value;
@@ -62,6 +80,13 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
    for(let step=0;step<seed.warmupSteps;step++){if((step&255)===0)this.check();this.integrate(i);}
    this.transform(i);
   }
+  if(this.visualConfiguration){
+   const v=this.visualConfiguration;
+   this.color=new SourceAttractorColorRuntime({count:this.count,nativeBackend:'cpu',showTrails:v.trails.show,palette:v.palette,reserve:n=>this.reserve(n),isCancelled:this.options.isCancelled});
+   // No warmup records. Native Dot3D capacity is fixed at construction even
+   // when recording is disabled; pooled storage stays lazy until first add.
+   this.history=new SourceParticleTrailHistory(this.count,F(v.trails.lifetime),v.trails.fade,this.color.packed,()=>this.check(),()=>{throw new SourceAttractorCpuError('capacity','原版吸引子拖尾超过本地 100 万记录预算');});
+  }
  }
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())throw new SourceAttractorCpuError('cancelled','原版吸引子回放已取消');}
  private reserve(n:number){this.check();if(!Number.isSafeInteger(n)||n<0||this.used+n>MAX_WORK)throw new SourceAttractorCpuError('capacity','原版吸引子超过本地 2000 万工作单位预算');this.used+=n;this.options.reserve?.(n);}
@@ -79,19 +104,31 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
   const positions=this.positions,at=id*3;
   return{kind:'bound',readPosition:()=>this.guarded(()=>[positions[at],positions[at+1],positions[at+2]] as [number,number,number])};
  });}
+ beginGradientActions(actions:readonly SourceGradientAction[]):void{this.guarded(()=>{
+  if(!this.color){if(Array.isArray(actions)&&actions.length===0)return;throw new SourceAttractorCpuError('input','原版吸引子渐变需要视觉配置');}this.color.beginGradientActions(actions);
+ });}
+ interpolateGradientActions(eased:number,finished:boolean):void{this.guarded(()=>{
+  this.color?.interpolateGradientActions(eased,finished);
+ });}
  update(frame:OrdinaryCameraParticleFrame):void{this.guarded(()=>{
   if(!Number.isSafeInteger(frame.frameIndex)||frame.frameIndex!==this.frameIndex+1||!Number.isFinite(F(frame.time))||frame.time<0||!Number.isFinite(F(frame.deltaTime))||frame.deltaTime<0)throw new SourceAttractorCpuError('input','原版吸引子帧顺序或时刻无效');
-  const substeps=this.configuration.stepsPerFrame;
-  this.reserve(Math.max(0,substeps)*this.count*(this.operations+12));
+  const substeps=this.configuration.stepsPerFrame,time=F(frame.time);
+  this.color?.update(F(frame.deltaTime));
+  this.reserve(Math.max(0,substeps)*this.count*(this.operations+12+(this.visualConfiguration?.trails.show?8:0)));
   // StrangeAttractor.update ignores elapsed dt for integration, even dt=0.
   // The Scene clock decides whether this active-frame callback occurs at all.
   // An empty source array has no motion to advance. Avoid an uncharged outer
   // loop when a preserved int32 substep count is large and count is zero.
-  if(this.count>0)for(let step=0;step<substeps;step++)for(let i=0;i<this.count;i++){if((i&255)===0)this.check();this.integrate(i);this.transform(i);}
+  if(this.count>0)for(let step=0;step<substeps;step++)for(let i=0;i<this.count;i++){if((i&255)===0)this.check();this.integrate(i);this.transform(i);
+   if(this.history&&this.visualConfiguration!.trails.show){const at=i*3;this.history.add(i,this.positions[at],this.positions[at+1],this.positions[at+2],time);}
+  }
+  if(this.history){this.reserve(this.count);for(let i=0;i<this.count;i++){if((i&255)===0)this.check();this.history.expire(i,time);}}
   this.frameIndex=frame.frameIndex;
  });}
  snapshot():SourceAttractorCpuSnapshot{return this.guarded(()=>{
   this.reserve(this.count*9);
-  return{model:'attractor-cpu-motion-1.7.8',frameIndex:this.frameIndex,rawPositions:this.raw.slice(),positions:this.positions.slice(),timeSteps:this.dt.slice(),integrationSteps:this.steps.slice(),workUnits:this.used};
+  if(this.color)this.reserve(this.count*8+(this.history?.recordCount??0)*12);
+  const visual=this.color?{visualConfiguration:this.visualConfiguration!,colors:this.color.colors.slice(),pointAlphas:this.color.alphas.slice(),packedColors:this.color.packed.slice(),particleIds:Uint32Array.from({length:this.count},(_,i)=>i),trails:this.history!.snapshot(),diagnostics:[...this.color.diagnostics]}:{};
+  return{...visual,model:'attractor-cpu-motion-1.7.8',frameIndex:this.frameIndex,rawPositions:this.raw.slice(),positions:this.positions.slice(),timeSteps:this.dt.slice(),integrationSteps:this.steps.slice(),workUnits:this.used};
  });}
 }

@@ -1,37 +1,13 @@
+import {type SourceParticleGradientConfiguration,SourceParticleGradientConfigurationError,SOURCE_PARTICLE_GRADIENT_MODES,SOURCE_PARTICLE_GRADIENT_INTERPOLATIONS} from './sourceParticleGradientConfig';
 import type {GradientAnimation} from '../types';
 import {parseDomainSourceDouble} from './domainSourceScalar';
 import {isJavaBlank,javaTrim} from './sourceJavaText';
 import {SOURCE_JSON_LIMITS} from './sourceJson';
 
-export interface SourceSurfaceGradientConfiguration extends GradientAnimation {
- readonly model:'offsets';
- readonly affectInside:true;
- readonly affectOutside:true;
-}
-export class SourceSurfaceGradientConfigurationError extends Error {
- constructor(readonly code:'input'|'capacity',message:string){super(message);this.name='SourceSurfaceGradientConfigurationError';}
-}
-export const SOURCE_SURFACE_GRADIENT_MODES=Object.freeze(['hue_rotate','offset_cycle','palette_morph','cross_fade'] as const);
-export const SOURCE_SURFACE_GRADIENT_INTERPOLATIONS=Object.freeze(['rgb','linear','oklab','oklch'] as const);
-export const SOURCE_SURFACE_GRADIENT_DEFAULT:SourceSurfaceGradientConfiguration=Object.freeze({model:'offsets',mode:'hue_rotate',interpolation:'oklab',speed:60,affectInside:true,affectOutside:true});
 export const SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS=Object.freeze(['targetDomain','mode','interpolation','speed','affectInside','affectOutside'] as const);
-const modes:readonly string[]=SOURCE_SURFACE_GRADIENT_MODES,interpolations:readonly string[]=SOURCE_SURFACE_GRADIENT_INTERPOLATIONS;
+const modes:readonly string[]=SOURCE_PARTICLE_GRADIENT_MODES,interpolations:readonly string[]=SOURCE_PARTICLE_GRADIENT_INTERPOLATIONS;
 const object=(raw:unknown):raw is Record<string,unknown>=>raw!==null&&typeof raw==='object'&&!Array.isArray(raw);
 const own=(raw:Readonly<Record<string,unknown>>,key:string):unknown=>Object.hasOwn(raw,key)?raw[key]:undefined;
-const fail=(message:string):never=>{throw new SourceSurfaceGradientConfigurationError('input',message);};
-
-/** Saved configuration never acquires source defaults. Optional GradientAnimation
- * markers are normalized, but conflicting models/flags and unrelated fields fail. */
-export function parseSourceSurfaceGradientConfiguration(raw:unknown):SourceSurfaceGradientConfiguration {
- if(!object(raw))return fail('曲面渐变配置必须为对象');
- if(Object.keys(raw).some(key=>!['model','mode','interpolation','speed','affectInside','affectOutside'].includes(key)))return fail('曲面渐变配置含未知字段');
- const mode=own(raw,'mode'),interpolation=own(raw,'interpolation'),speed=own(raw,'speed');
- if(typeof mode!=='string'||!modes.includes(mode)||typeof interpolation!=='string'||!interpolations.includes(interpolation))return fail('曲面渐变模式或插值无效');
- if(typeof speed!=='number'||!Number.isFinite(speed)||speed<0)return fail('曲面渐变速度必须为有限非负数值');
- if(own(raw,'model')!==undefined&&own(raw,'model')!=='offsets')return fail('曲面源渐变只接受 offsets 模型');
- if(own(raw,'affectInside')!==undefined&&own(raw,'affectInside')!==true||own(raw,'affectOutside')!==undefined&&own(raw,'affectOutside')!==true)return fail('曲面源渐变始终同时作用于两侧');
- return {model:'offsets',mode:mode as GradientAnimation['mode'],interpolation:interpolation as GradientAnimation['interpolation'],speed,affectInside:true,affectOutside:true};
-}
 
 export interface SourceSurfaceGradientPayload {readonly value:Readonly<Record<string,unknown>>;readonly path:readonly string[];}
 /** JsonSurfaceConfig.extractFirstObjectPayload offsets 0–54: unlike Roots,
@@ -46,7 +22,7 @@ export type SourceSurfaceGradientImportFacts={
  readonly payloadEmpty:boolean;
  readonly consumedFields:readonly (typeof SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS[number])[];
  readonly diagnostics:readonly string[];
-}&({readonly kind:'start';readonly config:SourceSurfaceGradientConfiguration}|{readonly kind:'skip';readonly reason:'target-domain'|'unknown-mode'});
+}&({readonly kind:'start';readonly config:SourceParticleGradientConfiguration}|{readonly kind:'skip';readonly reason:'target-domain'|'unknown-mode'});
 
 /** JSONObject.getString falls back only for missing/null. JSON objects and
  * arrays stringify with delimiters, so cannot match an enum or FRACTAL. Their
@@ -54,7 +30,7 @@ export type SourceSurfaceGradientImportFacts={
 function sourceText(raw:unknown):string|undefined {
  if(raw==null)return undefined;
  if(typeof raw==='string'){
-  if(raw.length>SOURCE_JSON_LIMITS.characters)throw new SourceSurfaceGradientConfigurationError('capacity','曲面渐变文本超过源 JSON 字符容量');
+  if(raw.length>SOURCE_JSON_LIMITS.characters)throw new SourceParticleGradientConfigurationError('capacity','曲面渐变文本超过源 JSON 字符容量');
   return raw;
  }
  if(typeof raw==='number'||typeof raw==='boolean')return String(raw);
@@ -72,7 +48,7 @@ function sourceSpeed(raw:unknown,diagnostics:string[]):number {
  else if(typeof raw==='string'){
   const parsed=parseDomainSourceDouble(raw);
   if(parsed.ok)value=parsed.value;
-  else if(parsed.error.kind==='capacity')throw new SourceSurfaceGradientConfigurationError('capacity',`曲面渐变速度超过本地标量解析容量 characters=${parsed.error.limit}`);
+  else if(parsed.error.kind==='capacity')throw new SourceParticleGradientConfigurationError('capacity',`曲面渐变速度超过本地标量解析容量 characters=${parsed.error.limit}`);
  }
  if(value===undefined||!Number.isFinite(value)){
   if(raw!==undefined)diagnostics.push('原版渐变速度未解析为有限 Java double，采用默认值 60；原值保留在 source。');

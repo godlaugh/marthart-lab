@@ -4,7 +4,7 @@ import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
 import {gradientAnimationCapabilities} from '../src/engine/gradientOffsets';
-import {SOURCE_SURFACE_GRADIENT_DEFAULT} from '../src/engine/sourceSurfaceGradientConfig';
+import {SOURCE_PARTICLE_GRADIENT_DEFAULT} from '../src/engine/sourceParticleGradientConfig';
 import {SurfaceGradientEditor} from '../src/components/Timeline';
 import {I18nProvider} from '../src/i18n';
 import type {GradientAnimation} from '../src/types';
@@ -19,15 +19,15 @@ describe('Surface source gradient public import and authoring',()=>{
   const {scene,warnings}=imported({mode:'CROSS_FADE',interpolation:'OKLCH',speed:'0x1.2p6',affectInside:false,affectOutside:false});
   expect(scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-points-v1');
   expect(scene.surfaceSourcePalette).toEqual({colors:['#FF0000','#0000FF']});
-  expect(scene.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_SURFACE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:72});
+  expect(scene.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_PARTICLE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:72});
   expect(parseScene(serializeScene(scene)).timeline).toEqual(scene.timeline);
   expect(warnings.some(w=>w.includes('固定同时作用于两侧'))).toBe(true);
   expect(warnings.some(w=>w.includes('既有本地解析'))).toBe(false);
-  expect(gradientAnimationCapabilities(scene)).toMatchObject({localPalette:false,offsets:true,defaultAnimation:SOURCE_SURFACE_GRADIENT_DEFAULT});
+  expect(gradientAnimationCapabilities(scene)).toMatchObject({localPalette:false,offsets:true,defaultAnimation:SOURCE_PARTICLE_GRADIENT_DEFAULT});
  });
  it('reads a direct object or only the first array object, never a later configuration',()=>{
-  expect(config([{mode:'PALETTE_MORPH',speed:24},{speed:99}])).toEqual({...SOURCE_SURFACE_GRADIENT_DEFAULT,mode:'palette_morph',speed:24});
-  for(const args of [[],[null,{mode:'CROSS_FADE',speed:99}]])expect(config(args)).toEqual(SOURCE_SURFACE_GRADIENT_DEFAULT);
+  expect(config([{mode:'PALETTE_MORPH',speed:24},{speed:99}])).toEqual({...SOURCE_PARTICLE_GRADIENT_DEFAULT,mode:'palette_morph',speed:24});
+  for(const args of [[],[null,{mode:'CROSS_FADE',speed:99}]])expect(config(args)).toEqual(SOURCE_PARTICLE_GRADIENT_DEFAULT);
   for(const args of [undefined,null,17,'{}'])expect(config(args)).toBeUndefined();
  });
  it('preserves skipped unknown modes and FRACTAL targets without activating local palette actions',()=>{
@@ -48,7 +48,7 @@ describe('Surface source gradient public import and authoring',()=>{
  it('retains a skipped target payload and numeric fallback argument as evidence without applying them',()=>{
   const text=JSON.stringify(source([{method:'gradientStart',args:{targetDomain:'FRACTAL',speed:1}},{method:'gradientStart',args:2},{method:'gradientStart',args:[]}])).replace('"speed":1','"speed":1e999').replace('"args":2','"args":-1e999');
   const scene=parseScene(serializeScene(parseProjectFile(text).scene));expect(scene.timeline.tracks[0].actions).toHaveLength(1);
-  expect(scene.timeline.tracks[0].actions![0].gradient).toEqual(SOURCE_SURFACE_GRADIENT_DEFAULT);
+  expect(scene.timeline.tracks[0].actions![0].gradient).toEqual(SOURCE_PARTICLE_GRADIENT_DEFAULT);
   expect(scene.provenance!.sourceNumberTokens).toEqual(expect.arrayContaining([{path:['timeline','0','actions','0','args','speed'],token:'1e999'},{path:['timeline','0','actions','1','args'],token:'-1e999'}]));
  });
  it('keeps source clip enable semantics, ignores action enable, and does not parse disabled clip payloads',()=>{
@@ -62,28 +62,28 @@ describe('Surface source gradient public import and authoring',()=>{
   const gpu=parseProjectFile(JSON.stringify(source(actions,{surface_mode:'MESH',render_mode:'GPU'}))).scene;
   expect(gpu.surfaceSource).toMatchObject({mode:'mesh',nativeBackend:'gpu'});
   expect(parseScene(serializeScene(gpu)).timeline).toEqual(gpu.timeline);
-  expect(gpu.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_SURFACE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:24});
+  expect(gpu.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_PARTICLE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:24});
   const original=source(actions,{surface_mode:'MESH'}),{scene}=parseProjectFile(JSON.stringify(original));
   expect(scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-surface-v1');
   expect(scene.surfaceSource).toMatchObject({mode:'mesh',nativeBackend:'cpu',mesh:{uSegments:2,vSegments:2}});
   expect(scene.surfaceSourcePalette).toEqual({colors:['#FF0000','#0000FF']});
-  expect(scene.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_SURFACE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:24});
+  expect(scene.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_PARTICLE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:24});
   const reopened=parseScene(serializeScene(scene));expect(reopened.surfaceSource).toEqual(scene.surfaceSource);expect(reopened.timeline).toEqual(scene.timeline);expect(reopened.provenance!.original).toEqual(original);
-  expect(gradientAnimationCapabilities(scene)).toMatchObject({localPalette:false,offsets:true,defaultAnimation:SOURCE_SURFACE_GRADIENT_DEFAULT});
+  expect(gradientAnimationCapabilities(scene)).toMatchObject({localPalette:false,offsets:true,defaultAnimation:SOURCE_PARTICLE_GRADIENT_DEFAULT});
  });
  it('offers all source modes and color interpolation without regional toggles or local palette controls',()=>{
-  const value={...SOURCE_SURFACE_GRADIENT_DEFAULT},before=structuredClone(value),html=render(value);
+  const value={...SOURCE_PARTICLE_GRADIENT_DEFAULT},before=structuredClone(value),html=render(value);
   for(const option of ['hue_rotate','offset_cycle','palette_morph','cross_fade','rgb','linear','oklab','oklch'])expect(html).toContain(`value="${option}"`);
   expect(html).toContain('渐变速度 °/s');expect(html).toContain('相位曲线与循环颜色插值');expect(html).toContain('data-testid="surface-gradient-config"');
   expect(html).not.toContain('type="checkbox"');expect(html).not.toContain('type="color"');expect(value).toEqual(before);
  });
  it('translates the source gradient editor without mutating its configuration',()=>{
-  const value={...SOURCE_SURFACE_GRADIENT_DEFAULT},before=structuredClone(value);
+  const value={...SOURCE_PARTICLE_GRADIENT_DEFAULT},before=structuredClone(value);
   const html=renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(SurfaceGradientEditor,{config:value,onChange:()=>{throw Error('render must not mutate');}})}));
   expect(html).toContain('Phase curve and cyclic color interpolation');expect(html).toContain('The gradient affects both sides of the surface.');expect(value).toEqual(before);
  });
  it('retains malformed saved configuration and requests explicit repair without silently applying defaults',()=>{
-  for(const value of [undefined,{...SOURCE_SURFACE_GRADIENT_DEFAULT,affectInside:false}]){
+  for(const value of [undefined,{...SOURCE_PARTICLE_GRADIENT_DEFAULT,affectInside:false}]){
    const before=structuredClone(value),html=render(value);expect(html).toContain('data-testid="surface-gradient-unconfigured"');expect(html).toContain('设置源渐变配置');expect(html).not.toContain('渐变速度 °/s');expect(value).toEqual(before);
   }
  });

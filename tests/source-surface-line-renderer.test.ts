@@ -1,8 +1,10 @@
 import {describe,it,expect} from 'vitest';
 import * as THREE from 'three';
 import {prepareSourceCamera,type SourceCameraPlan} from '../src/engine/sourceCamera';
-import {createSourceSurfaceMeshLines,sourceSurfaceLineBuffers} from '../src/engine/sourceSurfaceLineRenderer';
+import {sourceProcessingLineBuffers} from '../src/engine/sourceProcessingLineRenderer';
+import {createSourceSurfaceMeshLines} from '../src/engine/sourceSurfaceLineRenderer';
 import type {SourceSurfaceMeshWireframeFrame} from '../src/engine/sourceSurfaceMeshWireframe';
+const lineBuffers=(frame:SourceSurfaceMeshWireframeFrame,plan:SourceCameraPlan)=>sourceProcessingLineBuffers(frame.positions,frame.lineWidth,plan);
 const parsed=prepareSourceCamera({model:'mathart-1.7.8-v1',configuration:{kind:'absent'}},{logicalWidth:200,logicalHeight:100,referenceLogicalHeight:100,target:'primary',projectionPass:'perspective'});
 if(!parsed.ok||parsed.value.kind!=='known')throw Error('camera fixture');
 const sourcePlan=parsed.value.plan;
@@ -13,7 +15,7 @@ const frame=(positions=[0,0,0,1,0,0],lineWidth=2,packedColor=0xffabcdef):SourceS
 const release=(mesh:ReturnType<typeof createSourceSurfaceMeshLines>)=>{mesh.geometry.dispose();mesh.material.dispose();};
 describe('Processing CPU independent line tessellation',()=>{
  it('emits four vertices and six indices in source endpoint/width order without joining or deduplicating pairs',()=>{
-  const data=frame([0,0,0,1,2,3,0,0,0,1,2,3]),input=data.positions.slice(),out=sourceSurfaceLineBuffers(data,plan);
+  const data=frame([0,0,0,1,2,3,0,0,0,1,2,3]),input=data.positions.slice(),out=lineBuffers(data,plan);
   expect(Array.from(out.positions.slice(0,16))).toEqual([0,0,0,1,0,0,0,1,1,2,3,1,1,2,3,1]);
   expect(Array.from(out.directions.slice(0,16))).toEqual([1,2,3,1,1,2,3,-1,-1,-2,-3,-1,-1,-2,-3,1]);
   expect(Array.from(out.indices)).toEqual([0,1,2,2,1,3,4,5,6,6,5,7]);
@@ -21,7 +23,7 @@ describe('Processing CPU independent line tessellation',()=>{
  });
  it('transforms raw F32 directions independently of translated endpoint precision',()=>{
   const m=identity.slice();m[3]=16777216;
-  const out=sourceSurfaceLineBuffers(frame(),withMatrix(m));
+  const out=lineBuffers(frame(),withMatrix(m));
   expect(out.positions[0]).toBe(16777216);expect(out.positions[8]).toBe(16777216);
   expect(out.directions[0]).toBe(1);expect(out.directions[8]).toBe(-1);
  });
@@ -29,35 +31,35 @@ describe('Processing CPU independent line tessellation',()=>{
   // Independently evaluated with Python struct.pack/unpack float32 arithmetic.
   for(const x of [105,-105]){
    const m=identity.slice();m[0]=x;
-   expect(sourceSurfaceLineBuffers(frame(undefined,1.2),withMatrix(m)).directions[3]).toBe(2.8306167125701904);
+   expect(lineBuffers(frame(undefined,1.2),withMatrix(m)).directions[3]).toBe(2.8306167125701904);
   }
   const large=identity.slice();large[0]=1e18;
   // The retained exponent produces 1000000.4375, unlike cbrt's 1000000.
-  expect(sourceSurfaceLineBuffers(frame(undefined,1.2),withMatrix(large)).directions[3]).toBe(600000.3125);
+  expect(lineBuffers(frame(undefined,1.2),withMatrix(large)).directions[3]).toBe(600000.3125);
   const singular=identity.slice();singular[0]=0;
-  const collapsed=sourceSurfaceLineBuffers(frame(),withMatrix(singular));
+  const collapsed=lineBuffers(frame(),withMatrix(singular));
   expect(collapsed.directions[3]).toBe(0);expect(Object.is(collapsed.directions[7],-0)).toBe(true);
  });
  it('rounds direction products and left associated sums without normalization',()=>{
   const m=[1,1,-1,0,0,1,0,0,0,0,1,0,0,0,0,1];
-  const out=sourceSurfaceLineBuffers(frame([0,0,0,16777216,1,16777216]),withMatrix(m));
+  const out=lineBuffers(frame([0,0,0,16777216,1,16777216]),withMatrix(m));
   expect(Array.from(out.directions.slice(0,3))).toEqual([0,1,16777216]);
  });
  it('retains zero length pairs and nonfinite endpoint consequences instead of filtering or bridging',()=>{
-  const out=sourceSurfaceLineBuffers(frame([0,0,0,0,0,0,NaN,0,0,1,1,1]),plan);
+  const out=lineBuffers(frame([0,0,0,0,0,0,NaN,0,0,1,1,1]),plan);
   expect(out.indices.length).toBe(12);expect(Array.from(out.directions.slice(0,3))).toEqual([0,0,0]);
   expect(Number.isNaN(out.positions[16])).toBe(true);expect(Number.isNaN(out.directions[16])).toBe(true);
  });
  it('keeps uint32 indexing beyond the 16 bit vertex boundary',()=>{
-  const count=17000,out=sourceSurfaceLineBuffers({...frame(),positions:new Float32Array(count*6)},plan);
+  const count=17000,out=lineBuffers({...frame(),positions:new Float32Array(count*6)},plan);
   expect(out.indices).toBeInstanceOf(Uint32Array);expect(out.indices.at(-1)).toBe(count*4-1);expect(out.positions.length).toBe(count*16);
  });
  it('rejects malformed pairs and capacity excess including all expanded RGBA storage',()=>{
-  expect(()=>sourceSurfaceLineBuffers({...frame(),positions:new Float32Array(5)},plan)).toThrow(/缓冲/);
+  expect(()=>lineBuffers({...frame(),positions:new Float32Array(5)},plan)).toThrow(/缓冲/);
   const oversized=new Float32Array((Math.floor(256*1024*1024/216)+1)*6);
-  expect(()=>sourceSurfaceLineBuffers({...frame(),positions:oversized},plan)).toThrow(/256 MiB/);
-  for(const lineWidth of [0,-1,NaN,Infinity,1e39])expect(()=>sourceSurfaceLineBuffers({...frame(),lineWidth},plan)).toThrow(/宽度/);
-  for(const packedColor of [NaN,1.5,-2147483649,4294967296])expect(()=>sourceSurfaceLineBuffers({...frame(),packedColor},plan)).toThrow(/颜色/);
+  expect(()=>lineBuffers({...frame(),positions:oversized},plan)).toThrow(/256 MiB/);
+  for(const lineWidth of [0,-1,NaN,Infinity,1e39])expect(()=>lineBuffers({...frame(),lineWidth},plan)).toThrow(/宽度/);
+  for(const packedColor of [NaN,1.5,-2147483649,4294967296])expect(()=>createSourceSurfaceMeshLines({...frame(),packedColor},plan)).toThrow(/颜色/);
  });
  it('creates an empty draw with owned buffers when no lines are present',()=>{
   const mesh=createSourceSurfaceMeshLines(frame([]),plan);
