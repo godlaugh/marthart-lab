@@ -52,10 +52,10 @@ it('offers only implemented clips for source CPU particle replay',()=>{
  const markup=html(scene),types=choices(markup);expect(types).toContain('value="param"');expect(types).not.toContain('value="surface_mode_transition"');expect(types).toContain('value="animate"');expect(types).toContain('value="trails"');expect(supportsCameraAction(scene,'track')).toBe(true);
 });
 
-it('offers the shared source queue for CPU mesh without advertising mode switches',()=>{
+it('offers the shared source queue for CPU host including supported mode switches',()=>{
  const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Mesh queue',equations:{x:'u',y:'v',z:'0'},settings:{surface_mode:'MESH',mesh_u_segments:3,mesh_v_segments:4},timeline:[{type:'wait',duration:1}]})).scene;
  const before=structuredClone(scene),markup=html(scene),types=choices(markup);
- for(const name of ['wait','animate','align','param','trails'])expect(types).toContain(`value="${name}"`);
- for(const name of ['numeric','surface_mode_transition','fractal_zoom','spirograph_finish_wait'])expect(types).not.toContain(`value="${name}"`);
+ for(const name of ['wait','animate','align','param','trails','surface_mode_transition'])expect(types).toContain(`value="${name}"`);
+ for(const name of ['numeric','fractal_zoom','spirograph_finish_wait'])expect(types).not.toContain(`value="${name}"`);
  expect(markup).toContain('Offline preview frame rate');expect(supportsCameraAction(scene,'track')).toBe(true);expect(scene).toEqual(before);
 });

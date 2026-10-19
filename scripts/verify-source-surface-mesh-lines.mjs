@@ -10,7 +10,7 @@ import {createServer as createTcpServer} from 'node:net';
 // Processing CPU tessellation, F32 matrix scale, and fill/stroke(int) colors.
 const core='../.cache/mathart-investigation/MathArt.app/Contents/app/core-4.5.0-acdf3bce2932985b9d091c284407a54.jar';
 const hash=b=>createHash('sha256').update(b).digest('hex');
-const paths=['src/engine/sourceProcessingGeometry.ts','src/engine/sourceSurfaceLineRenderer.ts','src/engine/sourceSurfaceMeshRenderer.ts','src/engine/sourceSurfaceFunction.ts','src/engine/sourceSurfaceMeshGeometry.ts','src/engine/sourceSurfaceMeshRuntime.ts','src/engine/sourceSurfaceMeshConfig.ts','src/engine/sourceSurfaceMeshWireframe.ts','src/engine/sourceSurfaceColor.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceCamera.ts','src/engine/ordinarySourceCamera.ts','src/engine/renderer.ts','src/types.ts','scripts/verify-source-surface-mesh-lines.mjs'];
+const paths=['src/engine/sourceSurfaceOverlay.ts','src/engine/sourceProcessingGeometry.ts','src/engine/sourceSurfaceLineRenderer.ts','src/engine/sourceSurfaceMeshRenderer.ts','src/engine/sourceSurfaceFunction.ts','src/engine/sourceSurfaceMeshGeometry.ts','src/engine/sourceSurfaceMeshRuntime.ts','src/engine/sourceSurfaceMeshConfig.ts','src/engine/sourceSurfaceMeshWireframe.ts','src/engine/sourceSurfaceColor.ts','src/engine/sourceSurfaceGradient.ts','src/engine/sourceCamera.ts','src/engine/ordinarySourceCamera.ts','src/engine/renderer.ts','src/types.ts','scripts/verify-source-surface-mesh-lines.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));
 const report={at:new Date().toISOString(),scope:'CPU mesh runtime and explicit boundary fixtures through ArtRenderer versus shipped Processing Line/Color shaders. Shared geometry and camera inputs; independent Python CPU tessellation and packed color interpretation; complete RGBA8 frames, no MSAA. No public import, native app, JOGL/driver or GPU mesh parity.',unmeasured:['Original native framebuffer','Native MSAA and compositor','GPU time','Agent tokens','Full process-family memory','Public import/playback/export'],adapter:'GLSL 300 es syntax; retained fragment precision; original shader arithmetic unchanged. Default surface hint state: perspective=0, depth bias scale=.9990000128746033; logical viewport dimensions.'};
 let server,browser;
@@ -40,6 +40,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:
    {name:'partial-alpha',packed:0x4055ddff,clearAlpha:0},{name:'duplicate-alpha',packed:0x4055ddff,clearAlpha:0,duplicate:true},
    {name:'mixed-nonfinite',fixture:'invalid'},{name:'display-opacity',displayOpacity:.37},{name:'wide-lines',lineWidth:13.25},
    {name:'over-16bit',large:true},
+   {name:'transition-mid-fill',runtime:true,fill:true,background:0x804080c0,overlay:128},{name:'transition-opaque',runtime:true,fill:true,background:0x804080c0,overlay:255,blank:true},{name:'transition-reset',runtime:true,fill:true,background:0x804080c0,overlay:0},{name:'transition-transparent',background:0x004080c0,overlay:64},
    {name:'source-background',background:0x804080c0},{name:'source-background-gray',background:0x80},{name:'source-background-transparent',background:0x804080c0,transparentBackground:true},
   ];
   window.meshLineFrames=cases.map(c=>{
@@ -64,7 +65,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:
     if(c.large){positions=[];for(let i=0;i<16385;i++){const y=(i%91)-45;positions.push(-55,y,0,55,y+.125,0);}}
     wire={positions:new Float32Array(positions),packedColor:c.packed??0xff33ccff,lineWidth:c.lineWidth??2.75,mode:'coupled'};
    }
-   const output={type:'geometry',topology:'mesh',positions:geometry.positions,indices:geometry.triangles,sourceMeshColors:colors,sourceMeshAppearance:sourceSurfaceMeshAppearance(!!c.fill,.65),sourceMeshWireframe:wire,...(c.background===undefined?{}:{sourceMeshBackgroundColor:c.background}),sourceCameraFrame:frame,stats:{samples:geometry.positions.length/3,generated:geometry.positions.length/3,invalid:0}};
+   const output={type:'geometry',topology:'mesh',positions:geometry.positions,indices:geometry.triangles,sourceMeshColors:colors,sourceMeshAppearance:sourceSurfaceMeshAppearance(!!c.fill,.65),sourceMeshWireframe:wire,...(c.background===undefined?{}:{sourceSurfaceBackgroundColor:c.background}),...(c.overlay===undefined?{}:{sourceSurfaceOverlayAlpha:c.overlay}),sourceCameraFrame:frame,stats:{samples:geometry.positions.length/3,generated:geometry.positions.length/3,invalid:0}};
    return{...c,width,height,dpr,doc,output,plan};
   });
   const encode=a=>{let s='';for(const b of new Uint8Array(a.buffer,a.byteOffset,a.byteLength))s+=String.fromCharCode(b);return btoa(s);};
@@ -110,7 +111,12 @@ print(json.dumps({'rows':rows,'oracleCost':{'elapsedMs':(time.perf_counter()-sta
   try{
    const adapt=(text,fragment)=>'#version 300 es\nprecision highp float;\nprecision highp int;\n'+(fragment?'out vec4 oracleFragment;\n':'')+text.replaceAll('attribute ','in ').replaceAll('varying ',fragment?'in ':'out ').replaceAll('gl_FragColor','oracleFragment');
    const program=kind=>{const p=gl.createProgram();programs.push(p);for(const [type,suffix,frag] of [[gl.VERTEX_SHADER,'Vert',false],[gl.FRAGMENT_SHADER,'Frag',true]]){const s=gl.createShader(type);shaders.push(s);gl.shaderSource(s,adapt(source[kind+suffix],frag));gl.compileShader(s);check(gl.getShaderParameter(s,gl.COMPILE_STATUS),gl.getShaderInfoLog(s));gl.attachShader(p,s);}gl.linkProgram(p);check(gl.getProgramParameter(p,gl.LINK_STATUS),gl.getProgramInfoLog(p));return p;};
-   const lineProgram=program('Line'),fillProgram=program('Color');
+   // Independent full-canvas rectangle, using raw GL and two triangles rather
+   // than the production Three.js overlay geometry/material.
+   source.OverlayVert='attribute vec2 vertex; void main(){gl_Position=vec4(vertex,0.0,1.0);}';
+   source.OverlayFrag='uniform float amount; void main(){gl_FragColor=vec4(0.0,0.0,0.0,amount);}';
+   const lineProgram=program('Line'),fillProgram=program('Color'),overlayProgram=program('Overlay');
+   const overlayVAO=gl.createVertexArray();vaos.push(overlayVAO);
    const lineVAO=gl.createVertexArray(),fillVAO=gl.createVertexArray();vaos.push(lineVAO,fillVAO);
    const attribute=(p,name,size,values)=>{const b=gl.createBuffer();buffers.push(b);gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,values,gl.STATIC_DRAW);const at=gl.getAttribLocation(p,name);check(at>=0,'missing '+name);gl.enableVertexAttribArray(at);gl.vertexAttribPointer(at,size,gl.FLOAT,false,0,0);};
    const indexed=(indices)=>{const b=gl.createBuffer();buffers.push(b);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,b);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);gl.drawElements(gl.TRIANGLES,indices.length,gl.UNSIGNED_INT,0);};
@@ -128,6 +134,7 @@ print(json.dumps({'rows':rows,'oracleCost':{'elapsedMs':(time.perf_counter()-sta
     const colorAt=gl.getAttribLocation(lineProgram,'color');gl.disableVertexAttribArray(colorAt);gl.vertexAttrib4fv(colorAt,ref.rgba);
     gl.uniformMatrix4fv(gl.getUniformLocation(lineProgram,'modelviewMatrix'),false,new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]));gl.uniformMatrix4fv(gl.getUniformLocation(lineProgram,'projectionMatrix'),false,c.plan.projection.columnMajor);
     gl.uniform4f(gl.getUniformLocation(lineProgram,'viewport'),0,0,c.width,c.height);gl.uniform1i(gl.getUniformLocation(lineProgram,'perspective'),0);const bias=Math.fround(.999);gl.uniform3f(gl.getUniformLocation(lineProgram,'scale'),c.projection==='scene-fade-orthographic'?1:bias,c.projection==='scene-fade-orthographic'?1:bias,bias);indexed(expectedIndices);
+    if(c.overlay){gl.disable(gl.DEPTH_TEST);gl.depthMask(false);gl.bindVertexArray(overlayVAO);gl.useProgram(overlayProgram);attribute(overlayProgram,'vertex',2,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]));gl.uniform1f(gl.getUniformLocation(overlayProgram,'amount'),c.overlay/255);gl.drawArrays(gl.TRIANGLES,0,6);}
     const expected=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,expected);check(gl.getError()===0,'oracle GL error '+c.name);
     const rt=new THREE.WebGLRenderTarget(w,h),actual=new Uint8Array(expected.length);
     try{
@@ -137,7 +144,7 @@ print(json.dumps({'rows':rows,'oracleCost':{'elapsedMs':(time.perf_counter()-sta
     }finally{art.renderer.setRenderTarget(null);rt.dispose();}
     let different=0,maxDelta=0,lit=0;for(let j=0;j<actual.length;j++){const d=Math.abs(actual[j]-expected[j]);if(d){different++;maxDelta=Math.max(maxDelta,d);}if(j%4!==3&&actual[j])lit++;}
     check(c.blank?lit===0:lit>0,'blank expectation '+c.name+' lit='+lit);
-    rows.push({name:c.name,width:w,height:h,logicalWidth:c.width,logicalHeight:c.height,dpr:c.dpr,mode:wire.mode,segments:wire.positions.length/6,expandedVertices:expectedVertices.length/4,transformScale:ref.transformScale,bufferDifferences,bufferGenerationMs:bufferMs,litChannels:lit,differentChannels:different,maxDelta,actualHash:await digest(actual),referenceHash:await digest(expected)});
+    rows.push({name:c.name,width:w,height:h,logicalWidth:c.width,logicalHeight:c.height,dpr:c.dpr,mode:wire.mode,overlayAlpha:c.overlay??0,segments:wire.positions.length/6,expandedVertices:expectedVertices.length/4,transformScale:ref.transformScale,bufferDifferences,bufferGenerationMs:bufferMs,litChannels:lit,differentChannels:different,maxDelta,actualHash:await digest(actual),referenceHash:await digest(expected)});
     for(const b of buffers.splice(0))gl.deleteBuffer(b);
    }
    check(rows.find(r=>r.name==='partial-alpha').actualHash!==rows.find(r=>r.name==='duplicate-alpha').actualHash,'duplicate transparent lines must visibly accumulate');

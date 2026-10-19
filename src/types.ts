@@ -195,7 +195,7 @@ export interface SceneDocument {
   rootsSourcePalette?: RootsSourcePalette;
   surfaceSourcePalette?: SourceSurfacePalette;
   /** Canonical source mesh settings, independent of local mesh controls. */
-  surfaceSourceMesh?: SourceSurfaceMeshConfiguration;
+  surfaceSource?: SourceSurfaceMeshConfiguration;
   rootsMath?: RootsMathConfiguration;
   /** Optional authored presentation payload. Omission retains legacy rules;
    * local-v1 keeps this payload dormant without discarding its source values. */
@@ -307,7 +307,9 @@ export interface GeometryOutput {
   /** Ordered native CPU line pairs, packed stroke color and resolved width. */
   sourceMeshWireframe?: SourceSurfaceMeshWireframeFrame;
   /** Packed background passed to source P3D background(int), including alpha. */
-  sourceMeshBackgroundColor?:number;
+  sourceSurfaceBackgroundColor?:number;
+  /** Final source full-scene black overlay, already quantized to a byte. */
+  sourceSurfaceOverlayAlpha?:number;
   /** Parameter-grid provenance from the surface producer, before vertex compaction.
    * Each cell mask: bit 0 = (a,b,c), bit 1 = (a,c,d); omitted triangles stay holes. */
   surfaceGrid?: {

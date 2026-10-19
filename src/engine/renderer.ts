@@ -2,6 +2,7 @@ import {createSourceSurfacePoints} from './sourceSurfacePointRenderer';
 import {createSourceSurfaceMeshFill} from './sourceSurfaceMeshRenderer';
 import {createSourceSurfaceMeshLines} from './sourceSurfaceLineRenderer';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
+import {createSourceSurfaceOverlay} from './sourceSurfaceOverlay';
 import {prepareOrdinarySourceFrame} from './ordinarySourceCamera';
 import type {SourceCameraPlan} from './sourceCamera';
 import {implicitMeshPresentation,createImplicitWireframe} from './implicitMeshPresentation';
@@ -32,6 +33,8 @@ export class ArtRenderer {
   private cameraResolved = false;
   private sourceCameraPlan?:SourceCameraPlan;
   private sourceClear?:readonly [number,number,number,number];
+  private readonly surfaceOverlayScene=new THREE.Scene();
+  private surfaceOverlay?:ReturnType<typeof createSourceSurfaceOverlay>;
   private interactiveRequested=true;
   private planar = false;
   private roll = 0;
@@ -126,7 +129,9 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
     if(output.type==='geometry'&&output.sourcePointAppearance&&output.sourceMeshAppearance)throw new Error('源曲面点与网格外观不能混用');
     if(output.type==='geometry'&&output.sourceMeshWireframe&&!output.sourceMeshAppearance)throw new Error('源曲面线框缺少对应网格外观');
-    if(output.type==='geometry'&&output.sourceMeshBackgroundColor!==undefined&&(!output.sourceMeshAppearance||!Number.isInteger(output.sourceMeshBackgroundColor)||output.sourceMeshBackgroundColor<0||output.sourceMeshBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应网格和 uint32 颜色');
+    if(output.type==='geometry'&&output.sourceSurfaceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance)||!Number.isInteger(output.sourceSurfaceBackgroundColor)||output.sourceSurfaceBackgroundColor<0||output.sourceSurfaceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
+    const overlayAlpha=output.type==='geometry'?output.sourceSurfaceOverlayAlpha:undefined;
+    if(overlayAlpha!==undefined&&(output.type!=='geometry'||output.sourceSurfaceBackgroundColor===undefined||!Number.isInteger(overlayAlpha)||overlayAlpha<0||overlayAlpha>255))throw new Error('源曲面遮罩需要对应背景与 0–255 透明度');
     const sourcePlan=output.sourceCameraFrame?prepareOrdinarySourceFrame(output.sourceCameraFrame):undefined;
     const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
     if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
@@ -138,6 +143,8 @@ export class ArtRenderer {
     if(cameraResolved!==this.cameraResolved)fit=true;
     this.cameraResolved=cameraResolved;
     this.clear();
+    if(overlayAlpha){if(!this.surfaceOverlay){this.surfaceOverlay=createSourceSurfaceOverlay();this.surfaceOverlayScene.add(this.surfaceOverlay);}this.surfaceOverlay.material.uniforms.alpha.value=Math.fround(overlayAlpha/255);}
+    if(this.surfaceOverlay)this.surfaceOverlay.visible=!!overlayAlpha;
     this.ambientLight.color.set(0xffffff);this.ambientLight.intensity=.9;
     const isRaster = output.type === "raster",
       planar = !sourcePlan&&(isRaster || output.dimension === 2);
@@ -247,7 +254,7 @@ export class ArtRenderer {
       if(trail.appearance?.overlay){lines.material.depthTest=false;lines.renderOrder=2;}
       this.group.add(lines);
     }
-    const sourceBackground=output.type==='geometry'?output.sourceMeshBackgroundColor:undefined;
+    const sourceBackground=output.type==='geometry'?output.sourceSurfaceBackgroundColor:undefined;
     // Source shaders and P3D clear colors are already display channel values.
     // Keep screen and offscreen clear paths in the same raw channel space.
     this.renderer.outputColorSpace=sourceBackground===undefined?THREE.SRGBColorSpace:THREE.LinearSRGBColorSpace;
@@ -375,6 +382,10 @@ export class ArtRenderer {
         this.renderer.autoClear=false;this.renderer.render(this.scene,this.camera);
       }finally{this.renderer.autoClear=autoClear;}
     }else this.renderer.render(this.scene, this.camera);
+    if(this.surfaceOverlay?.visible){
+      const autoClear=this.renderer.autoClear;
+      try{this.renderer.autoClear=false;this.renderer.render(this.surfaceOverlayScene,this.camera);}finally{this.renderer.autoClear=autoClear;}
+    }
   }
   async blob(type = "image/png", quality = 0.95): Promise<Blob> {
     this.render();
@@ -404,6 +415,7 @@ export class ArtRenderer {
   }
   dispose() {
     this.clear();
+    this.surfaceOverlay?.geometry.dispose();this.surfaceOverlay?.material.dispose();this.surfaceOverlayScene.clear();
     this.controls.dispose();
     this.grid.geometry.dispose();
     (this.grid.material as THREE.Material).dispose();

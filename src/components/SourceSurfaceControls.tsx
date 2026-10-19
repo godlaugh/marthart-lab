@@ -1,26 +1,26 @@
 import {useState} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
-import {usesSourceSurfaceMesh} from '../engine/sourceSurfaceIdentity';
+import {usesSourceSurfaceHost} from '../engine/sourceSurfaceIdentity';
 import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from '../engine/sourceSurfaceMeshConfig';
 
-type Group='mesh'|'domain'|'transform'|'tracking';
+type Group='points'|'mesh'|'domain'|'transform'|'tracking';
 type Props={scene:SceneDocument;onChange:(scene:SceneDocument)=>void};
 /** Edits only the canonical saved configuration. Native source limits and local
  * allocation admission remain with their owners; this editor never clamps. */
-export function SourceSurfaceMeshControls({scene,onChange}:Props){
+export function SourceSurfaceControls({scene,onChange}:Props){
  const {t}=useI18n(),[error,setError]=useState('');
- if(!usesSourceSurfaceMesh(scene)||!scene.surfaceSourceMesh)return null;
- const configuration=scene.surfaceSourceMesh;
+ if(!usesSourceSurfaceHost(scene)||!scene.surfaceSource)return null;
+ const configuration=scene.surfaceSource;
  const emit=(next:SourceSurfaceMeshConfiguration)=>{
   const parsed=parseSourceSurfaceMeshConfiguration(next);
   if(!parsed.ok){setError(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);return;}
-  onChange({...scene,surfaceSourceMesh:parsed.value});setError('');
+  onChange({...scene,surfaceSource:parsed.value});setError('');
  };
  const patch=(group:Group,key:string,value:number|boolean)=>emit({...configuration,[group]:{...configuration[group],[key]:value}});
  const number=(group:Group,key:string,label:string,integer=false)=>{
   const value=(configuration[group] as unknown as Record<string,number>)[key];
-  return <label className="field" key={key}><span>{t(label)}</span><input data-testid={`source-mesh-${key}`} aria-label={t(label)} type="number" step={integer?1:'any'} value={value} onChange={event=>{if(event.target.value==='')return;const n=Number(event.target.value);if(!Number.isFinite(n)){setError(t('请输入有限数值'));return;}patch(group,key,n);}}/></label>;
+  return <label className="field" key={key}><span>{t(label)}</span><input data-testid={`${group==='points'?'source-points':'source-mesh'}-${key}`} aria-label={t(label)} type="number" step={integer?1:'any'} value={value} onChange={event=>{if(event.target.value==='')return;const n=Number(event.target.value);if(!Number.isFinite(n)){setError(t('请输入有限数值'));return;}patch(group,key,n);}}/></label>;
  };
  const toggle=(group:Group,key:string,label:string)=> <label className="field toggle-field" key={key}><span>{t(label)}</span><input data-testid={`source-mesh-${key}`} aria-label={t(label)} type="checkbox" checked={(configuration[group] as unknown as Record<string,boolean>)[key]} onChange={event=>patch(group,key,event.target.checked)}/></label>;
  const color=(key:'wireframeColor'|'backgroundColor',label:string)=>{
@@ -32,6 +32,15 @@ export function SourceSurfaceMeshControls({scene,onChange}:Props){
   </div></div>;
  };
  return <div data-testid="source-surface-mesh-controls">
+  <details open className="inspector-section"><summary>{t('曲面初始模式')}</summary><div className="section-body">
+   <label className="field"><span>{t('初始显示')}</span><select aria-label={t('曲面初始模式')} value={configuration.mode} onChange={event=>emit({...configuration,mode:event.target.value as 'points'|'mesh'})}><option value="points">{t('点云')}</option><option value="mesh">{t('网格曲面')}</option></select></label>
+   <p className="muted">{t('时间线可切换点云与网格；两种模式分别使用下方的采样和外观设置。')}</p>
+  </div></details>
+  <details className="inspector-section"><summary>{t('曲面点云')}</summary><div className="section-body">
+   {number('points','uSegments','点云 U 采样数',true)}{number('points','vSegments','点云 V 采样数',true)}
+   {number('points','dotRadius','点半径')}{number('points','lineWeight','拖尾线宽')}{number('points','trailLifetime','拖尾寿命')}
+   {toggle('points','showTrails','显示拖尾')}{toggle('points','fadeTrails','拖尾渐隐')}
+  </div></details>
   <details open className="inspector-section"><summary>{t('曲面网格')}</summary><div className="section-body">
    {number('mesh','uSegments','网格 U 采样数',true)}{number('mesh','vSegments','网格 V 采样数',true)}
    <p className="muted">{t('采样数包含边界端点；任一方向为 1 时没有网格面。超出本机容量会显示错误，原值不会被截断。')}</p>

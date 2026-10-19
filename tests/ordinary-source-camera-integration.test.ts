@@ -56,7 +56,7 @@ describe('source project file through production ordinary camera timeline',()=>{
   expect(parse('ATTRACTOR',{timeline:[{type:'not-native',duration:2}]}).scene.timeline.tracks).toEqual([]);
   expect(parse('SURFACE',{timeline:[animate('track',[1])]}).scene.settings).toMatchObject({showTrails:true,fadeTrails:true,trailLifetime:4});
   expect(parse('SURFACE',{timeline:[{type:'trails',enable:true}]}).scene.timeline.tracks[0]).toMatchObject({type:'trails',duration:0,trailsEnabled:true});
-  expect(()=>parse('SURFACE',{timeline:[{type:'surface_mode_transition'}]})).toThrow('尚缺');
+  expect(parse('SURFACE',{timeline:[{type:'surface_mode_transition'}]}).scene.timeline.tracks[0]).toMatchObject({type:'surface_mode_transition',surfaceMode:'points',duration:1});
  });
  it('uses the source parameter owner while preserving native clip duration',()=>{
   const result=parse('SURFACE',{parameters:{a:1},timeline:[animate('paramStart',[{parameters:{a:{step:.1,min:0,max:2}}}]),{type:'param',duration:2,parameters:{a:{step:.1,min:0,max:2}}}]});

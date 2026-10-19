@@ -82,8 +82,8 @@ describe('original timeline Reader to real scene evaluator',()=>{
    const result=parse(surface([animate(1,[action('gradientStart',{mode:mode.toUpperCase(),speed:.3,interpolation:'OKLAB'})]),wait(3)]));expect(result.scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-points-v1');expect(result.scene.timeline.tracks[0].actions![0].gradient).toMatchObject({model:'offsets',mode,speed:.3,interpolation:'oklab'});
   }
  });
- it('keeps saved local trails and mesh blending while refusing unresolved native instant-child timing',()=>{
-  const raw=surface([{type:'trails',duration:1,enable:true},{type:'surface_mode_transition',duration:2,easing:'LINEAR',to:'MESH'}]);expect(()=>parse(raw)).toThrow('编译事实');
+ it('keeps saved local blending separate from native instant trails and mode replacement',()=>{
+  const raw=surface([{type:'trails',duration:1,enable:true},{type:'surface_mode_transition',duration:2,easing:'LINEAR',to:'MESH'}]);const imported=parse(raw).scene;expect(imported.timeline.tracks.map(t=>t.type)).toEqual(['trails','surface_mode_transition']);expect(imported.timeline.tracks[0].duration).toBe(0);expect(sceneAtTime(imported,.5).settings.surfaceBlend).toBeUndefined();
   const scene=local([localClip(0,1,[],{type:'trails',target:'settings.recordTrails',trailsEnabled:true}),localClip(1,2,[],{type:'surface_mode_transition',target:'settings.surfaceBlend',surfaceMode:'mesh'})],raw),at=sceneAtTime(scene,2);expect(at.settings.recordTrails).toBe(true);expect(at.settings.surfaceBlend).toBeCloseTo(.5);expect(at.settings.renderMode).toBe('mesh');expect(scene.provenance!.original).toEqual(raw);
  });
  it('interpolates fractal target centers during the clip without changing the imported initial state',()=>{

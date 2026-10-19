@@ -25,9 +25,28 @@ const settings={u_segments:40,v_segments:20,mesh_u_segments:40,mesh_v_segments:2
 function task(){
  if(mode!=='switch'){
   const raw={config_version:'1.0.0',type:'SURFACE',name:'Host regression',equations,parameters,palette:['#FF0000','#0000FF'],settings:{...settings,surface_mode:mode==='mesh'?'MESH':'POINTS'},timeline:[{type:'animate',duration:2,actions:[{method:'track',args:[410]}]}]};
+  if(mode==='public-switch'){
+   Object.assign(raw.settings,{surface_mode:'POINTS',u_segments:12,v_segments:12,mesh_u_segments:12,mesh_v_segments:12});
+   raw.timeline=Array.from({length:6},(_,i)=>({type:'surface_mode_transition',to:i%2?'POINTS':'MESH',duration:.25,easing:'LINEAR'}));
+  }
   const scene=api.parseScene(api.serializeScene(api.parseProjectFile(JSON.stringify(raw)).scene)),h=createHash('sha256');
-  for(let i=0;i<20;i++)h.update(digest(api.generateScene(scene,{time:i/10,width:320,height:240,quality:'preview',sourceViewport:api.ordinarySourceViewport(scene,320,240,'primary',240)})));
-  return{sha256:h.digest('hex'),requestedQueries:20,completedQueries:20};
+  const warnings=new Set(),observedModes=new Set();
+  for(let i=0;i<20;i++){
+   const output=api.generateScene(scene,{time:i/10,width:320,height:240,quality:'preview',sourceViewport:api.ordinarySourceViewport(scene,320,240,'primary',240)});
+   for(const warning of output.warnings??[])warnings.add(warning);delete output.warnings;
+   observedModes.add(output.topology);
+   // Rename the old output field at this explicit comparison boundary.
+   // The new neutral transition metadata has no pre-feature equivalent.
+   if(mode!=='public-switch'){
+    if(output.sourceMeshBackgroundColor!==undefined){output.sourceSurfaceBackgroundColor=output.sourceMeshBackgroundColor;delete output.sourceMeshBackgroundColor;}
+    if(output.sourceSurfaceOverlayAlpha!==undefined){if(output.sourceSurfaceOverlayAlpha!==0)throw Error('Non-neutral overlay in regression');delete output.sourceSurfaceOverlayAlpha;}
+    const transition=output.sourceCameraFrame?.surfaceTransition;
+    if(transition){if(transition.mode!==mode||transition.overlayAlpha!==0)throw Error('Unexpected transition in regression');delete output.sourceCameraFrame.surfaceTransition;}
+   }
+   h.update(digest(output));
+  }
+  if(mode==='public-switch'&&observedModes.size!==2)throw Error('Public switching did not produce both modes');
+  return{sha256:h.digest('hex'),requestedQueries:20,completedQueries:20,warnings:[...warnings],observedModes:[...observedModes]};
  }
  const parsed=api.importSourceSurfaceMeshConfig({...settings,u_segments:12,v_segments:12,mesh_u_segments:12,mesh_v_segments:12});if(!parsed.ok)throw Error(JSON.stringify(parsed.error));
  const surface=new api.SourceSurfaceHost({configuration:parsed.value.configuration,equations,parameters,frameRate:60,coverage:'all'}),tracks=[];
@@ -43,11 +62,12 @@ console.log(JSON.stringify({variant,mode,rows}));
 const results=[];
 for(const mode of ['points','mesh'])for(const variant of ['before','after'])results.push(JSON.parse(run(process.execPath,[runner,variant,mode])));
 results.push(JSON.parse(run(process.execPath,[runner,'after','switch'])));
+results.push(JSON.parse(run(process.execPath,[runner,'after','public-switch'])));
 const comparisons=[0,2].map(i=>({mode:results[i].mode,equal:results[i].rows.every((r,j)=>r.sha256===results[i+1].rows[j].sha256)}));
 const repeatStable=results.every(r=>r.rows.every(x=>x.sha256===r.rows[0].sha256));
 const sourceStable=(await Promise.all(Object.entries(sources).map(async([path,hash])=>createHash('sha256').update(await readFile(path)).digest('hex')===hash))).every(Boolean);
 const report={status:comparisons.every(r=>r.equal)&&repeatStable&&sourceStable?'passed':'failed',at:new Date().toISOString(),baseline,directory,sources,sourceStable,repeatStable,comparisons,results,
- scope:'Existing public CPU point/mesh import-save-reopen and 20 full generated frames compared with pinned baseline. New host runs 106 frames with six mode replacements; no pre-feature equivalent. Exact typed arrays and camera facts hashed; timing/work counts excluded.',
+ scope:'Existing public CPU point/mesh import-save-reopen and 20 full generated frames compared with pinned baseline. New host runs 106 frames with six mode replacements; no pre-feature equivalent. Exact typed arrays and camera facts hashed; timing/work counts excluded. Explicit normalization: renamed source background output field; neutral mode/overlay fields checked then omitted for old-scene comparison; warning prose retained separately. Public transition import-save-reopen and 20 generated queries measured separately with no pre-feature equivalent.',
  measurement:'Serial independent process per variant/task, one cold then two fresh warm runs. Time/CPU include task and hashing, exclude build/module load; maxRSS includes module load and is process cumulative high-water. No children during measured task.',
  unmeasured:['agent tokens','GPU/rasterization/PNG','browser process-family memory','native JVM/JOGL costs','original full-frame parity'],nativeParity:false};
 await writeFile('.cache/v2-source-surface-host-cost.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,comparisons,results},null,2));if(report.status!=='passed')process.exitCode=1;

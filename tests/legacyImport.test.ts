@@ -53,7 +53,7 @@ describe('legacy scene import production contract',()=>{
    {id:'disabled',type:'wait',target:'timeline.wait',from:0,to:0,start:5,duration:9,easing:'linear',pingPong:false,enabled:false},
   ];
   const saved=serializeScene(local),reopened=parseScene(saved);expect(reopened.sourceCamera).toBeUndefined();expect(reopened.timeline.tracks).toEqual(local.timeline.tracks);expect(serializeScene(reopened)).toBe(saved);
-  const native=parse({...fixtures[0],timeline:[{type:'wait',duration:2},{type:'animate',duration:3,actions:[{method:'track',args:[5]}]}]});expect(native.scene.surfaceSourceMesh!.mode).toBe('mesh');expect(parseScene(serializeScene(native.scene)).timeline.tracks[1].actions![0].args).toEqual({index:5});
+  const native=parse({...fixtures[0],timeline:[{type:'wait',duration:2},{type:'animate',duration:3,actions:[{method:'track',args:[5]}]}]});expect(native.scene.surfaceSource!.mode).toBe('mesh');expect(parseScene(serializeScene(native.scene)).timeline.tracks[1].actions![0].args).toEqual({index:5});
   expect(serializeScene(local)).toBe(saved);
  });
  it('does not mutate input source through edits to the converted document',()=>{const result=parse({...fixtures[0],palette:['#112233','#445566']});result.scene.parameters.a=22;result.scene.palette.stops[0]='#ffffff';expect((result.source as any).parameters.a).toBeUndefined();expect((result.source as any).palette[0]).toBe('#112233');});

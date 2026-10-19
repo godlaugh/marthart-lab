@@ -2,7 +2,7 @@ import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from
 import {parseSourceSurfaceGradientConfiguration} from './sourceSurfaceGradientConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {replaySourceSurfaceCamera} from './sourceSurfaceReplay';
-import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+import {usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {evaluateOrdinarySourceCameraTimeline,resolveOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {inactiveFractalSourceColorTarget,usesFractalSourceColor,readFractalSourceColorAnimation,writeFractalSourceColorAnimation,FRACTAL_SOURCE_COLOR_ANIMATION_TARGETS} from './fractalSourceColorAuthoring';
 import {rootMathAnimationTargetEnabled} from './rootsMathConfig';
@@ -167,7 +167,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
-  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:usesSourceSurfaceGeometry(scene)?'surface':undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
+  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:usesSourceSurfaceGeometry(scene)?'surface':undefined,surfaceMode:usesSourceSurfaceHost(scene)?scene.surfaceSource?.mode:undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
   if(usesRootsCameraTimeline(scene))return resolveRootsCameraTimeline(scene);
   if(scene.timeline.schedule==='roots-camera-sequence-v1'||scene.timeline.schedule==='roots-scene-sequence-v1')return {...scene.timeline,schedule:undefined};
   if(usesSpirographFrameClock(scene))return interactiveSpirographFrames.timeline(scene);
@@ -209,7 +209,7 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   const copied:SceneDocument = { ...scene, parameters: { ...scene.parameters }, settings: { ...scene.settings }, palette: { ...scene.palette, stops: [...scene.palette.stops], ...(scene.palette.positions ? { positions: [...scene.palette.positions] } : {}) }, camera: { ...scene.camera, position: [...scene.camera.position], target: [...scene.camera.target] }, ...(scene.evaluatedCamera?{evaluatedCamera:cloneEvaluatedCamera(scene.evaluatedCamera)}:{}) };
   if(scene.fractalSourceColor)copied.fractalSourceColor=structuredClone(scene.fractalSourceColor);
   if(scene.domainSourcePalette)copied.domainSourcePalette={...scene.domainSourcePalette,colors:[...scene.domainSourcePalette.colors]};
-  if(scene.surfaceSourceMesh)copied.surfaceSourceMesh=structuredClone(scene.surfaceSourceMesh);
+  if(scene.surfaceSource)copied.surfaceSource=structuredClone(scene.surfaceSource);
   if(scene.surfaceSourcePalette)copied.surfaceSourcePalette={colors:[...scene.surfaceSourcePalette.colors]};
   if(scene.rootsSourcePalette)copied.rootsSourcePalette={colors:[...scene.rootsSourcePalette.colors]};
   if(scene.rootsMath)copied.rootsMath=structuredClone(scene.rootsMath);
@@ -403,6 +403,7 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
 }
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceSurface=false):void{
  if(track.spirographWait!==undefined&&(track.spirographWait!=='visual-or-deadline-v1'||track.type!=='spirograph_finish_wait'||sceneKind!==undefined&&sceneKind!=='spirograph'))throw new Error('旋轮完成等待规则无效');
+ if(track.surfaceFadeOutRatio!==undefined&&(track.type!=='surface_mode_transition'||typeof track.surfaceFadeOutRatio!=='number'||!Number.isFinite(track.surfaceFadeOutRatio)||!Number.isFinite(Math.fround(track.surfaceFadeOutRatio))))throw new Error('曲面淡出比例无效');
  if(track.gradient!==undefined)validateGradientConfig(track.gradient);
  if(track.surfaceParameterClip!==undefined||sourceSurface&&track.type==='param'){if(!sourceSurface||track.type!=='param'||track.parameterAnimations!==undefined||track.parameterClock!==undefined||track.replaceParameters!==undefined)throw new Error('曲面源参数片段不能混用其他参数模型');parseSourceSurfaceParameterClip(track.surfaceParameterClip);}
  if(track.alignMode!==undefined&&!['absolute','next-turn'].includes(track.alignMode))throw new Error('未知相机对齐模式');
@@ -450,15 +451,15 @@ export function sceneAtTime(scene: SceneDocument, position: number): SceneDocume
   const rootsPresentationIdentity=JSON.stringify(scene.rootsPresentation,(_key,value:unknown)=>typeof value==='number'?Object.is(value,-0)?{negativeZero:true}:finite(value,'时间线文档数值'):value);
   const fractalSourceColorIdentity=JSON.stringify(scene.fractalSourceColor,(_key,value:unknown)=>typeof value==='number'?Object.is(value,-0)?{negativeZero:true}:finite(value,'时间线文档数值'):value);
   const sourceCameraIdentity=JSON.stringify(scene.sourceCamera,(_key,value)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
-  const surfaceSourceMeshIdentity=JSON.stringify(scene.surfaceSourceMesh,(_key,value)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
-  const key = JSON.stringify({ sourceCameraIdentity, surfaceSourceMeshIdentity, rootsMathIdentity, rootsPresentationIdentity, fractalSourceColorIdentity, kind: scene.kind, equations:scene.equations, parameters: scene.parameters, settings: scene.settings, palette: scene.palette, domainSourcePalette:scene.domainSourcePalette, rootsSourcePalette:scene.rootsSourcePalette, surfaceSourcePalette:scene.surfaceSourcePalette, camera: scene.camera, timeline: scene.timeline }, (_key, value: unknown) => typeof value === 'number' ? finite(value, '时间线文档数值') : value);
+  const surfaceSourceIdentity=JSON.stringify(scene.surfaceSource,(_key,value)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
+  const key = JSON.stringify({ sourceCameraIdentity, surfaceSourceIdentity, rootsMathIdentity, rootsPresentationIdentity, fractalSourceColorIdentity, kind: scene.kind, equations:scene.equations, parameters: scene.parameters, settings: scene.settings, palette: scene.palette, domainSourcePalette:scene.domainSourcePalette, rootsSourcePalette:scene.rootsSourcePalette, surfaceSourcePalette:scene.surfaceSourcePalette, camera: scene.camera, timeline: scene.timeline }, (_key, value: unknown) => typeof value === 'number' ? finite(value, '时间线文档数值') : value);
   let evaluate = compiledTimelines.get(key);
   if (!evaluate) {
     const snapshot=JSON.parse(key);
     // Cache-only identities are not authored document fields. Their owning
     // payloads are copied explicitly below to preserve non-JSON numeric facts.
-    delete snapshot.sourceCameraIdentity;delete snapshot.surfaceSourceMeshIdentity;delete snapshot.rootsMathIdentity;delete snapshot.rootsPresentationIdentity;delete snapshot.fractalSourceColorIdentity;
-    evaluate = compileTimeline({ ...scene, ...snapshot, ...(scene.surfaceSourceMesh?{surfaceSourceMesh:structuredClone(scene.surfaceSourceMesh)}:{}), ...(scene.sourceCamera?{sourceCamera:structuredClone(scene.sourceCamera)}:{}), ...(scene.fractalSourceColor?{fractalSourceColor:structuredClone(scene.fractalSourceColor)}:{}), ...(scene.rootsMath?{rootsMath:structuredClone(scene.rootsMath)}:{}), ...(scene.rootsPresentation?{rootsPresentation:structuredClone(scene.rootsPresentation)}:{}) });
+    delete snapshot.sourceCameraIdentity;delete snapshot.surfaceSourceIdentity;delete snapshot.rootsMathIdentity;delete snapshot.rootsPresentationIdentity;delete snapshot.fractalSourceColorIdentity;
+    evaluate = compileTimeline({ ...scene, ...snapshot, ...(scene.surfaceSource?{surfaceSource:structuredClone(scene.surfaceSource)}:{}), ...(scene.sourceCamera?{sourceCamera:structuredClone(scene.sourceCamera)}:{}), ...(scene.fractalSourceColor?{fractalSourceColor:structuredClone(scene.fractalSourceColor)}:{}), ...(scene.rootsMath?{rootsMath:structuredClone(scene.rootsMath)}:{}), ...(scene.rootsPresentation?{rootsPresentation:structuredClone(scene.rootsPresentation)}:{}) });
     if (key.length <= 1_000_000) {
       if (compiledTimelines.size >= 4) compiledTimelines.delete(compiledTimelines.keys().next().value!);
       compiledTimelines.set(key, evaluate);
@@ -745,6 +746,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
     // Never overwrite its initial recording state or display flag here.
     if (type === 'trails') { if(!usesSourceSurfaceGeometry(scene))plans.push({ start: track.start, apply: out => { out.settings.recordTrails = track.trailsEnabled !== false; out.settings.showTrails = track.trailsEnabled !== false; } }); continue; }
     if (type === 'surface_mode_transition') {
+      if(usesSourceSurfaceHost(scene))continue;
       if (scene.kind !== 'surface') throw new Error('曲面过渡仅适用于参数曲面');
       const from = Number(baseline.settings.surfaceBlend ?? (baseline.settings.renderMode === 'points' ? 0 : 1)), to = track.surfaceMode === 'points' ? 0 : 1;
       plans.push({ start: track.start, apply: (out, at) => { out.settings.surfaceBlend = clamp(mix(from, to, clipProgress(track, at))); out.settings.renderMode = 'mesh'; } }); continue;
@@ -790,7 +792,7 @@ export function createAnimationTrack(scene: SceneDocument, type: AnimationClipTy
   if (type === 'align') { track.target = 'camera.orientation'; track.orientation = supportsCameraActions(scene)?{theta:0,phi:0,gamma:0}:{theta:0}; track.alignMode='next-turn'; }
   if (type === 'param') track.parameterAnimations = [{ target, ...(parameterAnimationSuggestion(scene,target)??{min:from-1,max:from+1}), step: 1, enabled: true }];
   if (type === 'fractal_zoom') { track.target = 'settings.zoom'; const centerX = Number(scene.settings.centerX ?? 0), centerY = Number(scene.settings.centerY ?? 0), centerXLow=Number(scene.settings.centerXLow??0),centerYLow=Number(scene.settings.centerYLow??0),zoom = Number(scene.settings.zoom ?? 1); track.keyframes = [{ time: 0, centerX, centerY,centerXLow,centerYLow, zoom }, { time: duration, centerX, centerY,centerXLow,centerYLow, zoom: Math.min(1e28,zoom * 10) }]; track.interpolation = 'exponential'; }
-  if (type === 'surface_mode_transition') { track.target = 'settings.surfaceBlend'; track.surfaceMode = scene.settings.renderMode === 'points' ? 'mesh' : 'points'; }
+  if (type === 'surface_mode_transition') { track.target = 'settings.surfaceBlend'; track.surfaceMode = (usesSourceSurfaceHost(scene)?scene.surfaceSource!.mode:scene.settings.renderMode) === 'points' ? 'mesh' : 'points'; }
   if (type === 'trails') { track.target = 'settings.recordTrails'; track.trailsEnabled = true;if(usesSourceSurfaceGeometry(scene)){track.duration=0;track.easing='linear';} }
   if (type === 'wait' || type === 'spirograph_finish_wait') track.target = 'timeline.wait';
   if (type === 'spirograph_finish_wait') {

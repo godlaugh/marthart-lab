@@ -61,11 +61,11 @@ describe('Surface source gradient public import and authoring',()=>{
   const actions=[{method:'gradientStart',args:{mode:'CROSS_FADE',interpolation:'OKLCH',speed:24}}];
   for(const settings of [{render_mode:'GPU'},{surface_mode:'MESH',render_mode:'GPU'}])expect(()=>parseProjectFile(JSON.stringify(source(actions,settings)))).toThrow('GPU');
   const original=source(actions,{surface_mode:'MESH'}),{scene}=parseProjectFile(JSON.stringify(original));
-  expect(scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-mesh-v1');
-  expect(scene.surfaceSourceMesh).toMatchObject({mode:'mesh',nativeBackend:'cpu',mesh:{uSegments:2,vSegments:2}});
+  expect(scene.settings.surfaceGeometryVersion).toBe('mathart-1.7.8-surface-v1');
+  expect(scene.surfaceSource).toMatchObject({mode:'mesh',nativeBackend:'cpu',mesh:{uSegments:2,vSegments:2}});
   expect(scene.surfaceSourcePalette).toEqual({colors:['#FF0000','#0000FF']});
   expect(scene.timeline.tracks[0].actions![0].gradient).toEqual({...SOURCE_SURFACE_GRADIENT_DEFAULT,mode:'cross_fade',interpolation:'oklch',speed:24});
-  const reopened=parseScene(serializeScene(scene));expect(reopened.surfaceSourceMesh).toEqual(scene.surfaceSourceMesh);expect(reopened.timeline).toEqual(scene.timeline);expect(reopened.provenance!.original).toEqual(original);
+  const reopened=parseScene(serializeScene(scene));expect(reopened.surfaceSource).toEqual(scene.surfaceSource);expect(reopened.timeline).toEqual(scene.timeline);expect(reopened.provenance!.original).toEqual(original);
   expect(gradientAnimationCapabilities(scene)).toMatchObject({localPalette:false,offsets:true,defaultAnimation:SOURCE_SURFACE_GRADIENT_DEFAULT});
  });
  it('offers all source modes and color interpolation without regional toggles or local palette controls',()=>{

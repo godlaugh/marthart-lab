@@ -12,7 +12,7 @@ const baselineCommit=run('git',['rev-parse',baselineRef+'^{commit}']).trim();
 const archive=run('git',['archive','--format=tar',baselineCommit,'src'],{encoding:null});
 run('tar',['-xf','-','-C',directory],{input:archive});
 const runtimeExports=`export {createSourceSurfaceMeshRuntime} from './src/engine/sourceSurfaceMeshRuntime';export {prepareSourceSurfaceFunction} from './src/engine/sourceSurfaceFunction';export {importSourceSurfaceMeshConfig} from './src/engine/sourceSurfaceMeshConfig';`;
-const publicExports=`export {parseProjectFile} from './src/engine/legacyImport';export {parseScene,serializeScene} from './src/engine/document';export {sceneAtTime} from './src/engine/timeline';export {generateScene} from './src/engine/temporal';export {ordinarySourceViewport} from './src/engine/ordinarySourceCamera';export {replaySourceSurfaceMesh} from './src/engine/sourceSurfaceMeshScene';`;
+const publicExports=`export {parseProjectFile} from './src/engine/legacyImport';export {parseScene,serializeScene} from './src/engine/document';export {sceneAtTime} from './src/engine/timeline';export {generateScene} from './src/engine/temporal';export {ordinarySourceViewport} from './src/engine/ordinarySourceCamera';export {replaySourceSurfaceHost} from './src/engine/sourceSurfaceScene';`;
 const scriptPath=resolve('scripts/benchmark-source-surface-mesh-public.mjs');
 const sourceHashes={[scriptPath]:createHash('sha256').update(await readFile(scriptPath)).digest('hex')};
 for(const variant of ['before','after','public']){

@@ -783,5 +783,13 @@
   "跟踪 U 流动": "Tracking U flow",
   "跟踪 V 流动": "Tracking V flow",
   "网格颜色沿 U 方向排列；闭合接缝会平滑颜色。填充透明度由网格外观控制。": "Mesh colors run along U; closed seams smooth the colors. Mesh appearance controls fill opacity.",
-  "网格不生成拖尾；此片段保留原版队列时序，切换录制不会改变画面。": "The mesh produces no trails. This clip preserves the original queue timing; toggling recording does not change the image."
+  "网格不生成拖尾；此片段保留原版队列时序，切换录制不会改变画面。": "The mesh produces no trails. This clip preserves the original queue timing; toggling recording does not change the image.",
+  "曲面初始模式": "Initial surface mode",
+  "初始显示": "Initial display",
+  "时间线可切换点云与网格；两种模式分别使用下方的采样和外观设置。": "The timeline can switch between points and mesh. Each mode uses its own sampling and appearance settings below.",
+  "曲面点云": "Surface points",
+  "点云 U 采样数": "Point U samples",
+  "点云 V 采样数": "Point V samples",
+  "拖尾寿命": "Trail lifetime",
+  "先淡出到黑色，再切换曲面并淡入；参数和跟踪动作仍绑定初始曲面。": "Fade to black, switch surface mode, then fade in. Parameter and tracking actions remain bound to the initial surface."
 }

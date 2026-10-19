@@ -1,6 +1,6 @@
-import {prepareSourceSurfaceMeshScene} from './sourceSurfaceMeshScene';
+import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
 import {parseSourceSurfacePalette} from './sourceSurfaceColor';
-import {usesSourceSurfaceParticles,usesSourceSurfaceMesh,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+import {SOURCE_SURFACE_HOST,usesSourceSurfaceParticles,usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {parseSourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {parseFractalSourceColorProfile,parseFractalSourceColorConfiguration} from './fractalSourceColor';
@@ -139,6 +139,14 @@ export function parseSceneValue(data: unknown): SceneDocument {
     "palette",
   ])
     if (!record(data[key])) fail(`缺少 ${key}`);
+  // Migrate the old mesh-only authored payload once at the saved-file boundary.
+  // Never reconstruct editable values from original import provenance.
+  const sourceSettings=data.settings as Settings;
+  if(sourceSettings.surfaceGeometryVersion==='mathart-1.7.8-mesh-v1'){
+    if(data.kind!=='surface'||data.surfaceSource!==undefined||data.surfaceSourceMesh===undefined)fail('旧曲面网格配置缺失或与新版配置冲突');
+    data.surfaceSource=data.surfaceSourceMesh;delete data.surfaceSourceMesh;
+    sourceSettings.surfaceGeometryVersion=SOURCE_SURFACE_HOST;
+  }else if(data.surfaceSourceMesh!==undefined)fail('旧网格配置缺少对应版本，不能猜测其归属');
   for (const [k, v] of Object.entries(data.equations as object))
     if (typeof v !== "string" || v.length > (data.kind==='symmetry'&&k==='glsl'?MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH:8192) || k.length > 100)
       fail("公式无效");
@@ -191,21 +199,21 @@ export function parseSceneValue(data: unknown): SceneDocument {
     if(data.kind!=='spirograph')fail('旋轮帧事件仅适用于旋轮场景');
     data.spirographFrameEvents=parseSpirographFrameEvents(data.spirographFrameEvents);
   }
-  if(!usesSourceSurfaceMesh(data as unknown as SceneDocument)){
+  if(!usesSourceSurfaceHost(data as unknown as SceneDocument)){
     if(data.kind==='surface'||data.kind==='implicit')geometryColorModel({kind:data.kind,settings:data.settings as Settings});
     if(data.kind==='surface'||data.kind==='attractor')parseTrailAppearance(data.settings as Settings);
   }
-  if(data.surfaceSourceMesh!==undefined){
-    if(!usesSourceSurfaceMesh(data as unknown as SceneDocument))fail('曲面源网格配置仅适用于原版 CPU 网格');
-    const parsed=parseSourceSurfaceMeshConfiguration(data.surfaceSourceMesh);
+  if(data.surfaceSource!==undefined){
+    if(!usesSourceSurfaceHost(data as unknown as SceneDocument))fail('曲面源网格配置仅适用于原版 CPU 网格');
+    const parsed=parseSourceSurfaceMeshConfiguration(data.surfaceSource);
     if(!parsed.ok)fail(`曲面源网格配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
-    if(parsed.value.mode!=='mesh'||parsed.value.nativeBackend!=='cpu')fail('曲面源网格仅接入 CPU MESH，模式切换与 GPU 尚未接入');
-    data.surfaceSourceMesh=parsed.value;
+    if(parsed.value.nativeBackend!=='cpu')fail('曲面源宿主仅接入 CPU，GPU 尚未接入');
+    data.surfaceSource=parsed.value;
   }
-  if(usesSourceSurfaceMesh(data as unknown as SceneDocument)){
+  if(usesSourceSurfaceHost(data as unknown as SceneDocument)){
     const settings=data.settings as Settings;
-    if(data.surfaceSourceMesh===undefined)fail('曲面源网格缺少配置');
-    if(settings.renderMode!=='mesh'||settings.computeBackend!=='cpu')fail('曲面源网格显示模式与后端不匹配');
+    if(data.surfaceSource===undefined)fail('曲面源网格缺少配置');
+    if(settings.computeBackend!=='cpu')fail('曲面源宿主后端不匹配');
     if(data.surfaceSourcePalette===undefined)fail('曲面源网格缺少源色板');
   }
   // Source-particle documents saved before the dedicated palette editor used
@@ -267,7 +275,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     spirographSimulationFps(data as unknown as SceneDocument);
     spirographFrameClips(data as unknown as SceneDocument);
   }
-  if(usesSourceSurfaceMesh(data as unknown as SceneDocument))prepareSourceSurfaceMeshScene(data as unknown as SceneDocument);
+  if(usesSourceSurfaceHost(data as unknown as SceneDocument))prepareSourceSurfaceScene(data as unknown as SceneDocument);
   return data as unknown as SceneDocument;
 }
 export const STORAGE_KEY = "mathart-lab-v1";
