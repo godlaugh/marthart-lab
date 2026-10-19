@@ -8,6 +8,10 @@ export interface RootsSceneClip {
   /** Verified InstantAction: zero duration, no interpolated children. The
    * queue still consumes one update; this is not a general zero-duration tween. */
   readonly instant?:true;
+  /** Source leaf whose start decides it is already complete (e.g. a same-mode
+   * surface transition). Its declared duration still contributes to Scene's
+   * remaining-time fold before that first update, unlike a zero-time instant. */
+  readonly finishOnStart?:true;
   /** Canonical name, already resolved by the importing/authoring owner. */
   readonly easing:string;
   readonly zoom?:number;
@@ -188,6 +192,8 @@ export class RootsSceneClock {
       // Roots JSON clamps to .001F. Ordinary scenes can explicitly compile an
       // InstantAction whose onUpdate ignores even 0/0; never allow a tween here.
       if(clip.instant!==undefined&&clip.instant!==true)throw new RootsSceneClockError('input','即时片段标记无效');
+      if(clip.finishOnStart!==undefined&&clip.finishOnStart!==true)throw new RootsSceneClockError('input','开始即完成标记无效');
+      if(clip.finishOnStart&&(clip.instant||clip.zoom!==undefined||clip.rates!==undefined||clip.gradientActions?.length))throw new RootsSceneClockError('input','开始即完成片段不能含其它插值子项');
       if(clip.instant&&(duration!==0||clip.zoom!==undefined||clip.rates!==undefined||clip.gradientActions?.length))throw new RootsSceneClockError('input','即时片段必须零时长且没有插值子项');
       if(duration<0||duration===0&&!clip.instant)throw new RootsSceneClockError('input','Roots 相机片段时长必须大于 0');
       if(!names.has(clip.easing))throw new RootsSceneClockError('input',`Roots 相机片段缓动未知：${String(clip.easing)}`);
@@ -201,6 +207,7 @@ export class RootsSceneClock {
         catch(error){if(error instanceof RootsGradientConfigurationError)throw new RootsSceneClockError(error.code,error.message);throw error;}
       });
       return{duration,easing:clip.easing,...(clip.instant?{instant:true as const}:{}),
+        ...(clip.finishOnStart?{finishOnStart:true as const}:{}),
         ...(gradientActions===undefined?{}:{gradientActions:Object.freeze(gradientActions)}),
         ...(clip.zoom===undefined?{}:{zoom:finiteFloat(clip.zoom,'目标 zoom')}),
         ...(clip.rates===undefined?{}:{rates:clip.rates.map((value:number,i:number)=>finiteFloat(value,`目标角速度 ${i}`)) as Triple})};
@@ -251,7 +258,7 @@ export class RootsSceneClock {
           next.startedClip=next.queueIndex;
           if(next.gradient)startGradientChildren(next,clip.gradientActions??[],options.isCancelled);
         }
-        next.runtime=finiteResult(F(next.runtime+next.activeDt),'动画时间');
+        if(!clip.finishOnStart)next.runtime=finiteResult(F(next.runtime+next.activeDt),'动画时间');
         if(clip.zoom!==undefined||clip.rates!==undefined){
           const eased=sourceEase(clip.easing,constrain(F(next.runtime/clip.duration)));
           if(clip.zoom!==undefined)next.camera.zoom=lerp(next.startZoom,clip.zoom,eased);
@@ -264,7 +271,7 @@ export class RootsSceneClock {
           const eased=sourceEase(clip.easing,constrain(F(next.runtime/clip.duration)));
           updateGradientChildren(next,clip.gradientActions,eased,next.runtime>=clip.duration,options.isCancelled);
         }
-        if(next.runtime>=clip.duration){
+        if(clip.finishOnStart||next.runtime>=clip.duration){
           next.finishedClip=next.queueIndex;next.queueIndex++;next.current=false;next.runtime=0;next.gradientChildren=[];
         }
       }else{

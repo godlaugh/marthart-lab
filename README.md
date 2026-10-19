@@ -237,6 +237,8 @@ Worker 将相机帧与逻辑画布尺寸成对交付，预览和导出使用同�
 
 曲面四种动态渐变已接入 CPU 点时间线，支持启动、停止、重启与按记录年龄着色的拖尾。界面可编辑模式、速度与插值，保存重开及反向跳转已验证。122 组基础金标和新增 69 帧独立生命周期颜色／透明度对照通过，相关测试累计 850 项通过，构建通过；真实 PNG 下载、导出服务和冷 Worker／Renderer 完整文件一致。执行 `node scripts/verify-ordinary-source-camera-export.mjs --surface-gradient-runtime` 可复验。原版完整画面仍未验收。
 
+曲面 CPU 模式切换的对象宿主与源时钟已实现：新对象在切换帧开始更新，旧参数动作和相机目标保留原绑定，淡出／淡入分别计算，并累计跨对象工作预算。目前尚未接入公共切换片段导入、编辑和最终黑色遮罩，不能视为完整可用的模式切换；原版整图仍未验收。边界回归见 `tests/source-surface-host.test.ts`。
+
 曲面 CPU 初始网格已接通原版导入、编辑、保存重开、参数与相机回放、填充及两种线框 PNG 导出。配置只有一个保存来源，保留反向范围和完整 ARGB；超过容量明确报错。半透明背景按源 RGBA 清屏，无公式标注 PNG 直接编码原始像素，独立解码与冷启动 framebuffer 一致。带标注及非 PNG 的透明颜色规则尚未验证；点／网格切换和 GPU 曲面仍待接入。执行 `node scripts/verify-source-surface-mesh-export.mjs` 可复验，详细范围见 [曲面中文验证记录](docs/source-surface-validation.zh-CN.md)。
 
 曲面 CPU 点参数动画现已支持具名／全部开始停止与独立片段替换，保留原始上下界、步进、端点减速及结束顺序。实际界面编辑、保存重开、正反跳转与 PNG 导出链路已验证；作品初始参数不被运行值改写。离线使用作品名义帧率，尚未对照原版实时帧率和完整画面。执行 `python3 scripts/source-surface-parameter-oracle.py --check` 和 `node scripts/verify-ordinary-source-camera-export.mjs --surface-parameter-runtime` 可复验，范围与成本见 [曲面中文验证记录](docs/source-surface-validation.zh-CN.md)。

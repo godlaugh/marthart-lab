@@ -4,8 +4,9 @@ import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sourceSurfacePaletteTarget,smoothSo
 import {createSourceSurfaceTrailGradient} from './sourceSurfaceTrailGradient';
 import {parseSourceSurfacePalette,prepareSourceSurfaceColors,refreshSourceSurfaceColors,type SourceSurfacePalette,type PreparedSourceSurfaceColors} from './sourceSurfaceColor';
 import type {SceneDocument} from '../types';
+import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {parseDomainSourceFloat} from './domainSourceScalar';
-import {prepareSourceSurfaceFunction,type PreparedSourceSurfaceFunction,type SourceSurfaceFunction} from './sourceSurfaceFunction';
+import {prepareSourceSurfaceFunction,type SourceSurfaceFunction} from './sourceSurfaceFunction';
 import type {OrdinarySourceCameraParticles,OrdinaryCameraTargetRequest,OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding} from './ordinarySourceCameraTimeline';
 import {evaluateOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
@@ -62,9 +63,28 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  const scales=['X','Y','Z'].map(a=>scalar(s['scale'+a],'scale'+a)),offsets=['X','Y','Z'].map(a=>scalar(s['offset'+a],'offset'+a));
  const surfaceFunction=prepareSourceSurfaceFunction({equations:scene.equations,parameters:scene.parameters,scales,offsets});
  const operations=surfaceFunction.operations;
- return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,surfaceFunction,frameRate:F(scene.timeline.fps),operations,trails,palette,fadePoints},coverage,isCancelled)};
+ return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,surfaceFunction:surfaceFunction.create(),frameRate:F(scene.timeline.fps),operations,trails,palette,fadePoints},coverage,isCancelled)};
 }
-interface Configuration {surfaceFunction:PreparedSourceSurfaceFunction;frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
+interface Configuration {reserve?:(units:number)=>void;surfaceFunction:SourceSurfaceFunction;frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
+export interface SourceSurfacePointRuntimeOptions {
+ configuration:SourceSurfaceMeshConfiguration;surfaceFunction:SourceSurfaceFunction;
+ operationsPerPosition:number;frameRate:number;palette?:SourceSurfacePalette;
+ coverage:'all'|'tracked';isCancelled?:()=>boolean;reserve?:(units:number)=>void;
+}
+/** Construct one ParametricSurface from the canonical full surface settings.
+ * A mode host supplies the function instance so fresh objects copy the current
+ * shared constants while prebuilt actions retain the initial function slots. */
+export function createSourceSurfacePointRuntime(options:SourceSurfacePointRuntimeOptions):SourceSurfaceParticles {
+ const parsed=parseSourceSurfaceMeshConfiguration(options.configuration);
+ if(!parsed.ok)fail('input',`原版点配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
+ const c=parsed.value,p=c.points,d=c.domain;
+ if(c.nativeBackend!=='cpu')fail('unsupported','此运行时只执行原版 CPU ParametricSurface');
+ if(!Number.isFinite(options.frameRate)||options.frameRate<1||options.frameRate>120)fail('input','原版点帧率必须在 1–120');
+ if(!Number.isInteger(options.operationsPerPosition)||options.operationsPerPosition<0)fail('input','原版点公式工作量无效');
+ if(![p.uSegments,p.vSegments].every(n=>Number.isInteger(n)&&n>=1&&n<=512))fail('capacity','原版点每轴采样数必须在 1–512');
+ const axis=(name:'U'|'V'):Axis=>({min:scalar(d[name==='U'?'uMin':'vMin'],name+'Min'),max:scalar(d[name==='U'?'uMax':'vMax'],name+'Max'),count:p[name==='U'?'uSegments':'vSegments'],speed:scalar(c.tracking[`speed${name}`],'speed'+name),periodic:d[`periodic${name}`],flowing:d[`flowing${name}`]});
+ return new SourceSurfaceParticles({u:axis('U'),v:axis('V'),count:p.uSegments*p.vSegments,surfaceFunction:options.surfaceFunction,frameRate:F(options.frameRate),operations:options.operationsPerPosition,palette:options.palette,fadePoints:p.fadePoints,trails:{show:p.showTrails,record:true,fade:p.fadeTrails,lifetime:scalar(p.trailLifetime,'trailLifetime')},reserve:options.reserve},options.coverage,options.isCancelled);
+}
 function wrap(value:number,axis:Axis):number {
  const range=F(axis.max-axis.min);if(range<=0)return axis.min;
  let rest=F(F(value-axis.min)%range);if(rest<0)rest=F(rest+range);return F(axis.min+rest);
@@ -86,10 +106,10 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly ignoredParameterNames=new Set<string>();
  private paletteState:SourceSurfacePaletteState=INITIAL_SOURCE_SURFACE_PALETTE_STATE;
  private animationTime=0;
- private readonly color?:PreparedSourceSurfaceColors;
- private readonly pointAlphas?:Float32Array;
- private readonly state:Float32Array;
- private readonly positions:Float32Array;
+ private color?:PreparedSourceSurfaceColors;
+ private pointAlphas?:Float32Array;
+ private state:Float32Array;
+ private positions:Float32Array;
  private readonly ids:number[]=[];
  private readonly slots=new Map<number,number>();
  private readonly surfaceFunction:SourceSurfaceFunction;
@@ -100,9 +120,11 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private failure:unknown;
  private failed=false;
  private lastFrame=-1;
+ private retired=false;
+ private readonly targets=new Map<number,Float32Array>();
  constructor(private readonly config:Configuration,private readonly coverage:'all'|'tracked',private readonly isCancelled?:()=>boolean){
   const capacity=coverage==='all'?config.count:Math.min(config.count,4096);
-  this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.surfaceFunction=config.surfaceFunction.create();
+  this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.surfaceFunction=config.surfaceFunction;
   this.recording=config.trails.record;
   // Camera-only queries never allocate full-grid color buffers.
   if(coverage==='all'){this.color=prepareSourceSurfaceColors(config.palette,config.u.count,config.v.count,config.u.periodic);this.pointAlphas=new Float32Array(capacity);}
@@ -131,7 +153,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   try{this.check();return operation();}catch(error){this.failed=true;this.failure=error;throw error;}
  }
  private reserve(count=1){this.reserveWork(count*(this.config.operations+24));}
- private reserveWork(units:number){this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','原版曲面粒子回放超过本地 2000 万工作单位预算');}
+ private reserveWork(units:number){this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','原版曲面粒子回放超过本地 2000 万工作单位预算');this.config.reserve?.(units);}
  /** Shared expression/transform owner for heads and seam endpoints. Boundary
   * nonfinite results become source break records; invalid heads still reject. */
  private position(u:number,v:number,out:Float32Array,offset:number):boolean {
@@ -139,6 +161,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  }
  private calculate(slot:number){
   if(!this.position(this.state[slot*4],this.state[slot*4+1],this.positions,slot*3))fail('arithmetic',`原版曲面粒子 ${this.ids[slot]} 产生非有限坐标；没有替换成邻点或原点`);
+  this.targets.get(slot)?.set(this.positions.subarray(slot*3,slot*3+3));
  }
  private boundary(slot:number,u:number,v:number,time:number,invalidBreak:boolean){
   this.reserve();const p=this.boundaryPoint;
@@ -155,16 +178,20 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   this.state[at+2]=u.speed;this.state[at+3]=v.speed;this.calculate(slot);if(this.pointAlphas)this.pointAlphas[slot]=(this.color!.packed[id]>>>24)/255;return slot;
  }
  bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding {return this.guarded(()=>{
-  if(this.lastFrame>=0)fail('input','原版曲面目标必须在第一帧前绑定');
+  if(this.retired||this.lastFrame>=0)fail('input','原版曲面目标必须在第一帧前绑定');
   const raw=request.action.args?.index;
   if(typeof raw!=='number'||!Number.isFinite(raw))fail('input','原版曲面跟踪索引必须有限');
   // JVM f2i then setTrackedDot clamp, not local row-major or survivor index.
-  const id=Math.max(0,Math.min(this.config.count-1,Math.trunc(F(raw)))),slot=this.ensure(id),positions=this.positions;
-  return{kind:'bound',readPosition:()=>this.guarded(()=>[positions[slot*3],positions[slot*3+1],positions[slot*3+2]])};
+  const id=Math.max(0,Math.min(this.config.count-1,Math.trunc(F(raw)))),slot=this.ensure(id);
+  let target=this.targets.get(slot);if(!target){target=this.positions.slice(slot*3,slot*3+3);this.targets.set(slot,target);}
+  const captured=target;return{kind:'bound',readPosition:()=>this.guarded(()=>[captured[0],captured[1],captured[2]])};
  });}
+ /** resetToEmpty removes particles and history, but old actions and captured
+  * target vectors remain valid. Retained targets no longer pin full buffers. */
+ retire():void {this.guarded(()=>{this.retired=true;this.state=new Float32Array();this.positions=new Float32Array();this.ids.length=0;this.slots.clear();this.targets.clear();this.color=undefined;this.pointAlphas=undefined;this.history=undefined;});}
  setRecordingTrails(enabled:boolean):void {this.guarded(()=>{
   if(typeof enabled!=='boolean')fail('input','原版拖尾录制开关必须是布尔值');
-  if(enabled&&!this.history&&this.coverage==='all'&&this.config.trails.show)this.history=new SurfaceTrailHistory(this.config.count,this.config.trails.lifetime,this.config.trails.fade,this.color!.packed,()=>this.check());
+  if(!this.retired&&enabled&&!this.history&&this.coverage==='all'&&this.config.trails.show)this.history=new SurfaceTrailHistory(this.config.count,this.config.trails.lifetime,this.config.trails.fade,this.color!.packed,()=>this.check());
   this.recording=enabled;
  });}
  beginGradientActions(actions:readonly SourceGradientAction[]):void {this.guarded(()=>this.gradient.begin(actions));}
@@ -174,7 +201,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]):void {this.guarded(()=>this.parameters.replace(parameters));}
  finishParameterClip():void {this.guarded(()=>this.parameters.stop());}
  update(frame:OrdinaryCameraParticleFrame):void {this.guarded(()=>{
-  this.check();if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
+  this.check();if(this.retired)fail('input','已移出的曲面不再执行粒子更新');if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
   this.lastFrame=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
   this.animationTime=F(frame.time);this.parameters.update(dt,this.config.frameRate);this.gradient.update(dt);
   this.reserve(this.ids.length);
@@ -211,6 +238,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   }
  });}
  snapshot():{positions:Float32Array;particleIds:Uint32Array;colors:Float32Array;pointAlphas:Float32Array;diagnostics:string[];workUnits:number;trails?:SourceSurfaceTrails} {return this.guarded(()=>{
+  if(this.retired)fail('input','已移出的曲面没有可交付画面');
   if(this.coverage!=='all')fail('input','稀疏相机查询不能伪装成完整曲面输出');
   const dynamic=this.history&&this.gradient.running?createSourceSurfaceTrailGradient({palette:this.color!.palette,runtime:this.gradient,time:this.animationTime,numU:this.config.u.count,numV:this.config.v.count,reserve:units=>this.reserveWork(units)}):undefined;
   const trails=this.history?.snapshot(dynamic);

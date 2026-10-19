@@ -165,6 +165,7 @@ export interface AnimationTrack {
   interpolation?: "linear" | "exponential";
   gradient?: GradientAnimation;
   surfaceMode?: "points" | "mesh";
+  surfaceFadeOutRatio?: number;
   trailsEnabled?: boolean;
   /** Omitted preserves the saved automatic closure estimate. Explicit waits
    * end at visible completion or at their authored maximum duration. */

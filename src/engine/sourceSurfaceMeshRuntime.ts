@@ -47,10 +47,10 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  private readonly options:SourceSurfaceMeshRuntimeOptions;
  private readonly configuration:SourceSurfaceMeshConfiguration;
  private readonly numU:number;private readonly numV:number;private readonly count:number;
- private readonly initialUv:Float32Array;private readonly initialPositions:Float32Array;
+ private initialUv:Float32Array;private initialPositions:Float32Array;
  private readonly geometry:SourceSurfaceMeshGeometry;
  private readonly wireframe:ReturnType<typeof createSourceSurfaceMeshWireframe>;
- private readonly color:PreparedSourceSurfaceColors;
+ private color?:PreparedSourceSurfaceColors;
  private readonly gradient:SourceGradientRuntime;
  private readonly parameters:SourceSurfaceParameterRuntime;
  private paletteState:SourceSurfacePaletteState=INITIAL_SOURCE_SURFACE_PALETTE_STATE;
@@ -58,6 +58,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  private readonly trackingPosition=new Float32Array(3);
  private readonly tracking=new Float32Array(4);
  private trackingIndex=0;private animationTime=0;private lastUpdate=-1;private lastDisplay=-1;
+ private retired=false;
  private used=0;private failed=false;private failure:unknown;
  private rendered?:SourceSurfaceMeshRuntimeSnapshot;
  private colorRevision=0;
@@ -99,10 +100,11 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   this.gradient=new SourceGradientRuntime(()=>this.paletteState.primary,(frame,configuration)=>{
    this.reserve(64);const next=smoothSourceSurfacePalette(this.paletteState,sourceSurfacePaletteTarget(frame,configuration.mode));
    if(!next.changed)return;this.paletteState=next.state;
+   if(this.retired)return;
    this.reserve(this.numU*128+this.count*4);
    // Source evaluates closure first even while a running gradient forces cyclic.
    const cyclic=this.geometry.cyclicPaletteU()||this.gradient.running;
-   refreshSourceSurfaceColors(this.color,this.numU,this.numV,this.paletteState,configuration.mode,configuration.interpolation,cyclic,()=>this.check(),3);
+   refreshSourceSurfaceColors(this.color!,this.numU,this.numV,this.paletteState,configuration.mode,configuration.interpolation,cyclic,()=>this.check(),3);
    this.colorRevision++;
   });
   this.parameters=new SourceSurfaceParameterRuntime({read:name=>this.options.surfaceFunction.read(name),write:(name,value)=>{if(!this.options.surfaceFunction.write(name,value))this.ignoredNames.add(name);},reserve:n=>this.reserve(n)});
@@ -117,13 +119,16 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   this.trackingPosition.set(this.initialPositions.subarray(index*3,index*3+3));
  }
  bind(request:OrdinaryCameraTargetRequest):OrdinaryCameraTargetBinding{return this.guarded(()=>{
-  if(this.lastUpdate>=0||this.lastDisplay>=0)fail('input','原版网格目标必须在首次播放前绑定');
+  if(this.retired||this.lastUpdate>=0||this.lastDisplay>=0)fail('input','原版网格目标必须在首次播放前绑定');
   const raw=request.action.args?.index;if(typeof raw!=='number'||!Number.isFinite(raw))fail('input','原版网格跟踪索引必须有限');
   this.select(Math.max(0,Math.min(this.count-1,Math.trunc(F(raw)))));
   // Every binding captures this SAME mutable trackingPosition object. Later
   // build-time setTrackedDot calls overwrite the target of all earlier actions.
   return{kind:'bound',readPosition:()=>this.guarded(()=>[this.trackingPosition[0],this.trackingPosition[1],this.trackingPosition[2]])};
  });}
+ /** Keep the separate tracking vector and initial action/function identity;
+  * detach display data when the host replaces the native main object. */
+ retire():void{this.guarded(()=>{this.retired=true;this.initialUv=new Float32Array();this.initialPositions=new Float32Array();this.color=undefined;this.rendered=undefined;this.geometryCache=undefined;this.wireCache=undefined;this.mappedColorCache=undefined;});}
  setRecordingTrails(enabled:boolean):void{this.guarded(()=>{if(typeof enabled!=='boolean')fail('input','原版网格拖尾开关需要布尔值');});}
  beginGradientActions(actions:readonly SourceGradientAction[]):void{this.guarded(()=>this.gradient.begin(actions));}
  interpolateGradientActions(eased:number,finished:boolean):void{this.guarded(()=>this.gradient.interpolate(eased,finished));}
@@ -132,6 +137,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]):void{this.guarded(()=>this.parameters.replace(parameters));}
  finishParameterClip():void{this.guarded(()=>this.parameters.stop());}
  update(frame:OrdinaryCameraParticleFrame):void{this.guarded(()=>{
+  if(this.retired)fail('input','已移出的网格不再执行更新');
   if(!Number.isInteger(frame.frameIndex)||frame.frameIndex<0||this.lastUpdate>this.lastDisplay||this.lastUpdate>=0&&frame.frameIndex!==this.lastUpdate+1||frame.frameIndex<=this.lastDisplay||!Number.isFinite(F(frame.time))||frame.time<0||!Number.isFinite(F(frame.deltaTime))||frame.deltaTime<0)fail('input','原版网格更新帧顺序或时间无效；每次更新后必须执行对应显示帧');
   this.lastUpdate=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
   this.animationTime=F(frame.time);this.parameters.update(dt,F(this.options.frameRate));
@@ -156,6 +162,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  /** Call after the frame's animation/update/camera work, even for dt=0 and
   * completed queues. snapshot never creates geometry or initializes U shift. */
  display(frameIndex:number,lineScale=1,publish=true):void{this.guarded(()=>{
+  if(this.retired)fail('input','已移出的网格不再显示');
   if(!Number.isInteger(frameIndex)||frameIndex<0||this.lastDisplay>=0&&frameIndex!==this.lastDisplay+1||frameIndex<this.lastUpdate||this.lastDisplay<0&&this.lastUpdate>=0&&frameIndex!==this.lastUpdate)fail('input','原版网格显示帧顺序无效');
   this.reserve(1);
   if(this.options.coverage==='tracked'){this.lastDisplay=frameIndex;this.rendered=undefined;return;}
@@ -176,7 +183,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
    const length=privateGeometry?.sourceColorIndices.length??0;this.reserve(length);
    const packed=new Uint32Array(length);
    for(let i=0;i<length;i++){
-    if((i&255)===0)this.check();packed[i]=this.color.packed[privateGeometry!.sourceColorIndices[i]];
+    if((i&255)===0)this.check();packed[i]=this.color!.packed[privateGeometry!.sourceColorIndices[i]];
    }
    this.mappedColorCache={revision,colorRevision:this.colorRevision,packed};
   }
@@ -193,7 +200,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   this.lastDisplay=frameIndex;
   this.rendered={frameIndex,animationTime:this.animationTime,geometry,packedColors,fillEnabled:m.fillEnabled,fillOpacity:m.fillOpacity,wireframe,
    gradient:this.gradient.snapshot(),paletteState:{...this.paletteState},tracked:{index:this.trackingIndex,u:this.tracking[0],v:this.tracking[1],speedU:this.tracking[2],speedV:this.tracking[3],position:[this.trackingPosition[0],this.trackingPosition[1],this.trackingPosition[2]]},
-   diagnostics:[...this.color.diagnostics,...(this.ignoredNames.size?[`原版曲面忽略 ${this.ignoredNames.size} 个未声明参数的写入。`]:[])],workUnits:this.used};
+   diagnostics:[...this.color!.diagnostics,...(this.ignoredNames.size?[`原版曲面忽略 ${this.ignoredNames.size} 个未声明参数的写入。`]:[])],workUnits:this.used};
  });}
  /** Buffers are newly owned by each display snapshot. Repeated reads return
   * that same snapshot without copies. Runtime never reads/mutates them again;
