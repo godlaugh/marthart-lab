@@ -1,3 +1,4 @@
+import {SOURCE_PERLIN_GPU_NUMBER_FIELDS,SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
 import {SOURCE_SURFACE_PARAMETER_FIELDS,SOURCE_SURFACE_PARAMETER_EDGE_FIELDS} from './sourceSurfaceParameterConfig';
 import {SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS} from './sourceSurfaceGradientConfig';
 import type {SceneDocument} from '../types';
@@ -108,19 +109,26 @@ function surfaceParameterPath(path:readonly unknown[]):boolean {
  if(tail.length===2&&tail[0]==='edgeEasing'&&surfaceEdgeField(tail[1]))return true;
  return tail[0]==='parameters'&&surfaceParameterName(tail[1])&&(tail.length===2||tail.length===3&&surfaceParameterField(tail[2])||tail.length===4&&tail[2]==='edgeEasing'&&surfaceEdgeField(tail[3]));
 }
+const perlinFields=new Set<string>(SOURCE_PERLIN_GPU_NUMBER_FIELDS);
+function perlinParameterPath(path:readonly unknown[]):boolean {
+ if(path[0]!=='timeline'||!index(path[1],maxTimelineClips)||path[2]!=='actions'||!index(path[3],maxTimelineActions)||path[4]!=='args')return false;
+ const tail=path.slice(path[5]==='0'?6:5);
+ return tail.length===3&&tail[0]==='parameters'&&typeof tail[1]==='string'&&(SOURCE_PERLIN_PARAMETER_NAMES as readonly string[]).includes(tail[1])&&['step','min','max'].includes(String(tail[2]));
+}
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
+ if(family==='perlin'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&perlinFields.has(path[1])||perlinParameterPath(path)))return true;
  if(family==='attractor'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&attractorSettingFields.has(path[1])||path.length===2&&path[0]==='initialization'&&typeof path[1]==='string'&&attractorWarmupFields.has(path[1])||path.length===3&&path[0]==='initialization'&&path[1]==='bounds'&&typeof path[2]==='string'&&attractorBoundsFields.has(path[2])))return true;
  if(family==='surface'&&surfaceParameterPath(path))return true;
  if(family==='surface'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&surfaceStaticFields.has(path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
- if((family==='surface'||family==='attractor')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
+ if((family==='surface'||family==='attractor'||family==='perlin')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
 }
 /** Global resolution, Roots presentation/timeline slots and ordinary camera,
  * parameter and timeline scalars. These family-specific registrations do not
  * assert lossless numeric lexemes for the whole source document. */
 export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kind']='roots'):SourceNumberToken[]{
- const roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=bouncing?bouncingStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=ordinary?ordinaryMaximum:projectFields.size+(bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
+ const roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=bouncing?bouncingStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=sceneKind==='perlin'?Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+perlinFields.size+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length+SOURCE_PERLIN_PARAMETER_NAMES.length*3))):ordinary?ordinaryMaximum:projectFields.size+(bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
  if(!Array.isArray(raw)||raw.length>maximum)throw new Error(`源数字词法记录必须是最多 ${maximum} 项的数组`);
  const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0,parameterNameCharacters=0,parameterCount=0;let bouncingPolygonSource:string|undefined;const bouncingVertexForms=new Map<string,string>();
  // Preserve the existing independent static-field bound; timeline records do
@@ -131,7 +139,7 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('源数字词法记录无效');
   const {path,token}=value as {path?:unknown;token?:unknown};
   const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):(bouncing?bouncingField(path):ordinary&&ordinaryField(path,sceneKind))?JSON.stringify(path):undefined):undefined;
-  if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效');
+  if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效：'+JSON.stringify(path));
   if(bouncing){
    const polygon=bouncingPolygonPath(path);
    if(polygon){
@@ -141,8 +149,8 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
     bouncingPolygonSource=source;bouncingVertexForms.set(vertex,form);
    }
   }
-  if((roots||sceneKind==='surface'||sceneKind==='attractor')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
-   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify((sceneKind==='surface'||sceneKind==='attractor')?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
+  if((roots||sceneKind==='surface'||sceneKind==='attractor'||sceneKind==='perlin')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&!perlinParameterPath(path)&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
+   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify((sceneKind==='surface'||sceneKind==='attractor'||sceneKind==='perlin')?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
    if(previous!==undefined&&previous!==payload)throw new Error('一个源动画动作只能保留首个对象的数字词法');
    gradientPayloads.set(action,payload);
   }

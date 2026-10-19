@@ -1,3 +1,4 @@
+import {usesSourcePerlinGpu} from './sourcePerlinGpuDocument';
 import {usesSourceAttractor,SOURCE_ATTRACTOR_ACTION_METHODS} from './sourceAttractorDocument';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {ordinarySourceCameraGeometry} from './ordinarySourceCamera';
@@ -8,13 +9,13 @@ export const isRaymarchScene=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scen
 export const hasContinuousDensity=(scene:Pick<SceneDocument,'kind'|'settings'>)=>['map','symmetry','samila'].includes(scene.kind)&&scene.settings.iteratedMode==='continuous';
 export const hasProgressiveRoots=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='roots'&&scene.settings.rootsMode==='progressive';
 export const hasMathematicalPlane=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='domain'||scene.kind==='fractal'&&scene.settings.formula!=='mandelbulb_3d'||scene.kind==='bouncing'&&scene.settings.bouncingPresentation==='raster'||hasContinuousDensity(scene)||hasProgressiveRoots(scene);
-type CameraCapabilities=Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'sourceCamera'|'attractorSource'>>;
+type CameraCapabilities=Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'sourceCamera'|'attractorSource'|'perlinGpuSource'>>;
 /** Explicit authored marker; never infer source semantics from a scene family. */
 export const usesOrdinarySourceCamera=(scene:CameraCapabilities)=>scene.sourceCamera!==undefined;
 const ordinaryMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking']);
 export const supportsCameraActions=(scene:CameraCapabilities)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene):!hasMathematicalPlane(scene);
 /** Scalar-camera families opt into specific components, never the full orbit. */
-export const supportsCameraAction=(scene:CameraCapabilities,method:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&(usesSourceAttractor(scene)?SOURCE_ATTRACTOR_ACTION_METHODS.includes(method):ordinaryMethods.has(method)||method==='track'&&supportsParticleTracking(scene)):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
+export const supportsCameraAction=(scene:CameraCapabilities,method:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&(usesSourcePerlinGpu(scene)?['rotatePhi','rotateTheta','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking'].includes(method):usesSourceAttractor(scene)?SOURCE_ATTRACTOR_ACTION_METHODS.includes(method):ordinaryMethods.has(method)||method==='track'&&supportsParticleTracking(scene)):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
 export const supportsCameraComponent=(scene:CameraCapabilities,axis:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&['phi','theta','gamma'].includes(axis):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&axis==='theta';
 export const supportsCameraTarget=(scene:CameraCapabilities,target:string)=>!target.startsWith('camera.')||!usesOrdinarySourceCamera(scene)&&(supportsCameraActions(scene)||samilaCameraEnabled(scene)&&target==='camera.theta');
 /** Indexed targets use mathematical identities, never compacted display indices

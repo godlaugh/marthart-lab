@@ -2,7 +2,8 @@ import {sourceParticleGradientPayload} from './sourceParticleGradientImport';
 import {parseDomainSourceDouble} from './domainSourceScalar';
 import {javaEqualsIgnoreCaseAscii} from './sourceJavaText';
 
-export const SOURCE_PERLIN_PARAMETER_NAMES=['noise_offset','noise_scale','curve_noise_scale','curve_angle_scale'] as const;
+import {SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
+export {SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
 export type SourcePerlinParameterName=typeof SOURCE_PERLIN_PARAMETER_NAMES[number];
 export interface SourcePerlinParameterConfiguration {readonly name:SourcePerlinParameterName;readonly step:number;readonly min:number;readonly max:number;}
 export interface SourcePerlinParameterAction {readonly kind:'start'|'stop';readonly parameters:readonly SourcePerlinParameterConfiguration[];}

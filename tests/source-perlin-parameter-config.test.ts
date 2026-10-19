@@ -41,6 +41,6 @@ describe('Perlin parameter parsed boundary',()=>{
  });
  it('does not silently execute source parameters as a local document animation',()=>{
   const track={actions:[{method:'paramStart',perlinParameters:{kind:'start',parameters:[]}}]} as unknown as AnimationTrack;
-  expect(()=>validateTimelineExtensions(track,'perlin')).toThrow(/作品入口尚未接入/);
+  expect(()=>validateTimelineExtensions(track,'perlin')).toThrow(/只能用于源 Perlin 作品/);
  });
 });

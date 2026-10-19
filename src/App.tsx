@@ -1,3 +1,5 @@
+import {SourcePerlinGpuControls} from './components/SourcePerlinGpuControls';
+import {usesSourcePerlinGpu} from './engine/sourcePerlinGpuDocument';
 import {initialSourceBouncingNavigation,setSourceBouncingPaused,editSourceBouncingAngles,navigateSourceBouncing,sourceBouncingViewMatches,sourceBouncingViewsEqual,type SourceBouncingNavigationState} from './engine/sourceBouncingNavigation';
 import {SourceBouncingControls} from './components/SourceBouncingControls';
 import {SourceBouncingTransport} from './components/SourceBouncingTransport';
@@ -1072,7 +1074,7 @@ export default function App() {
               {sourceBouncing?<SourceBouncingControls key={`source-bouncing:${scene.id}:${tab}`} scene={scene} tab={tab} onChange={edit}/>:tab === "geometry" ? (
                 <>
                   <SymmetryFormula scene={scene} onChange={edit}/>
-                  {scene.kind==='perlin'&&<PerlinPresetControls scene={scene} preset={perlinPreset} onChange={edit}/>}
+                  {scene.kind==='perlin'&&!usesSourcePerlinGpu(scene)&&<PerlinPresetControls scene={scene} preset={perlinPreset} onChange={edit}/>}
                   {experience.equations&&!usesRootsNativeMath(scene)&&def.equations.length > 0 && (
                     <details open className="inspector-section">
                       <summary>{t(scene.kind==='bouncing'?'初始位置公式':"数学公式")}<span className="mono">ƒ(x)</span>
@@ -1083,7 +1085,7 @@ export default function App() {
                       </div>
                     </details>
                   )}
-                  {experience.parameterPanel&&!usesRootsNativeMath(scene)&&<details open className="inspector-section">
+                  {experience.parameterPanel&&!usesRootsNativeMath(scene)&&!usesSourcePerlinGpu(scene)&&<details open className="inspector-section">
                     <summary>{t(experience.continuous?"已有参数 · 兼容":"自定义参数")}{" "}
                       {experience.createParameters&&supportsGenericParameters(scene)&&<button
                         title={t("添加参数")}
@@ -1144,7 +1146,7 @@ export default function App() {
                   {scene.kind==='roots'&&<RootsMathControls key={`root-math:${scene.id}`} scene={scene} onChange={edit}/>}
                   {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={edit} onRestart={()=>{rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
                   <RootsDensityColorControls scene={scene} onChange={edit} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsColor:undefined}/>
-                  {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} section="formula"/>:!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&<SettingsFields
+                  {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} section="formula"/>:!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlinGpu(scene)&&<SettingsFields
                     controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls))).filter(control=>{
                       if(!isMeshMaterialControlVisible(scene,control.key)||!rootMathControlVisible(scene,control.key)||!rootsPresentationControlVisible(scene,control.key))return false;
                       if(usesSourceSurfaceParticles(scene)&&control.key==='colorMetric')return false;
@@ -1170,6 +1172,7 @@ export default function App() {
                     settings={meshAppearanceControlSettings(scene.kind==='bouncing'?bouncingControlSettings(scene.settings):scene.kind==='roots'?rootsControlSettings(scene.settings):scene.kind==='domain'?domainControlSettings(scene.settings):scene.kind==='surface'||scene.kind==='attractor'?{...scene.settings,trailWidth:parseTrailAppearance(scene.settings).width}:scene.kind==='samila'?samilaToneControlSettings(scene.settings):densityToneControlSettings(scene.kind,scene.settings))}
                     onChange={changeSetting}
                   />}
+                  <SourcePerlinGpuControls key={`source-perlin:${scene.id}`} scene={scene} onChange={edit} tab="geometry"/>
                   <SourceAttractorControls key={`source-attractor:${scene.id}`} scene={scene} onChange={edit}/>
                   <SourceSurfaceControls key={`source-mesh:${scene.id}`} scene={scene} onChange={edit}/>
                   {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={edit} disabled={playing||recording}/>}
@@ -1210,12 +1213,12 @@ export default function App() {
               ) : (
                 <>
                   <FractalControls scene={scene} onChange={edit} section="color"/>
-                  {!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&<GeometryColorControls scene={scene} onChange={edit}/>}
+                  {!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlinGpu(scene)&&<GeometryColorControls scene={scene} onChange={edit}/>}
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
-                      {!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
+                      {usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
+                      {!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlinGpu(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
                           label: t("着色依据"),
@@ -1237,7 +1240,7 @@ export default function App() {
                     <summary>{t("画布与渲染")}</summary>
                     <div className="section-body">
                       {usesSourceAttractor(scene)&&<SourceAttractorBackground scene={scene} onChange={edit}/>}
-                      {!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&<label className="field">
+                      {!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlinGpu(scene)&&<label className="field">
                         <span>{t("背景颜色")}</span>
                         <input
                           type="color"
@@ -1248,7 +1251,7 @@ export default function App() {
                           }
                         />
                       </label>}
-                      {!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&rootsAppearanceControlVisible(scene,'pointSize')&&<Control
+                      {!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlinGpu(scene)&&rootsAppearanceControlVisible(scene,'pointSize')&&<Control
                         spec={{
                           key: "pointSize",
                           label: t(usesSourceSurfaceParticles(scene)?"点半径":"粒子大小"),
@@ -1261,7 +1264,7 @@ export default function App() {
                         value={scene.settings.pointSize}
                         onChange={(v) => changeSetting("pointSize", v)}
                       />}
-                      {!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&bouncingCanvasControl(scene,'opacity')&&rootsAppearanceControlVisible(scene,'opacity')&&<Control
+                      {!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlinGpu(scene)&&bouncingCanvasControl(scene,'opacity')&&rootsAppearanceControlVisible(scene,'opacity')&&<Control
                         spec={{
                           key: "opacity",
                           label: t("不透明度"),

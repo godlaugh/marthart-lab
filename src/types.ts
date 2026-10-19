@@ -1,3 +1,4 @@
+import type {SourcePerlinGpuDocumentPayload} from './engine/sourcePerlinGpuDocument';
 import type {SourceBouncingView} from './engine/sourceBouncingNavigation';
 import type {SourcePerlinParameterAction} from './engine/sourcePerlinParameterConfig';
 import type {SourceSurfaceGpuMeshFrame} from './engine/sourceSurfaceGpuMesh';
@@ -208,6 +209,7 @@ export interface SceneDocument {
   surfaceSource?: SourceSurfaceMeshConfiguration;
   /** Canonical native Attractor authoring. Omission keeps the local model. */
   attractorSource?: SourceAttractorDocumentPayload;
+  perlinGpuSource?: SourcePerlinGpuDocumentPayload;
   /** Explicit source identity; omission preserves the existing local model. */
   bouncingSource?: SourceBouncingDocumentPayload;
   rootsMath?: RootsMathConfiguration;

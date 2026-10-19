@@ -1,3 +1,6 @@
+import {usesSourcePerlinGpu} from './sourcePerlinGpuDocument';
+import {replaySourcePerlinGpuCamera} from './sourcePerlinGpuReplay';
+import {parseSourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
 import {usesSourceAttractor} from './sourceAttractorDocument';
 import {replaySourceAttractorCamera} from './sourceAttractorReplay';
@@ -93,7 +96,7 @@ export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument):string[]{
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,'复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。'];
  const genericWarning=genericParameterTimelineWarning(scene),messages:string[]=[...(genericWarning?[genericWarning]:[]),...parseSamilaCamera(scene).warnings];
- if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!,frame=usesSourceSurfaceGeometry(scene)?replaySourceSurfaceCamera(scene,0):usesSourceAttractor(scene)?replaySourceAttractorCamera(scene,0):evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0);messages.push(...frame.diagnostics.map(d=>d.message),'原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
+ if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!,frame=usesSourcePerlinGpu(scene)?replaySourcePerlinGpuCamera(scene,0):usesSourceSurfaceGeometry(scene)?replaySourceSurfaceCamera(scene,0):usesSourceAttractor(scene)?replaySourceAttractorCamera(scene,0):evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0);messages.push(...frame.diagnostics.map(d=>d.message),'原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&!rootMathAnimationTargetEnabled(scene,track.target)||track.type==='param'&&track.parameterAnimations?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&action.parameters?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))))))messages.push('源复根数学不使用通用参数或旧采样与求解字段；相关轨道保留时长但未执行。');
  const inactiveSourceParameters=(parameters:readonly ParameterAnimation[]|undefined)=>parameters?.some(p=>p.enabled&&inactiveFractalSourceColorTarget(scene,p.target));
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&inactiveFractalSourceColorTarget(scene,track.target)||track.type==='param'&&inactiveSourceParameters(track.parameterAnimations)||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&inactiveSourceParameters(action.parameters)))))messages.push('原版分形着色已停用；其偏移动画保留但不执行。');
@@ -170,7 +173,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
-  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':undefined,surfaceMode:usesSourceSurfaceHost(scene)?scene.surfaceSource?.mode:undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
+  if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:usesSourcePerlinGpu(scene)?'perlin':usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':undefined,surfaceMode:usesSourceSurfaceHost(scene)?scene.surfaceSource?.mode:undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
   if(usesRootsCameraTimeline(scene))return resolveRootsCameraTimeline(scene);
   if(scene.timeline.schedule==='roots-camera-sequence-v1'||scene.timeline.schedule==='roots-scene-sequence-v1')return {...scene.timeline,schedule:undefined};
   if(usesSpirographFrameClock(scene))return interactiveSpirographFrames.timeline(scene);
@@ -225,7 +228,7 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   delete copied.evaluatedSpirographFrame;
   delete copied.evaluatedRootsCamera;
   delete copied.evaluatedSourceCamera;
-  if(scene.sourceCamera){copied.sourceCamera=structuredClone(scene.sourceCamera);if(time!==undefined)copied.evaluatedSourceCamera=usesSourceSurfaceGeometry(copied)?replaySourceSurfaceCamera(copied,time):usesSourceAttractor(copied)?replaySourceAttractorCamera(copied,time):evaluateOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(copied)!,scene.timeline.tracks,scene.timeline.fps,time);}
+  if(scene.sourceCamera){copied.sourceCamera=structuredClone(scene.sourceCamera);if(time!==undefined)copied.evaluatedSourceCamera=usesSourcePerlinGpu(copied)?replaySourcePerlinGpuCamera(copied,time):usesSourceSurfaceGeometry(copied)?replaySourceSurfaceCamera(copied,time):usesSourceAttractor(copied)?replaySourceAttractorCamera(copied,time):evaluateOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(copied)!,scene.timeline.tracks,scene.timeline.fps,time);}
   if(time!==undefined&&scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)==='mathart-1.7.8-v1'){
     copied.evaluatedSpirographRotationRadians=finite(spirographSourceRotationRate(scene.settings.rotationSpeed)*time,'旋轮运行时旋转');
   }
@@ -406,10 +409,8 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
   return{...p,...(edge?{edgeEasing:edge}:{})};
  });
 }
-export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceSurface=false,sourceAttractor=false):void{
- // A Perlin source document/geometry owner is not yet published. Reject this
- // internal queue payload here so a saved local scene cannot silently ignore it.
- if(Array.isArray(track.actions)&&track.actions.some(a=>a?.perlinParameters!==undefined))throw new Error('Perlin 源参数作品入口尚未接入；不能用本地参数时间线替代');
+export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceSurface=false,sourceAttractor=false,sourcePerlinGpu=false):void{
+ if(Array.isArray(track.actions))for(const action of track.actions){if(action?.perlinParameters!==undefined){if(!sourcePerlinGpu||!['paramStart','paramStop'].includes(action.method))throw new Error('Perlin 源参数只能用于源 Perlin 作品');const parsed=parseSourcePerlinParameterAction(action.perlinParameters);if(!parsed.ok)throw new Error(parsed.error.reason);}}
  if(track.spirographWait!==undefined&&(track.spirographWait!=='visual-or-deadline-v1'||track.type!=='spirograph_finish_wait'||sceneKind!==undefined&&sceneKind!=='spirograph'))throw new Error('旋轮完成等待规则无效');
  if(track.surfaceFadeOutRatio!==undefined&&(track.type!=='surface_mode_transition'||typeof track.surfaceFadeOutRatio!=='number'||!Number.isFinite(track.surfaceFadeOutRatio)||!Number.isFinite(Math.fround(track.surfaceFadeOutRatio))))throw new Error('曲面淡出比例无效');
  if(track.gradient!==undefined)validateGradientConfig(track.gradient);
@@ -422,7 +423,7 @@ export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:Scene
   // Authored full-scene configuration has one contract even while its clip is
   // disabled. Camera-only markers retain the older generic validation rules.
   if(sceneKind==='roots'&&schedule==='roots-scene-sequence-v1'&&action.method==='gradientStart')parseRootsGradientConfiguration(action.gradient);
-  else if((sourceSurface||sourceAttractor)&&action.method==='gradientStart')parseSourceParticleGradientConfiguration(action.gradient);
+  else if((sourceSurface||sourceAttractor||sourcePerlinGpu)&&action.method==='gradientStart')parseSourceParticleGradientConfiguration(action.gradient);
   else validateGradientConfig(action.gradient);
  }}}
 }
@@ -430,7 +431,7 @@ function validateTrack(track: AnimationTrack, scene: SceneDocument) {
   if (!Number.isFinite(track.start) || track.start < 0) throw new Error('片段起点必须是非负有限数值');
   if (!CLIP_TYPES.some(item => item.type === (track.type ?? 'numeric'))) throw new Error(`未知片段类型 ${track.type}`);
   if (track.actions && (!Array.isArray(track.actions) || track.actions.length > 64)) throw new Error('单片段最多64个动作');
-  validateTimelineExtensions(track,scene.kind,scene.timeline.schedule,usesSourceSurfaceGeometry(scene),usesSourceAttractor(scene));clipProgress(track, track.start, clipDuration(track, scene));
+  validateTimelineExtensions(track,scene.kind,scene.timeline.schedule,usesSourceSurfaceGeometry(scene),usesSourceAttractor(scene),usesSourcePerlinGpu(scene));clipProgress(track, track.start, clipDuration(track, scene));
 }
 
 type TimelineEvaluator = (position: number, base: SceneDocument) => SceneDocument;
@@ -452,7 +453,7 @@ export function sceneAtTime(scene: SceneDocument, position: number): SceneDocume
   // The native Attractor queue owns every supported action. Do not compile it
   // again as local palette/parameter animation, or retain duplicate snapshots
   // in the generic timeline cache. Geometry and camera replay share this owner.
-  if(usesSourceAttractor(scene))return copyState(scene,clamp(position,0,resolved.duration));
+  if(usesSourceAttractor(scene)||usesSourcePerlinGpu(scene))return copyState(scene,clamp(position,0,resolved.duration));
   if (!Number.isFinite(scene.timeline.duration) || scene.timeline.duration <= 0 || scene.timeline.tracks.length > 1000) throw new Error('时间线时长或片段数无效');
   if (!scene.timeline.tracks.length) return copyState(scene,scene.timeline.schedule===undefined?position:clamp(position,0,resolved.duration));
   // Content identity works across worker messages and detects edits to the same
@@ -809,7 +810,7 @@ export function createAnimationTrack(scene: SceneDocument, type: AnimationClipTy
   if (type === 'param') track.parameterAnimations = [{ target, ...(parameterAnimationSuggestion(scene,target)??{min:from-1,max:from+1}), step: 1, enabled: true }];
   if (type === 'fractal_zoom') { track.target = 'settings.zoom'; const centerX = Number(scene.settings.centerX ?? 0), centerY = Number(scene.settings.centerY ?? 0), centerXLow=Number(scene.settings.centerXLow??0),centerYLow=Number(scene.settings.centerYLow??0),zoom = Number(scene.settings.zoom ?? 1); track.keyframes = [{ time: 0, centerX, centerY,centerXLow,centerYLow, zoom }, { time: duration, centerX, centerY,centerXLow,centerYLow, zoom: Math.min(1e28,zoom * 10) }]; track.interpolation = 'exponential'; }
   if (type === 'surface_mode_transition') { track.target = 'settings.surfaceBlend'; track.surfaceMode = (usesSourceSurfaceHost(scene)?scene.surfaceSource!.mode:scene.settings.renderMode) === 'points' ? 'mesh' : 'points'; }
-  if (type === 'trails') { track.target = 'settings.recordTrails'; track.trailsEnabled = true;if(usesSourceSurfaceGeometry(scene)){track.duration=0;track.easing='linear';} }
+  if (type === 'trails') { track.target = 'settings.recordTrails'; track.trailsEnabled = true;if(usesSourceSurfaceGeometry(scene)||usesSourcePerlinGpu(scene)){track.duration=0;track.easing='linear';if(usesSourcePerlinGpu(scene))track.target='settings.showTrails';} }
   if (type === 'wait' || type === 'spirograph_finish_wait') track.target = 'timeline.wait';
   if (type === 'spirograph_finish_wait') {
     if(scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)==='mathart-1.7.8-v1'){

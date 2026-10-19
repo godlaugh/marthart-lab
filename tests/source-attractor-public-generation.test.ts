@@ -1,4 +1,4 @@
-import {sourceAttractorPresentedScene} from '../src/engine/sourceAttractorPresentation';
+import {sourceQueuePresentedScene} from '../src/engine/sourceQueuePresentation';
 import {describe,it,expect} from 'vitest';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
@@ -84,11 +84,11 @@ describe('public native CPU Attractor dispatch',()=>{
 
 describe('retained source CPU Attractor request lifetime',()=>{
  it('presents the exact delivered camera without another replay or local gradient pass',()=>{
-  const scene=source(),out=generateScene(scene,context),presented=sourceAttractorPresentedScene(scene,out)!;
+  const scene=source(),out=generateScene(scene,context),presented=sourceQueuePresentedScene(scene,out)!;
   expect(presented.evaluatedSourceCamera).toBe(out.sourceCameraFrame);
   expect(presented.evaluatedSourceCamera!.camera).toEqual(sceneAtTime(scene,context.time).evaluatedSourceCamera!.camera);
   expect(presented.palette).toEqual(scene.palette);expect(presented.parameters).toEqual(scene.parameters);
-  expect(sourceAttractorPresentedScene(createScene(definition('surface')),out)).toBeUndefined();
+  expect(sourceQueuePresentedScene(createScene(definition('surface')),out)).toBeUndefined();
  });
  it('shares motion and camera across forward/same-frame requests, with detached transferable outputs',()=>{
   const scene=source(),session=new TemporalGenerationSession();

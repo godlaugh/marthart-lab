@@ -1,3 +1,4 @@
+import {usesSourcePerlinGpu} from './sourcePerlinGpuDocument';
 import type {GenerateContext, SceneDocument, SceneOutput} from '../types';
 import {prepareSourceCamera, resolveSourceCamera, SOURCE_CAMERA_MODEL, type SourceCameraInput, type SourceCameraPlan, type SourceCameraScalars, type SourceCameraViewport} from './sourceCamera';
 
@@ -6,8 +7,9 @@ export interface OrdinarySourceCameraEvaluation {time:number;camera:SourceCamera
 export interface OrdinarySourceCameraFrame extends OrdinarySourceCameraEvaluation {
  model:typeof SOURCE_CAMERA_MODEL;viewport:SourceCameraViewport;
 }
-type Scene=Pick<SceneDocument,'kind'|'settings'|'sourceCamera'>;
-export function ordinarySourceCameraGeometry(scene:Pick<SceneDocument,'kind'|'settings'>):boolean {
+type Scene=Pick<SceneDocument,'kind'|'settings'|'sourceCamera'|'perlinGpuSource'>;
+export function ordinarySourceCameraGeometry(scene:Pick<SceneDocument,'kind'|'settings'|'perlinGpuSource'>):boolean {
+ if(usesSourcePerlinGpu(scene))return true;
  if(scene.kind==='surface'||scene.kind==='implicit')return true;
  if(scene.kind==='attractor')return scene.settings.presentation!=='density';
  return scene.kind==='perlin'&&scene.settings.style==='continuous'&&['heads','trails'].includes(String(scene.settings.particleDisplay));
