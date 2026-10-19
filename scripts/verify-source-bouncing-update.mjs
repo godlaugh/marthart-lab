@@ -67,6 +67,9 @@ try{
    {name:'hostile-nonfinite-state',initial:new Float32Array([NaN,0,1,0,0,Infinity,0,1]),hostile:true,sequence:[update(circle),update(ellipse),update(box)]},
    {name:'default200000-supplied-state',count:200000,sequence:[update(circle)]},
    {name:'requested2000000-supplied-state',count:2000000,sequence:[update(circle,{subSteps:1})]},
+   {name:'transferred-small-mixed-padding',transfer:true,initial:initial.slice(),sequence:[update(circle),update(ellipse),update(box)]},
+   {name:'copy-input-mutation-isolation',mutate:true,initial:initial.slice(),sequence:[update(circle)]},
+   {name:'transferred5000000-supplied-state',transfer:true,count:5000000,sequence:[update(circle,{subSteps:1})],diagnosticAdmission:true},
   ];
   const results=[];
   const compare=async(actual,expected,name)=>{
@@ -78,13 +81,28 @@ try{
    for(const fixture of cases){
     let data=fixture.initial;
     if(fixture.count){data=new Float32Array(fixture.count*4);for(let i=0;i<fixture.count;i++){data[i*4]=(i%101)/505-.1;data[i*4+1]=Math.floor(i/101)%101/505-.1;data[i*4+2]=.3;data[i*4+3]=-.1;}}
-    const engine=new SourceBouncingGpu(data),oracle=createOracle(data),frames=[];
+    const count=data.length/4,oracle=createOracle(data),engine=fixture.transfer?SourceBouncingGpu.takeState(data):new SourceBouncingGpu(data),frames=[];
+    if(fixture.transfer)check(data.byteLength===0,'Transferred caller alias remains live');
+    if(fixture.mutate)data.fill(123);
     try{
      engine.initialize();frames.push(await compare(engine.readState(),oracle.read(),fixture.name+' initial'));engine.initialize();
      for(let step=0;step<fixture.sequence.length;step++){const uniforms=fixture.sequence[step];oracle.advance(uniforms);engine.advance(uniforms);frames.push(await compare(engine.readState(),oracle.read(),fixture.name+' '+step));}
      let capWitness;
      if(fixture.witness){const more=createOracle(data,8);more.advance(fixture.sequence[0]);const extended=more.read(),original=oracle.read();check(await digest(extended)!==await digest(original),'Four-collision witness failed to distinguish 8 collisions');const local=advanceBilliard([data[0],data[1]],[data[2],data[3]],Math.fround(.25),{kind:'circle',radius:1},Math.fround(.02)),positionGap=Math.hypot(original[0]-local.position[0],original[1]-local.position[1]);check(local.collisions>4&&positionGap>.01,'Local continuous solver did not distinguish native four-collision cap');capWitness={nativeMaxCollisions:4,diagnosticVariantCollisions:8,native:Array.from(original),variant:Array.from(extended),localContinuousSolver:local,localPositionGap:positionGap,interpretation:'Changing only the collision cap changes state; the existing local continuous solver also differs. Neither local nor 8-collision output supplies reference expected state.'};}
-     results.push({name:fixture.name,count:data.length/4,hostileRawAbi:!!fixture.hostile,frames,capWitness,diagnostics:engine.diagnostics()});
+     let diagnosticAdmission;
+     if(fixture.diagnosticAdmission){
+      const {prepareSourceCamera,SOURCE_CAMERA_MODEL}=await import('/src/engine/sourceCamera.ts'),{importSourceBouncingVisualConfig}=await import('/src/engine/sourceBouncingVisualConfig.ts');
+      const camera=prepareSourceCamera({model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'}},{logicalWidth:3840,logicalHeight:2160,referenceLogicalHeight:360,target:'offscreen',projectionPass:'perspective'}),visual=importSourceBouncingVisualConfig({settings:{dot_size:.001}});
+      check(camera.ok&&camera.value.kind==='known'&&visual.ok,'4K fixture preparation');
+      const options={width:3840,height:2160,cameraPlan:camera.value.plan,visualConfiguration:visual.value.configuration,initialSpeed:1};
+      const first=engine.render(options);let rejected='';try{engine.readState();}catch(error){rejected=String(error);}
+      check(rejected.includes('诊断读回')&&!engine.diagnostics().failed,'Diagnostic capacity refusal poisoned usable owner');
+      const same=engine.render(options);check(await digest(first.pixels)===await digest(same.pixels),'Diagnostic refusal changed display');
+      engine.advance(fixture.sequence[0]);oracle.advance(fixture.sequence[0]);engine.render({...options,width:320,height:180});
+      frames.push(await compare(engine.readState(),oracle.read(),fixture.name+' recovered diagnostic'));
+      diagnosticAdmission={rejected,same4kFrame:true,continuedUpdate:true,smallerTargetReadback:true};
+     }
+     results.push({name:fixture.name,count,transferred:!!fixture.transfer,hostileRawAbi:!!fixture.hostile,frames,capWitness,diagnosticAdmission,diagnostics:engine.diagnostics()});
     }finally{engine.dispose();engine.dispose();cleanup();}
     check(outstanding()===0,'Case resource leak '+fixture.name);
    }
@@ -95,6 +113,12 @@ try{
    const shaderSource=proto.shaderSource,bad=new SourceBouncingGpu(initial);message='';
    try{proto.shaderSource=function(shader,text){return shaderSource.call(this,shader,text.includes('solveCircle')?text+'\ninvalid_source_symbol':text);};try{bad.initialize();}catch(error){message=String(error);}check(message.includes('编译失败'),'Compile failure ignored');}finally{proto.shaderSource=shaderSource;bad.dispose();}
    check(!outstanding(),'Compile leak');failures.push({name:'compile-failure',message});
+   const texSubImage2D=proto.texSubImage2D,upload=SourceBouncingGpu.takeState(initial.slice());let uploads=0;message='';
+   try{proto.texSubImage2D=function(...args){if(++uploads===2)throw Error('injected tail upload failure');return texSubImage2D.apply(this,args);};try{upload.initialize();}catch(error){message=String(error);}check(message.includes('tail upload')&&upload.diagnostics().handles>0,'Upload failure lost ownership');}finally{proto.texSubImage2D=texSubImage2D;upload.dispose();}
+   check(!outstanding(),'Tail upload leak');failures.push({name:'transferred-tail-upload-failure',message});
+   let transferCancelled=false;const cancelledTransfer=SourceBouncingGpu.takeState(initial.slice(),()=>transferCancelled);transferCancelled=true;message='';
+   try{cancelledTransfer.initialize();}catch(error){message=String(error);}finally{cancelledTransfer.dispose();}
+   check(message.includes('取消')&&!outstanding(),'Transferred pre-initialize cancellation leak');failures.push({name:'transferred-cancel-before-initialize',message});
    let cancelled=false;const cancel=new SourceBouncingGpu(initial,()=>cancelled);cancel.initialize();cancelled=true;message='';try{cancel.advance(update());}catch(error){message=String(error);}finally{cancel.dispose();}check(message.includes('取消')&&!outstanding(),'Cancellation failure');failures.push({name:'cancel',message});
    const retry=new SourceBouncingGpu(initial);retry.initialize();const deleteTexture=proto.deleteTexture;let threw=false,retained;
    try{proto.deleteTexture=function(handle){if(!threw){threw=true;throw Error('injected delete failure');}return deleteTexture.call(this,handle);};message='';try{retry.dispose();}catch(error){message=String(error);}retained=retry.diagnostics();check(message&&retained.contextOwned&&retained.handles,'Failed cleanup ownership discarded');}finally{proto.deleteTexture=deleteTexture;retry.dispose();}

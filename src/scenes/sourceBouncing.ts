@@ -34,7 +34,7 @@ export class SourceBouncingSession {
    this.key='';this.updates=0;this.seedDiagnostics=undefined;this.isCancelled=undefined;
   },failures);
  }
- diagnostics(){const gpu=this.gpu?.diagnostics();return{simulationUpdates:this.updates,retainedBytes:gpu?.estimatedBytes??0,seed:this.seedDiagnostics,gpu};}
+ diagnostics(){const gpu=this.gpu?.diagnostics();return{simulationUpdates:this.updates,retainedBytes:gpu?.retainedBytes??0,seed:this.seedDiagnostics,gpu};}
  generate(scene:SceneDocument,context:GenerateContext):SceneOutput{
   this.cleanup.prepare();
   const started=performance.now();
@@ -49,7 +49,7 @@ export class SourceBouncingSession {
    if(!camera.ok)throw camera.error;
    if(camera.value.kind!=='known')throw new SourceBouncingGpuError('input','源弹跳相机投影未知');
    const plan=camera.value.plan;
-   sourceBouncingGpuFrameLayout(payload.configuration.particleCount,context.width,context.height);
+   sourceBouncingGpuFrameLayout(payload.configuration.particleCount,context.width,context.height,true,'transfer');
    // The canonical source owner already interpreted inputs. This key preserves
    // signed zero and omits display, camera and metadata edits deliberately.
    const key=sourceBouncingInitializationKey(payload.configuration);
@@ -64,7 +64,7 @@ export class SourceBouncingSession {
     const seeds=unwrap(prepared!.generate());
     this.update=seeds.update;
     this.seedDiagnostics=seeds.diagnostics;
-    this.gpu=new SourceBouncingGpu(seeds.state,()=>this.isCancelled?.()??false);
+    this.gpu=SourceBouncingGpu.takeState(seeds.state,()=>this.isCancelled?.()??false);
     this.key=key;
    }
    while(this.updates<checkpoint.simulationUpdates){this.gpu.advance(this.update!);this.updates++;}

@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,sourceBouncingGpuDisplayLayout,SourceBouncingGpu,SOURCE_BOUNCING_GPU_LIMITS,type SourceBouncingUpdate,type SourceBouncingGpuDisplay} from '../src/engine/sourceBouncingGpu';
+import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,sourceBouncingGpuFrameLayout,sourceBouncingGpuDisplayLayout,SourceBouncingGpu,SOURCE_BOUNCING_GPU_LIMITS,type SourceBouncingUpdate,type SourceBouncingGpuDisplay} from '../src/engine/sourceBouncingGpu';
 import {importSourceBouncingVisualConfig} from '../src/engine/sourceBouncingVisualConfig';
 import {prepareSourceCamera,SOURCE_CAMERA_MODEL} from '../src/engine/sourceCamera';
 import cameraFixture from './fixtures/source-camera/transforms.json';
@@ -30,7 +30,29 @@ describe('native Bouncing update uniform boundary',()=>{
  it('admits the two-million supplied-state workload without allocating it in metadata checks',()=>{
   expect(sourceBouncingGpuLayout(2000000)).toMatchObject({count:2000000,size:1415,texels:2002225});
   expect(()=>sourceBouncingGpuLayout(5000000)).toThrow('256 MiB');
+  const owned=sourceBouncingGpuLayout(5000000,'transfer');
+  expect(owned).toMatchObject({size:2237,texels:5004169,initializationBytes:240133472,diagnosticBytes:240200176});
+  expect(sourceBouncingGpuFrameLayout(5000000,3840,2160,true,'transfer').bytes).toBeLessThan(SOURCE_BOUNCING_GPU_LIMITS.bytes);
+  expect(owned.diagnosticBytes+3840*2160*4).toBeGreaterThan(SOURCE_BOUNCING_GPU_LIMITS.bytes);
   for(const count of [0,-1,.5,NaN,2147483648])expect(()=>sourceBouncingGpuLayout(count)).toThrow();
+ });
+ it('explicit transfer detaches every alias and rejects reuse while copy construction preserves input',()=>{
+  const data=new Float32Array([0,-0,1,0]),alias=new Uint8Array(data.buffer),copy=new SourceBouncingGpu(data);
+  expect(data.length).toBe(4);expect(copy.layout.ownership).toBe('copy');
+  const owner=SourceBouncingGpu.takeState(data);
+  expect(owner.diagnostics().retainedBytes).toBe(16);expect(copy.diagnostics().retainedBytes).toBe(16);
+  expect(data.byteLength).toBe(0);expect(alias.byteLength).toBe(0);expect(owner.layout.ownership).toBe('transfer');
+  expect(()=>SourceBouncingGpu.takeState(data)).toThrow();
+  owner.dispose();copy.dispose();expect(owner.diagnostics().retainedBytes).toBe(0);
+ });
+ it('invalid or pre-cancelled transfer requests preserve all caller bytes',()=>{
+  const data=new Float32Array([0,-0,1,0,2,3,4,5]);
+  expect(()=>SourceBouncingGpu.takeState(data.subarray(0,4))).toThrow('完整');
+  expect(()=>SourceBouncingGpu.takeState(data,()=>true)).toThrow('取消');
+  expect(Array.from(data)).toEqual([0,-0,1,0,2,3,4,5]);
+  expect(()=>SourceBouncingGpu.takeState(new Float32Array(new SharedArrayBuffer(16)))).toThrow('ArrayBuffer');
+  const resizable=Reflect.construct(ArrayBuffer,[16,{maxByteLength:32}]) as ArrayBuffer;
+  expect(()=>SourceBouncingGpu.takeState(new Float32Array(resizable))).toThrow('固定');
  });
  it('owns initialization without a context and supports cancellation/disposal before use',()=>{
   const data=new Float32Array([0,0,1,0]),owner=new SourceBouncingGpu(data,()=>true);
@@ -74,14 +96,14 @@ describe('Bouncing particle display admission before allocating GPU resources',(
   const input=options();rejects({...input,boundary:{kind:'circle',center:[0,0],radius:1},cameraPlan:{...input.cameraPlan,viewport:{...input.cameraPlan.viewport,projectionPass:'unknown'}}},'投影未知');
  });
  it('reserves boundary CPU and GPU buffers in the same total budget as particles and pixels',()=>{
-  const width=1920,height=4966,count=2000000;
-  expect(sourceBouncingGpuLayout(count).bytes+sourceBouncingGpuDisplayLayout(width,height).bytes).toBeLessThan(SOURCE_BOUNCING_GPU_LIMITS.bytes);
+  const width=1920,height=11221,count=2000000;
+  expect(sourceBouncingGpuFrameLayout(count,width,height,false).bytes).toBeLessThan(SOURCE_BOUNCING_GPU_LIMITS.bytes);
   const gpu=new SourceBouncingGpu(new Float32Array(count*4));
   try{expect(()=>gpu.render({...options(),width,height,boundary:{kind:'circle',center:[0,0],radius:1}})).toThrow('合计');expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,boundaryDraws:0});}
   finally{gpu.dispose();}
  });
  it('accounts for the whole state and image together before opening a context',()=>{
-  const gpu=new SourceBouncingGpu(new Float32Array(2000000*4));
+  const gpu=new SourceBouncingGpu(new Float32Array(3500000*4));
   try{expect(()=>gpu.render({...options(),width:4096,height:4096})).toThrow('合计');expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,rendered:0});}
   finally{gpu.dispose();}
  });
