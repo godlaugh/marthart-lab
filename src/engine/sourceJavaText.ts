@@ -13,3 +13,23 @@ export function javaTrim(value: string): string {
   while (end > start && value.charCodeAt(end - 1) <= 32) end--;
   return value.slice(start, end);
 }
+
+/** Java String.equalsIgnoreCase against an ASCII literal only. Java's simple
+ * character case mapping also equates dotted/dotless I, long S and Kelvin sign
+ * with ASCII I/S/K. Do not apply JS full-string casing (which can expand chars)
+ * or use this as a general Unicode case comparator. Non-ASCII expected literals
+ * are outside this contract and return false. */
+export function javaEqualsIgnoreCaseAscii(value: string, expected: string): boolean {
+  if (value.length !== expected.length) return false;
+  for (let i = 0; i < expected.length; i++) {
+    let right = expected.charCodeAt(i), left = value.charCodeAt(i);
+    if (right > 127) return false;
+    if (right >= 97 && right <= 122) right -= 32;
+    if (left >= 97 && left <= 122) left -= 32;
+    else if (left === 0x130 || left === 0x131) left = 73;
+    else if (left === 0x17f) left = 83;
+    else if (left === 0x212a) left = 75;
+    if (left !== right) return false;
+  }
+  return true;
+}

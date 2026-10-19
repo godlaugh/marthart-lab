@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {isJavaBlank,isJavaWhitespace,javaTrim} from '../src/engine/sourceJavaText';
+import {isJavaBlank,isJavaWhitespace,javaTrim,javaEqualsIgnoreCaseAscii} from '../src/engine/sourceJavaText';
 import {isJavaBlank as retainedDomainBlank,normalizeDomainNativeNext} from '../src/engine/domainSourceIteration';
 it('keeps Java trim and blank distinct at source parameter names',()=>{
  expect(javaTrim('\0\x1f name \x20')).toBe('name');
@@ -8,6 +8,15 @@ it('keeps Java trim and blank distinct at source parameter names',()=>{
  expect(isJavaBlank('\u3000')).toBe(true);
  expect(javaTrim('\u3000')).toBe('\u3000');
  expect(isJavaBlank('')).toBe(true);
+});
+it('matches Java simple case comparison for ASCII literals without full-string expansions or trimming',()=>{
+ for(const value of ['outline','OUTLINE','outlİne','outlıne'])expect(javaEqualsIgnoreCaseAscii(value,'OUTLINE')).toBe(true);
+ expect(javaEqualsIgnoreCaseAscii('ſKİı','skii')).toBe(true);
+ for(const value of [' OUTLINE','OUTLINE ','outlïne','outl\u0307ine'])expect(javaEqualsIgnoreCaseAscii(value,'OUTLINE')).toBe(false);
+ expect(javaEqualsIgnoreCaseAscii('ß','SS')).toBe(false);
+ expect(javaEqualsIgnoreCaseAscii('ﬀ','ff')).toBe(false);
+ expect(javaEqualsIgnoreCaseAscii('AZ_09-','az_09-')).toBe(true);
+ expect(javaEqualsIgnoreCaseAscii('é','É')).toBe(false);
 });
 it('retains exact Domain predicate and normalization for every UTF-16 code unit',()=>{
  const before=/^[\u0009-\u000d\u001c-\u0020\u1680\u2000-\u2006\u2008-\u200a\u2028\u2029\u205f\u3000]*$/;
