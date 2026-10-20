@@ -1,13 +1,13 @@
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
-import type { GenerationRequest, GenerationResponse, RootsPausedCaptureResult, RootsPausedCaptureSize } from './generationProtocol';
-import {RootsPausedCaptureError} from './generationProtocol';
+import type { GenerationRequest, GenerationResponse, RootsPausedCaptureResult, RootsPausedCaptureSize, PerlinPausedCaptureResult, PerlinPausedCaptureSize, PausedCaptureOperation, PausedCaptureResult, PausedCaptureSize } from './generationProtocol';
+import {RootsPausedCaptureError,PerlinPausedCaptureError,isPausedCaptureOperation} from './generationProtocol';
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
 type Completed={id:number;scene:SceneDocument;output:SceneOutput};
 type Pending = { operation: 'generate'; scene:SceneDocument; resolve: (output: SceneOutput) => void; reject: (error: Error) => void; onProgress?: (output: SceneOutput) => void; onStatus?: (status: GenerationStatus) => void }
-  | { operation:'roots-paused-capture'; source:Completed; resolve:(output:RootsPausedCaptureResult)=>void; reject:(error:Error)=>void }
+  | { operation:PausedCaptureOperation; source:Completed; resolve:(output:PausedCaptureResult)=>void; reject:(error:Error)=>void }
   | { operation:'roots-recording-plan'; resolve:(output:RootsFreshRecordingPlan)=>void; reject:(error:Error)=>void }
   | { operation:'spirograph-recording-plan'; resolve:(output:SpirographRecordingPlan)=>void; reject:(error:Error)=>void }
   | { operation: 'search-stable'; resolve: (output: StableSearchResult) => void; reject: (error: Error) => void; onProgress?: (progress: StableSearchProgress) => void }
@@ -45,10 +45,10 @@ export class Generator {
       }
       this.pending.delete(data.id);
       if ('error' in data) {
-        if(p.operation==='roots-paused-capture'){
-          const retained=data.operation==='roots-paused-capture'&&data.retainedSourceId===p.source.id&&data.id===this.currentInputId;
+        if(isPausedCaptureOperation(p.operation)&&'source' in p){
+          const retained=data.operation===p.operation&&'retainedSourceId' in data&&data.retainedSourceId===p.source.id&&data.id===this.currentInputId;
           if(retained)this.completed=p.source;
-          p.reject(new RootsPausedCaptureError(data.error,retained));
+          p.reject(p.operation==='roots-paused-capture'?new RootsPausedCaptureError(data.error,retained):new PerlinPausedCaptureError(data.error,retained));
         }else p.reject(new Error(data.error));
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
@@ -56,7 +56,7 @@ export class Generator {
         if(data.id===this.currentInputId)this.completed={id:data.id,scene:p.scene,output:data.output};
         p.resolve(data.output);
       }
-      else if (p.operation==='roots-paused-capture'&&data.operation==='roots-paused-capture') {
+      else if (isPausedCaptureOperation(p.operation)&&'source' in p&&data.operation===p.operation&&'result' in data) {
         if(data.id===this.currentInputId)this.completed={id:data.id,scene:p.source.scene,output:data.result.preview};
         p.resolve(data.result);
       }
@@ -92,17 +92,27 @@ export class Generator {
   /** The exact completed preview is the capability. A copied, superseded or
    * partially generated frame cannot select a live worker-owned scene. */
   captureRootsPaused(output:SceneOutput,size:RootsPausedCaptureSize,scale:1|3|5=1):Promise<RootsPausedCaptureResult>{
-    const source=this.completed;
-    if(!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!output.rootsPresentation)
-      return Promise.reject(new Error('当前复根画面尚未完成或已过期，请等待预览完成后重试'));
+    return this.capturePaused('roots-paused-capture',output,size,scale);
+  }
+  capturePerlinPaused(output:SceneOutput,size:PerlinPausedCaptureSize,scale:1|3|5=1):Promise<PerlinPausedCaptureResult>{
+    return this.capturePaused('perlin-paused-capture',output,size,scale);
+  }
+  private capturePaused(operation:PausedCaptureOperation,output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
+    const source=this.completed,roots=operation==='roots-paused-capture';
+    const eligible=output.type==='raster'&&(roots?!!output.rootsPresentation:!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
+    if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
+      return Promise.reject(new Error(`当前${roots?'复根':'Perlin'}画面尚未完成或已过期，请等待预览完成后重试`));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve,reject)=>{
-      this.pending.set(id,{operation:'roots-paused-capture',source,resolve,reject});
-      const request:GenerationRequest={operation:'roots-paused-capture',sessionId:this.sessionId,id,sourceId:source.id,size:{...size},scale};
+      this.pending.set(id,{operation,source,resolve,reject});
+      const request:GenerationRequest={operation,sessionId:this.sessionId,id,sourceId:source.id,size:{...size},scale};
       try{this.worker!.postMessage(request);}catch(error){
         this.pending.delete(id);
-        const retained=this.currentInputId===id&&this.worker!==null;if(retained)this.completed=source;
-        reject(new RootsPausedCaptureError(error instanceof Error?error.message:String(error),retained));
+        // Preserve the established Roots synchronous-send contract. Perlin
+        // retention requires an explicit acknowledgement from its live owner.
+        const retained=roots&&this.currentInputId===id&&this.worker!==null;if(retained)this.completed=source;
+        const message=error instanceof Error?error.message:String(error);
+        reject(roots?new RootsPausedCaptureError(message,retained):new PerlinPausedCaptureError(message,retained));
       }
     });
   }

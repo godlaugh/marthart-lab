@@ -1,8 +1,8 @@
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
-import {RootsPausedImageError} from './rootsPausedImage';
+import {SourcePausedImageError} from './sourcePausedImage';
 
-export type RootsPausedUpscale=3|5;
-export interface RootsPausedUpscalePlan {
+export type SourcePausedUpscale=3|5;
+export interface SourcePausedUpscalePlan {
  readonly width:number;readonly height:number;
  readonly inputBytes:number;readonly outputBytes:number;readonly workspaceBytes:number;
  /** Borrowed input view + premultiplied scratch + result + shared lookup tables.
@@ -32,19 +32,19 @@ const LOOKUP_BYTES=coefficients.byteLength+divisionSteps.byteLength;
 
 /** Menu scales only. Scale1 uses the enhancement result directly: sending it
  * through a premultiplied transform would alter transparent/low-alpha RGB. */
-export function prepareRootsPausedUpscale(width:number,height:number,scale:RootsPausedUpscale):RootsPausedUpscalePlan {
+export function prepareSourcePausedUpscale(width:number,height:number,scale:SourcePausedUpscale):SourcePausedUpscalePlan {
  if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1)
-  throw new RootsPausedImageError('input','dimensions must be positive safe integers');
- if(scale!==3&&scale!==5)throw new RootsPausedImageError('input','bicubic upscale must be 3 or 5');
+  throw new SourcePausedImageError('input','dimensions must be positive safe integers');
+ if(scale!==3&&scale!==5)throw new SourcePausedImageError('input','bicubic upscale must be 3 or 5');
  const inputCount=width*height;
  if(!Number.isSafeInteger(inputCount)||inputCount>MAX_RASTER_PIXELS)
-  throw new RootsPausedImageError('capacity','RGBA input exceeds the shared 128 MiB raster budget');
+  throw new SourcePausedImageError('capacity','RGBA input exceeds the shared 128 MiB raster budget');
  // MathArt.upscaleImage i2f/fmul/Math.round(F), followed by a size-based
  // Graphics2D transform (target/source), not a second geometric render.
  const w=Math.floor(Math.fround(Math.fround(width)*scale)+.5);
  const h=Math.floor(Math.fround(Math.fround(height)*scale)+.5),outputCount=w*h;
  if(!Number.isSafeInteger(outputCount)||outputCount>MAX_RASTER_PIXELS)
-  throw new RootsPausedImageError('capacity','upscaled RGBA output exceeds the shared 128 MiB raster budget');
+  throw new SourcePausedImageError('capacity','upscaled RGBA output exceeds the shared 128 MiB raster budget');
  const inputBytes=inputCount*4,outputBytes=outputCount*4,workspaceBytes=inputBytes+32;
  return {width:w,height:h,inputBytes,outputBytes,workspaceBytes,
   peakBytes:inputBytes+outputBytes+workspaceBytes+LOOKUP_BYTES,method:'openjdk21-software-bicubic'};
@@ -55,10 +55,11 @@ const clamp=(value:number,maximum:number)=>Math.max(0,Math.min(maximum,value));
 const premultiply=(value:number,alpha:number)=>Math.floor((value*alpha*65793+8388608)/BYTE_UNIT);
 const unpremultiply=(value:number,alpha:number)=>value>=alpha?255:Math.floor((8388608+value*divisionSteps[alpha])/BYTE_UNIT);
 function checkCancelled(isCancelled?:()=>boolean):void {
- if(isCancelled?.())throw new DOMException('Roots paused image upscale cancelled','AbortError');
+ if(isCancelled?.())throw new DOMException('Source paused image upscale cancelled','AbortError');
 }
 
-/** Explicit OpenJDK21 default *software* image pipeline, not Canvas smoothing
+/** Shared MathArt upscaleImage postprocessing, independent of scene/backend.
+ * Explicit OpenJDK21 default *software* image pipeline, not Canvas smoothing
  * and not a claim of byte equality with the original JVM's platform route.
  * Top-down straight RGBA8 -> MUL8 premultiply -> fixed32.32 center sampling
  * -> clamped-edge4x4 integer bicubic -> premultiplied saturation -> SrcOver
@@ -69,15 +70,15 @@ function checkCancelled(isCancelled?:()=>boolean):void {
  * IntArgb.h CopyIntArgbToIntArgbPre; AlphaMath.c tables; AlphaMacros.h
  * DEFINE_SRCOVER_MASKBLIT(IntArgbPre,IntArgb,4ByteArgb). See retained audit.
  * Allocations are preflighted; input is never mutated/detached. */
-export function upscaleRootsPausedImage(pixels:Uint8ClampedArray,width:number,height:number,scale:RootsPausedUpscale,isCancelled?:()=>boolean):Uint8ClampedArray {
- const plan=prepareRootsPausedUpscale(width,height,scale);
+export function upscaleSourcePausedImage(pixels:Uint8ClampedArray,width:number,height:number,scale:SourcePausedUpscale,isCancelled?:()=>boolean):Uint8ClampedArray {
+ const plan=prepareSourcePausedUpscale(width,height,scale);
  if(!(pixels instanceof Uint8ClampedArray)||!(pixels.buffer instanceof ArrayBuffer)||pixels.length!==plan.inputBytes)
-  throw new RootsPausedImageError('input','input must be a complete unshared RGBA8 image');
- try{new Uint8Array(pixels.buffer,0,0);}catch(cause){throw new RootsPausedImageError('input','input buffer is detached',{cause});}
+  throw new SourcePausedImageError('input','input must be a complete unshared RGBA8 image');
+ try{new Uint8Array(pixels.buffer,0,0);}catch(cause){throw new SourcePausedImageError('input','input buffer is detached',{cause});}
  checkCancelled(isCancelled);
  let source:Uint8Array,result:Uint8ClampedArray,columns:Int32Array,rows:Int32Array;
  try{source=new Uint8Array(plan.inputBytes);result=new Uint8ClampedArray(plan.outputBytes);columns=new Int32Array(4);rows=new Int32Array(4);}
- catch(cause){throw new RootsPausedImageError('allocation','could not allocate bicubic image workspace',{cause});}
+ catch(cause){throw new SourcePausedImageError('allocation','could not allocate bicubic image workspace',{cause});}
  for(let i=0;i<pixels.length;i+=4){
   if((i&16383)===0)checkCancelled(isCancelled);
   const alpha=pixels[i+3];source[i+3]=alpha;

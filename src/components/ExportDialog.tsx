@@ -1,3 +1,4 @@
+import {prepareSourcePerlinCaptureSize} from '../engine/sourcePerlinCaptureSize';
 import {usesSourcePerlin} from '../engine/sourcePerlinIdentity';
 import {sourceQueuePresentedScene} from '../engine/sourceQueuePresentation';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
@@ -8,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, Image, Film, X } from "lucide-react";
 import type { SceneDocument,SceneOutput,GenerationStatus,RasterOutput } from "../types";
 import type {RootsPausedCaptureSize} from '../engine/generationProtocol';
-import {prepareRootsPausedUpscale} from '../engine/rootsPausedUpscale';
+import {prepareSourcePausedUpscale} from '../engine/sourcePausedUpscale';
 import {validateRasterRequest} from '../engine/rasterDimensions';
 import {encodeRgbaPng} from '../engine/rgbaPng';
 import { Generator } from "../engine/client";
@@ -31,6 +32,7 @@ export function ExportDialog({
   sourcePerlinViewport,
   previewPointPixelDensity,
   currentRootsCapture,
+  currentPerlinCapture,
   currentSourceBouncingFrame,
   onClose,
   onDone,
@@ -42,16 +44,18 @@ export function ExportDialog({
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   previewPointPixelDensity?:number;
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
+  currentPerlinCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentSourceBouncingFrame?:SourceBouncingPresentedExport;
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
   const {t}=useI18n();
-  const sourceBouncing=usesSourceBouncing(scene);
+  const sourceBouncing=usesSourceBouncing(scene),sourcePerlin=!!scene.perlinSource;
+  const currentPausedCapture=sourcePerlin?currentPerlinCapture:currentRootsCapture;
   const [bouncingStart,setBouncingStart]=useState<'current'|'seed'>('seed');
   const sourceFrames=usesSpirographFrameClock(scene);
-  const [rootsImageMode,setRootsImageMode]=useState<'current'|'replay'>(()=>usesRootsNativePresentation(scene)?'current':'replay');
-  const [rootsImageScale,setRootsImageScale]=useState<1|3|5>(1);
+  const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>usesRootsNativePresentation(scene)||sourcePerlin?'current':'replay');
+  const [pausedImageScale,setPausedImageScale]=useState<1|3|5>(1);
   const [rootsVideoMode,setRootsVideoMode]=useState<'duration'|'source'>(()=>usesRootsGradientTimeline(scene)?'source':'duration');
   const rootsFrames=usesRootsCameraTimeline(scene)&&rootsVideoMode==='source';
   const [recordingStart,setRecordingStart]=useState<'fresh'|'current'>('fresh');
@@ -59,9 +63,9 @@ export function ExportDialog({
   const [sourceVideoFrames,setSourceVideoFrames]=useState<number|null>(null);
   const [kind, setKind] = useState<"image" | "video">("image"),
     [format, setFormat] = useState("png"),
-    [resolution, setResolution] = useState(scene.projectResolution||currentRootsCapture?'custom':"1920x1080"),
-    [customWidth,setCustomWidth]=useState(scene.projectResolution?.width??currentRootsCapture?.size.width??1920),
-    [customHeight,setCustomHeight]=useState(scene.projectResolution?.height??currentRootsCapture?.size.height??1080),
+    [resolution, setResolution] = useState(scene.projectResolution||currentPausedCapture?'custom':"1920x1080"),
+    [customWidth,setCustomWidth]=useState(scene.projectResolution?.width??currentPausedCapture?.size.width??1920),
+    [customHeight,setCustomHeight]=useState(scene.projectResolution?.height??currentPausedCapture?.size.height??1080),
     [fps, setFps] = useState(()=>sourceFrames?spirographSimulationFps(scene):scene.timeline.fps),
     [duration, setDuration] = useState(()=>sourceFrames||sourceBouncing?scene.timeline.duration:resolveTimeline(scene).duration),
     [working, setWorking] = useState(false),
@@ -78,9 +82,11 @@ export function ExportDialog({
     sessionRef = useRef<ExportSessionTicket | null>(null),
     generator = useRef<Generator | null>(null);
   const [width,height]=resolution==='custom'?[customWidth,customHeight]:resolution.split('x').map(Number);
-  const pausedRootsImage=kind==='image'&&usesRootsNativePresentation(scene)&&rootsImageMode==='current';
-  let upscaleError='';
-  if(pausedRootsImage&&rootsImageScale!==1){try{const size=prepareRootsPausedUpscale(width,height,rootsImageScale);validateRasterRequest({time:0,quality:'export',width:size.width,height:size.height});}catch(error){upscaleError=error instanceof Error?error.message:String(error);}}
+  const pausedSourceImage=kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin)&&sourceImageMode==='current';
+  let pausedBase={width,height},pausedSizeError='';
+  if(pausedSourceImage&&sourcePerlin){try{pausedBase=prepareSourcePerlinCaptureSize({width,height},sourcePerlinViewport?.pixelDensity??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  let upscaleError=pausedSizeError;
+  if(pausedSourceImage&&pausedImageScale!==1){try{const size=prepareSourcePausedUpscale(pausedBase.width,pausedBase.height,pausedImageScale);validateRasterRequest({time:0,quality:'export',width:size.width,height:size.height});}catch(error){upscaleError=error instanceof Error?error.message:String(error);}}
   let dimensionError='';
   if(kind==='video')dimensionError=![width,height].every(Number.isSafeInteger)||width<16||height<16||width>7680||height>4320?t("宽度需为 16–7680、高度需为 16–4320 的整数。"):(width%2!==0||height%2!==0)?t("视频的宽度和高度都必须是偶数。"):'';
   else try{
@@ -129,11 +135,11 @@ export function ExportDialog({
       await exportSessionCleanup.flush();
       if(sessionRef.current&&!sessionRef.current.pending)sessionRef.current=null;
       checkCancelled();
-      if(pausedRootsImage){
-        if(!currentRootsCapture?.ready)throw new Error(t('请等待当前复根预览完成后再保存暂停画面'));
-        const captured=await currentRootsCapture.capture({width,height},rootsImageScale);
+      if(pausedSourceImage){
+        if(!currentPausedCapture?.ready)throw new Error(t('请等待当前预览完成并暂停后再保存画面'));
+        const captured=await currentPausedCapture.capture({width,height},pausedImageScale);
         checkCancelled();
-        if(captured.type!=='raster')throw new Error(t('复根暂停截图没有生成图像'));
+        if(captured.type!=='raster')throw new Error(t('暂停截图没有生成图像'));
         const blob=await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);
         checkCancelled();
         const url=service?(await request('/api/images',{method:'POST',headers:{'content-type':'image/png'},body:blob})).url:URL.createObjectURL(blob);
@@ -312,7 +318,8 @@ export function ExportDialog({
         </p>
         {domainFrames.length>0&&<details open data-testid="domain-export-rendering"><summary>{t('本次导出的实际执行规则')}</summary>{domainFrames.map(item=><div key={item.key}><p>{t('已完成帧 {first}–{last}',{first:item.first+1,last:item.last+1})}</p><DomainRenderSummary facts={item.facts}/></div>)}{domainFrames.length>1&&<p>{t('本次导出使用了多种执行路径；以下范围记录各路径首次和最后出现的帧，不表示中间所有帧相同。')}</p>}{domainRoutesTruncated&&<p>{t('执行路径详情超过 16 项，后续不同路径未全部列出。')}</p>}</details>}
         {sourceBouncing&&<p role="status" className="muted">{t(kind==='image'?'PNG 保存当前已呈现检查点，不推进模拟；尺寸变化只改变输出投影。':'源弹跳离线逐帧录制，使用源时钟的预热与停止规则。')}{!currentSourceBouncingFrame?.ready&&t('请等待当前预览完成并暂停后再导出。')}</p>}
-        {usesRootsNativePresentation(scene)&&<p role="status" className="muted">{t(pausedRootsImage?'保存当前暂停场景并增强图像；尺寸变化会清空密度墨迹，点云截图使用独立的累积画布。':'空间复根导出会从初始采样重放到所选时间，使用当前相机和导出尺寸；预览中的历史墨迹与点云拖影不会复制。')}</p>}
+        {sourcePerlin&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。':'从当前配置的初始状态重放，不保留预览中的后端切换历史。')}</p>}
+        {usesRootsNativePresentation(scene)&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像；尺寸变化会清空密度墨迹，点云截图使用独立的累积画布。':'空间复根导出会从初始采样重放到所选时间，使用当前相机和导出尺寸；预览中的历史墨迹与点云拖影不会复制。')}</p>}
         <div className="export-kind">
           <button
             className={kind === "image" ? "active" : ""}
@@ -333,8 +340,8 @@ export function ExportDialog({
           >
             <Film size={15} />{t("动画视频")}</button>
         </div>
-        {kind==='image'&&usesRootsNativePresentation(scene)&&<label className="field"><span>{t('复根图像来源')}</span><select aria-label={t('复根图像来源')} disabled={working} value={rootsImageMode} onChange={e=>{setRootsImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
-        {pausedRootsImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={rootsImageScale} onChange={e=>setRootsImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t('先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:width*rootsImageScale,height:height*rootsImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
+        {kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin)&&<label className="field"><span>{t(sourcePerlin?'Perlin 图像来源':'复根图像来源')}</span><select aria-label={t(sourcePerlin?'Perlin 图像来源':'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
+        {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t('先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:pausedBase.width*pausedImageScale,height:pausedBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         <label className="field">
           <span>{t("文件格式")}</span>
           <select
@@ -343,7 +350,7 @@ export function ExportDialog({
             value={format}
             onChange={(e) => setFormat(e.target.value)}
           >
-            {(kind === "image" ? pausedRootsImage||sourceBouncing?["png"]:["png", "jpg"] : ["mp4", "webm", "gif"]).map(
+            {(kind === "image" ? pausedSourceImage||sourceBouncing?["png"]:["png", "jpg"] : ["mp4", "webm", "gif"]).map(
               (f) => (
                 <option key={f} value={f}>
                   {f.toUpperCase()}
@@ -452,7 +459,7 @@ export function ExportDialog({
           <button
             className="primary-button"
             disabled={
-              working || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedRootsImage&&!currentRootsCapture?.ready ||
+              working || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedSourceImage&&!currentPausedCapture?.ready ||
               (kind === "video" &&
                 (ffmpeg !== true || !Number.isSafeInteger(fps)||fps<1||fps>120||
                   (sourceFrames||rootsFrames)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&(!Number.isFinite(duration) ||

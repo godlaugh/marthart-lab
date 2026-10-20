@@ -1374,6 +1374,14 @@ export default function App() {
           sourcePerlinViewport={presentedSource===scene?presentedOutput?.sourcePerlinFrame?.sourceViewport:undefined}
           previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
           previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourcePointAppearance?.referencePixelDensity:undefined}
+          currentPerlinCapture={scene.perlinSource?{
+            size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
+            ready:completedFrameReady,
+            capture:async(size,scale)=>{
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Perlin 画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current.capturePerlinPaused(output,size,scale);
+            },
+          }:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{
             size:{width:output?.type==='raster'?output.width:1920,height:output?.type==='raster'?output.height:1080},
             ready:completedFrameReady,

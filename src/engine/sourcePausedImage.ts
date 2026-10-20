@@ -1,25 +1,25 @@
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 
-export class RootsPausedImageError extends Error {
+export class SourcePausedImageError extends Error {
  constructor(readonly kind:'input'|'capacity'|'allocation',reason:string,options?:ErrorOptions){
-  super(`Roots paused image: ${reason}`,options);this.name='RootsPausedImageError';
+  super(`Source paused image: ${reason}`,options);this.name='SourcePausedImageError';
  }
 }
 
 function pixelCount(width:number,height:number):number {
  if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1)
-  throw new RootsPausedImageError('input','dimensions must be positive safe integers');
+  throw new SourcePausedImageError('input','dimensions must be positive safe integers');
  const count=width*height;
  // Reuse the public raster result budget, not an invented native format limit.
  if(!Number.isSafeInteger(count)||count>MAX_RASTER_PIXELS)
-  throw new RootsPausedImageError('capacity','RGBA output exceeds the shared 128 MiB raster budget');
+  throw new SourcePausedImageError('capacity','RGBA output exceeds the shared 128 MiB raster budget');
  return count;
 }
 
 /** Borrowed RGBA view + owned RGBA result + one reusable byte-luma workspace.
  * Other retained backing storage, renderer targets and PNG encoding are the
  * caller's budget. No Gaussian image or second RGBA result is allocated. */
-export function rootsPausedImageBytes(width:number,height:number):number {
+export function sourcePausedImageBytes(width:number,height:number):number {
  return pixelCount(width,height)*9;
 }
 
@@ -32,7 +32,8 @@ function fillLuma(pixels:Uint8ClampedArray,luma:Uint8Array):void {
  for(let i=0,p=0;p<luma.length;p++,i+=4)luma[p]=(54*pixels[i]+183*pixels[i+1]+19*pixels[i+2])>>8;
 }
 
-/** MathArt 1.7.8 savePausedFrameInternal always calls buildEnhancedImage with
+/** Shared MathArt image postprocessing; independent of scene type/backend.
+ * MathArt 1.7.8 savePausedFrameInternal always calls buildEnhancedImage with
  * scale=1 before its separate optional Java2D bicubic upscale. This implements
  * that base enhancement: edge AA, then Gaussian-luma sharpening. Input/output
  * are top-down RGBA8. Alpha is preserved, not forced opaque or premultiplied.
@@ -42,14 +43,14 @@ function fillLuma(pixels:Uint8ClampedArray,luma:Uint8Array):void {
  * The original's full int[] luma/blur temporaries are unnecessary: luma fits a
  * byte, and sharpening only reads immutable luma, so it can write RGBA in place.
  * Never mutates or detaches input; returned storage is independently owned. */
-export function enhanceRootsPausedImage(pixels:Uint8ClampedArray,width:number,height:number):Uint8ClampedArray {
+export function enhanceSourcePausedImage(pixels:Uint8ClampedArray,width:number,height:number):Uint8ClampedArray {
  const count=pixelCount(width,height);
  if(!(pixels instanceof Uint8ClampedArray)||!(pixels.buffer instanceof ArrayBuffer)||pixels.length!==count*4)
-  throw new RootsPausedImageError('input','input must be a complete unshared RGBA8 image');
- try{new Uint8Array(pixels.buffer,0,0);}catch(cause){throw new RootsPausedImageError('input','input buffer is detached',{cause});}
+  throw new SourcePausedImageError('input','input must be a complete unshared RGBA8 image');
+ try{new Uint8Array(pixels.buffer,0,0);}catch(cause){throw new SourcePausedImageError('input','input buffer is detached',{cause});}
  let output:Uint8ClampedArray,luma:Uint8Array;
  try{output=new Uint8ClampedArray(pixels);luma=new Uint8Array(count);}
- catch(cause){throw new RootsPausedImageError('allocation','could not allocate RGBA output and luma workspace',{cause});}
+ catch(cause){throw new SourcePausedImageError('allocation','could not allocate RGBA output and luma workspace',{cause});}
  fillLuma(pixels,luma);
  for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){
   const p=y*width+x,left=p-1,right=p+1,up=p-width,down=p+width;

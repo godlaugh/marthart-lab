@@ -381,6 +381,7 @@ export interface RasterOutput {
   /** PNG postprocessing follows base-size rendering; it does not resample the
    * scene or alter the render target dimensions recorded in rootsPresentation. */
   rootsPausedImage?:{enhancement:'mathart-1.7.8-scale1';baseSize:readonly[number,number];scale:1|3|5;resampling:'none'|'openjdk21-software-bicubic';originalRuntimeCompared:false};
+  sourcePausedImage?:{enhancement:'mathart-1.7.8-scale1';baseSize:readonly[number,number];scale:1|3|5;resampling:'none'|'openjdk21-software-bicubic';originalRuntimeCompared:false};
   /** Source spatial display facts owned by the completed worker request. */
   rootsPresentation?: RootsPresentationFacts;
   /** Source Roots presentation facts paired with these delivered pixels. */

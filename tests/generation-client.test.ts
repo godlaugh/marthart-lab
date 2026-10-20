@@ -2,6 +2,7 @@ import {describe,it,expect,vi,afterEach} from 'vitest';
 import {Generator} from '../src/engine/client';
 import type {GenerationRequest,GenerationResponse} from '../src/engine/generationProtocol';
 import type {SceneOutput,GenerationStatus,GenerationInput} from '../src/types';
+import {parseProjectFile} from '../src/engine/legacyImport';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 class FakeWorker{
@@ -74,6 +75,44 @@ describe('generation status protocol ownership',()=>{
   const retry=g.generate(scene(),ctx),rr=worker.messages.at(-1)!;worker.emit({operation:'generate',id:rr.id,sessionId:rr.sessionId,output:rootsOutput});await retry;
   const capture=g.captureRootsPaused(rootsOutput,{width:1,height:1}),captureError=capture.catch(e=>e);g.cancel();expect((await captureError).name).toBe('AbortError');
   await expect(g.captureRootsPaused(rootsOutput,{width:1,height:1})).rejects.toThrow('过期');expect(worker.terminated).toBe(true);
+ });
+ it('captures the exact completed Perlin output, transfers eligibility, and never sends a replacement scene',async()=>{
+  const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'capture',settings:{seed:'1',particle_count:2}})).scene;
+  const frame={...output,sourcePerlinFrame:{sourceViewport:{width:32,height:24,pixelDensity:2},samples:4,frameIndex:60,updates:61}};
+  const g=setup(),pending=g.generate(s,{...ctx,quality:'preview',sourcePerlinViewport:{width:32,height:24,pixelDensity:2}}),worker=FakeWorker.instances[0],r=worker.messages[0];
+  await expect(g.capturePerlinPaused(frame,{width:3,height:5})).rejects.toThrow('尚未完成');
+  worker.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await pending;
+  await expect(g.capturePerlinPaused({...frame},{width:3,height:5})).rejects.toThrow('过期');
+  const size={width:3,height:5},capture=g.capturePerlinPaused(frame,size,3),c=worker.messages.at(-1)!;size.width=999;
+  expect(c).toEqual({operation:'perlin-paused-capture',id:c.id,sessionId:r.sessionId,sourceId:r.id,size:{width:3,height:5},scale:3});
+  const preview={...frame};worker.emit({operation:'perlin-paused-capture',id:c.id,sessionId:c.sessionId,result:{capture:frame,preview}});expect(await capture).toEqual({capture:frame,preview});
+  await expect(g.capturePerlinPaused(frame,{width:3,height:5})).rejects.toThrow('过期');
+  const again=g.capturePerlinPaused(preview,{width:3,height:5},5),a=worker.messages.at(-1)!;expect(a.operation==='perlin-paused-capture'&&a.sourceId).toBe(c.id);
+  worker.emit({operation:'perlin-paused-capture',id:a.id,sessionId:a.sessionId,result:{capture:frame,preview:{...preview}}});await again;g.dispose();
+ });
+ it('requires matching Perlin owner retention, never another family, missing evidence or send failure',async()=>{
+  for(const response of ['matching','wrong-id','roots','missing','send'] as const){
+   const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'capture',settings:{seed:'1'}})).scene;
+   const frame={...output,sourcePerlinFrame:{sourceViewport:{width:32,height:24,pixelDensity:1},samples:4,frameIndex:60,updates:61}};
+   const g=setup(),pending=g.generate(s,ctx),worker=FakeWorker.instances[0],r=worker.messages[0];worker.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await pending;
+   if(response==='send')worker.postMessage=()=>{throw new Error('transport failed');};
+   const capture=g.capturePerlinPaused(frame,{width:1,height:1}),caught=capture.catch(error=>error),c=worker.messages.at(-1)!;
+   if(response!=='send')worker.emit({operation:response==='roots'?'roots-paused-capture':'perlin-paused-capture',id:c.id,sessionId:c.sessionId,error:'capacity before mutation',...(response==='missing'?{}:{retainedSourceId:response==='wrong-id'?999:r.id})});
+   expect(await caught).toMatchObject({name:'PerlinPausedCaptureError',previewRetained:response==='matching'});
+   if(response==='matching'){
+    const retry=g.capturePerlinPaused(frame,{width:1,height:1}),retryCaught=retry.catch(error=>error);g.cancel();expect((await retryCaught).name).toBe('AbortError');
+   }else await expect(g.capturePerlinPaused(frame,{width:1,height:1})).rejects.toThrow('过期');
+   g.dispose();
+  }
+ });
+ it('does not grant Perlin capture to legacy-only documents or unrelated output metadata',async()=>{
+  for(const full of [false,true]){
+   const s=createScene(definition('perlin'));
+   if(full)s.perlinSource=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'capture',settings:{seed:'1'}})).scene.perlinSource;
+   const frame=full?output:{...output,sourcePerlinFrame:{sourceViewport:{width:1,height:1,pixelDensity:1},samples:4,frameIndex:0,updates:1}};
+   const g=setup(),pending=g.generate(s,ctx),worker=FakeWorker.instances[0],r=worker.messages[0];worker.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await pending;
+   await expect(g.capturePerlinPaused(frame,{width:1,height:1})).rejects.toThrow('过期');g.dispose();
+  }
  });
  it('forwards explicitly resolved Roots logical, physical and reference sizes without aliasing the caller',async()=>{
   const g=setup(),rootsViewport={logicalWidth:101,logicalHeight:79,referenceLogicalHeight:151,target:'offscreen' as const};

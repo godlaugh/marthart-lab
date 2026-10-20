@@ -2,8 +2,8 @@ import {retainsIteratedCompiler} from './iteratedIdentity';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
-import type {RootsPausedCaptureResult,RootsPausedCaptureSize} from './generationProtocol';
-import {RootsPausedCaptureError} from './generationProtocol';
+import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCaptureResult,PerlinPausedCaptureSize,PausedCaptureSize} from './generationProtocol';
+import {RootsPausedCaptureError,PerlinPausedCaptureError} from './generationProtocol';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
@@ -12,6 +12,7 @@ interface GeneratorPort {
   cancel():void;
   dispose():void;
   captureRootsPaused?(output:SceneOutput,size:RootsPausedCaptureSize,scale?:1|3|5):Promise<RootsPausedCaptureResult>;
+  capturePerlinPaused?(output:SceneOutput,size:PerlinPausedCaptureSize,scale?:1|3|5):Promise<PerlinPausedCaptureResult>;
 }
 interface Request {scene:SceneDocument;context:Context;}
 /** Coalesce time changes while retaining the latest requested frame. Domain
@@ -58,21 +59,27 @@ export class GenerationQueue {
       if(this.latest!==request)this.start();else this.callbacks.busy(false);
     });
   }
-  async captureRootsPaused(output:SceneOutput,size:RootsPausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{
-    const request=this.latest;
-    if(this.disposed||this.running||this.captureOwner||this.timer!==undefined||!request||!this.generator.captureRootsPaused)
-      throw new Error('请等待当前复根预览完成后再保存暂停画面');
+  captureRootsPaused(output:SceneOutput,size:RootsPausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{
+    return this.capturePaused('captureRootsPaused',output,size,scale);
+  }
+  capturePerlinPaused(output:SceneOutput,size:PerlinPausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{
+    return this.capturePaused('capturePerlinPaused',output,size,scale);
+  }
+  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
+    const request=this.latest,capture=this.generator[method],CaptureError=method==='captureRootsPaused'?RootsPausedCaptureError:PerlinPausedCaptureError;
+    if(this.disposed||this.running||this.captureOwner||this.timer!==undefined||!request||!capture)
+      throw new Error(`请等待当前${method==='captureRootsPaused'?'复根':'Perlin'}预览完成后再保存暂停画面`);
     const ticket={};this.captureOwner=ticket;this.callbacks.busy(true);
     const current=()=>!this.disposed&&this.captureOwner===ticket;
     try{
-      const result=await this.generator.captureRootsPaused(output,size,scale);
+      const result=await capture.call(this.generator,output,size,scale);
       if(!current()||this.latest!==request)throw new DOMException('截图期间场景已改变','AbortError');
       // Source capture also redraws the primary destination. Publish that
       // result even if the caller has abandoned its PNG download.
       this.callbacks.output(result.preview,request.context.time,request.scene);
       return result.capture;
     }catch(error){
-      if(current()&&this.latest===request&&error instanceof Error&&error.name!=='AbortError'&&!(error instanceof RootsPausedCaptureError&&error.previewRetained))this.callbacks.error(error);
+      if(current()&&this.latest===request&&error instanceof Error&&error.name!=='AbortError'&&!(error instanceof CaptureError&&error.previewRetained))this.callbacks.error(error);
       throw error;
     }finally{
       if(current()){

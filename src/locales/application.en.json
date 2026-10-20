@@ -1216,5 +1216,10 @@
   "最旧记录透明、最新记录使用色板透明度；边界断点也计入渐隐顺序。": "The oldest record is transparent; the newest uses palette alpha. Boundary breaks count in the fade order.",
   "点半径": "Point radius",
   "原版曲面使用独立色板与渐变时间线；本地色板动画不参与执行。": "Source surfaces use their own palette and gradient timeline. Local palette animations do not run.",
-  "曲面动画使用源 CPU 点状态、半开参数域和原版索引；参数注册表、渐变和拖尾按源规则回放；GPU/网格尚未接入，完整原版画面尚未验收。": "Surface animations use source CPU particles, half-open parameter ranges, and original indices. Parameter animations, gradients, and trails replay source rules. GPU and mesh modes remain unsupported; full native-frame parity is not verified."
+  "曲面动画使用源 CPU 点状态、半开参数域和原版索引；参数注册表、渐变和拖尾按源规则回放；GPU/网格尚未接入，完整原版画面尚未验收。": "Surface animations use source CPU particles, half-open parameter ranges, and original indices. Parameter animations, gradients, and trails replay source rules. GPU and mesh modes remain unsupported; full native-frame parity is not verified.",
+  "Perlin 图像来源": "Perlin image source",
+  "请等待当前预览完成并暂停后再保存画面": "Wait for the current preview to finish and pause before saving.",
+  "暂停截图没有生成图像": "Paused capture did not produce an image.",
+  "保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。": "Save and enhance the paused scene without advancing animation. Accumulation is retained on a separate export canvas.",
+  "从当前配置的初始状态重放，不保留预览中的后端切换历史。": "Replay the current configuration from its initial state. Preview backend switch history is not retained."
 }

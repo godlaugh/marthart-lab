@@ -66,9 +66,9 @@ class SourcePerlinCpuDevice{
  readonly programs:Partial<Record<ProgramKind,Program>>={};
  private readonly targets=new Map<object,{bytes:number;release:()=>void}>();
  private readonly uploadSizes=[0,0,0,0];
- private reservedBytes=0;
+ private reservedBytes=0;private workingBytes=0;
  failed=false;
- get bytes(){return this.reservedBytes+this.uploadSizes.reduce((a,b)=>a+b,0);}
+ get bytes(){return this.reservedBytes+this.workingBytes+this.uploadSizes.reduce((a,b)=>a+b,0);}
  get targetCount(){return this.targets.size;}
  add(owner:object,bytes:number,release:()=>void){
   this.check();this.budget(bytes);this.targets.set(owner,{bytes,release});this.reservedBytes+=bytes;
@@ -84,6 +84,10 @@ class SourcePerlinCpuDevice{
   if(!this.targets.size)this.release();
  }
  budget(extra:number){if(!Number.isSafeInteger(extra)||extra<0||this.bytes+extra>MAX_BYTES)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU shared device representations exceed 256 MiB.');}
+ withWorkingBytes<T>(bytes:number,run:()=>T):T{
+  this.check();this.budget(bytes);this.workingBytes+=bytes;
+  try{return run();}finally{this.workingBytes-=bytes;}
+ }
  uploaded(index:number,bytes:number){this.uploadSizes[index]=bytes;}
  check(){
   if(this.failed)throw new SourcePerlinCpuTargetError('failed','Perlin CPU shared device failed; rebuild before use.');
@@ -187,6 +191,9 @@ export class SourcePerlinCpuTarget{
    sibling.device.remove(sibling);sibling.device=this.device;return sibling;
   }catch(error){sibling.dispose();throw error;}
  }
+ /** Reserve caller-owned postprocessing storage through both capture draws.
+  * The operation is synchronous; device allocations consult this reservation. */
+ withWorkingBytes<T>(bytes:number,run:()=>T):T{this.check();return this.device.withWorkingBytes(bytes,run);}
  /** Opaque source GPU draw into this same target history, without readback or
   * pixel upload. Six retained flow images can be declared by the host; the
   * selected identity alone controls this target's lazy shader/texture reuse. */

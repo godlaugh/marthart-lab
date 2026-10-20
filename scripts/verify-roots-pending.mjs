@@ -91,7 +91,7 @@ try{
  report.checks.worker=await stage('real-worker-pending',()=>page.evaluate(async vectors=>{
   const{Generator}=await import('/src/engine/client.ts'),{createScene,parseScene}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');
   const{createRootsNativeMath}=await import('/src/engine/rootsMathConfig.ts'),{defaultRootsPresentationConfiguration}=await import('/src/engine/rootsPresentationConfig.ts');
-  const{RootsNativeDensityDisplay}=await import('/src/engine/rootsNativeDisplay.ts'),{prepareRootsProjection}=await import('/src/engine/rootsProjection.ts'),{prepareRootsDensityColor}=await import('/src/engine/rootsDensityColor.ts'),{enhanceRootsPausedImage}=await import('/src/engine/rootsPausedImage.ts');
+  const{RootsNativeDensityDisplay}=await import('/src/engine/rootsNativeDisplay.ts'),{prepareRootsProjection}=await import('/src/engine/rootsProjection.ts'),{prepareRootsDensityColor}=await import('/src/engine/rootsDensityColor.ts'),{enhanceSourcePausedImage}=await import('/src/engine/sourcePausedImage.ts');
   const result=window.__direct={rows:[],checks:[],plans:[],cleanup:[]},owners=[];
   const make=()=>{const g=new Generator();owners.push(g);return g;};
   const check=(ok,message)=>{if(!ok)throw Error(message);result.checks.push(message);};
@@ -127,7 +127,7 @@ try{
   function fixedPoints(n){const points=new Float32Array(n*4);for(let i=0;i<n;i++)points.set([.05,.08,.08,.05],i*4);return points;}
   const projection=(s,target='primary')=>prepareRootsProjection(s.rootsPresentation,{width:97,height:73,viewport:{logicalWidth:97,logicalHeight:73,referenceLogicalHeight:73,target}});
   function expectedKnownPixels(s,n,target='primary',enhance=false){
-   const display=new RootsNativeDensityDisplay();try{const color=prepareRootsDensityColor(s);display.advanceBatches(projection(s,target),[fixedPoints(n)],color);const raw=display.present(color).pixels;return enhance?enhanceRootsPausedImage(raw,97,73):raw;}finally{display.dispose();}
+   const display=new RootsNativeDensityDisplay();try{const color=prepareRootsDensityColor(s);display.advanceBatches(projection(s,target),[fixedPoints(n)],color);const raw=display.present(color).pixels;return enhance?enhanceSourcePausedImage(raw,97,73):raw;}finally{display.dispose();}
   }
   try{
    const s=scene(),g=make(),warm=[];

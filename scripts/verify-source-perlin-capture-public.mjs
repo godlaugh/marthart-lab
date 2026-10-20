@@ -1,0 +1,109 @@
+/** Actual App hot Perlin capture, independent PNG decoding, no fresh-model oracle.
+ * Only owned headless Chrome is used. Native JVM/JOGL parity is not claimed. */
+import {chromium} from '@playwright/test';
+import {createServer} from 'vite';
+import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {inflateSync} from 'node:zlib';
+import {createServer as createTcpServer} from 'node:net';
+import {createExportServer} from '../server/index.mjs';
+const check=(v,m)=>{if(!v)throw Error(m);},sha=v=>createHash('sha256').update(v).digest('hex');
+function decodePng(bytes){
+ check(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),'not a PNG');
+ let width=0,height=0,ended=false;const compressed=[];
+ for(let at=8;at<bytes.length;){
+  check(at+12<=bytes.length,'truncated PNG chunk');const length=bytes.readUInt32BE(at),end=at+length+12;
+  check(end<=bytes.length,'truncated PNG payload');const type=bytes.toString('ascii',at+4,at+8),data=bytes.subarray(at+8,end-4);
+  let crc=-1;for(const value of bytes.subarray(at+4,end-4)){crc^=value;for(let bit=0;bit<8;bit++)crc=crc&1?(crc>>>1)^0xedb88320:crc>>>1;}
+  check(((crc^-1)>>>0)===bytes.readUInt32BE(end-4),'PNG CRC mismatch');
+  if(type==='IHDR'){check(length===13&&!width,'invalid PNG header');width=data.readUInt32BE(0);height=data.readUInt32BE(4);check(data.subarray(8).equals(Buffer.from([8,6,0,0,0])),'expected non-interlaced RGBA8 PNG');}
+  else if(type==='IDAT')compressed.push(data);
+  else if(type==='IEND'){check(length===0&&end===bytes.length,'invalid PNG end');ended=true;}
+  at=end;
+ }
+ check(width>0&&height>0&&ended&&compressed.length,'incomplete PNG');const stride=width*4,raw=inflateSync(Buffer.concat(compressed));check(raw.length===(stride+1)*height,'invalid PNG row length');const rgba=Buffer.alloc(stride*height);
+ const paeth=(a,b,c)=>{const p=a+b-c,pa=Math.abs(p-a),pb=Math.abs(p-b),pc=Math.abs(p-c);return pa<=pb&&pa<=pc?a:pb<=pc?b:c;};
+ for(let y=0;y<height;y++){const filter=raw[y*(stride+1)];check(filter<=4,'invalid PNG row filter');for(let x=0;x<stride;x++){const a=x>=4?rgba[y*stride+x-4]:0,b=y?rgba[(y-1)*stride+x]:0,c=y&&x>=4?rgba[(y-1)*stride+x-4]:0;rgba[y*stride+x]=(raw[y*(stride+1)+1+x]+[0,a,b,Math.floor((a+b)/2),paeth(a,b,c)][filter])&255;}}
+ return{width,height,rgba};
+}
+
+const directory=process.argv[2]??`.cache/perlin-capture-public-${Date.now()}`,artifact=name=>directory+'/'+name;
+await mkdir(directory,{recursive:true});
+const started=performance.now(),report={at:new Date().toISOString(),status:'running',nativeParity:false,scope:'Actual public App import/hot backend switches/current paused PNG, retained Worker and refreshed preview; full RGBA decoded outside canvas. No reconstructed model is substituted for hot history.',cases:[],directory};
+async function files(dir){const out=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())out.push(...await files(p));else if(e.isFile())out.push(p);}return out;}
+const hashes=async()=>Object.fromEntries(await Promise.all([...(await files('src')),...(await files('server')),'scripts/verify-source-perlin-capture-public.mjs','scripts/source-paused-upscale-oracle.py'].sort().map(async p=>[p,sha(await readFile(p))])));
+report.sourceBefore=await hashes();await writeFile(artifact('verifier.mjs'),await readFile('scripts/verify-source-perlin-capture-public.mjs'));
+let browser,page,server,exportServer;const errors=[],consoleErrors=[];
+function installAudit(){
+ const Native=window.Worker,audit=window.__captureAudit={issued:0,created:0,terminated:0,requests:[],completed:[],errors:[],pixels:new Map(),owners:new WeakMap()};
+ const meta=o=>{const{pixels,...rest}=o;return rest;};
+ window.Worker=class extends Native{
+  ended=false;sent=new Map();
+  constructor(...args){super(...args);this.workerId=++audit.created;this.addEventListener('message',({data})=>{
+   if(!['generate','perlin-paused-capture'].includes(data.operation))return;const sent=this.sent.get(data.id);if(!sent||data.sessionId!==sent.request.sessionId)return;
+   if(data.error){audit.errors.push({...sent,error:data.error});this.sent.delete(data.id);return;}
+   const o=data.operation==='generate'?data.output:data.result?.preview;if(!o)return;
+   const row={...sent,output:meta(o),...(data.result?{capture:meta(data.result.capture)}:{})};
+   const remember=(value,role)=>{audit.owners.set(value,{sequence:row.sequence,workerId:this.workerId,role});if(value.pixels)audit.pixels.set(row.sequence+':'+role,value.pixels.slice());};
+   remember(o,'preview');if(data.result)remember(data.result.capture,'capture');audit.completed.push(row);this.sent.delete(data.id);while(audit.pixels.size>24)audit.pixels.delete(audit.pixels.keys().next().value);
+  });}
+  postMessage(message,...args){if(['generate','perlin-paused-capture'].includes(message.operation)){const sent={request:structuredClone(message),sequence:++audit.issued,workerId:this.workerId};this.sent.set(message.id,sent);audit.requests.push(sent);}return super.postMessage(message,...args);}
+  terminate(){if(!this.ended){this.ended=true;audit.terminated++;}return super.terminate();}
+ };
+}
+const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
+const latest=()=>page.evaluate(()=>window.__captureAudit.completed.at(-1));
+const counts=()=>page.evaluate(()=>({issued:window.__captureAudit.issued,created:window.__captureAudit.created,terminated:window.__captureAudit.terminated}));
+async function settled(){await page.waitForFunction(()=>{const a=window.__captureAudit,r=a.requests.at(-1);return r&&a.completed.some(c=>c.sequence===r.sequence);});await ready();return latest();}
+async function seek(time){const value=await page.getByRole('slider',{name:'Time position',exact:true}).evaluate((e,v)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,String(v));e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return Number(e.value);},time);await page.waitForFunction(t=>{const r=window.__captureAudit.requests.at(-1);return r?.request.operation==='generate'&&Math.abs(r.request.context.time-t)<1e-6;},value);return settled();}
+async function switchTo(backend){await page.getByTestId('source-perlin-backend').selectOption(backend);await page.waitForFunction(b=>window.__captureAudit.requests.at(-1)?.request.scene?.perlinSource?.backend===b,backend);return settled();}
+async function openExport(w,h,scale=1){await page.getByRole('button',{name:'Export artwork',exact:true}).click();check(await page.getByRole('combobox',{name:'Perlin image source',exact:true}).inputValue()==='current','paused capture is not default');await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill(String(w));await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill(String(h));await page.getByRole('combobox',{name:'PNG upscale',exact:true}).selectOption(String(scale));}
+async function captureRow(after){await page.waitForFunction(n=>window.__captureAudit.completed.some(r=>r.sequence>n&&r.request.operation==='perlin-paused-capture'),after);return page.evaluate(n=>window.__captureAudit.completed.findLast(r=>r.sequence>n&&r.request.operation==='perlin-paused-capture'),after);}
+async function assertPreview(row){await page.waitForFunction(r=>window.__rendered.some(p=>p.sequence===r.sequence&&p.workerId===r.workerId&&p.role==='preview'),row);}
+function assertNoAdvance(before,after){check(after.workerId===before.workerId,'capture replaced preview Worker');check(JSON.stringify(after.output.sourcePerlinFrame)===JSON.stringify(before.output.sourcePerlinFrame),'capture changed clock/source viewport');check(JSON.stringify(after.output.sourceCameraFrame)===JSON.stringify(before.output.sourceCameraFrame),'capture changed source camera clock');}
+async function capture(name,before,w,h,scale=1){
+ await openExport(w,h,scale);const count=await counts(),button=page.getByRole('button',{name:'Start export',exact:true});if(!await button.isEnabled())throw Error('Start export disabled: '+await page.locator('.export-modal').innerText());const [download]=await Promise.all([page.waitForEvent('download',{timeout:30000}),button.click()]),path=artifact(name+'.png');await download.saveAs(path);const row=await captureRow(count.issued);assertNoAdvance(before,row);await assertPreview(row);
+ const density=row.output.sourcePerlinFrame.sourceViewport.pixelDensity,bw=Math.round(w/density)*density,bh=Math.round(h/density)*density;
+ check(row.capture.width===bw*scale&&row.capture.height===bh*scale,'wrong actual rounded capture dimensions');
+ check(row.capture.sourcePausedImage?.scale===scale&&JSON.stringify(row.capture.sourcePausedImage.baseSize)===JSON.stringify([bw,bh])&&row.capture.sourcePausedImage.originalRuntimeCompared===false,'missing actual source image facts');
+ const expected=Buffer.from(await page.evaluate(n=>Array.from(window.__captureAudit.pixels.get(n+':capture')),row.sequence)),decoded=decodePng(await readFile(path));
+ check(decoded.width===bw*scale&&decoded.height===bh*scale&&decoded.rgba.equals(expected),'PNG differs from actual Worker capture RGBA');
+ const colors=new Set();for(let at=0;at<expected.length;at+=4)colors.add(expected.readUInt32LE(at));check(colors.size>1,'capture fixture produced a uniform/empty image');
+ const pixelSha=sha(expected),after=await counts();check(after.created===count.created&&after.terminated===count.terminated,'capture replaced or terminated a Worker');
+ await page.getByRole('button',{name:'Close export',exact:true}).click();await ready();check(JSON.stringify(await counts())===JSON.stringify(after),'closing completed export rebuilt preview');
+ return{row,path,pngSha:sha(await readFile(path)),rgbaSha:pixelSha,distinctColors:colors.size,width:decoded.width,height:decoded.height,allRgbaEqual:true,previewRefreshed:true,workerRetained:true};
+}
+async function setupPage(origin,dpr){
+ page=await browser.newPage({viewport:{width:1200,height:820},deviceScaleFactor:dpr,acceptDownloads:true});page.setDefaultTimeout(90000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text());});await page.addInitScript(installAudit);
+ await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(origin+'fixture');
+ await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const s=createScene(definition('surface'));Object.assign(s.settings,{uSegments:3,vSegments:3,showTrails:false});saveWorkspace(localStorage,{scenes:[s],active:s.id,theme:'dark',language:'en',render:{quality:'standard',frameRate:30}});});await page.goto(origin);await settled();
+ await page.evaluate(async()=>{const{ArtRenderer}=await import('/src/engine/renderer.ts'),native=ArtRenderer.prototype.setOutput;window.__rendered=[];ArtRenderer.prototype.setOutput=function(o,s,...args){const result=native.call(this,o,s,...args),owner=window.__captureAudit.owners.get(o);window.__rendered.push({sceneId:s.id,...owner});return result;};});
+}
+async function cancelledDownload(before){
+ await openExport(97,73);const count=await counts();let downloads=0;const onDownload=()=>downloads++;page.on('download',onDownload);
+ await page.evaluate(()=>{const Native=window.CompressionStream;window.__pngDelay={held:false,timedOut:false,released:false,bytes:0};window.CompressionStream=class{constructor(...args){const native=new Native(...args);this.writable=native.writable;this.readable=native.readable.pipeThrough(new TransformStream({async transform(chunk,controller){window.__pngDelay.bytes+=chunk.byteLength;if(!window.__pngDelay.held){window.__pngDelay.held=true;await new Promise(resolve=>{const timer=setTimeout(()=>{window.__pngDelay.timedOut=true;window.__pngDelay.release();},15000);window.__pngDelay.release=()=>{if(window.__pngDelay.released)return;window.__pngDelay.released=true;clearTimeout(timer);resolve();};});}controller.enqueue(chunk);}}));}};window.__pngDelay.restore=()=>{window.CompressionStream=Native;};});
+ try{await page.getByRole('button',{name:'Start export',exact:true}).click();await page.waitForFunction(()=>window.__pngDelay.held);const row=await captureRow(count.issued);assertNoAdvance(before,row);await assertPreview(row);await page.getByRole('button',{name:'Cancel export',exact:true}).click();await page.evaluate(()=>window.__pngDelay.release());await page.getByRole('button',{name:'Start export',exact:true}).waitFor({state:'visible'});check(await page.getByRole('button',{name:'Start export',exact:true}).isEnabled(),'cancel did not settle');const delay=await page.evaluate(()=>({timedOut:window.__pngDelay.timedOut,released:window.__pngDelay.released,bytes:window.__pngDelay.bytes}));check(!delay.timedOut&&delay.released&&delay.bytes>0&&downloads===0,'cancel downloaded PNG or failed bounded release');const after=await counts();check(after.created===count.created&&after.terminated===count.terminated,'download cancel rebuilt preview Worker');await page.getByRole('button',{name:'Close export',exact:true}).click();await ready();check(JSON.stringify(await counts())===JSON.stringify(after),'closing cancelled dialog rebuilt preview');return{row,delay,downloads,workerRetained:true,scope:'Only real deflate chunk delivery delayed; capture and compression bytes are real.'};}
+ finally{await page.evaluate(()=>{window.__pngDelay.release?.();window.__pngDelay.restore();});page.off('download',onDownload);}
+}
+try{
+ const port=await new Promise((resolve,reject)=>{const s=createTcpServer();s.once('error',reject);s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(e=>e?reject(e):resolve(p));});});
+ exportServer=await createExportServer({root:artifact('service'),allowedOrigins:[`http://127.0.0.1:${port}`]});const address=await exportServer.listen(0);server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});const origin=server.resolvedUrls.local[0];
+ const jar='../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar',jarBytes=await readFile(jar);check(sha(jarBytes)==='a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018','fixed JAR changed');const originalBytes=execFileSync('python3',['-c',"import zipfile,sys;sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read('data/Noise/noise.json'))",jar]),original=JSON.parse(originalBytes);report.source={jarSha256:sha(jarBytes),member:'data/Noise/noise.json',memberSha256:sha(originalBytes)};
+ await setupPage(origin,1);
+ for(const spec of [{style:'PARTICLES',accumulation:false},{style:'PARTICLES',accumulation:true},{style:'FIELD_CURVES',accumulation:false},{style:'FIELD_CURVES',accumulation:true},{style:'PARTICLES',accumulation:false,gpu:true}]){
+  const name=spec.style+'-'+spec.accumulation+(spec.gpu?'-gpu':''),raw=structuredClone(original);raw.name='Capture '+name;Object.assign(raw.settings,{particle_count:128,step_size:.75,curve_count:32,curve_length:40,curve_step_size:2,line_weight:12,dot_size:12,cpu_render_style:spec.style,use_accumulation_buffer:spec.accumulation,render_mode:'CPU'});raw.timeline=[{type:'wait',duration:3}];
+  console.log(JSON.stringify({stage:'case',name}));const row={...spec,settingsOverrides:raw.settings,timeline:raw.timeline,captures:[]};report.cases.push(row);
+  await page.locator('input[type=file]').setInputFiles({name:name+'.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(raw))});await page.waitForFunction(name=>window.__captureAudit.requests.at(-1)?.request.scene?.name===name,raw.name);const imported=await settled();check(imported.request.scene.perlinSource,'not unified canonical Perlin');check(imported.request.scene.perlinSource.display.accumulation===spec.accumulation&&imported.request.scene.perlinSource.cpuStyle===(spec.style==='PARTICLES'?'particles':'field-curves'),'fixture axes did not reach canonical configuration');
+  console.log(JSON.stringify({stage:'imported',name}));const cpu=await seek(.8),gpu=await switchTo('gpu'),later=await seek(1.5),returned=spec.gpu?later:await switchTo('cpu');
+  check([gpu,later,returned].every(s=>s.workerId===cpu.workerId),'hot switch replaced Worker');check(gpu.output.sourcePerlinFrame.updates===cpu.output.sourcePerlinFrame.updates&&returned.output.sourcePerlinFrame.updates===later.output.sourcePerlinFrame.updates,'paused backend switch advanced clock');row.hotHistory=[cpu,gpu,later,returned];
+  console.log(JSON.stringify({stage:'capture',name}));let captureStart=returned;if(spec.accumulation&&spec.style==='PARTICLES'){const primingBackend=await switchTo('gpu');row.offscreenPriming=await capture(name+'-gpu-prime',primingBackend,255,193);captureStart=await switchTo('cpu');row.primingReason='Opaque stationary particles can repeat identically on black. A real GPU screenshot first populates this same offscreen target; subsequent CPU captures must fade its retained history.';}const first=await capture(name+'-first',captureStart,255,193),second=await capture(name+'-repeat',first.row,255,193);row.captures.push(first,second);if(spec.accumulation)check(first.rgbaSha!==second.rgbaSha,'repeated accumulation capture did not evolve retained offscreen target');else check(first.rgbaSha===second.rgbaSha,'nonaccumulating repeated capture changed pixels');
+  const count=await counts();await openExport(97,73);await page.getByRole('button',{name:'Close export',exact:true}).click();await ready();check(JSON.stringify(await counts())===JSON.stringify(count),'closing unopened capture rebuilt preview');row.closeWithoutRunRetainsPreview=true;
+  if(spec.style==='PARTICLES'&&!spec.accumulation&&!spec.gpu){let prior=second.row;for(const scale of [1,3,5]){const out=await capture(name+'-small-'+scale,prior,97,73,scale);row.captures.push(out);prior=out.row;}const base=decodePng(await readFile(row.captures.find(c=>c.path.endsWith('-small-1.png')).path));row.upscaleOracle=[];for(const scale of [3,5]){const input=artifact(name+'-oracle-'+scale+'-input.json'),output=artifact(name+'-oracle-'+scale+'-output.json');await writeFile(input,JSON.stringify({width:base.width,height:base.height,scale,pixels:Array.from(base.rgba)}));execFileSync('python3',['scripts/source-paused-upscale-oracle.py','--input-json',input,'--output-json',output]);const expected=JSON.parse(await readFile(output,'utf8')),png=decodePng(await readFile(row.captures.find(c=>c.path.endsWith('-small-'+scale+'.png')).path));check(png.width===expected.width&&png.height===expected.height&&png.rgba.equals(Buffer.from(expected.pixels)),'actual upscale PNG differs from independent software oracle');row.upscaleOracle.push({scale,input,output,rgbaSha:sha(png.rgba),exact:true,nativeParity:false});}row.cancel=await cancelledDownload(prior);row.afterCancel=await capture(name+'-after-cancel',row.cancel.row,97,73);}
+  await writeFile(artifact('progress.json'),JSON.stringify(report,null,2)+'\n');
+ }
+ check(!(await page.evaluate(()=>window.__captureAudit.errors)).length,'first context Worker errors');await page.close();await setupPage(origin,2);
+ const raw=structuredClone(original);raw.name='Capture Retina odd';Object.assign(raw.settings,{particle_count:128,line_weight:12,dot_size:12});raw.timeline=[{type:'wait',duration:3}];await page.locator('input[type=file]').setInputFiles({name:'retina.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(raw))});await page.waitForFunction(()=>window.__captureAudit.requests.at(-1)?.request.scene?.name==='Capture Retina odd');await settled();const retina=await seek(.8);check(retina.output.sourcePerlinFrame.sourceViewport.pixelDensity===2,'Retina context did not preserve density2');report.retina=await capture('retina-odd',retina,255,193);check(report.retina.width===256&&report.retina.height===194,'Retina odd target rounded incorrectly');
+ await page.screenshot({path:artifact('retina-ui.png')});report.workerErrors=await page.evaluate(()=>window.__captureAudit.errors);check(!report.workerErrors.length&&!errors.length&&!consoleErrors.length,'App/Worker errors');report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);check(report.sourceStable,'production source changed during verification');report.status='passed';
+}catch(error){report.status='failed';report.error=String(error.stack??error);process.exitCode=1;if(page){report.body=await page.locator('body').innerText().catch(()=>undefined);report.failure=await page.evaluate(()=>({last:window.__captureAudit?.completed.at(-1),errors:window.__captureAudit?.errors})).catch(()=>undefined);await page.screenshot({path:artifact('failure.png')}).catch(()=>{});}}
+finally{report.pageErrors=errors;report.consoleErrors=consoleErrors;report.elapsedMs=performance.now()-started;const cleanup=await Promise.allSettled([browser?.close(),server?.close(),exportServer?.close()]);report.cleanup=cleanup.map((r,i)=>({resource:['browser','vite','exportServer'][i],status:r.status,...(r.status==='rejected'?{error:String(r.reason)}:{})}));if(cleanup.some(r=>r.status==='rejected')){report.status='failed';process.exitCode=1;}await writeFile(artifact('report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,error:report.error,directory,cases:report.cases.length,elapsedMs:report.elapsedMs}));}

@@ -3,12 +3,14 @@ import { generateScene, TemporalGenerationSession } from './temporal';
 import { searchStableAttractor } from './stableSearch';
 import { exploreComplex } from './complexExplore';
 import type { GenerationRequest, GenerationPayload } from './generationProtocol';
+import {isPausedCaptureOperation} from './generationProtocol';
 import {outputBuffers} from './outputBuffers';
 import {planRootsFreshRecording} from './rootsRecording';
 import type {GenerationInput,SceneDocument} from '../types';
-import {enhanceRootsPausedImage,rootsPausedImageBytes} from './rootsPausedImage';
-import {prepareRootsPausedUpscale,upscaleRootsPausedImage} from './rootsPausedUpscale';
+import {enhanceSourcePausedImage,sourcePausedImageBytes} from './sourcePausedImage';
+import {prepareSourcePausedUpscale,upscaleSourcePausedImage} from './sourcePausedUpscale';
 import {validateRasterRequest} from './rasterDimensions';
+import {prepareSourcePerlinCaptureSize} from './sourcePerlinCaptureSize';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
@@ -20,30 +22,42 @@ self.onmessage = (
   const start = performance.now();
   let captureSource:typeof completed;
   let captureRendered=false;
+  let captureSourceMatched=false;
   try {
     // A failed release keeps the old owner and must still answer this request.
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
-    if(event.data.operation==='roots-paused-capture'){
+    if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'){
       const source=captureSource=completed;
       if(!source||source.id!==event.data.sourceId)throw new Error('暂停截图对应的预览已过期');
-      const {width,height}=event.data.size;
-      const scale=event.data.scale;
+      captureSourceMatched=true;
+      const perlin=event.data.operation==='perlin-paused-capture';
+      const {width,height}=event.data.size,scale=event.data.scale;
       if(scale!==1&&scale!==3&&scale!==5)throw new Error('暂停 PNG 放大倍率须为 1、3 或 5');
-      const upscale=scale===1?undefined:prepareRootsPausedUpscale(width,height,scale);
+      if(perlin&&(!source.scene.perlinSource||source.scene.kind!=='perlin'||!source.context.sourcePerlinViewport||source.context.sourceViewport?.target!=='primary'))
+        throw new Error('Perlin 暂停截图需要完整配置和已完成主画布的实际尺寸与密度');
+      // Perlin inherits parent density. Native render-buffer rounding can make
+      // actual physical base dimensions differ from the user's requested size.
+      const base=perlin?prepareSourcePerlinCaptureSize({width,height},source.context.sourcePerlinViewport!.pixelDensity):{width,height};
+      const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
       if(upscale)validateRasterRequest({time:0,quality:'export',width:upscale.width,height:upscale.height});
-      const additionalBytes=rootsPausedImageBytes(width,height)-width*height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);
-      // Use the worker's retained document and context. The capture request
-      // carries no redundant scene bytes that could replace this instance.
+      const additionalBytes=sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);
+      // The request carries only a completed-frame capability. The worker owns
+      // scene history and its original primary context; no fresh replay occurs.
       completed=undefined;
-      const result=temporalSession.rootsNative.capturePaused(source.scene,{...source.context,quality:'export',width,height,rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:source.context.rootsViewport?.referenceLogicalHeight??source.context.height,target:'offscreen'}},{additionalBytes});
+      const result=perlin
+        ?temporalSession.sourcePerlin.capturePaused(source.scene,{...source.context,quality:'export',width,height,sourceViewport:{...source.context.sourceViewport!,target:'offscreen'}},{additionalBytes})
+        :temporalSession.rootsNative.capturePaused(source.scene,{...source.context,quality:'export',width,height,rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:source.context.rootsViewport?.referenceLogicalHeight??source.context.height,target:'offscreen'}},{additionalBytes});
       captureRendered=true;
-      if(result.capture.type!=='raster'||result.preview.type!=='raster')throw new Error('复根暂停截图没有生成图像');
-      const enhanced=enhanceRootsPausedImage(result.capture.pixels,width,height);
-      result.capture.pixels=scale===1?enhanced:upscaleRootsPausedImage(enhanced,width,height,scale);
-      result.capture.width=upscale?.width??width;result.capture.height=upscale?.height??height;
-      result.capture.rootsPausedImage={enhancement:'mathart-1.7.8-scale1',baseSize:[width,height],scale,resampling:upscale?'openjdk21-software-bicubic':'none',originalRuntimeCompared:false};
+      if(result.capture.type!=='raster'||result.preview.type!=='raster')throw new Error('暂停截图没有生成图像');
+      const captureWidth=result.capture.width,captureHeight=result.capture.height;
+      if(captureWidth!==base.width||captureHeight!==base.height)throw new Error('暂停截图实际尺寸与已核验的后处理预算不一致');
+      const enhanced=enhanceSourcePausedImage(result.capture.pixels,captureWidth,captureHeight);
+      result.capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,captureWidth,captureHeight,scale);
+      result.capture.width=upscale?.width??captureWidth;result.capture.height=upscale?.height??captureHeight;
+      const imageFacts={enhancement:'mathart-1.7.8-scale1' as const,baseSize:[captureWidth,captureHeight] as const,scale,resampling:upscale?'openjdk21-software-bicubic' as const:'none' as const,originalRuntimeCompared:false as const};
+      if(perlin)result.capture.sourcePausedImage=imageFacts;else result.capture.rootsPausedImage=imageFacts;
       completed={...source,id};
-      send({operation:'roots-paused-capture',id,result:{capture:result.capture,preview:result.preview}},[...new Set([...outputBuffers(result.capture),...outputBuffers(result.preview)])]);
+      send({operation:event.data.operation,id,result:{capture:result.capture,preview:result.preview}},[...new Set([...outputBuffers(result.capture),...outputBuffers(result.preview)])]);
       return;
     }
     const {scene}=event.data;
@@ -81,10 +95,12 @@ self.onmessage = (
     send({ operation: 'generate', id, output }, outputBuffers(output));
   } catch (error) {
     const message=error instanceof Error?error.message:String(error);
-    if(operation==='roots-paused-capture'){
+    if(isPausedCaptureOperation(operation)){
       // Check the session owner, not an error category: a late capacity or
       // readback failure may already have changed/retired shared density ink.
-      const retained=!captureRendered&&!!captureSource&&temporalSession.rootsNative.matchesCompletedPrimary(captureSource.scene,captureSource.context);
+      const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='perlin-paused-capture'
+        ?temporalSession.sourcePerlin.matchesCompletedPrimary(captureSource.scene,captureSource.context)
+        :temporalSession.rootsNative.matchesCompletedPrimary(captureSource.scene,captureSource.context));
       completed=retained?captureSource:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:captureSource!.id}:{})});
     }else send({id,operation,error:message});
