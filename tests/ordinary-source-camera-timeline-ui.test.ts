@@ -18,6 +18,17 @@ function source(kind:'surface'|'implicit'|'attractor'|'perlin'='surface'){
 function html(scene:SceneDocument){return renderToStaticMarkup(createElement(I18nProvider,{language:'en',children:createElement(Timeline,{scene,time:0,playing:false,onTime:()=>{},onPlay:()=>{},onChange:()=>{}})}));}
 const choices=(markup:string)=>markup.match(/<select aria-label="New clip type"[^>]*>(.*?)<\/select>/)?.[1]??'';
 describe('ordinary source camera Timeline authoring boundaries',()=>{
+ it.each(['map','symmetry'] as const)('filters %s captured density clip types without hiding its supported camera components',kind=>{
+  const scene=createScene(definition(kind));Object.assign(scene.settings,{iteratedMode:'continuous',iteratedCameraModel:'captured-density-v1',sourceCameraProjection:'perspective'});
+  scene.sourceCamera={model:'mathart-1.7.8-v1',configuration:{kind:'angles',family:kind}};scene.timeline.schedule='ordinary-camera-sequence-v1';scene.timeline.tracks=[];
+  const before=structuredClone(scene),markup=html(scene),types=choices(markup);
+  for(const type of ['wait','animate'])expect(types).toContain(`value="${type}"`);
+  expect(types.includes('value="align"')).toBe(kind==='map');
+  for(const type of ['numeric','param','trails','fractal_zoom','surface_mode_transition'])expect(types).not.toContain(`value="${type}"`);
+  for(const method of ['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient'])expect(supportsCameraAction(scene,method)).toBe(true);
+  for(const method of ['track','stopTracking'])expect(supportsCameraAction(scene,method)).toBe(false);
+  expect(supportsCameraComponent(scene,'theta')).toBe(true);expect(markup).toContain('Offline preview frame rate');expect(scene).toEqual(before);
+ });
  it.each(['surface','implicit','attractor','perlin'] as const)('offers useful source queue edits without unsupported new clip types: %s',kind=>{
   const scene=source(kind),before=structuredClone(scene),markup=html(scene),types=choices(markup);
   for(const name of ['wait','animate','align','param'])expect(types).toContain(`value="${name}"`);

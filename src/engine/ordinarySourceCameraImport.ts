@@ -1,7 +1,7 @@
 import {DOMAIN_SOURCE_SCALAR_LIMITS,parseDomainSourceDouble,parseDomainSourceFloat,prepareDomainSourceObjectScalar,prepareDomainSourceScalar,type DomainSourceScalarResult} from './domainSourceScalar';
 import {SOURCE_CAMERA_MODEL,type SourceCameraInput} from './sourceCamera';
 
-export type OrdinarySourceCameraFamily='surface'|'implicit'|'attractor'|'perlin';
+export type OrdinarySourceCameraFamily='surface'|'implicit'|'attractor'|'perlin'|'map'|'symmetry';
 export interface OrdinarySourceCameraImportOptions {
  /** Original top-level parameters. Only Surface/Implicit bind these names. */
  readonly parameters?:unknown;
@@ -101,7 +101,7 @@ function finite(value:number,path:string):number{if(!Number.isFinite(value))fail
  * fields, action arguments and timeline fields have distinct source overloads.
  * Raw provenance belongs to the file reader. No target methods are executed. */
 export function prepareOrdinarySourceScalarScope(family:OrdinarySourceCameraFamily,options:OrdinarySourceCameraImportOptions={}):OrdinarySourceScalarResult<OrdinarySourceScalarScope>{return attempt(()=>{
- if(!['surface','implicit','attractor','perlin'].includes(family))fail({kind:'input',path:'family',reason:'invalid-family'});
+ if(!['surface','implicit','attractor','perlin','map','symmetry'].includes(family))fail({kind:'input',path:'family',reason:'invalid-family'});
  const surface=family==='surface'||family==='implicit',scopeDiagnostics:string[]=[];
  const bindings=surface?parameters(options.parameters,options.memberOrder,scopeDiagnostics):new Map<string,number>();
  return {
@@ -132,7 +132,7 @@ export function prepareOrdinarySourceScalarScope(family:OrdinarySourceCameraFami
    const diagnostics:string[]=[];
    // getArgAsString catches non-string getString, then getFloat; Float.toString
    // followed by Float.parseFloat preserves the already rounded Float bits.
-   const value=typeof raw==='number'?Math.fround(raw):family==='attractor'
+   const value=typeof raw==='number'?Math.fround(raw):['attractor','map','symmetry'].includes(family)
     ?unwrap(prepareDomainSourceScalar(raw,{fallback:0,precision:'float32'}),path,diagnostics)
     :typeof raw==='string'?surfaceString(raw,path,bindings,diagnostics):0;
    return{value:finite(value,path),diagnostics};
@@ -145,7 +145,7 @@ export function prepareOrdinarySourceScalarScope(family:OrdinarySourceCameraFami
     const direct=parseDomainSourceDouble(raw);if(direct.ok)return{value:finite(Math.fround(direct.value),path),diagnostics};
     if(direct.error.kind==='capacity')fail({...direct.error,path});
    }
-   if(family==='attractor'){
+   if(['attractor','map','symmetry'].includes(family)){
     const parsed=prepareDomainSourceObjectScalar(raw,{fallback,precision:'float32'});
     if(!parsed.ok)fail({...parsed.error,path});
     if(parsed.facts.route==='fallback')diagnostics.push(`${path}: 原版 getJsonFloat 采用默认值 ${fallback}。`);

@@ -144,7 +144,7 @@ export const Viewport = forwardRef<
       if(!view.ok)return;return{epoch:current.sourceBouncingInteractionEpoch??0,view:view.value,expected:current.scene,checkpoint:facts.checkpoint};
     };
     let wheelGesture:{expected:SceneDocument;view:SamilaCapture;last:number}|undefined;
-    const active=()=>interaction.current.managed&&!interaction.current.playing;
+    const active=()=>interaction.current.managed&&!interaction.current.playing&&!interaction.current.scene.sourceCamera;
     const samila=()=>samilaCameraEnabled(interaction.current.scene);
     const hasDeliveredSamila=()=>deliveredOutput.current?.output.type==='raster'&&deliveredOutput.current.output.samilaView;
     const capture=()=>{

@@ -183,7 +183,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
       )
     )
       fail("相机无效");
-  if(data.sourceCamera!==undefined)ordinarySourceCameraInitial(data as unknown as SceneDocument);
+  if(data.sourceCamera!==undefined||(data.settings as Settings).iteratedCameraModel!==undefined)ordinarySourceCameraInitial(data as unknown as SceneDocument);
   delete data.evaluatedSourceCamera;
   const palette=validatePalette(data.palette);data.palette=palette;
   if(data.kind==='domain'){

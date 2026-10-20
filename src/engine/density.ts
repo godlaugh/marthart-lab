@@ -5,7 +5,9 @@ import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {hexRGB, paletteColor, validatePalette} from './palette';
 import {densityToneModel,prepareDensityNormalization,normalizedDensityValue,type DensityNormalization,type DensityNormalizationFacts} from './densityNormalization';
 import {deriveSamilaNormalization,samilaDensityValue,samilaToneParameters,type SamilaNormalization,type SamilaToneFacts,type SamilaToneBranch} from './samilaTone';
-import {samilaSourceIndex,validateSamilaView,type PreparedSamilaView} from './samilaCamera';
+import {samilaSourceIndex} from './samilaCamera';
+import {sampleCapturedDensity} from './sourceDensityCamera';
+import {isCapturedDensityView,validateDensityView,type PreparedDensityView} from './densityPresentation';
 
 export interface DensityGrid {
   width:number;height:number;counts:Uint32Array;weights?:Float64Array;colorSums?:Float64Array;stats:DensityStats;
@@ -139,12 +141,12 @@ function toneDensityPrepared(grid:DensityGrid,job:DensityToneJob):Uint8ClampedAr
 export function toneDensityRgba(width:number,height:number,rgba:Float32Array|Float64Array,palette:Palette,settings:Settings={},isCancelled?:()=>boolean):Uint8ClampedArray {
   return toneDensityRgbaPrepared(width,height,rgba,prepareDensityTone(palette,settings),isCancelled);
 }
-export function toneDensityRgbaPrepared(width:number,height:number,rgba:Float32Array|Float64Array,job:DensityToneJob,isCancelled?:()=>boolean,destination?:Uint8ClampedArray,view?:PreparedSamilaView):Uint8ClampedArray {
+export function toneDensityRgbaPrepared(width:number,height:number,rgba:Float32Array|Float64Array,job:DensityToneJob,isCancelled?:()=>boolean,destination?:Uint8ClampedArray,view?:PreparedDensityView):Uint8ClampedArray {
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>16384||height>16384||width*height>MAX_RASTER_PIXELS)throw new Error('密度输出超过 128 MiB 图像预算或尺寸无效');
   if(!(rgba instanceof Float32Array||rgba instanceof Float64Array)||rgba.length!==width*height*4)throw new Error('浮点密度缓冲长度或类型无效');
   if(destination&&(!(destination instanceof Uint8ClampedArray)||destination.length!==width*height*4))throw new Error('调色目标缓冲长度或类型无效');
   if(view){
-    validateSamilaView(view,width,height);
+    validateDensityView(view,width,height);
     // Validate the owned source, including texels outside the presented view.
     // A rotation must never hide malformed ink from its producer's consumer.
     for(let i=0;i<rgba.length;i+=4){
@@ -155,17 +157,23 @@ export function toneDensityRgbaPrepared(width:number,height:number,rgba:Float32A
   }
   return mapDensity(width,height,job,i=>rgba[i*4+3],(i,k)=>rgba[i*4+k],isCancelled,destination,view);
 }
-function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number)=>number,colorSum?:((i:number,k:number)=>number),isCancelled?:()=>boolean,destination?:Uint8ClampedArray,view?:PreparedSamilaView):Uint8ClampedArray {
+function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number)=>number,colorSum?:((i:number,k:number)=>number),isCancelled?:()=>boolean,destination?:Uint8ClampedArray,view?:PreparedDensityView):Uint8ClampedArray {
   const {tone,palette,background:bg,gain}=job;if(tone.paletteMode==='source'&&!colorSum)throw new Error('原采样颜色模式需要 RGB 累积');
   const pixels=destination??new Uint8ClampedArray(width*height*4);if(destination)pixels.fill(0);
+  const captured=view&&isCapturedDensityView(view)?view:undefined,samila=view&&!isCapturedDensityView(view)?view:undefined;
+  // Interpolate floating sums AND mass before nonlinear tone mapping. Reuse
+  // one four-channel sample; presentation never copies the full ink buffer.
+  const sampled=captured?new Float64Array(4):undefined;
+  const sampleColor=sampled?(_index:number,channel:number)=>sampled[channel]:colorSum;
   for(let i=0;i<width*height;i++){
     if(i%16384===0&&isCancelled?.())throw new DOMException('密度映射已取消','AbortError');
-    const source=view?samilaSourceIndex(view,i%width,Math.floor(i/width)):i,count=source<0?0:mass(source),offset=i*4;
+    if(captured){sampled!.fill(0);for(const tap of sampleCapturedDensity(captured,i%width,Math.floor(i/width))){sampled![3]+=mass(tap.index)*tap.weight;if(colorSum)for(let k=0;k<3;k++)sampled![k]+=colorSum(tap.index,k)*tap.weight;}}
+    const source=samila?samilaSourceIndex(samila,i%width,Math.floor(i/width)):i,count=sampled?sampled[3]:source<0?0:mass(source),offset=i*4;
     if(!Number.isFinite(count)||count<0)throw new Error('密度权重必须是非负有限数值');
-    if(source>=0&&job.model==='samila-normalized-v2'&&![colorSum!(source,0),colorSum!(source,1),colorSum!(source,2)].every(Number.isFinite))throw new Error('密度 RGB 累积包含非有限值');
+    if(source>=0&&job.model==='samila-normalized-v2'&&![sampleColor!(source,0),sampleColor!(source,1),sampleColor!(source,2)].every(Number.isFinite))throw new Error('密度 RGB 累积包含非有限值');
     if(!count||job.model!=='white-point-v1'&&count<=1e-12){if(!tone.transparentBackground){for(let k=0;k<3;k++)pixels[offset+k]=Math.round(bg[k]*255);pixels[offset+3]=255;}continue;}
     if(job.model==='samila-normalized-v2'){
-      const value=samilaDensityValue(Math.log(count)-Math.log(job.normalization.scale),tone.contrast,tone.brightness,tone.dynamicRange),rgb=[colorSum!(source,0)/count,colorSum!(source,1)/count,colorSum!(source,2)/count];
+      const value=samilaDensityValue(Math.log(count)-Math.log(job.normalization.scale),tone.contrast,tone.brightness,tone.dynamicRange),rgb=[sampleColor!(source,0)/count,sampleColor!(source,1)/count,sampleColor!(source,2)/count];
       if(!rgb.every(Number.isFinite))throw new Error('密度 RGB 累积包含非有限值');
       let color:number[],alpha=clamp(1/(1+.02*job.normalization.scale/count));
       if(job.branch==='palette-average'){
@@ -183,7 +191,7 @@ function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number
     }
     if(job.model==='normalized-v2'){
       const norm=job.normalization,logDensity=Math.log(count)-Math.log(norm.scale),value=normalizedDensityValue(logDensity,tone.contrast,tone.brightness,tone.dynamicRange);
-      const rgb=norm.kind==='map'&&count<=1e-6?[0,0,0]:[colorSum!(source,0)/count,colorSum!(source,1)/count,colorSum!(source,2)/count];
+      const rgb=norm.kind==='map'&&count<=1e-6?[0,0,0]:[sampleColor!(source,0)/count,sampleColor!(source,1)/count,sampleColor!(source,2)/count];
       if(!rgb.every(Number.isFinite))throw new Error('密度 RGB 累积包含非有限值');
       const y=.299*rgb[0]+.587*rgb[1]+.114*rgb[2],chroma=tone.saturation*value*(1-value)*4,u=.493*(rgb[2]-y)*chroma,v=.877*(rgb[0]-y)*chroma;
       const color=[value+v/.877,value-.39393*u-.58081*v,value+u/.493];
@@ -192,7 +200,7 @@ function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number
       pixels[offset+3]=tone.transparentBackground?Math.round(255*alpha):255;continue;
     }
     const base=baseTone(count,job),level=clamp((base*gain-.5)*tone.contrast+.5+tone.brightness)**job.inverseGamma;
-    const color=tone.paletteMode==='source'?[colorSum!(source,0)/count,colorSum!(source,1)/count,colorSum!(source,2)/count]:paletteColor(palette,Math.min(1-Number.EPSILON,clamp(base)));
+    const color=tone.paletteMode==='source'?[sampleColor!(source,0)/count,sampleColor!(source,1)/count,sampleColor!(source,2)/count]:paletteColor(palette,Math.min(1-Number.EPSILON,clamp(base)));
     if(!color.every(Number.isFinite))throw new Error('密度 RGB 累积包含非有限值');
     const luminance=.2126*color[0]+.7152*color[1]+.0722*color[2];
     for(let k=0;k<3;k++){const channel=clamp(luminance+(color[k]-luminance)*tone.saturation);pixels[offset+k]=Math.round(255*(tone.transparentBackground?(level?channel:0):channel*level+bg[k]*(1-level)));}

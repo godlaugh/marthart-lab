@@ -1,7 +1,7 @@
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 import {usesSourceAttractor,SOURCE_ATTRACTOR_ACTION_METHODS} from './sourceAttractorDocument';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
-import {ordinarySourceCameraGeometry} from './ordinarySourceCamera';
+import {sourceCameraMode,usesCapturedDensityCamera,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
 import {samilaCameraEnabled,initializeSamilaCameraFrame,refreshSamilaCameraSetting} from './samilaCamera';
 import type {CameraState,EvaluatedCamera,SceneDocument,Settings,SceneOutput} from '../types';
 import {numberSetting} from './expression';
@@ -13,10 +13,11 @@ type CameraCapabilities=Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<Scene
 /** Explicit authored marker; never infer source semantics from a scene family. */
 export const usesOrdinarySourceCamera=(scene:CameraCapabilities)=>scene.sourceCamera!==undefined;
 const ordinaryMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking']);
-export const supportsCameraActions=(scene:CameraCapabilities)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene):!hasMathematicalPlane(scene);
+const hasSourceCameraDisplay=(scene:CameraCapabilities)=>{const mode=sourceCameraMode(scene);return mode.kind==='ordinary'||mode.kind==='captured-density';};
+export const supportsCameraActions=(scene:CameraCapabilities)=>usesOrdinarySourceCamera(scene)?hasSourceCameraDisplay(scene):sourceCameraMode(scene).kind==='local'&&!hasMathematicalPlane(scene);
 /** Scalar-camera families opt into specific components, never the full orbit. */
-export const supportsCameraAction=(scene:CameraCapabilities,method:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&(usesSourcePerlin(scene)?['rotatePhi','rotateTheta','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking'].includes(method):usesSourceAttractor(scene)?SOURCE_ATTRACTOR_ACTION_METHODS.includes(method):ordinaryMethods.has(method)||method==='track'&&supportsParticleTracking(scene)):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
-export const supportsCameraComponent=(scene:CameraCapabilities,axis:string)=>usesOrdinarySourceCamera(scene)?ordinarySourceCameraGeometry(scene)&&['phi','theta','gamma'].includes(axis):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&axis==='theta';
+export const supportsCameraAction=(scene:CameraCapabilities,method:string)=>usesCapturedDensityCamera(scene)?CAPTURED_DENSITY_CAMERA_ACTIONS.includes(method):usesOrdinarySourceCamera(scene)?hasSourceCameraDisplay(scene)&&(usesSourcePerlin(scene)?['rotatePhi','rotateTheta','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking'].includes(method):usesSourceAttractor(scene)?SOURCE_ATTRACTOR_ACTION_METHODS.includes(method):ordinaryMethods.has(method)||method==='track'&&supportsParticleTracking(scene)):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&['rotateTheta','rotateTo','ambient','stopAmbient'].includes(method);
+export const supportsCameraComponent=(scene:CameraCapabilities,axis:string)=>usesOrdinarySourceCamera(scene)?hasSourceCameraDisplay(scene)&&['phi','theta','gamma'].includes(axis):supportsCameraActions(scene)||samilaCameraEnabled(scene)&&axis==='theta';
 export const supportsCameraTarget=(scene:CameraCapabilities,target:string)=>!target.startsWith('camera.')||!usesOrdinarySourceCamera(scene)&&(supportsCameraActions(scene)||samilaCameraEnabled(scene)&&target==='camera.theta');
 /** Indexed targets use mathematical identities, never compacted display indices
  * or coordinates inferred from a projected density image. */

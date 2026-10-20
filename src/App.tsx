@@ -994,7 +994,7 @@ export default function App() {
               </div>
             )}
             <div className="viewport-bottom">
-              <span className="interaction-hint">{t(sourceBouncing?"暂停时拖动旋转、滚轮缩放 · 播放恢复旋转角度":pickingJulia&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>
+              {!scene.sourceCamera&&<span className="interaction-hint">{t(sourceBouncing?"暂停时拖动旋转、滚轮缩放 · 播放恢复旋转角度":pickingJulia&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>}
               {!sourceBouncing&&<div className="view-chips">
                 <button
                   className={scene.settings.showGrid ? "active" : ""}

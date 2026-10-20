@@ -3,7 +3,7 @@ import {parseLegacyScene} from '../src/engine/legacyImport';
 import {parseScene,serializeScene,createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 const base=(type:string,extra:Record<string,unknown>={})=>({config_version:'1.0.0',type,name:'Imported test',parameters:{},settings:{},...extra});
-const parse=(value:unknown)=>parseLegacyScene(JSON.stringify(value));
+const parse=(value:unknown)=>parseLegacyScene(JSON.stringify(value),{iteratedCamera:'legacy-v1'});
 const fixtures=[
  base('SURFACE',{equations:{x:'cos(u)*sin(v)',y:'sin(u)*sin(v)',z:'cos(v)'},settings:{u_segments:6,v_segments:4,u_min:0,u_max:'TWO_PI',v_min:0,v_max:'PI',surface_mode:'MESH'}}),
  base('ATTRACTOR',{equations:{dx:'y',dy:'-x',dz:'0'},settings:{particle_count:1,time_step:.01,trail_lifetime:.1},initialization:{bounds:{min_x:1,max_x:1,min_y:0,max_y:0,min_z:0,max_z:0},warmup_steps:0}}),

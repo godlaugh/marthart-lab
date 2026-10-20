@@ -1,4 +1,5 @@
-import {usesSourcePerlin} from './sourcePerlinIdentity';
+import {sourceCameraMode} from './sourceCameraMode';
+export {ordinarySourceCameraGeometry} from './sourceCameraMode';
 import type {GenerateContext, SceneDocument, SceneOutput} from '../types';
 import {prepareSourceCamera, resolveSourceCamera, SOURCE_CAMERA_MODEL, type SourceCameraInput, type SourceCameraPlan, type SourceCameraScalars, type SourceCameraViewport} from './sourceCamera';
 
@@ -8,20 +9,15 @@ export interface OrdinarySourceCameraFrame extends OrdinarySourceCameraEvaluatio
  model:typeof SOURCE_CAMERA_MODEL;viewport:SourceCameraViewport;
 }
 type Scene=Pick<SceneDocument,'kind'|'settings'|'sourceCamera'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>;
-export function ordinarySourceCameraGeometry(scene:Pick<SceneDocument,'kind'|'settings'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>):boolean {
- if(usesSourcePerlin(scene))return true;
- if(scene.kind==='surface'||scene.kind==='implicit')return true;
- if(scene.kind==='attractor')return scene.settings.presentation!=='density';
- return scene.kind==='perlin'&&scene.settings.style==='continuous'&&['heads','trails'].includes(String(scene.settings.particleDisplay));
-}
 export function ordinarySourceCameraInitial(scene:Scene):SourceCameraScalars|undefined {
- if(scene.sourceCamera===undefined)return;
- if(!ordinarySourceCameraGeometry(scene))throw new Error('此显示模式尚未接入原版相机投影；请使用已支持的几何显示模式');
+ const mode=sourceCameraMode(scene);
+ if(mode.kind==='unsupported')throw new Error(`此显示模式尚未接入原版相机投影：${mode.reason}`);
+ if(mode.kind==='local')return;
  if(!['perspective','scene-fade-orthographic'].includes(String(scene.settings.sourceCameraProjection)))throw new Error('原版相机缺少已确认的投影方式');
  const parsed=resolveSourceCamera(scene.sourceCamera);
  if(!parsed.ok)throw parsed.error;
  if(parsed.value.kind!=='known')throw new Error('原版相机配置未解析：'+parsed.value.reason);
- if(scene.sourceCamera.configuration.kind==='angles'&&scene.sourceCamera.configuration.family!==scene.kind)throw new Error('原版相机场景类型不匹配');
+ if(scene.sourceCamera!.configuration.kind==='angles'&&scene.sourceCamera!.configuration.family!==scene.kind)throw new Error('原版相机场景类型不匹配');
  return parsed.value.state.authored;
 }
 export function ordinarySourceViewport(scene:Scene,width:number,height:number,target:'primary'|'offscreen',referenceLogicalHeight:number):SourceCameraViewport {

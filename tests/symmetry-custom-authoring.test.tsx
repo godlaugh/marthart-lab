@@ -15,7 +15,9 @@ import type {AnimationTrack} from '../src/types';
 
 const source='\n// Caller source, preserved exactly.\nuniform float gain;\nuniform float delta;\nvoid calculate_next(in vec3 pos, out vec3 nextPos, out float stepMetric) {\n nextPos=vec3(pos.x*gain+0.01, pos.y+delta, 9.0); stepMetric=-2.0;\n}\n';
 const legacy=(glsl:unknown)=>({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Custom source test',equation:{glsl,formula:'Caller display: <x> & "gain"',template:'standard'},parameters:{gain:1.234567891,delta:3.1415926535,lambda:9.123456789,symmetry_degree:5},settings:{batch_size:32,render_mode:'GPU',burn_in_steps:0}});
-const imported=()=>parseLegacyScene(JSON.stringify(legacy(source))).scene;
+// This suite retains the established local numeric/oscillator authoring model.
+// Source queue/camera imports are covered separately by source-density-pipeline.
+const imported=()=>parseLegacyScene(JSON.stringify(legacy(source)),{iteratedCamera:'legacy-v1'}).scene;
 const reload=(s:ReturnType<typeof imported>)=>parseScene(JSON.stringify(persistentScene(s)));
 
 describe('custom Symmetry imported authoring and persistence',()=>{
@@ -91,7 +93,7 @@ describe('custom Symmetry imported authoring and persistence',()=>{
   }
  });
  it('preserves GLSL identifiers and their animations without applying MathJS name restrictions',()=>{
-  const input={...legacy(source),parameters:{_gain:.5,time:2,x:3,sin:4}},scene=parseLegacyScene(JSON.stringify(input)).scene;
+  const input={...legacy(source),parameters:{_gain:.5,time:2,x:3,sin:4}},scene=parseLegacyScene(JSON.stringify(input),{iteratedCamera:'legacy-v1'}).scene;
   const track=createAnimationTrack(scene,'param');expect(track.target).toBe('parameters._gain');scene.timeline.tracks=[track];
   const saved=reload(scene);expect(saved.parameters).toEqual(input.parameters);expect(sceneAtTime(saved,1).parameters._gain).toBe(sceneAtTime(scene,1).parameters._gain);
   expect(reload(withSymmetryTemplate(scene,'standard')).parameters._gain).toBe(.5);

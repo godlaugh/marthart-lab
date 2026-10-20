@@ -58,7 +58,7 @@ export function* rootsTimelineNumberTokenPaths(raw:readonly unknown[]):Iterable<
   }
  }
 }
-const ordinaryFamilies=new Set<SceneDocument['kind']>(['surface','implicit','attractor','perlin']);
+const ordinaryFamilies=new Set<SceneDocument['kind']>(['surface','implicit','attractor','perlin','map','symmetry']);
 export const SOURCE_SURFACE_NUMBER_FIELDS=['u_segments','v_segments','u_min','u_max','v_min','v_max','speed_u','speed_v','scale_x','scale_y','scale_z','offset_x','offset_y','offset_z','trail_lifetime','line_weight','dot_size'] as const;
 // Mesh config consumes numeric fallbacks too (e.g. a numeric boolean/color).
 // Retention preserves their lexemes without asserting those inputs were active.

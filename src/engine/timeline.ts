@@ -1,4 +1,5 @@
 import {usesSourcePerlin} from './sourcePerlinIdentity';
+import {usesCapturedDensityCamera,capturedDensityCameraClipTypes,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
 import {replaySourcePerlinCamera} from './sourcePerlinReplay';
 import {parseSourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
@@ -94,6 +95,7 @@ export const ACTIONS = [
 const cameraMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','track','stopTracking','ambient','stopAmbient']);
 export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument):string[]{
+ if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,'复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。'];
  const genericWarning=genericParameterTimelineWarning(scene),messages:string[]=[...(genericWarning?[genericWarning]:[]),...parseSamilaCamera(scene).warnings];
  if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!,frame=usesSourcePerlin(scene)?replaySourcePerlinCamera(scene,0):usesSourceSurfaceGeometry(scene)?replaySourceSurfaceCamera(scene,0):usesSourceAttractor(scene)?replaySourceAttractorCamera(scene,0):evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0);messages.push(...frame.diagnostics.map(d=>d.message),'原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
@@ -164,6 +166,16 @@ export function validateTimelineSchedule(scene:SceneDocument):void {
   const schedule=scene.timeline.schedule;
   if(scene.sourceCamera&&schedule!=='ordinary-camera-sequence-v1')throw new Error('原版几何相机必须使用对应的顺序时间线');
   if(schedule!==undefined&&!((schedule==='ordinary-camera-sequence-v1'&&!!scene.sourceCamera)||(schedule==='spirograph-sequence-v1'&&scene.kind==='spirograph')||((schedule==='roots-camera-sequence-v1'||schedule==='roots-scene-sequence-v1')&&scene.kind==='roots')))throw new Error('时间线顺序规则无效');
+  if(usesCapturedDensityCamera(scene)){
+    const clips=capturedDensityCameraClipTypes(scene);
+    for(const track of scene.timeline.tracks){
+      if(!track.enabled)continue;
+      if(!clips.includes(track.type??'numeric'))throw new Error(`源 ${scene.kind} 密度相机不支持 ${track.type??'numeric'} 片段`);
+      // The native camera builder ignores action-level enabled, so even a
+      // retained disabled unsupported action must not reach the shared clock.
+      for(const action of track.actions??[])if((isCameraAction(action.method)||action.method==='rotate')&&!CAPTURED_DENSITY_CAMERA_ACTIONS.includes(action.method))throw new Error(`源 ${scene.kind} 密度相机不分派 ${action.method}`);
+    }
+  }
 }
 const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
 /** Resolve the explicit source queue against the current geometry. A source

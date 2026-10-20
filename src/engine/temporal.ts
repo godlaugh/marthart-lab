@@ -6,7 +6,8 @@ import {usesSourceAttractor} from './sourceAttractorDocument';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {SourceBouncingSession} from '../scenes/sourceBouncing';
 import {generateSourceAttractor,SourceAttractorSession} from '../scenes/sourceAttractor';
-import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera} from './ordinarySourceCamera';
+import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,bindOrdinarySourceCamera,prepareOrdinarySourceFrame} from './ordinarySourceCamera';
+import {sourceCameraMode} from './sourceCameraMode';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {generateSourceSurface} from '../scenes/sourceSurface';
 import {AttractorParticleSession} from '../scenes/attractorParticles';
@@ -376,7 +377,15 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
       const state=sceneAtTime(scene,context.time);
       ordinarySourceCameraFrame(state,context);
     }
-    const bind=(output:SceneOutput)=>scene.sourceCamera?bindOrdinarySourceCamera(output,sceneAtTime(scene,output.temporal?.time??context.time),context):output;
+    const mode=sourceCameraMode(scene);
+    const bind=(output:SceneOutput)=>{
+      if(mode.kind==='ordinary')return bindOrdinarySourceCamera(output,sceneAtTime(scene,output.temporal?.time??context.time),context);
+      if(mode.kind==='captured-density'){
+        if(output.type!=='raster'||!output.cameraResolved||!output.sourceCameraFrame)throw new Error('源密度相机需要携带相机帧的已投影像素图像');
+        prepareOrdinarySourceFrame(output.sourceCameraFrame);
+      }
+      return output;
+    };
     const scoped=scene.sourceCamera&&context.onProgress?{...context,onProgress:(output:SceneOutput)=>context.onProgress!(bind(output))}:context;
     const output=bind(generateSceneFrame(scene,scoped,owner)),warnings=timelineWarnings(scene);
     if(warnings.length)output.warnings=[...new Set([...(output.warnings??[]),...warnings])];

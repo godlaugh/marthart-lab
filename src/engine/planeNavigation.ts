@@ -1,3 +1,4 @@
+import {usesCapturedDensityCamera} from './sourceCameraMode';
 import {prepareDomainViewport,panDomainViewport,zoomDomainViewport,parseDomainViewportVersion,type PreparedDomainViewport} from './domainViewport';
 import {samilaCameraEnabled} from './samilaCamera';
 import type {SceneDocument,Settings,DensityBounds} from '../types';
@@ -15,6 +16,7 @@ export function rasterPresentationRect(canvasWidth:number,canvasHeight:number,ra
   return{x:(canvasWidth-width)/2,y:(canvasHeight-height)/2,width,height,scale};
 }
 export function planeNavigation(scene:SceneDocument,width:number,height:number,renderedBounds?:DensityBounds,domainView?:PreparedDomainViewport,fractalView?:PreparedFractalViewportNavigation):PlaneNavigation{
+  if(usesCapturedDensityCamera(scene))throw new Error('源密度相机请通过相机面板或时间线调整');
   if(samilaCameraEnabled(scene))throw new Error('Samila 使用临时几何视图；通用平面适配尚未实现');
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)throw new Error('视口尺寸必须为正数');
   if(hasContinuousDensity(scene)||hasProgressiveRoots(scene)){
@@ -53,6 +55,7 @@ export function zoomPlane(view:PlaneNavigation,x:number,y:number,deltaPixels:num
   return shifted(view,(x/view.width-.5)*view.spanX*(1-ratio),(view.fractalViewport?.rules.yDirection==='down'?y/view.height-.5:.5-y/view.height)*view.spanY*(1-ratio),spanX,zoom);
 }
 export function fitPlane(scene:SceneDocument,domainView?:PreparedDomainViewport):Settings{
+  if(usesCapturedDensityCamera(scene))throw new Error('源密度相机请通过相机面板或时间线调整');
   if(samilaCameraEnabled(scene))throw new Error('Samila 使用临时几何视图；通用平面适配尚未实现');
   if(hasContinuousDensity(scene)||hasProgressiveRoots(scene))return{densityView:'auto'};
   if(scene.kind==='bouncing')return{bouncingView:'fit'};

@@ -4,7 +4,7 @@ import {definition} from '../src/scenes';
 import {iteratedUniform} from '../src/scenes/iteratedDensity';
 import {symmetryStep} from '../src/scenes/iterated';
 const context={time:0,width:64,height:48,quality:'preview' as const};
-const legacy=(type:string,extra:Record<string,unknown>)=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',name:'Iteration import regression',type,...extra}));
+const legacy=(type:string,extra:Record<string,unknown>)=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',name:'Iteration import regression',type,...extra}),{iteratedCamera:'legacy-v1'});
 describe('legacy iterated coordinate and template semantics',()=>{
  it('preserves requested legacy backend and rejects unknown values explicitly',()=>{for(const [render_mode,expected]of [['CPU','cpu'],['GPU','gpu'],['AUTO','auto']]){const imported=legacy('MAP_ATTRACTOR',{equations:{x_next:'x',y_next:'y'},settings:{render_mode,batch_size:1,burn_in_steps:0}});expect(imported.scene.settings.iteratedBackend).toBe(expected);expect(imported.warnings.join()).toContain('后端选择已保留');expect(imported.warnings.join()).not.toContain('后端选择不移植');}expect(()=>legacy('MAP_ATTRACTOR',{equations:{x_next:'x',y_next:'y'},settings:{render_mode:'MAGIC'}})).toThrow(/render_mode/);});
  it('preserves noncentered zero-width X/Y boxes and evaluates nx/ny cascades with true source Z initialization',()=>{

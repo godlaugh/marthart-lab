@@ -1,3 +1,4 @@
+import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 import {importSourcePerlinDocument} from './sourcePerlinDocument';
 import {importSourcePerlinGradientGroup} from './sourcePerlinGradientImport';
@@ -247,7 +248,7 @@ function common(r:Reader,s:SceneDocument){
  if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))commonLocalPalette(r,s);
  if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
- if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
+ if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
 function formulaAnnotations(r:Reader,s:SceneDocument){
@@ -859,12 +860,12 @@ function legacyZoomTarget(r:Reader,path:string,fallback:{centerX:number;centerY:
  if(zoom<=0||zoom>1e28)fail(`${path}.zoom 必须在 (0,1e28]`);
  return {centerX,centerY,centerXLow,centerYLow,zoom};
 }
-function ordinaryFamily(kind:SceneKind):kind is OrdinarySourceCameraFamily{return ['surface','implicit','attractor','perlin'].includes(kind);}
+function ordinaryFamily(kind:SceneKind):kind is OrdinarySourceCameraFamily{return ['surface','implicit','attractor','perlin','map','symmetry'].includes(kind);}
 function ordinaryResult<T>(result:OrdinarySourceScalarResult<T>):T {
  if(!result.ok)fail(`原版相机标量 ${result.error.path}: ${JSON.stringify(result.error)}`);return result.value;
 }
 function ordinaryCamera(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope):void {
- if(!ordinarySourceCameraGeometry(s)){
+ if(!ordinarySourceCameraGeometry(s)&&s.settings.iteratedCameraModel!==CAPTURED_DENSITY_CAMERA_MODEL){
   r.warnings.push('当前密度或噪声纹理显示模式尚未接入原版几何相机；保留本地显示和完整源相机数据，不声明原版相机一致。');return;
  }
  const parsed=ordinaryResult(scope.camera(r.peek(['camera'])));s.sourceCamera=parsed.camera;r.warnings.push(...parsed.diagnostics);
@@ -938,7 +939,7 @@ function surfaceParameterImport<T>(r:Reader,prefix:readonly string[],result:Sour
  for(const diagnostic of result.value.diagnostics)r.warnings.push(`${pathLabel(prefix)}: ${diagnostic}`);
  return result.value.configuration;
 }
-function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:OrdinarySourceScalarScope):OrdinaryTimelineClip[] {
+function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:OrdinarySourceScalarScope,capturedDensity=false):OrdinaryTimelineClip[] {
  let edgeDefaults:OscillationEdgeEasing={...SOURCE_SURFACE_PARAMETER_EDGE_DEFAULT};
  if(surface&&r.has(['settings','param_edge_easing']))edgeDefaults=surfaceParameterImport(r,['settings','param_edge_easing'],importSourceSurfaceParameterEdge(r.peek(['settings','param_edge_easing'])));
  const clips=r.peek(['timeline']);if(clips===undefined)return[];
@@ -948,7 +949,11 @@ function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:Ordina
  for(let i=0;i<clips.length;i++){
   const path=['timeline',String(i)];r.object(path);
   if(!r.domainBoolean([...path,'enabled'])){r.acknowledge(path,'原版跳过禁用片段，不读取类型、时长或动作');continue;}
-  const originalType=r.str([...path,'type'],true)!,type=originalType.toLowerCase(),actions:OrdinaryTimelineAction[]=[];
+  // Source getString(default) accepts nonstrings, whose spellings cannot
+  // match these method/type names. Preserve their raw values without inventing
+  // Java container formatting for dispatch.
+  const rawType=capturedDensity?r.use([...path,'type']):undefined;
+  const originalType=capturedDensity?(rawType==null?'wait':typeof rawType==='string'?rawType:'unrecognized'):r.str([...path,'type'],true)!,type=originalType.toLowerCase(),actions:OrdinaryTimelineAction[]=[];
   if(type==='animate'){
    const raw=r.peek([...path,'actions']);
    if(raw!==undefined&&(!Array.isArray(raw)||raw.length>64))fail(`${pathLabel(path)}.actions 应为最多 64 个动作的数组`);
@@ -956,13 +961,14 @@ function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:Ordina
     if(!raw.length)r.use([...path,'actions']);
     for(let j=0;j<raw.length;j++){
      const actionPath=[...path,'actions',String(j)];r.object(actionPath);
-     const method=r.str([...actionPath,'method'],true)!,args=r.peek([...actionPath,'args']);
+     const rawMethod=capturedDensity?r.use([...actionPath,'method']):undefined;
+     const method=capturedDensity?(typeof rawMethod==='string'?rawMethod:''):r.str([...actionPath,'method'],true)!,args=r.peek([...actionPath,'args']);
      // JsonSurfaceConfig.setupTimeline first obtains an array/object argument.
      // Its null guard skips the whole action before any child builder runs.
-     if(surface&&!Array.isArray(args)&&!isObject(args)){
+     if((surface||capturedDensity)&&!Array.isArray(args)&&!isObject(args)){
       r.retainNumberToken([...actionPath,'args']);
-      if(r.has([...actionPath,'args']))r.acknowledge([...actionPath,'args'],'原版曲面仅分派数组或对象参数，跳过此动作');
-      r.warnings.push(`${pathLabel(actionPath)} ${method}：原版曲面未取得数组或对象参数，跳过此动作；片段时长和原值保留。`);
+      if(r.has([...actionPath,'args']))r.acknowledge([...actionPath,'args'],'原版此场景仅分派数组或对象参数，跳过此动作');
+      r.warnings.push(`${pathLabel(actionPath)} ${method}：原版此场景未取得数组或对象参数，跳过此动作；片段时长和原值保留。`);
       continue;
      }
      const surfaceParameters=surface&&(method==='paramStart'||method==='paramStop')?surfaceParameterImport(r,[...actionPath,'args'],importSourceSurfaceParameterAction(method,args,{scope:parameterScope!,memberOrder:path=>r.sourceKeys([...actionPath,'args',...path]),edgeDefaults})):undefined;
@@ -975,12 +981,13 @@ function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:Ordina
  }
  return result;
 }
-function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope,structure=ordinaryTimelineStructure(r,s.kind==='surface',scope)):void {
+function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope,structure=ordinaryTimelineStructure(r,s.kind==='surface',scope,usesCapturedDensityCamera(s))):void {
  s.timeline={...s.timeline,schedule:ORDINARY_CAMERA_SEQUENCE,tracks:[]};let total=0;
  const field=(path:readonly string[],fallback:number)=>{
   r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
  };
- for(const {path,originalType,type,actions:sourceActions,surfaceParameterClip} of structure){
+ for(const {path,originalType,type:sourceType,actions:sourceActions,surfaceParameterClip} of structure){
+  const type=usesCapturedDensityCamera(s)&&s.kind==='symmetry'&&sourceType==='align'?'hold':sourceType;
   if(type==='surface_mode_transition'&&usesSourceSurfaceHost(s)){
    const durationValue=field([...path,'duration'],1),duration=durationValue<=0?1:durationValue;
    if(duration>86400)fail(`${pathLabel(path)}.duration 超过本地 24 小时容量`);
@@ -1065,6 +1072,9 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
      if(facts.kind==='start')track.actions.push({id:crypto.randomUUID(),method,enabled:true,gradient:{...facts.config}});
      continue;
     }
+    if(usesCapturedDensityCamera(s)&&!['paramStart','paramStop','gradientStart','gradientStop'].includes(method)&&(!CAPTURED_DENSITY_CAMERA_ACTIONS.includes(method)||!Array.isArray(raw))){
+     r.acknowledge(actionPath,'原版此密度场景不分派该相机方法或非数组参数；原动作保留，不读取参数');continue;
+    }
     const noncamera=['paramStart','paramStop'].includes(method)&&s.kind!=='attractor'||['gradientStart','gradientStop'].includes(method)&&s.kind!=='implicit';
     if(noncamera){
      // Retained child constructors forward this same duration to Animation;
@@ -1086,9 +1096,9 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
     const arg=(index:number)=>{const p=[...actionPath,'args',String(index)];r.retainNumberToken(p);const out=ordinaryResult(scope.argument(r.use(p),pathLabel(p)));r.warnings.push(...out.diagnostics);return out.value;};
     let action:AnimationAction|undefined;
     if(method==='track'&&(s.kind==='surface'||usesSourceAttractor(s))&&args.length>0)action={id:crypto.randomUUID(),method,args:{index:arg(0)}};
-    else if(['rotatePhi','rotateTheta','zoom','focal'].includes(method))action={id:crypto.randomUUID(),method,args:{[method.startsWith('rotate')?'angle':'value']:arg(0)}};
+    else if(['rotatePhi','rotateTheta','zoom','focal'].includes(method)||usesCapturedDensityCamera(s)&&method==='rotateGamma')action={id:crypto.randomUUID(),method,args:{[method.startsWith('rotate')?'angle':'value']:arg(0)}};
     else if(method==='rotateTo'&&s.kind!=='attractor'&&args.length>=3)action={id:crypto.randomUUID(),method,args:{phi:arg(0),theta:arg(1),gamma:arg(2)}};
-    else if((method==='ambient'||method==='setRates'&&s.kind==='attractor')&&args.length>=(s.kind==='attractor'?2:3))action={id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:arg(0),thetaSpeed:arg(1),gammaSpeed:args.length>=3?arg(2):0}};
+    else if((method==='ambient'||method==='setRates'&&s.kind==='attractor')&&args.length>=(s.kind==='attractor'||usesCapturedDensityCamera(s)?2:3))action={id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:arg(0),thetaSpeed:arg(1),gammaSpeed:args.length>=3?arg(2):0}};
     else if(['stopTracking','stopAmbient'].includes(method)&&s.kind!=='implicit')action={id:crypto.randomUUID(),method,args:{}};
     if(!action){ignored('原版此场景未分派该方法或参数数目不足');continue;}
     if(Array.isArray(raw)&&!raw.length)r.use([...actionPath,'args']);
@@ -1305,7 +1315,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
 }
 
 /** Import original MathArt JSON while retaining every original value separately. */
-export function parseLegacyScene(text:string,options:{samilaCamera?:'auto'|'legacy-v1'}={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
+export function parseLegacyScene(text:string,options:{samilaCamera?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1'}={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
  const parsed=readProjectJson(text),imported=importLegacyValue(parsed.source,options,parsed.metadata,parsed.text);
  serializeScene(sceneWithImportedProvenance(imported));return imported;
 }
@@ -1341,7 +1351,7 @@ function projectResolution(r:Reader,scene:SceneDocument):void {
  if(facts.status==='applied')scene.projectResolution=facts.value;
  else if(facts.status==='ignored')r.warnings.push('resolution 未同时提供源整数规则下 64 至 8192 的宽高，按原版 ProjectState 保留无分辨率覆盖；原值保留在 source。');
 }
-function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'legacy-v1'}={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
+function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1'}={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
  const r=new Reader(source,metadata,sourceText),version=r.str('config_version',true);if(version!=='1.0.0'&&version!=='1.0')fail(`不支持 config_version=${version}`);
  const type=r.str('type',true)!,kind=TYPES[type.toUpperCase()];if(!kind)fail(`未知场景类型 ${type}`);const def=definitions.find(d=>d.kind===kind)!;const scene=createScene(def);
  if(ordinaryFamily(kind))r.validateNativeObjects();
@@ -1373,6 +1383,9 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  }
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
+ // Captured Symmetry has native world-unit defaults; the legacy auto-fit
+ // profile retains its former local defaults. Explicit source fields still win.
+ if(kind==='symmetry'&&options.iteratedCamera!=='legacy-v1')Object.assign(scene.settings,{scaleX:100,scaleY:100,scaleZ:0});
  common(r,scene);
  ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin:()=>{},spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);
  // A finite explicit source theta is consumed only by the Samila scalar owner.
@@ -1381,7 +1394,9 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  let samilaTheta:number|undefined;
  if(kind==='samila'&&r.has('camera')){r.object('camera');samilaTheta=r.num('camera.theta',scene.parameters);}
  if(kind==='samila'&&samilaTheta!==undefined&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaCameraTheta:samilaTheta});
- if(ordinaryScope)ordinaryCamera(r,scene,ordinaryScope);
+ if((kind==='map'||kind==='symmetry')&&options.iteratedCamera!=='legacy-v1')scene.settings.iteratedCameraModel=CAPTURED_DENSITY_CAMERA_MODEL;
+ if(ordinaryScope&&(!['map','symmetry'].includes(kind)||options.iteratedCamera!=='legacy-v1'))ordinaryCamera(r,scene,ordinaryScope);
+ if(usesCapturedDensityCamera(scene))r.warnings.push('Map/Symmetry 已启用源相机捕获投影：Map 相机变化清空密度，Symmetry 角度变化保留密度旋转；新窗口与导出按本地固定时钟重放，随机序列、点覆盖和原版完整画面仍未对照。');
  formulaAnnotations(r,scene);timeline(r,scene,ordinaryScope,ordinaryStructure);
  if(kind==='samila'){
   const thetaAction=scene.timeline.tracks.some(t=>t.type==='align'&&t.orientation?.theta!==undefined||t.actions?.some(a=>['rotateTheta','rotateTo','ambient'].includes(a.method)));
