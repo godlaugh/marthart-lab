@@ -1,3 +1,4 @@
+import {SOURCE_SAMILA_MATH_FIELDS,SOURCE_SAMILA_PARAMETER_LIMIT} from './sourceSamilaFields';
 import {SAMILA_VIEWPORT_SOURCE_FIELDS} from './samilaViewportImport';
 import {SOURCE_PERLIN_NUMBER_FIELDS,SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
 import {SOURCE_SURFACE_PARAMETER_FIELDS,SOURCE_SURFACE_PARAMETER_EDGE_FIELDS} from './sourceSurfaceParameterConfig';
@@ -126,12 +127,18 @@ function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boo
  if((family==='surface'||family==='attractor'||family==='perlin')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
 }
+const samilaStaticMaximum=SAMILA_VIEWPORT_SOURCE_FIELDS.length+SOURCE_SAMILA_MATH_FIELDS.length+2+SOURCE_SAMILA_PARAMETER_LIMIT;
+function samilaNumberField(path:readonly unknown[]):boolean {
+ if(path.length!==2||typeof path[1]!=='string')return false;
+ return path[0]==='settings'&&([...SAMILA_VIEWPORT_SOURCE_FIELDS,...SOURCE_SAMILA_MATH_FIELDS] as readonly string[]).includes(path[1])||path[0]==='samila'&&(SOURCE_SAMILA_MATH_FIELDS as readonly string[]).includes(path[1])||path[0]==='equations'&&['f1','f2'].includes(path[1])||path[0]==='parameters'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(path[1])&&!['constructor','prototype'].includes(path[1]);
+}
 /** Global resolution, Roots presentation/timeline slots and ordinary camera,
  * parameter and timeline scalars. These family-specific registrations do not
  * assert lossless numeric lexemes for the whole source document. */
 export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kind']='roots'):SourceNumberToken[]{
- const samila=sceneKind==='samila',roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=samila?SAMILA_VIEWPORT_SOURCE_FIELDS.length:bouncing?bouncingStaticMaximum:sceneKind==='perlin'?perlinStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=sceneKind==='perlin'?Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+perlinStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length+SOURCE_PERLIN_PARAMETER_NAMES.length*3))):ordinary?ordinaryMaximum:projectFields.size+(samila?SAMILA_VIEWPORT_SOURCE_FIELDS.length:bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
+ const samila=sceneKind==='samila',roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=samila?samilaStaticMaximum:bouncing?bouncingStaticMaximum:sceneKind==='perlin'?perlinStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=sceneKind==='perlin'?Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+perlinStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length+SOURCE_PERLIN_PARAMETER_NAMES.length*3))):ordinary?ordinaryMaximum:projectFields.size+(samila?samilaStaticMaximum:bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
  if(!Array.isArray(raw)||raw.length>maximum)throw new Error(`源数字词法记录必须是最多 ${maximum} 项的数组`);
+ let samilaMathParent:string|undefined;
  const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0,parameterNameCharacters=0,parameterCount=0;let bouncingPolygonSource:string|undefined;const bouncingVertexForms=new Map<string,string>();
  // Preserve the existing independent static-field bound; timeline records do
  // not increase capacity for duplicate or unrelated spatial fields.
@@ -140,8 +147,10 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
  return raw.map(value=>{
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('源数字词法记录无效');
   const {path,token}=value as {path?:unknown;token?:unknown};
-  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):(samila?path.length===2&&path[0]==='settings'&&(SAMILA_VIEWPORT_SOURCE_FIELDS as readonly unknown[]).includes(path[1]):bouncing?bouncingField(path):ordinary&&ordinaryField(path,sceneKind))?JSON.stringify(path):undefined):undefined;
+  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):(samila?samilaNumberField(path):bouncing?bouncingField(path):ordinary&&ordinaryField(path,sceneKind))?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效：'+JSON.stringify(path));
+  if(samila&&['settings','samila'].includes(String(path[0]))&&(SOURCE_SAMILA_MATH_FIELDS as readonly unknown[]).includes(path[1])){if(samilaMathParent!==undefined&&samilaMathParent!==path[0])throw new Error('Samila 源数字词法只能保留一个已选数学配置对象');samilaMathParent=String(path[0]);}
+  if(samila&&path[0]==='parameters'&&++parameterCount>SOURCE_SAMILA_PARAMETER_LIMIT)throw new Error('Samila 源参数词法超过参数容量');
   if(bouncing){
    const polygon=bouncingPolygonPath(path);
    if(polygon){

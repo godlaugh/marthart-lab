@@ -15,6 +15,8 @@ import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type S
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
 import {FRACTAL_SOURCE_COLOR_PROFILE,prepareFractalSourceColorImport} from './fractalSourceColor';
 import {initializeSamilaCamera} from './samilaCamera';
+import {importSourceSamilaConfig} from './sourceSamilaConfig';
+import {usesSourceSamilaMath} from './sourceSamilaMath';
 import {SAMILA_SOURCE_PROJECTION_MODEL,usesSamilaSourceProjection} from './samilaProjection';
 import {SAMILA_VIEWPORT_SOURCE_FIELDS,importSamilaViewportScalar} from './samilaViewportImport';
 import {resolveFractalParameterBinding} from './fractalParameterBindings';
@@ -340,7 +342,7 @@ function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
 
 function iteratedLegacy(r:Reader,s:SceneDocument){
  s.settings.iteratedMode='continuous';s.settings.iteratedFps=60;s.settings.paletteMode='source';s.settings.iteratedColor=s.kind==='samila'?'noise':'step';
- count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);seed(r,s,'settings.seed');
+ count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);if(!usesSourceSamilaMath(s))seed(r,s,'settings.seed');
  for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const)numberTo(r,s,'settings.'+old,key,{min,max});
  if(s.kind==='map'||s.kind==='symmetry'){
   for(const [old,key,fallback,sourceMin,sourceMax,legacyMin,legacyMax]of [['gamma','Gamma',2.2,.1,10,.1,8],['contrast','Contrast',1,.1,2,0,8],['brightness','Brightness',s.kind==='map'?.3:.5,-.5,1.5,-1,1],['saturation','Saturation',.8,0,1,0,4],['dynamic_range','DynamicRange',s.kind==='map'?.2:.5,.1,1,.001,1e9]]as const){
@@ -476,9 +478,14 @@ function samila(r:Reader,s:SceneDocument){
    const key=field.replace(/_([a-z])/g,(_,c:string)=>c.toUpperCase());s.settings[key]=fact.value;r.retainNumberToken(path);
    if(fact.defaulted)r.warnings.push(`settings.${field} 按原版 getFloat 使用默认值 ${fact.value}；原值保留在 source。`);
   }
-  r.warnings.push('Samila 采用源 NDC 视口：旋转、XY 缩放、物理画布宽高比、NDC 平移依次应用；不自动适配边界。随机序列、数学投影、噪声颜色、点覆盖及固定时钟仍为本地实现，不能据此认定整图一致。');
+  r.warnings.push('Samila 采用源 NDC 视口：旋转、XY 缩放、物理画布宽高比、NDC 平移依次应用；不自动适配边界。随机序列、噪声颜色、点覆盖及固定时钟仍为本地实现，数学行为由独立版本决定，不能据此认定整图一致。');
  }
 
+ if(usesSourceSamilaMath(s)){
+  iteratedLegacy(r,s);
+  r.warnings.push('Samila 数学配置按源构造读取：根 samila 对象整体优先于 settings，公式与参数保留源默认值；映射及地理投影使用独立版本。seed 只用于本地可重放随机流，func_seed 原版绘制不消费；时间线、噪声颜色和点覆盖仍未建立原版整图一致性。');
+  return;
+ }
  equation(r,s,'equations.f1','f1');equation(r,s,'equations.f2','f2');
  // Original labels use vertical-vs-horizontal ordering; project files use explicit X_Y ordering.
  const mapping:Record<string,string>={f1_vs_f2:'f2_f1',f2_vs_f1:'f1_f2',f1_vs_x1:'x_f1',f2_vs_x1:'x_f2',f1_vs_x2:'y_f1',f2_vs_x2:'y_f2',x1_vs_f1:'f1_x',x1_vs_f2:'f2_x',x2_vs_f1:'f1_y',x2_vs_f2:'f2_y',f1f2_vs_f1:'f1_product',f1f2_vs_f2:'f2_product',f1_vs_f1f2:'product_f1',f2_vs_f1f2:'product_f2',kaleidoscope_vs_x:'kaleidoscope_x',x_vs_kaleidoscope:'x_kaleidoscope',swirl_vs_x:'swirl_x',x_vs_swirl:'x_swirl',warp_vs_x:'warp_x',x_vs_warp:'x_warp',cos_mod_vs_x:'cosmod_x',x_vs_cos_mod:'x_cosmod',radial_vs_x:'radial_x',x_vs_radial:'x_radial',fold_vs_x:'fold_x',x_vs_fold:'x_fold',random:'random'};
@@ -1326,7 +1333,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
-export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
+export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
 
 /** Import original MathArt JSON while retaining every original value separately. */
 export function parseLegacyScene(text:string,options:LegacyImportOptions={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
@@ -1376,7 +1383,8 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   r.validateNativeObjects();sourceBouncing(r,scene);projectResolution(r,scene);r.remaining();
   return{scene,warnings:r.warnings,source,...(r.sourceNumberTokens.length?{sourceNumberTokens:r.sourceNumberTokens}:{})};
  }
- scene.parameters=kind==='perlin'?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ const sourceSamila=kind==='samila'&&options.samilaMath!=='legacy-v1'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1';
+ scene.parameters=sourceSamila?{}:kind==='perlin'?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
  if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
  if(kind==='attractor'){for(const key of Object.keys(scene.parameters)){r.use(['parameters',key]);r.retainNumberToken(['parameters',key]);}if(r.has(['parameters'])&&!Object.keys(scene.parameters).length)r.use(['parameters']);ordinaryAttractorGeometry(r,scene);}
  // Source geometry and queue share parsed dispatch facts. Select its owner
@@ -1401,6 +1409,9 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  // profile retains its former local defaults. Explicit source fields still win.
  if(kind==='symmetry'&&options.iteratedCamera!=='legacy-v1')Object.assign(scene.settings,{scaleX:100,scaleY:100,scaleZ:0});
  if(kind==='samila'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaProjectionModel:SAMILA_SOURCE_PROJECTION_MODEL,samilaCameraTheta:0});
+ if(sourceSamila){
+  const parsed=importSourceSamilaConfig(source,path=>r.numberToken(path));if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);const facts=parsed.value;scene.parameters=facts.parameters;scene.equations=facts.equations;Object.assign(scene.settings,facts.settings);for(const path of facts.consumedPaths)r.use(path);for(const path of facts.numericPaths)r.retainNumberToken(path);r.warnings.push(...facts.diagnostics);
+ }
  common(r,scene);
  ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin:()=>{},spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);
  // A finite explicit source theta is consumed only by the Samila scalar owner.

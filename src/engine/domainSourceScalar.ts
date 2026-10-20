@@ -107,6 +107,8 @@ export function parseDomainSourceFloat(text: string): DomainSourceDoubleResult {
 
 const constants: Readonly<Record<string, number>> = Object.freeze({ PI: Math.PI, TWO_PI: 2 * Math.PI, TAU: 2 * Math.PI, HALF_PI: Math.PI / 2, E: Math.E });
 const functions = new Set(['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'arcsin', 'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 'sqrt', 'abs', 'log', 'ln', 'log10', 'exp', 'floor', 'ceil', 'round', 'sign', 'pow', 'min', 'max', 'atan2']);
+/** Metadata from the same source grammar used by evaluation and GPU emission. */
+export const sourceRealFunctionNames=Object.freeze([...functions]);
 function normalize(text: string): string {
  // Retain the source's fast-path test: U+22C5 is replaced only if another
  // listed character first triggers normalization (method offsets 0..134).
@@ -292,7 +294,10 @@ export function parseSourceRealExpression(raw:unknown,variableNames:readonly str
 }
 export function prepareSourceRealExpression(raw:unknown,variableNames:readonly string[]):SourceRealExpressionResult {
  const parsed=parseSourceRealExpression(raw,variableNames);if(!parsed.ok)return parsed;
- const root=parsed.value;
+ return prepareSourceRealExpressionAst(parsed.value,variableNames);
+}
+/** Compile a validated source-parser AST without reparsing its formula text. */
+export function prepareSourceRealExpressionAst(root:SourceRealExpressionNode,variableNames:readonly string[]):SourceRealExpressionResult {
  try{
   type Instruction={node:Node;count:number};
   const instructions:Instruction[]=[],pending:{node:Node;expanded:boolean}[]=[{node:root,expanded:false}];

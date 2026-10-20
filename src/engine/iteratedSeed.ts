@@ -17,8 +17,8 @@ export const initialPoint=(cfg:IteratedSeedConfig,index:number,serial:number):Po
  * CPU; backend recurrence/burn-in and accumulation remain GPU operations. */
 export function iteratedInitialChunk(cfg:IteratedSeedConfig,offset:number,count:number):Float32Array {return seedChunk(cfg,offset,count,0);}
 /** Canonical fresh plane samples for one Samila batch, before its GPU formulas. */
-export function iteratedSamilaSeedChunk(cfg:Pick<IteratedSeedConfig,'seed'|'count'>,frame:number,lo:number,hi:number,offset:number,count:number):Float32Array {
- if(!Number.isSafeInteger(frame)||frame<0||!Number.isFinite(lo)||!Number.isFinite(hi)||hi<=lo)throw new Error('Samila 随机批次边界无效');
+export function iteratedSamilaSeedChunk(cfg:Pick<IteratedSeedConfig,'seed'|'count'>,frame:number,lo:number,hi:number,offset:number,count:number,allowEqual=false):Float32Array {
+ if(!Number.isSafeInteger(frame)||frame<0||!Number.isFinite(lo)||!Number.isFinite(hi)||(allowEqual?hi<lo:hi<=lo))throw new Error('Samila 随机批次边界无效');
  return seedChunk({...cfg,dimension:2,bounds:[[lo,hi],[lo,hi],[0,0]]},offset,count,frame);
 }
 function seedChunk(cfg:IteratedSeedConfig,offset:number,count:number,serial:number):Float32Array {

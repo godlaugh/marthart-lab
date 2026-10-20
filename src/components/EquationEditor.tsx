@@ -8,11 +8,11 @@ import {editableEquations} from '../engine/mapDimension';
 function EquationField({label,value,analysis,onChange,onApply,onBlur}:{label:string;value:string;analysis:EquationAnalysis;onChange:(value:string)=>void;onApply:()=>void;onBlur?:()=>void}){
   const {t}=useI18n(),id=useId(),textarea=useRef<HTMLTextAreaElement>(null),paint=useRef<HTMLPreElement>(null);
   const [caret,setCaret]=useState(0),[open,setOpen]=useState(false),[all,setAll]=useState(false),[selected,setSelected]=useState(0);
-  const range=equationCompletion(value,caret,analysis.suggestions,all,analysis.native),items=open?range.items:[];
+  const range=equationCompletion(value,caret,analysis.suggestions,all,analysis.native||analysis.sourceReal),items=open?range.items:[];
   const active=Math.min(selected,Math.max(0,items.length-1));
   const tokens=useMemo(()=>equationTokens(value,analysis.suggestions,analysis.native),[value,analysis.suggestions,analysis.native]);
   const complete=(item:EquationSuggestion)=>{
-    const next=insertEquationCompletion(value,range,item,analysis.native);onChange(next.source);setOpen(false);setAll(false);setCaret(next.caret);
+    const next=insertEquationCompletion(value,range,item,analysis.native||analysis.sourceReal);onChange(next.source);setOpen(false);setAll(false);setCaret(next.caret);
     requestAnimationFrame(()=>{textarea.current?.focus();textarea.current?.setSelectionRange(next.caret,next.caret);});
   };
   return <div className="equation-field">
@@ -49,13 +49,14 @@ export function EquationEditor({scene,equations,draft,onChange,onApply,applyOnBl
   const {t}=useI18n();
   const fields=useMemo(()=>{
     const editable=editableEquations(scene,equations),values=Object.fromEntries(editable.map(eq=>[eq.key,draft[eq.key]??scene.equations[eq.key]??''])),analyses=analyzeEquationDraft(scene,values);
-    return editable.map(eq=>({key:eq.key,label:eq.label,value:values[eq.key],analysis:analyses[eq.key]}));
+    return editable.map(eq=>({key:eq.key,label:analyses[eq.key].sourceReal?(eq.key==='f1'?'f₁(x, y)':'f₂(x, y)'):eq.label,value:values[eq.key],analysis:analyses[eq.key]}));
   },[equations,draft,scene]);
   const invalid=fields.some(field=>field.analysis.error);
   const dirty=fields.some(field=>field.value!==scene.equations[field.key]);
   const apply=()=>{if(!invalid&&dirty)onApply();};
   return <><div className="equation-editors">{fields.map(field=><EquationField key={field.key} label={t(field.label)} value={field.value} analysis={field.analysis} onChange={value=>onChange({...draft,[field.key]:value})} onApply={apply} onBlur={applyOnBlur?apply:undefined}/>)}</div>
     {fields.some(field=>field.analysis.native)&&<div className="formula-help">{t('原产物语法：函数名须紧邻左括号；未绑定变量按 0 求值。π 为普通变量，科学计数写法不作为数值解析。')}</div>}
+    {fields.some(field=>field.analysis.sourceReal)&&<div className="formula-help">{t('源 Samila 实数语法：函数名紧邻左括号；x、y 为采样坐标，a–d 缺省为 0。其他变量必须显式声明为参数；不注入时间。')}</div>}
     <div className="formula-help">{t(applyOnBlur?'失焦或 Enter 应用有效公式 · Shift+Enter 换行 · Ctrl+空格补全':'Enter 应用 · Shift+Enter 换行 · Ctrl+空格补全')}</div>
     <button className="apply-button" disabled={invalid} onClick={apply}><Check size={14}/>{t('应用公式')}</button>
   </>;

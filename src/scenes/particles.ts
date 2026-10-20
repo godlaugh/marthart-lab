@@ -1,3 +1,4 @@
+import {usesSourceSamilaMath} from '../engine/sourceSamilaMath';
 import {mapDimension} from '../engine/mapDimension';
 import {hasSymmetryCustom} from '../engine/symmetryCustom';
 import type {ControlSpec, GenerateContext, SceneDefinition, SceneDocument, SceneOutput, Settings} from '../types';
@@ -200,6 +201,7 @@ function generateBouncing(scene:SceneDocument,c:GenerateContext):SceneOutput {
 }
 
 function generateSamila(scene:SceneDocument,c:GenerateContext):SceneOutput {
+  usesSourceSamilaMath(scene);
   if(scene.settings.iteratedMode==='continuous')return generateIteratedDensity(scene,c);
   const s=scene.settings,requested=integer(s,'count',70000,1,1000000),limit=c.quality==='export'?500000:150000;
   const g=new Geometry(Math.min(requested,limit),'points',scene),count=budget(requested,limit,g,'Samila 采样数');

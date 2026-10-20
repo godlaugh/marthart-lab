@@ -1,3 +1,5 @@
+import {prepareSourceSamilaExpressions} from './sourceSamilaExpression';
+import {SOURCE_SAMILA_MATH_MODEL,resolveSourceSamilaSelection,sourceSamilaUniform,sourceSamilaMathGlsl} from './sourceSamilaMath';
 import type {IteratedField} from '../scenes/iteratedDensity';
 import {SAMILA_MODES,SAMILA_PROJECTIONS} from '../scenes/samila';
 import {existingParameterNameError} from './expression';
@@ -39,6 +41,26 @@ function projectionSource(projection:string):string {
  * are supplied by the caller; this helper does not sample Settings or RNG.
  * Caller supplies glslRealPrelude and bit-based finiteFloat/finiteVector. */
 export function compileSamilaGpuField(field:SamilaField):SamilaGpuField {
+ if(field.mathModel!==undefined){
+  if(field.mathModel!==SOURCE_SAMILA_MATH_MODEL)throw Error('源 Samila GPU 数学版本无效');
+  const selection=resolveSourceSamilaSelection(field.mapping,field.projection),expressions=prepareSourceSamilaExpressions(field.equations,Object.keys(field.parameters)),bound=expressions.bind(field.parameters);
+  if(!finite32(field.rotation))throw Error('源 Samila 旋转超出 Float32');
+  const uniforms:Record<string,number>={...bound.uniforms,mappingA:sourceSamilaUniform(field.parameters.a),mappingB:sourceSamilaUniform(field.parameters.b),mappingC:sourceSamilaUniform(field.parameters.c),mappingD:sourceSamilaUniform(field.parameters.d),sourceSamilaRotation:field.rotation};
+  const math=sourceSamilaMathGlsl.replace('uniform int sourceSamilaMode,sourceSamilaProjection;',`const int sourceSamilaMode=${selection.modeIndex},sourceSamilaProjection=${selection.projectionIndex};`);
+  const source=`${Object.keys(uniforms).map(name=>`uniform float ${name};`).join('\n')}
+${math}
+vec3 nextPoint(vec3 samplePosition){
+ float v1=${expressions.glsl[0]},v2=${expressions.glsl[1]};
+ if(!finiteFloat(v1)||!finiteFloat(v2))return vec3(realNaN());
+ float plotX,plotY;sourceSamilaApplyGenerateMode(v1,v2,samplePosition.x,samplePosition.y,0.,plotX,plotY);
+ float finalX,finalY;sourceSamilaApplyProjection(plotX,plotY,finalX,finalY);
+ vec2 result=vec2(finalX,finalY);
+ if(abs(sourceSamilaRotation)>1e-9){float co=cos(sourceSamilaRotation),si=sin(sourceSamilaRotation);result=vec2(finalX*co-finalY*si,finalX*si+finalY*co);}
+ return finiteVector(vec3(result,0.))?vec3(result,0.):vec3(realNaN());
+}`;
+  return{source,uniforms,key:source};
+ }
+
  if(field.mapping==='random'||!(SAMILA_MODES as readonly string[]).includes(field.mapping))throw new Error('Samila GPU 映射尚未解析或不支持');
  if(field.projection==='random'||!(SAMILA_PROJECTIONS as readonly string[]).includes(field.projection))throw new Error('Samila GPU 投影尚未解析或不支持');
  const names=Object.keys(field.parameters).sort();

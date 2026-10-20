@@ -820,5 +820,14 @@
   "指南 · Star Pattern": "Guide · Star Pattern",
   "按指南的定子 150、内转子 50 与笔距 60 绘制星形。": "Uses guide stator 150, inside rotor 50 and pen distance 60.",
   "指南 · 复杂螺旋": "Guide · Nested spiral",
-  "按指南的定子 150、内转子 75、外转子 30 与笔距 40 绘制嵌套旋轮。": "Uses guide stator 150, inside rotor 75, outside rotor 30 and pen distance 40."
+  "按指南的定子 150、内转子 75、外转子 30 与笔距 40 绘制嵌套旋轮。": "Uses guide stator 150, inside rotor 75, outside rotor 30 and pen distance 40.",
+  "源采样边界 A": "Source sampling endpoint A",
+  "源采样边界 B": "Source sampling endpoint B",
+  "原版先排序再转 Float32；允许相等边界，超出有限 Float32 范围会明确报错。": "Endpoints are sorted before conversion to Float32. Equal endpoints are allowed; values outside the finite Float32 range produce an error.",
+  "源函数种子（保留值）": "Source function seed (retained)",
+  "原版数学采样不消费此字段；本地随机探索属于独立工具。": "The source mathematical sampler does not use this field. Local random exploration is a separate tool.",
+  "本地重放随机种子": "Local replay random seed",
+  "用于可重放的本地采样，不是原版每帧 ThreadLocalRandom 随机流。": "Controls repeatable local sampling, independently of the original per-frame ThreadLocalRandom stream.",
+  "源 RANDOM · 等同 F1_VS_F2": "Source RANDOM · same as F1_VS_F2",
+  "源 RANDOM · 等同直角投影": "Source RANDOM · same as Cartesian"
 }

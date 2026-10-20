@@ -1,3 +1,4 @@
+import {usesSourceSamilaMath} from './sourceSamilaMath';
 import {parseSourcePerlinDocument,migrateSourcePerlinDocument} from './sourcePerlinDocument';
 import {replaySourcePerlinCamera} from './sourcePerlinReplay';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
@@ -184,6 +185,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     )
       fail("相机无效");
   if(data.sourceCamera!==undefined||(data.settings as Settings).iteratedCameraModel!==undefined)ordinarySourceCameraInitial(data as unknown as SceneDocument);
+  usesSourceSamilaMath(data as unknown as SceneDocument);
   delete data.evaluatedSourceCamera;
   const palette=validatePalette(data.palette);data.palette=palette;
   if(data.kind==='domain'){

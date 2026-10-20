@@ -1,3 +1,5 @@
+import {usesSourceSamilaMath} from './sourceSamilaMath';
+import {prepareSourceSamilaExpressions,SOURCE_SAMILA_EXPRESSION_VARIABLES,sourceSamilaFunctionNames} from './sourceSamilaExpression';
 import {usesRootsNativeMath} from './rootsMathConfig';
 import type {SceneDocument} from '../types';
 import {compileReal,realConstantNames,realFunctionNames} from './expression';
@@ -9,7 +11,7 @@ import {prepareDomainExecution,nativeCpuExpressionFallback,parseDomainIterationV
 import {domainNativeConstantNames,domainNativeFunctionNames} from './domainNativeArithmetic';
 
 export interface EquationSuggestion {name:string;kind:'function'|'variable'|'constant';}
-export interface EquationAnalysis {suggestions:EquationSuggestion[];error?:{message:string;offset?:number};native?:boolean;warnings?:readonly string[];effectiveSource?:string;}
+export interface EquationAnalysis {suggestions:EquationSuggestion[];error?:{message:string;offset?:number};native?:boolean;sourceReal?:boolean;warnings?:readonly string[];effectiveSource?:string;}
 /** A committed edit replaces only its changed fields. Keep unrelated pending
  * text (including invalid text) when an explicit dimension action resets z. */
 export function reconcileEquationDraft(previous:Pick<SceneDocument,'id'|'equations'>,next:Pick<SceneDocument,'id'|'equations'>,draft:Record<string,string>):Record<string,string>{
@@ -67,6 +69,13 @@ function analyzeLocalEquation(scene:SceneDocument,key:string,source:string):Equa
 export function analyzeEquationDraft(scene:SceneDocument,draft:Record<string,string>):Record<string,EquationAnalysis>{
  const entries=Object.entries(draft);
  if(usesRootsNativeMath(scene))return Object.fromEntries(entries.map(([key])=>[key,{suggestions:[],warnings:['本地多项式保留但未使用；源数学使用独立系数表，不验证休眠的本地公式。']}]));
+ if(scene.settings.samilaMathModel!==undefined){
+  const variables=[...new Set([...SOURCE_SAMILA_EXPRESSION_VARIABLES,...Object.keys(scene.parameters)])],suggestions:EquationSuggestion[]=[...sourceSamilaFunctionNames.map(name=>({name,kind:'function' as const})),...variables.map(name=>({name,kind:'variable' as const}))];
+  const result=Object.fromEntries(entries.map(([key])=>[key,{suggestions,sourceReal:true} as EquationAnalysis]));
+  try{usesSourceSamilaMath(scene);const equations={...scene.equations,...draft};if(typeof equations.f1!=='string'||typeof equations.f2!=='string')throw Error('源 Samila 数学需要显式 f1/f2 公式');prepareSourceSamilaExpressions({f1:equations.f1,f2:equations.f2},Object.keys(scene.parameters));}
+  catch(error){for(const analysis of Object.values(result))analysis.error={message:error instanceof Error?error.message:String(error)};}
+  return result;
+ }
  if(scene.kind!=='domain')return Object.fromEntries(entries.map(([key,source])=>[key,analyzeLocalEquation(scene,key,source)]));
  let execution:ReturnType<typeof prepareDomainExecution>;
  try{

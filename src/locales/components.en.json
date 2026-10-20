@@ -835,5 +835,6 @@
   "GPU 伽马": "GPU gamma",
   "GPU 饱和度": "GPU saturation",
   "GPU 密度比例": "GPU density scale",
-  "色调数值按原版范围限制。密度比例控制当前帧的叠加亮度，不延长轨迹。": "Tone values use the original limits. Density scale controls the current frame’s accumulated brightness, not trail duration."
+  "色调数值按原版范围限制。密度比例控制当前帧的叠加亮度，不延长轨迹。": "Tone values use the original limits. Density scale controls the current frame’s accumulated brightness, not trail duration.",
+  "源 Samila 实数语法：函数名紧邻左括号；x、y 为采样坐标，a–d 缺省为 0。其他变量必须显式声明为参数；不注入时间。": "Source Samila real expressions: function names must directly precede the opening parenthesis. x and y are sample coordinates; a–d default to 0. Other variables must be declared as parameters. Time is not injected."
 }

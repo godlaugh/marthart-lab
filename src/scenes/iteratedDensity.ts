@@ -1,3 +1,5 @@
+import {usesSourceSamilaMath,resolveSourceSamilaSelection,prepareSourceSamilaRange,sourceSamilaMapProject,type SourceSamilaMathModel} from '../engine/sourceSamilaMath';
+import {prepareSourceSamilaExpressions,type PreparedSourceSamilaExpressions} from '../engine/sourceSamilaExpression';
 import {usesSamilaSourceProjection,prepareSamilaNdcProjection,samilaNdcParticleTransform,samilaNdcPosition,samilaNdcSamplingRotation,samilaNdcDensityViewport,SAMILA_SOURCE_DORMANT_CONTROLS,type SamilaNdcProjection} from '../engine/samilaProjection';
 import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera} from '../engine/sourceCameraMode';
 import {ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from '../engine/ordinarySourceCamera';
@@ -53,7 +55,7 @@ export type IteratedField =
  | {kind:'map';equations:{x:string;y:string;z?:string};parameters:Record<string,number>;dimension:2|3;time:number}
  | {kind:'symmetry';parameters:SymmetryParameters;time:number}
  | {kind:'symmetry-custom';plan:PreparedSymmetryCustomSource;uniforms:Readonly<Record<string,number>>;parameters:Readonly<Record<string,number>>;time:number}
- | {kind:'samila';equations:{f1:string;f2:string};parameters:Record<string,number>;mapping:string;projection:string;lo:number;hi:number;rotation:number;time:number};
+ | {kind:'samila';mathModel?:SourceSamilaMathModel;equations:{f1:string;f2:string};parameters:Record<string,number>;mapping:string;projection:string;lo:number;hi:number;rotation:number;time:number};
 export interface IteratedFrameJob {samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
 function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:SceneDocument):IteratedField {
  const p={...scene.parameters};for(const [key,v]of Object.entries(p))finite(v,`参数 ${key}`);
@@ -71,12 +73,13 @@ function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:
    return{kind:'symmetry-custom',plan,uniforms:bindSymmetryCustomParameters(plan,p),parameters:p,time};
   }
  }
- if(scene.kind!=='symmetry')for(const key of Object.keys(p)){const error=existingParameterNameError(key,scene.kind);if(error)throw new Error(error);}
+ if(scene.kind!=='symmetry'&&!usesSourceSamilaMath(scene))for(const key of Object.keys(p)){const error=existingParameterNameError(key,scene.kind);if(error)throw new Error(error);}
  if(scene.kind==='map')return{kind:'map',equations:{x:scene.equations.x??'sin(a*y)+c*cos(a*x)',y:scene.equations.y??'sin(b*x)+d*cos(b*y)',z:scene.equations.z},parameters:p,dimension:cfg.dimension,time};
  if(scene.kind==='symmetry'){const s=scene.settings,defaults=SYMMETRY_DEFAULT_PARAMETERS,q=validateSymmetryParameters({lambda:p.lambda??defaults.lambda,alpha:p.alpha??defaults.alpha,beta:p.beta??defaults.beta,gamma:p.gamma??defaults.gamma,omega:p.omega??defaults.omega,n:int(s,'degree',SYMMETRY_DEFAULT_SETTINGS.degree,2,50),template:option(s,'template',SYMMETRY_DEFAULT_SETTINGS.template,['standard','modified']) as 'standard'|'modified',delta:p.delta??defaults.delta,deltaPower:int(s,'deltaPower',SYMMETRY_DEFAULT_SETTINGS.deltaPower,1,6)});return{kind:'symmetry',parameters:q,time};}
- const s=scene.settings,lo=numberSetting(s,'start',-Math.PI,-1000,1000),hi=numberSetting(s,'stop',Math.PI,-1000,1000);if(hi<=lo)throw new Error('Samila 采样上限必须大于下限');
- const selection=resolveSamilaSelection(String(s.mapping??'f1_f2'),String(s.projection??'polar'),cfg.seed),rotation=(usesSamilaSourceProjection(scene)?numberSetting(s,'rotation',0):numberSetting(s,'rotation',0,-10000,10000))+time*numberSetting(s,'rotationSpeed',0,-100,100);
- return{kind:'samila',equations:{f1:scene.equations.f1??'sin(a*x*y)+cos(b*x^2)',f2:scene.equations.f2??'cos(c*x+y)+sin(d*y^4)'},parameters:p,...selection,lo,hi,rotation,time};
+ const s=scene.settings,sourceMath=usesSourceSamilaMath(scene),range=sourceMath?prepareSourceSamilaRange(numberSetting(s,'start',-Math.PI),numberSetting(s,'stop',Math.PI)):{lo:numberSetting(s,'start',-Math.PI,-1000,1000),hi:numberSetting(s,'stop',Math.PI,-1000,1000)}, {lo,hi}=range;if(!sourceMath&&hi<=lo)throw new Error('Samila 采样上限必须大于下限');
+ const selection=sourceMath?resolveSourceSamilaSelection(String(s.mapping??'f2_f1'),String(s.projection??'cartesian')):resolveSamilaSelection(String(s.mapping??'f1_f2'),String(s.projection??'polar'),cfg.seed),rotation=(usesSamilaSourceProjection(scene)?numberSetting(s,'rotation',0):numberSetting(s,'rotation',0,-10000,10000))+time*numberSetting(s,'rotationSpeed',0,-100,100);
+ if(sourceMath&&(typeof scene.equations.f1!=='string'||typeof scene.equations.f2!=='string'))throw Error('源 Samila 数学需要显式 f1/f2 公式');
+ return{kind:'samila',...(sourceMath?{mathModel:'mathart-1.7.8' as const}:{}),equations:{f1:scene.equations.f1??'sin(a*x*y)+cos(b*x^2)',f2:scene.equations.f2??'cos(c*x+y)+sin(d*y^4)'},parameters:p,...selection,lo,hi,rotation,time};
 }
 /** The sole normalized mathematical/render frame consumed by CPU and GPU owners.
  * Raw settings never enter a backend; time sampling and replay decisions belong
@@ -95,7 +98,7 @@ export function prepareIteratedFrame(scene:SceneDocument,time:number,frame:numbe
  return{...(samilaProjection?{samilaProjection}:{}),kind:scene.kind as IteratedKind,frame,time,config:cfg,field,transform,palette:validatePalette(scene.palette),fieldKey:JSON.stringify(identity),structuralKey:structure(cfg)};
 }
 interface Field {step?:(point:Point3)=>IteratedStep;sample?:(index:number,frame:number)=>Point3;}
-interface SamilaPrograms {readonly f1:RealEvaluator;readonly f2:RealEvaluator;readonly source1:string;readonly source2:string;}
+interface SamilaPrograms {readonly f1?:RealEvaluator;readonly f2?:RealEvaluator;readonly source?:PreparedSourceSamilaExpressions;readonly key:string;readonly source1:string;readonly source2:string;}
 function compileField(job:IteratedFrameJob,programs?:SamilaPrograms):Field {
  const f=job.field,cfg=job.config;
  if(f.kind==='map'){const step=compileMapIterator(f.equations,f.parameters,f.dimension,f.time);return{step:point=>builtInIterationResult(point,step(point),cfg.escape)};}
@@ -104,7 +107,8 @@ function compileField(job:IteratedFrameJob,programs?:SamilaPrograms):Field {
  if(!programs)throw new Error('Samila CPU 公式尚未编译');
  // Mapping closes over a/b/c/d, and scope/time/rotation belong to this frame.
  // Only the immutable arithmetic evaluators can outlive the frame binding.
- const mapping=compileSamilaMapping(f.mapping,f.parameters),{f1,f2}=programs,scope={...f.parameters,x:0,y:0,t:f.time,time:f.time},co=Math.cos(f.rotation),si=Math.sin(f.rotation);
+ if(f.mathModel){if(!programs.source)throw Error('源 Samila 公式缓存版本不匹配');const bound=programs.source.bind(f.parameters),selection=resolveSourceSamilaSelection(f.mapping,f.projection),input={...selection,parameters:f.parameters},co=Math.cos(f.rotation),si=Math.sin(f.rotation);return{sample:(index,frame)=>{const x=Math.fround(f.lo+(f.hi-f.lo)*uniform(cfg.sampleSeed??cfg.seed,index,frame,0)),y=Math.fround(f.lo+(f.hi-f.lo)*uniform(cfg.sampleSeed??cfg.seed,index,frame,1)),[v1,v2]=bound.evaluate(x,y),point=sourceSamilaMapProject(input,x,y,v1,v2);return[Math.fround(point[0]*co-point[1]*si),Math.fround(point[0]*si+point[1]*co),0];}};}
+ const mapping=compileSamilaMapping(f.mapping,f.parameters),f1=programs.f1!,f2=programs.f2!,scope={...f.parameters,x:0,y:0,t:f.time,time:f.time},co=Math.cos(f.rotation),si=Math.sin(f.rotation);
  return{sample:(index,frame)=>{scope.x=f.lo+(f.hi-f.lo)*uniform(cfg.sampleSeed??cfg.seed,index,frame,0);scope.y=f.lo+(f.hi-f.lo)*uniform(cfg.sampleSeed??cfg.seed,index,frame,1);const point=projectSamila(...mapping(scope.x,scope.y,f1(scope),f2(scope)),f.projection);return[point[0]*co-point[1]*si,point[0]*si+point[1]*co,0];}};
 }
 
@@ -127,15 +131,15 @@ export class IteratedDensitySession {
  private clearReplay(){this.key='';this.state=undefined;this.hits=0;this.fallback=undefined;}
  private resetSimulation(){this.gpu?.dispose();this.gpu=undefined;this.gpuScope=undefined;this.clearReplay();}
  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{this.resetSimulation();this.samilaPrograms=undefined;},failures);}
- /** Samila uses unrestricted, own-scope symbol lookup, including lazy branches.
-  * Parameter names/values do not change compilation semantics. Never turn this
-  * into compileReal(source, names): strict symbol validation is a different API.
-  * Keep only the current successful pair, installed after both parses succeed. */
- private programs(equations:{f1:string;f2:string}):SamilaPrograms {
-  const current=this.samilaPrograms;
-  if(current?.source1===equations.f1&&current.source2===equations.f2)return current;
+ /** Legacy Samila retains unrestricted own-scope symbol lookup and lazy branches.
+  * Source Samila owns fixed AST slots, so its cache also includes parameter names
+  * and math version. Install only after both source parsers/emitters succeed. */
+ private programs(field:Extract<IteratedField,{kind:'samila'}>):SamilaPrograms {
+  const equations=field.equations,key=JSON.stringify([field.mathModel,field.mathModel?Object.keys(field.parameters).sort():undefined]),current=this.samilaPrograms;
+  if(current?.key===key&&current.source1===equations.f1&&current.source2===equations.f2)return current;
+  if(field.mathModel)return this.samilaPrograms={source:prepareSourceSamilaExpressions(equations,Object.keys(field.parameters)),key,source1:equations.f1,source2:equations.f2};
   const f1=compileReal(equations.f1),f2=compileReal(equations.f2);
-  return this.samilaPrograms={f1,f2,source1:equations.f1,source2:equations.f2};
+  return this.samilaPrograms={f1,f2,key,source1:equations.f1,source2:equations.f2};
  }
  diagnostics(){return{retainedBytes:(this.state?stateBytes(this.state)+this.key.length*2:0)+(this.gpu?.diagnostics().retainedBytes??0),samilaCompiledExpressions:this.samilaPrograms?2:0,gpu:this.gpu?.diagnostics(),backend:this.gpu?'webgl2':'cpu',frame:this.state?.frame??null,cacheHits:this.hits,steps:this.state?.steps??0,deposited:this.state?.deposited??0,recordedPasses:this.state?.recordedPasses??0,lastBatchSize:this.state?.lastBatchSize??null,lastFramePasses:this.state?.lastFramePasses??0,lastFrameSamples:this.state?.lastFrameSamples??0,replays:this.state?.replays??0,clears:this.state?.clears??0,sourceCameraAnchor:this.state?.sourceCameraAnchor?structuredClone(this.state.sourceCameraAnchor):undefined,samilaAnchor:this.state?.samilaAnchor,bounds:this.state?{...this.state.bounds}:undefined};}
  /** Explicit copied raw-ink diagnostic; never a per-frame presentation copy. */
@@ -218,7 +222,7 @@ export class IteratedDensitySession {
     const facts=this.gpu.step(job,{resetParticles,clearInk:clear,width,height,projection:view.projection,padding:view.padding,bounds:view.bounds??(frame===0?undefined:s.bounds),isCancelled:c.isCancelled});
     s.structuralKey=job.structuralKey;s.fieldKey=job.fieldKey;s.bounds=facts.bounds;s.steps+=facts.steps;s.invalid+=facts.invalid;s.accepted+=facts.accepted;s.clipped+=facts.clipped;s.sampleInvalid+=facts.sampleInvalid;s.deposited+=samples;s.recordedPasses+=passes;s.lastFramePasses=passes;s.lastFrameSamples=samples;s.history=job.history?.next;s.lastBatchSize=cfg.count;if(job.history)s.completedSamila=samilaToneFacts(cfg,width,height,s.recordedPasses);s.frame=frame;newFrames++;continue;
    }
-   const f=compileField(job,job.field.kind==='samila'?this.programs(job.field.equations):undefined),structuralKey=job.structuralKey,transform=job.transform,palette=job.palette,noise=createNoise(cfg.seed),[axisX,axisY]=AXES[view.projection];
+   const f=compileField(job,job.field.kind==='samila'?this.programs(job.field):undefined),structuralKey=job.structuralKey,transform=job.transform,palette=job.palette,noise=createNoise(cfg.seed),[axisX,axisY]=AXES[view.projection];
    if(s.structuralKey!==structuralKey){
     clearInk(s);s.structuralKey=structuralKey;s.replays++;s.fieldKey=job.fieldKey;
     if(base.kind!=='samila'){
@@ -265,6 +269,7 @@ export class IteratedDensitySession {
   if(backend==='webgl2'){const shown=this.gpu!.present(tone,c.isCancelled,densityView);pixels=shown.pixels;occupied=shown.occupiedPixels;maxCount=shown.maxCount;toneBackend=shown.toneBackend;warnings.push(...shown.warnings);}
   else{pixels=toneDensityRgbaPrepared(width,height,s.ink,tone,c.isCancelled,undefined,densityView);for(let i=3;i<s.ink.length;i+=4){if((i&65535)===3)cancelled(c);if(s.ink[i]>0)occupied++;maxCount=Math.max(maxCount,s.ink[i]);}}
   this.state=s;
+  if(usesSourceSamilaMath(baseScene)&&backend==='cpu')warnings.push('源 Samila CPU 为源表达式双精度求值与 Float32 数学的派生实现；原版使用 GPU，三角函数、幂、极点及未定义输入可能明显不同，不能视为原版 GPU 等效结果。');
   warnings.push(`固定 ${initial.fps} Hz 的独立持续批次；本次推进 ${newFrames} 帧，累计数学求值 ${s.steps} 次。`);
   if(captured)warnings.push('源相机在密度采样前投影；Map 变化重拍锚点，Symmetry 保留角度历史。编辑、尺寸和导出使用本地确定性重放；点覆盖、随机序列及原版整图仍未对照。');
   if(tone.model==='normalized-v2')warnings.push(NORMALIZED_DENSITY_NOTICE);
@@ -291,13 +296,19 @@ export const iteratedDensityControls:ControlSpec[]=[
 ];
 export function visibleIteratedControls(kind:SceneKind,settings:Settings,controls:ControlSpec[]):ControlSpec[] {
  if(!['map','symmetry','samila'].includes(kind))return controls;
- const active=settings.iteratedMode==='continuous',normalized=active&&((kind!=='samila'&&settings.densityToneModel==='normalized-v2')||(kind==='samila'&&settings.densityToneModel==='samila-normalized-v2')),own=new Set(iteratedDensityControls.map(c=>c.key)),hidden=new Set<string>();
+ const sourceMath=usesSourceSamilaMath({kind,settings}),active=settings.iteratedMode==='continuous',normalized=active&&((kind!=='samila'&&settings.densityToneModel==='normalized-v2')||(kind==='samila'&&settings.densityToneModel==='samila-normalized-v2')),own=new Set(iteratedDensityControls.map(c=>c.key)),hidden=new Set<string>();
  if(kind!=='samila')hidden.add('samilaHistoryModel');
+ if(sourceMath)hidden.add('iteratedMode');
  if(usesSamilaSourceProjection({kind,settings}))for(const key of SAMILA_SOURCE_DORMANT_CONTROLS)hidden.add(key);
  if((kind==='map'||kind==='symmetry')&&settings.iteratedCameraModel===CAPTURED_DENSITY_CAMERA_MODEL)for(const key of ['iteratedMode','densityProjection','densityView','densityCenterX','densityCenterY','densitySpan','densityPadding'])hidden.add(key);
  if(!normalized)for(const c of [...normalizedDensityControls,...samilaToneControls])hidden.add(c.key);
  else for(const k of ['toneMap','paletteMode','dynamicRange','exposure','gamma','contrast','brightness','saturation'])hidden.add(k);
  if(!active){for(const k of own)if(k!=='iteratedMode')hidden.add(k);if(kind==='symmetry')for(const axis of ['X','Y'])for(const edge of ['Min','Max'])hidden.add('initial'+axis+edge);}
  else {for(const k of ['count','colorMetric','presentation','densityAccumulation','densityLifetime','densitySampleRate','densityDecay'])hidden.add(k);if(kind==='samila'){hidden.add('iterationsPerFrame');hidden.add('burnIn');}else for(const k of ['alpha','showTrails','trailLifetime'])hidden.add(k);if(settings.showTrails===false)hidden.add('trailLifetime');if(settings.paletteMode!=='source'&&!normalized){for(const k of ['iteratedColor','colorSpeed','colorPhase','stepMetricMin','stepMetricMax','stepMetricNormalize'])hidden.add(k);}else if(settings.iteratedColor!=='step')for(const k of ['stepMetricMin','stepMetricMax','stepMetricNormalize'])hidden.add(k);}
- return controls.filter(c=>!hidden.has(c.key)).map(c=>kind==='samila'&&c.key==='iteratedColor'?{...c,options:c.options?.filter(o=>o.value!=='step')}:c);
+ return controls.filter(c=>!hidden.has(c.key)).map(c=>{if(kind==='samila'&&c.key==='iteratedColor')return{...c,options:c.options?.filter(o=>o.value!=='step')};
+  if(sourceMath&&(c.key==='start'||c.key==='stop'))return{...c,label:c.key==='start'?'源采样边界 A':'源采样边界 B',min:undefined,max:undefined,help:'原版先排序再转 Float32；允许相等边界，超出有限 Float32 范围会明确报错。'};
+  if(sourceMath&&c.key==='funcSeed')return{...c,min:-2147483648,max:2147483647,label:'源函数种子（保留值）',help:'原版数学采样不消费此字段；本地随机探索属于独立工具。'};
+  if(sourceMath&&c.key==='seed')return{...c,label:'本地重放随机种子',help:'用于可重放的本地采样，不是原版每帧 ThreadLocalRandom 随机流。'};
+  if(sourceMath&&(c.key==='mapping'||c.key==='projection'))return{...c,options:c.options?.map(o=>o.value==='random'?{...o,label:c.key==='mapping'?'源 RANDOM · 等同 F1_VS_F2':'源 RANDOM · 等同直角投影'}:o)};
+  return c;});
 }

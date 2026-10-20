@@ -57,3 +57,10 @@ describe('equation editor uses production compiler contracts',()=>{
   const domain=createScene(definition('domain'));expect(analyzeEquation(domain,'f','sqrt(-1)').error).toBeUndefined();
  });
 });
+
+describe('source Samila equation editor scope',()=>{
+ const source=()=>{const s=createScene(definition('samila'));s.settings.iteratedMode='continuous';s.settings.samilaMathModel='mathart-1.7.8';s.parameters={};s.equations={f1:'x',f2:'y'};return s;};
+ it('accepts native real bars and a-d slots, rejects implicit time and local conditional grammar',()=>{const s=source();for(const text of ['|x|','a+x','sin(x)','sqrt(-1)',''])expect(analyzeEquation(s,'f1',text).error,text).toBeUndefined();for(const text of ['time+x','t+x','x>0?x:0','sin (x)','PI','E','TAU','TWO_PI','HALF_PI'])expect(analyzeEquation(s,'f1',text).error,text).toBeDefined();s.parameters={time:2};expect(analyzeEquation(s,'f1','time+x').error).toBeUndefined();const names=analyzeEquation(source(),'f1','x').suggestions.map(v=>v.name);expect(names).toContain('a');expect(names).not.toContain('time');expect(names).not.toContain('PI');});
+ it('shows source coordinate labels without local time and does not claim missing variables evaluate to zero',()=>{const s=source(),html=renderToStaticMarkup(<I18nProvider language="zh"><EquationEditor scene={s} equations={definition('samila').equations} draft={s.equations} onChange={()=>{}} onApply={()=>{}}/></I18nProvider>);expect(html).toContain('f₁(x, y)');expect(html).toContain('不注入时间');expect(html).not.toContain('未绑定变量按 0 求值');});
+ it('does not rename conflicting original shader globals into newly valid parameters',()=>{const s=source();for(const key of ['u_generateMode','scale','offset','radius','noiseLUT','u_rangeStart','PI']){s.parameters={[key]:1};expect(analyzeEquation(s,'f1','x').error,key).toBeDefined();}s.parameters={e:1,pi:2};expect(analyzeEquation(s,'f1','e+pi+x').error).toBeUndefined();});
+});
