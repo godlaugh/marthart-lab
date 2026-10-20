@@ -7,7 +7,7 @@ import {generateScene} from '../src/engine/temporal';
 import type {SceneDocument,SceneOutput} from '../src/types';
 
 const source=(settings?:unknown)=>({config_version:'1.0.0',type:'SAMILA',name:'Tone import',parameters:{a:3},equations:{f1:'sin(x)',f2:'cos(y)'},...(settings===undefined?{}:{settings})});
-const parse=(settings?:unknown)=>parseLegacyScene(JSON.stringify(source(settings)));
+const parse=(settings?:unknown)=>parseLegacyScene(JSON.stringify(source(settings)),{samilaProjection:'legacy-v1'});
 function small(scene:SceneDocument){Object.assign(scene.settings,{batchSize:32,iteratedBackend:'cpu',iteratedFps:10,showTrails:false});return scene;}
 const context={time:.1,width:16,height:12,quality:'export' as const};
 function pixels(output:SceneOutput){if(output.type!=='raster')throw Error('expected raster');return output.pixels;}

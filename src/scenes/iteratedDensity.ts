@@ -1,3 +1,4 @@
+import {usesSamilaSourceProjection,prepareSamilaNdcProjection,samilaNdcParticleTransform,samilaNdcPosition,samilaNdcSamplingRotation,samilaNdcDensityViewport,SAMILA_SOURCE_DORMANT_CONTROLS,type SamilaNdcProjection} from '../engine/samilaProjection';
 import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera} from '../engine/sourceCameraMode';
 import {ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from '../engine/ordinarySourceCamera';
 import {prepareCapturedDensityCamera,prepareCapturedDensityView,projectCapturedDensityPoint,type CapturedDensityAnchor,type PreparedDensityCameraFrame} from '../engine/sourceDensityCamera';
@@ -53,7 +54,7 @@ export type IteratedField =
  | {kind:'symmetry';parameters:SymmetryParameters;time:number}
  | {kind:'symmetry-custom';plan:PreparedSymmetryCustomSource;uniforms:Readonly<Record<string,number>>;parameters:Readonly<Record<string,number>>;time:number}
  | {kind:'samila';equations:{f1:string;f2:string};parameters:Record<string,number>;mapping:string;projection:string;lo:number;hi:number;rotation:number;time:number};
-export interface IteratedFrameJob {sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
+export interface IteratedFrameJob {samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
 function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:SceneDocument):IteratedField {
  const p={...scene.parameters};for(const [key,v]of Object.entries(p))finite(v,`参数 ${key}`);
  if(scene.kind==='symmetry'){
@@ -74,7 +75,7 @@ function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:
  if(scene.kind==='map')return{kind:'map',equations:{x:scene.equations.x??'sin(a*y)+c*cos(a*x)',y:scene.equations.y??'sin(b*x)+d*cos(b*y)',z:scene.equations.z},parameters:p,dimension:cfg.dimension,time};
  if(scene.kind==='symmetry'){const s=scene.settings,defaults=SYMMETRY_DEFAULT_PARAMETERS,q=validateSymmetryParameters({lambda:p.lambda??defaults.lambda,alpha:p.alpha??defaults.alpha,beta:p.beta??defaults.beta,gamma:p.gamma??defaults.gamma,omega:p.omega??defaults.omega,n:int(s,'degree',SYMMETRY_DEFAULT_SETTINGS.degree,2,50),template:option(s,'template',SYMMETRY_DEFAULT_SETTINGS.template,['standard','modified']) as 'standard'|'modified',delta:p.delta??defaults.delta,deltaPower:int(s,'deltaPower',SYMMETRY_DEFAULT_SETTINGS.deltaPower,1,6)});return{kind:'symmetry',parameters:q,time};}
  const s=scene.settings,lo=numberSetting(s,'start',-Math.PI,-1000,1000),hi=numberSetting(s,'stop',Math.PI,-1000,1000);if(hi<=lo)throw new Error('Samila 采样上限必须大于下限');
- const selection=resolveSamilaSelection(String(s.mapping??'f1_f2'),String(s.projection??'polar'),cfg.seed),rotation=numberSetting(s,'rotation',0,-10000,10000)+time*numberSetting(s,'rotationSpeed',0,-100,100);
+ const selection=resolveSamilaSelection(String(s.mapping??'f1_f2'),String(s.projection??'polar'),cfg.seed),rotation=(usesSamilaSourceProjection(scene)?numberSetting(s,'rotation',0):numberSetting(s,'rotation',0,-10000,10000))+time*numberSetting(s,'rotationSpeed',0,-100,100);
  return{kind:'samila',equations:{f1:scene.equations.f1??'sin(a*x*y)+cos(b*x^2)',f2:scene.equations.f2??'cos(c*x+y)+sin(d*y^4)'},parameters:p,...selection,lo,hi,rotation,time};
 }
 /** The sole normalized mathematical/render frame consumed by CPU and GPU owners.
@@ -82,7 +83,7 @@ function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:
  * to IteratedDensitySession, not the GPU adapter. */
 export function prepareIteratedFrame(scene:SceneDocument,time:number,frame:number,authored:SceneDocument=scene):IteratedFrameJob {
  if(!['map','symmetry','samila'].includes(scene.kind))throw new Error('持续批次帧类型无效');finite(time,'持续帧时间');if(!Number.isSafeInteger(frame)||frame<0)throw new Error('持续帧索引无效');
- const cfg=config(scene),field=parseField(scene,cfg,time,authored),transform=parseParticleTransform(scene.settings);
+ const cfg=config(scene),field=parseField(scene,cfg,time,authored),samilaProjection=prepareSamilaNdcProjection(scene),transform=samilaProjection?samilaNdcParticleTransform(samilaProjection):parseParticleTransform(scene.settings);
  const {time:ignored,...fieldIdentity}=field;
  // Parsed source has several retained representations. Its program identity
  // already owns their derivation; do not serialize all of them into each frame
@@ -90,8 +91,8 @@ export function prepareIteratedFrame(scene:SceneDocument,time:number,frame:numbe
  const mathematicalIdentity=field.kind==='symmetry-custom'?{kind:field.kind,programKey:field.plan.programKey,parameters:field.parameters}:fieldIdentity;
  // In v2 parameters have their own acknowledged-snapshot boundary. Other
  // mathematics still clears history immediately, without six-pass compensation.
- const identity=cfg.samilaHistoryModel==='bounded-v2'?{...mathematicalIdentity,parameters:undefined,...(samilaCameraEnabled(scene)?{transform:[transform.sx,transform.sy,transform.sz,transform.ox,transform.oy,transform.oz,transform.co,transform.si]}:{})}:mathematicalIdentity;
- return{kind:scene.kind as IteratedKind,frame,time,config:cfg,field,transform,palette:validatePalette(scene.palette),fieldKey:JSON.stringify(identity),structuralKey:structure(cfg)};
+ const identity=cfg.samilaHistoryModel==='bounded-v2'?{...mathematicalIdentity,parameters:undefined,...(samilaProjection?{samilaProjection}:{}),...(samilaCameraEnabled(scene)?{transform:[transform.sx,transform.sy,transform.sz,transform.ox,transform.oy,transform.oz,transform.co,transform.si]}:{})}:mathematicalIdentity;
+ return{...(samilaProjection?{samilaProjection}:{}),kind:scene.kind as IteratedKind,frame,time,config:cfg,field,transform,palette:validatePalette(scene.palette),fieldKey:JSON.stringify(identity),structuralKey:structure(cfg)};
 }
 interface Field {step?:(point:Point3)=>IteratedStep;sample?:(index:number,frame:number)=>Point3;}
 interface SamilaPrograms {readonly f1:RealEvaluator;readonly f2:RealEvaluator;readonly source1:string;readonly source2:string;}
@@ -165,10 +166,10 @@ export class IteratedDensitySession {
   const base=inputScene(baseScene),zero=runtime.atTime(Number(base.settings.iteratedStartTime??0)),initial=config(zero),target=Math.max(-1,Math.floor((c.time-initial.startTime)*initial.fps+1e-9)),warnings:string[]=[];
   if(target<0)backend='cpu';
   warnings.push(...parseSamilaCamera(baseScene).warnings);
-  const [width,height]=rasterDimensions(c,1,backend,warnings),view=parseDensityViewport(current,width,height),bytes=backend==='webgl2'?iteratedGpuBytes(initial.count,width,height,2048,initial.samilaHistoryModel==='bounded-v2',hasSymmetryCustom(base))+width*height*4:(base.kind==='samila'?0:initial.count*33)+width*height*36;
+  const [width,height]=rasterDimensions(c,1,backend,warnings),view=usesSamilaSourceProjection(current)?samilaNdcDensityViewport():parseDensityViewport(current,width,height),bytes=backend==='webgl2'?iteratedGpuBytes(initial.count,width,height,2048,initial.samilaHistoryModel==='bounded-v2',hasSymmetryCustom(base))+width*height*4:(base.kind==='samila'?0:initial.count*33)+width*height*36;
   const captured=usesCapturedDensityCamera(baseScene);
   if(captured){view.projection='xy';view.bounds={minX:-1,maxX:1,minY:-1,maxY:1};}
-  else if(runtime.bounds)view.bounds=runtime.bounds;
+  else if(runtime.bounds&&!usesSamilaSourceProjection(current))view.bounds=runtime.bounds;
   if(bytes>MAX_LIVE_BYTES)throw new Error('持续密度已知工作缓冲超过 768 MiB；请减少批次粒子数或画布尺寸');
   validatePalette(current.palette);
   const reusableCompiler=backend==='webgl2'&&retainsIteratedCompiler(base),scope=JSON.stringify([base.id,base.kind]);
@@ -195,13 +196,13 @@ export class IteratedDensitySession {
     s.sourceCameraAnchor=job.sourceCamera.anchor;
    }
    if(runtime.revision!==undefined)cfg.sampleSeed=Math.floor(uniform(cfg.seed,0,runtime.revision,251)*4294967296);
-   if(base.kind==='samila')s.samilaGeometry=samilaViewportTransform(snapshot);
+   if(base.kind==='samila'){const projection=job.samilaProjection;s.samilaGeometry=projection?{scaleX:projection.scaleX,scaleY:projection.scaleY,offsetX:projection.offsetX,offsetY:projection.offsetY}:samilaViewportTransform(snapshot);}
    if(cfg.fps!==initial.fps||cfg.startTime!==initial.startTime)throw new Error('持续采样时钟和 Replay 起点不能在运行中动画改变');
    if(cfg.samilaHistoryModel==='bounded-v2'){if(job.field.kind!=='samila')throw new Error('Samila 历史场类型不匹配');job.history=prepareSamilaHistoryFrame({parameters:job.field.parameters,fieldKey:job.fieldKey,frame,count:cfg.count,record:cfg.record},s.history,s.structuralKey!==job.structuralKey);}
    // Clear ownership is resolved on the unanchored field. Camera theta never
    // changes that key, compensation, PRNG addresses or parameter acknowledgement.
    const camera=samilaCameraFrame(snapshot);
-   if(camera){if(!job.history||job.field.kind!=='samila')throw new Error('Samila 相机缺少限幅历史帧');if(job.history.clear||s.samilaAnchor===undefined)s.samilaAnchor=camera.theta;job.field={...job.field,rotation:samilaSamplingRotation(job.field.rotation,s.samilaAnchor)};}
+   if(camera){if(!job.history||job.field.kind!=='samila')throw new Error('Samila 相机缺少限幅历史帧');if(job.history.clear||s.samilaAnchor===undefined)s.samilaAnchor=camera.theta;job.field={...job.field,rotation:job.samilaProjection?samilaNdcSamplingRotation(job.field.rotation,s.samilaAnchor):samilaSamplingRotation(job.field.rotation,s.samilaAnchor)};}
    const passes=job.history?.passes??(cfg.record?1:0),samples=job.history?.samples??(cfg.record?cfg.count:0),randomFrames=job.history?.randomFrames??[frame];
    // Compensation is charged before backend allocation, copying or sampling.
    if(job.history){preflight(samples);pixelTests+=samples*(Math.ceil(cfg.pointSize)+2)**2;if(!Number.isSafeInteger(pixelTests)||pixelTests>MAX_PIXEL_TESTS)throw new Error('Samila 历史补采超过 20 亿次像素测试；请减少点尺寸、批次或时间');}
@@ -243,7 +244,9 @@ export class IteratedDensitySession {
      // Let the footprint clip at the side edges; a center outside XY may still
      // cover a pixel. Near/far and nonpositive W reject the entire source quad.
      if(projected&&(!projected.clip.every(Number.isFinite)||projected.clip[3]<=0||Math.abs(projected.clip[2])>projected.clip[3])){s.clipped++;return;}
-     const px=projected?projected.pixel[0]-.5:(point[axisX]-bounds.minX)/spanX*width-.5,py=projected?projected.pixel[1]-.5:(bounds.maxY-point[axisY])/spanY*height-.5;
+     const ndc=job.samilaProjection?samilaNdcPosition(job.samilaProjection,point,width,height):undefined;
+     if(ndc&&!ndc.every(Number.isFinite)){s.invalid++;s.sampleInvalid++;return;}
+     const px=ndc?(ndc[0]+1)*width/2-.5:projected?projected.pixel[0]-.5:(point[axisX]-bounds.minX)/spanX*width-.5,py=ndc?(1-ndc[1])*height/2-.5:projected?projected.pixel[1]-.5:(bounds.maxY-point[axisY])/spanY*height-.5;
      const left=Math.max(0,Math.ceil(px-radius-.5)),right=Math.min(width-1,Math.floor(px+radius+.5)),top=Math.max(0,Math.ceil(py-radius-.5)),bottom=Math.min(height-1,Math.floor(py+radius+.5));
      if(left>right||top>bottom){s.clipped++;return;}s.accepted++;
      if(!job.history)pixelTests+=(right-left+1)*(bottom-top+1);if(pixelTests>MAX_PIXEL_TESTS)throw new Error('持续密度单次累积超过 20 亿次像素测试；请减少点尺寸、批次或时间');
@@ -290,6 +293,7 @@ export function visibleIteratedControls(kind:SceneKind,settings:Settings,control
  if(!['map','symmetry','samila'].includes(kind))return controls;
  const active=settings.iteratedMode==='continuous',normalized=active&&((kind!=='samila'&&settings.densityToneModel==='normalized-v2')||(kind==='samila'&&settings.densityToneModel==='samila-normalized-v2')),own=new Set(iteratedDensityControls.map(c=>c.key)),hidden=new Set<string>();
  if(kind!=='samila')hidden.add('samilaHistoryModel');
+ if(usesSamilaSourceProjection({kind,settings}))for(const key of SAMILA_SOURCE_DORMANT_CONTROLS)hidden.add(key);
  if((kind==='map'||kind==='symmetry')&&settings.iteratedCameraModel===CAPTURED_DENSITY_CAMERA_MODEL)for(const key of ['iteratedMode','densityProjection','densityView','densityCenterX','densityCenterY','densitySpan','densityPadding'])hidden.add(key);
  if(!normalized)for(const c of [...normalizedDensityControls,...samilaToneControls])hidden.add(c.key);
  else for(const k of ['toneMap','paletteMode','dynamicRange','exposure','gamma','contrast','brightness','saturation'])hidden.add(k);

@@ -1,3 +1,4 @@
+import {SAMILA_NDC_POSITION_GLSL} from './samilaProjection';
 import {isCapturedDensityView,type PreparedDensityView} from './densityPresentation';
 import type {DensityBounds,DensityProjection} from '../types';
 import type {IteratedFrameJob,IteratedField} from '../scenes/iteratedDensity';
@@ -77,18 +78,21 @@ for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=nextPoint(p);valid=!bad(next)
 newState=vec4(p,metric);newMetadata=uvec2(invalid,valid?1u:0u);gl_Position=vec4(0.);}`;
 const TRANSFORM=`${FLOAT_CLASSIFY}
 uniform vec3 scale,offset;uniform vec2 turn;uniform ivec2 axes;
+uniform int samilaNdc;uniform float samilaAspect;uniform vec2 samilaOffset;
+${SAMILA_NDC_POSITION_GLSL}
 uniform int capturedCamera;uniform mat4 capturedProjection,capturedModelView;
 float norm3(vec3 p){float m=max(max(abs(p.x),abs(p.y)),abs(p.z));return m==0.?0.:m*sqrt(dot(p/m,p/m));}
 vec3 transformed(vec3 p){return vec3(p.x*scale.x*turn.x-p.y*scale.y*turn.y+offset.x,p.x*scale.x*turn.y+p.y*scale.y*turn.x+offset.y,p.z*scale.z+offset.z);}
 // Both statistics and draw use this exact staged projection. Color remains
 // a function of the mathematical point, not screen-space coordinates.
 bool densityPosition(vec3 point,out vec2 projected){
+ if(samilaNdc==1){projected=samilaNdcPosition(point);return finiteFloat(projected.x)&&finiteFloat(projected.y);}
  if(capturedCamera==0){projected=vec2(point[axes.x],point[axes.y]);return true;}
  vec4 eye=capturedModelView*vec4(point,1.);vec4 clip=capturedProjection*eye;
  if(!finiteVector(clip.xyz)||!finiteFloat(clip.w)||clip.w<=0.||clip.z< -clip.w||clip.z>clip.w){projected=vec2(0.);return false;}
  projected=clip.xy/clip.w;return finiteFloat(projected.x)&&finiteFloat(projected.y);
 }
-bool invalidPosition(vec4 p,vec3 t,uint valid){return (valid&1u)==0u||abs(p.x)>=1e12||abs(p.y)>=1e12||!finiteVector(t);}
+bool invalidPosition(vec4 p,vec3 t,uint valid){return (valid&1u)==0u||(samilaNdc==0&&(abs(p.x)>=1e12||abs(p.y)>=1e12))||!finiteVector(t)||(samilaNdc==1&&!finiteVector(vec3(samilaNdcPosition(t),0.)));}
 `;
 const BOUNDS_FIRST=HEADER+TRANSFORM+`uniform sampler2D states;uniform usampler2D counters;uniform ivec2 sourceSize;uniform int count;out vec4 result;
 void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;vec4 bounds=vec4(3.402823466e38,-3.402823466e38,3.402823466e38,-3.402823466e38);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;vec4 state=texelFetch(states,p,0);vec3 t=transformed(state.xyz);if(invalidPosition(state,t,texelFetch(counters,p,0).g))continue;bounds.x=min(bounds.x,t[axes.x]);bounds.y=max(bounds.y,t[axes.x]);bounds.z=min(bounds.z,t[axes.y]);bounds.w=max(bounds.w,t[axes.y]);}result=bounds;}`;
@@ -145,6 +149,7 @@ export class IteratedDensityGpu {
   catch(e){buffers.forEach(b=>gl.deleteBuffer(b));textures.forEach(t=>gl.deleteTexture(t));vaos.forEach(v=>gl.deleteVertexArray(v));gl.deleteFramebuffer(framebuffer);gl.deleteTransformFeedback(feedback);this.resources=undefined;throw e;}
  }
  private transform(p:Program,job:IteratedFrameJob,projection:DensityProjection){const gl=this.gl!,t=job.transform;checked([t.sx,t.sy,t.sz,t.ox,t.oy,t.oz,t.co,t.si].every(finite32),'粒子变换超出 GPU float32');gl.uniform3f(this.location(p,'scale'),Math.fround(t.sx),Math.fround(t.sy),Math.fround(t.sz));gl.uniform3f(this.location(p,'offset'),Math.fround(t.ox),Math.fround(t.oy),Math.fround(t.oz));gl.uniform2f(this.location(p,'turn'),Math.fround(t.co),Math.fround(t.si));const a={xy:[0,1],xz:[0,2],yz:[1,2]}[projection];checked(Boolean(a),'GPU 投影无效');this.iv(p,'axes',a[0],a[1]);
+  this.i(p,'samilaNdc',job.samilaProjection?1:0);gl.uniform2f(this.location(p,'samilaOffset'),job.samilaProjection?.offsetX??0,job.samilaProjection?.offsetY??0);this.f(p,'samilaAspect',this.resources!.width/this.resources!.height);
   this.i(p,'capturedCamera',job.sourceCamera?1:0);if(job.sourceCamera){const anchor=job.sourceCamera.anchor;for(const [name,matrix]of[['capturedProjection',anchor.projection],['capturedModelView',anchor.modelView]]as const){gl.uniformMatrix4fv(this.location(p,name),false,matrix.columnMajor);}}
  }
  private setBounds(p:Program,b:DensityBounds){checkBounds(b);this.gl!.uniform4f(this.location(p,'bounds'),Math.fround(b.minX),Math.fround(b.maxX),Math.fround(b.minY),Math.fround(b.maxY));}
@@ -227,7 +232,7 @@ export class IteratedDensityGpu {
   if(samila&&cfg.record){const field=job.field;if(field.kind!=='samila')throw new Error('Samila 帧标签不一致');for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const seeds=iteratedSamilaSeedChunk({...cfg,seed:cfg.sampleSeed??cfg.seed},randomFrame,field.lo,field.hi,offset,Math.min(CHUNK,cfg.count-offset));gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*16,seeds);}}
   if(!samila||cfg.record){this.iterate(job,source,cfg.iterations,samila?0:cfg.burn+1+job.frame*16,samila||!options.resetParticles,options.isCancelled);this.uploadState();}
   if(customStorage){const errors=this.reduce(this.program('custom-errors-first',QUAD,CUSTOM_ERRORS_FIRST),this.program('custom-errors-reduce',QUAD,CUSTOM_ERRORS_REDUCE),true,()=>{},options.isCancelled);checked(errors[0]===0,'自定义对称公式超过单次调用的循环工作预算');}
-  if(job.sourceCamera)this.bounds={minX:-1,maxX:1,minY:-1,maxY:1};else if(options.bounds)this.bounds={...options.bounds};else if(!this.bounds||job.frame===0&&pass===0)this.bounds=samila&&!cfg.record?{minX:-options.width/options.height,maxX:options.width/options.height,minY:-1,maxY:1}:this.autoBounds(job,options);const bounds=this.bounds!;
+  if(job.sourceCamera||job.samilaProjection)this.bounds={minX:-1,maxX:1,minY:-1,maxY:1};else if(options.bounds)this.bounds={...options.bounds};else if(!this.bounds||job.frame===0&&pass===0)this.bounds=samila&&!cfg.record?{minX:-options.width/options.height,maxX:options.width/options.height,minY:-1,maxY:1}:this.autoBounds(job,options);const bounds=this.bounds!;
   const stat=samila&&!cfg.record?new Uint32Array(4):this.reduce(this.program('stats-first',QUAD,STATS_FIRST),this.program('stats-reduce',QUAD,STATS_REDUCE),true,p=>{this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r!.width,r!.height);this.f(p,'radius',cfg.pointSize/2);this.i(p,'recording',cfg.record?1:0);},options.isCancelled);
 
   if(cfg.record){

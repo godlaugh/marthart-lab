@@ -1,3 +1,4 @@
+import {usesSamilaSourceProjection} from './engine/samilaProjection';
 import {SourcePerlinCpuControls} from './components/SourcePerlinCpuControls';
 import {sourcePerlinPreviewViewport} from './engine/sourcePerlinViewport';
 import {usesSourcePerlin,usesSourcePerlinCpu} from './engine/sourcePerlinIdentity';
@@ -313,7 +314,7 @@ export default function App() {
   const def = definition(scene.kind),
     Icon = icons[scene.kind];
   const experience=bouncingExperience(scene),sourceBouncing=usesSourceBouncing(scene);
-  const samilaCameraActive=samilaCameraEnabled(scene),samilaNavigationLocked=samilaCameraActive||!!(output?.type==='raster'&&output.samilaView);
+  const samilaSourceProjection=usesSamilaSourceProjection(scene),samilaCameraActive=samilaCameraEnabled(scene),samilaNavigationLocked=samilaCameraActive||!!(output?.type==='raster'&&output.samilaView);
   const equationBasis=useRef({id:scene.id,equations:scene.equations});
   const perlinPreset=useMemo(()=>matchingPerlinPreset(scene,def),[scene,def]);
   let rootCompletion:number|undefined,rootSamplingFps:number|undefined,rootScheduleError='';
@@ -1193,12 +1194,12 @@ export default function App() {
                   <SourceSurfaceControls key={`source-mesh:${scene.id}`} scene={scene} onChange={edit}/>
                   {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={edit} disabled={playing||recording}/>}
                   {scene.kind==='samila'&&<details open className="inspector-section"><summary>{t('Samila 相机')}</summary><div className="section-body">
-                    <p className="muted">{t('启用后切换为持续批次、限幅历史与 XY 投影。相机旋转保留累积图像；编辑起始角会重新计算历史。')}</p>
+                    <p className="muted">{t(samilaSourceProjection?'原版视口：拖动按画布比例平移，滚轮围绕原点缩放。调整视图会清空并重新采样；不会自动适配边界。':'启用后切换为持续批次、限幅历史与 XY 投影。相机旋转保留累积图像；编辑起始角会重新计算历史。')}</p>
                     {!samilaCameraActive&&<button disabled={busy||playing} onClick={()=>edit({...scene,settings:initializeSamilaCamera(scene.settings)})}>{t('启用锚定 theta 相机')}</button>}
                     {scene.settings.samilaCameraModel===SAMILA_CAMERA_MODEL&&<>
                       {samilaCameraControls.map(spec=><Control key={spec.key} spec={spec} value={scene.settings[spec.key]??0} onChange={value=>changeSetting(spec.key,value)}/>)}
                       <button disabled={busy||playing||!scene.runtimeSamilaViewport} onClick={()=>edit({...scene,runtimeSamilaViewport:undefined})}>{t('重置临时视图')}</button>
-                      <button disabled={busy||playing} onClick={()=>changeSetting('samilaCameraModel','legacy-v1')}>{t('停用锚定 theta 相机')}</button>
+                      {!samilaSourceProjection&&<button disabled={busy||playing} onClick={()=>changeSetting('samilaCameraModel','legacy-v1')}>{t('停用锚定 theta 相机')}</button>}
                     </>}
                   </div></details>}
                   {hasContinuousDensity(scene)&&<div className="section-body"><button onClick={()=>changeSetting('iteratedStartTime',time)}><RotateCcw size={14}/>{t('从当前时间重新累积')}</button></div>}

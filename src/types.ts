@@ -187,6 +187,8 @@ export interface AnimationTrack {
 export interface SamilaViewportTransform {scaleX:number;scaleY:number;offsetX:number;offsetY:number;}
 export interface RuntimeSamilaViewport extends SamilaViewportTransform {
   model:"samila-runtime-viewport-v1"; baselineKey:string; revision:number; at:number;
+  /** Runtime gesture units; omission preserves legacy delivered-bounds units. */
+  projectionModel?:"source-ndc-v1";
   bounds:DensityBounds;
 }
 /** Ordered authored input; the last command assigned to one update wins. */

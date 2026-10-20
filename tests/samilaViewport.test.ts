@@ -4,7 +4,7 @@ import {definition} from '../src/scenes';
 import {initializeSamilaCamera,samilaCameraFrame} from '../src/engine/samilaCamera';
 import {captureSamilaViewport,navigateSamilaViewport,applySamilaViewport,readSamilaViewport,commitSamilaViewport,retainSamilaViewportOnSave} from '../src/engine/samilaViewport';
 import {IteratedDensitySession,prepareIteratedFrame} from '../src/scenes/iteratedDensity';
-import type {AnimationTrack,SceneDocument,SceneOutput} from '../src/types';
+import type {AnimationTrack,SceneDocument,SceneOutput,RuntimeSamilaViewport} from '../src/types';
 const context={time:0,width:97,height:71,quality:'export' as const};
 function scene(){const s=createScene(definition('samila'));s.id='navigation';s.settings=initializeSamilaCamera({...s.settings,iteratedBackend:'cpu',batchSize:64,iteratedFps:10,seed:7,densityView:'manual',densitySpan:10,pointSize:2,showTrails:false,accumulationDecay:1,alpha:1,mapping:'f1_f2',projection:'cartesian',rotation:0,rotationSpeed:0,scaleX:1.2,scaleY:.8,offsetX:.2,offsetY:-.3,iteratedColor:'noise'});s.equations={f1:'x+a',f2:'y'};s.parameters={a:0};s.timeline.tracks=[];return s;}
 function track(patch:Partial<AnimationTrack>):AnimationTrack{return{id:'t',type:'numeric',target:'camera.theta',from:0,to:2,start:0,duration:2,easing:'linear',pingPong:false,enabled:true,...patch};}
@@ -31,4 +31,31 @@ describe('Samila temporary geometry and producer ownership',()=>{
  it('starts the local sampling grid at the delivered fractional time',()=>{const h=hot(scene(),.05);expect(cold(h,.05).out.temporal?.frames).toBe(1);expect(cold(h,.10).out.temporal?.frames).toBe(1);expect(cold(h,.15).out.temporal?.frames).toBe(2);});
  it('keeps pre-camera local geometry history behavior when the camera was not enabled',()=>{const s=scene();delete s.settings.samilaCameraModel;s.timeline.tracks=[track({target:'settings.scaleX',from:1,to:2,duration:.1})];expect(cold(s,.1).facts).toMatchObject({recordedPasses:2,clears:1});});
  it('clears animated geometry with one batch and a new theta anchor',()=>{const s=scene();s.timeline.tracks=[track({}),track({id:'g',target:'settings.offsetX',from:0,to:1,duration:.1})];const r=cold(s,.1);expect(r.facts).toMatchObject({recordedPasses:1,lastFramePasses:1,clears:2});expect(r.facts.samilaAnchor).toBeCloseTo(.1,14);});
+});
+
+describe('source NDC gesture units and float32 event history',()=>{
+ const F=Math.fround,marker='source-ndc-v1' as const;
+ function captured(){return{model:'samila-runtime-viewport-v1' as const,projectionModel:marker,baselineKey:'fixture',at:0,scaleX:F(.33),scaleY:F(.7),offsetX:F(.13),offsetY:F(-.2),bounds:{minX:-200,maxX:900,minY:-3,maxY:8}};}
+ it('uses screen NDC units regardless of prior auto-fit bounds, scale or theta',()=>{
+  const c=captured(),pan=navigateSamilaViewport(c,{kind:'pan',dx:43.3,dy:-27.1,width:733.25,height:421.5},1);
+  expect(pan.offsetX).toBe(F(c.offsetX+F(43.3/F(733.25)*2)));expect(pan.offsetY).toBe(F(c.offsetY+F(27.1/F(421.5)*2)));
+  expect(pan.bounds).toEqual({minX:-1,maxX:1,minY:-1,maxY:1});expect(pan.scaleX).toBe(c.scaleX);expect(pan.scaleY).toBe(c.scaleY);
+  const other=navigateSamilaViewport({...c,scaleX:100,scaleY:-100,bounds:{minX:-1,maxX:1,minY:-1,maxY:1}},{kind:'pan',dx:43.3,dy:-27.1,width:733.25,height:421.5},1);expect([other.offsetX,other.offsetY]).toEqual([pan.offsetX,pan.offsetY]);
+ });
+ it('rounds count, factor and each multiplication in the native order',()=>{
+  const c=captured(),count=.123456789123,expected=F(Math.pow(F(1.05),-F(count))),out=navigateSamilaViewport(c,{kind:'zoom',wheelCount:count},1);
+  expect(out.scaleX).toBe(F(c.scaleX*expected));expect(out.scaleY).toBe(F(c.scaleY*expected));expect(out.offsetX).toBe(c.offsetX);expect(out.offsetY).toBe(c.offsetY);
+  expect(()=>navigateSamilaViewport(c,{kind:'zoom',wheelCount:-1e10},1)).toThrow('数值范围');expect(()=>navigateSamilaViewport(c,{kind:'pan',dx:1,dy:1,width:1e-100,height:10},1)).toThrow('数值范围');
+ });
+ it('keeps event-by-event rounding, not a recomputed pointerdown total',()=>{
+  const c=captured();let current:Omit<RuntimeSamilaViewport,'revision'>=c,expected=c.offsetX;
+  for(let n=1;n<=32;n++){current=navigateSamilaViewport(current,{kind:'pan',dx:.11,dy:0,width:733,height:421},n);expected=F(expected+F(.11/733*2));}
+  expect(current.offsetX).toBe(expected);expect(current.offsetX).not.toBe(navigateSamilaViewport(c,{kind:'pan',dx:.11*32,dy:0,width:733,height:421},32).offsetX);
+ });
+ it('binds projection ownership and rejects a stale gesture after mode changes',()=>{
+  const s=scene();s.settings.samilaProjectionModel=marker;const owner=new IteratedDensitySession(),out=owner.generate(s,context),c=captureSamilaViewport(s,out);owner.reset();expect(c.projectionModel).toBe(marker);expect(c.scaleX).toBe(F(1.2));
+  const v=navigateSamilaViewport(c,{kind:'zoom',wheelCount:1},1),h={...s,runtimeSamilaViewport:v};expect(readSamilaViewport(h)).toBeDefined();const legacy={...h,settings:{...h.settings}};delete legacy.settings.samilaProjectionModel;expect(readSamilaViewport(legacy)).toBeUndefined();
+  expect(readSamilaViewport({...h,runtimeSamilaViewport:{...v,projectionModel:undefined}})).toBeUndefined();expect(()=>readSamilaViewport({...h,runtimeSamilaViewport:{...v,projectionModel:'unknown' as any}})).toThrow('投影模型');
+  expect(persistentScene(h).runtimeSamilaViewport).toBeUndefined();expect(parseScene(JSON.stringify(persistentScene(h))).settings.samilaProjectionModel).toBe(marker);
+ });
 });

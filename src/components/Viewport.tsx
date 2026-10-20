@@ -152,7 +152,10 @@ export const Viewport = forwardRef<
       if(!frame||!delivered||frame.source!==current.scene||delivered.source!==frame.source||delivered.output.type!=='raster')return;
       const out=delivered.output,view=captureSamilaViewport(current.scene,out);
       revision=Math.max(revision,current.scene.runtimeSamilaViewport?.revision??0);
-      return{view,expected:current.scene,width:out.width,height:out.height,scale:rasterPresentationRect(element.clientWidth,element.clientHeight,out.width,out.height).scale};
+      const rect=rasterPresentationRect(element.clientWidth,element.clientHeight,out.width,out.height);
+      // Source drag is measured in logical screen dimensions; DPR never changes
+      // NDC delta. Legacy gestures retain their original physical-to-CSS mapping.
+      return view.projectionModel?{view,expected:current.scene,width:rect.width,height:rect.height,scale:1}:{view,expected:current.scene,width:out.width,height:out.height,scale:rect.scale};
     };
     const planeView=()=>{
       const current=interaction.current;
@@ -204,6 +207,9 @@ export const Viewport = forwardRef<
           const accepted=interaction.current.onSamilaViewport?.(drag.expected,next,!drag.began);
           if(!accepted){drag=undefined;return;}
           drag.expected=accepted;drag.began=true;drag.lastX=event.clientX;drag.lastY=event.clientY;
+          // Native drag adds each event's float32 delta. Recomputing a total
+          // displacement from pointerdown would discard that rounding history.
+          if(drag.view.projectionModel){drag.view=next;drag.x=event.clientX;drag.y=event.clientY;}
         }else if(drag.mode==='plane')interaction.current.onViewSettings?.(panPlane(drag.camera as PlaneNavigation,(event.clientX-drag.x)/drag.scale,(event.clientY-drag.y)/drag.scale));
         else {const view=drag.camera as {yaw:number;pitch:number},width=Math.max(1,element.clientWidth),height=Math.max(1,element.clientHeight);interaction.current.onViewSettings?.({bulbCameraYaw:view.yaw-(event.clientX-drag.x)/width*2*Math.PI,bulbCameraPitch:Math.max(-1.55,Math.min(1.55,view.pitch+(event.clientY-drag.y)/height*Math.PI))});}
       }catch(error){setRenderError(error instanceof Error?error.message:String(error));}

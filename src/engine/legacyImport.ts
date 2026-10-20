@@ -15,6 +15,8 @@ import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type S
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
 import {FRACTAL_SOURCE_COLOR_PROFILE,prepareFractalSourceColorImport} from './fractalSourceColor';
 import {initializeSamilaCamera} from './samilaCamera';
+import {SAMILA_SOURCE_PROJECTION_MODEL,usesSamilaSourceProjection} from './samilaProjection';
+import {SAMILA_VIEWPORT_SOURCE_FIELDS,importSamilaViewportScalar} from './samilaViewportImport';
 import {resolveFractalParameterBinding} from './fractalParameterBindings';
 import {DEFAULT_EDGE_EASING,parseOscillationEdge} from './oscillation';
 import type {AnimationAction,AnimationTrack,DomainParameterAction,GradientAnimation,OscillationEdgeEasing,ParameterAnimation,SceneDocument,SceneKind,Settings} from '../types';
@@ -247,7 +249,7 @@ function common(r:Reader,s:SceneDocument){
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))commonLocalPalette(r,s);
- if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
+ if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSamilaSourceProjection(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
@@ -467,13 +469,23 @@ function sourceBouncing(r:Reader,s:SceneDocument):void {
 }
 
 function samila(r:Reader,s:SceneDocument){
+ if(usesSamilaSourceProjection(s)){
+  for(const field of SAMILA_VIEWPORT_SOURCE_FIELDS){
+   const path=['settings',field],raw=r.use(path),fact=importSamilaViewportScalar(field,raw,r.has(path));
+   if(!fact.ok)fail(`settings.${field}: ${fact.reason}`);
+   const key=field.replace(/_([a-z])/g,(_,c:string)=>c.toUpperCase());s.settings[key]=fact.value;r.retainNumberToken(path);
+   if(fact.defaulted)r.warnings.push(`settings.${field} 按原版 getFloat 使用默认值 ${fact.value}；原值保留在 source。`);
+  }
+  r.warnings.push('Samila 采用源 NDC 视口：旋转、XY 缩放、物理画布宽高比、NDC 平移依次应用；不自动适配边界。随机序列、数学投影、噪声颜色、点覆盖及固定时钟仍为本地实现，不能据此认定整图一致。');
+ }
+
  equation(r,s,'equations.f1','f1');equation(r,s,'equations.f2','f2');
  // Original labels use vertical-vs-horizontal ordering; project files use explicit X_Y ordering.
  const mapping:Record<string,string>={f1_vs_f2:'f2_f1',f2_vs_f1:'f1_f2',f1_vs_x1:'x_f1',f2_vs_x1:'x_f2',f1_vs_x2:'y_f1',f2_vs_x2:'y_f2',x1_vs_f1:'f1_x',x1_vs_f2:'f2_x',x2_vs_f1:'f1_y',x2_vs_f2:'f2_y',f1f2_vs_f1:'f1_product',f1f2_vs_f2:'f2_product',f1_vs_f1f2:'product_f1',f2_vs_f1f2:'product_f2',kaleidoscope_vs_x:'kaleidoscope_x',x_vs_kaleidoscope:'x_kaleidoscope',swirl_vs_x:'swirl_x',x_vs_swirl:'x_swirl',warp_vs_x:'warp_x',x_vs_warp:'x_warp',cos_mod_vs_x:'cosmod_x',x_vs_cos_mod:'x_cosmod',radial_vs_x:'radial_x',x_vs_radial:'x_radial',fold_vs_x:'fold_x',x_vs_fold:'x_fold',random:'random'};
  const m=r.str('settings.generate_mode');if(m!==undefined){s.settings.mapping=mapping[m.toLowerCase()]??m;r.warnings.push(...(mapping[m.toLowerCase()]?[]:[`未知 Samila 模式 ${m}，保留原标识；生成器会明确报错。`]));}
  const projections:Record<string,string>={rectilinear:'cartesian',polar:'polar',aitoff:'aitoff',hammer:'hammer',lambert:'lambert',mollweide:'mollweide',random:'random'};
  const p=r.str('settings.projection');if(p!==undefined){s.settings.projection=projections[p.toLowerCase()]??p;if(!projections[p.toLowerCase()])r.warnings.push(`未知 Samila 投影 ${p}，保留原标识；生成器会明确报错。`);}
- for(const key of ['start','stop','rotation'])numberTo(r,s,'settings.'+key,key);iteratedLegacy(r,s);seed(r,s,'settings.seed');seed(r,s,'settings.func_seed','funcSeed');
+ for(const key of ['start','stop',...(usesSamilaSourceProjection(s)?[]:['rotation'])])numberTo(r,s,'settings.'+key,key);iteratedLegacy(r,s);seed(r,s,'settings.seed');seed(r,s,'settings.func_seed','funcSeed');
  r.warnings.push('Samila 的 26 个组合与随机模式已映射；使用独立的确定性采样。球面投影采用标准经纬归一化，Aitoff 横轴为标准双倍比例，与原版未归一化投影不保证像素一致；逐帧采样现可持续累积，原版 GPU 噪声着色、随机序列与色调数值仍有差异。');
 }
 
@@ -1314,8 +1326,10 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
+export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
+
 /** Import original MathArt JSON while retaining every original value separately. */
-export function parseLegacyScene(text:string,options:{samilaCamera?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1'}={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
+export function parseLegacyScene(text:string,options:LegacyImportOptions={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
  const parsed=readProjectJson(text),imported=importLegacyValue(parsed.source,options,parsed.metadata,parsed.text);
  serializeScene(sceneWithImportedProvenance(imported));return imported;
 }
@@ -1351,10 +1365,10 @@ function projectResolution(r:Reader,scene:SceneDocument):void {
  if(facts.status==='applied')scene.projectResolution=facts.value;
  else if(facts.status==='ignored')r.warnings.push('resolution 未同时提供源整数规则下 64 至 8192 的宽高，按原版 ProjectState 保留无分辨率覆盖；原值保留在 source。');
 }
-function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1'}={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
+function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
  const r=new Reader(source,metadata,sourceText),version=r.str('config_version',true);if(version!=='1.0.0'&&version!=='1.0')fail(`不支持 config_version=${version}`);
  const type=r.str('type',true)!,kind=TYPES[type.toUpperCase()];if(!kind)fail(`未知场景类型 ${type}`);const def=definitions.find(d=>d.kind===kind)!;const scene=createScene(def);
- if(ordinaryFamily(kind))r.validateNativeObjects();
+ if(ordinaryFamily(kind)||kind==='samila'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1')r.validateNativeObjects();
  const ordinaryScope=ordinaryFamily(kind)?ordinaryResult(prepareOrdinarySourceScalarScope(kind,{parameters:r.peek(['parameters']),memberOrder:(kind==='surface'||kind==='implicit')&&r.has(['parameters'])?r.sourceKeys(['parameters']):undefined})):undefined;
  if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
  const name=r.str('name',true)!;if(!name.trim()||name.length>300)fail('场景名称为空或超过 300 字符');scene.name=name;
@@ -1386,19 +1400,23 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  // Captured Symmetry has native world-unit defaults; the legacy auto-fit
  // profile retains its former local defaults. Explicit source fields still win.
  if(kind==='symmetry'&&options.iteratedCamera!=='legacy-v1')Object.assign(scene.settings,{scaleX:100,scaleY:100,scaleZ:0});
+ if(kind==='samila'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaProjectionModel:SAMILA_SOURCE_PROJECTION_MODEL,samilaCameraTheta:0});
  common(r,scene);
  ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin:()=>{},spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);
  // A finite explicit source theta is consumed only by the Samila scalar owner.
  // Validate the owned container even when keeping legacy behavior; never silently
  // substitute a guessed angle for malformed authored camera data.
  let samilaTheta:number|undefined;
- if(kind==='samila'&&r.has('camera')){r.object('camera');samilaTheta=r.num('camera.theta',scene.parameters);}
+ if(kind==='samila'&&!usesSamilaSourceProjection(scene)&&r.has('camera')){r.object('camera');samilaTheta=r.num('camera.theta',scene.parameters);}
  if(kind==='samila'&&samilaTheta!==undefined&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaCameraTheta:samilaTheta});
  if((kind==='map'||kind==='symmetry')&&options.iteratedCamera!=='legacy-v1')scene.settings.iteratedCameraModel=CAPTURED_DENSITY_CAMERA_MODEL;
  if(ordinaryScope&&(!['map','symmetry'].includes(kind)||options.iteratedCamera!=='legacy-v1'))ordinaryCamera(r,scene,ordinaryScope);
  if(usesCapturedDensityCamera(scene))r.warnings.push('Map/Symmetry 已启用源相机捕获投影：Map 相机变化清空密度，Symmetry 角度变化保留密度旋转；新窗口与导出按本地固定时钟重放，随机序列、点覆盖和原版完整画面仍未对照。');
  formulaAnnotations(r,scene);timeline(r,scene,ordinaryScope,ordinaryStructure);
- if(kind==='samila'){
+ if(kind==='samila'&&usesSamilaSourceProjection(scene)){
+  if(r.has('camera'))r.acknowledge('camera','Samila 场景构造不读取该对象；保留构造起始 theta=0，相机时间线沿用本地时序');
+  r.warnings.push('Samila 时间线沿用本地固定时钟及动作解释；本次视口修正不等于源队列时序、热窗口缩放或相机动作已完全复刻。');
+ }else if(kind==='samila'){
   const thetaAction=scene.timeline.tracks.some(t=>t.type==='align'&&t.orientation?.theta!==undefined||t.actions?.some(a=>['rotateTheta','rotateTo','ambient'].includes(a.method)));
   if(options.samilaCamera!=='legacy-v1'&&(samilaTheta!==undefined||thetaAction)){
    scene.settings=initializeSamilaCamera({...scene.settings,samilaCameraTheta:samilaTheta??0});
