@@ -1,3 +1,4 @@
+import {SOURCE_SAMILA_SAMPLING_GLSL,validateSourceSamilaSamplingBatch} from './sourceSamilaSampling';
 import {sourceSamilaNoiseLut,sourceSamilaPaletteLut,sourceSamilaPointDiameter} from './sourceSamilaSplat';
 import {SAMILA_NDC_POSITION_GLSL} from './samilaProjection';
 import {isCapturedDensityView,type PreparedDensityView} from './densityPresentation';
@@ -74,8 +75,8 @@ vec3 initial(uint id,uint serial){vec3 u=vec3(address(id,serial,0u),address(id,s
 float stableLength(vec3 p){float m=max(max(abs(p.x),abs(p.y)),abs(p.z));return m==0.?0.:m*length(p/m);}
 bool bad(vec3 p){return !finiteVector(p);}
 `;
-const STEP_MAIN=`void main(){uint id=uint(gl_VertexID);vec3 p=oldState.xyz;uint invalid=resetCounter==1?0u:oldMetadata.r;float metric=0.;bool valid=true;
-for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=nextPoint(p);valid=!bad(next)&&(samila==1||stableLength(next)<=escapeRadius);if(valid){metric=samila==1?0.:stableLength(next-p);p=next;}else{invalid++;p=samila==1?next:initial(id,serialBase+uint(j));}}
+const stepMain=(initialPosition:string,sourceSampling=false)=>`void main(){uint id=uint(gl_VertexID);vec3 p=${initialPosition};uint invalid=resetCounter==1?0u:oldMetadata.r;float metric=0.;bool valid=true;
+for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=nextPoint(p);valid=${sourceSampling?'sourceSamilaFiniteResult(next)':'!bad(next)'}&&(samila==1||stableLength(next)<=escapeRadius);if(valid){metric=samila==1?0.:stableLength(next-p);p=next;}else{invalid++;p=samila==1?next:initial(id,serialBase+uint(j));}}
 newState=vec4(p,metric);newMetadata=uvec2(invalid,valid?1u:0u);gl_Position=vec4(0.);}`;
 const TRANSFORM=`${FLOAT_CLASSIFY}
 uniform vec3 scale,offset;uniform vec2 turn;uniform ivec2 axes;
@@ -171,10 +172,11 @@ export class IteratedDensityGpu {
   this.i(p,'capturedCamera',job.sourceCamera?1:0);if(job.sourceCamera){const anchor=job.sourceCamera.anchor;for(const [name,matrix]of[['capturedProjection',anchor.projection],['capturedModelView',anchor.modelView]]as const){gl.uniformMatrix4fv(this.location(p,name),false,matrix.columnMajor);}}
  }
  private setBounds(p:Program,b:DensityBounds){checkBounds(b);this.gl!.uniform4f(this.location(p,'bounds'),Math.fround(b.minX),Math.fround(b.maxX),Math.fround(b.minY),Math.fround(b.maxY));}
- private iterate(job:IteratedFrameJob,source:IteratedGpuFieldSource,steps:number,serial:number,resetCounter:boolean,cancel?:()=>boolean){
+ private iterate(job:IteratedFrameJob,source:IteratedGpuFieldSource,steps:number,serial:number,resetCounter:boolean,cancel?:()=>boolean,sampleOffset=0){
   if(source.stage==='fragment'){this.iterateCustom(job,source,steps,serial,resetCounter,cancel);return;}
-  const gl=this.gl!,r=this.resources!,p=this.program('step:'+source.key,STEP+source.source+STEP_MAIN,EMPTY,['newState','newMetadata']);
+  const gl=this.gl!,r=this.resources!,sampling=job.samilaSampling,p=this.program('step:'+(sampling?.model??'legacy')+source.key,STEP+(sampling?SOURCE_SAMILA_SAMPLING_GLSL:'')+source.source+stepMain(sampling?'sourceSamilaSample(sourceSamilaSampleOffset+id)':'oldState.xyz',Boolean(sampling)),EMPTY,['newState','newMetadata']);
   checked(Object.keys(source.uniforms).length+16<=gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS),'GPU 公式 uniform 容量不足');gl.useProgram(p.value);for(const [name,value]of Object.entries(source.uniforms))this.f(p,name,value);
+  if(sampling){checked(job.field.kind==='samila','源 Samila 随机帧类型无效');if(job.field.kind!=='samila')throw Error('源 Samila 场类型无效');gl.uniform1ui(this.location(p,'sourceSamilaFrameSeed'),sampling.frameSeed);gl.uniform1ui(this.location(p,'sourceSamilaSampleOffset'),sampleOffset);gl.uniform2f(this.location(p,'sourceSamilaRange'),job.field.lo,job.field.hi);}
   const cfg=job.config;gl.uniform1ui(this.location(p,'seed'),cfg.seed);gl.uniform1ui(this.location(p,'serialBase'),serial);gl.uniform3f(this.location(p,'lower'),...cfg.bounds.map(v=>Math.fround(v[0])) as [number,number,number]);gl.uniform3f(this.location(p,'upper'),...cfg.bounds.map(v=>Math.fround(v[1])) as [number,number,number]);this.i(p,'dimension',cfg.dimension);this.i(p,'samila',job.kind==='samila'?1:0);this.i(p,'resetCounter',resetCounter?1:0);this.i(p,'steps',steps);this.f(p,'escapeRadius',cfg.escape);
   const next=1-r.side;gl.bindVertexArray(r.vao);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,r.counters[r.side]);gl.enableVertexAttribArray(1);gl.vertexAttribIPointer(1,2,gl.UNSIGNED_INT,0,0);gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,r.feedback);gl.enable(gl.RASTERIZER_DISCARD);
   try{for(let offset=0;offset<r.count;offset+=CHUNK){checkCancelled(cancel);const n=Math.min(CHUNK,r.count-offset);gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER,0,r.positions[next],offset*16,n*16);gl.bindBufferRange(gl.TRANSFORM_FEEDBACK_BUFFER,1,r.counters[next],offset*8,n*8);gl.beginTransformFeedback(gl.POINTS);try{gl.drawArrays(gl.POINTS,offset,n);}finally{gl.endTransformFeedback();}}r.side=next;}
@@ -233,7 +235,8 @@ export class IteratedDensityGpu {
  private run(job:IteratedFrameJob,options:IteratedGpuOptions):IteratedGpuFacts {
   checkCancelled(options.isCancelled);const source=iteratedGpuFieldSource(job.field);const cfg=job.config;checked(['map','symmetry','samila'].includes(job.kind),'GPU 持续密度类型无效');const customStorage=job.field.kind==='symmetry-custom',samila=job.kind==='samila',boundedHistory=samila&&cfg.samilaHistoryModel==='bounded-v2',history=job.history;
   checked(!history||boundedHistory,'GPU 历史规则与模型不匹配');
-  if(boundedHistory)checked(!!history&&history.densityCeiling===SAMILA_HISTORY_CEILING&&[0,1,6].includes(history.passes)&&history.samples===cfg.count*history.passes&&history.randomFrames.length===history.passes&&history.randomFrames.every(f=>Number.isSafeInteger(f)&&f>=0)&&new Set(history.randomFrames).size===history.passes&&(history.passes>0)===cfg.record,'GPU Samila 缺少有效历史帧事实');
+  if(job.samilaSampling){checked(samila&&!!job.samilaSplat&&job.field.kind==='samila'&&job.field.mathModel==='mathart-1.7.8'&&!!job.samilaProjection&&!!history,'源 Samila PCG 缺少已解析场/历史事实');validateSourceSamilaSamplingBatch(job.samilaSampling,cfg.count,history!.passes,job.frame);}
+  if(boundedHistory)checked(!!history&&history.densityCeiling===SAMILA_HISTORY_CEILING&&[0,1,6].includes(history.passes)&&history.samples===cfg.count*history.passes&&(job.samilaSampling!==undefined||history.randomFrames.length===history.passes&&history.randomFrames.every(f=>Number.isSafeInteger(f)&&f>=0)&&new Set(history.randomFrames).size===history.passes)&&(history.passes>0)===cfg.record,'GPU Samila 缺少有效历史帧事实');
   checked(Number.isSafeInteger(job.frame)&&job.frame>=0&&(samila||cfg.burn+1+job.frame*16+cfg.iterations<=0xffffffff),'GPU 随机序号超出 32 位');
   checked(cfg.bounds.flat().every(finite32)&&[cfg.decay,cfg.alpha,cfg.escape,cfg.pointSize,cfg.metricMin,cfg.metricMax,cfg.colorSpeed,cfg.colorPhase].every(finite32),'GPU 帧参数超出 float32');
   if(job.sourceCamera){checked(job.kind!=='samila'&&job.sourceCamera.anchor.family===job.kind,'源密度相机与模型不匹配');for(const matrix of [job.sourceCamera.anchor.projection,job.sourceCamera.anchor.modelView])checked(matrix.columnMajor.length===16&&Array.from(matrix.columnMajor).every(finite32),'源密度投影矩阵无效');}
@@ -260,10 +263,10 @@ export class IteratedDensityGpu {
   // six times the particle state or decay the ink between compensation batches.
   const randomFrames=history?.randomFrames.length?history.randomFrames:[job.frame];
   let invalid=0,accepted=0,clipped=0,sampleInvalid=0;
-  for(let pass=0;pass<randomFrames.length;pass++){
+  for(let pass=0;pass<(job.samilaSampling?history!.passes:randomFrames.length);pass++){
    checkCancelled(options.isCancelled);const randomFrame=randomFrames[pass];
-  if(samila&&cfg.record){const field=job.field;if(field.kind!=='samila')throw new Error('Samila 帧标签不一致');for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const seeds=iteratedSamilaSeedChunk({...cfg,seed:cfg.sampleSeed??cfg.seed},randomFrame,field.lo,field.hi,offset,Math.min(CHUNK,cfg.count-offset),field.mathModel!==undefined);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*16,seeds);}}
-  if(!samila||cfg.record){this.iterate(job,source,cfg.iterations,samila?0:cfg.burn+1+job.frame*16,samila||!options.resetParticles,options.isCancelled);this.uploadState();}
+  if(samila&&cfg.record&&!job.samilaSampling){const field=job.field;if(field.kind!=='samila')throw new Error('Samila 帧标签不一致');for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const seeds=iteratedSamilaSeedChunk({...cfg,seed:cfg.sampleSeed??cfg.seed},randomFrame,field.lo,field.hi,offset,Math.min(CHUNK,cfg.count-offset),field.mathModel!==undefined);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*16,seeds);}}
+  if(!samila||cfg.record){this.iterate(job,source,cfg.iterations,samila?0:cfg.burn+1+job.frame*16,samila||!options.resetParticles,options.isCancelled,job.samilaSampling?pass*cfg.count:0);this.uploadState();}
   if(customStorage){const errors=this.reduce(this.program('custom-errors-first',QUAD,CUSTOM_ERRORS_FIRST),this.program('custom-errors-reduce',QUAD,CUSTOM_ERRORS_REDUCE),true,()=>{},options.isCancelled);checked(errors[0]===0,'自定义对称公式超过单次调用的循环工作预算');}
   if(job.sourceCamera||job.samilaProjection)this.bounds={minX:-1,maxX:1,minY:-1,maxY:1};else if(options.bounds)this.bounds={...options.bounds};else if(!this.bounds||job.frame===0&&pass===0)this.bounds=samila&&!cfg.record?{minX:-options.width/options.height,maxX:options.width/options.height,minY:-1,maxY:1}:this.autoBounds(job,options);const bounds=this.bounds!;
   const stat=samila&&!cfg.record?new Uint32Array(4):this.reduce(this.program('stats-first',QUAD,STATS_FIRST),this.program('stats-reduce',QUAD,STATS_REDUCE),true,p=>{this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r!.width,r!.height);this.f(p,'radius',job.samilaSplat?sourceSamilaPointDiameter(job.samilaSplat)/2-.5:cfg.pointSize/2);this.i(p,'recording',cfg.record?1:0);this.i(p,'sourcePointClip',job.samilaSplat?.path==='points'?1:0);},options.isCancelled);

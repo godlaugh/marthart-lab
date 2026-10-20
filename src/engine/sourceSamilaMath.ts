@@ -22,10 +22,13 @@ export function resolveSourceSamilaSelection(mapping:string,projection:string){
 const F=Math.fround,PI=F(Math.PI),add=(x:number,y:number)=>F(x+y),sub=(x:number,y:number)=>F(x-y),mul=(x:number,y:number)=>F(x*y),div=(x:number,y:number)=>F(x/y),sin=(x:number)=>F(Math.sin(x)),cos=(x:number)=>F(Math.cos(x)),sqrt=(x:number)=>F(Math.sqrt(x)),pow=(x:number,y:number)=>F(Math.pow(x,y)),mod=(x:number,y:number)=>sub(x,mul(y,Math.floor(div(x,y))));
 /** The GL uniform upload substitutes zero for nonfinite narrowed values. */
 export function sourceSamilaUniform(value:number|undefined):number {const f=F(value??0);return Number.isFinite(f)?f:0;}
-export function prepareSourceSamilaRange(start:number,stop:number):{lo:number;hi:number} {
+export function prepareSourceSamilaRange(start:number,stop:number,samplingPolicy:'legacy-finite-span'|'source-pcg'='legacy-finite-span'):{lo:number;hi:number} {
+ if(samplingPolicy!=='legacy-finite-span'&&samplingPolicy!=='source-pcg')throw Error('源 Samila 采样范围策略无效');
  if(!Number.isFinite(start)||!Number.isFinite(stop))throw Error('源 Samila 采样范围需要有限 double');
  const lo=F(Math.min(start,stop)),hi=F(Math.max(start,stop));
- if(!Number.isFinite(lo)||!Number.isFinite(hi)||!Number.isFinite(F(hi-lo)))throw Error('源 Samila 采样范围超出有限 Float32');
+ if(!Number.isFinite(lo)||!Number.isFinite(hi)||samplingPolicy==='legacy-finite-span'&&!Number.isFinite(F(hi-lo)))throw Error('源 Samila 采样范围超出有限 Float32');
+ // The source PCG evaluates the range expression in GLSL. An overflowing
+ // span may be ignored by constant formulas, so only actual results reject it.
  return{lo,hi};
 }
 export interface SourceSamilaMathInput {modeIndex:number;projectionIndex:number;parameters:Readonly<Record<string,number>>;}

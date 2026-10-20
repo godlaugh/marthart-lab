@@ -69,3 +69,5 @@ node scripts/verify-samila-source-math-public.mjs
 `BaseSamilaConfig` 和 `JsonSamilaConfig` 负责缺省值与根级对象优先级；`SamilaExpressionCompiler` 负责固定符号和公式生成；`SamilaMobject.drawSplatBatch` 负责区间、模式及随机种子上传；`uploadSplatShaderParameterUniforms` 负责参数 float 转换。Processing 的 `JSONObject` 定义 getString／getDouble／getInt 读取差异。
 
 本地审计为 `.cache/v2-samila-math-config-audit.md`，15 个类的身份清单及完整五个内置 Samila 配置在 `.cache/v2-samila-math-source/`。这些是静态包内证据，不是原版窗口截图。此前视口与手势的独立验证见[Samila 源视口记录](samila-source-viewport-validation.zh-CN.md)。
+
+后续采样算法与六倍补采的修正见 [Samila 随机采样验证](samila-source-sampling-validation.zh-CN.md)；上文随机序列说明保留为该批次的历史范围。

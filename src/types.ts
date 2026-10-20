@@ -404,6 +404,8 @@ export interface RasterOutput {
   /** Delivered raw-ink lookup facts at this image's request time; never authored. */
   samilaView?:PreparedSamilaView;
   samilaSplat?:{model:'samila-splat-1.7.8';referenceKind:'primary'|'local-output';primaryPixelHeight:number;nominalRadius:number;radius:number;path:'points'|'quad';encoding:'rgb-mass';noiseModel:'source-simplex-lut-256'};
+  /** Local runtime seed evidence; not a captured original JVM random stream. */
+  samilaSampling?:import('./engine/sourceSamilaSampling').SourceSamilaSamplingFacts;
   /** Completed present-target bytes; alpha records native blending, not layer opacity. */
   sourceSamilaPresentation?:SourceSamilaPresentationFacts;
   type: "raster";

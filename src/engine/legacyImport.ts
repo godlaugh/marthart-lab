@@ -1,6 +1,7 @@
 import {importSourceSamilaAppearance,importSourceSamilaPalette} from './sourceSamilaAppearanceImport';
 import {SAMILA_SOURCE_SPLAT_MODEL,usesSourceSamilaSplat} from './sourceSamilaSplat';
 import {SOURCE_SAMILA_PRESENTATION_MODEL} from './sourceSamilaPresentation';
+import {SOURCE_SAMILA_SAMPLING_MODEL} from './sourceSamilaSampling';
 import {importSourceSamilaTimeline} from './sourceSamilaTimelineImport';
 import {SAMILA_SCENE_SEQUENCE} from './sourceSamilaReplay';
 import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
@@ -494,7 +495,7 @@ function samila(r:Reader,s:SceneDocument){
 
  if(usesSourceSamilaMath(s)){
   iteratedLegacy(r,s);
-  r.warnings.push('Samila 数学配置按源构造读取：根 samila 对象整体优先于 settings，公式与参数保留源默认值；映射及地理投影使用独立版本。seed 只用于本地可重放随机流，func_seed 原版绘制不消费；时间线、噪声颜色和点覆盖仍未建立原版整图一致性。');
+  r.warnings.push('Samila 数学配置按源构造读取：根 samila 对象整体优先于 settings，公式与参数保留源默认值；映射及地理投影使用独立版本。新源采样版本不消费 seed／func_seed；未标记的旧版本继续本地可重放采样。时间线、噪声颜色和点覆盖仍未建立原版整图一致性。');
   return;
  }
  equation(r,s,'equations.f1','f1');equation(r,s,'equations.f2','f2');
@@ -1344,7 +1345,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
-export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';samilaPresentation?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
+export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';samilaPresentation?:'auto'|'legacy-v1';samilaSampling?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
 
 /** Import original MathArt JSON while retaining every original value separately. */
 export function parseLegacyScene(text:string,options:LegacyImportOptions={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
@@ -1425,6 +1426,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  }
  if(sourceSamila&&options.samilaSplat!=='legacy-v1'){
   scene.settings.samilaSplatModel=SAMILA_SOURCE_SPLAT_MODEL;
+  if(options.samilaSampling!=='legacy-v1')scene.settings.samilaSamplingModel=SOURCE_SAMILA_SAMPLING_MODEL;
   if(options.samilaPresentation!=='legacy-v1')scene.settings.samilaPresentationModel=SOURCE_SAMILA_PRESENTATION_MODEL;
   const parsed=importSourceSamilaAppearance(r.peek(['settings']),path=>r.numberToken(path));
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);

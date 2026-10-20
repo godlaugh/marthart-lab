@@ -1,5 +1,6 @@
 import {validateSourceSamilaSplat} from './sourceSamilaSplat';
 import {validateSourceSamilaPresentation} from './sourceSamilaPresentation';
+import {validateSourceSamilaSampling} from './sourceSamilaSampling';
 import {SAMILA_SCENE_SEQUENCE,resolveSourceSamilaTimeline} from './sourceSamilaReplay';
 import {usesSourceSamilaMath} from './sourceSamilaMath';
 import {parseSourcePerlinDocument,migrateSourcePerlinDocument} from './sourcePerlinDocument';
@@ -273,6 +274,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   }
   validateSourceSamilaSplat(data as unknown as SceneDocument);
   validateSourceSamilaPresentation(data as unknown as SceneDocument);
+  validateSourceSamilaSampling(data as unknown as SceneDocument);
   if(data.formulas!==undefined)data.formulas=validateFormulas(data.formulas);
   const t = data.timeline as Record<string, unknown>;
   if (

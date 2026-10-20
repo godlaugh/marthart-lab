@@ -7,7 +7,7 @@ const parse=(patch:Record<string,unknown>={})=>parseProjectFile(JSON.stringify(r
 describe('source Samila appearance import',()=>{
  it('distinguishes base and JSON defaults and keeps literal F32 values',()=>{
   const base=parse().scene,json=parse({settings:{}}).scene;
-  expect(base.settings).toMatchObject({samilaSplatModel:'samila-splat-1.7.8',samilaPresentationModel:'samila-present-1.7.8',batchSize:262144,normalizedBrightness:.5,normalizedDynamicRange:.5,samilaSpotSize:Math.fround(.01),iteratedBackend:'gpu'});
+  expect(base.settings).toMatchObject({samilaSplatModel:'samila-splat-1.7.8',samilaPresentationModel:'samila-present-1.7.8',samilaSamplingModel:'samila-pcg-1.7.8',batchSize:262144,normalizedBrightness:.5,normalizedDynamicRange:.5,samilaSpotSize:Math.fround(.01),iteratedBackend:'gpu'});
   expect(json.settings).toMatchObject({normalizedBrightness:Math.fround(.3),normalizedDynamicRange:Math.fround(.2),normalizedGamma:Math.fround(2.2),colorPhase:180});
   const {scene}=parse({settings:{batch_size:'3',spot_size:'0x1p-2',alpha:'PI',gamma:-2,trail_lifetime:0,show_trails:'FALSE'}});
   expect(scene.settings).toMatchObject({batchSize:3,samilaSpotSize:.25,alpha:Math.fround(.1),normalizedGamma:-2,trailLifetime:0,showTrails:false});
@@ -36,21 +36,30 @@ describe('source Samila appearance import',()=>{
  });
  it('rejects edited documents with incompatible source rendering contracts at load',()=>{
   const scene=parse({settings:{batch_size:8}}).scene;
-  for(const patch of [{samilaSplatModel:'unknown'},{samilaPresentationModel:'unknown'},{samilaUsePaletteLut:'false'},{densityToneModel:'white-point-v1'},{samilaHistoryModel:'legacy-v1'},{samilaSpotSize:1e100}]){
+  for(const patch of [{samilaSplatModel:'unknown'},{samilaPresentationModel:'unknown'},{samilaSamplingModel:'unknown'},{samilaUsePaletteLut:'false'},{densityToneModel:'white-point-v1'},{samilaHistoryModel:'legacy-v1'},{samilaSpotSize:1e100}]){
    const value={...scene,settings:{...scene.settings,...patch}};expect(()=>parseScene(JSON.stringify(value))).toThrow();
   }
   expect(()=>parseScene(JSON.stringify({...scene,palette:{...scene.palette,cycles:2}}))).toThrow('cycles');
  });
 
  it('preserves old splat documents without implicitly upgrading their presentation',()=>{
-  const prior=parseLegacyScene(JSON.stringify(raw()),{samilaPresentation:'legacy-v1'}).scene;
+  const prior=parseLegacyScene(JSON.stringify(raw()),{samilaPresentation:'legacy-v1',samilaSampling:'legacy-v1'}).scene;
   expect(prior.settings.samilaSplatModel).toBe('samila-splat-1.7.8');
   expect(prior.settings.samilaPresentationModel).toBeUndefined();
+  expect(prior.settings.samilaSamplingModel).toBeUndefined();
   expect(parseScene(serializeScene(prior)).settings).toEqual(prior.settings);
   const current=parse().scene;
   expect(parseScene(serializeScene(current)).settings.samilaPresentationModel).toBe('samila-present-1.7.8');
   const malformed={...current,settings:{...current.settings}};delete malformed.settings.samilaSplatModel;
   expect(()=>parseScene(JSON.stringify(malformed))).toThrow();
+ });
+
+ it('versions runtime random sampling separately from previous presentation documents',()=>{
+  const prior=parseLegacyScene(JSON.stringify(raw()),{samilaSampling:'legacy-v1'}).scene;
+  expect(prior.settings.samilaPresentationModel).toBe('samila-present-1.7.8');
+  expect(prior.settings.samilaSamplingModel).toBeUndefined();
+  expect(parseScene(serializeScene(prior)).settings).toEqual(prior.settings);
+  const current=parse().scene;expect(parseScene(serializeScene(current)).settings.samilaSamplingModel).toBe('samila-pcg-1.7.8');
  });
 
  it('reads source background aliases and packed colors without consuming generic aliases',()=>{

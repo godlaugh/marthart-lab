@@ -51,7 +51,7 @@ export function importSourceSamilaConfig(root:Record<string,unknown>,numberToken
   // Null/omission uses the constructor default; other values reach enum fallback.
   const mode=read(selected,'generate_mode',parent),projection=read(selected,'projection',parent);
   const modeText=mode==null?'f1_vs_f2':typeof mode==='string'?mode:'',projectionText=projection==null?'polar':typeof projection==='string'?projection:'';
-  if(sourceSeed<0)diagnostics.push(`源 seed=${sourceSeed} 保留在来源中；本地可重放随机序列使用同一 32 位模式 ${sourceSeed>>>0}，不是原版逐帧随机流。`);
+  if(sourceSeed<0)diagnostics.push(`源 seed=${sourceSeed} 保留在来源中，文档保存同一 32 位模式 ${sourceSeed>>>0}；是否参与本地采样由采样版本决定，不能据此还原原版逐帧随机流。`);
   return{ok:true,value:{equations,parameters,settings:{samilaMathModel:SOURCE_SAMILA_MATH_MODEL,mapping:sourceSamilaModeFromConfig(modeText),projection:sourceSamilaProjectionFromConfig(projectionText),start,stop,seed:sourceSeed>>>0,funcSeed},consumedPaths,numericPaths,diagnostics}};
  }catch(error){if(error instanceof Failure)return{ok:false,error:error.detail};throw error;}
 }

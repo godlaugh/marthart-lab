@@ -850,5 +850,6 @@
   "源斑点尺寸": "Source spot size",
   "源 spot_size，经主画布物理高度换算；不等同像素半径。": "Source spot_size, scaled by the primary canvas pixel height; this is not a pixel radius.",
   "源余弦相位 · 弧度": "Source cosine phase · radians",
-  "Samila 导出缺少主画布物理高度，请等待预览完成": "Samila export needs the primary canvas pixel height. Wait for the preview to finish."
+  "Samila 导出缺少主画布物理高度，请等待预览完成": "Samila export needs the primary canvas pixel height. Wait for the preview to finish.",
+  "使用运行时随机样本；参数改变时，采样量增至六倍。": "Uses runtime random samples. Parameter changes increase the sample count to six times the base batch."
 }
