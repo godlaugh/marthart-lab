@@ -216,7 +216,7 @@ function bindTracking(plan:Plan,particles:OrdinarySourceCameraParticles|undefine
  });
 }
 const replays=new Map<string,Replay>();
-type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
+type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;updates:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
 const layouts=new Map<string,Layout>();
 function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin',surfaceMode?:SourceSurfaceMode):string|undefined {
  const key=JSON.stringify([initial,tracks,fps,particleActions,surfaceMode],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
@@ -344,7 +344,7 @@ function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationT
   return{time:target/fps,camera:copy(replay.camera),frameIndex:target,sceneTime:replay.facts.sceneTime,queueIndex:replay.facts.queueIndex,queueComplete:replay.facts.queueComplete,diagnostics:plan.diagnostics.map(item=>({...item})),...(replay.surfaceMode?{surfaceTransition:{mode:replay.surfaceMode,overlayAlpha:replay.overlayAlpha}}:{})};
  }catch(error){if(key!==undefined)replayCache.delete(key);throw error;}
 }
-/** Display layout facts only. Never feed rounded display durations back into
+/** Integer update count and display layout facts. Never feed rounded display durations back into
  * the source clock: sourceDuration is the authored child duration (a native
  * multi-child group may compile a negative duration to zero). */
 export function resolveOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:Pick<OrdinarySourceCameraTimelineOptions,'isCancelled'|'particleActions'|'surfaceMode'>={}) {
@@ -353,7 +353,7 @@ export function resolveOrdinarySourceCameraTimeline(initial:SourceCameraScalars,
  const plan=prepare(initial,tracks,fps,options.particleActions,options.surfaceMode),clock=new RootsSceneClock(plan.initial,plan.clips.map(c=>({duration:c.duration,easing:'linear',...(c.instant?{instant:true as const}:{}),...(c.finishOnStart?{finishOnStart:true as const}:{})}))),reserve=budget();
  let facts=clock.snapshot(),frame=0;const starts:number[]=[],durations:number[]=[];
  while(!facts.queueComplete){check(options);reserve(facts.queueIndex,plan.clips.length);facts=clock.step(plan.dt,{isCancelled:options.isCancelled});if(facts.startedClip!==null)starts[facts.startedClip]=frame/fps;if(facts.finishedClip!==null)durations[facts.finishedClip]=(frame+1)/fps-starts[facts.finishedClip];frame++;}
- const layout:Layout={schedule:ORDINARY_CAMERA_SEQUENCE,span:frame/fps,clips:plan.clips.map((c,i)=>({trackId:c.trackId,start:starts[i],duration:durations[i],sourceDuration:c.duration})),diagnostics:plan.diagnostics};
+ const layout:Layout={schedule:ORDINARY_CAMERA_SEQUENCE,span:frame/fps,updates:frame,clips:plan.clips.map((c,i)=>({trackId:c.trackId,start:starts[i],duration:durations[i],sourceDuration:c.duration})),diagnostics:plan.diagnostics};
  check(options);if(key!==undefined){layouts.set(key,layout);while(layouts.size>4)layouts.delete(layouts.keys().next().value!);}
  return structuredClone(layout);
 }

@@ -160,7 +160,7 @@ export class SourcePerlinSession{
    const facts=this.model!.diagnostics();
    const pixels=samplePixels(target.readPixels(context.isCancelled),target.physicalWidth,target.physicalHeight,context.width,context.height,context.isCancelled);
    const output:Raster={type:'raster',pixels,width:context.width,height:context.height,dimension:2,cameraResolved:true,backend:this.backend==='cpu'?'cpu':'webgl2',sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},{...context,sourceViewport:{...initial.viewport,logicalWidth:width,logicalHeight:height}}),
-    sourcePerlinFrame:{sourceViewport:view,samples:target.diagnostics().samples,frameIndex:frame.frameIndex,updates:facts.updates},
+    sourcePerlinFrame:{sourceViewport:view,samples:target.diagnostics().samples,frameIndex:frame.frameIndex,updates:facts.updates,queueComplete:frame.queueComplete,queueIndex:frame.queueIndex,sceneTime:frame.sceneTime},
     stats:{samples:this.backend==='gpu'?context.width*context.height:config.cpuStyle==='particles'?config.particles.count:config.curves.count*config.curves.length,generated:context.width*context.height,invalid:0,elapsedMs:performance.now()-started},
     warnings:['源 Perlin 保留 CPU/GPU 运行状态；倒退或修改配置会按当前后端重放。原版 JVM／JOGL 整图尚未验收。'],
    };

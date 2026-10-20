@@ -1,3 +1,4 @@
+import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
 import type { GenerationRequest, GenerationResponse, RootsPausedCaptureResult, RootsPausedCaptureSize, PerlinPausedCaptureResult, PerlinPausedCaptureSize, PausedCaptureOperation, PausedCaptureResult, PausedCaptureSize } from './generationProtocol';
@@ -8,6 +9,7 @@ import type {RootsFreshRecordingPlan} from './rootsRecording';
 type Completed={id:number;scene:SceneDocument;output:SceneOutput};
 type Pending = { operation: 'generate'; scene:SceneDocument; resolve: (output: SceneOutput) => void; reject: (error: Error) => void; onProgress?: (output: SceneOutput) => void; onStatus?: (status: GenerationStatus) => void }
   | { operation:PausedCaptureOperation; source:Completed; resolve:(output:PausedCaptureResult)=>void; reject:(error:Error)=>void }
+  | { operation:'perlin-recording-plan'; resolve:(output:PerlinFreshRecordingPlan)=>void; reject:(error:Error)=>void }
   | { operation:'roots-recording-plan'; resolve:(output:RootsFreshRecordingPlan)=>void; reject:(error:Error)=>void }
   | { operation:'spirograph-recording-plan'; resolve:(output:SpirographRecordingPlan)=>void; reject:(error:Error)=>void }
   | { operation: 'search-stable'; resolve: (output: StableSearchResult) => void; reject: (error: Error) => void; onProgress?: (progress: StableSearchProgress) => void }
@@ -61,6 +63,7 @@ export class Generator {
         p.resolve(data.result);
       }
       else if (p.operation === 'explore-complex' && data.operation === 'explore-complex') p.resolve(data.result);
+      else if (p.operation === 'perlin-recording-plan' && data.operation === 'perlin-recording-plan') p.resolve(data.result);
       else if (p.operation === 'roots-recording-plan' && data.operation === 'roots-recording-plan') p.resolve(data.result);
       else if (p.operation === 'spirograph-recording-plan' && data.operation === 'spirograph-recording-plan') p.resolve(data.result);
       else p.reject(new Error('后台任务响应与请求类型不一致'));
@@ -130,6 +133,14 @@ export class Generator {
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'spirograph-recording-plan',resolve,reject});
       const request:GenerationRequest={operation:'spirograph-recording-plan',sessionId:this.sessionId,id,scene,startFrame,fps};
+      try{this.worker!.postMessage(request);}catch(error){this.pending.delete(id);reject(error);}
+    });
+  }
+  planPerlinFreshRecording(scene:SceneDocument,simulationFps:number,encoderFps:number):Promise<PerlinFreshRecordingPlan>{
+    this.ensure();const id=++this.counter;
+    return new Promise((resolve,reject)=>{
+      this.pending.set(id,{operation:'perlin-recording-plan',resolve,reject});
+      const request:GenerationRequest={operation:'perlin-recording-plan',sessionId:this.sessionId,id,scene,simulationFps,encoderFps};
       try{this.worker!.postMessage(request);}catch(error){this.pending.delete(id);reject(error);}
     });
   }

@@ -1,3 +1,4 @@
+import {planPerlinFreshRecording} from './sourcePerlinRecording';
 import { definition } from "../scenes";
 import { generateScene, TemporalGenerationSession } from './temporal';
 import { searchStableAttractor } from './stableSearch';
@@ -61,6 +62,10 @@ self.onmessage = (
       return;
     }
     const {scene}=event.data;
+    if(event.data.operation==='perlin-recording-plan'){
+      const result=planPerlinFreshRecording(scene,{simulationFps:event.data.simulationFps,encoderFps:event.data.encoderFps});
+      send({operation:'perlin-recording-plan',id,result});return;
+    }
     if(event.data.operation==='roots-recording-plan'){
       const result=planRootsFreshRecording(scene,{simulationFps:event.data.simulationFps,encoderFps:event.data.encoderFps});
       send({operation:'roots-recording-plan',id,result});return;

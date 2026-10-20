@@ -1221,5 +1221,9 @@
   "请等待当前预览完成并暂停后再保存画面": "Wait for the current preview to finish and pause before saving.",
   "暂停截图没有生成图像": "Paused capture did not produce an image.",
   "保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。": "Save and enhance the paused scene without advancing animation. Accumulation is retained on a separate export canvas.",
-  "从当前配置的初始状态重放，不保留预览中的后端切换历史。": "Replay the current configuration from its initial state. Preview backend switch history is not retained."
+  "从当前配置的初始状态重放，不保留预览中的后端切换历史。": "Replay the current configuration from its initial state. Preview backend switch history is not retained.",
+  "Perlin 视频模式": "Perlin video mode",
+  "按源队列结束重放": "Replay until source queue ends",
+  "使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。": "Replay the current configuration on a new canvas. Discard one warmup frame, then stop when the source queue ends. Preview and previous export pixels are not reused. Simulation FPS controls motion; encoder FPS controls playback speed.",
+  "Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列": "The Perlin queue ended during warmup with no frames to encode; extend the queue."
 }

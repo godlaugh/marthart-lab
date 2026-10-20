@@ -421,7 +421,7 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
   spirographFrame?:SpirographReplayFrame;
   cameraFrame?: CameraFrame;
   sourceCameraFrame?:OrdinarySourceCameraFrame;
-  sourcePerlinFrame?:{sourceViewport:{width:number;height:number;pixelDensity:number};samples:number;frameIndex:number;updates:number};
+  sourcePerlinFrame?:{sourceViewport:{width:number;height:number;pixelDensity:number};samples:number;frameIndex:number;updates:number;queueComplete:boolean;queueIndex:number;sceneTime:number};
   dimension?: 2 | 3;
   backend?: 'cpu' | 'webgl2';
   density?: DensityStats;

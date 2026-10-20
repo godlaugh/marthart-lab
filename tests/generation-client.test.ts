@@ -78,7 +78,7 @@ describe('generation status protocol ownership',()=>{
  });
  it('captures the exact completed Perlin output, transfers eligibility, and never sends a replacement scene',async()=>{
   const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'capture',settings:{seed:'1',particle_count:2}})).scene;
-  const frame={...output,sourcePerlinFrame:{sourceViewport:{width:32,height:24,pixelDensity:2},samples:4,frameIndex:60,updates:61}};
+  const frame={...output,sourcePerlinFrame:{sourceViewport:{width:32,height:24,pixelDensity:2},samples:4,frameIndex:60,updates:61,queueComplete:false,queueIndex:0,sceneTime:1}};
   const g=setup(),pending=g.generate(s,{...ctx,quality:'preview',sourcePerlinViewport:{width:32,height:24,pixelDensity:2}}),worker=FakeWorker.instances[0],r=worker.messages[0];
   await expect(g.capturePerlinPaused(frame,{width:3,height:5})).rejects.toThrow('尚未完成');
   worker.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await pending;
@@ -93,7 +93,7 @@ describe('generation status protocol ownership',()=>{
  it('requires matching Perlin owner retention, never another family, missing evidence or send failure',async()=>{
   for(const response of ['matching','wrong-id','roots','missing','send'] as const){
    const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'capture',settings:{seed:'1'}})).scene;
-   const frame={...output,sourcePerlinFrame:{sourceViewport:{width:32,height:24,pixelDensity:1},samples:4,frameIndex:60,updates:61}};
+   const frame={...output,sourcePerlinFrame:{sourceViewport:{width:32,height:24,pixelDensity:1},samples:4,frameIndex:60,updates:61,queueComplete:false,queueIndex:0,sceneTime:1}};
    const g=setup(),pending=g.generate(s,ctx),worker=FakeWorker.instances[0],r=worker.messages[0];worker.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await pending;
    if(response==='send')worker.postMessage=()=>{throw new Error('transport failed');};
    const capture=g.capturePerlinPaused(frame,{width:1,height:1}),caught=capture.catch(error=>error),c=worker.messages.at(-1)!;
@@ -109,7 +109,7 @@ describe('generation status protocol ownership',()=>{
   for(const full of [false,true]){
    const s=createScene(definition('perlin'));
    if(full)s.perlinSource=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'capture',settings:{seed:'1'}})).scene.perlinSource;
-   const frame=full?output:{...output,sourcePerlinFrame:{sourceViewport:{width:1,height:1,pixelDensity:1},samples:4,frameIndex:0,updates:1}};
+   const frame=full?output:{...output,sourcePerlinFrame:{sourceViewport:{width:1,height:1,pixelDensity:1},samples:4,frameIndex:0,updates:1,queueComplete:false,queueIndex:0,sceneTime:0}};
    const g=setup(),pending=g.generate(s,ctx),worker=FakeWorker.instances[0],r=worker.messages[0];worker.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await pending;
    await expect(g.capturePerlinPaused(frame,{width:1,height:1})).rejects.toThrow('过期');g.dispose();
   }
