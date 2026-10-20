@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
-  prepareSourcePerlinParticleDisplay,
-  type SourcePerlinParticleDisplayInput,
+  prepareSourcePerlinCpuDisplay,
+  type SourcePerlinCpuDisplayInput,
 } from '../src/engine/sourcePerlinDisplay';
 import type fixtureShape from './fixtures/source-perlin/display.json';
 
@@ -13,7 +13,7 @@ const fixture: typeof fixtureShape = JSON.parse(
 );
 const methodOnlyCase = 'offscreen-zero-source-explicit-line-scale';
 const displayCases = fixture.cases.filter(c => c.name !== methodOnlyCase);
-function inputFor(c: typeof fixture.cases[number]): SourcePerlinParticleDisplayInput {
+function inputFor(c: typeof fixture.cases[number]): SourcePerlinCpuDisplayInput {
   const input = c.input;
   if (input.target !== 'primary' && input.target !== 'offscreen') throw new Error('Unknown fixture target');
   return {
@@ -27,7 +27,7 @@ function columnMajor(rowMajor: readonly number[]): number[] {
   return Array.from({ length: 16 }, (_, i) => rowMajor[(i % 4) * 4 + Math.floor(i / 4)]);
 }
 
-describe('source Perlin particle display transforms and stroke widths', () => {
+describe('source Perlin CPU display transforms and stroke widths', () => {
   it('declares static evidence and the one excluded method-only diagnostic', () => {
     expect(fixture.provenance.nativeExecution).toBe(false);
     expect(fixture.provenance.kind).toBe('independent-static-instruction-transcription');
@@ -38,7 +38,7 @@ describe('source Perlin particle display transforms and stroke widths', () => {
 
   for (const c of displayCases) {
     it(`matches independent model/view, projection and widths: ${c.name}`, () => {
-      const actual = prepareSourcePerlinParticleDisplay(inputFor(c));
+      const actual = prepareSourcePerlinCpuDisplay(inputFor(c));
       expect(actual.modelView.rowMajor).toEqual(c.expected.modelView);
       expect([...actual.modelView.columnMajor]).toEqual(columnMajor(c.expected.modelView));
       expect(actual.projection.rowMajor).toEqual(c.expected.projection);
@@ -58,7 +58,7 @@ describe('source Perlin particle display transforms and stroke widths', () => {
     // cannot establish a successful Scene render or count as a display match.
     expect(c.input.lineScaleArg).toBe(1);
     expect(c.input.sourceHeight).toBe(0);
-    expect(() => prepareSourcePerlinParticleDisplay(inputFor(c)))
+    expect(() => prepareSourcePerlinCpuDisplay(inputFor(c)))
       .toThrow(expect.objectContaining({ code: 'nonfinite' }));
   });
 
@@ -69,7 +69,7 @@ describe('source Perlin particle display transforms and stroke widths', () => {
       { sourceWidth: 2147483648 }, { sourcePixelDensity: -2147483649 },
       { target: 'unknown' },
     ]) {
-      expect(() => prepareSourcePerlinParticleDisplay({ ...input, ...change } as SourcePerlinParticleDisplayInput))
+      expect(() => prepareSourcePerlinCpuDisplay({ ...input, ...change } as SourcePerlinCpuDisplayInput))
         .toThrow(expect.objectContaining({ code: 'input' }));
     }
   });
@@ -80,7 +80,7 @@ describe('source Perlin particle display transforms and stroke widths', () => {
       { lineWeight: NaN }, { dotSize: Infinity }, { lineWeight: 1e40 },
       { target: 'offscreen' as const, sourceHeight: -1 },
     ]) {
-      expect(() => prepareSourcePerlinParticleDisplay({ ...input, ...change }))
+      expect(() => prepareSourcePerlinCpuDisplay({ ...input, ...change }))
         .toThrow(expect.objectContaining({ code: 'nonfinite' }));
     }
   });

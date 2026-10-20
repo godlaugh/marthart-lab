@@ -1,11 +1,23 @@
 import {describe,it,expect} from 'vitest';
 import fixture from './fixtures/source-perlin/parameters.json';
 import {SourcePerlinParameterRuntime,type SourcePerlinFieldEffect,type SourcePerlinParameterOptions} from '../src/engine/sourcePerlinParameterRuntime';
-import {SOURCE_PERLIN_PARAMETER_NAMES as names,type SourcePerlinParameterAction} from '../src/engine/sourcePerlinParameterConfig';
+import {SOURCE_PERLIN_PARAMETER_NAMES as names,SOURCE_PERLIN_PARAMETER_DEFAULTS,type SourcePerlinParameterAction} from '../src/engine/sourcePerlinParameterConfig';
 
 const initial={noise_offset:0,noise_scale:12,curve_noise_scale:1.25,curve_angle_scale:3.5};
 const start=(name:typeof names[number],min:number,max:number,step:number):SourcePerlinParameterAction=>({kind:'start',parameters:[{name,min,max,step}]});
 describe('Perlin specialized parameters against independent static bytecode transcription',()=>{
+ for(const name of names)it(`curve animation state follows action and drift owner: ${name}`,()=>{
+  const r=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'field-curves'});
+  expect(r.fieldCurvesAnimating).toBe(false);
+  const [step,min,max]=SOURCE_PERLIN_PARAMETER_DEFAULTS[name];
+  r.begin([start(name,min,max,step)]);
+  expect(r.fieldCurvesAnimating).toBe(name!=='noise_scale');
+  r.interpolate(1,true,.1);
+  expect(r.snapshot().active).toBe(false);
+  expect(r.fieldCurvesAnimating).toBe(name!=='noise_scale');
+  r.begin([{kind:'stop',parameters:[]}]);
+  expect(r.fieldCurvesAnimating).toBe(false);
+ });
  for(const c of fixture.cases)it(c.name,()=>{
   const runtime=new SourcePerlinParameterRuntime({initial:c.initial,backend:c.backend==='gpu'?'gpu':'cpu',style:c.backend==='cpu-curves'?'field-curves':'particles'});
   c.operations.forEach((raw,index)=>{
@@ -55,7 +67,7 @@ describe('Perlin specialized parameters against independent static bytecode tran
  });
  it('bounds repeated phase subtraction and invalidates failed owners',()=>{
   const r=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'particles'});r.begin([start('noise_offset',-1,1,1e12)]);
-  expect(()=>r.interpolate(1,false,1)).toThrow(/预算/);expect(()=>r.update(.1)).toThrow(/重建/);
+  expect(()=>r.interpolate(1,false,1)).toThrow(/预算/);expect(()=>r.update(.1)).toThrow(/重建/);expect(()=>r.fieldCurvesAnimating).toThrow(/重建/);
  });
  it('propagates geometry failure without allowing reuse; cancellation is distinct',()=>{
   const r=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'field-curves',onFieldEffect:()=>{throw Error('geometry failed');}});

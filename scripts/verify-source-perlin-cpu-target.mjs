@@ -21,7 +21,7 @@ try{
  await page.goto(server.resolvedUrls.local[0]+'cpu-target-oracle');
  const result=await page.evaluate(async reference=>{
   const {SourcePerlinCpuTarget}=await import('/src/engine/sourcePerlinCpuTarget.ts');
-  const {prepareSourcePerlinParticleDisplay}=await import('/src/engine/sourcePerlinDisplay.ts');
+  const {prepareSourcePerlinCpuDisplay}=await import('/src/engine/sourcePerlinDisplay.ts');
   const {sourceProcessingOpenStrokeBuffers}=await import('/src/engine/sourceProcessingStroke.ts');
   const {sourceProcessingRoundPointBuffers}=await import('/src/engine/sourceProcessingPoints.ts');
   const {SourcePerlinParticleMotion}=await import('/src/engine/sourcePerlinParticleMotion.ts');
@@ -94,7 +94,7 @@ try{
   try{
    for(const samples of [0,...supported.filter(n=>[2,4,8].includes(n)).slice(0,1)])for(const density of [1,2]){
     const o={width:97,height:71,density,samples,initialColor:[.2,.3,.4,.25]},target=new SourcePerlinCpuTarget(o),ref=referenceTarget(o);
-    const display=prepareSourcePerlinParticleDisplay({width:o.width,height:o.height,sourceWidth:97,sourceHeight:71,sourcePixelDensity:density,target:'primary',lineWeight:3,dotSize:7});
+    const display=prepareSourcePerlinCpuDisplay({width:o.width,height:o.height,sourceWidth:97,sourceHeight:71,sourcePixelDensity:density,target:'primary',lineWeight:3,dotSize:7});
     const xyz=new Float32Array([-30,-20,0,0,20,0,30,-10,0,30,-10,0,-20,15,0]),colors=new Float32Array([1,0,0,.3,0,1,0,.7,0,0,1,1,1,1,0,.5,1,0,1,.9]);
     const primitive=(kind,width=3,pos=xyz,col=colors)=>({kind,buffers:kind==='lines'?sourceProcessingOpenStrokeBuffers({positions:pos,colors:col,polygonOffsets:new Uint32Array([0,pos.length/3]),lineWidth:width,rowMajor:display.modelView.rowMajor}):sourceProcessingRoundPointBuffers({positions:pos,colors:col,width,rowMajor:display.modelView.rowMajor})});
     async function compare(label,primitives,accumulation=false){

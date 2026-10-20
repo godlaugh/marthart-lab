@@ -57,6 +57,12 @@ export class SourcePerlinParameterRuntime {
   this.work=0;try{this.spend();f();}catch(e){this.failed=true;throw e;}
  }
  snapshot(){return Object.freeze({values:Object.freeze({...this.values}),active:this.active,drifts:Object.freeze(NAMES.map(n=>Object.freeze({...this.drifts[n]}))),children:Object.freeze(this.children.map(c=>Object.freeze({...c,parameters:Object.freeze(c.parameters.map(p=>Object.freeze({...p})))})))});}
+ /** PerlinNoiseField.isFieldCurveAnimating excludes ordinary noise_scale and
+  * all color-gradient state. Consumers must not reinterpret drift snapshots. */
+ get fieldCurvesAnimating():boolean{
+  if(this.failed)throw new SourcePerlinParameterRuntimeError('failed','Perlin 参数状态先前失败，需要重建');
+  return this.active||this.drifts.noise_offset.running||this.drifts.curve_noise_scale.running||this.drifts.curve_angle_scale.running;
+ }
  private effect(effect:SourcePerlinFieldEffect){this.spend();this.options.onFieldEffect?.(effect,Object.freeze({...this.values}));}
  private write(name:SourcePerlinParameterName,input:number){
   this.spend();const value=finite(F(name==='noise_offset'?clamp(F(input),-1,1):Math.max(floors[name],F(input))));

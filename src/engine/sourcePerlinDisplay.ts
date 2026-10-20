@@ -3,14 +3,14 @@ const F=Math.fround;
 export class SourcePerlinDisplayError extends Error{
  constructor(readonly code:'input'|'nonfinite',message:string){super(message);this.name='SourcePerlinDisplayError';}
 }
-export interface SourcePerlinParticleDisplayInput{
+export interface SourcePerlinCpuDisplayInput{
  readonly width:number;readonly height:number;
  /** Actual PApplet logical dimensions, not the simulation's joint 800 fallback. */
  readonly sourceWidth:number;readonly sourceHeight:number;
  readonly target:'primary'|'offscreen';readonly sourcePixelDensity:number;
  readonly lineWeight:number;readonly dotSize:number;
 }
-export interface SourcePerlinParticleDisplay{
+export interface SourcePerlinCpuDisplay{
  readonly modelView:SourceProcessingMatrix;readonly projection:SourceProcessingMatrix;
  readonly viewport:readonly[number,number,number,number];
  readonly lineScale:number;readonly lineWidth:number;readonly pointWidth:number;
@@ -19,7 +19,7 @@ export interface SourcePerlinParticleDisplay{
 const finite=(v:number)=>{if(typeof v!=='number'||!Number.isFinite(F(v)))throw new SourcePerlinDisplayError('nonfinite','Perlin display requires finite Float32 values.');return F(v);};
 /** Perlin.display resets the Scene camera and applies its own camera/ortho,
  * center translation and independent x/y scaling. No Euler/visual transform. */
-export function prepareSourcePerlinParticleDisplay(input:SourcePerlinParticleDisplayInput):SourcePerlinParticleDisplay{
+export function prepareSourcePerlinCpuDisplay(input:SourcePerlinCpuDisplayInput):SourcePerlinCpuDisplay{
  for(const key of ['width','height','sourceWidth','sourceHeight','sourcePixelDensity'] as const){
   const n=input[key];if(!Number.isInteger(n)||n< -2147483648||n>2147483647)throw new SourcePerlinDisplayError('input','Perlin display dimensions/density require Java int32.');
  }

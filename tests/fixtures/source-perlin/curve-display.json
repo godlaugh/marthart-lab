@@ -1,0 +1,1384 @@
+{
+  "provenance": {
+    "kind": "independent-static-instruction-transcription",
+    "nativeExecution": false,
+    "mathartJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "processingJarSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+    "perlinClassSha256": "ef1de66f25e6fed5a126cb260005d0b5d7fd161118cc83993f0648009de96d92",
+    "pGraphicsClassSha256": "d495bc8e9b3f6855759da98715874d9f95aed561664c12edf792a08abcb5e818",
+    "methods": [
+      "drawFieldCurveCache PC0–125",
+      "drawFieldCurves2D PC0–212",
+      "isFieldCurveAnimating PC0–33",
+      "rebuildFieldCurvesIfNeeded PC0–25",
+      "rebuildFieldCurveCache PC0–289",
+      "applyPalette",
+      "applyGradientState",
+      "PGraphics.colorCalc(FFFF) RGB255 PC124–172,473–572"
+    ],
+    "limits": [
+      "Successful lifecycle calls only; resource failures have no source oracle here.",
+      "Zero-size cache sequence is method diagnostic, not a renderable camera.",
+      "Geometry rebuilding modeled as event; no geometric output or native pixels.",
+      "Draw lineScale is already computed for final target; no second cache scale.",
+      "RGBA assumes source default RGB255, not arbitrary inherited colorMode."
+    ]
+  },
+  "colors": [
+    {
+      "name": "opaque",
+      "input": {
+        "packed": 4279383294,
+        "alpha": 1.0
+      },
+      "expected": {
+        "alpha255": 255.0,
+        "colorCalc": [
+          0.07058823853731155,
+          0.20392157137393951,
+          0.9960784316062927,
+          1.0
+        ],
+        "bytes": [
+          18,
+          52,
+          254,
+          255
+        ],
+        "rgba": [
+          0.07058823853731155,
+          0.20392157137393951,
+          0.9960784316062927,
+          1.0
+        ],
+        "packed": 4279383294
+      }
+    },
+    {
+      "name": "packed-alpha-ignored-zero",
+      "input": {
+        "packed": 1193214,
+        "alpha": 1.0
+      },
+      "expected": {
+        "alpha255": 255.0,
+        "colorCalc": [
+          0.07058823853731155,
+          0.20392157137393951,
+          0.9960784316062927,
+          1.0
+        ],
+        "bytes": [
+          18,
+          52,
+          254,
+          255
+        ],
+        "rgba": [
+          0.07058823853731155,
+          0.20392157137393951,
+          0.9960784316062927,
+          1.0
+        ],
+        "packed": 4279383294
+      }
+    },
+    {
+      "name": "packed-alpha-ignored-half",
+      "input": {
+        "packed": 2148676862,
+        "alpha": 0.5
+      },
+      "expected": {
+        "alpha255": 127.5,
+        "colorCalc": [
+          0.07058823853731155,
+          0.20392157137393951,
+          0.9960784316062927,
+          0.5
+        ],
+        "bytes": [
+          18,
+          52,
+          254,
+          127
+        ],
+        "rgba": [
+          0.07058823853731155,
+          0.20392157137393951,
+          0.9960784316062927,
+          0.49803921580314636
+        ],
+        "packed": 2131899646
+      }
+    },
+    {
+      "name": "alpha-floor-zero",
+      "input": {
+        "packed": 16777215,
+        "alpha": 0.0
+      },
+      "expected": {
+        "alpha255": 2.549999952316284,
+        "colorCalc": [
+          1.0,
+          1.0,
+          1.0,
+          0.009999999776482582
+        ],
+        "bytes": [
+          255,
+          255,
+          255,
+          2
+        ],
+        "rgba": [
+          1.0,
+          1.0,
+          1.0,
+          0.007843137718737125
+        ],
+        "packed": 50331647
+      }
+    },
+    {
+      "name": "alpha-floor-negative",
+      "input": {
+        "packed": 270544960,
+        "alpha": -3.0
+      },
+      "expected": {
+        "alpha255": 2.549999952316284,
+        "colorCalc": [
+          0.125490203499794,
+          0.1882352977991104,
+          0.250980406999588,
+          0.009999999776482582
+        ],
+        "bytes": [
+          32,
+          48,
+          64,
+          2
+        ],
+        "rgba": [
+          0.125490203499794,
+          0.1882352977991104,
+          0.250980406999588,
+          0.007843137718737125
+        ],
+        "packed": 35663936
+      }
+    },
+    {
+      "name": "alpha-over-one",
+      "input": {
+        "packed": 4294967295,
+        "alpha": 4.0
+      },
+      "expected": {
+        "alpha255": 255.0,
+        "colorCalc": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "bytes": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "rgba": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "packed": 4294967295
+      }
+    },
+    {
+      "name": "alpha-just-below-half",
+      "input": {
+        "packed": 66051,
+        "alpha": 0.4999999701976776
+      },
+      "expected": {
+        "alpha255": 127.49999237060547,
+        "colorCalc": [
+          0.003921568859368563,
+          0.007843137718737125,
+          0.0117647061124444,
+          0.4999999701976776
+        ],
+        "bytes": [
+          1,
+          2,
+          3,
+          127
+        ],
+        "rgba": [
+          0.003921568859368563,
+          0.007843137718737125,
+          0.0117647061124444,
+          0.49803921580314636
+        ],
+        "packed": 2130772483
+      }
+    },
+    {
+      "name": "alpha-just-above-half",
+      "input": {
+        "packed": 66051,
+        "alpha": 0.5000000596046448
+      },
+      "expected": {
+        "alpha255": 127.50001525878906,
+        "colorCalc": [
+          0.003921568859368563,
+          0.007843137718737125,
+          0.0117647061124444,
+          0.5000000596046448
+        ],
+        "bytes": [
+          1,
+          2,
+          3,
+          127
+        ],
+        "rgba": [
+          0.003921568859368563,
+          0.007843137718737125,
+          0.0117647061124444,
+          0.49803921580314636
+        ],
+        "packed": 2130772483
+      }
+    },
+    {
+      "name": "alpha-fraction",
+      "input": {
+        "packed": 2139062527,
+        "alpha": 0.1234567
+      },
+      "expected": {
+        "alpha255": 31.48145866394043,
+        "colorCalc": [
+          0.49803921580314636,
+          0.501960813999176,
+          1.0,
+          0.12345670163631439
+        ],
+        "bytes": [
+          127,
+          128,
+          255,
+          31
+        ],
+        "rgba": [
+          0.49803921580314636,
+          0.501960813999176,
+          1.0,
+          0.12156862765550613
+        ],
+        "packed": 528449791
+      }
+    },
+    {
+      "name": "alpha-254-over-255",
+      "input": {
+        "packed": 4294967295,
+        "alpha": 0.9960784316062927
+      },
+      "expected": {
+        "alpha255": 254.0,
+        "colorCalc": [
+          1.0,
+          1.0,
+          1.0,
+          0.9960784316062927
+        ],
+        "bytes": [
+          255,
+          255,
+          255,
+          254
+        ],
+        "rgba": [
+          1.0,
+          1.0,
+          1.0,
+          0.9960784316062927
+        ],
+        "packed": 4278190079
+      }
+    }
+  ],
+  "widths": [
+    {
+      "input": {
+        "lineWeight": 0.0,
+        "lineScale": 1.0
+      },
+      "expected": 0.019999999552965164
+    },
+    {
+      "input": {
+        "lineWeight": -1.0,
+        "lineScale": 1.0
+      },
+      "expected": 0.019999999552965164
+    },
+    {
+      "input": {
+        "lineWeight": 0.02,
+        "lineScale": 1.0
+      },
+      "expected": 0.019999999552965164
+    },
+    {
+      "input": {
+        "lineWeight": 0.1,
+        "lineScale": 0.2
+      },
+      "expected": 0.020000001415610313
+    },
+    {
+      "input": {
+        "lineWeight": 1.3,
+        "lineScale": 0.56
+      },
+      "expected": 0.7279999852180481
+    },
+    {
+      "input": {
+        "lineWeight": 1.3,
+        "lineScale": 0.5316330194473267
+      },
+      "expected": 0.6911228895187378
+    },
+    {
+      "input": {
+        "lineWeight": 0.019999997690320015,
+        "lineScale": 1.0
+      },
+      "expected": 0.019999999552965164
+    },
+    {
+      "input": {
+        "lineWeight": 0.020000001415610313,
+        "lineScale": 1.0
+      },
+      "expected": 0.020000001415610313
+    }
+  ],
+  "thresholds": [
+    {
+      "input": {
+        "cachedScale": 0.0,
+        "newScale": 9.99999901978299e-05
+      },
+      "expected": {
+        "difference": 9.99999901978299e-05,
+        "rebuild": false
+      }
+    },
+    {
+      "input": {
+        "cachedScale": 0.0,
+        "newScale": 9.999999747378752e-05
+      },
+      "expected": {
+        "difference": 9.999999747378752e-05,
+        "rebuild": false
+      }
+    },
+    {
+      "input": {
+        "cachedScale": 0.0,
+        "newScale": 0.00010000000474974513
+      },
+      "expected": {
+        "difference": 0.00010000000474974513,
+        "rebuild": true
+      }
+    },
+    {
+      "input": {
+        "cachedScale": 1.0,
+        "newScale": 1.000100016593933
+      },
+      "expected": {
+        "difference": 0.00010001659393310547,
+        "rebuild": true
+      }
+    },
+    {
+      "input": {
+        "cachedScale": 1.0,
+        "newScale": 1.0000998973846436
+      },
+      "expected": {
+        "difference": 9.989738464355469e-05,
+        "rebuild": false
+      }
+    },
+    {
+      "input": {
+        "cachedScale": 2.0,
+        "newScale": 2.0000998973846436
+      },
+      "expected": {
+        "difference": 9.989738464355469e-05,
+        "rebuild": false
+      }
+    },
+    {
+      "input": {
+        "cachedScale": 2.0,
+        "newScale": 2.0001001358032227
+      },
+      "expected": {
+        "difference": 0.00010013580322265625,
+        "rebuild": true
+      }
+    }
+  ],
+  "animationFlags": [
+    {
+      "input": {
+        "noiseOffsetAnimationActive": true
+      },
+      "expected": true
+    },
+    {
+      "input": {
+        "noiseOffsetDriftRunning": true
+      },
+      "expected": true
+    },
+    {
+      "input": {
+        "curveNoiseScaleDriftRunning": true
+      },
+      "expected": true
+    },
+    {
+      "input": {
+        "curveAngleScaleDriftRunning": true
+      },
+      "expected": true
+    },
+    {
+      "input": {
+        "gradientRunning": true
+      },
+      "expected": false
+    },
+    {
+      "input": {
+        "noiseScaleDriftRunning": true
+      },
+      "expected": false
+    }
+  ],
+  "sequences": [
+    {
+      "name": "cache-reuse-palette-and-geometry",
+      "initial": {},
+      "steps": [
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "palette",
+            "validNonempty": false
+          },
+          "expected": {
+            "effects": [],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "palette"
+          },
+          "expected": {
+            "effects": [
+              "refresh-colors"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": true,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "geometry-dirty"
+          },
+          "expected": {
+            "effects": [],
+            "geometryDirty": true,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "rebuild-geometry",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 1,
+            "cacheBuilds": 3,
+            "allocations": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "gradient-change-not-running-flag",
+      "initial": {},
+      "steps": [
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "flags",
+            "values": {
+              "gradientRunning": true,
+              "noiseScaleDriftRunning": true
+            }
+          },
+          "expected": {
+            "effects": [],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "gradient",
+            "offset": 0.0,
+            "secondaryOffset": 0.0,
+            "blend": 0.0
+          },
+          "expected": {
+            "effects": [],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "gradient",
+            "offset": 0.1,
+            "secondaryOffset": 0.0,
+            "blend": 0.0
+          },
+          "expected": {
+            "effects": [
+              "refresh-colors"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": true,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "direct-retains-dirty-cache-until-static",
+      "initial": {},
+      "steps": [
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "flags",
+            "values": {
+              "noiseOffsetDriftRunning": true
+            }
+          },
+          "expected": {
+            "effects": [],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "geometry-dirty"
+          },
+          "expected": {
+            "effects": [],
+            "geometryDirty": true,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "rebuild-geometry",
+              "direct"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": true,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 1,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "direct"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": true,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 1,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "flags",
+            "values": {
+              "noiseOffsetDriftRunning": false
+            }
+          },
+          "expected": {
+            "effects": [],
+            "geometryDirty": false,
+            "cacheDirty": true,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 1,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 1,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 1,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "target-size-single-cache-and-no-density-key",
+      "initial": {},
+      "steps": [
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0,
+            "targetIdentity": "export",
+            "pixelDensity": 2
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 640,
+            "height": 400,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 640,
+              "height": 400,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 2,
+            "allocations": 2
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 3,
+            "allocations": 3
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 0.56
+          },
+          "expected": {
+            "effects": [
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 0.5600000023841858
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 4,
+            "allocations": 3
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 0.56
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 0.5600000023841858
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 4,
+            "allocations": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "small-changes-relative-to-last-rebuild",
+      "initial": {},
+      "steps": [
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0000499486923218
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0000900030136108
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0001399517059326
+          },
+          "expected": {
+            "effects": [
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0001399517059326
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.000190019607544
+          },
+          "expected": {
+            "effects": [
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 320,
+              "height": 200,
+              "lineScale": 1.0001399517059326
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty-cache-return-before-geometry",
+      "initial": {
+        "curveCount": 0,
+        "geometryDirty": true
+      },
+      "steps": [
+        {
+          "event": {
+            "action": "draw",
+            "width": 320,
+            "height": 200,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "empty-return"
+            ],
+            "geometryDirty": true,
+            "cacheDirty": false,
+            "cache": null,
+            "geometryBuilds": 0,
+            "cacheBuilds": 0,
+            "allocations": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "zero-size-diagnostic-rebuild-every-draw",
+      "initial": {},
+      "steps": [
+        {
+          "event": {
+            "action": "draw",
+            "width": 0,
+            "height": 0,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "allocate-cache",
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 1,
+              "height": 1,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 1,
+            "allocations": 1
+          }
+        },
+        {
+          "event": {
+            "action": "draw",
+            "width": 0,
+            "height": 0,
+            "lineScale": 1.0
+          },
+          "expected": {
+            "effects": [
+              "rebuild-cache",
+              "image-cache"
+            ],
+            "geometryDirty": false,
+            "cacheDirty": false,
+            "cache": {
+              "width": 1,
+              "height": 1,
+              "lineScale": 1.0
+            },
+            "geometryBuilds": 0,
+            "cacheBuilds": 2,
+            "allocations": 1
+          }
+        }
+      ]
+    }
+  ]
+}

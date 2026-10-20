@@ -13,6 +13,8 @@ export interface SourcePerlinCpuFrame{
  /** Already interpreted RGB255 fill/background color, not raw packed input. */
  readonly background:readonly[number,number,number,number];
  readonly accumulation:boolean;readonly primitives:readonly SourcePerlinCpuPrimitive[];
+ /** Completed sibling targets, composited in order after primitives. */
+ readonly images?:readonly SourcePerlinCpuTarget[];
 }
 export interface SourcePerlinCpuTargetOptions{
  readonly width:number;readonly height:number;readonly density:number;
@@ -31,35 +33,68 @@ void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));gl_Posit
 const backgroundFragment=`#version 300 es
 precision mediump float;
 uniform vec4 background;out vec4 fragmentColor;void main(){fragmentColor=background;}`;
-const colorValid=(color:readonly number[])=>color?.length===4&&color.every(v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1);
+// The source texture is already a GL framebuffer: v=0 is its bottom row.
+// Processing's image texture inversion cancels its top-left image coordinates.
+// No unpremultiply: source BLEND applies SRC_ALPHA again at this image pass.
+const imageVertex=`#version 300 es
+precision highp float;
+out vec2 imageUV;
+void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID&2));imageUV=p;gl_Position=vec4(p*2.0-1.0,0,1);}`;
+const imageFragment=`#version 300 es
+precision mediump float;
+uniform sampler2D imageTexture;in vec2 imageUV;out vec4 fragmentColor;
+void main(){fragmentColor=texture(imageTexture,imageUV);}`;
+const colorValid=(color:unknown):color is readonly[number,number,number,number]=>Array.isArray(color)&&color.length===4&&[0,1,2,3].every(i=>typeof color[i]==='number'&&Number.isFinite(color[i])&&color[i]>=0&&color[i]<=1);
 const MAX_BYTES=256*1024*1024;
 type Program={program:WebGLProgram;uniforms:Map<string,WebGLUniformLocation|null>};
-/** Owns one render target and its display history. draw() ALWAYS applies the
- * Scene clear/fade, even when the producer has not updated. readPixels() is an
- * observation only. A resize creates a new owner with explicit initial state.
- * Primitive assembly, curve-cache composition and frame scheduling are callers. */
-export class SourcePerlinCpuTarget{
- readonly width:number;readonly height:number;readonly physicalWidth:number;readonly physicalHeight:number;
- private readonly options:SourcePerlinCpuTargetOptions;private readonly targetBytes:number;
- private gl?:WebGL2RenderingContext;private failed=false;private disposed=false;
- private vao?:WebGLVertexArrayObject;private buffers:WebGLBuffer[]=[];
- private programs:Partial<Record<'lines'|'points'|'background',Program>>={};
- private framebuffer?:WebGLFramebuffer;private texture?:WebGLTexture;
- private multisample?:WebGLFramebuffer;private renderbuffer?:WebGLRenderbuffer;
- private drawCount=0;
- constructor(options:SourcePerlinCpuTargetOptions){
-  if(!options||!Number.isSafeInteger(options.width)||!Number.isSafeInteger(options.height)||options.width<1||options.height<1||!Number.isSafeInteger(options.density)||options.density<1||![0,2,4,8].includes(options.samples)||!colorValid(options.initialColor))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU target dimensions, samples or initial color.');
-  this.width=options.width;this.height=options.height;this.physicalWidth=options.width*options.density;this.physicalHeight=options.height*options.density;
-  if(this.physicalWidth>16384||this.physicalHeight>16384||this.physicalWidth*this.physicalHeight>16777216)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU target exceeds the physical pixel budget.');
-  this.targetBytes=this.physicalWidth*this.physicalHeight*4*(2+options.samples)+this.physicalWidth*4;
-  if(this.targetBytes>MAX_BYTES)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU attachments/readback exceed 256 MiB.');
-  this.options=Object.freeze({...options,initialColor:Object.freeze([...options.initialColor]) as readonly[number,number,number,number]});
+type ProgramKind='lines'|'points'|'background'|'image';
+
+/** One context owner. Targets own only attachments; losing this device invalidates
+ * all of them. The map also reserves not-yet-allocated targets and their readbacks. */
+class SourcePerlinCpuDevice{
+ gl?:WebGL2RenderingContext;
+ vao?:WebGLVertexArrayObject;
+ readonly buffers:WebGLBuffer[]=[];
+ readonly programs:Partial<Record<ProgramKind,Program>>={};
+ private readonly targets=new Map<object,{bytes:number;release:()=>void}>();
+ private readonly uploadSizes=[0,0,0,0];
+ private reservedBytes=0;
+ failed=false;
+ get bytes(){return this.reservedBytes+this.uploadSizes.reduce((a,b)=>a+b,0);}
+ get targetCount(){return this.targets.size;}
+ add(owner:object,bytes:number,release:()=>void){
+  this.check();this.budget(bytes);this.targets.set(owner,{bytes,release});this.reservedBytes+=bytes;
  }
- private check(cancelled?:()=>boolean){
-  if(this.disposed)throw new SourcePerlinCpuTargetError('disposed','Perlin CPU target is disposed.');
-  if(this.failed)throw new SourcePerlinCpuTargetError('failed','Perlin CPU target failed; rebuild before use.');
-  if(cancelled?.())throw new SourcePerlinCpuTargetError('cancelled','Perlin CPU drawing cancelled.');
-  if(this.gl?.isContextLost())throw new SourcePerlinCpuTargetError('render','Perlin CPU WebGL context lost.');
+ remove(owner:object){
+  const target=this.targets.get(owner);if(!target)return;
+  this.targets.delete(owner);this.reservedBytes-=target.bytes;
+  if(!this.targets.size)this.release();
+ }
+ budget(extra:number){if(!Number.isSafeInteger(extra)||extra<0||this.bytes+extra>MAX_BYTES)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU shared device representations exceed 256 MiB.');}
+ uploaded(index:number,bytes:number){this.uploadSizes[index]=bytes;}
+ check(){
+  if(this.failed)throw new SourcePerlinCpuTargetError('failed','Perlin CPU shared device failed; rebuild before use.');
+  if(this.gl?.isContextLost()){this.fail();throw new SourcePerlinCpuTargetError('render','Perlin CPU WebGL context lost.');}
+ }
+ fail(){
+  this.failed=true;
+  for(const target of this.targets.values())target.release();
+  this.targets.clear();this.reservedBytes=0;this.release();
+ }
+ context(){
+  this.check();if(this.gl)return this.gl;
+  try{
+   if(typeof OffscreenCanvas==='undefined')throw new SourcePerlinCpuTargetError('capability','Perlin CPU drawing needs OffscreenCanvas WebGL2.');
+   const g=new OffscreenCanvas(1,1).getContext('webgl2',{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false});
+   if(!g)throw new SourcePerlinCpuTargetError('capability','Perlin CPU WebGL2 unavailable.');this.gl=g;
+   this.programs.lines=this.compile(sourceProcessingLineVertex,sourceProcessingLineFragment);
+   this.programs.points=this.compile(sourceProcessingPointVertex,sourceProcessingPointFragment);
+   this.programs.background=this.compile(backgroundVertex,backgroundFragment);
+   this.programs.image=this.compile(imageVertex,imageFragment);
+   this.vao=g.createVertexArray()??undefined;if(!this.vao)throw new SourcePerlinCpuTargetError('render','Cannot allocate Perlin VAO.');
+   for(let i=0;i<4;i++){const b=g.createBuffer();if(!b)throw new SourcePerlinCpuTargetError('render','Cannot allocate Perlin geometry buffer.');this.buffers.push(b);}
+   return g;
+  }catch(error){this.fail();throw error;}
  }
  private compile(vertex:string,fragment:string):Program{
   const g=this.gl!,program=g.createProgram();if(!program)throw new SourcePerlinCpuTargetError('render','Cannot allocate Perlin program.');
@@ -75,48 +110,88 @@ export class SourcePerlinCpuTarget{
    return{program,uniforms:new Map()};
   }catch(error){g.deleteProgram(program);throw error;}finally{for(const shader of shaders)g.deleteShader(shader);}
  }
+ uniform(p:Program,name:string){if(!p.uniforms.has(name))p.uniforms.set(name,this.gl!.getUniformLocation(p.program,name));return p.uniforms.get(name)!;}
+ private release(){
+  const g=this.gl;if(!g)return;
+  for(const key of Object.keys(this.programs) as ProgramKind[]){g.deleteProgram(this.programs[key]!.program);delete this.programs[key];}
+  for(const b of this.buffers)g.deleteBuffer(b);this.buffers.length=0;this.uploadSizes.fill(0);
+  g.deleteVertexArray(this.vao??null);this.vao=undefined;g.getExtension('WEBGL_lose_context')?.loseContext();this.gl=undefined;
+ }
+}
+
+/** Owns one render target and its display history. draw() ALWAYS applies the
+ * Scene clear/fade, even when the producer has not updated. readPixels() is an
+ * observation only. Siblings share GPU resources but retain independent history.
+ * Primitive assembly, curve-cache invalidation and frame scheduling are callers. */
+export class SourcePerlinCpuTarget{
+ readonly width:number;readonly height:number;readonly physicalWidth:number;readonly physicalHeight:number;
+ private readonly options:SourcePerlinCpuTargetOptions;private readonly targetBytes:number;
+ private device:SourcePerlinCpuDevice;private failed=false;private disposed=false;
+ private framebuffer?:WebGLFramebuffer;private texture?:WebGLTexture;
+ private multisample?:WebGLFramebuffer;private renderbuffer?:WebGLRenderbuffer;
+ private drawCount=0;
+ constructor(options:SourcePerlinCpuTargetOptions){
+  if(!options||!Number.isSafeInteger(options.width)||!Number.isSafeInteger(options.height)||options.width<1||options.height<1||!Number.isSafeInteger(options.density)||options.density<1||![0,2,4,8].includes(options.samples)||!colorValid(options.initialColor))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU target dimensions, samples or initial color.');
+  this.width=options.width;this.height=options.height;this.physicalWidth=options.width*options.density;this.physicalHeight=options.height*options.density;
+  if(this.physicalWidth>16384||this.physicalHeight>16384||this.physicalWidth*this.physicalHeight>16777216)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU target exceeds the physical pixel budget.');
+  // Texture + optional MSAA storage + one top-down readback and its swap row.
+  // A readback is reserved for each live target, including its row swap scratch.
+  this.targetBytes=this.physicalWidth*this.physicalHeight*4*(2+options.samples)+this.physicalWidth*4;
+  if(this.targetBytes>MAX_BYTES)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU attachments/readback exceed 256 MiB.');
+  this.options=Object.freeze({...options,initialColor:Object.freeze([...options.initialColor]) as readonly[number,number,number,number]});
+  this.device=new SourcePerlinCpuDevice();this.device.add(this,this.targetBytes,()=>this.releaseAttachments());
+ }
+ createSibling(options:SourcePerlinCpuTargetOptions):SourcePerlinCpuTarget{
+  this.check();const sibling=new SourcePerlinCpuTarget(options);
+  try{
+   this.device.add(sibling,sibling.targetBytes,()=>sibling.releaseAttachments());
+   sibling.device.remove(sibling);sibling.device=this.device;return sibling;
+  }catch(error){sibling.dispose();throw error;}
+ }
+ private check(cancelled?:()=>boolean){
+  if(this.disposed)throw new SourcePerlinCpuTargetError('disposed','Perlin CPU target is disposed.');
+  if(this.failed)throw new SourcePerlinCpuTargetError('failed','Perlin CPU target failed; rebuild before use.');
+  if(cancelled!==undefined&&typeof cancelled!=='function')throw new SourcePerlinCpuTargetError('input','Perlin CPU cancellation must be a function.');
+  if(cancelled?.())throw new SourcePerlinCpuTargetError('cancelled','Perlin CPU drawing cancelled.');
+  this.device.check();
+ }
  private context(){
-  if(this.gl)return this.gl;
-  if(typeof OffscreenCanvas==='undefined')throw new SourcePerlinCpuTargetError('capability','Perlin CPU drawing needs OffscreenCanvas WebGL2.');
-  const g=new OffscreenCanvas(1,1).getContext('webgl2',{alpha:true,antialias:false,depth:false,stencil:false,premultipliedAlpha:false});
-  if(!g)throw new SourcePerlinCpuTargetError('capability','Perlin CPU WebGL2 unavailable.');this.gl=g;
+  const g=this.device.context();if(this.framebuffer)return g;
   const max=g.getParameter(g.MAX_TEXTURE_SIZE),viewport=g.getParameter(g.MAX_VIEWPORT_DIMS) as Int32Array;
   if(this.physicalWidth>Math.min(max,viewport[0])||this.physicalHeight>Math.min(max,viewport[1]))throw new SourcePerlinCpuTargetError('capacity','Perlin CPU target exceeds GPU dimensions.');
   if(this.options.samples){
    const supported=g.getInternalformatParameter(g.RENDERBUFFER,g.RGBA8,g.SAMPLES) as Int32Array;
    if(![...supported].includes(this.options.samples))throw new SourcePerlinCpuTargetError('capability','Requested Perlin CPU MSAA count unavailable.');
   }
-  this.programs.lines=this.compile(sourceProcessingLineVertex,sourceProcessingLineFragment);
-  this.programs.points=this.compile(sourceProcessingPointVertex,sourceProcessingPointFragment);
-  this.programs.background=this.compile(backgroundVertex,backgroundFragment);
-  this.vao=g.createVertexArray()??undefined;if(!this.vao)throw new SourcePerlinCpuTargetError('render','Cannot allocate Perlin VAO.');
-  for(let i=0;i<4;i++){const b=g.createBuffer();if(!b)throw new SourcePerlinCpuTargetError('render','Cannot allocate Perlin geometry buffer.');this.buffers.push(b);}
   this.texture=g.createTexture()??undefined;this.framebuffer=g.createFramebuffer()??undefined;
   if(!this.texture||!this.framebuffer)throw new SourcePerlinCpuTargetError('render','Cannot allocate Perlin color target.');
   g.bindTexture(g.TEXTURE_2D,this.texture);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MIN_FILTER,g.LINEAR);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MAG_FILTER,g.LINEAR);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE);
   g.texImage2D(g.TEXTURE_2D,0,g.RGBA8,this.physicalWidth,this.physicalHeight,0,g.RGBA,g.UNSIGNED_BYTE,null);
-  g.bindFramebuffer(g.FRAMEBUFFER,this.framebuffer);g.framebufferTexture2D(g.FRAMEBUFFER,g.COLOR_ATTACHMENT0,g.TEXTURE_2D,this.texture,0);this.complete();
+  g.bindFramebuffer(g.FRAMEBUFFER,this.framebuffer);g.framebufferTexture2D(g.FRAMEBUFFER,g.COLOR_ATTACHMENT0,g.TEXTURE_2D,this.texture,0);this.complete(g);
   if(this.options.samples){
    this.multisample=g.createFramebuffer()??undefined;this.renderbuffer=g.createRenderbuffer()??undefined;
    if(!this.multisample||!this.renderbuffer)throw new SourcePerlinCpuTargetError('render','Cannot allocate Perlin multisample target.');
    g.bindRenderbuffer(g.RENDERBUFFER,this.renderbuffer);g.renderbufferStorageMultisample(g.RENDERBUFFER,this.options.samples,g.RGBA8,this.physicalWidth,this.physicalHeight);
-   g.bindFramebuffer(g.FRAMEBUFFER,this.multisample);g.framebufferRenderbuffer(g.FRAMEBUFFER,g.COLOR_ATTACHMENT0,g.RENDERBUFFER,this.renderbuffer);this.complete();
+   g.bindFramebuffer(g.FRAMEBUFFER,this.multisample);g.framebufferRenderbuffer(g.FRAMEBUFFER,g.COLOR_ATTACHMENT0,g.RENDERBUFFER,this.renderbuffer);this.complete(g);
   }
-  g.clearColor(...this.options.initialColor);g.clear(g.COLOR_BUFFER_BIT);this.resolve();return g;
+  g.disable(g.SCISSOR_TEST);g.colorMask(true,true,true,true);g.clearColor(...this.options.initialColor);g.clear(g.COLOR_BUFFER_BIT);this.resolve(g);return g;
  }
- private complete(){const g=this.gl!;if(g.checkFramebufferStatus(g.FRAMEBUFFER)!==g.FRAMEBUFFER_COMPLETE)throw new SourcePerlinCpuTargetError('render','Perlin CPU framebuffer incomplete.');}
- private resolve(){const g=this.gl!;if(!this.multisample)return;g.bindFramebuffer(g.READ_FRAMEBUFFER,this.multisample);g.bindFramebuffer(g.DRAW_FRAMEBUFFER,this.framebuffer!);g.blitFramebuffer(0,0,this.physicalWidth,this.physicalHeight,0,0,this.physicalWidth,this.physicalHeight,g.COLOR_BUFFER_BIT,g.NEAREST);}
- private uniform(p:Program,name:string){if(!p.uniforms.has(name))p.uniforms.set(name,this.gl!.getUniformLocation(p.program,name));return p.uniforms.get(name)!;}
+ private complete(g:WebGL2RenderingContext){if(g.checkFramebufferStatus(g.FRAMEBUFFER)!==g.FRAMEBUFFER_COMPLETE)throw new SourcePerlinCpuTargetError('render','Perlin CPU framebuffer incomplete.');}
+ private resolve(g:WebGL2RenderingContext){if(!this.multisample)return;g.bindFramebuffer(g.READ_FRAMEBUFFER,this.multisample);g.bindFramebuffer(g.DRAW_FRAMEBUFFER,this.framebuffer!);g.blitFramebuffer(0,0,this.physicalWidth,this.physicalHeight,0,0,this.physicalWidth,this.physicalHeight,g.COLOR_BUFFER_BIT,g.NEAREST);}
  private verify(frame:SourcePerlinCpuFrame,cancelled?:()=>boolean){
-  if(!(frame?.projection instanceof Float32Array)||frame.projection.length!==16||!frame.projection.every(Number.isFinite)||!colorValid(frame.background)||typeof frame.accumulation!=='boolean'||!Array.isArray(frame.primitives))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU draw frame.');
-  let bytes=this.targetBytes;
+  if(!(frame?.projection instanceof Float32Array)||frame.projection.length!==16||!frame.projection.every(Number.isFinite)||!colorValid(frame.background)||typeof frame.accumulation!=='boolean'||!Array.isArray(frame.primitives)||(frame.images!==undefined&&!Array.isArray(frame.images)))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU draw frame.');
+  for(const image of frame.images??[]){
+   if(!(image instanceof SourcePerlinCpuTarget)||image===this||image.device!==this.device||image.disposed||image.failed||image.drawCount===0||!image.texture||!image.framebuffer)throw new SourcePerlinCpuTargetError('input','Perlin CPU image must be a completed, live sibling target.');
+   image.check();
+  }
+  let bytes=0;
   for(const p of frame.primitives){
    this.check(cancelled);if(!p||!['lines','points'].includes(p.kind)||!p.buffers)throw new SourcePerlinCpuTargetError('input','Unknown Perlin CPU primitive or missing buffers.');const b=p.buffers,d=p.kind==='lines'?p.buffers.directions:p.buffers.offsets,size=p.kind==='lines'?4:2;
-   if(!b||!(b.positions instanceof Float32Array)||b.positions.length%4||!(b.colors instanceof Float32Array)||b.colors.length!==b.positions.length||!(d instanceof Float32Array)||d.length!==b.positions.length/4*size||!(b.indices instanceof Uint16Array)||!Array.isArray(b.caches))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU primitive buffers.');
-   // Input arrays plus their complete GPU uploads; count representation growth
-   // before GPU allocation. Driver bookkeeping is outside this explicit budget.
+   if(!(b.positions instanceof Float32Array)||b.positions.length%4||!(b.colors instanceof Float32Array)||b.colors.length!==b.positions.length||!(d instanceof Float32Array)||d.length!==b.positions.length/4*size||!(b.indices instanceof Uint16Array)||!Array.isArray(b.caches))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU primitive buffers.');
+   // Count source arrays, complete GPU uploads and existing device uploads before
+   // any new allocation. The shared map includes every sibling's attachments.
    bytes+=2*(b.positions.byteLength+b.colors.byteLength+d.byteLength+b.indices.byteLength)+b.caches.length*32;
-   if(bytes>MAX_BYTES)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU draw representations exceed 256 MiB.');
+   this.device.budget(bytes);
    let previousIndex=0,previousVertex=0;
    for(const cache of b.caches){
     this.check(cancelled);
@@ -131,35 +206,46 @@ export class SourcePerlinCpuTarget{
  }
  draw(frame:SourcePerlinCpuFrame,cancelled?:()=>boolean):void{
   try{
-   this.check(cancelled);this.verify(frame,cancelled);const g=this.context();
-   g.bindFramebuffer(g.FRAMEBUFFER,this.multisample??this.framebuffer!);g.bindVertexArray(this.vao!);g.viewport(0,0,this.physicalWidth,this.physicalHeight);
+   this.check(cancelled);this.verify(frame,cancelled);const g=this.context(),device=this.device;
+   g.bindFramebuffer(g.FRAMEBUFFER,this.multisample??this.framebuffer!);g.bindVertexArray(device.vao!);g.viewport(0,0,this.physicalWidth,this.physicalHeight);
    g.disable(g.DEPTH_TEST);g.disable(g.SCISSOR_TEST);g.disable(g.CULL_FACE);g.enable(g.DITHER);g.enable(g.BLEND);g.blendEquationSeparate(g.FUNC_ADD,g.FUNC_ADD);g.blendFuncSeparate(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA,g.ONE,g.ONE);
-   if(frame.accumulation){const p=this.programs.background!;g.useProgram(p.program);g.uniform4fv(this.uniform(p,'background'),frame.background);for(let i=0;i<3;i++)g.disableVertexAttribArray(i);g.drawArrays(g.TRIANGLES,0,3);}
+   if(frame.accumulation){const p=device.programs.background!;g.useProgram(p.program);g.uniform4fv(device.uniform(p,'background'),frame.background);for(let i=0;i<3;i++)g.disableVertexAttribArray(i);g.drawArrays(g.TRIANGLES,0,3);}
    else{g.clearColor(...frame.background);g.clear(g.COLOR_BUFFER_BIT);}
    for(const primitive of frame.primitives){
-    this.check(cancelled);const p=this.programs[primitive.kind]!,b=primitive.buffers,d=primitive.kind==='lines'?primitive.buffers.directions:primitive.buffers.offsets,size=primitive.kind==='lines'?4:2;
-    g.useProgram(p.program);g.uniform4f(this.uniform(p,'viewport'),0,0,this.width,this.height);g.uniform1i(this.uniform(p,'perspective'),0);
-    g.uniformMatrix4fv(this.uniform(p,primitive.kind==='lines'?'lineModelview':'pointModelview'),false,identity);g.uniformMatrix4fv(this.uniform(p,'projection'),false,frame.projection);
-    if(primitive.kind==='lines')g.uniform3f(this.uniform(p,'scale'),1,1,Math.fround(.999));
-    const data=[b.positions,b.colors,d];for(let i=0;i<3;i++){g.bindBuffer(g.ARRAY_BUFFER,this.buffers[i]);g.bufferData(g.ARRAY_BUFFER,data[i],g.DYNAMIC_DRAW);g.enableVertexAttribArray(i);}
-    g.bindBuffer(g.ELEMENT_ARRAY_BUFFER,this.buffers[3]);g.bufferData(g.ELEMENT_ARRAY_BUFFER,b.indices,g.DYNAMIC_DRAW);
+    this.check(cancelled);const p=device.programs[primitive.kind]!,b=primitive.buffers,d=primitive.kind==='lines'?primitive.buffers.directions:primitive.buffers.offsets,size=primitive.kind==='lines'?4:2;
+    g.useProgram(p.program);g.uniform4f(device.uniform(p,'viewport'),0,0,this.width,this.height);g.uniform1i(device.uniform(p,'perspective'),0);
+    g.uniformMatrix4fv(device.uniform(p,primitive.kind==='lines'?'lineModelview':'pointModelview'),false,identity);g.uniformMatrix4fv(device.uniform(p,'projection'),false,frame.projection);
+    if(primitive.kind==='lines')g.uniform3f(device.uniform(p,'scale'),1,1,Math.fround(.999));
+    const data=[b.positions,b.colors,d];for(let i=0;i<3;i++){g.bindBuffer(g.ARRAY_BUFFER,device.buffers[i]);g.bufferData(g.ARRAY_BUFFER,data[i],g.DYNAMIC_DRAW);device.uploaded(i,data[i].byteLength);g.enableVertexAttribArray(i);}
+    g.bindBuffer(g.ELEMENT_ARRAY_BUFFER,device.buffers[3]);g.bufferData(g.ELEMENT_ARRAY_BUFFER,b.indices,g.DYNAMIC_DRAW);device.uploaded(3,b.indices.byteLength);
     for(const cache of b.caches){
-     this.check(cancelled);for(let i=0;i<3;i++){g.bindBuffer(g.ARRAY_BUFFER,this.buffers[i]);const components=i===2?size:4;g.vertexAttribPointer(i,components,g.FLOAT,false,0,cache.vertexOffset*components*4);}
+     this.check(cancelled);for(let i=0;i<3;i++){g.bindBuffer(g.ARRAY_BUFFER,device.buffers[i]);const components=i===2?size:4;g.vertexAttribPointer(i,components,g.FLOAT,false,0,cache.vertexOffset*components*4);}
      g.drawElements(g.TRIANGLES,cache.indexCount,g.UNSIGNED_SHORT,cache.indexOffset*2);
     }
    }
-   this.resolve();this.check(cancelled);if(g.getError()!==g.NO_ERROR)throw new SourcePerlinCpuTargetError('render','Perlin CPU GL draw failed.');this.drawCount++;
-  }catch(error){this.failed=true;this.release();throw error;}
+   if(frame.images?.length){
+    const p=device.programs.image!;g.useProgram(p.program);g.activeTexture(g.TEXTURE0);g.uniform1i(device.uniform(p,'imageTexture'),0);
+    for(let i=0;i<3;i++)g.disableVertexAttribArray(i);
+    for(const image of frame.images){this.check(cancelled);g.bindTexture(g.TEXTURE_2D,image.texture!);g.drawArrays(g.TRIANGLES,0,3);}
+    g.bindTexture(g.TEXTURE_2D,null);
+   }
+   this.resolve(g);this.check(cancelled);if(g.getError()!==g.NO_ERROR)throw new SourcePerlinCpuTargetError('render','Perlin CPU GL draw failed.');this.drawCount++;
+  }catch(error){this.poison();throw error;}
  }
  readPixels(cancelled?:()=>boolean):Uint8ClampedArray{
   try{
-   this.check(cancelled);const g=this.context(),pixels=new Uint8ClampedArray(this.physicalWidth*this.physicalHeight*4);g.bindFramebuffer(g.FRAMEBUFFER,this.framebuffer!);g.readPixels(0,0,this.physicalWidth,this.physicalHeight,g.RGBA,g.UNSIGNED_BYTE,pixels);
+   this.check(cancelled);this.device.budget(0);const g=this.context(),pixels=new Uint8ClampedArray(this.physicalWidth*this.physicalHeight*4);g.bindFramebuffer(g.FRAMEBUFFER,this.framebuffer!);g.readPixels(0,0,this.physicalWidth,this.physicalHeight,g.RGBA,g.UNSIGNED_BYTE,pixels);
    if(g.getError()!==g.NO_ERROR)throw new SourcePerlinCpuTargetError('render','Perlin CPU readback failed.');const rowBytes=this.physicalWidth*4,row=new Uint8ClampedArray(rowBytes);
    for(let y=0;y<Math.floor(this.physicalHeight/2);y++){this.check(cancelled);const a=y*rowBytes,b=(this.physicalHeight-y-1)*rowBytes;row.set(pixels.subarray(a,a+rowBytes));pixels.copyWithin(a,b,b+rowBytes);pixels.set(row,b);}
    this.check(cancelled);return pixels;
-  }catch(error){this.failed=true;this.release();throw error;}
+  }catch(error){this.poison();throw error;}
  }
- diagnostics(){this.check();return{draws:this.drawCount,width:this.width,height:this.height,physicalWidth:this.physicalWidth,physicalHeight:this.physicalHeight,samples:this.options.samples,targetRepresentationBytes:this.targetBytes,initialized:!!this.gl};}
- private release(){const g=this.gl;if(!g)return;for(const p of Object.values(this.programs))if(p)g.deleteProgram(p.program);for(const b of this.buffers)g.deleteBuffer(b);g.deleteVertexArray(this.vao??null);g.deleteFramebuffer(this.multisample??null);g.deleteRenderbuffer(this.renderbuffer??null);g.deleteFramebuffer(this.framebuffer??null);g.deleteTexture(this.texture??null);g.getExtension('WEBGL_lose_context')?.loseContext();this.gl=undefined;this.programs={};this.buffers=[];this.vao=undefined;this.multisample=undefined;this.renderbuffer=undefined;this.framebuffer=undefined;this.texture=undefined;}
- dispose(){if(this.disposed)return;this.release();this.disposed=true;}
+ diagnostics(){this.check();return{draws:this.drawCount,width:this.width,height:this.height,physicalWidth:this.physicalWidth,physicalHeight:this.physicalHeight,samples:this.options.samples,targetRepresentationBytes:this.targetBytes,deviceRepresentationBytes:this.device.bytes,deviceTargets:this.device.targetCount,initialized:!!this.framebuffer};}
+ private releaseAttachments(){
+  const g=this.device.gl;if(!g)return;
+  g.deleteFramebuffer(this.multisample??null);g.deleteRenderbuffer(this.renderbuffer??null);g.deleteFramebuffer(this.framebuffer??null);g.deleteTexture(this.texture??null);
+  this.multisample=undefined;this.renderbuffer=undefined;this.framebuffer=undefined;this.texture=undefined;
+ }
+ private poison(){this.failed=true;this.releaseAttachments();this.device.remove(this);}
+ dispose(){if(this.disposed)return;this.releaseAttachments();this.device.remove(this);this.disposed=true;}
 }
