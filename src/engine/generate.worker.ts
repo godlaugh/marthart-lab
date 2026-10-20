@@ -4,7 +4,7 @@ import { generateScene, TemporalGenerationSession } from './temporal';
 import { searchStableAttractor } from './stableSearch';
 import { exploreComplex } from './complexExplore';
 import type { GenerationRequest, GenerationPayload } from './generationProtocol';
-import {isPausedCaptureOperation} from './generationProtocol';
+import {isPausedCaptureOperation,isPerlinRecordingOperation} from './generationProtocol';
 import {outputBuffers} from './outputBuffers';
 import {planRootsFreshRecording} from './rootsRecording';
 import type {GenerationInput,SceneDocument} from '../types';
@@ -15,6 +15,14 @@ import {prepareSourcePerlinCaptureSize} from './sourcePerlinCaptureSize';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
+type RuntimeStart=ReturnType<typeof temporalSession.sourcePerlin.beginRecording>;
+type RecordingRaster=RuntimeStart['warmup'];
+let recording:{id:number;runtime:RuntimeStart;finish?:ReturnType<typeof temporalSession.sourcePerlin.finishRecording>;preview?:RecordingRaster;pendingFrame?:{index:number;output:RecordingRaster}}|undefined;
+function retainsRecording(){
+ if(!recording)return false;
+ return recording.finish?temporalSession.sourcePerlin.matchesCompletedPrimary(recording.finish.scene,recording.finish.context):temporalSession.sourcePerlin.ownsRecording(recording.runtime.handle);
+}
+
 self.onmessage = (
   event: MessageEvent<GenerationRequest>,
 ) => {
@@ -22,11 +30,48 @@ self.onmessage = (
   const send = (payload: GenerationPayload, transfer: Transferable[] = []) => self.postMessage({ ...payload, sessionId }, { transfer });
   const start = performance.now();
   let captureSource:typeof completed;
+  let recordingSource:typeof completed;
+  const leaseAtEntry=recording;
   let captureRendered=false;
   let captureSourceMatched=false;
   try {
     // A failed release keeps the old owner and must still answer this request.
+    if(recording&&(owner!==sessionId||!isPerlinRecordingOperation(operation)))throw new Error('Perlin 录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
+    if(event.data.operation==='perlin-recording-begin'){
+      if(recording)throw new Error('Perlin 录制已开始');
+      const source=recordingSource=completed;
+      if(!source||source.id!==event.data.sourceId)throw new Error('Perlin 录制对应的主预览已过期');
+      const runtime=temporalSession.sourcePerlin.beginRecording(source.scene,source.context,event.data.options);
+      recording={id,runtime};completed=undefined;
+      send({operation:event.data.operation,id,recordingId:id,result:{scene:runtime.scene,context:runtime.context,clock:runtime.clock,warmup:runtime.warmup}},outputBuffers(runtime.warmup));return;
+    }
+    if(event.data.operation==='perlin-recording-frame'||event.data.operation==='perlin-recording-finish'){
+      const lease=recording;
+      if(!lease||lease.id!==event.data.recordingId)throw new Error('Perlin 录制身份已过期');
+      if(event.data.operation==='perlin-recording-frame'){
+        if(lease.finish)throw new Error('Perlin 录制已停止，等待主预览恢复');
+        const displayFrame=event.data.displayFrame;
+        if(!Number.isSafeInteger(displayFrame)||displayFrame<1)throw new Error('Perlin 录制帧序号无效');
+        const pending=lease.pendingFrame;
+        if(pending&&pending.index!==displayFrame)throw new Error('Perlin 上一录制帧尚未交付，请重试该帧或结束录制');
+        const output=pending?.output??temporalSession.sourcePerlin.nextRecordingFrame(lease.runtime.handle,displayFrame);
+        if(output.pixels.byteLength!==output.width*output.height*4)throw new Error('Perlin 录制帧传输状态未知，请结束录制');
+        lease.pendingFrame={index:displayFrame,output};
+        send({operation:event.data.operation,id,recordingId:lease.id,displayFrame,output},outputBuffers(output));lease.pendingFrame=undefined;return;
+      }
+      // finishRecording mutates runtime ownership exactly once. If publication
+      // fails, retain its result and completed preview for an explicit retry.
+      lease.finish??=temporalSession.sourcePerlin.finishRecording(lease.runtime.handle);
+      const {scene,context}=lease.finish;
+      if(!lease.preview||lease.preview.pixels.byteLength!==lease.preview.width*lease.preview.height*4){
+        const output=generateScene(scene,context,temporalSession);
+        if(output.type!=='raster')throw new Error('Perlin 录制结束没有生成主预览');
+        lease.preview=output;
+      }
+      send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context,preview:lease.preview}},outputBuffers(lease.preview));
+      completed={id,scene,context};recording=undefined;return;
+    }
     if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'){
       const source=captureSource=completed;
       if(!source||source.id!==event.data.sourceId)throw new Error('暂停截图对应的预览已过期');
@@ -100,7 +145,15 @@ self.onmessage = (
     send({ operation: 'generate', id, output }, outputBuffers(output));
   } catch (error) {
     const message=error instanceof Error?error.message:String(error);
-    if(isPausedCaptureOperation(operation)){
+    if(isPerlinRecordingOperation(operation)||leaseAtEntry){
+      const retained=owner===sessionId&&retainsRecording();
+      // Foreign and stale requests cannot revoke the actual lease. A runtime
+      // failure does revoke it, even if the textual error looks recoverable.
+      if(recording&&!retainsRecording()){recording=undefined;completed=undefined;}
+      const previewRetained=!recording&&!!recordingSource&&owner===sessionId&&temporalSession.sourcePerlin.matchesCompletedPrimary(recordingSource.scene,recordingSource.context);
+      if(recordingSource)completed=previewRetained?recordingSource:undefined;
+      send({id,operation,error:message,...(retained?{retainedRecordingId:recording!.id}:{}),...(previewRetained?{retainedSourceId:recordingSource!.id}:{})});
+    }else     if(isPausedCaptureOperation(operation)){
       // Check the session owner, not an error category: a late capacity or
       // readback failure may already have changed/retired shared density ink.
       const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='perlin-paused-capture'

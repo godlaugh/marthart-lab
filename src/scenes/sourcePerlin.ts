@@ -248,6 +248,7 @@ export class SourcePerlinSession{
   assertPerlinRecordingFrame(output,record.clock,displayFrame);
   record.frame=frame;record.next=displayFrame+1;return output;
  }
+ ownsRecording(handle:object):boolean{return !!this.recording&&this.recording.handle===handle;}
  nextRecordingFrame(handle:object,displayFrame:number):Raster{
   const record=this.recording;
   if(!record||record.handle!==handle||displayFrame!==record.next||displayFrame>record.clock.lastDisplayFrame)throw new Error('Perlin 录制身份或连续帧序号无效');

@@ -615,6 +615,16 @@ export default function App() {
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
       output:(output,time,source)=>{setOutput(output);setOutputScene(source);setRenderTime(time);setError('');},
+      recordingStopped:(result,originalScene)=>{
+        // The queue finishes the owned recording even if its dialog unmounted.
+        // Do not replace a document the user selected or edited meanwhile.
+        if(sceneRef.current!==originalScene)return;
+        autoPlayPending.current=false;playingRef.current=false;setPlaying(false);
+        sceneRef.current=result.scene;generationScene.current=result.scene;
+        camera.current=result.scene.camera;setSceneState(result.scene);
+        timeRef.current=result.context.time;playbackClock.current=result.context.time;
+        setTime(result.context.time);setPreviewCancelled(false);
+      },
       error:error=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();setError(error.message);setPlaying(false);},
       busy:value=>{generationPending.current=value;setGenerationActive(value);setBusy(value&&!playingRef.current);},
     });
@@ -1380,6 +1390,13 @@ export default function App() {
             capture:async(size,scale)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Perlin 画面尚未完成或已过期，请等待预览完成后重试');
               return generationQueue.current.capturePerlinPaused(output,size,scale);
+            },
+          }:undefined}
+          currentPerlinRecording={scene.perlinSource?{
+            ready:completedFrameReady,
+            record:async(options,consumer,signal)=>{
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Perlin 画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current.recordPerlin(output,options,consumer,signal);
             },
           }:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{

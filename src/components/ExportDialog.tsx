@@ -9,7 +9,8 @@ import {ordinarySourceViewport} from '../engine/ordinarySourceCamera';
 import { useEffect, useRef, useState } from "react";
 import { Download, Image, Film, X } from "lucide-react";
 import type { SceneDocument,SceneOutput,GenerationStatus,RasterOutput } from "../types";
-import type {RootsPausedCaptureSize} from '../engine/generationProtocol';
+import type {RootsPausedCaptureSize,PerlinRecordingOptions} from '../engine/generationProtocol';
+import type {PerlinRecordingConsumer} from '../engine/generationQueue';
 import {prepareSourcePausedUpscale} from '../engine/sourcePausedUpscale';
 import {validateRasterRequest} from '../engine/rasterDimensions';
 import {encodeRgbaPng} from '../engine/rgbaPng';
@@ -34,6 +35,7 @@ export function ExportDialog({
   previewPointPixelDensity,
   currentRootsCapture,
   currentPerlinCapture,
+  currentPerlinRecording,
   currentSourceBouncingFrame,
   onClose,
   onDone,
@@ -46,6 +48,7 @@ export function ExportDialog({
   previewPointPixelDensity?:number;
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentPerlinCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
+  currentPerlinRecording?:{ready:boolean;record:(options:PerlinRecordingOptions,consumer:PerlinRecordingConsumer,signal?:AbortSignal)=>Promise<void>};
   currentSourceBouncingFrame?:SourceBouncingPresentedExport;
   onClose: () => void;
   onDone: (message: string) => void;
@@ -58,7 +61,7 @@ export function ExportDialog({
   const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>usesRootsNativePresentation(scene)||sourcePerlin?'current':'replay');
   const [pausedImageScale,setPausedImageScale]=useState<1|3|5>(1);
   const [rootsVideoMode,setRootsVideoMode]=useState<'duration'|'source'>(()=>usesRootsGradientTimeline(scene)?'source':'duration');
-  const [perlinVideoMode,setPerlinVideoMode]=useState<'duration'|'source'>('duration');
+  const [perlinVideoMode,setPerlinVideoMode]=useState<'duration'|'source'|'retained'>('duration');
   const perlinFrames=sourcePerlin&&perlinVideoMode==='source';
   const rootsFrames=usesRootsCameraTimeline(scene)&&rootsVideoMode==='source';
   const [recordingStart,setRecordingStart]=useState<'fresh'|'current'>('fresh');
@@ -83,15 +86,19 @@ export function ExportDialog({
   const domainRouteKeys=useRef(new Set<string>());
   const cancelRef = useRef(false),
     sessionRef = useRef<ExportSessionTicket | null>(null),
-    generator = useRef<Generator | null>(null);
+    generator = useRef<Generator | null>(null),
+    recordingAbort = useRef<AbortController | null>(null);
   const [width,height]=resolution==='custom'?[customWidth,customHeight]:resolution.split('x').map(Number);
+  const retainedPerlin=kind==='video'&&sourcePerlin&&perlinVideoMode==='retained';
+  const perlinQueueVideo=perlinFrames||retainedPerlin;
   const pausedSourceImage=kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin)&&sourceImageMode==='current';
-  let pausedBase={width,height},pausedSizeError='';
-  if(pausedSourceImage&&sourcePerlin){try{pausedBase=prepareSourcePerlinCaptureSize({width,height},sourcePerlinViewport?.pixelDensity??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  let outputBase={width,height},pausedSizeError='';
+  if(sourcePerlin&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePerlinCaptureSize({width,height},sourcePerlinViewport?.pixelDensity??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let upscaleError=pausedSizeError;
-  if(pausedSourceImage&&pausedImageScale!==1){try{const size=prepareSourcePausedUpscale(pausedBase.width,pausedBase.height,pausedImageScale);validateRasterRequest({time:0,quality:'export',width:size.width,height:size.height});}catch(error){upscaleError=error instanceof Error?error.message:String(error);}}
+  if(pausedSourceImage&&pausedImageScale!==1){try{const size=prepareSourcePausedUpscale(outputBase.width,outputBase.height,pausedImageScale);validateRasterRequest({time:0,quality:'export',width:size.width,height:size.height});}catch(error){upscaleError=error instanceof Error?error.message:String(error);}}
   let dimensionError='';
-  if(kind==='video')dimensionError=![width,height].every(Number.isSafeInteger)||width<16||height<16||width>7680||height>4320?t("宽度需为 16–7680、高度需为 16–4320 的整数。"):(width%2!==0||height%2!==0)?t("视频的宽度和高度都必须是偶数。"):'';
+  const videoWidth=retainedPerlin?outputBase.width:width,videoHeight=retainedPerlin?outputBase.height:height;
+  if(kind==='video')dimensionError=![videoWidth,videoHeight].every(Number.isSafeInteger)||videoWidth<16||videoHeight<16||videoWidth>7680||videoHeight>4320?t("宽度需为 16–7680、高度需为 16–4320 的整数。"):(videoWidth%2!==0||videoHeight%2!==0)?t("视频的宽度和高度都必须是偶数。"):'';
   else try{
     // Still images use the raster owner's representation budget. A valid
     // 8192-wide project must not inherit the encoder's narrower video limits.
@@ -105,6 +112,7 @@ export function ExportDialog({
       .catch(() => setFfmpeg(false));
     return () => {
       cancelRef.current = true;
+      recordingAbort.current?.abort();
       try { generator.current?.dispose(); }
       finally {
         // The module owner retains failed cleanup after this dialog unmounts.
@@ -130,10 +138,18 @@ export function ExportDialog({
     setDomainFrames([]);
     setDomainRoutesTruncated(false);domainRouteKeys.current.clear();
     cancelRef.current = false;
-    const g = new Generator();
-    generator.current = g;
+    let g:Generator|null=null;
+    const abort=new AbortController();recordingAbort.current=abort;
     let r:ArtRenderer|null=null;
     const checkCancelled=()=>{if(cancelRef.current)throw new DOMException(t('导出已取消'),'AbortError');};
+    async function finishVideo(){
+      const ticket=sessionRef.current!;
+      const result=await request(`/api/exports/${ticket.id}/finish`,{method:'POST'});
+      ticket.finished();sessionRef.current=null;
+      checkCancelled();
+      setResult({url:result.url,format,name:scene.name});
+      const a=document.createElement('a');a.href=result.url;a.download=`${scene.name}.${format}`;a.click();
+    }
     try {
       await exportSessionCleanup.flush();
       if(sessionRef.current&&!sessionRef.current.pending)sessionRef.current=null;
@@ -152,6 +168,36 @@ export function ExportDialog({
         if(!service)setTimeout(()=>URL.revokeObjectURL(url),600000);
         setProgress(1);setWorking(false);onDone(t('图片已导出'));return;
       }
+      if(retainedPerlin){
+        if(!currentPerlinRecording?.ready)throw new Error(t('请等待当前预览完成并暂停后再录制'));
+        await currentPerlinRecording.record({width,height,simulationFps:recordingFps},{
+          start:async start=>{
+            checkCancelled();
+            assertPerlinRecordingFrame(start.warmup,start.clock,0);
+            if(start.warmup.width!==videoWidth||start.warmup.height!==videoHeight)throw new Error('Perlin 录制实际尺寸与预检不一致，请等待预览完成后重试');
+            const frames=start.clock.encodedFrames;
+            setSourceVideoFrames(frames);
+            if(frames===0)throw new Error(t('Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列'));
+            const session=await request('/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:videoWidth,height:videoHeight,fps,frames,format})});
+            // Register before observing cancellation, including dialog unmount
+            // while the server was accepting the create request.
+            sessionRef.current=exportSessionCleanup.registerCreated(session.id);
+            checkCancelled();
+          },
+          frame:async(output,index,start)=>{
+            checkCancelled();
+            assertPerlinRecordingFrame(output,start.clock,index+1);
+            const blob=await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
+            checkCancelled();
+            await request(`/api/exports/${sessionRef.current!.id}/frames?index=${index}`,{method:'POST',headers:{'content-type':'image/png'},body:blob});
+            checkCancelled();setProgress((index+1)/start.clock.encodedFrames);
+          },
+        },abort.signal);
+        // Queue completion releases the live preview before slow encoding.
+        checkCancelled();await finishVideo();checkCancelled();
+        onDone(t('视频已编码并导出'));setWorking(false);return;
+      }
+      g=new Generator();generator.current=g;
       const exportScene=kind==='video'?(rootsFrames?withRootsFreshRecording(scene,recordingFps):perlinFrames?withPerlinFreshRecording(scene,recordingFps):scene):scene;
       const bouncingPlan=sourceBouncing?prepareSourceBouncingExport(exportScene,currentSourceBouncingFrame,{kind,start:bouncingStart,width,height,fps}):undefined;
       if(bouncingPlan&&!bouncingPlan.ok)throw new Error(bouncingPlan.error.reason);
@@ -266,17 +312,7 @@ export function ExportDialog({
       }
       if (kind === "video") {
         checkCancelled();
-        const result = await request(
-          `/api/exports/${sessionRef.current!.id}/finish`,
-          { method: "POST" },
-        );
-        sessionRef.current!.finished();sessionRef.current=null;
-        checkCancelled();
-        const a = document.createElement("a");
-        a.href = result.url;
-        setResult({url:result.url,format,name:scene.name});
-        a.download = `${scene.name}.${format}`;
-        a.click();
+        await finishVideo();
       }
       checkCancelled();
       onDone(kind === "image" ? t("图片已导出") : t("视频已编码并导出"));
@@ -294,11 +330,12 @@ export function ExportDialog({
       if(message)setError(message);
       setWorking(false);
     } finally {
-      try { g.dispose(); }
+      try { g?.dispose(); }
       finally {
         try { r?.dispose(); }
         finally {
           generator.current = null;
+          if(recordingAbort.current===abort)recordingAbort.current=null;
           setGenerationStatus(null);
         }
       }
@@ -306,6 +343,7 @@ export function ExportDialog({
   }
   function cancel() {
     cancelRef.current = true;
+    recordingAbort.current?.abort();
     generator.current?.cancel();
   }
   return (
@@ -330,7 +368,8 @@ export function ExportDialog({
         </p>
         {domainFrames.length>0&&<details open data-testid="domain-export-rendering"><summary>{t('本次导出的实际执行规则')}</summary>{domainFrames.map(item=><div key={item.key}><p>{t('已完成帧 {first}–{last}',{first:item.first+1,last:item.last+1})}</p><DomainRenderSummary facts={item.facts}/></div>)}{domainFrames.length>1&&<p>{t('本次导出使用了多种执行路径；以下范围记录各路径首次和最后出现的帧，不表示中间所有帧相同。')}</p>}{domainRoutesTruncated&&<p>{t('执行路径详情超过 16 项，后续不同路径未全部列出。')}</p>}</details>}
         {sourceBouncing&&<p role="status" className="muted">{t(kind==='image'?'PNG 保存当前已呈现检查点，不推进模拟；尺寸变化只改变输出投影。':'源弹跳离线逐帧录制，使用源时钟的预热与停止规则。')}{!currentSourceBouncingFrame?.ready&&t('请等待当前预览完成并暂停后再导出。')}</p>}
-        {sourcePerlin&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。':'从当前配置的初始状态重放，不保留预览中的后端切换历史。')}</p>}
+        {sourcePerlin&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。':retainedPerlin?'使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。停止后停留在实际末帧，方便检查。':'从当前配置的初始状态重放，不保留预览中的后端切换历史。')}</p>}
+        {retainedPerlin&&<><p className="muted">{t('实际视频尺寸：{width} × {height} 像素。',{width:videoWidth,height:videoHeight})}</p>{!working&&!currentPerlinRecording?.ready&&<p role="status" className="muted">{t('请等待当前预览完成并暂停后再录制')}</p>}{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         {usesRootsNativePresentation(scene)&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像；尺寸变化会清空密度墨迹，点云截图使用独立的累积画布。':'空间复根导出会从初始采样重放到所选时间，使用当前相机和导出尺寸；预览中的历史墨迹与点云拖影不会复制。')}</p>}
         <div className="export-kind">
           <button
@@ -353,7 +392,7 @@ export function ExportDialog({
             <Film size={15} />{t("动画视频")}</button>
         </div>
         {kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin)&&<label className="field"><span>{t(sourcePerlin?'Perlin 图像来源':'复根图像来源')}</span><select aria-label={t(sourcePerlin?'Perlin 图像来源':'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
-        {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t('先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:pausedBase.width*pausedImageScale,height:pausedBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
+        {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t('先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:outputBase.width*pausedImageScale,height:outputBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         <label className="field">
           <span>{t("文件格式")}</span>
           <select
@@ -399,7 +438,7 @@ export function ExportDialog({
         {kind === "video" && (
           <>
             <label className="field">
-              <span>{t(sourceFrames||rootsFrames||perlinFrames?'编码帧率':'帧率')}</span>
+              <span>{t(sourceFrames||rootsFrames||perlinQueueVideo?'编码帧率':'帧率')}</span>
               <input
                 disabled={working}
                 type="number"
@@ -412,16 +451,16 @@ export function ExportDialog({
               />
             </label>
             {usesRootsCameraTimeline(scene)&&<label className="field"><span>{t('复根视频模式')}</span><select aria-label={t('复根视频模式')} disabled={working} value={rootsVideoMode} onChange={event=>setRootsVideoMode(event.target.value as 'duration'|'source')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源完成条件录制')}</option></select></label>}
-            {sourcePerlin&&<label className="field"><span>{t('Perlin 视频模式')}</span><select aria-label={t('Perlin 视频模式')} disabled={working} value={perlinVideoMode} onChange={event=>setPerlinVideoMode(event.target.value as 'duration'|'source')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源队列结束重放')}</option></select></label>}
+            {sourcePerlin&&<label className="field"><span>{t('Perlin 视频模式')}</span><select aria-label={t('Perlin 视频模式')} disabled={working} value={perlinVideoMode} onChange={event=>setPerlinVideoMode(event.target.value as 'duration'|'source'|'retained')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源队列结束重放')}</option><option value="retained">{t('保留画布录制')}</option></select></label>}
             {sourceBouncing?<>
               <label className="field"><span>{t('弹跳录制起点')}</span><select aria-label={t('弹跳录制起点')} disabled={working} value={bouncingStart} onChange={event=>setBouncingStart(event.target.value as 'current'|'seed')}><option value="seed">{t('重建初始状态')}</option><option value="current">{t('当前状态（本地扩展）')}</option></select></label>
               <p className="muted" data-testid="source-bouncing-export-duration">{t('源录制时长（秒）')}：{scene.bouncingSource!.recordDuration}。{t('修改场景的源录制时长可改变停止条件。')}</p>
               <p className="muted">{t('重建初始状态会按当前场景配置生成粒子、恢复作者相机角度并将缩放重置为 1；当前状态选项保留已呈现的粒子与视角。两种方式均将录制时钟清零，先推进并绘制 1 帧预热但不编码，再录制到源时长阈值；帧率同时用于模拟时钟和视频编码。')}</p>
               {sourceVideoFrames!==null&&<p className="muted">{t('本次录制 {frames} 帧',{frames:sourceVideoFrames})}</p>}
-            </>:sourceFrames||rootsFrames||perlinFrames?<>
+            </>:sourceFrames||rootsFrames||perlinQueueVideo?<>
               {sourceFrames&&<label className="field"><span>{t('录制起点')}</span><select aria-label={t('录制起点')} disabled={working} value={recordingStart} onChange={event=>setRecordingStart(event.target.value as 'fresh'|'current')}><option value="fresh">{t('从初始状态')}</option><option value="current" disabled={currentSpirographFrame===undefined}>{t('从当前已呈现帧')}</option></select></label>}
               <label className="field"><span>{t('录制模拟帧率')}</span><input aria-label={t('录制模拟帧率')} disabled={working} type="number" min={1} max={120} step={1} value={recordingFps} onChange={event=>setRecordingFps(Number(event.target.value))}/></label>
-              <p className="muted">{t(perlinFrames?'使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。':rootsFrames?'从初始状态重放；首帧用于预热。存在源队列时按队列结束停止；空队列等待本地样本提交完成。模拟帧率决定运动步长，编码帧率决定视频播放速度。':'按源队列结束时停止录制；首个已推进帧用于预热，不写入视频。模拟帧率决定运动步长，编码帧率决定视频播放速度。')}</p>
+              <p className="muted">{t(retainedPerlin?'恢复上次应用的模拟配置和后端，首帧预热后按源队列结束停止。导出尺寸变化会重建导出画布。模拟帧率决定运动步长，编码帧率决定播放速度。':perlinFrames?'使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。':rootsFrames?'从初始状态重放；首帧用于预热。存在源队列时按队列结束停止；空队列等待本地样本提交完成。模拟帧率决定运动步长，编码帧率决定视频播放速度。':'按源队列结束时停止录制；首个已推进帧用于预热，不写入视频。模拟帧率决定运动步长，编码帧率决定视频播放速度。')}</p>
               {sourceVideoFrames!==null&&<p className="muted">{t('本次录制 {frames} 帧',{frames:sourceVideoFrames})}</p>}
             </>:<label className="field">
               <span>{t("时长（秒）")}</span>
@@ -472,10 +511,10 @@ export function ExportDialog({
           <button
             className="primary-button"
             disabled={
-              working || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedSourceImage&&!currentPausedCapture?.ready ||
+              working || retainedPerlin&&!currentPerlinRecording?.ready || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedSourceImage&&!currentPausedCapture?.ready ||
               (kind === "video" &&
                 (ffmpeg !== true || !Number.isSafeInteger(fps)||fps<1||fps>120||
-                  (sourceFrames||rootsFrames||perlinFrames)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&!perlinFrames&&(!Number.isFinite(duration) ||
+                  (sourceFrames||rootsFrames||perlinQueueVideo)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&!perlinQueueVideo&&(!Number.isFinite(duration) ||
                   duration <= 0 ||
                   duration > 3600)))
             }

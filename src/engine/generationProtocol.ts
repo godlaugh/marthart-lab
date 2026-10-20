@@ -1,9 +1,23 @@
-import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
+import type {PerlinFreshRecordingPlan,PerlinRecordingClock} from './sourcePerlinRecording';
 import type { GenerationInput, GenerationStatus, SceneDocument, SceneOutput } from '../types';
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
+
+export type PerlinRecordingRaster=Extract<SceneOutput,{type:'raster'}>;
+export interface PerlinRecordingOptions {width:number;height:number;simulationFps:number;}
+export interface PerlinRecordingHandle {readonly sessionId:number;readonly recordingId:number;}
+export interface PerlinRecordingStart {handle:PerlinRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:PerlinRecordingClock;warmup:PerlinRecordingRaster;}
+export interface PerlinRecordingStop {scene:SceneDocument;context:GenerationInput;preview:PerlinRecordingRaster;}
+export type PerlinRecordingOperation='perlin-recording-begin'|'perlin-recording-frame'|'perlin-recording-finish';
+export function isPerlinRecordingOperation(operation:string):operation is PerlinRecordingOperation{return operation==='perlin-recording-begin'||operation==='perlin-recording-frame'||operation==='perlin-recording-finish';}
+/** Retention is an acknowledgement from the current owner, never inferred from
+ * an error message. A retained begin failure exposes its exact local handle so
+ * callers can finish a recording whose warmup response could not be delivered. */
+export class PerlinRecordingOperationError extends Error {
+ constructor(message:string,readonly previewRetained:boolean,readonly recordingRetained:boolean,readonly handle?:PerlinRecordingHandle){super(message);this.name='PerlinRecordingOperationError';}
+}
 
 export interface PausedCaptureSize {width:number;height:number;}
 export interface PausedCaptureResult {capture:Extract<SceneOutput,{type:'raster'}>;preview:Extract<SceneOutput,{type:'raster'}>;}
@@ -29,12 +43,18 @@ type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Ope
 export type GenerationRequest = { sessionId: number } & (
   | { operation: 'generate'; id: number; scene: SceneDocument; context: GenerationInput; wantsStatus?:true }
   | PausedCaptureRequest
+  | {operation:'perlin-recording-begin';id:number;sourceId:number;options:PerlinRecordingOptions}
+  | {operation:'perlin-recording-frame';id:number;recordingId:number;displayFrame:number}
+  | {operation:'perlin-recording-finish';id:number;recordingId:number}
   | { operation: 'search-stable'; id: number; scene: SceneDocument; options: StableSearchOptions }
   | { operation: 'spirograph-recording-plan'; id:number; scene:SceneDocument; startFrame:number; fps:number }
   | { operation: 'perlin-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'roots-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
 export type GenerationPayload =
+  | {operation:'perlin-recording-begin';id:number;recordingId:number;result:Omit<PerlinRecordingStart,'handle'>}
+  | {operation:'perlin-recording-frame';id:number;recordingId:number;displayFrame:number;output:PerlinRecordingRaster}
+  | {operation:'perlin-recording-finish';id:number;recordingId:number;result:PerlinRecordingStop}
   | { operation: 'generate'; id: number; output: SceneOutput }
   | { operation: PausedCaptureOperation; id:number; result:PausedCaptureResult }
   | { operation: 'generate-progress'; id: number; output: SceneOutput }
@@ -46,6 +66,5 @@ export type GenerationPayload =
   | { operation: 'search-stable'; id: number; progress: StableSearchProgress }
   | { operation: 'explore-complex'; id: number; result: ComplexExploreResult }
   | { operation: 'explore-complex'; id: number; progress: ComplexExploreProgress }
-  | { operation:PausedCaptureOperation;id:number;error:string;retainedSourceId?:number }
-  | { operation: Exclude<GenerationRequest['operation'],PausedCaptureOperation>; id: number; error: string };
+  | {operation:GenerationRequest['operation'];id:number;error:string;retainedSourceId?:number;retainedRecordingId?:number};
 export type GenerationResponse = GenerationPayload & { sessionId: number };

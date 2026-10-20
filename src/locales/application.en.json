@@ -1225,5 +1225,10 @@
   "Perlin 视频模式": "Perlin video mode",
   "按源队列结束重放": "Replay until source queue ends",
   "使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。": "Replay the current configuration on a new canvas. Discard one warmup frame, then stop when the source queue ends. Preview and previous export pixels are not reused. Simulation FPS controls motion; encoder FPS controls playback speed.",
-  "Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列": "The Perlin queue ended during warmup with no frames to encode; extend the queue."
+  "Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列": "The Perlin queue ended during warmup with no frames to encode; extend the queue.",
+  "保留画布录制": "Record with retained canvases",
+  "请等待当前预览完成并暂停后再录制": "Wait for the current preview to finish and pause before recording.",
+  "使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。停止后停留在实际末帧，方便检查。": "Restart recording with the last applied configuration, retaining accumulation on the primary canvas and same-size export canvas. Stop at the actual final frame for inspection.",
+  "恢复上次应用的模拟配置和后端，首帧预热后按源队列结束停止。导出尺寸变化会重建导出画布。模拟帧率决定运动步长，编码帧率决定播放速度。": "Restore the last applied simulation configuration and backend. Discard one warmup frame, then stop when the source queue ends. Resizing recreates the export canvas. Simulation FPS controls motion; encoder FPS controls playback speed.",
+  "实际视频尺寸：{width} × {height} 像素。": "Actual video size: {width} × {height} pixels."
 }
