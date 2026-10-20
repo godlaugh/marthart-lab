@@ -1,4 +1,5 @@
 import type {SceneDocument} from '../types';
+import {SAMILA_SCENE_SEQUENCE} from './sourceSamilaReplay';
 
 export interface ParameterTimelineReference {target:string;trackId:string;kind:'value'|'stop';enabled:boolean;}
 /** Parameter references follow the timeline's named operation contracts. A stop
@@ -12,7 +13,13 @@ export function parameterTimelineReferences(scene:Pick<SceneDocument,'timeline'>
   const type=track.type??'numeric';
   if(type==='numeric')add(track.target,track.enabled);
   if(type==='param')ranges(track.parameterAnimations,track.enabled);
-  if(type==='animate')for(const action of track.actions??[]){const enabled=track.enabled&&action.enabled!==false;if(action.method==='paramStart')ranges(action.parameters,enabled);if(action.method==='paramStop')add(action.args?.target,enabled,'stop');}
+  if(type==='animate')for(const action of track.actions??[]){
+   if(scene.timeline.schedule===SAMILA_SCENE_SEQUENCE){
+    if(action.method==='paramStart')for(const p of action.samilaParameters?.parameters??[])add('parameters.'+p.name,track.enabled);
+    continue; // Source stop acts on the drift registry, not a named initial value.
+   }
+   const enabled=track.enabled&&action.enabled!==false;if(action.method==='paramStart')ranges(action.parameters,enabled);if(action.method==='paramStop')add(action.args?.target,enabled,'stop');
+  }
  }
  return out;
 }

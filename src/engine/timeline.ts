@@ -1,3 +1,5 @@
+import {SAMILA_SCENE_SEQUENCE,usesSourceSamilaTimeline,resolveSourceSamilaTimeline,replaySourceSamilaTimeline,bindSourceSamilaFrame} from './sourceSamilaReplay';
+import {normalizeSourceSamilaParameterAction} from './sourceSamilaParameter';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 import {usesCapturedDensityCamera,capturedDensityCameraClipTypes,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
 import {replaySourcePerlinCamera} from './sourcePerlinReplay';
@@ -95,6 +97,7 @@ export const ACTIONS = [
 const cameraMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','track','stopTracking','ambient','stopAmbient']);
 export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument):string[]{
+ if(usesSourceSamilaTimeline(scene)){const frame=replaySourceSamilaTimeline(scene,0);return[...frame.diagnostics.map(d=>d.message),'源 Samila 队列按固定帧率回放；仅 theta 参与密度显示，其他相机分量保留运行状态。'];}
  if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,'复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。'];
  const genericWarning=genericParameterTimelineWarning(scene),messages:string[]=[...(genericWarning?[genericWarning]:[]),...parseSamilaCamera(scene).warnings];
@@ -165,7 +168,7 @@ export function clipDuration(track: AnimationTrack, scene: SceneDocument): numbe
 export function validateTimelineSchedule(scene:SceneDocument):void {
   const schedule=scene.timeline.schedule;
   if(scene.sourceCamera&&schedule!=='ordinary-camera-sequence-v1')throw new Error('原版几何相机必须使用对应的顺序时间线');
-  if(schedule!==undefined&&!((schedule==='ordinary-camera-sequence-v1'&&!!scene.sourceCamera)||(schedule==='spirograph-sequence-v1'&&scene.kind==='spirograph')||((schedule==='roots-camera-sequence-v1'||schedule==='roots-scene-sequence-v1')&&scene.kind==='roots')))throw new Error('时间线顺序规则无效');
+  if(schedule!==undefined&&!(usesSourceSamilaTimeline(scene)||(schedule==='ordinary-camera-sequence-v1'&&!!scene.sourceCamera)||(schedule==='spirograph-sequence-v1'&&scene.kind==='spirograph')||((schedule==='roots-camera-sequence-v1'||schedule==='roots-scene-sequence-v1')&&scene.kind==='roots')))throw new Error('时间线顺序规则无效');
   if(usesCapturedDensityCamera(scene)){
     const clips=capturedDensityCameraClipTypes(scene);
     for(const track of scene.timeline.tracks){
@@ -185,6 +188,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
+  if(usesSourceSamilaTimeline(scene))return resolveSourceSamilaTimeline(scene);
   if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:usesSourcePerlin(scene)?'perlin':usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':undefined,surfaceMode:usesSourceSurfaceHost(scene)?scene.surfaceSource?.mode:undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
   if(usesRootsCameraTimeline(scene))return resolveRootsCameraTimeline(scene);
   if(scene.timeline.schedule==='roots-camera-sequence-v1'||scene.timeline.schedule==='roots-scene-sequence-v1')return {...scene.timeline,schedule:undefined};
@@ -422,6 +426,7 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
  });
 }
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceSurface=false,sourceAttractor=false,sourcePerlin=false):void{
+ if(Array.isArray(track.actions))for(const action of track.actions){if(action?.samilaParameters!==undefined){if(sceneKind!=='samila'||schedule!==SAMILA_SCENE_SEQUENCE||!['paramStart','paramStop'].includes(action.method))throw new Error('Samila 源参数只适用于源 Samila 队列');const parsed=normalizeSourceSamilaParameterAction(action.samilaParameters);if(!parsed.ok)throw new Error(parsed.error.reason);}}
  if(Array.isArray(track.actions))for(const action of track.actions){if(action?.perlinParameters!==undefined){if(!sourcePerlin||!['paramStart','paramStop'].includes(action.method))throw new Error('Perlin 源参数只能用于源 Perlin 作品');const parsed=parseSourcePerlinParameterAction(action.perlinParameters);if(!parsed.ok)throw new Error(parsed.error.reason);}}
  if(track.spirographWait!==undefined&&(track.spirographWait!=='visual-or-deadline-v1'||track.type!=='spirograph_finish_wait'||sceneKind!==undefined&&sceneKind!=='spirograph'))throw new Error('旋轮完成等待规则无效');
  if(track.surfaceFadeOutRatio!==undefined&&(track.type!=='surface_mode_transition'||typeof track.surfaceFadeOutRatio!=='number'||!Number.isFinite(track.surfaceFadeOutRatio)||!Number.isFinite(Math.fround(track.surfaceFadeOutRatio))))throw new Error('曲面淡出比例无效');
@@ -462,6 +467,7 @@ export function sceneAtTime(scene: SceneDocument, position: number): SceneDocume
   }
   if(usesSpirographFrameClock(scene))return sceneAtSpirographFrame(scene,position);
   const resolved=resolveTimeline(scene);
+  if(usesSourceSamilaTimeline(scene)){const copied=copyState(scene,position),frame=replaySourceSamilaTimeline(scene,clamp(position,0,resolved.duration));copied.parameters={...frame.parameters};writeSamilaTheta(copied,frame.camera.theta);bindSourceSamilaFrame(copied,frame);return copied;}
   // The native Attractor queue owns every supported action. Do not compile it
   // again as local palette/parameter animation, or retain duplicate snapshots
   // in the generic timeline cache. Geometry and camera replay share this owner.

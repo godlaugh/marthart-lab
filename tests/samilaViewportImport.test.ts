@@ -10,7 +10,7 @@ describe('source Samila viewport import',()=>{
  it('selects the explicit new profile with native viewport defaults and retains unused camera',()=>{
   const raw=source(),imported=parseLegacyScene(JSON.stringify(raw));
   expect(imported.scene.settings).toMatchObject({samilaProjectionModel:'source-ndc-v1',samilaCameraModel:'anchored-theta-v1',samilaHistoryModel:'bounded-v2',samilaCameraTheta:0,scaleX:Math.fround(.33),scaleY:Math.fround(.33),offsetX:0,offsetY:0,rotation:0});
-  expect(imported.source).toEqual(raw);expect(imported.warnings.join(' ')).toContain('本地固定时钟');
+  expect(imported.source).toEqual(raw);expect(imported.warnings.join(' ')).toContain('使用文档固定帧率');expect(imported.warnings.join(' ')).toContain('原版实时线程时钟');
   expect(parseScene(serializeScene(imported.scene)).settings).toEqual(imported.scene.settings);
  });
  it('does not reinterpret literal getter fields as formula expressions or bind parameters',()=>{

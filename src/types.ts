@@ -1,3 +1,4 @@
+import type {SourceSamilaParameterAction} from './engine/sourceSamilaParameter';
 import type {SourcePerlinDocumentPayload} from './engine/sourcePerlinDocument';
 import type {SourcePerlinCpuDocumentPayload} from './engine/sourcePerlinCpuDocument';
 import type {SourcePerlinGpuDocumentPayload} from './engine/sourcePerlinGpuDocument';
@@ -151,6 +152,8 @@ export interface AnimationAction {
   surfaceParameters?:SourceSurfaceParameterAction[];
   /** Dedicated source Perlin child; admitted only by its source queue. */
   perlinParameters?:SourcePerlinParameterAction;
+  /** Dedicated source Samila child; initial phase belongs to its queue runtime. */
+  samilaParameters?:SourceSamilaParameterAction;
 }
 export interface AnimationTrack {
   id: string;
@@ -256,7 +259,7 @@ export interface SceneDocument {
     /** Sequential profiles derive absolute positions through resolveTimeline.
      * Spirograph reads track.start as a pre-clip delay; Roots ignores it and
      * uses explicit waits. duration is the caller's minimum playback span. */
-    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1' | 'ordinary-camera-sequence-v1';
+    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1' | 'ordinary-camera-sequence-v1' | 'samila-scene-sequence-v1';
   };
   favorite: boolean;
   formulas?: FormulaConfig;

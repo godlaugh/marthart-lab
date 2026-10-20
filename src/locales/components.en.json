@@ -836,5 +836,13 @@
   "GPU 饱和度": "GPU saturation",
   "GPU 密度比例": "GPU density scale",
   "色调数值按原版范围限制。密度比例控制当前帧的叠加亮度，不延长轨迹。": "Tone values use the original limits. Density scale controls the current frame’s accumulated brightness, not trail duration.",
-  "源 Samila 实数语法：函数名紧邻左括号；x、y 为采样坐标，a–d 缺省为 0。其他变量必须显式声明为参数；不注入时间。": "Source Samila real expressions: function names must directly precede the opening parenthesis. x and y are sample coordinates; a–d default to 0. Other variables must be declared as parameters. Time is not injected."
+  "源 Samila 实数语法：函数名紧邻左括号；x、y 为采样坐标，a–d 缺省为 0。其他变量必须显式声明为参数；不注入时间。": "Source Samila real expressions: function names must directly precede the opening parenthesis. x and y are sample coordinates; a–d default to 0. Other variables must be declared as parameters. Time is not injected.",
+  "片段结束时停止全部 Samila 参数漂移；过渡期间已有漂移继续。": "Stops all Samila parameter drift at the end of the clip. Existing drift continues during the transition.",
+  "添加 Samila 动画参数": "Add Samila animation parameter",
+  "源 Samila 队列按固定帧率回放；仅 theta 参与密度显示，其他相机分量保留运行状态。": "The source Samila queue uses fixed-rate replay. Only theta affects the density display; other camera components retain their runtime state.",
+  "最小值": "Minimum",
+  "最大值": "Maximum",
+  "每帧步长（60 fps 参考）": "Step per frame (60 fps reference)",
+  "初相位来自作品初始参数；片段完成后替换持续漂移列表。步长按每个参考帧计算，负值反向。": "Initial phase comes from the artwork’s initial parameters. Completing the clip replaces the persistent drift list. Step is per reference frame; negative values reverse direction.",
+  "Samila 片段按列表顺序执行，未知原片段作为等待。参数在队列结束后停止更新，环绕相机仍按帧推进。预览和导出共用文档帧率。": "Samila clips run in list order; unknown source clips become waits. Parameters stop updating when the queue ends; ambient camera motion continues per frame. Preview and export share the document frame rate."
 }

@@ -1,3 +1,4 @@
+import {SAMILA_SCENE_SEQUENCE,resolveSourceSamilaTimeline} from './sourceSamilaReplay';
 import {usesSourceSamilaMath} from './sourceSamilaMath';
 import {parseSourcePerlinDocument,migrateSourcePerlinDocument} from './sourcePerlinDocument';
 import {replaySourcePerlinCamera} from './sourcePerlinReplay';
@@ -282,7 +283,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   )
     fail("时间线无效");
   for (const track of t.tracks) {
-    const ordinaryDuration=record(track)&&data.sourceCamera!==undefined&&t.schedule==='ordinary-camera-sequence-v1'&&['wait','animate','align','param'].includes(String(track.type));
+    const ordinaryDuration=record(track)&&(data.sourceCamera!==undefined&&t.schedule==='ordinary-camera-sequence-v1'&&['wait','animate','align','param'].includes(String(track.type))||data.kind==='samila'&&t.schedule==='samila-scene-sequence-v1'&&['wait','animate'].includes(String(track.type)));
     const zeroDuration=record(track)&&(ordinaryDuration||['animate','spirograph_finish_wait'].includes(String(track.type))||track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)||track.type==='trails'&&(usesSourceSurfaceGeometry(data as unknown as SceneDocument)||usesSourcePerlin(data as unknown as SceneDocument)));
     if (
       !record(track) ||
@@ -298,6 +299,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     if(track.type==='fractal_zoom')track.keyframes=validateFractalKeyframes(track as unknown as AnimationTrack);
   }
   validateTimelineSchedule(data as unknown as SceneDocument);
+  if(t.schedule===SAMILA_SCENE_SEQUENCE)resolveSourceSamilaTimeline(data as unknown as SceneDocument);
   if(t.schedule==='roots-camera-sequence-v1'||t.schedule==='roots-scene-sequence-v1')prepareRootsCameraTimeline(data as unknown as SceneDocument);
   if(usesSpirographFrameClock(data as unknown as SceneDocument)){
     spirographSimulationFps(data as unknown as SceneDocument);

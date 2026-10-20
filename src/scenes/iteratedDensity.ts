@@ -1,3 +1,4 @@
+import {usesSourceSamilaTimeline,sourceSamilaFrame} from '../engine/sourceSamilaReplay';
 import {usesSourceSamilaMath,resolveSourceSamilaSelection,prepareSourceSamilaRange,sourceSamilaMapProject,type SourceSamilaMathModel} from '../engine/sourceSamilaMath';
 import {prepareSourceSamilaExpressions,type PreparedSourceSamilaExpressions} from '../engine/sourceSamilaExpression';
 import {usesSamilaSourceProjection,prepareSamilaNdcProjection,samilaNdcParticleTransform,samilaNdcPosition,samilaNdcSamplingRotation,samilaNdcDensityViewport,SAMILA_SOURCE_DORMANT_CONTROLS,type SamilaNdcProjection} from '../engine/samilaProjection';
@@ -47,7 +48,7 @@ function config(scene:SceneDocument):IteratedConfig {
  const s=scene.settings,kind=scene.kind,dimension=kind==='map'?mapDimension(s):2,range=numberSetting(s,'initialRange',.1,0,100),initial=option(s,'initialMode',kind==='symmetry'?'box':'range',['range','box']);
  const bounds:[number,number][]=['X','Y','Z'].map((axis):[number,number]=>initial==='range'?[-range,range]:[numberSetting(s,'initial'+axis+'Min',kind==='symmetry'?.001:-1,-1e6,1e6),numberSetting(s,'initial'+axis+'Max',kind==='symmetry'?.002:1,-1e6,1e6)]);
  for(const [lo,hi]of bounds)if(hi<lo)throw new Error('初始盒上限必须不小于下限');
- const fps=int(s,'iteratedFps',60,1,120),metricMin=numberSetting(s,'stepMetricMin',0,0,1e12),metricMax=numberSetting(s,'stepMetricMax',2,.001,1e12),metricMode=option(s,'stepMetricNormalize','clamp',['clamp','robust']) as 'clamp'|'robust';normalizeStepMetric(0,metricMin,metricMax,metricMode);
+ const fps=usesSourceSamilaTimeline(scene)?numberSetting({fps:scene.timeline.fps},'fps',60,1,120):int(s,'iteratedFps',60,1,120),metricMin=numberSetting(s,'stepMetricMin',0,0,1e12),metricMax=numberSetting(s,'stepMetricMax',2,.001,1e12),metricMode=option(s,'stepMetricNormalize','clamp',['clamp','robust']) as 'clamp'|'robust';normalizeStepMetric(0,metricMin,metricMax,metricMode);
  let decay=numberSetting(s,'accumulationDecay',1,0,1);if(kind==='samila'&&bool(s,'showTrails',true))decay*=Math.pow(.01,1/(fps*numberSetting(s,'trailLifetime',4,.001,3600)));
  return{...(kind==='samila'?{samilaHistoryModel:samilaHistoryModel(s)}:{}),count:int(s,'batchSize',4096,1,MAX_BATCH),fps,startTime:numberSetting(s,'iteratedStartTime',0,0,86400),seed:int(s,'seed',1,0,0xffffffff),burn:kind==='samila'?0:int(s,'burnIn',kind==='map'?100:200,0,100000),iterations:kind==='samila'?1:int(s,'iterationsPerFrame',1,1,16),dimension,escape:numberSetting(s,'escapeRadius',kind==='symmetry'?10:100,.001,1e12),bounds,decay,alpha:kind==='samila'?numberSetting(s,'alpha',.1,0,1):1,record:bool(s,'recordTrails',true),pointSize:numberSetting(s,'pointSize',1,.1,32),metricMin,metricMax,metricMode,color:option(s,'iteratedColor',kind==='samila'?'noise':'step',['step','noise','index','radius','angle','height']),colorSpeed:numberSetting(s,'colorSpeed',.22,.001,100),colorPhase:numberSetting(s,'colorPhase',0,-1e9,1e9)};
 }
@@ -202,7 +203,7 @@ export class IteratedDensitySession {
    if(runtime.revision!==undefined)cfg.sampleSeed=Math.floor(uniform(cfg.seed,0,runtime.revision,251)*4294967296);
    if(base.kind==='samila'){const projection=job.samilaProjection;s.samilaGeometry=projection?{scaleX:projection.scaleX,scaleY:projection.scaleY,offsetX:projection.offsetX,offsetY:projection.offsetY}:samilaViewportTransform(snapshot);}
    if(cfg.fps!==initial.fps||cfg.startTime!==initial.startTime)throw new Error('持续采样时钟和 Replay 起点不能在运行中动画改变');
-   if(cfg.samilaHistoryModel==='bounded-v2'){if(job.field.kind!=='samila')throw new Error('Samila 历史场类型不匹配');job.history=prepareSamilaHistoryFrame({parameters:job.field.parameters,fieldKey:job.fieldKey,frame,count:cfg.count,record:cfg.record},s.history,s.structuralKey!==job.structuralKey);}
+   if(cfg.samilaHistoryModel==='bounded-v2'){if(job.field.kind!=='samila')throw new Error('Samila 历史场类型不匹配');job.history=prepareSamilaHistoryFrame({parameters:job.field.parameters,fieldKey:job.fieldKey,frame,count:cfg.count,record:cfg.record},s.history,s.structuralKey!==job.structuralKey||(sourceSamilaFrame(snapshot)?.parameterWrites??0)>0);}
    // Clear ownership is resolved on the unanchored field. Camera theta never
    // changes that key, compensation, PRNG addresses or parameter acknowledgement.
    const camera=samilaCameraFrame(snapshot);
@@ -294,10 +295,11 @@ export const iteratedDensityControls:ControlSpec[]=[
  select('iteratedColor','持续样本配色',[['step','最后一步距离'],['noise','空间噪声'],['index','粒子序号'],['radius','距原点距离'],['angle','极角'],['height','高度']]),
  n('stepMetricMin','步长度量下限',0,1e12,.01),n('stepMetricMax','步长度量上限',.001,1e12,.01),select('stepMetricNormalize','步长归一化',[['clamp','截断'],['robust','稳健压缩']]),n('colorSpeed','样本颜色频率',.001,100,.01),n('colorPhase','样本颜色相位 · 度',-1e9,1e9,1),
 ];
-export function visibleIteratedControls(kind:SceneKind,settings:Settings,controls:ControlSpec[]):ControlSpec[] {
+export function visibleIteratedControls(kind:SceneKind,settings:Settings,controls:ControlSpec[],timeline?:SceneDocument['timeline']):ControlSpec[] {
  if(!['map','symmetry','samila'].includes(kind))return controls;
  const sourceMath=usesSourceSamilaMath({kind,settings}),active=settings.iteratedMode==='continuous',normalized=active&&((kind!=='samila'&&settings.densityToneModel==='normalized-v2')||(kind==='samila'&&settings.densityToneModel==='samila-normalized-v2')),own=new Set(iteratedDensityControls.map(c=>c.key)),hidden=new Set<string>();
  if(kind!=='samila')hidden.add('samilaHistoryModel');
+ if(timeline&&usesSourceSamilaTimeline({kind,settings,timeline}))hidden.add('iteratedFps');
  if(sourceMath)hidden.add('iteratedMode');
  if(usesSamilaSourceProjection({kind,settings}))for(const key of SAMILA_SOURCE_DORMANT_CONTROLS)hidden.add(key);
  if((kind==='map'||kind==='symmetry')&&settings.iteratedCameraModel===CAPTURED_DENSITY_CAMERA_MODEL)for(const key of ['iteratedMode','densityProjection','densityView','densityCenterX','densityCenterY','densitySpan','densityPadding'])hidden.add(key);

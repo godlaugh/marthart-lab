@@ -1,3 +1,5 @@
+import {importSourceSamilaTimeline} from './sourceSamilaTimelineImport';
+import {SAMILA_SCENE_SEQUENCE} from './sourceSamilaReplay';
 import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 import {importSourcePerlinDocument} from './sourcePerlinDocument';
@@ -1333,7 +1335,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
-export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
+export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
 
 /** Import original MathArt JSON while retaining every original value separately. */
 export function parseLegacyScene(text:string,options:LegacyImportOptions={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
@@ -1423,10 +1425,17 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  if((kind==='map'||kind==='symmetry')&&options.iteratedCamera!=='legacy-v1')scene.settings.iteratedCameraModel=CAPTURED_DENSITY_CAMERA_MODEL;
  if(ordinaryScope&&(!['map','symmetry'].includes(kind)||options.iteratedCamera!=='legacy-v1'))ordinaryCamera(r,scene,ordinaryScope);
  if(usesCapturedDensityCamera(scene))r.warnings.push('Map/Symmetry 已启用源相机捕获投影：Map 相机变化清空密度，Symmetry 角度变化保留密度旋转；新窗口与导出按本地固定时钟重放，随机序列、点覆盖和原版完整画面仍未对照。');
- formulaAnnotations(r,scene);timeline(r,scene,ordinaryScope,ordinaryStructure);
+ formulaAnnotations(r,scene);
+ if(sourceSamila&&options.samilaTimeline!=='legacy-v1'){
+  const parsed=importSourceSamilaTimeline(r.peek(['timeline']),{numberToken:path=>r.numberToken(path),memberKeys:path=>r.sourceKeys(path)});
+  if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
+  for(const path of parsed.value.consumedPaths)r.use(path);for(const path of parsed.value.numericPaths)r.retainNumberToken(path);r.warnings.push(...parsed.value.warnings);
+  scene.timeline={...scene.timeline,schedule:SAMILA_SCENE_SEQUENCE,tracks:parsed.value.tracks};
+  const resolved=resolveTimeline(scene);scene.timeline.duration=Math.max(.01,resolved.duration);
+ }else timeline(r,scene,ordinaryScope,ordinaryStructure);
  if(kind==='samila'&&usesSamilaSourceProjection(scene)){
-  if(r.has('camera'))r.acknowledge('camera','Samila 场景构造不读取该对象；保留构造起始 theta=0，相机时间线沿用本地时序');
-  r.warnings.push('Samila 时间线沿用本地固定时钟及动作解释；本次视口修正不等于源队列时序、热窗口缩放或相机动作已完全复刻。');
+  if(r.has('camera'))r.acknowledge('camera','Samila 场景构造不读取该对象；保留构造起始 theta=0，相机时间线使用文档显式版本');
+  r.warnings.push(scene.timeline.schedule===SAMILA_SCENE_SEQUENCE?'Samila 按源顺序队列重放相机与专用参数动作；使用文档固定帧率，原版实时线程时钟、随机流和热窗口缩放仍未建立一致性。':'Samila 时间线沿用本地固定时钟及动作解释；本次视口修正不等于源队列时序、热窗口缩放或相机动作已完全复刻。');
  }else if(kind==='samila'){
   const thetaAction=scene.timeline.tracks.some(t=>t.type==='align'&&t.orientation?.theta!==undefined||t.actions?.some(a=>['rotateTheta','rotateTo','ambient'].includes(a.method)));
   if(options.samilaCamera!=='legacy-v1'&&(samilaTheta!==undefined||thetaAction)){
