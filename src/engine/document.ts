@@ -1,5 +1,7 @@
-import {createSourcePerlinGpuReplay} from './sourcePerlinGpuReplay';
-import {usesSourcePerlinGpu,parseSourcePerlinGpuDocument} from './sourcePerlinGpuDocument';
+import {replaySourcePerlinCamera} from './sourcePerlinReplay';
+import {usesSourcePerlin,usesSourcePerlinCpu} from './sourcePerlinIdentity';
+import {parseSourcePerlinCpuDocument} from './sourcePerlinCpuDocument';
+import {parseSourcePerlinGpuDocument} from './sourcePerlinGpuDocument';
 import {usesSourceAttractor,parseSourceAttractorDocument,prepareSourceAttractorScene} from './sourceAttractorDocument';
 import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
@@ -207,8 +209,13 @@ export function parseSceneValue(data: unknown): SceneDocument {
     if(data.kind==='surface'||data.kind==='implicit')geometryColorModel({kind:data.kind,settings:data.settings as Settings});
     if(data.kind==='surface'||data.kind==='attractor'&&!usesSourceAttractor(data as unknown as SceneDocument))parseTrailAppearance(data.settings as Settings);
   }
+  if(data.perlinCpuSource!==undefined){
+    if(!usesSourcePerlinCpu(data as unknown as SceneDocument))fail('源 Perlin CPU 配置只能用于 Perlin 场景');
+    if(data.perlinGpuSource!==undefined)fail('同一作品只能有一个活动 Perlin 源后端');
+    const parsed=parseSourcePerlinCpuDocument(data.perlinCpuSource);if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);data.perlinCpuSource=parsed.value;
+  }
   if(data.perlinGpuSource!==undefined){
-    if(!usesSourcePerlinGpu(data as unknown as SceneDocument))fail('源 Perlin GPU 配置只能用于 Perlin 场景');
+    if(!usesSourcePerlin(data as unknown as SceneDocument))fail('源 Perlin GPU 配置只能用于 Perlin 场景');
     const parsed=parseSourcePerlinGpuDocument(data.perlinGpuSource);if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);data.perlinGpuSource=parsed.value;
   }
   if(data.attractorSource!==undefined){
@@ -268,7 +275,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     fail("时间线无效");
   for (const track of t.tracks) {
     const ordinaryDuration=record(track)&&data.sourceCamera!==undefined&&t.schedule==='ordinary-camera-sequence-v1'&&['wait','animate','align','param'].includes(String(track.type));
-    const zeroDuration=record(track)&&(ordinaryDuration||['animate','spirograph_finish_wait'].includes(String(track.type))||track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)||track.type==='trails'&&(usesSourceSurfaceGeometry(data as unknown as SceneDocument)||usesSourcePerlinGpu(data as unknown as SceneDocument)));
+    const zeroDuration=record(track)&&(ordinaryDuration||['animate','spirograph_finish_wait'].includes(String(track.type))||track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)||track.type==='trails'&&(usesSourceSurfaceGeometry(data as unknown as SceneDocument)||usesSourcePerlin(data as unknown as SceneDocument)));
     if (
       !record(track) ||
       typeof track.target !== "string" ||
@@ -279,7 +286,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
       Number(track.start) < 0
     )
       fail("动画轨道无效");
-    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],usesSourceSurfaceGeometry(data as unknown as SceneDocument),usesSourceAttractor(data as unknown as SceneDocument),usesSourcePerlinGpu(data as unknown as SceneDocument));
+    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],usesSourceSurfaceGeometry(data as unknown as SceneDocument),usesSourceAttractor(data as unknown as SceneDocument),usesSourcePerlin(data as unknown as SceneDocument));
     if(track.type==='fractal_zoom')track.keyframes=validateFractalKeyframes(track as unknown as AnimationTrack);
   }
   validateTimelineSchedule(data as unknown as SceneDocument);
@@ -290,7 +297,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   }
   if(usesSourceSurfaceHost(data as unknown as SceneDocument))prepareSourceSurfaceScene(data as unknown as SceneDocument);
   if(usesSourceAttractor(data as unknown as SceneDocument))prepareSourceAttractorScene(data as unknown as SceneDocument);
-  if(usesSourcePerlinGpu(data as unknown as SceneDocument)){const owner=createSourcePerlinGpuReplay(data as unknown as SceneDocument);owner.timeline.evaluate(0);owner.timeline.reset();}
+  if(usesSourcePerlin(data as unknown as SceneDocument)){replaySourcePerlinCamera(data as unknown as SceneDocument,0);}
   if(data.bouncingSource!==undefined){
     if(!usesSourceBouncing(data))fail('源弹跳配置只能用于弹跳场景');
     const prepared=prepareSourceBouncingScene(data as unknown as SceneDocument);

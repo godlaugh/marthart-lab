@@ -1,4 +1,7 @@
-import {usesSourcePerlinGpu,importSourcePerlinGpuDocument} from './sourcePerlinGpuDocument';
+import {sourcePerlinBackendFromSettings} from './sourcePerlinDocumentConfig';
+import {usesSourcePerlin} from './sourcePerlinIdentity';
+import {importSourcePerlinCpuDocument} from './sourcePerlinCpuDocument';
+import {importSourcePerlinGpuDocument} from './sourcePerlinGpuDocument';
 import {importSourcePerlinGradientGroup} from './sourcePerlinGradientImport';
 import {importSourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import {importSourceBouncingDocument} from './sourceBouncingDocument';
@@ -242,12 +245,12 @@ function commonLocalPalette(r:Reader,s:SceneDocument){
 }
 function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
- const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlinGpu(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
- if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlinGpu(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlinGpu(s))commonLocalPalette(r,s);
- if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlinGpu(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
+ const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
+ if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
+ if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))commonLocalPalette(r,s);
+ if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
- if(!usesSourcePerlinGpu(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
+ if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
 }
 function formulaAnnotations(r:Reader,s:SceneDocument){
  if(!r.has('main_equation')&&!r.has('formulas'))return;
@@ -403,26 +406,6 @@ function symmetry(r:Reader,s:SceneDocument){
  if(formula!==undefined&&formula!==null)r.warnings.push('equation.formula 已保留为只读说明；实际计算使用非空 equation.glsl 或所选模板。');
 }
 
-function perlin(r:Reader,s:SceneDocument){
- if(usesSourcePerlinGpu(s))return;
- stringTo(r,s,'settings.flow_mode','flow',{ANGLE_FIELD:'angle',VECTOR_FIELD:'curl',CURL_FIELD:'curl',SWIRL_FIELD:'swirl'});stringTo(r,s,'settings.angle_map','angleMap',{LINEAR:'linear',SOFT_POWER:'soft-power'});
- const renderer=r.str('settings.render_mode'),cpuStyle=r.str('settings.cpu_render_style');if(renderer!==undefined&&!['CPU','GPU'].includes(renderer))fail('未知噪声 render_mode');
- if(cpuStyle!==undefined){const styles:Record<string,string>={PARTICLES:'continuous',FIELD_CURVES:'field-curves',CURVES:'streams'};if(!styles[cpuStyle])fail('未知噪声 cpu_render_style');s.settings.style=styles[cpuStyle];}
- const gpuStyle=r.num('settings.gpu_render_style');if(gpuStyle!==undefined&&gpuStyle!==0&&gpuStyle!==1)fail('gpu_render_style 必须为 0 或 1');if(renderer==='GPU'){s.settings.style=gpuStyle===1?'water':'filament';s.settings.perlinBackend='auto';}else if(cpuStyle===undefined)s.settings.style='continuous';
- const texture=r.num('settings.gpu_texture_style');if(texture!==undefined){if(!Number.isInteger(texture)||texture<0||texture>5)fail('gpu_texture_style 必须为 0 至 5');s.settings.textureStyle=['fiber','streak','silk','water','flame','mist'][texture];}
- count(r,s,'settings.particle_count','particleCount',20000);if(s.settings.style==='streams')count(r,s,'settings.particle_count','count',10000);numberTo(r,s,'settings.noise_scale','noiseScale',{min:s.settings.style==='continuous'?0:.001,max:100});numberTo(r,s,'settings.noise_offset','noiseOffset');numberTo(r,s,'settings.time_scale','timeSpeed',{min:-10,max:10});seed(r,s,'settings.seed');
- const fields:Record<string,[string,number,number,boolean?]>={curve_count:['curveCount',1,20000,true],curve_length:['curveLength',2,2000,true],curve_step_size:['curveStepSize',.001,100],curve_alpha:['curveAlpha',0,1],field_cell_size:['fieldCellSize',1,500,true],curve_noise_scale:['curveNoiseScale',0,100],curve_noise_octaves:['curveNoiseOctaves',1,8,true],curve_noise_offset:['curveNoiseOffset',-10000,10000],curve_angle_scale:['curveAngleScale',0,100],seed_space_circle_count:['seedSpaceCircleCount',0,500,true],seed_space_min_radius:['seedSpaceMinRadius',0,10000],seed_space_max_radius:['seedSpaceMaxRadius',0,10000],gpu_noise_frequency:['textureFrequency',.01,100],gpu_warp_amplitude:['warpAmplitude',0,10],gpu_warp_frequency:['warpFrequency',0,100],gpu_direction_offset:['directionOffset',-10000,10000],gpu_time_speed:['textureTimeSpeed',-10,10],gpu_march_steps:['marchSteps',1,128,true],gpu_step_size:['marchStepSize',.0001,.5],gpu_brightness:['textureBrightness',0,10],gpu_vignette_power:['vignettePower',0,5],gpu_fiber_strength:['fiberStrength',0,1]};
- for(const [old,[key,min,max,integer]]of Object.entries(fields))numberTo(r,s,'settings.'+old,key,{min,max,integer});
- stringTo(r,s,'settings.curve_sampling_mode','curveSampling',{RANDOM:'random',JITTERED_GRID:'jittered-grid'});stringTo(r,s,'settings.curve_color_mode','curveColor',{INDEX:'index',POSITION:'position',NOISE:'noise',SEED_SPACE:'seed-space'});
- if(cpuStyle==='FIELD_CURVES'){numberTo(r,s,'settings.line_weight','curveLineWidth',{min:.1,max:32});r.warnings.push('Field Curves 的双向积分、抖动网格和空间色圆已映射；场域使用可编辑的 800×800，原版视窗尺度、Processing 噪声序列和栅格结果不保证一致。');}
- if(renderer==='GPU')r.warnings.push('原版 GPU 噪声纹理转换为独立 WebGL2 沿场积分；不可用时明确回退 CPU。Filament/Water 和全部纹理参数可用，但不宣称原版着色器逐像素等效。');
- const step=r.num('settings.step_size');if(step!==undefined){if(step<0||step>5)fail('噪声 step_size 超出范围');s.settings.particleSpeed=step*60;s.settings.stepSize=step;if(s.settings.style==='streams'&&step===0)fail('流线 step_size 必须为正数');}
- const respawn=r.num('settings.respawn_rate');if(respawn!==undefined){if(respawn<0||respawn>1)fail('respawn_rate 必须为 0 至 1');s.settings.respawnEveryStep=respawn===1;s.settings.respawnRate=respawn===1?0:-60*Math.log1p(-respawn);r.warnings.push('原版 respawn_rate 按 60 Hz 每帧概率转换为连续时间重生强度；独立随机序列不保证相同。');}
- numberTo(r,s,'settings.accumulation_fade_alpha','accumulationFade',{min:0,max:255});numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:3600});numberTo(r,s,'settings.dot_size','particleRadius',{min:0,max:8});booleanTo(r,s,'settings.fade_trails','fadeTrails');booleanTo(r,s,'settings.show_trails','showTrails');
- const accumulation=r.domainBoolean(['settings','use_accumulation_buffer'],false,'default');s.settings.particleDisplay=accumulation?'accumulation':s.settings.showTrails===false?'heads':'trails';
- if(s.settings.style==='continuous')r.warnings.push('持续粒子采用固定 60 Hz 独立 CPU 推进、环绕、重生和衰减累积；拖尾每 5 步采样一次以限制历史内存，原版帧时序、栅格和噪声序列未逐像素校验。');
- r.warnings.push('流场与参数探索采用独立确定性算法，不声明原版噪声/随机选择逐值等效。');
-}
 function spirograph(r:Reader,s:SceneDocument){
  r.object('settings');r.object('settings.sceneTransform');
  const rawLayers=r.peek('settings.layers');
@@ -1017,14 +1000,14 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
    s.timeline.tracks.push({id:crypto.randomUUID(),type:'surface_mode_transition',target:'surface.mode',surfaceMode,from:0,to:0,start:0,duration,easing,pingPong:false,enabled:true,label:originalType});
    total+=duration;if(total>86400)fail('源相机队列超过 24 小时');continue;
   }
-  if(type==='trails'&&(usesSourceSurfaceGeometry(s)||usesSourcePerlinGpu(s))){
+  if(type==='trails'&&(usesSourceSurfaceGeometry(s)||usesSourcePerlin(s))){
    // JsonSurfaceConfig constructs InstantAction directly: duration/easing are
    // not read, even when malformed. Preserve them in source, never parse/clamp.
    const trailsEnabled=r.domainBoolean([...path,'enable'],true);
    r.retainNumberToken([...path,'duration']);
    if(r.has([...path,'duration']))r.acknowledge([...path,'duration'],'原版拖尾开关为即时动作，不读取 duration');
    if(r.has([...path,'easing']))r.acknowledge([...path,'easing'],'原版拖尾开关不读取 easing');
-   s.timeline.tracks.push({id:crypto.randomUUID(),type:'trails',target:usesSourcePerlinGpu(s)?'settings.showTrails':'settings.recordTrails',label:originalType,from:0,to:0,start:0,duration:0,easing:'linear',pingPong:false,enabled:true,trailsEnabled});
+   s.timeline.tracks.push({id:crypto.randomUUID(),type:'trails',target:usesSourcePerlin(s)?'settings.showTrails':'settings.recordTrails',label:originalType,from:0,to:0,start:0,duration:0,easing:'linear',pingPong:false,enabled:true,trailsEnabled});
    continue;
   }
   if(!['wait','animate','align'].includes(type)&&!(s.kind==='surface'&&type==='param')){
@@ -1047,10 +1030,10 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
    for(const axis of ['phi','theta','gamma'] as const)if(r.has([...path,'target_'+axis]))track.orientation[axis]=field([...path,'target_'+axis],0);
   }else if(type==='animate'){
    track.actions=[];track.target='camera.actions';
-   const perlinGradients=usesSourcePerlinGpu(s)?importSourcePerlinGradientGroup(sourceActions.map(a=>({method:a.method,args:a.raw}))):undefined;
+   const perlinGradients=usesSourcePerlin(s)?importSourcePerlinGradientGroup(sourceActions.map(a=>({method:a.method,args:a.raw}))):undefined;
    if(perlinGradients){for(const relative of perlinGradients.consumedPaths){r.use([...path,'actions',...relative]);r.retainNumberToken([...path,'actions',...relative]);}r.warnings.push(...perlinGradients.diagnostics);}
    for(const [actionIndex,{path:actionPath,method,raw,surfaceGradient,surfaceParameters}] of sourceActions.entries()){
-    if(usesSourcePerlinGpu(s)){
+    if(usesSourcePerlin(s)){
      if(method==='gradientStart'||method==='gradientStop'){
       if(perlinGradients!.selectedIndex===actionIndex){const action=perlinGradients!.action!;track.actions.push({id:crypto.randomUUID(),method:action.kind==='start'?'gradientStart':'gradientStop',enabled:true,...(action.kind==='start'?{gradient:action.config}:{})});}continue;
      }
@@ -1363,7 +1346,9 @@ function projectResolution(r:Reader,scene:SceneDocument):void {
 function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'legacy-v1'}={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
  const r=new Reader(source,metadata,sourceText),version=r.str('config_version',true);if(version!=='1.0.0'&&version!=='1.0')fail(`不支持 config_version=${version}`);
  const type=r.str('type',true)!,kind=TYPES[type.toUpperCase()];if(!kind)fail(`未知场景类型 ${type}`);const def=definitions.find(d=>d.kind===kind)!;const scene=createScene(def);
- const perlinGpuInput=kind==='perlin'&&typeof r.peek(['settings','render_mode'])==='string'&&(r.peek(['settings','render_mode']) as string).toUpperCase()==='GPU';
+ const perlinBackend=kind==='perlin'?sourcePerlinBackendFromSettings(r.peek(['settings'])):undefined;
+ if(perlinBackend&&!perlinBackend.ok)fail(`源 Perlin ${perlinBackend.error.path.join('.')}: ${perlinBackend.error.reason}`);
+ const perlinGpuInput=perlinBackend?.ok&&perlinBackend.value==='gpu';
  if(ordinaryFamily(kind))r.validateNativeObjects();
  const ordinaryScope=ordinaryFamily(kind)?ordinaryResult(prepareOrdinarySourceScalarScope(kind,{parameters:r.peek(['parameters']),memberOrder:(kind==='surface'||kind==='implicit')&&r.has(['parameters'])?r.sourceKeys(['parameters']):undefined})):undefined;
  if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
@@ -1372,7 +1357,7 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
   r.validateNativeObjects();sourceBouncing(r,scene);projectResolution(r,scene);r.remaining();
   return{scene,warnings:r.warnings,source,...(r.sourceNumberTokens.length?{sourceNumberTokens:r.sourceNumberTokens}:{})};
  }
- scene.parameters=perlinGpuInput?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ scene.parameters=kind==='perlin'?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
  if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
  if(kind==='attractor'){for(const key of Object.keys(scene.parameters)){r.use(['parameters',key]);r.retainNumberToken(['parameters',key]);}if(r.has(['parameters'])&&!Object.keys(scene.parameters).length)r.use(['parameters']);ordinaryAttractorGeometry(r,scene);}
  // Source geometry and queue share parsed dispatch facts. Select its owner
@@ -1391,10 +1376,19 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
   r.warnings.push(...facts.diagnostics,'源 Perlin GPU 使用原包着色器适配和独立 Processing 纹理；原版完整画面仍待验收。');
   Object.assign(scene.settings,{scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1});
  }
+ if(kind==='perlin'&&!perlinGpuInput){
+  const parsed=importSourcePerlinCpuDocument(r.peek(['settings']),r.peek(['palette']),{defaultSeed:String(Date.now()),numberToken:path=>r.numberToken(path)});
+  if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
+  const facts=parsed.value;scene.perlinCpuSource=facts.configuration;
+  for(const path of facts.consumedPaths)r.use(path);
+  for(const path of facts.numericPaths)r.retainNumberToken(path);
+  r.warnings.push(...facts.diagnostics,'源 Perlin CPU 按固定帧率重放；原版 JVM／JOGL 完整画面仍待验收。');
+  Object.assign(scene.settings,{scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1});
+ }
  // Definitions supply explicit application defaults for omitted optional settings.
  projectResolution(r,scene);
  common(r,scene);
- ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin,spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);
+ ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin:()=>{},spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);
  // A finite explicit source theta is consumed only by the Samila scalar owner.
  // Validate the owned container even when keeping legacy behavior; never silently
  // substitute a guessed angle for malformed authored camera data.

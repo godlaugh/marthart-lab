@@ -1,3 +1,5 @@
+import {usesSourcePerlinCpu} from './sourcePerlinIdentity';
+import {SourcePerlinCpuSession} from '../scenes/sourcePerlinCpu';
 import {usesSourcePerlinGpu} from './sourcePerlinGpuDocument';
 import {SourcePerlinGpuSession} from '../scenes/sourcePerlinGpu';
 import {usesSourceAttractor} from './sourceAttractorDocument';
@@ -59,6 +61,7 @@ export class TemporalGenerationSession {
   cacheHits = 0;
   simulation?: Simulation;
   readonly perlin = new PerlinParticleSession();
+  readonly sourcePerlinCpu = new SourcePerlinCpuSession();
   readonly sourcePerlinGpu = new SourcePerlinGpuSession();
   readonly bouncing = new BouncingRasterSession();
   readonly sourceBouncing = new SourceBouncingSession();
@@ -71,9 +74,10 @@ export class TemporalGenerationSession {
   readonly domain = new DomainRenderSession();
   readonly spirograph = new SpirographFrameSession();
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
-  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
+  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlinCpu.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
     this.cleanup.prepare();
+    if(!usesSourcePerlinCpu(scene))this.sourcePerlinCpu.reset();
     if(!usesSourcePerlinGpu(scene))this.sourcePerlinGpu.reset();
     if(!usesSourceAttractor(scene))this.sourceAttractor.reset();
     if(!usesSourceBouncing(scene))this.sourceBouncing.reset();else this.bouncing.reset();
@@ -360,6 +364,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
   if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
+    if(usesSourcePerlinCpu(scene)){owner.select(scene,context);return owner.sourcePerlinCpu.generate(scene,context);}
     if(usesSourcePerlinGpu(scene)){owner.select(scene,context);return owner.sourcePerlinGpu.generate(scene,context);}
     if(usesSourceBouncing(scene)){owner.select(scene,context);return owner.sourceBouncing.generate(scene,context);}
     if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}

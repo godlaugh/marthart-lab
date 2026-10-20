@@ -1,3 +1,4 @@
+import type {SourcePerlinCpuDocumentPayload} from './engine/sourcePerlinCpuDocument';
 import type {SourcePerlinGpuDocumentPayload} from './engine/sourcePerlinGpuDocument';
 import type {SourceBouncingView} from './engine/sourceBouncingNavigation';
 import type {SourcePerlinParameterAction} from './engine/sourcePerlinParameterConfig';
@@ -210,6 +211,7 @@ export interface SceneDocument {
   /** Canonical native Attractor authoring. Omission keeps the local model. */
   attractorSource?: SourceAttractorDocumentPayload;
   perlinGpuSource?: SourcePerlinGpuDocumentPayload;
+  perlinCpuSource?: SourcePerlinCpuDocumentPayload;
   /** Explicit source identity; omission preserves the existing local model. */
   bouncingSource?: SourceBouncingDocumentPayload;
   rootsMath?: RootsMathConfiguration;
@@ -414,6 +416,7 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
   spirographFrame?:SpirographReplayFrame;
   cameraFrame?: CameraFrame;
   sourceCameraFrame?:OrdinarySourceCameraFrame;
+  sourcePerlinFrame?:{sourceViewport:{width:number;height:number;pixelDensity:number};samples:number;frameIndex:number;updates:number};
   dimension?: 2 | 3;
   backend?: 'cpu' | 'webgl2';
   density?: DensityStats;
@@ -437,6 +440,8 @@ export interface GenerateContext {
   sourceViewport?:SourceCameraViewport;
   /** Measured local primary renderer density; separate from source-app DPI evidence. */
   sourcePointPixelDensity?:number;
+  /** Actual primary canvas facts retained for Perlin simulation and export. */
+  sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   /** Actual local logical canvas size, separate from preview sampling pixels.
    * Offscreen requests use the explicit export dimensions; neither proves
    * the original application's operating-system DPI or framebuffer scale. */
@@ -453,7 +458,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

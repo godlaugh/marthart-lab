@@ -2,7 +2,7 @@ import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {GenerationCleanupState} from '../engine/generationCleanup';
 import {SourcePerlinGpu,sourcePerlinFlowTextureSize,sourcePerlinGpuLayout} from '../engine/sourcePerlinGpu';
 import {SourcePerlinFlowTexture} from '../engine/sourcePerlinFlowTexture';
-import {createSourcePerlinGpuReplay} from '../engine/sourcePerlinGpuReplay';
+import {createSourcePerlinGpuReplay} from '../engine/sourcePerlinReplay';
 import {ordinarySourceCameraFrame} from '../engine/ordinarySourceCamera';
 
 /** Worker lifetime owns one authored source configuration and one texture

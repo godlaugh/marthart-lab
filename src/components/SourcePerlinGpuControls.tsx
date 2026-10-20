@@ -1,3 +1,4 @@
+import {SourcePerlinDraftField} from './SourcePerlinDraftField';
 import {useState, type ReactNode} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
@@ -6,26 +7,6 @@ import {parseSourcePerlinGpuDocument, usesSourcePerlinGpu, type SourcePerlinGpuD
 type Props = {scene:SceneDocument; onChange:(scene:SceneDocument)=>void; tab?:'geometry'|'appearance'|'all'};
 type Commit = (text:string)=>string|undefined;
 type UniformKey = keyof SourcePerlinGpuDocumentPayload['uniforms'];
-
-/** Only a valid committed value enters the document. The parent keys this field
- * by its own canonical value, so unrelated edits preserve an invalid draft. */
-function DraftField({id,label,value,commit,multiline=false,numeric=false}:{id:string;label:string;value:string;commit:Commit;multiline?:boolean;numeric?:boolean}){
- const [draft,setDraft]=useState(value),[error,setError]=useState('');
- const props={
-  'data-testid':`source-perlin-gpu-${id}`,'aria-label':label,'aria-invalid':!!error,
-  'aria-describedby':error?`source-perlin-gpu-${id}-error`:undefined,
-  value:draft,
-  onChange:(event:{currentTarget:{value:string}})=>{setDraft(event.currentTarget.value);setError('');},
-  onBlur:()=>setError(commit(draft)??''),
-  onKeyDown:(event:{key:string;ctrlKey:boolean;metaKey:boolean;preventDefault:()=>void;currentTarget:{blur:()=>void}})=>{
-   if(event.key==='Enter'&&(!multiline||event.ctrlKey||event.metaKey)){event.preventDefault();event.currentTarget.blur();}
-  },
- };
- return <label className="field"><span>{label}</span>
-  {multiline?<textarea {...props} rows={6} spellCheck={false}/>:<input {...props} type="text" inputMode={numeric?'decimal':undefined} spellCheck={false}/>}
-  {error&&<span id={`source-perlin-gpu-${id}-error`} role="alert">{error}</span>}
- </label>;
-}
 
 const textureLabels=['纤维','条纹','丝绸','水波','火焰','迷雾'] as const;
 const flowFields:readonly (readonly [UniformKey,string])[]=[
@@ -47,7 +28,7 @@ export function SourcePerlinGpuControls({scene,onChange,tab='all'}:Props){
   if(!parsed.ok){const path=parsed.error.path.join('.');return path?`${path}: ${t(parsed.error.reason)}`:t(parsed.error.reason);}
   onChange({...scene,perlinGpuSource:parsed.value});setError('');return undefined;
  };
- const field=(id:string,label:string,value:string,commit:Commit,multiline=false,numeric=false)=><DraftField
+ const field=(id:string,label:string,value:string,commit:Commit,multiline=false,numeric=false)=><SourcePerlinDraftField
   key={`${id}:${value}`} id={id} label={t(label)} value={value} commit={commit} multiline={multiline} numeric={numeric}/>;
  const uniform=(key:UniformKey,label:string)=>field(key,label,Object.is(source.uniforms[key],-0)?'-0':String(source.uniforms[key]),raw=>{
   if(raw.trim()==='')return t('请输入数值');

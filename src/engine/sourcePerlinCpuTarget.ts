@@ -65,6 +65,11 @@ class SourcePerlinCpuDevice{
  add(owner:object,bytes:number,release:()=>void){
   this.check();this.budget(bytes);this.targets.set(owner,{bytes,release});this.reservedBytes+=bytes;
  }
+ resize(owner:object,bytes:number){
+  const target=this.targets.get(owner);if(!target)throw new SourcePerlinCpuTargetError('failed','Missing Perlin target resource owner.');
+  if(bytes>target.bytes)this.budget(bytes-target.bytes);
+  this.reservedBytes+=bytes-target.bytes;target.bytes=bytes;
+ }
  remove(owner:object){
   const target=this.targets.get(owner);if(!target)return;
   this.targets.delete(owner);this.reservedBytes-=target.bytes;
@@ -125,7 +130,7 @@ class SourcePerlinCpuDevice{
  * Primitive assembly, curve-cache invalidation and frame scheduling are callers. */
 export class SourcePerlinCpuTarget{
  readonly width:number;readonly height:number;readonly physicalWidth:number;readonly physicalHeight:number;
- private readonly options:SourcePerlinCpuTargetOptions;private readonly targetBytes:number;
+ private options:SourcePerlinCpuTargetOptions;private targetBytes:number;
  private device:SourcePerlinCpuDevice;private failed=false;private disposed=false;
  private framebuffer?:WebGLFramebuffer;private texture?:WebGLTexture;
  private multisample?:WebGLFramebuffer;private renderbuffer?:WebGLRenderbuffer;
@@ -140,6 +145,31 @@ export class SourcePerlinCpuTarget{
   if(this.targetBytes>MAX_BYTES)throw new SourcePerlinCpuTargetError('capacity','Perlin CPU attachments/readback exceed 256 MiB.');
   this.options=Object.freeze({...options,initialColor:Object.freeze([...options.initialColor]) as readonly[number,number,number,number]});
   this.device=new SourcePerlinCpuDevice();this.device.add(this,this.targetBytes,()=>this.releaseAttachments());
+ }
+ /** Primary PGL FBO smooth request on the returned target device.
+  * PGL.createFBOLayer PC81–126 chooses min(request,maxSamples), and only
+  * counts >1 allocate MSAA. No alternative RGBA8 count is silently substituted. */
+ static createSmoothed(options:Omit<SourcePerlinCpuTargetOptions,'samples'>,requested=4):SourcePerlinCpuTarget{
+  const target=new SourcePerlinCpuTarget({...options,samples:0});
+  try{
+   const samples=target.selectedSamples(requested),bytes=target.physicalWidth*target.physicalHeight*4*(2+samples)+target.physicalWidth*4;
+   target.device.resize(target,bytes);target.targetBytes=bytes;target.options=Object.freeze({...target.options,samples});return target;
+  }catch(error){target.dispose();throw error;}
+ }
+ /** Query the primary PGL FBO sample policy on this existing device.
+  * Offscreen caches use their explicit smooth request, not this clamp policy.
+  * Returned counts describe this browser/device, not native JOGL capabilities. */
+ selectedSamples(requested=4):0|2|4|8{
+  try{
+   this.check();if(!Number.isSafeInteger(requested)||requested<0)throw new SourcePerlinCpuTargetError('input','Perlin smooth request requires a nonnegative integer.');
+   if(requested<=1)return 0;
+   const g=this.device.context(),maximum=g.getParameter(g.MAX_SAMPLES) as number;
+   if(!Number.isSafeInteger(maximum)||maximum<0)throw new SourcePerlinCpuTargetError('capability','Perlin maximum sample capability is unavailable.');
+   const selected=Math.min(requested,maximum);if(selected<=1)return 0;
+   const supported=g.getInternalformatParameter(g.RENDERBUFFER,g.RGBA8,g.SAMPLES) as Int32Array;
+   if(![2,4,8].includes(selected)||![...supported].includes(selected))throw new SourcePerlinCpuTargetError('capability','Source-selected Perlin MSAA count is unavailable for RGBA8.');
+   return selected as 2|4|8;
+  }catch(error){this.poison();throw error;}
  }
  createSibling(options:SourcePerlinCpuTargetOptions):SourcePerlinCpuTarget{
   this.check();const sibling=new SourcePerlinCpuTarget(options);

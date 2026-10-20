@@ -74,6 +74,18 @@ const result=await page.evaluate(async()=>{
  run('shared reservation prevents lazy sibling budget escape',()=>{
   const large={...opts,width:3000,height:3000},a=new Target(large),b=a.createSibling(large),c=a.createSibling(large);fail(()=>a.createSibling(large),'capacity');assert(a.diagnostics().deviceTargets===3,'Failed sibling modified device');b.dispose();const d=a.createSibling(large);a.dispose();c.dispose();d.dispose();
  });
+ run('source smoothing selection reuses the returned target device',()=>{
+  const before=contexts.length,a=Target.createSmoothed(opts,8),g=contexts.at(-1),expected=Math.min(8,g.getParameter(g.MAX_SAMPLES));
+  assert(contexts.length===before+1,'Smoothing factory created a probe context');assert(a.diagnostics().samples===(expected>1?expected:0),'Source min(request,maxSamples) policy changed');
+  const selected=a.selectedSamples(8);assert(selected===a.diagnostics().samples,'Same device query differs');const b=a.createSibling({...opts,samples:selected});a.draw(base);b.draw(base);assert(contexts.length===before+1,'Sibling introduced another context');a.dispose();b.dispose();
+ });
+ run('unsupported source-selected samples do not silently choose another count',()=>{
+  const a=new Target(opts);a.draw(base);const old=WebGL2RenderingContext.prototype.getParameter,oldFormat=WebGL2RenderingContext.prototype.getInternalformatParameter;
+  WebGL2RenderingContext.prototype.getParameter=function(p){return p===this.MAX_SAMPLES?2:old.call(this,p);};
+  WebGL2RenderingContext.prototype.getInternalformatParameter=function(...args){return args[2]===this.SAMPLES?new Int32Array([4]):oldFormat.apply(this,args);};
+  try{fail(()=>a.selectedSamples(4),'capability');}finally{WebGL2RenderingContext.prototype.getParameter=old;WebGL2RenderingContext.prototype.getInternalformatParameter=oldFormat;}
+  a.dispose();
+ });
  run('unknown public values are classified input failures',()=>{
   for(const initialColor of [{length:4},new Array(4),null,'abcd',[0,0,0,NaN]])fail(()=>new Target({...opts,initialColor}),'input');
   for(const frame of [null,{}, {...base,background:new Array(4)}, {...base,images:{}}, {...base,primitives:[null]}, {...base,primitives:[{kind:'lines',buffers:{}}]}]){const t=new Target(opts);fail(()=>t.draw(frame),'input');t.dispose();}

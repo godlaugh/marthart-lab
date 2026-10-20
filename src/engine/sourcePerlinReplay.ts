@@ -1,5 +1,8 @@
 import type {SceneDocument} from '../types';
 import {SourcePerlinColorRuntime} from './sourcePerlinColorRuntime';
+import {parseSourcePerlinCpuDocument} from './sourcePerlinCpuDocument';
+import {usesSourcePerlinCpu} from './sourcePerlinIdentity';
+import type {SourcePerlinGpuDocumentPayload} from './sourcePerlinGpuDocument';
 import {SourcePerlinParameterRuntime} from './sourcePerlinParameterRuntime';
 import {OrdinarySourceCameraTimelineSession,ORDINARY_CAMERA_SEQUENCE} from './ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
@@ -12,14 +15,17 @@ export function createSourcePerlinGpuReplay(scene:SceneDocument,isCancelled?:()=
  if(!usesSourcePerlinGpu(scene))throw new Error('缺少源 Perlin GPU 配置');
  const parsed=parseSourcePerlinGpuDocument(scene.perlinGpuSource);
  if(!parsed.ok)throw new Error(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
+ return createScalarReplay(scene,parsed.value,'gpu',isCancelled);
+}
+function createScalarReplay<T extends Pick<SourcePerlinGpuDocumentPayload,'palette'|'parameters'|'cpuStyle'>>(scene:SceneDocument,config:T,backend:'cpu'|'gpu',isCancelled?:()=>boolean){
  const camera=ordinarySourceCameraInitial(scene);
- if(!camera||scene.timeline.schedule!==ORDINARY_CAMERA_SEQUENCE)throw new Error('源 Perlin GPU 需要原版顺序时间线');
- const config=parsed.value;let time=0;let palette:Uint32Array=new Uint32Array(256);
+ if(!camera||scene.timeline.schedule!==ORDINARY_CAMERA_SEQUENCE)throw new Error('源 Perlin 需要原版顺序时间线');
+ let time=0;let palette:Uint32Array=new Uint32Array(256);
  const timeline=new OrdinarySourceCameraTimelineSession(camera,scene.timeline.tracks,scene.timeline.fps,{
   particleActions:'perlin',isCancelled,createParticles:()=>{
    time=0;
    const colors=new SourcePerlinColorRuntime({palette:config.palette,isCancelled});
-   const parameters=new SourcePerlinParameterRuntime({initial:config.parameters,backend:'gpu',style:config.cpuStyle,isCancelled});
+   const parameters=new SourcePerlinParameterRuntime({initial:config.parameters,backend,style:config.cpuStyle,isCancelled});
    return{
     bind:()=>{throw new Error('原版 Perlin 不支持粒子跟踪');},
     // GPU display does not consume trails; CPU field identity is not borrowed.
@@ -35,6 +41,8 @@ export function createSourcePerlinGpuReplay(scene:SceneDocument,isCancelled?:()=
  });
  return{config,camera,timeline,display:()=>({time,palette})};
 }
-export function replaySourcePerlinGpuCamera(scene:SceneDocument,time:number){
- const owner=createSourcePerlinGpuReplay(scene);try{return owner.timeline.evaluate(time);}finally{owner.timeline.reset();}
+export function replaySourcePerlinCamera(scene:SceneDocument,time:number){
+ // Perlin has no particle tracking. Camera queries need scalar queue state only;
+ // actual geometry and framebuffer history belong to the generation session.
+ const owner=usesSourcePerlinCpu(scene)?(()=>{const parsed=parseSourcePerlinCpuDocument(scene.perlinCpuSource);if(!parsed.ok)throw new Error(parsed.error.reason);return createScalarReplay(scene,parsed.value,'cpu');})():createSourcePerlinGpuReplay(scene);try{return owner.timeline.evaluate(time);}finally{owner.timeline.reset();}
 }

@@ -1,3 +1,4 @@
+import {usesSourcePerlinCpu} from '../engine/sourcePerlinIdentity';
 import {sourceQueuePresentedScene} from '../engine/sourceQueuePresentation';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
 import {prepareSourceBouncingExport,sourceBouncingExportContext,assertSourceBouncingExportFrame,type SourceBouncingPresentedExport} from '../engine/sourceBouncingExport';
@@ -27,6 +28,7 @@ export function ExportDialog({
   time,
   currentSpirographFrame,
   previewLogicalHeight,
+  sourcePerlinViewport,
   previewPointPixelDensity,
   currentRootsCapture,
   currentSourceBouncingFrame,
@@ -37,6 +39,7 @@ export function ExportDialog({
   time: number;
   currentSpirographFrame?:number;
   previewLogicalHeight?:number;
+  sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   previewPointPixelDensity?:number;
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentSourceBouncingFrame?:SourceBouncingPresentedExport;
@@ -147,7 +150,8 @@ export function ExportDialog({
       const timeline=sourceFrames||sourceBouncing?exportScene.timeline:resolveTimeline(exportScene);
       if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
       if(usesSourceSurfaceParticles(exportScene)&&previewPointPixelDensity===undefined)throw new Error('源曲面点导出缺少已呈现预览的像素密度，请等待预览完成');
-      const exportContext={quality:'export' as const,width,height,...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      if(usesSourcePerlinCpu(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin CPU 导出缺少已呈现的预览尺寸，请等待预览完成');
+      const exportContext={quality:'export' as const,width,height,...(usesSourcePerlinCpu(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       if(!bouncing){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas);r.setSize(width,height,1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));

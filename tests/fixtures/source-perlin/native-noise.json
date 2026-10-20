@@ -1,0 +1,74 @@
+{
+  "settings": {
+    "flow_mode": "SWIRL_FIELD",
+    "gpu_texture_style": 0,
+    "seed": 1771842692935,
+    "gpu_brightness": 1.7000000476837158,
+    "accumulation_fade_alpha": 18,
+    "fade_trails": true,
+    "particle_count": 6500,
+    "gpu_warp_frequency": 2,
+    "use_accumulation_buffer": false,
+    "gpu_direction_offset": 0,
+    "gpu_noise_frequency": 1.5,
+    "respawn_rate": 0.10000000149011612,
+    "gpu_vignette_power": 0.10000000149011612,
+    "render_mode": "CPU",
+    "gpu_march_steps": 32,
+    "gpu_time_speed": 1,
+    "dot_size": 0.6000000238418579,
+    "scale_z": 1,
+    "gpu_step_size": 0.00800000037997961,
+    "scale_y": 1,
+    "scale_x": 1,
+    "angle_map": "LINEAR",
+    "gpu_warp_amplitude": 0.10000000149011612,
+    "gpu_render_style": 0,
+    "noise_scale": 0.009999999776482582,
+    "show_trails": true,
+    "time_scale": 0.18000000715255737,
+    "trail_lifetime": 12,
+    "gpu_fiber_strength": 0.699999988079071,
+    "line_weight": 0.5,
+    "step_size": 0.44999998807907104
+  },
+  "main_equation": {
+    "color": "#FFFFFF",
+    "scale": 0.25,
+    "position": [
+      0,
+      200
+    ],
+    "enabled": false
+  },
+  "name": "noise",
+  "timeline": [{
+    "duration": 8,
+    "label": "Wait",
+    "type": "wait",
+    "easing": "LINEAR"
+  }],
+  "palette": [
+    "#8657D6",
+    "#8B52CE",
+    "#9865C2",
+    "#7D3DA1",
+    "#814398",
+    "#894498",
+    "#9E52B2",
+    "#80479F",
+    "#916BB9",
+    "#8165B8",
+    "#8570E0",
+    "#9E9BE8"
+  ],
+  "type": "PERLIN",
+  "camera": {
+    "phi": "0",
+    "theta": "0",
+    "gamma": "0"
+  },
+  "parameters": {},
+  "config_version": "1.0.0",
+  "isUserScene": true
+}

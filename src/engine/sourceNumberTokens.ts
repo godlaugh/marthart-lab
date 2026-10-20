@@ -1,4 +1,4 @@
-import {SOURCE_PERLIN_GPU_NUMBER_FIELDS,SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
+import {SOURCE_PERLIN_NUMBER_FIELDS,SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
 import {SOURCE_SURFACE_PARAMETER_FIELDS,SOURCE_SURFACE_PARAMETER_EDGE_FIELDS} from './sourceSurfaceParameterConfig';
 import {SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS} from './sourceSurfaceGradientConfig';
 import type {SceneDocument} from '../types';
@@ -109,7 +109,8 @@ function surfaceParameterPath(path:readonly unknown[]):boolean {
  if(tail.length===2&&tail[0]==='edgeEasing'&&surfaceEdgeField(tail[1]))return true;
  return tail[0]==='parameters'&&surfaceParameterName(tail[1])&&(tail.length===2||tail.length===3&&surfaceParameterField(tail[2])||tail.length===4&&tail[2]==='edgeEasing'&&surfaceEdgeField(tail[3]));
 }
-const perlinFields=new Set<string>(SOURCE_PERLIN_GPU_NUMBER_FIELDS);
+const perlinFields=new Set<string>(SOURCE_PERLIN_NUMBER_FIELDS);
+const perlinStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+perlinFields.size;
 function perlinParameterPath(path:readonly unknown[]):boolean {
  if(path[0]!=='timeline'||!index(path[1],maxTimelineClips)||path[2]!=='actions'||!index(path[3],maxTimelineActions)||path[4]!=='args')return false;
  const tail=path.slice(path[5]==='0'?6:5);
@@ -128,7 +129,7 @@ function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boo
  * parameter and timeline scalars. These family-specific registrations do not
  * assert lossless numeric lexemes for the whole source document. */
 export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kind']='roots'):SourceNumberToken[]{
- const roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=bouncing?bouncingStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=sceneKind==='perlin'?Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+perlinFields.size+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length+SOURCE_PERLIN_PARAMETER_NAMES.length*3))):ordinary?ordinaryMaximum:projectFields.size+(bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
+ const roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=bouncing?bouncingStaticMaximum:sceneKind==='perlin'?perlinStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=sceneKind==='perlin'?Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+perlinStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length+SOURCE_PERLIN_PARAMETER_NAMES.length*3))):ordinary?ordinaryMaximum:projectFields.size+(bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
  if(!Array.isArray(raw)||raw.length>maximum)throw new Error(`源数字词法记录必须是最多 ${maximum} 项的数组`);
  const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0,parameterNameCharacters=0,parameterCount=0;let bouncingPolygonSource:string|undefined;const bouncingVertexForms=new Map<string,string>();
  // Preserve the existing independent static-field bound; timeline records do

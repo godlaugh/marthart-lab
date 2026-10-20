@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {parseLegacyScene,parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
-import {createSourcePerlinGpuReplay} from '../src/engine/sourcePerlinGpuReplay';
+import {createSourcePerlinGpuReplay} from '../src/engine/sourcePerlinReplay';
 import {createAnimationTrack,resolveTimeline,sceneAtTime} from '../src/engine/timeline';
 import {SourcePerlinGpuSession} from '../src/scenes/sourcePerlinGpu';
 const source=()=>({config_version:'1.0.0',type:'PERLIN',name:'Source GPU',settings:{render_mode:'GPU',seed:'1771842692935',gpu_brightness:'1+1',gpu_texture_style:3},palette:['#FFAA2233','#FF3366FF'],timeline:[{type:'animate',duration:.5,easing:'LINEAR',actions:[{method:'gradientStart',args:{mode:'HUE_ROTATE',speed:90}},{method:'paramStart',args:{parameters:{noise_scale:{min:1,max:20,step:2}}}}]},{type:'animate',duration:.25,actions:[{method:'gradientStop',args:{}}]},{type:'wait',duration:.5}]});
