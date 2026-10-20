@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {sourceProcessingOpenStrokeBuffers,SourceProcessingStrokeError} from '../src/engine/sourceProcessingStroke';
+import {sourceProcessingOpenStrokeBuffers,forEachSourceProcessingOpenStrokeChunk,SOURCE_PROCESSING_OPEN_STROKE_LIMITS,SourceProcessingStrokeError} from '../src/engine/sourceProcessingStroke';
 const identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
 function input(n:number,width=2,offsets=[0,n]){
  const positions=new Float32Array(n*3),colors=new Float32Array(n*4);
@@ -67,5 +67,65 @@ describe('source Processing open POLYGON stroke expansion',()=>{
   expect(()=>sourceProcessingOpenStrokeBuffers(input(1_100_000))).toThrow(/256 MiB/);
   let checks=0;
   try{sourceProcessingOpenStrokeBuffers({...input(20_000),isCancelled:()=>++checks>8});throw Error('missing cancellation');}catch(error){expect(error).toBeInstanceOf(SourceProcessingStrokeError);expect(error).toMatchObject({code:'cancelled',name:'AbortError'});}
+ });
+});
+
+
+describe('source Processing bounded open stroke chunks',()=>{
+ function compareChunks(source:ReturnType<typeof input>){
+  const full=sourceProcessingOpenStrokeBuffers(source);
+  let vertex=0,index=0,cacheIndex=0;
+  forEachSourceProcessingOpenStrokeChunk(source,chunk=>{
+   const cache=chunk.caches[0],expected=full.caches[cacheIndex++];
+   expect(chunk.caches).toEqual([{...expected,vertexOffset:0,indexOffset:0}]);
+   expect(vertex).toBe(expected.vertexOffset);expect(index).toBe(expected.indexOffset);
+   for(const key of ['positions','directions','colors'] as const){
+    const actual=chunk[key],wanted=full[key].subarray(vertex*4,(vertex+cache.vertexCount)*4);
+    // Compare float bytes, including retained NaN payloads and signed zero.
+    expect(Buffer.from(actual.buffer,actual.byteOffset,actual.byteLength).equals(Buffer.from(wanted.buffer,wanted.byteOffset,wanted.byteLength))).toBe(true);
+   }
+   const wanted=full.indices.subarray(index,index+cache.indexCount);
+   expect(Buffer.from(chunk.indices.buffer,chunk.indices.byteOffset,chunk.indices.byteLength).equals(Buffer.from(wanted.buffer,wanted.byteOffset,wanted.byteLength))).toBe(true);
+   vertex+=cache.vertexCount;index+=cache.indexCount;
+  });
+  expect(vertex*4).toBe(full.positions.length);expect(index).toBe(full.indices.length);expect(cacheIndex).toBe(full.caches.length);
+ }
+ it('concatenates exactly to complete output across rollover, shape flush and shared caches',()=>{
+  for(const [n,width,offsets] of [[0,2,[0]],[11,2,[0,0,1,3,6,8,11]],[6554,2,[0,6554]],[6555,2,[0,6555]],[6558,2,[0,6555,6558]],[8193,1,[0,8193]],[40_000,2,[0,7000,14000,40000]]] as const)compareChunks(input(n,width,[...offsets]));
+ });
+ it('retains full-path duplicate, nonfinite, transformed width and float arithmetic',()=>{
+  for(const scale of [0,.5,2,NaN]){
+   const source=input(6558,2,[0,6555,6558]);
+   source.positions.set([0,0,0,0,0,0,NaN,Infinity,-Infinity]);
+   source.rowMajor=identity.slice();source.rowMajor[0]=scale;source.rowMajor[3]=16777216;
+   compareChunks(source);
+  }
+ });
+ it('borrows reusable storage and stops immediately on consumer failure or cancellation',()=>{
+  const source=input(20_000);let storage:ArrayBufferLike|undefined,count=0;
+  forEachSourceProcessingOpenStrokeChunk(source,chunk=>{if(storage)expect(chunk.positions.buffer).toBe(storage);storage=chunk.positions.buffer;count++;});
+  expect(count).toBeGreaterThan(2);
+  const failure=new Error('consumer failed');count=0;
+  expect(()=>forEachSourceProcessingOpenStrokeChunk(source,()=>{count++;throw failure;})).toThrow(failure);expect(count).toBe(1);
+  let cancelled=false;count=0;
+  expect(()=>forEachSourceProcessingOpenStrokeChunk({...source,isCancelled:()=>cancelled},()=>{count++;cancelled=true;})).toThrow(expect.objectContaining({code:'cancelled',name:'AbortError'}));expect(count).toBe(1);
+  const bad=input(3);bad.colors[0]=NaN;expect(()=>forEachSourceProcessingOpenStrokeChunk(bad,()=>{})).toThrow(/RGBA/);
+ });
+ it('streams expanded output above the complete-output limit with bounded chunk storage',()=>{
+  const source=input(1_100_000);let bytes=0,blocks=0;
+  expect(()=>sourceProcessingOpenStrokeBuffers(source)).toThrow(/256 MiB/);
+  forEachSourceProcessingOpenStrokeChunk(source,chunk=>{
+   blocks++;bytes+=chunk.positions.byteLength+chunk.directions.byteLength+chunk.colors.byteLength+chunk.indices.byteLength+32;
+   expect(chunk.caches[0].vertexCount).toBeLessThanOrEqual(SOURCE_PROCESSING_OPEN_STROKE_LIMITS.maxCacheVertices);
+   const working=chunk.positions.buffer.byteLength+chunk.directions.buffer.byteLength+chunk.colors.buffer.byteLength+chunk.indices.buffer.byteLength+32;
+   expect(working).toBe(SOURCE_PROCESSING_OPEN_STROKE_LIMITS.maxChunkBufferBytes);
+  });
+  expect(blocks).toBeGreaterThan(100);expect(bytes).toBeGreaterThan(SOURCE_PROCESSING_OPEN_STROKE_LIMITS.maxBufferBytes);
+ });
+ it('accounts for retained input backing storage before allocating a work chunk',()=>{
+  const buffer=new ArrayBuffer(SOURCE_PROCESSING_OPEN_STROKE_LIMITS.maxBufferBytes);
+  const source=input(3);source.positions=new Float32Array(buffer,0,9);
+  let called=false;
+  expect(()=>forEachSourceProcessingOpenStrokeChunk(source,()=>{called=true;})).toThrow(expect.objectContaining({code:'capacity'}));expect(called).toBe(false);
  });
 });

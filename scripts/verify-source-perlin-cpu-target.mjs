@@ -22,7 +22,7 @@ try{
  const result=await page.evaluate(async reference=>{
   const {SourcePerlinCpuTarget}=await import('/src/engine/sourcePerlinCpuTarget.ts');
   const {prepareSourcePerlinCpuDisplay}=await import('/src/engine/sourcePerlinDisplay.ts');
-  const {sourceProcessingOpenStrokeBuffers}=await import('/src/engine/sourceProcessingStroke.ts');
+  const {sourceProcessingOpenStrokeBuffers,forEachSourceProcessingOpenStrokeChunk}=await import('/src/engine/sourceProcessingStroke.ts');
   const {sourceProcessingRoundPointBuffers}=await import('/src/engine/sourceProcessingPoints.ts');
   const {SourcePerlinParticleMotion}=await import('/src/engine/sourcePerlinParticleMotion.ts');
   const {SourcePerlinParticleColors}=await import('/src/engine/sourcePerlinParticleColors.ts');
@@ -93,17 +93,23 @@ try{
   const results=[],failures=[];let preview;
   try{
    for(const samples of [0,...supported.filter(n=>[2,4,8].includes(n)).slice(0,1)])for(const density of [1,2]){
-    const o={width:97,height:71,density,samples,initialColor:[.2,.3,.4,.25]},target=new SourcePerlinCpuTarget(o),ref=referenceTarget(o);
+    const o={width:97,height:71,density,samples,initialColor:[.2,.3,.4,.25]},target=new SourcePerlinCpuTarget(o),streamed=new SourcePerlinCpuTarget(o),ref=referenceTarget(o);
     const display=prepareSourcePerlinCpuDisplay({width:o.width,height:o.height,sourceWidth:97,sourceHeight:71,sourcePixelDensity:density,target:'primary',lineWeight:3,dotSize:7});
     const xyz=new Float32Array([-30,-20,0,0,20,0,30,-10,0,30,-10,0,-20,15,0]),colors=new Float32Array([1,0,0,.3,0,1,0,.7,0,0,1,1,1,1,0,.5,1,0,1,.9]);
     const primitive=(kind,width=3,pos=xyz,col=colors)=>({kind,buffers:kind==='lines'?sourceProcessingOpenStrokeBuffers({positions:pos,colors:col,polygonOffsets:new Uint32Array([0,pos.length/3]),lineWidth:width,rowMajor:display.modelView.rowMajor}):sourceProcessingRoundPointBuffers({positions:pos,colors:col,width,rowMajor:display.modelView.rowMajor})});
-    async function compare(label,primitives,accumulation=false){
+    async function compare(label,primitives,accumulation=false,sourceStream){
      const frame={projection:display.projection.columnMajor,background:[.04,.08,.12,.2],accumulation,primitives};
      const start=performance.now();target.draw(frame);const a=target.readPixels(),elapsedMs=performance.now()-start,b=ref.draw(frame);
+     streamed.draw({...frame,primitives:[],streamPrimitives:sourceStream??(consume=>{
+      for(const p of primitives){const b=p.buffers,key=p.kind==='lines'?'directions':'offsets',components=p.kind==='lines'?4:2;
+       for(const c of b.caches)consume({kind:p.kind,buffers:{positions:b.positions.subarray(c.vertexOffset*4,(c.vertexOffset+c.vertexCount)*4),colors:b.colors.subarray(c.vertexOffset*4,(c.vertexOffset+c.vertexCount)*4),[key]:b[key].subarray(c.vertexOffset*components,(c.vertexOffset+c.vertexCount)*components),indices:b.indices.subarray(c.indexOffset,c.indexOffset+c.indexCount),caches:[{vertexOffset:0,indexOffset:0,vertexCount:c.vertexCount,indexCount:c.indexCount}]}});
+      }
+     })});
+     const streamedPixels=streamed.readPixels();check(streamedPixels.every((v,i)=>v===a[i]),`${label} streamed/full bytes differ`);
      let different=0,maxDelta=0;for(let i=0;i<a.length;i++){if(a[i]!==b[i])different++;maxDelta=Math.max(maxDelta,Math.abs(a[i]-b[i]));}
      check(different===0,`${label} d${density} MSAA${samples}: ${different} differing channels, delta ${maxDelta}`);
      check(target.readPixels().every((v,i)=>v===a[i]),'Readback changed render history');
-     results.push({label,density,samples,different,maxDelta,elapsedMs,sha256:await digest(a)});
+     results.push({label,density,samples,different,maxDelta,elapsedMs,streamedMatch:true,sha256:await digest(a)});
      return a;
     }
     try{
@@ -117,7 +123,7 @@ try{
      if(samples===0&&density===1){
       const count=6555,pos=new Float32Array(count*3),col=new Float32Array(count*4);
       for(let i=0;i<count;i++){pos[i*3]=Math.sin(i*.01)*30;pos[i*3+1]=Math.cos(i*.01)*20;col.set([i/count,.4,1-i/count,.1],i*4);}
-      await compare('long-wide-cache-rollover',[primitive('lines',3,pos,col)]);
+      await compare('long-wide-cache-rollover',[primitive('lines',3,pos,col)],false,consume=>forEachSourceProcessingOpenStrokeChunk({positions:pos,colors:col,polygonOffsets:new Uint32Array([0,count]),lineWidth:3,rowMajor:display.modelView.rowMajor},buffers=>consume({kind:'lines',buffers})));
       preview=await compare('preview',[primitive('lines',3),primitive('points',4)]);
       const motion=new SourcePerlinParticleMotion({seed:'12345',count:256,width:97,height:71});
       const colors=new SourcePerlinParticleColors({count:256,palette:[0xff8657d6,0xffefa9e6]});
@@ -134,7 +140,7 @@ try{
        }
       }
      }
-    }finally{target.dispose();ref.dispose();}
+    }finally{target.dispose();streamed.dispose();ref.dispose();}
     check(live.size===0,'Leaked successful target resources: '+live.size);
    }
    const options={width:31,height:27,density:1,samples:0,initialColor:[0,0,0,0]},frame={projection:identity,background:[0,0,0,.2],accumulation:true,primitives:[]};

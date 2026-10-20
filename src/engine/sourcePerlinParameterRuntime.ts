@@ -34,8 +34,11 @@ export class SourcePerlinParameterRuntime {
  private active=false;
  private failed=false;
  private work=0;
+ private currentBackend:SourcePerlinBackend;
  constructor(private readonly options:SourcePerlinParameterOptions){
-  if(!['cpu','gpu'].includes(options.backend)||!['particles','field-curves'].includes(options.style))throw new SourcePerlinParameterRuntimeError('input','Perlin 参数后端或样式无效');
+  if(!options||typeof options!=='object'||!['cpu','gpu'].includes(options.backend)||!['particles','field-curves'].includes(options.style))throw new SourcePerlinParameterRuntimeError('input','Perlin 参数后端或样式无效');
+  if(options.isCancelled!==undefined&&typeof options.isCancelled!=='function'||options.onFieldEffect!==undefined&&typeof options.onFieldEffect!=='function')throw new SourcePerlinParameterRuntimeError('input','Perlin 参数回调无效');
+  this.currentBackend=options.backend;
   const dimensions=options.fieldDimensions;
   if(dimensions!==undefined&&(!Array.isArray(dimensions)||dimensions.length!==2||dimensions.some(v=>typeof v!=='number'||!Number.isFinite(F(v)))))throw new SourcePerlinParameterRuntimeError('input','Perlin 场尺寸需要两个有限源 float');
   this.options=Object.freeze({...options,...(dimensions?{fieldDimensions:Object.freeze([F(dimensions[0]),F(dimensions[1])] as const)}:{})});
@@ -56,7 +59,17 @@ export class SourcePerlinParameterRuntime {
   if(this.failed)throw new SourcePerlinParameterRuntimeError('failed','Perlin 参数状态先前失败，需要重建');
   this.work=0;try{this.spend();f();}catch(e){this.failed=true;throw e;}
  }
- snapshot(){return Object.freeze({values:Object.freeze({...this.values}),active:this.active,drifts:Object.freeze(NAMES.map(n=>Object.freeze({...this.drifts[n]}))),children:Object.freeze(this.children.map(c=>Object.freeze({...c,parameters:Object.freeze(c.parameters.map(p=>Object.freeze({...p})))})))});}
+ get backend():SourcePerlinBackend{
+  if(this.failed)throw new SourcePerlinParameterRuntimeError('failed','Perlin 参数状态先前失败，需要重建');
+  return this.currentBackend;
+ }
+ /** setUseCPURender changes only the branch flag. In-flight action phases,
+  * stopped/running drifts and curve effects survive either direction. */
+ setBackend(backend:SourcePerlinBackend):void{this.run(()=>{
+  if(backend!=='cpu'&&backend!=='gpu')throw new SourcePerlinParameterRuntimeError('input','Perlin 参数后端无效');
+  this.currentBackend=backend;
+ });}
+ snapshot(){return Object.freeze({backend:this.backend,values:Object.freeze({...this.values}),active:this.active,drifts:Object.freeze(NAMES.map(n=>Object.freeze({...this.drifts[n]}))),children:Object.freeze(this.children.map(c=>Object.freeze({...c,parameters:Object.freeze(c.parameters.map(p=>Object.freeze({...p})))})))});}
  /** PerlinNoiseField.isFieldCurveAnimating excludes ordinary noise_scale and
   * all color-gradient state. Consumers must not reinterpret drift snapshots. */
  get fieldCurvesAnimating():boolean{
@@ -119,7 +132,7 @@ export class SourcePerlinParameterRuntime {
   }
  });}
  update(dt:number):void {this.run(()=>{
-  dt=Math.max(0,finite(F(dt)));if(this.options.backend==='gpu')return;
+  dt=Math.max(0,finite(F(dt)));if(this.currentBackend==='gpu')return;
   const names:readonly SourcePerlinParameterName[]=this.options.style==='field-curves'?['noise_scale','noise_offset','curve_noise_scale','curve_angle_scale']:['noise_scale'];
   for(const name of names){
    this.spend();const c=this.drifts[name];if(!c.running)continue;

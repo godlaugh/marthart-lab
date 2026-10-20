@@ -23,6 +23,8 @@ const result=await page.evaluate(async()=>{
   WebGL2RenderingContext.prototype[name]=function(...args){if(!contexts.includes(this))contexts.push(this);const r=old.apply(this,args);if(action==='create'&&r)live.add(r);if(action==='delete')live.delete(args[0]);return r;};
  }
  const run=(name,fn)=>{fn();assert(live.size===0,`${name} leaked ${live.size}`);tests.push(name);};
+ const runAsync=async(name,fn)=>{await fn();assert(live.size===0,`${name} leaked ${live.size}`);tests.push(name);};
+ const emptyPrimitive=(backing=new ArrayBuffer(0))=>({kind:'lines',buffers:{positions:new Float32Array(backing,0,0),directions:new Float32Array(),colors:new Float32Array(),indices:new Uint16Array(),caches:[]}});
  try{
  run('siblings share one context and survive parent disposal',()=>{
   const a=new Target(opts),b=a.createSibling(opts);b.draw({...base,background:[1,.5,.25,.5]});const n=contexts.length;
@@ -73,6 +75,63 @@ const result=await page.evaluate(async()=>{
  });
  run('shared reservation prevents lazy sibling budget escape',()=>{
   const large={...opts,width:3000,height:3000},a=new Target(large),b=a.createSibling(large),c=a.createSibling(large);fail(()=>a.createSibling(large),'capacity');assert(a.diagnostics().deviceTargets===3,'Failed sibling modified device');b.dispose();const d=a.createSibling(large);a.dispose();c.dispose();d.dispose();
+ });
+ run('stream input budget rejects before GL allocation',()=>{
+  const a=new Target(opts),before=contexts.length;
+  fail(()=>a.draw({...base,streamRetainedBytes:256*1024*1024,streamPrimitives:()=>{throw Error('Must reject before producer');}}),'capacity');
+  assert(contexts.length===before,'Oversized stream allocated a context');a.dispose();
+ });
+ run('stream failure and cancellation poison only the consumer target',()=>{
+  const empty={kind:'lines',buffers:{positions:new Float32Array(),directions:new Float32Array(),colors:new Float32Array(),indices:new Uint16Array(),caches:[]}};
+  for(const cancel of [false,true]){
+   const a=new Target(opts),b=a.createSibling(opts);a.draw(base);let cancelled=false,got;
+   try{b.draw({...base,streamPrimitives:consume=>{consume(empty);if(cancel){cancelled=true;consume(empty);}else throw Error('producer failed');}},()=>cancelled);}catch(e){got=e;}
+   assert(cancel?got?.code==='cancelled':got?.message==='producer failed','Stream failure identity lost');
+   fail(()=>b.draw(base),'failed');a.draw(base);assert(a.diagnostics().deviceTargets===1,'Stream failure retained consumer');a.dispose();b.dispose();
+  }
+ });
+ run('mixed retained and streamed backing stores share one frame budget',()=>{
+  // The declared source reservation leaves 8 MiB. Each 5 MiB backing is
+  // individually admissible; both remain alive even with zero-length views.
+  // This tests accounting without allocating the declared 248 MiB snapshot.
+  for(const shared of [false,true]){
+   const a=new Target(opts),b=a.createSibling(opts),backing=new ArrayBuffer(5*1024*1024),retained=emptyPrimitive(backing),streamed=emptyPrimitive(shared?backing:new ArrayBuffer(5*1024*1024));
+   const frame={...base,primitives:[retained],streamRetainedBytes:248*1024*1024,streamPrimitives:consume=>consume(streamed)};
+   if(shared){b.draw(frame);assert(b.diagnostics().draws===1,'Shared backing was counted twice');}
+   else{fail(()=>b.draw(frame),'capacity');fail(()=>b.readPixels(),'failed');}
+   a.draw(base);a.dispose();b.dispose();
+  }
+ });
+ run('swallowed consumption failures cannot publish partial frames',()=>{
+  for(const cancel of [false,true]){
+   const a=new Target(opts),b=a.createSibling(opts);a.draw(base);let cancelled=false,first,second;
+   const frame={...base,streamPrimitives:consume=>{
+    consume(emptyPrimitive());
+    try{cancelled=cancel;consume(cancel?emptyPrimitive():null);}catch(error){first=error;}
+    cancelled=false;
+    try{consume(emptyPrimitive());}catch(error){second=error;}
+   }};
+   let escaped;try{b.draw(frame,()=>cancelled);}catch(error){escaped=error;}
+   assert(first?.code===(cancel?'cancelled':'input'),'Wrong first consumption failure');
+   assert(second===first&&escaped===first,'Consumer swallowed or replaced the first failure');
+   fail(()=>b.readPixels(),'failed');a.draw(base);assert(a.diagnostics().deviceTargets===1,'Swallowed failure retained target');a.dispose();b.dispose();
+  }
+ });
+ await runAsync('asynchronous producers fail before publication and contain rejection',async()=>{
+  const unhandled=[],onUnhandled=event=>{unhandled.push(event.reason);event.preventDefault();};window.addEventListener('unhandledrejection',onUnhandled);
+  try{
+   for(const streamPrimitives of [async consume=>{await Promise.resolve();consume(emptyPrimitive());},async()=>{throw Error('Async producer rejected');},()=>({then(_resolve,reject){reject(Error('Thenable producer rejected'));}})]){
+    const a=new Target(opts),b=a.createSibling(opts);a.draw(base);
+    fail(()=>b.draw({...base,streamPrimitives}),'input');fail(()=>b.readPixels(),'failed');
+    await new Promise(resolve=>setTimeout(resolve,0));a.draw(base);assert(a.diagnostics().deviceTargets===1,'Async producer retained target');a.dispose();b.dispose();
+   }
+   await new Promise(resolve=>setTimeout(resolve,0));assert(unhandled.length===0,'Async stream leaked an unhandled rejection');
+  }finally{window.removeEventListener('unhandledrejection',onUnhandled);}
+ });
+ run('late consumption poisons the previously completed target',()=>{
+  const a=new Target(opts),b=a.createSibling(opts);a.draw(base);let late;
+  b.draw({...base,streamPrimitives:consume=>{late=consume;}});assert(b.diagnostics().draws===1,'Empty synchronous stream did not complete');
+  fail(()=>late(emptyPrimitive()),'input');fail(()=>b.readPixels(),'failed');a.draw(base);assert(a.diagnostics().deviceTargets===1,'Late consumer retained target');a.dispose();b.dispose();
  });
  run('source smoothing selection reuses the returned target device',()=>{
   const before=contexts.length,a=Target.createSmoothed(opts,8),g=contexts.at(-1),expected=Math.min(8,g.getParameter(g.MAX_SAMPLES));

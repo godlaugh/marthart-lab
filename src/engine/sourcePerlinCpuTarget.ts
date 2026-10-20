@@ -13,6 +13,12 @@ export interface SourcePerlinCpuFrame{
  /** Already interpreted RGB255 fill/background color, not raw packed input. */
  readonly background:readonly[number,number,number,number];
  readonly accumulation:boolean;readonly primitives:readonly SourcePerlinCpuPrimitive[];
+ /** Synchronously emit bounded primitives after the retained list. Buffers
+  * may be reused after consume returns; the target never retains their views. */
+ readonly streamPrimitives?:(consume:(primitive:SourcePerlinCpuPrimitive)=>void)=>void;
+ /** Caller-owned source/snapshot arrays live throughout streaming. Count them
+  * with each chunk and the shared device before admitting any GL allocation. */
+ readonly streamRetainedBytes?:number;
  /** Completed sibling targets, composited in order after primitives. */
  readonly images?:readonly SourcePerlinCpuTarget[];
 }
@@ -48,6 +54,7 @@ const colorValid=(color:unknown):color is readonly[number,number,number,number]=
 const MAX_BYTES=256*1024*1024;
 type Program={program:WebGLProgram;uniforms:Map<string,WebGLUniformLocation|null>};
 type ProgramKind='lines'|'points'|'background'|'image';
+interface PrimitiveInputs{readonly buffers:ReadonlySet<ArrayBufferLike>;readonly bytes:number;}
 
 /** One context owner. Targets own only attachments; losing this device invalidates
  * all of them. The map also reserves not-yet-allocated targets and their readbacks. */
@@ -209,19 +216,31 @@ export class SourcePerlinCpuTarget{
  private complete(g:WebGL2RenderingContext){if(g.checkFramebufferStatus(g.FRAMEBUFFER)!==g.FRAMEBUFFER_COMPLETE)throw new SourcePerlinCpuTargetError('render','Perlin CPU framebuffer incomplete.');}
  private resolve(g:WebGL2RenderingContext){if(!this.multisample)return;g.bindFramebuffer(g.READ_FRAMEBUFFER,this.multisample);g.bindFramebuffer(g.DRAW_FRAMEBUFFER,this.framebuffer!);g.blitFramebuffer(0,0,this.physicalWidth,this.physicalHeight,0,0,this.physicalWidth,this.physicalHeight,g.COLOR_BUFFER_BIT,g.NEAREST);}
  private verify(frame:SourcePerlinCpuFrame,cancelled?:()=>boolean){
-  if(!(frame?.projection instanceof Float32Array)||frame.projection.length!==16||!frame.projection.every(Number.isFinite)||!colorValid(frame.background)||typeof frame.accumulation!=='boolean'||!Array.isArray(frame.primitives)||(frame.images!==undefined&&!Array.isArray(frame.images)))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU draw frame.');
+  if(!(frame?.projection instanceof Float32Array)||frame.projection.length!==16||!frame.projection.every(Number.isFinite)||!colorValid(frame.background)||typeof frame.accumulation!=='boolean'||!Array.isArray(frame.primitives)||(frame.streamPrimitives!==undefined&&typeof frame.streamPrimitives!=='function')||(frame.images!==undefined&&!Array.isArray(frame.images)))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU draw frame.');
+  const retained=frame.streamRetainedBytes??0;
+  if(!Number.isSafeInteger(retained)||retained<0)throw new SourcePerlinCpuTargetError('input','Invalid Perlin streaming source byte count.');
+  this.device.budget(retained);
   for(const image of frame.images??[]){
    if(!(image instanceof SourcePerlinCpuTarget)||image===this||image.device!==this.device||image.disposed||image.failed||image.drawCount===0||!image.texture||!image.framebuffer)throw new SourcePerlinCpuTargetError('input','Perlin CPU image must be a completed, live sibling target.');
    image.check();
   }
-  let bytes=0;
-  for(const p of frame.primitives){
+  return this.verifyPrimitives(frame.primitives,retained,cancelled);
+ }
+ /** Original frame inputs remain alive throughout streaming. Only the current
+  * chunk is added to that reservation; prior chunks may reuse their storage.
+  * Existing GPU uploads are independently counted by the shared device. */
+ private verifyPrimitives(primitives:readonly SourcePerlinCpuPrimitive[],retained:number,cancelled?:()=>boolean,held?:PrimitiveInputs):PrimitiveInputs{
+  let inputBytes=held?.bytes??0,uploadBytes=0;const inputBuffers=new Set(held?.buffers);
+  this.device.budget(inputBytes+retained);
+  for(const p of primitives){
    this.check(cancelled);if(!p||!['lines','points'].includes(p.kind)||!p.buffers)throw new SourcePerlinCpuTargetError('input','Unknown Perlin CPU primitive or missing buffers.');const b=p.buffers,d=p.kind==='lines'?p.buffers.directions:p.buffers.offsets,size=p.kind==='lines'?4:2;
    if(!(b.positions instanceof Float32Array)||b.positions.length%4||!(b.colors instanceof Float32Array)||b.colors.length!==b.positions.length||!(d instanceof Float32Array)||d.length!==b.positions.length/4*size||!(b.indices instanceof Uint16Array)||!Array.isArray(b.caches))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU primitive buffers.');
    // Count source arrays, complete GPU uploads and existing device uploads before
    // any new allocation. The shared map includes every sibling's attachments.
-   bytes+=2*(b.positions.byteLength+b.colors.byteLength+d.byteLength+b.indices.byteLength)+b.caches.length*32;
-   this.device.budget(bytes);
+   for(const array of [b.positions,b.colors,d,b.indices])if(!inputBuffers.has(array.buffer)){inputBuffers.add(array.buffer);inputBytes+=array.buffer.byteLength;}
+   inputBytes+=b.caches.length*32;
+   uploadBytes+=b.positions.byteLength+b.colors.byteLength+d.byteLength+b.indices.byteLength;
+   this.device.budget(inputBytes+uploadBytes+retained);
    let previousIndex=0,previousVertex=0;
    for(const cache of b.caches){
     this.check(cancelled);
@@ -233,15 +252,16 @@ export class SourcePerlinCpuTarget{
    }
    if(previousIndex!==b.indices.length||previousVertex!==b.positions.length/4)throw new SourcePerlinCpuTargetError('input','Perlin CPU cache coverage is incomplete.');
   }
+  return{buffers:inputBuffers,bytes:inputBytes};
  }
  draw(frame:SourcePerlinCpuFrame,cancelled?:()=>boolean):void{
   try{
-   this.check(cancelled);this.verify(frame,cancelled);const g=this.context(),device=this.device;
+   this.check(cancelled);const inputs=this.verify(frame,cancelled),g=this.context(),device=this.device;
    g.bindFramebuffer(g.FRAMEBUFFER,this.multisample??this.framebuffer!);g.bindVertexArray(device.vao!);g.viewport(0,0,this.physicalWidth,this.physicalHeight);
    g.disable(g.DEPTH_TEST);g.disable(g.SCISSOR_TEST);g.disable(g.CULL_FACE);g.enable(g.DITHER);g.enable(g.BLEND);g.blendEquationSeparate(g.FUNC_ADD,g.FUNC_ADD);g.blendFuncSeparate(g.SRC_ALPHA,g.ONE_MINUS_SRC_ALPHA,g.ONE,g.ONE);
    if(frame.accumulation){const p=device.programs.background!;g.useProgram(p.program);g.uniform4fv(device.uniform(p,'background'),frame.background);for(let i=0;i<3;i++)g.disableVertexAttribArray(i);g.drawArrays(g.TRIANGLES,0,3);}
    else{g.clearColor(...frame.background);g.clear(g.COLOR_BUFFER_BIT);}
-   for(const primitive of frame.primitives){
+   const drawPrimitive=(primitive:SourcePerlinCpuPrimitive)=>{
     this.check(cancelled);const p=device.programs[primitive.kind]!,b=primitive.buffers,d=primitive.kind==='lines'?primitive.buffers.directions:primitive.buffers.offsets,size=primitive.kind==='lines'?4:2;
     g.useProgram(p.program);g.uniform4f(device.uniform(p,'viewport'),0,0,this.width,this.height);g.uniform1i(device.uniform(p,'perspective'),0);
     g.uniformMatrix4fv(device.uniform(p,primitive.kind==='lines'?'lineModelview':'pointModelview'),false,identity);g.uniformMatrix4fv(device.uniform(p,'projection'),false,frame.projection);
@@ -252,6 +272,31 @@ export class SourcePerlinCpuTarget{
      this.check(cancelled);for(let i=0;i<3;i++){g.bindBuffer(g.ARRAY_BUFFER,device.buffers[i]);const components=i===2?size:4;g.vertexAttribPointer(i,components,g.FLOAT,false,0,cache.vertexOffset*components*4);}
      g.drawElements(g.TRIANGLES,cache.indexCount,g.UNSIGNED_SHORT,cache.indexOffset*2);
     }
+   };
+   for(const primitive of frame.primitives)drawPrimitive(primitive);
+   if(frame.streamPrimitives){
+    let consuming=true,failure:{error:unknown}|undefined;
+    const reject=(error:unknown):never=>{
+     failure??={error};this.poison();throw failure.error;
+    };
+    try{
+     const completion:unknown=frame.streamPrimitives(primitive=>{
+      if(failure)throw failure.error;
+      try{
+       if(!consuming)throw new SourcePerlinCpuTargetError('input','Perlin primitive stream must be synchronous.');
+       this.check(cancelled);
+       this.verifyPrimitives([primitive],frame.streamRetainedBytes??0,cancelled,inputs);
+       drawPrimitive(primitive);
+      }catch(error){reject(error);}
+     });
+     if(completion!==null&&(typeof completion==='object'||typeof completion==='function')&&typeof (completion as PromiseLike<unknown>).then==='function'){
+      // A producer that returns a Promise cannot publish this synchronous draw.
+      // Observe its rejection, including a later rejected consume invocation.
+      void Promise.resolve(completion).catch(()=>{});
+      reject(new SourcePerlinCpuTargetError('input','Perlin primitive stream must complete synchronously.'));
+     }
+     if(failure)throw failure.error;
+    }catch(error){reject(error);}finally{consuming=false;}
    }
    if(frame.images?.length){
     const p=device.programs.image!;g.useProgram(p.program);g.activeTexture(g.TEXTURE0);g.uniform1i(device.uniform(p,'imageTexture'),0);

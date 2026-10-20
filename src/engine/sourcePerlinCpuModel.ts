@@ -3,7 +3,7 @@ import {SourcePerlinParticleMotion} from './sourcePerlinParticleMotion';
 import {SourcePerlinParticleColors} from './sourcePerlinParticleColors';
 import {SourcePerlinParticleTrails} from './sourcePerlinParticleTrails';
 import {SourcePerlinColorRuntime} from './sourcePerlinColorRuntime';
-import {SourcePerlinParameterRuntime,type SourcePerlinParameterValues,type SourcePerlinFieldEffect} from './sourcePerlinParameterRuntime';
+import {SourcePerlinParameterRuntime,type SourcePerlinParameterValues,type SourcePerlinFieldEffect,type SourcePerlinBackend} from './sourcePerlinParameterRuntime';
 import type {SourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import type {SourceGradientAction} from './sourceGradientRuntime';
 import {SourceProcessingNoise} from './sourceProcessingNoise';
@@ -12,10 +12,10 @@ import {SourcePerlinAngleField} from './sourcePerlinAngleField';
 import {SourcePerlinCurveGeometry,sourcePerlinCurveDimensions} from './sourcePerlinCurveGeometry';
 import {SourcePerlinCurveColors} from './sourcePerlinCurveColors';
 import {SourcePerlinCurveDisplay} from './sourcePerlinCurveDisplay';
-import {SourcePerlinCpuTarget,type SourcePerlinCpuPrimitive} from './sourcePerlinCpuTarget';
+import {SourcePerlinCpuTarget,type SourcePerlinCpuPrimitive,type SourcePerlinCpuFrame} from './sourcePerlinCpuTarget';
 import {prepareSourcePerlinCpuDisplay} from './sourcePerlinDisplay';
 import {sourceProcessingRoundPointBuffers} from './sourceProcessingPoints';
-import {sourceProcessingOpenStrokeBuffers} from './sourceProcessingStroke';
+import {forEachSourceProcessingOpenStrokeChunk} from './sourceProcessingStroke';
 import {sourcePerlinPointRgba} from './sourcePerlinPointColors';
 import {sourcePerlinBackgroundRgba} from './sourcePerlinBackground';
 const F=Math.fround;
@@ -28,6 +28,10 @@ export interface SourcePerlinCpuModelOptions{
  readonly sourceWidth:number;readonly sourceHeight:number;
  /** Actual selected local sample count; not a claim about native smooth(4). */
  readonly curveCacheSamples:0|2|4|8;
+ /** CPU state is initialized for either backend, just as the source does. */
+ readonly backend?:SourcePerlinBackend;
+ /** Shared PApplet noise state belongs to the host, including GPU side effects. */
+ readonly noise?:Pick<SourceProcessingNoise,'sample'>;
  readonly isCancelled?:()=>boolean;
  /** Caller-owned cumulative replay budget; throws before admitted work. */
  readonly reserve?:(units:number)=>void;
@@ -35,17 +39,18 @@ export interface SourcePerlinCpuModelOptions{
 export interface SourcePerlinCpuModelDraw{
  readonly target:SourcePerlinCpuTarget;readonly kind:'primary'|'offscreen';readonly sourcePixelDensity:number;
 }
-/** PerlinNoiseField's CPU lifecycle. Queue interpolation precedes update;
- * update advances colors before parameter drifts, then motion/history or dirty
- * fixed-seed geometry. draw handles Scene background on every invocation, even
- * without update. The caller owns output targets and their initial contents. */
+/** PerlinNoiseField's retained CPU state and shared time/color lifecycle.
+ * Queue interpolation precedes update; every backend advances time/colors,
+ * then only CPU advances drifts and motion/history or dirty fixed-seed geometry.
+ * Backend switches preserve all state. draw is CPU-only; the host consumes
+ * gpuDisplayFacts only when drawing GPU. Output targets belong to the caller. */
 export class SourcePerlinCpuModel{
  private readonly config:SourcePerlinCpuDocumentPayload;
  private readonly sourceWidth:number;private readonly sourceHeight:number;
  private readonly isCancelled?:()=>boolean;private readonly reserve?:(units:number)=>void;
  private readonly colors:SourcePerlinColorRuntime;
  private readonly parameters:SourcePerlinParameterRuntime;
- private readonly noise:SourceProcessingNoise;
+ private readonly noise:Pick<SourceProcessingNoise,'sample'>;
  private readonly textureSeed:number;
  private readonly motion?:SourcePerlinParticleMotion;
  private readonly particleColors?:SourcePerlinParticleColors;
@@ -56,18 +61,20 @@ export class SourcePerlinCpuModel{
  private angleField?:SourcePerlinAngleField;
  private seedXs?:Float32Array;private seedYs?:Float32Array;private curvePacked?:Uint32Array;
  private geometryDirty=false;private geometryBuilds=0;private colorRefreshes=0;private drawingSnapshots=0;
- private showTrails:boolean;private time=0;private updates=0;private draws=0;
+ private showTrails:boolean;private time=0;private updates=0;private cpuUpdates=0;private draws=0;
  private failed=false;private disposed=false;
  constructor(options:SourcePerlinCpuModelOptions){
   if(!options||typeof options!=='object')throw new SourcePerlinCpuModelError('input','Missing Perlin CPU model configuration.');
   for(const n of [options.sourceWidth,options.sourceHeight])if(!Number.isInteger(n)||n<0||n>2147483647)throw new SourcePerlinCpuModelError('input','Perlin primary dimensions require nonnegative Java integers.');
   if(options.reserve!==undefined&&typeof options.reserve!=='function')throw new SourcePerlinCpuModelError('input','Perlin work reserve must be a function.');
   if(options.isCancelled!==undefined&&typeof options.isCancelled!=='function')throw new SourcePerlinCpuModelError('input','Perlin cancellation must be a function.');
+  if(options.backend!==undefined&&options.backend!=='cpu'&&options.backend!=='gpu')throw new SourcePerlinCpuModelError('input','Invalid Perlin render backend.');
+  if(options.noise!==undefined&&(!options.noise||typeof options.noise.sample!=='function'))throw new SourcePerlinCpuModelError('input','Perlin noise owner must provide sample().');
   if(![0,2,4,8].includes(options.curveCacheSamples))throw new SourcePerlinCpuModelError('input','Perlin curve-cache samples must be an actual supported count.');
   const parsed=parseSourcePerlinCpuDocument(options.config);if(!parsed.ok)throw new SourcePerlinCpuModelError(parsed.error.kind==='capacity'?'capacity':'input',`Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   this.config=parsed.value;for(const value of Object.values(this.config))if(value&&typeof value==='object')Object.freeze(value);Object.freeze(this.config);
   this.sourceWidth=options.sourceWidth;this.sourceHeight=options.sourceHeight;this.isCancelled=options.isCancelled;this.reserve=options.reserve;this.check();
-  const c=this.config;this.showTrails=c.display.showTrails;this.textureSeed=sourcePerlinSeed(c.seed).textureSeed;this.noise=new SourceProcessingNoise(BigInt(this.textureSeed));
+  const c=this.config;this.showTrails=c.display.showTrails;this.textureSeed=sourcePerlinSeed(c.seed).textureSeed;this.noise=options.noise??new SourceProcessingNoise(BigInt(this.textureSeed));
   if(c.cpuStyle==='particles'){
    this.spend(c.particles.count);this.particleColors=new SourcePerlinParticleColors({count:c.particles.count,palette:c.palette,isCancelled:this.isCancelled});this.colors=this.particleColors.runtime;
    this.motion=new SourcePerlinParticleMotion({seed:c.seed,count:c.particles.count,width:this.sourceWidth,height:this.sourceHeight,noise:this.noise,isCancelled:this.isCancelled});
@@ -82,7 +89,7 @@ export class SourcePerlinCpuModel{
    const seeds=this.geometry.snapshot();this.seedXs=seeds.seedXs;this.seedYs=seeds.seedYs;this.curvePacked=new Uint32Array(this.geometry.count);
    this.resolveCurveColors(c.parameters);this.geometryBuilds=1;this.curveDisplay=new SourcePerlinCurveDisplay(options.curveCacheSamples);
   }
-  this.parameters=new SourcePerlinParameterRuntime({initial:c.parameters,backend:'cpu',style:c.cpuStyle,...(this.geometry?{fieldDimensions:[this.geometry.width,this.geometry.height] as const}:{}),isCancelled:this.isCancelled,onFieldEffect:(effect,values)=>this.fieldEffect(effect,values)});
+  this.parameters=new SourcePerlinParameterRuntime({initial:c.parameters,backend:options.backend??'cpu',style:c.cpuStyle,...(this.geometry?{fieldDimensions:[this.geometry.width,this.geometry.height] as const}:{}),isCancelled:this.isCancelled,onFieldEffect:(effect,values)=>this.fieldEffect(effect,values)});
  }
  private spend(units:number){this.check();this.reserve?.(Math.max(1,units));this.check();}
  private check(){if(this.disposed)throw new SourcePerlinCpuModelError('disposed','Perlin CPU model is disposed.');if(this.failed)throw new SourcePerlinCpuModelError('failed','Perlin CPU model failed; recreate it before use.');if(this.isCancelled?.())throw new SourcePerlinCpuModelError('cancelled','Perlin CPU model cancelled.');}
@@ -112,13 +119,25 @@ export class SourcePerlinCpuModel{
  interpolateGradientActions(eased:number,finished:boolean){this.run(()=>this.colors.interpolateGradientActions(eased,finished));}
  replacePalette(palette:readonly number[]){this.run(()=>{this.spend(this.motion?.count??1);this.colors.replacePalette(palette);});}
  setShowTrails(enabled:boolean){this.run(()=>{if(typeof enabled!=='boolean')throw new SourcePerlinCpuModelError('input','Perlin showTrails requires a boolean.');this.showTrails=enabled;});}
+ setBackend(backend:SourcePerlinBackend){this.run(()=>this.parameters.setBackend(backend));}
+ /** paletteTexture is lazy: updates, switches and diagnostics never build it.
+  * Returned pixels are detached; GPU texture/upload lifetime belongs to host. */
+ gpuDisplayFacts(){return this.run(()=>{
+  if(this.parameters.backend!=='gpu')throw new SourcePerlinCpuModelError('input','GPU display facts require the GPU backend.');
+  this.spend(256);return{time:this.time,palette:this.colors.paletteTexture()};
+ });}
  update(time:number,deltaTime:number){this.run(()=>{
   if(typeof time!=='number'||!Number.isFinite(F(time))||typeof deltaTime!=='number'||!Number.isFinite(F(deltaTime))||deltaTime<0)throw new SourcePerlinCpuModelError('input','Perlin update requires finite time and nonnegative delta time.');
-  this.spend(this.motion?.count??1);this.time=F(time);const dt=F(deltaTime);this.colors.update(dt);this.parameters.update(dt);
+  this.spend(this.motion?.count??1);this.time=F(time);const dt=F(deltaTime);this.colors.update(dt);
+  // PerlinNoiseField.update PC2/10 write GPU time and update gradients before
+  // PC20 returns for GPU. Action interpolation is external and is not paused.
+  if(this.parameters.backend==='gpu'){this.updates++;return;}
+  this.parameters.update(dt);
   if(this.motion){const p=this.config.particles,v=this.parameters.snapshot().values;this.motion.update({time:this.time,deltaTime:dt,noiseScale:v.noise_scale,noiseOffset:v.noise_offset,...p});this.trails!.afterMotion(this.time,this.showTrails);}
-  this.updates++;
+  this.updates++;this.cpuUpdates++;
  });}
  draw(frame:SourcePerlinCpuModelDraw):void{this.run(()=>{
+  if(this.parameters.backend!=='cpu')throw new SourcePerlinCpuModelError('input','CPU drawing requires the CPU backend.');
   this.spend(1);if(!frame||!(frame.target instanceof SourcePerlinCpuTarget)||!['primary','offscreen'].includes(frame.kind)||!Number.isInteger(frame.sourcePixelDensity)||frame.sourcePixelDensity<1)throw new SourcePerlinCpuModelError('input','Invalid Perlin CPU display target or primary density.');
   const dimensions=frame.target.diagnostics(),d=this.config.display,display={width:dimensions.width,height:dimensions.height,sourceWidth:this.sourceWidth,sourceHeight:this.sourceHeight,target:frame.kind,sourcePixelDensity:frame.sourcePixelDensity,lineWeight:d.lineWeight,dotSize:d.dotSize};
   const background=sourcePerlinBackgroundRgba(d.backgroundColor,d.accumulation,d.accumulationFadeAlpha);
@@ -126,6 +145,8 @@ export class SourcePerlinCpuModel{
    this.curveDisplay!.draw({target:frame.target,display,curves:{count:this.geometry.count,rebuildIfNeeded:()=>this.rebuildCurves(),snapshot:()=>{this.spend(this.geometry!.count*this.geometry!.diagnostics().length);this.drawingSnapshots++;const g=this.geometry!.snapshot();return{count:g.count,length:g.length,xs:g.xs,ys:g.ys,colors:this.curvePacked!.slice()};}},animating:this.parameters.fieldCurvesAnimating,curveAlpha:this.config.curves.alpha,background,accumulation:d.accumulation},this.isCancelled);
   }else{
    const prepared=prepareSourcePerlinCpuDisplay(display),primitives:SourcePerlinCpuPrimitive[]=[];
+   let streamPrimitives:SourcePerlinCpuFrame['streamPrimitives'];
+   let streamRetainedBytes=0;
    // PerlinNoiseField.display PC202–233: accumulation draws points;
    // otherwise showTrails draws trails; false jumps directly to hint/pop.
    if(d.accumulation){
@@ -134,13 +155,18 @@ export class SourcePerlinCpuModel{
    }else if(this.showTrails){
     this.spend(this.trails!.diagnostics().records);const trails=this.trails!.snapshotPolygons(this.sourceWidth,this.sourceHeight);this.spend(trails.alphas.length);const rgba=new Float32Array(trails.alphas.length*4);
     for(let i=0;i<trails.alphas.length;i++){if((i&255)===0)this.check();rgba.set(trails.colors.subarray(i*3,i*3+3),i*4);rgba[i*4+3]=trails.alphas[i];}
-    primitives.push({kind:'lines',buffers:sourceProcessingOpenStrokeBuffers({positions:trails.positions,colors:rgba,polygonOffsets:trails.polygonOffsets,rowMajor:prepared.modelView.rowMajor,lineWidth:prepared.lineWidth,isCancelled:this.isCancelled})});
+    const retained=new Set([trails.positions.buffer,trails.colors.buffer,trails.alphas.buffer,trails.polygonOffsets.buffer,trails.particleIds.buffer,rgba.buffer]);
+    for(const buffer of retained)streamRetainedBytes+=buffer.byteLength;
+    // Keep the source snapshot and normalized colors alive through this one
+    // synchronous draw. Tessellation storage is reused after each upload;
+    // Scene background is applied once, not once per source index cache.
+    streamPrimitives=consume=>forEachSourceProcessingOpenStrokeChunk({positions:trails.positions,colors:rgba,polygonOffsets:trails.polygonOffsets,rowMajor:prepared.modelView.rowMajor,lineWidth:prepared.lineWidth,isCancelled:this.isCancelled},buffers=>consume({kind:'lines',buffers}));
    }
-   frame.target.draw({projection:prepared.projection.columnMajor,background,accumulation:d.accumulation,primitives},this.isCancelled);
+   frame.target.draw({projection:prepared.projection.columnMajor,background,accumulation:d.accumulation,primitives,streamPrimitives,streamRetainedBytes},this.isCancelled);
   }
   this.draws++;
  });}
- diagnostics(){return this.run(()=>({style:this.config.cpuStyle,time:this.time,updates:this.updates,draws:this.draws,showTrails:this.showTrails,geometryBuilds:this.geometryBuilds,colorRefreshes:this.colorRefreshes,drawingSnapshots:this.drawingSnapshots,geometryDirty:this.geometryDirty,motion:this.motion?.diagnostics(),trails:this.trails?.diagnostics(),geometry:this.geometry?.diagnostics(),curveDisplay:this.curveDisplay?.diagnostics()}));}
+ diagnostics(){return this.run(()=>({backend:this.parameters.backend,style:this.config.cpuStyle,time:this.time,updates:this.updates,cpuUpdates:this.cpuUpdates,draws:this.draws,showTrails:this.showTrails,geometryBuilds:this.geometryBuilds,colorRefreshes:this.colorRefreshes,drawingSnapshots:this.drawingSnapshots,geometryDirty:this.geometryDirty,motion:this.motion?.diagnostics(),trails:this.trails?.diagnostics(),geometry:this.geometry?.diagnostics(),curveDisplay:this.curveDisplay?.diagnostics()}));}
  /** Explicit detached diagnostics; never used by the render/update hot path. */
  diagnosticSnapshot(){return this.run(()=>({motion:this.motion?.snapshot(),particleColors:this.particleColors?.snapshot(),trails:this.trails?.snapshotPolygons(this.sourceWidth,this.sourceHeight),geometry:this.geometry?.snapshot(),curveColors:this.curvePacked?.slice(),colors:this.colors.snapshot(),parameters:this.parameters.snapshot()}));}
  dispose(){if(this.disposed)return;this.curveDisplay?.dispose();this.disposed=true;}

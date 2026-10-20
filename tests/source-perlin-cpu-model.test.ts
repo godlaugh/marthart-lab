@@ -13,7 +13,7 @@ import angles from './fixtures/source-perlin/angle-field.json';
 const F=Math.fround;
 const config=():SourcePerlinCpuDocumentPayload=>{const p=importSourcePerlinCpuDocument({seed:1,particle_count:3,curve_count:3,curve_length:5,field_cell_size:80,seed_space_circle_count:2},[]);if(!p.ok)throw Error(p.error.reason);return p.value.configuration;};
 const model=(c=config(),options={})=>new SourcePerlinCpuModel({config:c,sourceWidth:320,sourceHeight:200,curveCacheSamples:0,...options});
-const start=(name:'curve_noise_scale'|'noise_offset',min:number,max:number,step:number):SourcePerlinParameterAction=>({kind:'start',parameters:[{name,min,max,step}]});
+const start=(name:'curve_noise_scale'|'noise_offset'|'noise_scale',min:number,max:number,step:number):SourcePerlinParameterAction=>({kind:'start',parameters:[{name,min,max,step}]});
 const gradient={kind:'start' as const,config:{mode:'hue_rotate' as const,interpolation:'rgb' as const,speed:120}};
 
 describe('Perlin CPU model composition',()=>{
@@ -58,11 +58,29 @@ describe('Perlin CPU model composition',()=>{
   finally{m.dispose();target.dispose();draw.mockRestore();}
  });
  it('preserves source display PC202–233 branches without particle heads',()=>{
-  const draw=vi.spyOn(SourcePerlinCpuTarget.prototype,'draw').mockImplementation(()=>{});
+  const submitted:string[]=[],draw=vi.spyOn(SourcePerlinCpuTarget.prototype,'draw').mockImplementation(frame=>{submitted.push(...frame.primitives.map(p=>p.kind));frame.streamPrimitives?.(p=>submitted.push(p.kind));});
   try{for(const accumulation of [false,true])for(const showTrails of [false,true]){
+   submitted.length=0;
    const d=config();d.display.accumulation=accumulation;d.display.showTrails=showTrails;const m=model(d),target=new SourcePerlinCpuTarget({width:320,height:200,density:1,samples:0,initialColor:[0,0,0,0]});
-   m.draw({target,kind:'primary',sourcePixelDensity:1});const frame=draw.mock.calls.at(-1)![0];expect(frame.primitives.map(p=>p.kind)).toEqual(accumulation?['points']:showTrails?['lines']:[]);expect(frame.accumulation).toBe(accumulation);m.dispose();target.dispose();
+   for(let i=1;i<=6;i++)m.update(i/60,1/60);
+   m.draw({target,kind:'primary',sourcePixelDensity:1});const frame=draw.mock.calls.at(-1)![0];expect(submitted).toEqual(accumulation?['points']:showTrails?['lines']:[]);expect(frame.accumulation).toBe(accumulation);m.dispose();target.dispose();
   }}finally{draw.mockRestore();}
+ });
+ it('streams long trail caches inside one target frame without retaining expanded geometry',()=>{
+  const chunks:number[]=[],draw=vi.spyOn(SourcePerlinCpuTarget.prototype,'draw').mockImplementation(frame=>frame.streamPrimitives?.(primitive=>{
+   expect(primitive.kind).toBe('lines');expect(primitive.buffers.caches).toHaveLength(1);expect(primitive.buffers.caches[0].vertexOffset).toBe(0);chunks.push(primitive.buffers.positions.length/4);
+  }));
+  const d=config();d.particles.count=3000;d.particles.stepSize=2;
+  const m=model(d),target=new SourcePerlinCpuTarget({width:320,height:200,density:1,samples:0,initialColor:[0,0,0,0]});
+  try{
+   for(let i=1;i<=12;i++)m.update(i/60,1/60);
+   m.draw({target,kind:'primary',sourcePixelDensity:1});
+   expect(draw).toHaveBeenCalledTimes(1);expect(draw.mock.calls[0][0].primitives).toHaveLength(0);expect(chunks.length).toBeGreaterThan(1);expect(Math.max(...chunks)).toBeLessThan(32768);expect(m.diagnostics().draws).toBe(1);
+   const snapshot=m.diagnosticSnapshot().trails!,bytes=Object.values(snapshot).reduce((sum,value)=>sum+(ArrayBuffer.isView(value)?value.byteLength:0),0)+snapshot.alphas.length*16;
+   expect(draw.mock.calls[0][0].streamRetainedBytes).toBe(bytes);
+   let emitted=0;draw.mockImplementation(frame=>frame.streamPrimitives?.(()=>{if(++emitted===2)throw new Error('Second upload failed');}));
+   expect(()=>m.draw({target,kind:'primary',sourcePixelDensity:1})).toThrow('Second upload failed');expect(emitted).toBe(2);expect(()=>m.setBackend('gpu')).toThrow(expect.objectContaining({code:'failed'}));
+  }finally{m.dispose();target.dispose();draw.mockRestore();}
  });
  it('does not borrow canonical mutable input or diagnostic arrays',()=>{
   const d=config(),a=model(d),b=model(d);d.particles.stepSize=900;d.palette[0]=0;a.diagnosticSnapshot().motion!.positions.fill(0);a.update(.1,.1);b.update(.1,.1);expect(a.diagnosticSnapshot()).toEqual(b.diagnosticSnapshot());a.dispose();b.dispose();
@@ -75,6 +93,71 @@ describe('Perlin CPU model composition',()=>{
   const a=model();expect(()=>a.update(NaN,0)).toThrow(expect.objectContaining({code:'input'}));expect(()=>a.diagnostics()).toThrow(expect.objectContaining({code:'failed'}));a.dispose();
   let cancelled=false;const b=model(config(),{isCancelled:()=>cancelled});cancelled=true;expect(()=>b.update(.1,.1)).toThrow(expect.objectContaining({code:'cancelled'}));cancelled=false;expect(()=>b.setShowTrails(true)).toThrow(expect.objectContaining({code:'failed'}));b.dispose();
   const c=model();expect(()=>c.draw(null!)).toThrow(expect.objectContaining({code:'input'}));expect(()=>c.update(.1,.1)).toThrow(expect.objectContaining({code:'failed'}));c.dispose();expect(()=>c.diagnostics()).toThrow(expect.objectContaining({code:'disposed'}));
+ });
+});
+describe('Perlin retained CPU state across backend switches',()=>{
+ it('initializes CPU particles even for GPU and creates palette pixels only at a GPU display request',()=>{
+  const d=config(),gpu=model(d,{backend:'gpu'}),cpu=model(d);
+  expect(gpu.diagnosticSnapshot().motion).toEqual(cpu.diagnosticSnapshot().motion);
+  expect(gpu.diagnosticSnapshot().trails).toEqual(cpu.diagnosticSnapshot().trails);
+  expect(gpu.diagnosticSnapshot().particleColors).toEqual(cpu.diagnosticSnapshot().particleColors);
+  expect(gpu.diagnosticSnapshot().colors.textureBuilds).toBe(0);
+  gpu.update(1/3,.1);gpu.setBackend('cpu');gpu.setBackend('gpu');
+  expect(gpu.diagnosticSnapshot().colors.textureBuilds).toBe(0);
+  const first=gpu.gpuDisplayFacts();expect(first.time).toBe(F(1/3));expect(first.palette).toHaveLength(256);
+  const original=first.palette[0];first.palette.fill(0);
+  expect(gpu.gpuDisplayFacts().palette[0]).toBe(original);expect(gpu.diagnosticSnapshot().colors.textureBuilds).toBe(1);
+  gpu.dispose();cpu.dispose();
+ });
+ it('pauses CPU RNG, motion, trail expiration and natural drift while GPU time and gradients continue',()=>{
+  const d=config();d.particles.stepSize=4;d.particles.respawnRate=.7;d.particles.timeScale=.5;d.display.trailLifetime=.2;
+  const retained=model(d),control=model(d);
+  for(const m of [retained,control]){
+   m.beginPerlinParameterActions([start('noise_scale',4,30,1)]);m.interpolatePerlinParameterActions(1,true,0);
+   for(let i=1;i<=4;i++)m.update(i/60,1/60);
+  }
+  retained.beginGradientActions([gradient]);retained.interpolateGradientActions(1,true);
+  retained.setBackend('gpu');const before=retained.diagnosticSnapshot();
+  for(let i=1;i<=3;i++)retained.update(i,.2);
+  const gpu=retained.diagnosticSnapshot();
+  expect(gpu.motion).toEqual(before.motion);expect(gpu.trails!.positions).toEqual(before.trails!.positions);expect(gpu.trails!.records).toBe(before.trails!.records);expect(gpu.trails!.alphas).toEqual(before.trails!.alphas);
+  expect(gpu.parameters).toEqual(before.parameters);expect(gpu.colors.state).not.toEqual(before.colors.state);expect(gpu.particleColors!.packed).not.toEqual(before.particleColors!.packed);
+  expect(retained.diagnostics()).toMatchObject({backend:'gpu',time:3,updates:7,cpuUpdates:4});expect(gpu.colors.textureBuilds).toBe(0);
+  expect(retained.gpuDisplayFacts().time).toBe(3);
+  retained.setBackend('cpu');retained.update(3.1,.1);control.update(3.1,.1);
+  const resumed=retained.diagnosticSnapshot(),expected=control.diagnosticSnapshot();
+  expect(resumed.motion).toEqual(expected.motion);expect(resumed.parameters).toEqual(expected.parameters);
+  expect(resumed.trails!.positions).toEqual(expected.trails!.positions);expect(resumed.trails!.records).toBe(expected.trails!.records);
+  expect(retained.diagnostics()).toMatchObject({backend:'cpu',updates:8,cpuUpdates:5});retained.dispose();control.dispose();
+ });
+ it('retains curve seeds while GPU actions rebuild angles and dirty geometry before CPU resumes',()=>{
+  const d=config();d.cpuStyle='field-curves';const m=model(d,{backend:'gpu'}),before=m.diagnosticSnapshot();
+  m.beginPerlinParameterActions([start('curve_noise_scale',3,3,0)]);m.interpolatePerlinParameterActions(1,true,0);
+  const changed=m.diagnosticSnapshot();expect(changed.parameters.values.curve_noise_scale).toBe(3);expect(changed.geometry).toEqual(before.geometry);expect(m.diagnostics().geometryDirty).toBe(true);
+  m.update(1,.5);expect(m.diagnosticSnapshot().parameters).toEqual(changed.parameters);expect(m.diagnostics().geometryBuilds).toBe(1);
+  m.setBackend('cpu');m.update(1,0);const after=m.diagnosticSnapshot();
+  expect(m.diagnostics().geometryBuilds).toBe(2);expect(after.geometry!.seedXs).toEqual(before.geometry!.seedXs);expect(after.geometry!.seedYs).toEqual(before.geometry!.seedYs);expect(after.geometry!.xs).not.toEqual(before.geometry!.xs);
+  expect(after.curveColors).toEqual(before.curveColors);m.dispose();
+ });
+ it('switches neither rebuild nor discard the retained static curve cache',()=>{
+  const draw=vi.spyOn(SourcePerlinCpuTarget.prototype,'draw').mockImplementation(()=>{}),d=config();d.cpuStyle='field-curves';const m=model(d),target=new SourcePerlinCpuTarget({width:320,height:200,density:1,samples:0,initialColor:[0,0,0,0]});
+  try{
+   m.draw({target,kind:'primary',sourcePixelDensity:1});const before=m.diagnostics();
+   m.setBackend('gpu');m.gpuDisplayFacts();m.setBackend('cpu');m.draw({target,kind:'primary',sourcePixelDensity:1});
+   expect(m.diagnostics().curveDisplay!.builds).toBe(before.curveDisplay!.builds);expect(m.diagnostics().drawingSnapshots).toBe(1);expect(target.diagnostics().deviceTargets).toBe(2);
+  }finally{m.dispose();target.dispose();draw.mockRestore();}
+ });
+ it('uses the injected live noise owner after switching without recreating CPU state',()=>{
+  let value=.1,calls=0;const noise={sample:()=>{calls++;return value;}},d=config(),m=model(d,{noise});
+  m.update(.1,.1);expect(calls).toBeGreaterThan(0);const count=calls,before=m.diagnosticSnapshot().motion!;
+  m.setBackend('gpu');value=.8;m.update(.2,.1);expect(calls).toBe(count);expect(m.diagnosticSnapshot().motion).toEqual(before);
+  m.setBackend('cpu');m.update(.3,.1);expect(calls).toBeGreaterThan(count);expect(m.diagnosticSnapshot().motion!.velocities).not.toEqual(before.velocities);m.dispose();
+ });
+ it('rejects invalid backend/noise and poisons a failed display or switch owner',()=>{
+  for(const options of [{backend:'invalid'},{noise:null},{noise:{sample:3}}])expect(()=>model(config(),options)).toThrow(expect.objectContaining({code:'input'}));
+  const m=model();expect(()=>m.setBackend('invalid' as 'cpu')).toThrow(expect.objectContaining({code:'input'}));expect(()=>m.setBackend('gpu')).toThrow(expect.objectContaining({code:'failed'}));m.dispose();
+  const cpu=model();expect(()=>cpu.gpuDisplayFacts()).toThrow(expect.objectContaining({code:'input'}));expect(()=>cpu.update(0,0)).toThrow(expect.objectContaining({code:'failed'}));cpu.dispose();
+  const gpu=model(config(),{backend:'gpu'});expect(()=>gpu.draw(null!)).toThrow(expect.objectContaining({code:'input'}));expect(()=>gpu.gpuDisplayFacts()).toThrow(expect.objectContaining({code:'failed'}));gpu.dispose();
  });
 });
 describe('Scene background clear/fade RGB255 boundary',()=>{

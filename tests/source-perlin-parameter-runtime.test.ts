@@ -61,6 +61,20 @@ describe('Perlin specialized parameters against independent static bytecode tran
   const r=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'particles'});
   expect(r.snapshot().drifts.map(d=>[d.step,d.min,d.max])).toEqual([[.01,-1,1],[1,4,30],[.02,.45,5.8],[.05,1.4,8.5]]);
  });
+ it('switches only the runtime branch while preserving unfinished actions and resumed drift phases',()=>{
+  const retained=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'particles'}),control=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'particles'});
+  for(const r of [retained,control]){r.begin([start('noise_scale',4,30,1)]);r.interpolate(.5,false,.1);}
+  const before=retained.snapshot();retained.setBackend('gpu');expect(retained.snapshot()).toEqual({...before,backend:'gpu'});
+  for(const r of [retained,control])r.interpolate(.75,true,.2);
+  const gpu=retained.snapshot();retained.update(.8);expect(retained.snapshot()).toEqual(gpu);
+  retained.setBackend('cpu');expect(retained.snapshot()).toEqual(control.snapshot());retained.update(.3);control.update(.3);expect(retained.snapshot()).toEqual(control.snapshot());
+ });
+ it('rejects unknown backend boundaries and prevents reading failed mutable state',()=>{
+  expect(()=>new SourcePerlinParameterRuntime(null!)).toThrow(expect.objectContaining({code:'input'}));
+  const r=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'particles'});
+  expect(()=>r.setBackend('invalid' as 'cpu')).toThrow(expect.objectContaining({code:'input'}));
+  expect(()=>r.snapshot()).toThrow(expect.objectContaining({code:'failed'}));expect(()=>r.setBackend('gpu')).toThrow(expect.objectContaining({code:'failed'}));
+ });
  it('retains phase movement when a sub-epsilon setter change is skipped',()=>{
   const r=new SourcePerlinParameterRuntime({initial,backend:'cpu',style:'particles'});r.begin([start('noise_offset',-1,1,1e-8)]);r.interpolate(1,false,.25);
   expect(r.snapshot().values.noise_offset).toBe(0);expect(r.snapshot().children[0].parameters[0].phase).toBeGreaterThan(0);

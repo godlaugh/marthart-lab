@@ -62,13 +62,14 @@ export interface SourceProcessingOpenStrokeBuffers {
 export class SourceProcessingStrokeError extends Error {
  constructor(readonly code:'input'|'capacity'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceProcessingStrokeError';}
 }
-export const SOURCE_PROCESSING_OPEN_STROKE_LIMITS=Object.freeze({maxBufferBytes:MAX_BUFFER_BYTES,maxCacheVertices:32767});
-/** Source immediate P3D open POLYGON strokes. Index caches persist across these
- * shapes, while previous-edge state resets at every shape. A rollover join
- * deliberately uses the previous edge START color (addLineSegment3D PC 463).
- * Capacity accounts for all three vec4 arrays, uint16 indices and four 64-bit
- * cache counters. No point-count cap or zero-length simplification is applied. */
-export function sourceProcessingOpenStrokeBuffers(input:SourceProcessingOpenStrokeInput):SourceProcessingOpenStrokeBuffers {
+const OPEN_CACHE_VERTICES=32767;
+// Every edge emits at most three indices per vertex (including rollover joins).
+const OPEN_CACHE_INDICES=OPEN_CACHE_VERTICES*3;
+const OPEN_CHUNK_BYTES=OPEN_CACHE_VERTICES*48+OPEN_CACHE_INDICES*2+32;
+export const SOURCE_PROCESSING_OPEN_STROKE_LIMITS=Object.freeze({maxBufferBytes:MAX_BUFFER_BYTES,maxCacheVertices:OPEN_CACHE_VERTICES,maxChunkBufferBytes:OPEN_CHUNK_BYTES});
+type MutableStrokeCache={vertexOffset:number;indexOffset:number;vertexCount:number;indexCount:number};
+type OpenEdgeVisitor=(a:number,b:number,vertex:number,index:number,base:number,previous0:number,previous1:number,rollover:boolean,join:boolean)=>void;
+function prepareOpenStroke(input:SourceProcessingOpenStrokeInput){
  if(!input||typeof input!=='object')throw new SourceProcessingStrokeError('input','Missing Processing polygon stroke input.');
  const {positions:xyz,polygonOffsets,colors:rgba,rowMajor:m,lineWidth,isCancelled}=input;
  const check=()=>{if(isCancelled?.())throw new SourceProcessingStrokeError('cancelled','Processing stroke expansion cancelled.');};
@@ -84,35 +85,46 @@ export function sourceProcessingOpenStrokeBuffers(input:SourceProcessingOpenStro
   if(!Number.isFinite(rgba[i])||rgba[i]<0||rgba[i]>1)throw new SourceProcessingStrokeError('input','Processing stroke colors must be parsed normalized RGBA.');
  }
  const scaledWidth=F(F(lineWidth)*sourceProcessingTransformScale(m)),joins=!(scaledWidth<2),half=F(scaledWidth/2),negativeHalf=F(-scaledWidth/2);
- type EdgeVisitor=(a:number,b:number,vertex:number,index:number,base:number,previous0:number,previous1:number,rollover:boolean,join:boolean)=>void;
- const walk=(visit?:EdgeVisitor)=>{
-  const caches:{vertexOffset:number;indexOffset:number;vertexCount:number;indexCount:number}[]=[];
-  let vertex=0,index=0,flushVertexStart=0,cache:typeof caches[number]|undefined;
-  for(let polygon=0;polygon+1<polygonOffsets.length;polygon++){
-   check();
-   const start=polygonOffsets[polygon],end=polygonOffsets[polygon+1];
-   if(end-start<3)continue;
-   let previous0=-1,previous1=-1;
-   for(let a=start;a+1<end;a++){
-    if((a&1023)===0)check();
-    const join=joins&&previous0>=0;
-    const rollover=cache!==undefined&&cache.vertexCount+4+(join?1:0)>=32768;
-    if(!cache||rollover){cache={vertexOffset:vertex,indexOffset:index,vertexCount:0,indexCount:0};caches.push(cache);}
-    const base=cache.vertexCount,addedVertices=4+(join?(rollover?3:1):0),addedIndices=6+(join?6:0);
-    if((vertex+addedVertices)*48+(index+addedIndices)*2+caches.length*32>MAX_BUFFER_BYTES)throw new SourceProcessingStrokeError('capacity','Processing polygon expansion exceeds 256 MiB local capacity.');
-    visit?.(a,a+1,vertex,index,base,previous0,previous1,rollover,join);
-    vertex+=addedVertices;index+=addedIndices;cache.vertexCount+=addedVertices;cache.indexCount+=addedIndices;
-    previous0=base+2;previous1=base+3;
-   }
-   // endShape checks total tessellation size after the whole shape, not edge.
-   if(vertex-flushVertexStart>=32768){cache=undefined;flushVertexStart=vertex;}
+ return {input,check,joins,half,negativeHalf};
+}
+type PreparedOpenStroke=ReturnType<typeof prepareOpenStroke>;
+/** Single topology owner for complete allocation and bounded streaming. Cache
+ * close events preserve source rollover and endShape flush ordering. */
+function walkOpenStroke(prepared:PreparedOpenStroke,completeCapacity:boolean,visit?:OpenEdgeVisitor,close?:(cache:MutableStrokeCache)=>void){
+ const {input:{polygonOffsets},check,joins}=prepared;
+ let vertex=0,index=0,cacheCount=0,flushVertexStart=0,cache:MutableStrokeCache|undefined;
+ const finish=()=>{if(cache){check();close?.(cache);check();cache=undefined;}};
+ for(let polygon=0;polygon+1<polygonOffsets.length;polygon++){
+  check();
+  const start=polygonOffsets[polygon],end=polygonOffsets[polygon+1];
+  if(end-start<3)continue;
+  let previous0=-1,previous1=-1;
+  for(let a=start;a+1<end;a++){
+   if((a&1023)===0)check();
+   const join=joins&&previous0>=0;
+   const rollover=cache!==undefined&&cache.vertexCount+4+(join?1:0)>=32768;
+   if(!cache||rollover){finish();cache={vertexOffset:vertex,indexOffset:index,vertexCount:0,indexCount:0};cacheCount++;}
+   const base=cache.vertexCount,addedVertices=4+(join?(rollover?3:1):0),addedIndices=6+(join?6:0);
+   if(completeCapacity&&(vertex+addedVertices)*48+(index+addedIndices)*2+cacheCount*32>MAX_BUFFER_BYTES)throw new SourceProcessingStrokeError('capacity','Processing polygon expansion exceeds 256 MiB local capacity.');
+   visit?.(a,a+1,vertex,index,base,previous0,previous1,rollover,join);
+   vertex+=addedVertices;index+=addedIndices;cache.vertexCount+=addedVertices;cache.indexCount+=addedIndices;
+   previous0=base+2;previous1=base+3;
   }
-  return {caches,vertex,index};
- };
- const layout=walk();check();
- const positions=new Float32Array(layout.vertex*4),directions=new Float32Array(layout.vertex*4),colors=new Float32Array(layout.vertex*4),indices=new Uint16Array(layout.index);
+  // Source checks total tessellation size after the whole shape, not edge.
+  if(vertex-flushVertexStart>=32768){finish();flushVertexStart=vertex;}
+ }
+ finish();return {vertex,index};
+}
+function openStrokeWriter(prepared:PreparedOpenStroke,output:Omit<SourceProcessingOpenStrokeBuffers,'caches'>,local:boolean):OpenEdgeVisitor{
+ const {input:{positions:xyz,colors:rgba,rowMajor:m},half,negativeHalf}=prepared;
+ const {positions,directions,colors,indices}=output;
+ let localIndex=0;
  const color=(vertex:number,source:number)=>{for(let c=0;c<4;c++)colors[vertex*4+c]=rgba[source*4+c];};
- walk((a,b,vertex,index,base,previous0,previous1,rollover,join)=>{
+ return (a,b,globalVertex,globalIndex,base,previous0,previous1,rollover,join)=>{
+  const vertex=local?base:globalVertex;
+  if(local&&base===0)localIndex=0;
+  const index=local?localIndex:globalIndex;
+  localIndex+=6+(join?6:0);
   writeStrokeSegment(xyz,m,a,b,positions,directions,vertex,half,negativeHalf);
   color(vertex,a);color(vertex+1,a);color(vertex+2,b);color(vertex+3,b);
   indices.set([base,base+1,base+2,base+2,base+1,base+3],index);
@@ -128,8 +140,38 @@ export function sourceProcessingOpenStrokeBuffers(input:SourceProcessingOpenStro
    color(vertex+4,a);
    indices.set([base+4,previous0,base,base+4,previous1,base+1],index+6);
   }
+ };
+}
+function allocateOpenStroke(vertex:number,index:number){
+ return {positions:new Float32Array(vertex*4),directions:new Float32Array(vertex*4),colors:new Float32Array(vertex*4),indices:new Uint16Array(index)};
+}
+/** Complete source immediate P3D open POLYGON output. Capacity includes all
+ * three vec4 arrays, uint16 indices and four 64-bit cache counters. */
+export function sourceProcessingOpenStrokeBuffers(input:SourceProcessingOpenStrokeInput):SourceProcessingOpenStrokeBuffers {
+ const prepared=prepareOpenStroke(input),caches:MutableStrokeCache[]=[];
+ const layout=walkOpenStroke(prepared,true,undefined,cache=>caches.push(cache));prepared.check();
+ const output=allocateOpenStroke(layout.vertex,layout.index);
+ walkOpenStroke(prepared,true,openStrokeWriter(prepared,output,false));
+ prepared.check();return {...output,caches};
+}
+/** Synchronously consume one source index cache at a time, in draw order.
+ * Each chunk has one cache with zero offsets and source-local ushort indices.
+ * Array storage is reused after consume returns: upload/draw or copy before
+ * returning, and do not mutate input during consumption. No async callbacks.
+ * Capacity bounds retained input backing stores plus one work chunk at 256 MiB;
+ * expanded total is not retained or bounded. Cancellation or consumer failure
+ * propagates immediately; earlier chunks may already have been consumed. */
+export function forEachSourceProcessingOpenStrokeChunk(input:SourceProcessingOpenStrokeInput,consume:(chunk:SourceProcessingOpenStrokeBuffers)=>void):void {
+ const prepared=prepareOpenStroke(input);
+ if(typeof consume!=='function')throw new SourceProcessingStrokeError('input','Missing Processing stroke chunk consumer.');
+ const buffers=new Set([input.positions.buffer,input.colors.buffer,input.polygonOffsets.buffer]);
+ const retainedBytes=Array.from(buffers).reduce((sum,buffer)=>sum+buffer.byteLength,0)+16*8;
+ if(retainedBytes+OPEN_CHUNK_BYTES>MAX_BUFFER_BYTES)throw new SourceProcessingStrokeError('capacity','Processing stroke input and chunk exceed 256 MiB local capacity.');
+ const output=allocateOpenStroke(OPEN_CACHE_VERTICES,OPEN_CACHE_INDICES);
+ walkOpenStroke(prepared,false,openStrokeWriter(prepared,output,true),cache=>{
+  consume({positions:output.positions.subarray(0,cache.vertexCount*4),directions:output.directions.subarray(0,cache.vertexCount*4),colors:output.colors.subarray(0,cache.vertexCount*4),indices:output.indices.subarray(0,cache.indexCount),caches:[{vertexOffset:0,indexOffset:0,vertexCount:cache.vertexCount,indexCount:cache.indexCount}]});
  });
- check();return {positions,directions,colors,indices,caches:layout.caches};
+ prepared.check();
 }
 /** The boundary producer currently admits 3..200 points. This bound also keeps
  * one immediate shape below Processing's short-index cache rollover threshold.

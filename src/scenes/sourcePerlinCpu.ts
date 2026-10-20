@@ -68,7 +68,13 @@ export class SourcePerlinCpuSession{
       this.target=kind==='primary'?SourcePerlinCpuTarget.createSmoothed(options,8):new SourcePerlinCpuTarget({...options,samples:0});
       const model=this.model=new SourcePerlinCpuModel({config,sourceWidth:view.width,sourceHeight:view.height,curveCacheSamples:4,reserve:this.reserve,isCancelled:()=>this.cancelled?.()??false});this.constructions++;
       return{bind:()=>{throw new Error('原版 Perlin 不支持粒子跟踪');},
-       update:frame=>model.update(frame.time,frame.deltaTime),displayFrame:()=>model.draw({target:this.target!,kind,sourcePixelDensity:view.pixelDensity}),
+       update:frame=>model.update(frame.time,frame.deltaTime),displayFrame:(_frameIndex,final)=>{
+        // Nonaccumulating particle display only clears and draws the current
+        // retained trails. Intermediate cold-seek images have no consumer and
+        // no model/cache effects. Still execute every motion/color/trail update.
+        // Curve caches and accumulation retain display history and cannot skip.
+        if(final||config.display.accumulation||config.cpuStyle==='field-curves')model.draw({target:this.target!,kind,sourcePixelDensity:view.pixelDensity});
+       },
        setShowTrails:enabled=>model.setShowTrails(enabled),
        beginPerlinParameterActions:actions=>model.beginPerlinParameterActions(actions),interpolatePerlinParameterActions:(eased,finished,dt)=>model.interpolatePerlinParameterActions(eased,finished,dt),
        beginGradientActions:actions=>model.beginGradientActions(actions),interpolateGradientActions:(eased,finished)=>model.interpolateGradientActions(eased,finished),
