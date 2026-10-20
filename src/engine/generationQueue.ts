@@ -1,3 +1,4 @@
+import {snapshotGenerationInput} from './generationInput';
 import {retainsIteratedCompiler} from './iteratedIdentity';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
@@ -56,7 +57,7 @@ export class GenerationQueue {
     const previousNative=!!previous&&usesRootsNativePresentation(previous);
     const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
-    this.latest={scene,context:{...context,...(context.sourceBouncingView!==undefined?{sourceBouncingView:{...context.sourceBouncingView}}:{}),...(context.sourceBouncingFrame?{sourceBouncingFrame:{...context.sourceBouncingFrame}}:{}),...(context.sourcePerlinViewport?{sourcePerlinViewport:{...context.sourcePerlinViewport}}:{}),...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{})}};
+    this.latest={scene,context:snapshotGenerationInput(context)};
     // A recording leases this exact worker, including while begin is pending.
     // Keep only the newest editor request without cancelling that lease.
     if(this.recordingOwner){this.callbacks.busy(true);this.retryRecordingInBackground();return;}

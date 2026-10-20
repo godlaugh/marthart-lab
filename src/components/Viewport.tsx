@@ -1,3 +1,4 @@
+import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
 import {sourceQueuePresentedScene} from '../engine/sourceQueuePresentation';
 import {sourceBouncingViewFromCamera,type SourceBouncingView,type SourceBouncingNavigationEvent} from '../engine/sourceBouncingNavigation';
 import type {SourceBouncingCheckpoint} from '../engine/sourceBouncingReplay';
@@ -108,7 +109,7 @@ export const Viewport = forwardRef<
         if(configured){Object.assign(element.style,{width:fit.width+'px',height:fit.height+'px',left:fit.left+'px',top:fit.top+'px',right:'auto',bottom:'auto'});}
         else {for(const property of ['width','height','left','top','right','bottom'])element.style.removeProperty(property);}
         const width=Math.round(fit.width),height=Math.round(fit.height);
-        const sourceCamera=!!interaction.current.scene.sourceCamera||usesSourceBouncing(interaction.current.scene);
+        const sourceCamera=!!interaction.current.scene.sourceCamera||usesSourceBouncing(interaction.current.scene)||usesSourceSamilaSplat(interaction.current.scene);
         r.setSize(sourceCamera?width:fit.width,sourceCamera?height:fit.height,ratio.current);presented.current.appearance();
         if(width>0&&height>0)sizeCallback.current?.(width,height,configured,r.renderer.getPixelRatio());
       }catch(error){failed(error);}
@@ -256,7 +257,7 @@ export const Viewport = forwardRef<
   },[]);
   // Report every authored configuration change, even if its aspect is unchanged.
   // App binds a measurement to this exact pair before starting a new instance.
-  useEffect(()=>{refit.current?.();},[pixelRatio,scene.projectResolution?.width,scene.projectResolution?.height,!!scene.sourceCamera,sourceBouncing]);
+  useEffect(()=>{refit.current?.();},[pixelRatio,scene.projectResolution?.width,scene.projectResolution?.height,!!scene.sourceCamera,sourceBouncing,scene.settings.samilaSplatModel]);
   useEffect(() => {
     if (output&&renderer.current) {
       const changed = lastId.current !== source.id;

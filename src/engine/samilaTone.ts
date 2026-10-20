@@ -1,11 +1,12 @@
-import type {ControlSpec,Settings} from '../types';
+import {sourceSamilaFloat,sourceSamilaUsesPaletteLut} from './sourceSamilaSplat';
+import type {ControlSpec,Settings,Palette} from '../types';
 import {numberSetting} from './expression';
 
 /** Completed accumulator facts, never reconstructed from UI time or mass. */
 export interface SamilaToneFacts {
  kind:'samila';historyModel:'bounded-v2';width:number;height:number;
  completedPasses:number;baseBatchSize:number;alpha:number;combinedDecay:number;
- splat:{model:'local-feathered-disc-v1';radiusPixels:number};
+ splat:{model:'local-feathered-disc-v1';radiusPixels:number}|{model:'samila-splat-1.7.8';nominalRadius:number};
 }
 export interface SamilaNormalization extends SamilaToneFacts {nominalRadius:number;scale:number;}
 export type SamilaToneBranch='palette-average'|'yuv-average';
@@ -28,8 +29,8 @@ export function initializeSamilaTone(settings:Settings):Settings {
 export function samilaToneControlSettings(settings:Settings):Settings {
  return settings.densityToneModel==='samila-normalized-v2'?{...defaults,...settings}:settings;
 }
-export function parseSamilaToneBranch(settings:Settings):SamilaToneBranch {
- const branch=settings.samilaToneBranch??'palette-average';
+export function parseSamilaToneBranch(settings:Settings,palette?:Pick<Palette,'mode'>):SamilaToneBranch {
+ const branch=settings.samilaSplatModel==='samila-splat-1.7.8'?(sourceSamilaUsesPaletteLut(settings,palette??{mode:'linear'})?'palette-average':'yuv-average'):settings.samilaToneBranch??'palette-average';
  if(branch!=='palette-average'&&branch!=='yuv-average')throw new Error('Samila 调色分支无效');
  return branch;
 }
@@ -38,17 +39,18 @@ const dimension=(n:number)=>Number.isInteger(n)&&n>=1&&n<=16384;
  * nominal radius is explicitly adapted from the local disc's actual pixel
  * radius; native point/quad edge kernels are not claimed to be equivalent. */
 export function deriveSamilaNormalization(facts:SamilaToneFacts):SamilaNormalization {
- if(facts.kind!=='samila'||facts.historyModel!=='bounded-v2'||facts.splat?.model!=='local-feathered-disc-v1')throw new Error('Samila 归一调色需要 bounded-v2 累积事实');
+ if(facts.kind!=='samila'||facts.historyModel!=='bounded-v2'||!['local-feathered-disc-v1','samila-splat-1.7.8'].includes(facts.splat?.model))throw new Error('Samila 归一调色需要 bounded-v2 累积事实');
  if(!dimension(facts.width)||!dimension(facts.height)||!Number.isSafeInteger(facts.completedPasses)||facts.completedPasses<0||!Number.isSafeInteger(facts.baseBatchSize)||facts.baseBatchSize<1)throw new Error('Samila 归一调色批次或尺寸事实无效');
- if(![facts.alpha,facts.combinedDecay].every(v=>Number.isFinite(v)&&v>=0&&v<=1)||!Number.isFinite(facts.splat.radiusPixels)||facts.splat.radiusPixels<=0)throw new Error('Samila 归一调色权重、衰减或点半径无效');
- const nominalRadius=facts.splat.radiusPixels*1080/facts.height;
+ const source=facts.splat.model==='samila-splat-1.7.8',radius=facts.splat.model==='local-feathered-disc-v1'?facts.splat.radiusPixels:facts.splat.nominalRadius;
+ if(!Number.isFinite(facts.alpha)||(!source&&(facts.alpha<0||facts.alpha>1))||![facts.combinedDecay].every(v=>Number.isFinite(v)&&v>=0&&v<=1)||!Number.isFinite(radius)||(!source&&radius<=0))throw new Error('Samila 归一调色权重、衰减或点半径无效');
+ const nominalRadius=source?radius:radius*1080/facts.height;
  const b=facts.baseBatchSize*facts.alpha*Math.PI*nominalRadius*nominalRadius/(facts.width*facts.height);
  let scale=b*Math.sqrt(Math.max(1,facts.completedPasses)*60);
  // This threshold is the retained source float constant; the independent
  // calculation otherwise uses double and GPU consumes the single parsed scale.
  if(facts.combinedDecay<Math.fround(.999))scale=Math.min(scale,Math.min(b/Math.max(1-facts.combinedDecay,1e-10),300)/8);
- if(!Number.isFinite(scale)||!Number.isFinite(nominalRadius))throw new Error('Samila 归一调色尺度超出有限范围');
- return{...facts,splat:{...facts.splat},nominalRadius,scale:Math.max(scale,1e-8)};
+ if(!Number.isFinite(scale)||(source&&!Number.isFinite(Math.fround(scale)))||!Number.isFinite(nominalRadius))throw new Error('Samila 归一调色尺度超出有限范围');
+ return{...facts,splat:{...facts.splat},nominalRadius,scale:source?Math.max(Math.fround(scale),Math.fround(1e-8)):Math.max(scale,1e-8)};
 }
 /** Positive source Samila limit. Map/Symmetry intentionally retain their own
  * complemented curve. Softplus avoids overflow for extreme finite densities. */
@@ -59,10 +61,10 @@ export function samilaDensityValue(logDensity:number,contrast:number,brightness:
  const limited=Math.exp(-k*(Math.max(x,0)+Math.log1p(Math.exp(-Math.abs(x)))));
  return .5+.5*Math.sign(q)*limited;
 }
-export function samilaToneParameters(settings:Settings){
+export function samilaToneParameters(settings:Settings,palette?:Pick<Palette,'mode'>){
  if(settings.samilaHistoryModel!=='bounded-v2')throw new Error('Samila 归一调色需要先启用 bounded-v2 历史');
- const read=(name:keyof typeof samilaToneParameterSpecs)=>{const p=samilaToneParameterSpecs[name];return numberSetting(settings,p.key,p.fallback,p.min,p.max);};
- return{branch:parseSamilaToneBranch(settings),brightness:read('brightness'),contrast:read('contrast'),gamma:read('gamma'),dynamicRange:read('dynamicRange'),saturation:read('saturation')};
+ const read=(name:keyof typeof samilaToneParameterSpecs)=>{const p=samilaToneParameterSpecs[name];return settings.samilaSplatModel==='samila-splat-1.7.8'?sourceSamilaFloat(settings,p.key,p.fallback):numberSetting(settings,p.key,p.fallback,p.min,p.max);};
+ return{branch:parseSamilaToneBranch(settings,palette),brightness:read('brightness'),contrast:read('contrast'),gamma:settings.samilaSplatModel==='samila-splat-1.7.8'?Math.max(sourceSamilaFloat(settings,'normalizedGamma',2.2),Math.fround(.001)):read('gamma'),dynamicRange:read('dynamicRange'),saturation:read('saturation')};
 }
 const n=(key:string,label:string,min:number,max:number,step:number,help?:string):ControlSpec=>({key,label,type:'number',min,max,step,help,group:'Samila 归一调色'});
 export const samilaToneControls:ControlSpec[]=[

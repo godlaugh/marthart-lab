@@ -22,6 +22,15 @@ const rootsOutput:Extract<SceneOutput,{type:'raster'}>={...output,rootsPresentat
 function setup(){FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);return new Generator();}
 afterEach(()=>vi.unstubAllGlobals());
 describe('generation status protocol ownership',()=>{
+ it('preserves source Samila primary height through direct Worker requests',async()=>{
+  for(const height of [undefined,1080,0,NaN]){
+   const g=setup(),s=createScene(definition('samila')),pending=g.generate(s,{...ctx,samilaPrimaryPixelHeight:height}),worker=FakeWorker.instances[0],request=worker.messages[0];
+   expect(request.operation).toBe('generate');if(request.operation!=='generate')throw Error('request');
+   expect(Object.hasOwn(request.context,'samilaPrimaryPixelHeight')).toBe(height!==undefined);expect(request.context.samilaPrimaryPixelHeight).toBe(height);
+   worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});await pending;g.dispose();
+  }
+ });
+
  it('preserves source fractal logical-size presence, including malformed values, for the owning worker validator',async()=>{
   for(const raw of [undefined,null,false,{logicalWidth:null,logicalHeight:97,target:'primary'}, {logicalWidth:257,logicalHeight:193,target:'offscreen'}]){
    const g=setup(),s=createScene(definition('fractal')),pending=g.generate(s,{...ctx,fractalViewport:raw as unknown as GenerationInput['fractalViewport']}),worker=FakeWorker.instances[0],request=worker.messages[0];

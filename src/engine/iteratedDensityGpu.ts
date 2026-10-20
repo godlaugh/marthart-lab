@@ -1,3 +1,4 @@
+import {sourceSamilaNoiseLut,sourceSamilaPaletteLut,sourceSamilaPointDiameter} from './sourceSamilaSplat';
 import {SAMILA_NDC_POSITION_GLSL} from './samilaProjection';
 import {isCapturedDensityView,type PreparedDensityView} from './densityPresentation';
 import type {DensityBounds,DensityProjection} from '../types';
@@ -16,7 +17,7 @@ import {SAMILA_HISTORY_CEILING} from './samilaHistory';
 export interface IteratedGpuOptions {resetParticles:boolean;clearInk:boolean;width:number;height:number;projection:DensityProjection;padding:number;bounds?:DensityBounds;isCancelled?:()=>boolean;}
 export interface IteratedGpuFacts {bounds:DensityBounds;steps:number;invalid:number;accepted:number;clipped:number;sampleInvalid:number;}
 interface Program {value:WebGLProgram;locations:Map<string,WebGLUniformLocation|null>;customBindingsChecked?:boolean;}
-interface Resources {count:number;capacity:number;tw:number;th:number;width:number;height:number;positions:WebGLBuffer[];counters:WebGLBuffer[];stateTextures:WebGLTexture[];counterTextures:WebGLTexture[];storage:'buffer'|'texture';ink:WebGLTexture;inkScratch?:WebGLTexture;palette:WebGLTexture;noise:WebGLTexture;floatReduce:WebGLTexture[];uintReduce:WebGLTexture[];framebuffer:WebGLFramebuffer;feedback:WebGLTransformFeedback;vao:WebGLVertexArrayObject;drawVao:WebGLVertexArrayObject;side:number;bytes:number;}
+interface Resources {sourceNoise?:WebGLTexture;sourcePalette?:WebGLTexture;splatPath?:'points'|'quad';paletteKey?:string;count:number;capacity:number;tw:number;th:number;width:number;height:number;positions:WebGLBuffer[];counters:WebGLBuffer[];stateTextures:WebGLTexture[];counterTextures:WebGLTexture[];storage:'buffer'|'texture';ink:WebGLTexture;inkScratch?:WebGLTexture;palette:WebGLTexture;noise:WebGLTexture;floatReduce:WebGLTexture[];uintReduce:WebGLTexture[];framebuffer:WebGLFramebuffer;feedback:WebGLTransformFeedback;vao:WebGLVertexArrayObject;drawVao:WebGLVertexArrayObject;side:number;bytes:number;}
 const HEADER='#version 300 es\nprecision highp float;precision highp int;precision highp sampler2D;precision highp usampler2D;\n';
 // Bit classification also survives fast-math shader compilation. ANGLE Metal's
 // program-cache path can lose its isnan/isinf compile flag; use one explicit
@@ -33,12 +34,12 @@ function checkBounds(b:DensityBounds){checked([b.minX,b.maxX,b.minY,b.maxY].ever
 const checkCancelled=(f?:()=>boolean)=>{if(f?.())throw new DOMException('GPU 持续密度已取消','AbortError');};
 /** Structural estimate includes every resident buffer/texture, two reduction
  * formats and a final image readback. It excludes driver/program overhead. */
-export function iteratedGpuBytes(count:number,width:number,height:number,textureWidth=2048,boundedHistory=false,customStorage=false):number {
- checked(typeof boundedHistory==='boolean'&&typeof customStorage==='boolean','GPU 历史模型容量标记无效');
+export function iteratedGpuBytes(count:number,width:number,height:number,textureWidth=2048,boundedHistory=false,customStorage=false,sourceSplat=false):number {
+ checked(typeof sourceSplat==='boolean'&&typeof boundedHistory==='boolean'&&typeof customStorage==='boolean','GPU 历史模型容量标记无效');
  checked(Number.isInteger(count)&&count>0&&count<=8_000_000,'GPU 粒子数须为 1–8000000');
  checked([width,height,textureWidth].every(n=>Number.isInteger(n)&&n>0&&n<=16384),'GPU 密度尺寸无效');
  const tw=Math.min(textureWidth,count),th=Math.ceil(count/tw),capacity=tw*th,reduce=Math.ceil(tw/2)*Math.ceil(th/2);
- return capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
+ return (sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
 }
 export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';}
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
@@ -98,8 +99,8 @@ const BOUNDS_FIRST=HEADER+TRANSFORM+`uniform sampler2D states;uniform usampler2D
 void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;vec4 bounds=vec4(3.402823466e38,-3.402823466e38,3.402823466e38,-3.402823466e38);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;vec4 state=texelFetch(states,p,0);vec3 t=transformed(state.xyz);if(invalidPosition(state,t,texelFetch(counters,p,0).g))continue;bounds.x=min(bounds.x,t[axes.x]);bounds.y=max(bounds.y,t[axes.x]);bounds.z=min(bounds.z,t[axes.y]);bounds.w=max(bounds.w,t[axes.y]);}result=bounds;}`;
 const BOUNDS_REDUCE=HEADER+`uniform sampler2D values;uniform ivec2 sourceSize;out vec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;vec4 b=vec4(3.402823466e38,-3.402823466e38,3.402823466e38,-3.402823466e38);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize)))continue;vec4 v=texelFetch(values,p,0);b=vec4(min(b.x,v.x),max(b.y,v.y),min(b.z,v.z),max(b.w,v.w));}result=b;}`;
 const SUM=`uvec4 sum(uvec4 a,uvec4 b){uint lo=a.x+b.x;return uvec4(lo,a.y+b.y+uint(lo<a.x),a.z+b.z,a.w+b.w);}`;
-const STATS_FIRST=HEADER+TRANSFORM+SUM+`uniform sampler2D states;uniform usampler2D counters;uniform ivec2 sourceSize,size;uniform int count,recording;uniform vec4 bounds;uniform float radius;out uvec4 result;
-void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uvec4 total=uvec4(0);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;vec4 state=texelFetch(states,p,0);vec3 t=transformed(state.xyz);uvec2 metadata=texelFetch(counters,p,0).rg;uint invalid=metadata.r,accepted=0u,clipped=0u;if(recording==1&&(metadata.g&1u)!=0u){vec2 projected;if(invalidPosition(state,t,metadata.g))invalid++;else if(!densityPosition(t,projected))clipped++;else{vec2 pixel=vec2((projected.x-bounds.x)/(bounds.y-bounds.x),(bounds.w-projected.y)/(bounds.w-bounds.z))*vec2(size)-.5;vec2 lo=max(vec2(0),ceil(pixel-radius-.5)),hi=min(vec2(size)-1.,floor(pixel+radius+.5));if(any(greaterThan(lo,hi)))clipped=1u;else accepted=1u;}}total=sum(total,uvec4(invalid,0u,accepted,clipped));}result=total;}`;
+const STATS_FIRST=HEADER+TRANSFORM+SUM+`uniform sampler2D states;uniform usampler2D counters;uniform ivec2 sourceSize,size;uniform int count,recording,sourcePointClip;uniform vec4 bounds;uniform float radius;out uvec4 result;
+void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uvec4 total=uvec4(0);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;vec4 state=texelFetch(states,p,0);vec3 t=transformed(state.xyz);uvec2 metadata=texelFetch(counters,p,0).rg;uint invalid=metadata.r,accepted=0u,clipped=0u;if(recording==1&&(metadata.g&1u)!=0u){vec2 projected;if(invalidPosition(state,t,metadata.g))invalid++;else if(!densityPosition(t,projected))clipped++;else if(sourcePointClip!=0&&any(greaterThan(abs(projected),vec2(1.))))clipped++;else{vec2 pixel=vec2((projected.x-bounds.x)/(bounds.y-bounds.x),(bounds.w-projected.y)/(bounds.w-bounds.z))*vec2(size)-.5;vec2 lo=max(vec2(0),ceil(pixel-radius-.5)),hi=min(vec2(size)-1.,floor(pixel+radius+.5));if(any(greaterThan(lo,hi)))clipped=1u;else accepted=1u;}}total=sum(total,uvec4(invalid,0u,accepted,clipped));}result=total;}`;
 const STATS_REDUCE=HEADER+SUM+`uniform usampler2D values;uniform ivec2 sourceSize;out uvec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uvec4 total=uvec4(0);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize)))continue;total=sum(total,texelFetch(values,p,0));}result=total;}`;
 const CUSTOM_ERRORS_FIRST=HEADER+`uniform usampler2D counters;uniform ivec2 sourceSize;uniform int count;out uvec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uint flags=0u;for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;flags|=texelFetch(counters,p,0).g&2u;}result=uvec4(flags,0u,0u,0u);}`;
 const CUSTOM_ERRORS_REDUCE=HEADER+`uniform usampler2D values;uniform ivec2 sourceSize;out uvec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uint flags=0u;for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize)))continue;flags|=texelFetch(values,p,0).r;}result=uvec4(flags,0u,0u,0u);}`;
@@ -113,12 +114,29 @@ center=vec2((projected.x-bounds.x)/(bounds.y-bounds.x),(projected.y-bounds.z)/(b
 vec2 corners[6]=vec2[6](vec2(-1.,-1.),vec2(1.,-1.),vec2(-1.,1.),vec2(-1.,1.),vec2(1.,-1.),vec2(1.,1.));vec2 pixel=center+corners[gl_VertexID]*(radius+.5);gl_Position=vec4(pixel/vec2(size)*2.-1.,0.,1.);}`;
 const DRAW_FRAGMENT=HEADER+`flat in vec2 center;flat in vec3 tint;uniform float radius,alpha;out vec4 result;void main(){float mass=clamp(radius+.5-length(gl_FragCoord.xy-center),0.,1.)*alpha;result=vec4(tint*mass,mass);}`;
 
+const SOURCE_DRAW_VERTEX=HEADER+TRANSFORM+`
+uniform sampler2D states,noiseLUT,palette;uniform usampler2D counters;uniform int stateWidth,particleOffset;uniform ivec2 size;uniform float radius,colorPhase;uniform bool quadSplat,usePaletteLut;
+out vec2 localPoint;flat out vec3 tint;flat out float localRadius,diameter;
+void main(){int id=particleOffset+gl_InstanceID;ivec2 at=ivec2(id%stateWidth,id/stateWidth);vec4 particle=texelFetch(states,at,0);vec3 p=transformed(particle.xyz);vec2 ndc;
+if(invalidPosition(particle,p,texelFetch(counters,at,0).g)||!densityPosition(p,ndc)){gl_Position=vec4(2.,2.,0.,1.);gl_PointSize=1.;localPoint=vec2(0.);localRadius=0.;diameter=1.;tint=vec3(0.);return;}
+float n=texture(noiseLUT,ndc*.1+.5).r;n=isnan(n)?0.:n;n*=.5;float u=clamp((n+.5*.85)/(.5*1.7),0.,1.);tint=usePaletteLut?texture(palette,vec2(u,.5)).rgb:.5+.5*cos(6.283185307179586*(vec3(u)-vec3(0.,1./3.,2./3.))-colorPhase);
+vec2 corners[6]=vec2[6](vec2(-1.,-1.),vec2(1.,-1.),vec2(-1.,1.),vec2(-1.,1.),vec2(1.,-1.),vec2(1.,1.));
+diameter=quadSplat?max(radius*.6,.8):max(radius,1.);localRadius=quadSplat?1.:min(radius,1.);localPoint=quadSplat?corners[gl_VertexID]:vec2(0.);gl_PointSize=max(radius,1.);gl_Position=vec4(ndc+(quadSplat?localPoint*diameter*.5*2./vec2(size):vec2(0.)),0.,1.);}`;
+const SOURCE_DRAW_FRAGMENT=HEADER+`
+in vec2 localPoint;flat in vec3 tint;flat in float localRadius,diameter;uniform float alpha;uniform bool quadSplat;out vec4 result;
+void main(){vec2 p=quadSplat?localPoint:gl_PointCoord*2.-1.;float dist=length(p),r=quadSplat?1.:max(localRadius,.01);if(dist>(quadSplat?1.35:r))discard;
+float mass=quadSplat?(1.-smoothstep(-.75,.75,(dist-1.)*max(diameter*.5,.4)))*exp(-.45*dot(p,p))*alpha:(1.-smoothstep(r*.75,r,dist))*alpha;
+// Explicit permutation of native (mass,rgbMass) into local (rgbMass,mass).
+result=vec4(tint*mass,mass);}`;
+const POINT_PROBE_VERTEX=HEADER+`void main(){gl_Position=vec4(0.,0.,0.,1.);gl_PointSize=32.;}`;
+const POINT_PROBE_FRAGMENT=HEADER+`out vec4 result;void main(){vec2 p=gl_PointCoord*2.-1.;if(dot(p,p)>1.)discard;result=vec4(1.);}`;
+
 /** One worker session owns all GPU resources. It never samples timeline time or
  * parses Settings. A failed frame destroys partial state. The session may replay
  * built-in fields on CPU; custom GLSL is an explicit error, never a built-in substitute. */
 export class IteratedDensityGpu {
  private tone?:DensityGpuTone;private gl?:WebGL2RenderingContext;private programs=new Map<string,Program>();private resources?:Resources;private bounds?:DensityBounds;private structuralKey='';private frame=-1;
- diagnostics(){const r=this.resources;return{retainedBytes:r?r.bytes-r.width*r.height*16-r.width*16-(PALETTE_INTERVALS+1)*16-CHUNK*16-256-densityGpuToneBytes()+(this.tone?.diagnostics().retainedBytes??0):0,estimatedPeakBytes:r?.bytes??0,frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r?.count??0};}
+ diagnostics(){const r=this.resources;return{retainedBytes:r?r.bytes+(r.sourceNoise?256*256*4+1024*3*4:0)-r.width*r.height*16-r.width*16-(PALETTE_INTERVALS+1)*16-CHUNK*16-256-densityGpuToneBytes()+(this.tone?.diagnostics().retainedBytes??0):0,estimatedPeakBytes:r?r.bytes+(r.sourceNoise?256*256*4*2+1024*3*4*2:0):0,frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r?.count??0};}
  private context(){
   if(this.gl?.isContextLost()){this.reset();throw new Error('GPU 持续密度上下文已丢失');}
   if(!this.gl){checked(typeof OffscreenCanvas!=='undefined','OffscreenCanvas 不可用');const gl=new OffscreenCanvas(1,1).getContext('webgl2',{antialias:false,depth:false,alpha:false});checked(Boolean(gl),'WebGL2 不可用');this.gl=gl!;checked(Boolean(gl!.getExtension('EXT_color_buffer_float')),'GPU 缺少 EXT_color_buffer_float');checked(Boolean(gl!.getExtension('EXT_float_blend')),'GPU 缺少 EXT_float_blend');}
@@ -198,6 +216,20 @@ export class IteratedDensityGpu {
  step(job:IteratedFrameJob,options:IteratedGpuOptions):IteratedGpuFacts {
   try{return this.run(job,options);}catch(e){this.reset();throw e;}
  }
+ private prepareSourceSplat(job:IteratedFrameJob,cancel?:()=>boolean){
+  const gl=this.gl!,r=this.resources!,facts=job.samilaSplat;if(!facts)return;checked(r.bytes+256*256*4*2+1024*3*4*2<=MAX_BYTES,'源 Samila LUT 超过 768 MiB 工作预算');
+  if(!r.splatPath){
+   // The source resolves primitive support by drawing sixteen points and reading
+   // finite positive mass, not by trusting ALIASED_POINT_SIZE_RANGE.
+   let drained=false;for(let i=0;i<16;i++){checkCancelled(cancel);checked(!gl.isContextLost(),'源 Samila 探针上下文已丢失');if(gl.getError()===gl.NO_ERROR){drained=true;break;}}checked(drained,'源 Samila 探针无法清除 GL 错误');const p=this.program('source-point-probe',POINT_PROBE_VERTEX,POINT_PROBE_FRAGMENT);this.target(r.ink,r.width,r.height);gl.clearBufferfv(gl.COLOR,0,new Float32Array(4));gl.useProgram(p.value);gl.bindVertexArray(r.drawVao);gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.ONE,gl.ONE);gl.drawArrays(gl.POINTS,0,16);gl.disable(gl.BLEND);
+   const tw=Math.min(256,r.width),th=Math.min(256,r.height),data=new Float32Array(tw*th*4);let positive=false;for(let y=0;y<r.height;y+=th)for(let x=0;x<r.width;x+=tw){checkCancelled(cancel);const w=Math.min(tw,r.width-x),h=Math.min(th,r.height-y);gl.readPixels(x,y,w,h,gl.RGBA,gl.FLOAT,data);for(let i=0;i<w*h*4;i+=4)if(Number.isFinite(data[i])&&data[i]>0)positive=true;}const ok=gl.getError()===gl.NO_ERROR&&positive;r.splatPath=ok?'points':'quad';gl.clearBufferfv(gl.COLOR,0,new Float32Array(4));gl.bindVertexArray(null);
+  }
+  facts.path=r.splatPath;
+  checked(Boolean(gl.getExtension('OES_texture_float_linear')),'源 Samila 需要 OES_texture_float_linear');
+  if(!r.sourceNoise){const texture=gl.createTexture();checked(Boolean(texture),'源 Samila noise texture 分配失败');r.sourceNoise=texture!;this.texture(texture!,3);gl.texImage2D(gl.TEXTURE_2D,0,gl.R32F,256,256,0,gl.RED,gl.FLOAT,sourceSamilaNoiseLut());for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,gl.LINEAR);for(const name of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,name,gl.CLAMP_TO_EDGE);}
+  const key=JSON.stringify(job.palette);if(r.paletteKey!==key){const values=sourceSamilaPaletteLut(job.palette);if(!r.sourcePalette){r.sourcePalette=gl.createTexture()??undefined;checked(Boolean(r.sourcePalette),'源 Samila palette texture 分配失败');}this.texture(r.sourcePalette!,2);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,1024,1,0,gl.RGB,gl.FLOAT,values);for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);r.paletteKey=key;}
+  checked(gl.getError()===gl.NO_ERROR,'源 Samila LUT 准备失败');
+ }
  private run(job:IteratedFrameJob,options:IteratedGpuOptions):IteratedGpuFacts {
   checkCancelled(options.isCancelled);const source=iteratedGpuFieldSource(job.field);const cfg=job.config;checked(['map','symmetry','samila'].includes(job.kind),'GPU 持续密度类型无效');const customStorage=job.field.kind==='symmetry-custom',samila=job.kind==='samila',boundedHistory=samila&&cfg.samilaHistoryModel==='bounded-v2',history=job.history;
   checked(!history||boundedHistory,'GPU 历史规则与模型不匹配');
@@ -210,6 +242,7 @@ export class IteratedDensityGpu {
   let r=this.resources;const mismatch=!r||r.count!==cfg.count||r.width!==options.width||r.height!==options.height||Boolean(r.inkScratch)!==boundedHistory||(r.storage==='texture')!==customStorage;
   checked(!mismatch||options.resetParticles,'GPU 状态尺寸变化需要 resetParticles');checked(options.resetParticles||this.structuralKey===job.structuralKey,'GPU 状态结构变化需要重置');checked(options.resetParticles||job.frame===this.frame+1,'GPU 状态仅允许顺序推进；seek 必须由会话重放');
   if(mismatch)this.allocate(cfg.count,options.width,options.height,boundedHistory,customStorage);r=this.resources!;
+  this.prepareSourceSplat(job,options.isCancelled);
   if(options.clearInk||options.resetParticles){this.target(r.ink,r.width,r.height);gl.clearBufferfv(gl.COLOR,0,new Float32Array(4));}
   if(options.resetParticles&&!samila){
    for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const initial=iteratedInitialChunk(cfg,offset,Math.min(CHUNK,cfg.count-offset));this.uploadInitial(initial,offset);}
@@ -233,13 +266,13 @@ export class IteratedDensityGpu {
   if(!samila||cfg.record){this.iterate(job,source,cfg.iterations,samila?0:cfg.burn+1+job.frame*16,samila||!options.resetParticles,options.isCancelled);this.uploadState();}
   if(customStorage){const errors=this.reduce(this.program('custom-errors-first',QUAD,CUSTOM_ERRORS_FIRST),this.program('custom-errors-reduce',QUAD,CUSTOM_ERRORS_REDUCE),true,()=>{},options.isCancelled);checked(errors[0]===0,'自定义对称公式超过单次调用的循环工作预算');}
   if(job.sourceCamera||job.samilaProjection)this.bounds={minX:-1,maxX:1,minY:-1,maxY:1};else if(options.bounds)this.bounds={...options.bounds};else if(!this.bounds||job.frame===0&&pass===0)this.bounds=samila&&!cfg.record?{minX:-options.width/options.height,maxX:options.width/options.height,minY:-1,maxY:1}:this.autoBounds(job,options);const bounds=this.bounds!;
-  const stat=samila&&!cfg.record?new Uint32Array(4):this.reduce(this.program('stats-first',QUAD,STATS_FIRST),this.program('stats-reduce',QUAD,STATS_REDUCE),true,p=>{this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r!.width,r!.height);this.f(p,'radius',cfg.pointSize/2);this.i(p,'recording',cfg.record?1:0);},options.isCancelled);
+  const stat=samila&&!cfg.record?new Uint32Array(4):this.reduce(this.program('stats-first',QUAD,STATS_FIRST),this.program('stats-reduce',QUAD,STATS_REDUCE),true,p=>{this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r!.width,r!.height);this.f(p,'radius',job.samilaSplat?sourceSamilaPointDiameter(job.samilaSplat)/2-.5:cfg.pointSize/2);this.i(p,'recording',cfg.record?1:0);this.i(p,'sourcePointClip',job.samilaSplat?.path==='points'?1:0);},options.isCancelled);
 
   if(cfg.record){
-   const p=this.program('draw',DRAW_VERTEX,DRAW_FRAGMENT);gl.useProgram(p.value);this.target(r.ink,r.width,r.height);this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r.width,r.height);this.i(p,'count',cfg.count);this.f(p,'radius',cfg.pointSize/2);this.f(p,'alpha',cfg.alpha);this.f(p,'metricMin',cfg.metricMin);this.f(p,'metricRange',cfg.metricMax-cfg.metricMin);this.i(p,'metricMode',cfg.metricMode==='robust'?1:0);this.i(p,'colorMode',['step','index','radius','angle','height','noise'].indexOf(cfg.color));this.f(p,'colorSpeed',cfg.colorSpeed);this.f(p,'colorPhase',cfg.colorPhase);this.f(p,'paletteCycles',job.palette.cycles);this.f(p,'paletteOffset',job.palette.offset);
-   const colors=new Float32Array((PALETTE_INTERVALS+1)*4);for(let i=0;i<=PALETTE_INTERVALS;i++){colors.set(paletteBaseColor(job.palette,i/PALETTE_INTERVALS),i*4);colors[i*4+3]=1;}this.texture(r.palette,2);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,PALETTE_INTERVALS+1,1,gl.RGBA,gl.FLOAT,colors);this.i(p,'palette',2);this.texture(r.noise,3);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,256,1,gl.RED_INTEGER,gl.UNSIGNED_BYTE,createNoisePermutation(cfg.seed));this.i(p,'noisePermutation',3);
+   const sourceSplat=job.samilaSplat,p=sourceSplat?this.program('source-samila-draw',SOURCE_DRAW_VERTEX,SOURCE_DRAW_FRAGMENT):this.program('draw',DRAW_VERTEX,DRAW_FRAGMENT);gl.useProgram(p.value);this.target(r.ink,r.width,r.height);this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r.width,r.height);this.i(p,'count',cfg.count);this.f(p,'radius',sourceSplat?.radius??cfg.pointSize/2);this.i(p,'quadSplat',sourceSplat?.path==='quad'?1:0);this.i(p,'usePaletteLut',cfg.sourcePaletteLut?1:0);this.f(p,'alpha',cfg.alpha);this.f(p,'metricMin',cfg.metricMin);this.f(p,'metricRange',cfg.metricMax-cfg.metricMin);this.i(p,'metricMode',cfg.metricMode==='robust'?1:0);this.i(p,'colorMode',['step','index','radius','angle','height','noise'].indexOf(cfg.color));this.f(p,'colorSpeed',cfg.colorSpeed);this.f(p,'colorPhase',cfg.colorPhase);this.f(p,'paletteCycles',job.palette.cycles);this.f(p,'paletteOffset',job.palette.offset);
+   if(sourceSplat){this.texture(r.sourcePalette!,2);this.i(p,'palette',2);this.texture(r.sourceNoise!,3);this.i(p,'noiseLUT',3);}else{const colors=new Float32Array((PALETTE_INTERVALS+1)*4);for(let i=0;i<=PALETTE_INTERVALS;i++){colors.set(paletteBaseColor(job.palette,i/PALETTE_INTERVALS),i*4);colors[i*4+3]=1;}this.texture(r.palette,2);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,PALETTE_INTERVALS+1,1,gl.RGBA,gl.FLOAT,colors);this.i(p,'palette',2);this.texture(r.noise,3);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,256,1,gl.RED_INTEGER,gl.UNSIGNED_BYTE,createNoisePermutation(cfg.seed));this.i(p,'noisePermutation',3);}
    gl.bindVertexArray(r.drawVao);this.texture(this.stateTexture(),0);this.i(p,'states',0);this.texture(this.counterTexture(),1);this.i(p,'counters',1);this.i(p,'stateWidth',r.tw);gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.ONE,gl.ONE);
-   try{for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);this.i(p,'particleOffset',offset);gl.drawArraysInstanced(gl.TRIANGLES,0,6,Math.min(CHUNK,cfg.count-offset));}}finally{gl.disable(gl.BLEND);gl.bindVertexArray(null);}
+   try{for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);this.i(p,'particleOffset',offset);gl.drawArraysInstanced(sourceSplat?.path==='points'?gl.POINTS:gl.TRIANGLES,0,sourceSplat?.path==='points'?1:6,Math.min(CHUNK,cfg.count-offset));}}finally{gl.disable(gl.BLEND);gl.bindVertexArray(null);}
   }
    invalid+=stat[0]+stat[1]*4294967296;accepted+=stat[2];clipped+=stat[3];sampleInvalid+=cfg.record?cfg.count-stat[2]-stat[3]:0;
   }
@@ -270,7 +303,7 @@ export class IteratedDensityGpu {
    checked(gl.getError()===gl.NO_ERROR&&!gl.isContextLost(),'GPU 粒子回读失败');return{positionsAndMetric,invalidCounts,validity};
   }catch(e){this.reset();throw e;}
  }
- private releaseResources(){this.tone?.dispose();this.tone=undefined;const gl=this.gl,r=this.resources;if(gl&&r){r.positions.forEach(b=>gl.deleteBuffer(b));r.counters.forEach(b=>gl.deleteBuffer(b));[...r.stateTextures,...r.counterTextures,r.ink,...(r.inkScratch?[r.inkScratch]:[]),r.palette,r.noise,...r.floatReduce,...r.uintReduce].forEach(t=>gl.deleteTexture(t));gl.deleteFramebuffer(r.framebuffer);gl.deleteTransformFeedback(r.feedback);gl.deleteVertexArray(r.vao);gl.deleteVertexArray(r.drawVao);}this.resources=undefined;this.bounds=undefined;this.structuralKey='';this.frame=-1;}
+ private releaseResources(){this.tone?.dispose();this.tone=undefined;const gl=this.gl,r=this.resources;if(gl&&r){r.positions.forEach(b=>gl.deleteBuffer(b));r.counters.forEach(b=>gl.deleteBuffer(b));[...r.stateTextures,...r.counterTextures,r.ink,...(r.inkScratch?[r.inkScratch]:[]),r.palette,r.noise,...(r.sourceNoise?[r.sourceNoise]:[]),...(r.sourcePalette?[r.sourcePalette]:[]),...r.floatReduce,...r.uintReduce].forEach(t=>gl.deleteTexture(t));gl.deleteFramebuffer(r.framebuffer);gl.deleteTransformFeedback(r.feedback);gl.deleteVertexArray(r.vao);gl.deleteVertexArray(r.drawVao);}this.resources=undefined;this.bounds=undefined;this.structuralKey='';this.frame=-1;}
  reset(){this.releaseResources();const gl=this.gl;if(gl){gl.useProgram(null);for(const p of this.programs.values())gl.deleteProgram(p.value);this.programs.clear();gl.getExtension('WEBGL_lose_context')?.loseContext();}this.gl=undefined;}
  dispose(){this.reset();}
 }

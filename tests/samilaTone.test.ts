@@ -5,7 +5,7 @@ import {prepareDensityGpuTone} from '../src/engine/densityGpuTone';
 import {normalizedDensityValue} from '../src/engine/densityNormalization';
 import type {Palette,Settings} from '../src/types';
 const palette:Palette={name:'test',mode:'linear',stops:['#ff0000','#0000ff'],cycles:1,offset:0};
-const facts:SamilaToneFacts={kind:'samila',historyModel:'bounded-v2',width:1080,height:1080,completedPasses:1,baseBatchSize:1000,alpha:.1,combinedDecay:1,splat:{model:'local-feathered-disc-v1',radiusPixels:1}};
+const facts:SamilaToneFacts & {splat:{model:'local-feathered-disc-v1';radiusPixels:number}}={kind:'samila',historyModel:'bounded-v2',width:1080,height:1080,completedPasses:1,baseBatchSize:1000,alpha:.1,combinedDecay:1,splat:{model:'local-feathered-disc-v1',radiusPixels:1}};
 const settings=(extra:Settings={})=>({...initializeSamilaTone({iteratedMode:'continuous'}),...extra});
 function unitJob(extra:Settings={}):DensityToneJob {const job=prepareDensityTone(palette,settings({normalizedBrightness:.5,normalizedDynamicRange:1,normalizedGamma:1,normalizedSaturation:1,background:'#000000',transparentBackground:true,...extra}),facts);if(job.model!=='samila-normalized-v2')throw Error('Samila job');return{...job,normalization:{...job.normalization,scale:1}};}
 describe('Samila versioned normalized tone',()=>{

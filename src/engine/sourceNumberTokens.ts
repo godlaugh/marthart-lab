@@ -1,4 +1,4 @@
-import {SOURCE_SAMILA_MATH_FIELDS,SOURCE_SAMILA_PARAMETER_LIMIT} from './sourceSamilaFields';
+import {SOURCE_SAMILA_APPEARANCE_FIELDS,SOURCE_SAMILA_MATH_FIELDS,SOURCE_SAMILA_PARAMETER_LIMIT} from './sourceSamilaFields';
 import {SAMILA_VIEWPORT_SOURCE_FIELDS} from './samilaViewportImport';
 import {SOURCE_PERLIN_NUMBER_FIELDS,SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
 import {SOURCE_SURFACE_PARAMETER_FIELDS,SOURCE_SURFACE_PARAMETER_EDGE_FIELDS} from './sourceSurfaceParameterConfig';
@@ -127,7 +127,7 @@ function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boo
  if((family==='surface'||family==='attractor'||family==='perlin')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
 }
-const samilaStaticMaximum=SAMILA_VIEWPORT_SOURCE_FIELDS.length+SOURCE_SAMILA_MATH_FIELDS.length+2+SOURCE_SAMILA_PARAMETER_LIMIT;
+const samilaStaticMaximum=Object.keys(SOURCE_SAMILA_APPEARANCE_FIELDS).length+2+SAMILA_VIEWPORT_SOURCE_FIELDS.length+SOURCE_SAMILA_MATH_FIELDS.length+2+SOURCE_SAMILA_PARAMETER_LIMIT;
 function samilaTimelineField(path:readonly unknown[]):boolean {
  if(path[0]!=='timeline'||!index(path[1],maxTimelineClips))return false;
  if(path.length===3&&path[2]==='duration')return true;
@@ -139,7 +139,7 @@ function samilaTimelineField(path:readonly unknown[]):boolean {
 function samilaNumberField(path:readonly unknown[]):boolean {
  if(samilaTimelineField(path))return true;
  if(path.length!==2||typeof path[1]!=='string')return false;
- return path[0]==='settings'&&([...SAMILA_VIEWPORT_SOURCE_FIELDS,...SOURCE_SAMILA_MATH_FIELDS] as readonly string[]).includes(path[1])||path[0]==='samila'&&(SOURCE_SAMILA_MATH_FIELDS as readonly string[]).includes(path[1])||path[0]==='equations'&&['f1','f2'].includes(path[1])||path[0]==='parameters'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(path[1])&&!['constructor','prototype'].includes(path[1]);
+ return path[0]==='settings'&&([...SAMILA_VIEWPORT_SOURCE_FIELDS,...SOURCE_SAMILA_MATH_FIELDS,...Object.keys(SOURCE_SAMILA_APPEARANCE_FIELDS),'batch_size','bgcolor'] as readonly string[]).includes(path[1])||path[0]==='samila'&&(SOURCE_SAMILA_MATH_FIELDS as readonly string[]).includes(path[1])||path[0]==='equations'&&['f1','f2'].includes(path[1])||path[0]==='parameters'&&/^[A-Za-z][A-Za-z0-9_]*$/.test(path[1])&&!['constructor','prototype'].includes(path[1]);
 }
 /** Global resolution, Roots presentation/timeline slots and ordinary camera,
  * parameter and timeline scalars. These family-specific registrations do not

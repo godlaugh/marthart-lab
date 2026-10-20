@@ -1,3 +1,5 @@
+import {importSourceSamilaAppearance,importSourceSamilaPalette} from './sourceSamilaAppearanceImport';
+import {SAMILA_SOURCE_SPLAT_MODEL,usesSourceSamilaSplat} from './sourceSamilaSplat';
 import {importSourceSamilaTimeline} from './sourceSamilaTimelineImport';
 import {SAMILA_SCENE_SEQUENCE} from './sourceSamilaReplay';
 import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
@@ -250,9 +252,9 @@ function commonLocalPalette(r:Reader,s:SceneDocument){
 }
 function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
- const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
- if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s))commonLocalPalette(r,s);
+ const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&!usesSourceSamilaSplat(s)&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
+ if(s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
+ if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
  if(!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSamilaSourceProjection(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
@@ -344,8 +346,13 @@ function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
 
 function iteratedLegacy(r:Reader,s:SceneDocument){
  s.settings.iteratedMode='continuous';s.settings.iteratedFps=60;s.settings.paletteMode='source';s.settings.iteratedColor=s.kind==='samila'?'noise':'step';
- count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);if(!usesSourceSamilaMath(s))seed(r,s,'settings.seed');
- for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const)numberTo(r,s,'settings.'+old,key,{min,max});
+ if(usesSourceSamilaSplat(s)){
+  const count=Math.max(1,r.sourceInt(['settings','batch_size'],262144));
+  if(count>8000000)fail('源 Samila batch_size 超过本地 8000000 样本容量');
+  s.settings.batchSize=count;r.retainNumberToken(['settings','batch_size']);
+ }else{count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);}
+ if(!usesSourceSamilaMath(s))seed(r,s,'settings.seed');
+ if(!usesSourceSamilaSplat(s))for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const)numberTo(r,s,'settings.'+old,key,{min,max});
  if(s.kind==='map'||s.kind==='symmetry'){
   for(const [old,key,fallback,sourceMin,sourceMax,legacyMin,legacyMax]of [['gamma','Gamma',2.2,.1,10,.1,8],['contrast','Contrast',1,.1,2,0,8],['brightness','Brightness',s.kind==='map'?.3:.5,-.5,1.5,-1,1],['saturation','Saturation',.8,0,1,0,4],['dynamic_range','DynamicRange',s.kind==='map'?.2:.5,.1,1,.001,1e9]]as const){
    const value=r.num('settings.'+old,s.parameters),effective=Math.min(sourceMax,Math.max(sourceMin,value??fallback));s.settings['normalized'+key]=effective;
@@ -355,19 +362,20 @@ function iteratedLegacy(r:Reader,s:SceneDocument){
   }
   r.warnings.push('已另存 Map/Symmetry 的归一调色参数与源默认值；当前仍使用兼容白点模型。可从已完成图像显式启用归一调色并保存本地参考尺寸，原应用的参考画布尺寸未知。');
   if(r.has('settings.invert'))r.warnings.push('Invert 的公开声明与包内绑定不一致：Map 固定补色，Symmetry 固定关闭 invert；该源字段未映射为可变控制。');
- }else{
+ }else if(!usesSourceSamilaSplat(s)){
   const object=r.object('settings'),source:SamilaToneSource|undefined=object===undefined?undefined:{};
   if(source)for(const key of samilaToneSourceFields){const value=r.num('settings.'+key,s.parameters);if(value!==undefined)source[key]=value;}
   const tone=importSamilaTone(source);Object.assign(s.settings,tone.normalized,tone.legacy);r.warnings.push(...tone.warnings);
   if(object&&Object.keys(object).length===0)r.use('settings');
  }
- stringTo(r,s,'settings.step_metric_normalize_mode','stepMetricNormalize',{CLAMP:'clamp',ROBUST:'robust'});
+ if(!usesSourceSamilaSplat(s))stringTo(r,s,'settings.step_metric_normalize_mode','stepMetricNormalize',{CLAMP:'clamp',ROBUST:'robust'});
  if(Number(s.settings.stepMetricMax)-Number(s.settings.stepMetricMin)<.001)fail('步长度量上限须至少大于下限 0.001');
- if(s.kind==='samila'){numberTo(r,s,'settings.alpha','alpha',{min:0,max:1});booleanTo(r,s,'settings.show_trails','showTrails');numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:3600});}
- else{if(r.has('settings.show_trails'))r.acknowledge('settings.show_trails','Map/Symmetry 密度由 accumulation_decay 控制；此通用拖尾标记未作为线段历史');if(r.has('settings.trail_lifetime'))r.acknowledge('settings.trail_lifetime','Map/Symmetry 的包内密度管线采用逐帧 accumulation_decay，不将通用寿命字段误作另一层衰减');}
+ if(s.kind==='samila'&&!usesSourceSamilaSplat(s)){numberTo(r,s,'settings.alpha','alpha',{min:0,max:1});booleanTo(r,s,'settings.show_trails','showTrails');numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:3600});}
+ else if(s.kind!=='samila'){if(r.has('settings.show_trails'))r.acknowledge('settings.show_trails','Map/Symmetry 密度由 accumulation_decay 控制；此通用拖尾标记未作为线段历史');if(r.has('settings.trail_lifetime'))r.acknowledge('settings.trail_lifetime','Map/Symmetry 的包内密度管线采用逐帧 accumulation_decay，不将通用寿命字段误作另一层衰减');}
  const custom=hasSymmetryCustom(s);
- const backend=r.str('settings.render_mode');if(backend){const mode=backend.toUpperCase();if(!['CPU','GPU','AUTO'].includes(mode))fail('未知持续批次 render_mode');s.settings.iteratedBackend=mode==='CPU'?'cpu':mode==='GPU'?'gpu':'auto';if(!custom)r.warnings.push('持续批次后端选择已保留：GPU 使用独立 float32 状态和浮点累积；设备或公式不支持时明确回退 CPU，不保证原版随机序列、像素或性能相同。');}
- r.warnings.push(custom
+ const backend=usesSourceSamilaSplat(s)?undefined:r.str('settings.render_mode');if(usesSourceSamilaSplat(s))s.settings.iteratedBackend='gpu';if(backend){const mode=backend.toUpperCase();if(!['CPU','GPU','AUTO'].includes(mode))fail('未知持续批次 render_mode');s.settings.iteratedBackend=mode==='CPU'?'cpu':mode==='GPU'?'gpu':'auto';if(!custom)r.warnings.push('持续批次后端选择已保留：GPU 使用独立 float32 状态和浮点累积；设备或公式不支持时明确回退 CPU，不保证原版随机序列、像素或性能相同。');}
+ if(usesSourceSamilaSplat(s))r.warnings.push('Samila 使用源噪声查找表、散点核与固定 60 Hz 衰减公式；本地随机流、最终窗口合成与热调整尺寸尚未证明原版整图一致。');
+ else r.warnings.push(custom
   ?'自定义 GLSL 源码与参数已保留；持续批次使用 WebGL2 片元着色器，最后一次 calculate_next 写出的 stepMetric 用于颜色。CPU 选择或 GPU 不可用时明确报错；不改用内置公式。GLSL ES 3.00 支持与循环预算有明确限制，原版像素、随机序列及性能未对照。'
   :'持续批次按固定 60 Hz 重放：Map/Symmetry 保留并行状态并对最后一步距离着色，Samila 每帧产生新的确定随机样本。随机序列、视口适配、噪声颜色及色调链独立实现；原版像素与帧率相关 Replay 过渡未验证。');
 }
@@ -480,7 +488,7 @@ function samila(r:Reader,s:SceneDocument){
    const key=field.replace(/_([a-z])/g,(_,c:string)=>c.toUpperCase());s.settings[key]=fact.value;r.retainNumberToken(path);
    if(fact.defaulted)r.warnings.push(`settings.${field} 按原版 getFloat 使用默认值 ${fact.value}；原值保留在 source。`);
   }
-  r.warnings.push('Samila 采用源 NDC 视口：旋转、XY 缩放、物理画布宽高比、NDC 平移依次应用；不自动适配边界。随机序列、噪声颜色、点覆盖及固定时钟仍为本地实现，数学行为由独立版本决定，不能据此认定整图一致。');
+  r.warnings.push('Samila 采用源 NDC 视口：旋转、XY 缩放、物理画布宽高比、NDC 平移依次应用；不自动适配边界。数学、时间线与散点行为由各自显式版本决定；本地随机流和原版最终窗口尚未建立整图一致性。');
  }
 
  if(usesSourceSamilaMath(s)){
@@ -1335,7 +1343,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
-export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
+export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
 
 /** Import original MathArt JSON while retaining every original value separately. */
 export function parseLegacyScene(text:string,options:LegacyImportOptions={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
@@ -1413,6 +1421,16 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  if(kind==='samila'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaProjectionModel:SAMILA_SOURCE_PROJECTION_MODEL,samilaCameraTheta:0});
  if(sourceSamila){
   const parsed=importSourceSamilaConfig(source,path=>r.numberToken(path));if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);const facts=parsed.value;scene.parameters=facts.parameters;scene.equations=facts.equations;Object.assign(scene.settings,facts.settings);for(const path of facts.consumedPaths)r.use(path);for(const path of facts.numericPaths)r.retainNumberToken(path);r.warnings.push(...facts.diagnostics);
+ }
+ if(sourceSamila&&options.samilaSplat!=='legacy-v1'){
+  scene.settings.samilaSplatModel=SAMILA_SOURCE_SPLAT_MODEL;
+  const parsed=importSourceSamilaAppearance(r.peek(['settings']),path=>r.numberToken(path));
+  if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
+  Object.assign(scene.settings,parsed.value.settings);
+  for(const path of parsed.value.consumedPaths)r.use(path);for(const path of parsed.value.numericPaths)r.retainNumberToken(path);r.warnings.push(...parsed.value.warnings);
+  const color=importSourceSamilaPalette(r.has('palette')?r.use('palette'):undefined);if(!color.ok)fail(color.error.reason);scene.palette=color.value.palette;scene.settings.samilaUsePaletteLut=color.value.useLut;r.warnings.push(...color.value.warnings);
+  if(r.has('color'))r.acknowledge('color','源 Samila JSON 不读取通用 color 对象；配色来自根 palette，原对象保留');
+  if(r.has(['settings','dot_size']))r.acknowledge(['settings','dot_size'],'Samila 活动绘制使用 spot_size；通用 dot_size 保留但不参与散点半径');
  }
  common(r,scene);
  ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin:()=>{},spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);

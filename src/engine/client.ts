@@ -1,3 +1,4 @@
+import {snapshotGenerationInput} from './generationInput';
 import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
@@ -128,8 +129,8 @@ export class Generator {
     this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { operation: 'generate', scene, resolve, reject, onProgress, onStatus });
-      const request: GenerationRequest = { operation: 'generate', sessionId: this.sessionId, id, scene, ...(onStatus?{wantsStatus:true as const}:{}), context: { time: context.time, width: context.width, height: context.height, quality: context.quality, ...(context.sourceBouncingView!==undefined?{sourceBouncingView:{...context.sourceBouncingView}}:{}),...(context.sourceBouncingFrame!==undefined?{sourceBouncingFrame:context.sourceBouncingFrame}:{}),...(context.spirographFrame?{spirographFrame:context.spirographFrame}:{}),...(context.sourcePerlinViewport?{sourcePerlinViewport:{...context.sourcePerlinViewport}}:{}),...(context.sourceViewport?{sourceViewport:{...context.sourceViewport}}:{}),...(context.sourcePointPixelDensity!==undefined?{sourcePointPixelDensity:context.sourcePointPixelDensity}:{}),...(context.rootsViewport?{rootsViewport:{...context.rootsViewport}}:{}),...(context.fractalViewport!==undefined?{fractalViewport:context.fractalViewport&&typeof context.fractalViewport==='object'&&!Array.isArray(context.fractalViewport)?{...context.fractalViewport}:context.fractalViewport}:{}),...(context.rootsSessionId!==undefined?{rootsSessionId:context.rootsSessionId}:{}) } };
-      try { this.worker!.postMessage(request); } catch (error) { this.pending.delete(id); reject(error); }
+      try { const request: GenerationRequest = { operation: 'generate', sessionId: this.sessionId, id, scene, ...(onStatus?{wantsStatus:true as const}:{}), context: snapshotGenerationInput(context) };
+      this.worker!.postMessage(request); } catch (error) { this.pending.delete(id); reject(error); }
     });
   }
   /** The exact completed preview is the capability. A copied, superseded or

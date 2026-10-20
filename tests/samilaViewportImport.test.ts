@@ -50,9 +50,9 @@ describe('source Samila viewport import',()=>{
   const owner=new IteratedDensitySession();try{expect(owner.generate(scene,{time:0,width:16,height:16,quality:'export'}).type).toBe('raster');}finally{owner.reset();}
  });
  it('delivers fixed NDC bounds through the production renderer so scale and offset remain visible',()=>{
-  const scene=parseLegacyScene(JSON.stringify(source({scale_x:.5,scale_y:.5,offset_x:.25,offset_y:0}))).scene;
+  const scene=parseLegacyScene(JSON.stringify(source({scale_x:.5,scale_y:.5,offset_x:.25,offset_y:0,spot_size:.04}))).scene;
   scene.settings.iteratedBackend='cpu';const session=new IteratedDensitySession();
-  try{const output=session.generate(scene,{time:0,width:80,height:40,quality:'export'});expect(output.density?.bounds).toEqual({minX:-1,maxX:1,minY:-1,maxY:1});
+  try{const output=session.generate(scene,{time:0,width:80,height:40,quality:'export',samilaPrimaryPixelHeight:1080});expect(output.density?.bounds).toEqual({minX:-1,maxX:1,minY:-1,maxY:1});
    const ink=session.snapshotInk();let mass=0,x=0,y=0;for(let i=0;i<80*40;i++){mass+=ink[i*4+3];x+=(i%80+.5)*ink[i*4+3];y+=(Math.floor(i/80)+.5)*ink[i*4+3];}
    expect(mass).toBeGreaterThan(0);expect(x/mass).toBeCloseTo(60,0);expect(y/mass).toBeCloseTo(15,0);
   }finally{session.reset();}

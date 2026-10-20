@@ -1,3 +1,4 @@
+import {densityAcceptsSignedMass} from './density';
 import type {DensityToneJob} from './density';
 import {DEFAULT_COSINE,hexRGB,paletteColor,palettePositions,rgbHSV} from './palette';
 import {samilaSourceIndex,validateSamilaView,type PreparedSamilaView} from './samilaCamera';
@@ -36,7 +37,7 @@ export function densityGpuToneBytes(tile=DENSITY_TONE_TILE):number {
 }
 const FRAGMENT=HEADER+`
 uniform sampler2D ink,stops;uniform usampler2D viewIndices;uniform int hasView;
-uniform ivec2 origin,imageSize;uniform int stopCount,sourceColor,toneMode,transparent,mode,hsvStops,normalized,mapProfile,samilaPalette;
+uniform ivec2 origin,imageSize;uniform int sourceSamilaSplat,stopCount,sourceColor,toneMode,transparent,mode,hsvStops,normalized,mapProfile,samilaPalette;
 uniform float whitePoint,logWhite,gain,inverseGamma,contrast,brightness,saturation,cycles,phase,normalizationScale;
 uniform vec3 background,endpoint,constantColor,cosA,cosB,cosC,cosD;
 layout(location=0)out vec4 pixel;layout(location=1)out uvec4 facts;
@@ -65,7 +66,7 @@ vec3 palette(float base,inout uint repair){
 }
 void main(){
  ivec2 local=ivec2(gl_FragCoord.xy),p=origin+local,at=ivec2(p.x,imageSize.y-1-p.y);vec4 v=texelFetch(ink,at,0);float count=v.a;
- uint bad=(!finiteFloat(count)||count<0.||!finite3(v.rgb))?1u:0u,repair=0u;
+ uint bad=(!finiteFloat(count)||(count<0.&&sourceSamilaSplat==0)||!finite3(v.rgb))?1u:0u,repair=0u;
  facts=uvec4(count>0.?1u:0u,bad==0u&&count>0.?floatBitsToUint(count):0u,bad,0u);
  if(bad!=0u){pixel=transparent!=0?vec4(0.):vec4(background,1.);return;}
  // Statistics and malformed-source checks above visit every original texel.
@@ -137,7 +138,7 @@ export class DensityGpuTone {
   const job=plan.job,t=job.tone,p=job.palette,pixels=new Uint8ClampedArray(width*height*4),facts=new Uint32Array(4);let occupiedPixels=0,maxBits=0,needsCpu=false;const indices=view?new Uint32Array(DENSITY_TONE_TILE**2):undefined;
   gl.bindVertexArray(null);gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.DITHER);gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.pixelStorei(gl.PACK_ALIGNMENT,1);
   this.bind(stops,1);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,plan.stops.length/4,1,gl.RGBA,gl.FLOAT,plan.stops);gl.useProgram(tone.program);this.i(tone,'ink',0);this.i(tone,'stops',1);this.i(tone,'viewIndices',2);this.i(tone,'hasView',view?1:0);this.bind(viewIndices,2);this.xy(tone,'imageSize',width,height);this.i(tone,'stopCount',plan.stops.length/4);this.i(tone,'sourceColor',t.paletteMode==='source'?1:0);this.i(tone,'toneMode',t.toneMap==='log'?1:0);this.i(tone,'transparent',t.transparentBackground?1:0);this.i(tone,'mode',plan.mode);this.i(tone,'hsvStops',plan.hsvStops?1:0);
-  this.i(tone,'normalized',job.model==='normalized-v2'?1:job.model==='samila-normalized-v2'?2:0);this.i(tone,'mapProfile',job.model==='normalized-v2'&&job.normalization.kind==='map'?1:0);this.i(tone,'samilaPalette',job.model==='samila-normalized-v2'&&job.branch==='palette-average'?1:0);
+  this.i(tone,'normalized',job.model==='normalized-v2'?1:job.model==='samila-normalized-v2'?2:0);this.i(tone,'mapProfile',job.model==='normalized-v2'&&job.normalization.kind==='map'?1:0);this.i(tone,'sourceSamilaSplat',densityAcceptsSignedMass(job)?1:0);this.i(tone,'samilaPalette',job.model==='samila-normalized-v2'&&job.branch==='palette-average'?1:0);
   for(const[name,value]of Object.entries({whitePoint:t.dynamicRange,logWhite:job.logWhite,gain:job.gain,inverseGamma:job.inverseGamma,contrast:t.contrast,brightness:t.brightness,saturation:t.saturation,cycles:t.paletteMode==='source'?0:p.cycles,phase:t.paletteMode==='source'?0:p.offset,normalizationScale:job.model!=='white-point-v1'?job.normalization.scale:1}))this.f(tone,name,value);
   this.rgb(tone,'background',job.background);this.rgb(tone,'endpoint',plan.endpoint);this.rgb(tone,'constantColor',plan.constant);for(const key of ['a','b','c','d']as const)this.rgb(tone,'cos'+key.toUpperCase(),plan.cosine[key]);
   try{for(let y=0;y<height;y+=512)for(let x=0;x<width;x+=512){cancel(isCancelled);const w=Math.min(512,width-x),h=Math.min(512,height-y);

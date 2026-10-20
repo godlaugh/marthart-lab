@@ -61,6 +61,6 @@ node scripts/verify-samila-source-math-public.mjs --timeline
 
 这批验证覆盖源代码语义与本地公开链路，**没有运行原版 JVM／JOGL 的整图对照**。Mac 窗口检查仍返回锁定，未继续操作原版窗口。源程序实时线程调度、显示补偿与窗口热更新未验证；固定帧率是本地可重放的声明模型。
 
-本地随机流仍不同于原版逐帧随机种子。噪声颜色、点覆盖、透明合成和跨设备图像也未由此次标量验证证明；CPU 与 GPU 的数学差异见[数学验证记录](samila-source-math-validation.zh-CN.md)。与 Worker 相同只说明本地导出接线一致，不能替代原版像素证据。
+本地随机流仍不同于原版逐帧随机种子。噪声颜色和点覆盖的后续验证见[绘制验证记录](samila-source-splat-validation.zh-CN.md)；透明合成和跨设备图像仍未由此次标量验证证明；CPU 与 GPU 的数学差异见[数学验证记录](samila-source-math-validation.zh-CN.md)。与 Worker 相同只说明本地导出接线一致，不能替代原版像素证据。
 
 本批不提出性能提升结论。缓存按内容身份有界保留，并为零帧与向前采样分别持有状态；这是资源约束。记录的耗时仅为对应检查的墙钟时间，完整任务 token、进程族 CPU／峰值内存、GPU 内存和等价原版端到端基线未测量。

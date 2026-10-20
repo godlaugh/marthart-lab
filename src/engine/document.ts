@@ -1,3 +1,4 @@
+import {validateSourceSamilaSplat} from './sourceSamilaSplat';
 import {SAMILA_SCENE_SEQUENCE,resolveSourceSamilaTimeline} from './sourceSamilaReplay';
 import {usesSourceSamilaMath} from './sourceSamilaMath';
 import {parseSourcePerlinDocument,migrateSourcePerlinDocument} from './sourcePerlinDocument';
@@ -269,6 +270,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     validateRootsSourceColorSettings(settings);
     if(!usesRootsNativeMath(data as unknown as SceneDocument))parseRootParameters(settings,String(settings.variable??'z'),Object.keys(data.parameters as object));
   }
+  validateSourceSamilaSplat(data as unknown as SceneDocument);
   if(data.formulas!==undefined)data.formulas=validateFormulas(data.formulas);
   const t = data.timeline as Record<string, unknown>;
   if (

@@ -1,3 +1,4 @@
+import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
 import {withPerlinFreshRecording,assertPerlinRecordingFrame} from '../engine/sourcePerlinRecording';
 import {prepareSourcePerlinCaptureSize} from '../engine/sourcePerlinCaptureSize';
 import {usesSourcePerlin} from '../engine/sourcePerlinIdentity';
@@ -33,6 +34,7 @@ export function ExportDialog({
   previewLogicalHeight,
   sourcePerlinViewport,
   previewPointPixelDensity,
+  samilaPrimaryPixelHeight,
   currentRootsCapture,
   currentPerlinCapture,
   currentPerlinRecording,
@@ -46,6 +48,7 @@ export function ExportDialog({
   previewLogicalHeight?:number;
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   previewPointPixelDensity?:number;
+  samilaPrimaryPixelHeight?:number;
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentPerlinCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentPerlinRecording?:{ready:boolean;record:(options:PerlinRecordingOptions,consumer:PerlinRecordingConsumer,signal?:AbortSignal)=>Promise<void>};
@@ -206,7 +209,8 @@ export function ExportDialog({
       if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
       if(usesSourceSurfaceParticles(exportScene)&&previewPointPixelDensity===undefined)throw new Error('源曲面点导出缺少已呈现预览的像素密度，请等待预览完成');
       if(usesSourcePerlin(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin 导出缺少已呈现的预览尺寸，请等待预览完成');
-      const exportContext={quality:'export' as const,width,height,...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
+      const exportContext={quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       if(!bouncing&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas);r.setSize(width,height,1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));

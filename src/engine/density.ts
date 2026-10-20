@@ -106,11 +106,12 @@ function toneSettings(s:Settings):DensityTone {
 /** Sole validated presentation input shared by CPU and GPU backends. */
 interface DensityToneBase {tone:DensityTone;palette:Palette;background:[number,number,number];gain:number;inverseGamma:number;logWhite:number;}
 export type DensityToneJob=DensityToneBase&({model:'white-point-v1'}|{model:'normalized-v2';normalization:DensityNormalization}|{model:'samila-normalized-v2';normalization:SamilaNormalization;branch:SamilaToneBranch});
+export function densityAcceptsSignedMass(job:DensityToneJob):boolean{return job.model==='samila-normalized-v2'&&job.normalization.splat.model==='samila-splat-1.7.8';}
 export function prepareDensityTone(palette:Palette,settings:Settings={},facts?:DensityNormalizationFacts|SamilaToneFacts):DensityToneJob {
  const model=densityToneModel(settings);
  if(model==='samila-normalized-v2'){
   if(!facts||facts.kind!=='samila')throw new Error('Samila 归一调色需要持续累积器提供真实批次事实');
-  const parsed=samilaToneParameters(settings),normalization=deriveSamilaNormalization(facts),background=String(settings.background??'#0a0c14');
+  const parsed=samilaToneParameters(settings,palette),normalization=deriveSamilaNormalization(facts),background=String(settings.background??'#0a0c14');
   if(!/^#[0-9a-f]{6}$/i.test(background))throw new Error('密度背景必须为 #RRGGBB');
   const {branch,...values}=parsed,tone:DensityTone={...values,toneMap:'log',exposure:0,paletteMode:'source',background,transparentBackground:boolean(settings,'transparentBackground',false)};
   return{model,normalization,branch,tone,palette:validatePalette(palette),background:hexRGB(background),gain:1,inverseGamma:1/tone.gamma,logWhite:Math.log(1000)};
@@ -151,7 +152,7 @@ export function toneDensityRgbaPrepared(width:number,height:number,rgba:Float32A
     // A rotation must never hide malformed ink from its producer's consumer.
     for(let i=0;i<rgba.length;i+=4){
       if(i%65536===0&&isCancelled?.())throw new DOMException('密度映射已取消','AbortError');
-      if(!Number.isFinite(rgba[i+3])||rgba[i+3]<0)throw new Error('密度权重必须是非负有限数值');
+      if(!Number.isFinite(rgba[i+3])||rgba[i+3]<0&&!densityAcceptsSignedMass(job))throw new Error('密度权重必须是非负有限数值');
       if(!Number.isFinite(rgba[i])||!Number.isFinite(rgba[i+1])||!Number.isFinite(rgba[i+2]))throw new Error('密度 RGB 累积包含非有限值');
     }
   }
@@ -169,7 +170,7 @@ function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number
     if(i%16384===0&&isCancelled?.())throw new DOMException('密度映射已取消','AbortError');
     if(captured){sampled!.fill(0);for(const tap of sampleCapturedDensity(captured,i%width,Math.floor(i/width))){sampled![3]+=mass(tap.index)*tap.weight;if(colorSum)for(let k=0;k<3;k++)sampled![k]+=colorSum(tap.index,k)*tap.weight;}}
     const source=samila?samilaSourceIndex(samila,i%width,Math.floor(i/width)):i,count=sampled?sampled[3]:source<0?0:mass(source),offset=i*4;
-    if(!Number.isFinite(count)||count<0)throw new Error('密度权重必须是非负有限数值');
+    if(!Number.isFinite(count)||(count<0&&!densityAcceptsSignedMass(job)))throw new Error('密度权重必须是非负有限数值');
     if(source>=0&&job.model==='samila-normalized-v2'&&![sampleColor!(source,0),sampleColor!(source,1),sampleColor!(source,2)].every(Number.isFinite))throw new Error('密度 RGB 累积包含非有限值');
     if(!count||job.model!=='white-point-v1'&&count<=1e-12){if(!tone.transparentBackground){for(let k=0;k<3;k++)pixels[offset+k]=Math.round(bg[k]*255);pixels[offset+3]=255;}continue;}
     if(job.model==='samila-normalized-v2'){

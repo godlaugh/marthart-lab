@@ -402,6 +402,7 @@ export interface RasterOutput {
   samilaViewportTransform?:SamilaViewportTransform;
   /** Delivered raw-ink lookup facts at this image's request time; never authored. */
   samilaView?:PreparedSamilaView;
+  samilaSplat?:{model:'samila-splat-1.7.8';referenceKind:'primary'|'local-output';primaryPixelHeight:number;nominalRadius:number;radius:number;path:'points'|'quad';encoding:'rgb-mass';noiseModel:'source-simplex-lut-256'};
   type: "raster";
   /** The producer already applied the mathematical camera. Display this image
    * front-on without a second document-camera transform. */
@@ -450,6 +451,8 @@ export interface GenerateContext {
   sourceViewport?:SourceCameraViewport;
   /** Measured local primary renderer density; separate from source-app DPI evidence. */
   sourcePointPixelDensity?:number;
+  /** Measured primary canvas physical height, retained for offscreen Samila splats. */
+  samilaPrimaryPixelHeight?:number;
   /** Actual primary canvas facts retained for Perlin simulation and export. */
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   /** Actual local logical canvas size, separate from preview sampling pixels.
@@ -468,7 +471,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

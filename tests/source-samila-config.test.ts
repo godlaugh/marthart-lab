@@ -14,7 +14,7 @@ describe('source Samila configuration ownership',()=>{
  it('selects root samila as a complete block and leaves ignored settings untouched in provenance',()=>{
   const value=raw({samila:{start:5},settings:{batch_size:8,start:-99,stop:99,generate_mode:'f2_vs_f1',projection:'hammer',seed:'bad',func_seed:{unused:true}}}),result=parseLegacyScene(JSON.stringify(value));
   expect(result.scene.settings).toMatchObject({start:5,stop:Math.PI,mapping:'f2_f1',projection:'polar',seed:0,funcSeed:0});expect(result.source).toEqual(value);
-  expect(result.sourceNumberTokens?.map(v=>v.path)).toEqual([['samila','start']]);
+  expect(result.sourceNumberTokens?.map(v=>v.path)).toEqual([['samila','start'],['settings','batch_size']]);
   expect(parse({samila:{}}).scene.settings.start).toBe(-Math.PI);
  });
  it('uses source literal getters rather than mathematical expressions',()=>{

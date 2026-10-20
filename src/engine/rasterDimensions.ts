@@ -9,10 +9,18 @@ export function validateRasterRequest({width,height,quality}:GenerateContext):vo
   for(const value of [width,height])if(!Number.isInteger(value)||value<1||value>16384)throw new Error('画布尺寸须为 1–16384 的整数');
   if(quality==='export'&&width*height>MAX_RASTER_PIXELS)throw new Error('导出像素超过 128 MiB 图像预算，请减小尺寸。');
 }
+/** Source point kernels are defined in physical pixels. A coarse preview later
+ * enlarged by the renderer changes their coverage, so these callers require an
+ * exact raster or an explicit resource rejection. */
+export function exactRasterDimensions(context:GenerateContext):[number,number]{
+  validateRasterRequest(context);
+  if(context.width*context.height>MAX_RASTER_PIXELS)throw new Error('图像像素超过 128 MiB 预算，请减小尺寸。');
+  return [context.width,context.height];
+}
 export function rasterDimensions(context:GenerateContext,cost:number,backend:'cpu'|'webgl2',warnings:string[]):[number,number]{
   validateRasterRequest(context);
   const {width,height,quality}=context;
-  if(quality==='export')return [width,height];
+  if(quality==='export')return exactRasterDimensions(context);
   const pixelBudget=backend==='webgl2'?1_048_576:320_000,workBudget=backend==='webgl2'?300_000_000:24_000_000;
   const factor=Math.min(1,Math.sqrt(pixelBudget/(width*height)),Math.sqrt(workBudget/(width*height*Math.max(1,cost))));
   const w=Math.max(1,Math.floor(width*factor)),h=Math.max(1,Math.floor(height*factor));
