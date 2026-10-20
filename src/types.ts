@@ -1,4 +1,5 @@
 import type {SourceSamilaParameterAction} from './engine/sourceSamilaParameter';
+import type {SourceSamilaPresentationFacts} from './engine/sourceSamilaPresentation';
 import type {SourcePerlinDocumentPayload} from './engine/sourcePerlinDocument';
 import type {SourcePerlinCpuDocumentPayload} from './engine/sourcePerlinCpuDocument';
 import type {SourcePerlinGpuDocumentPayload} from './engine/sourcePerlinGpuDocument';
@@ -403,6 +404,8 @@ export interface RasterOutput {
   /** Delivered raw-ink lookup facts at this image's request time; never authored. */
   samilaView?:PreparedSamilaView;
   samilaSplat?:{model:'samila-splat-1.7.8';referenceKind:'primary'|'local-output';primaryPixelHeight:number;nominalRadius:number;radius:number;path:'points'|'quad';encoding:'rgb-mass';noiseModel:'source-simplex-lut-256'};
+  /** Completed present-target bytes; alpha records native blending, not layer opacity. */
+  sourceSamilaPresentation?:SourceSamilaPresentationFacts;
   type: "raster";
   /** The producer already applied the mathematical camera. Display this image
    * front-on without a second document-camera transform. */

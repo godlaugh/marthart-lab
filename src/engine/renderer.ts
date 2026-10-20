@@ -1,4 +1,5 @@
 import {usesSourceBouncing} from './sourceBouncingDocument';
+import {usesSourceSamilaPresentation} from './sourceSamilaPresentation';
 import {createSourceParticleTrailLines} from './sourceProcessingLineRenderer';
 import {createSourceSurfaceGpuMesh} from './sourceSurfaceGpuMeshRenderer';
 import {createSourceParticlePoints} from './sourceParticlePointRenderer';
@@ -11,7 +12,7 @@ import type {SourceCameraPlan} from './sourceCamera';
 import {implicitMeshPresentation,createImplicitWireframe} from './implicitMeshPresentation';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import type { SceneDocument, SceneOutput, CameraState } from "../types";
+import type { SceneDocument, SceneOutput, CameraState, RasterOutput } from "../types";
 import { vertexColors } from "./palette";
 import {createMeshMaterial} from './meshMaterial';
 import {parseMeshAppearance} from './meshAppearance';
@@ -36,6 +37,7 @@ export class ArtRenderer {
   private cameraResolved = false;
   private sourceCameraPlan?:SourceCameraPlan;
   private sourceClear?:readonly [number,number,number,number];
+  private sourceSamilaRaster?:RasterOutput;
   private readonly surfaceOverlayScene=new THREE.Scene();
   private surfaceOverlay?:ReturnType<typeof createSourceSurfaceOverlay>;
   private interactiveRequested=true;
@@ -139,6 +141,8 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.sourceGpuMesh&&(output.backend!=='webgl2'||output.topology!=='mesh'||output.positions.length||output.sourcePointAppearance||output.sourceMeshAppearance||output.sourceGpuPoints))throw new Error('GPU 网格需要独立的种子缓冲与匹配后端');
     if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
     if(usesSourceBouncing(document)!==!!output.sourceBouncingFrame||output.sourceBouncingFrame&&(output.type!=='raster'||!output.cameraResolved))throw new Error('源弹跳需要与文档配对的已投影图像');
+    const sourceSamila=output.type==='raster'?output.sourceSamilaPresentation:undefined;
+    if(usesSourceSamilaPresentation(document)!==!!sourceSamila||sourceSamila&&(output.type!=='raster'||!output.cameraResolved||sourceSamila.model!=='samila-present-1.7.8'||sourceSamila.stage!=='present-target-rgba8'||sourceSamila.display!=='opaque-rgb-copy'))throw new Error('源 Samila 需要与文档配对的已合成图像');
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
     if(output.sourceCameraFrame&&output.type==='raster'&&!output.cameraResolved)throw new Error('源相机像素图像必须已完成投影');
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
@@ -157,6 +161,7 @@ export class ArtRenderer {
     const implicitAppearance=document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
     if(implicitAppearance&&output.type==='geometry')implicitMeshPresentation(output,implicitAppearance.wireframe);
     this.document=document;
+    this.sourceSamilaRaster=sourceSamila&&output.type==='raster'?output:undefined;
     const cameraResolved=output.type==='raster'&&output.cameraResolved===true;
     if(cameraResolved!==this.cameraResolved)fit=true;
     this.cameraResolved=cameraResolved;
@@ -184,10 +189,11 @@ export class ArtRenderer {
       texture.flipY = true;
       const plane = new THREE.Mesh(
         new THREE.PlaneGeometry((10 * output.width) / output.height, 10),
-        // Native Roots pixels already contain a complete background-composited
-        // framebuffer. Its GL alpha records point blending, not another layer
-        // opacity. Copy RGB opaquely to avoid blending the background twice.
-        new THREE.MeshBasicMaterial({ map: texture, transparent:!output.rootsPresentation&&!output.sourceBouncingFrame }),
+        // These producers deliver completed framebuffer RGB. Their alpha
+        // records native blending, not another layer opacity. Samila's normal
+        // native window copies the target with blending disabled to an opaque
+        // surface; PNG preserves the separately retained target alpha below.
+        new THREE.MeshBasicMaterial({ map: texture, transparent:!output.rootsPresentation&&!output.sourceBouncingFrame&&!sourceSamila }),
       );
       this.group.add(plane);
       this.controls.enableRotate = false;
@@ -413,8 +419,17 @@ export class ArtRenderer {
       try{this.renderer.autoClear=false;this.renderer.render(this.surfaceOverlayScene,this.camera);}finally{this.renderer.autoClear=autoClear;}
     }
   }
-  async blob(type = "image/png", quality = 0.95): Promise<Blob> {
+  async blob(type = "image/png", quality = 0.95, options?:{sourceSamilaAlpha:'preserve'|'opaque';isCancelled?:()=>boolean}): Promise<Blob> {
     this.render();
+    if(this.sourceSamilaRaster&&type==='image/png'&&(!this.document||formulaLabels(this.document).length===0)){
+      const frame=this.sourceSamilaRaster,gl=this.renderer.getContext();
+      if(frame.width!==gl.drawingBufferWidth||frame.height!==gl.drawingBufferHeight)throw new Error('源 Samila 导出尺寸必须与已生成图像一致');
+      if(!Number.isSafeInteger(frame.width*frame.height)||frame.width*frame.height>MAX_RASTER_PIXELS||frame.pixels.length!==frame.width*frame.height*4)throw new Error('源 Samila 导出超过共享 RGBA 图像容量或像素不完整');
+      // Canvas serializes a composited display, not the native target bytes.
+      // Preserve PNG RGBA explicitly. Video keeps that target RGB and makes
+      // alpha opaque before PNG transport; no additional background mix.
+      return encodeRgbaPng(frame.pixels,frame.width,frame.height,options?.isCancelled,{alpha:options?.sourceSamilaAlpha??'preserve'});
+    }
     if(this.sourceClear&&type==='image/png'&&(!this.document||formulaLabels(this.document).length===0)){
       // Canvas.toBlob would unpremultiply source framebuffer bytes. Reuse the
       // existing lossless encoder for unannotated source PNGs, including hidden
@@ -441,6 +456,7 @@ export class ArtRenderer {
   }
   dispose() {
     this.clear();
+    this.sourceSamilaRaster=undefined;
     this.surfaceOverlay?.geometry.dispose();this.surfaceOverlay?.material.dispose();this.surfaceOverlayScene.clear();
     this.controls.dispose();
     this.grid.geometry.dispose();

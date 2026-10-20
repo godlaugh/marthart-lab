@@ -20,7 +20,7 @@ function chunk(type:'IHDR'|'IDAT'|'IEND',data:Uint8Array):Uint8Array<ArrayBuffer
  * each compressor output becomes an IDAT chunk, avoiding a second full-image
  * scanline buffer or concatenated compressed image. The Blob owns its bytes.
  * This is lossless PNG pixel equivalence, not ImageIO encoded-byte identity. */
-export async function encodeRgbaPng(pixels:Uint8ClampedArray,width:number,height:number,isCancelled?:()=>boolean):Promise<Blob>{
+export async function encodeRgbaPng(pixels:Uint8ClampedArray,width:number,height:number,isCancelled?:()=>boolean,options?:{alpha:'preserve'|'opaque'}):Promise<Blob>{
  if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||!Number.isSafeInteger(width*height)||width*height>MAX_RASTER_PIXELS)
   throw new Error('PNG dimensions exceed the shared RGBA raster budget');
  if(!(pixels instanceof Uint8ClampedArray)||!(pixels.buffer instanceof ArrayBuffer)||pixels.length!==width*height*4)
@@ -39,7 +39,11 @@ export async function encodeRgbaPng(pixels:Uint8ClampedArray,width:number,height
  const source=new ReadableStream<Uint8Array<ArrayBuffer>>({pull(controller){
   check();if(row===height){controller.close();return;}
   const scanline=new Uint8Array(width*4+1); // PNG filter 0: exact input bytes.
-  scanline.set(pixels.subarray(row*width*4,(row+1)*width*4),1);row++;controller.enqueue(scanline);
+  scanline.set(pixels.subarray(row*width*4,(row+1)*width*4),1);
+  // Video may consume framebuffer RGB without its recorded blending alpha.
+  // Change only the already-owned row; do not allocate a second full raster.
+  if(options?.alpha==='opaque')for(let i=4;i<scanline.length;i+=4)scanline[i]=255;
+  row++;controller.enqueue(scanline);
  }});
  const reader=source.pipeThrough(new CompressionStream('deflate')).getReader();
  try{

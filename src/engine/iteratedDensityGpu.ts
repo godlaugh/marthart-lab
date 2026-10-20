@@ -6,7 +6,7 @@ import type {IteratedFrameJob,IteratedField} from '../scenes/iteratedDensity';
 import {compileGlslExpression,glslRealPrelude} from './gpuSampler';
 import {paletteBaseColor} from './palette';
 import {toneDensityRgbaPrepared,type DensityToneJob} from './density';
-import {DensityGpuTone,prepareDensityGpuTone,densityGpuToneBytes} from './densityGpuTone';
+import {DensityGpuTone,prepareDensityGpuTone,densityGpuToneBytes,sourceSamilaPresentationBytes} from './densityGpuTone';
 import {iteratedInitialChunk,iteratedSamilaSeedChunk} from './iteratedSeed';
 import {createNoisePermutation} from '../scenes/noise';
 import {iteratedNoiseGlsl} from './iteratedGpuNoise';
@@ -34,12 +34,12 @@ function checkBounds(b:DensityBounds){checked([b.minX,b.maxX,b.minY,b.maxY].ever
 const checkCancelled=(f?:()=>boolean)=>{if(f?.())throw new DOMException('GPU 持续密度已取消','AbortError');};
 /** Structural estimate includes every resident buffer/texture, two reduction
  * formats and a final image readback. It excludes driver/program overhead. */
-export function iteratedGpuBytes(count:number,width:number,height:number,textureWidth=2048,boundedHistory=false,customStorage=false,sourceSplat=false):number {
- checked(typeof sourceSplat==='boolean'&&typeof boundedHistory==='boolean'&&typeof customStorage==='boolean','GPU 历史模型容量标记无效');
+export function iteratedGpuBytes(count:number,width:number,height:number,textureWidth=2048,boundedHistory=false,customStorage=false,sourceSplat=false,sourcePresentation=false):number {
+ checked(typeof sourcePresentation==='boolean'&&typeof sourceSplat==='boolean'&&typeof boundedHistory==='boolean'&&typeof customStorage==='boolean','GPU 历史模型容量标记无效');
  checked(Number.isInteger(count)&&count>0&&count<=8_000_000,'GPU 粒子数须为 1–8000000');
  checked([width,height,textureWidth].every(n=>Number.isInteger(n)&&n>0&&n<=16384),'GPU 密度尺寸无效');
  const tw=Math.min(textureWidth,count),th=Math.ceil(count/tw),capacity=tw*th,reduce=Math.ceil(tw/2)*Math.ceil(th/2);
- return (sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
+ return (sourcePresentation?sourceSamilaPresentationBytes(width,height):0)+(sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
 }
 export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';}
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
@@ -136,7 +136,7 @@ const POINT_PROBE_FRAGMENT=HEADER+`out vec4 result;void main(){vec2 p=gl_PointCo
  * built-in fields on CPU; custom GLSL is an explicit error, never a built-in substitute. */
 export class IteratedDensityGpu {
  private tone?:DensityGpuTone;private gl?:WebGL2RenderingContext;private programs=new Map<string,Program>();private resources?:Resources;private bounds?:DensityBounds;private structuralKey='';private frame=-1;
- diagnostics(){const r=this.resources;return{retainedBytes:r?r.bytes+(r.sourceNoise?256*256*4+1024*3*4:0)-r.width*r.height*16-r.width*16-(PALETTE_INTERVALS+1)*16-CHUNK*16-256-densityGpuToneBytes()+(this.tone?.diagnostics().retainedBytes??0):0,estimatedPeakBytes:r?r.bytes+(r.sourceNoise?256*256*4*2+1024*3*4*2:0):0,frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r?.count??0};}
+ diagnostics(){const r=this.resources;return{retainedBytes:r?r.bytes+(r.sourceNoise?256*256*4+1024*3*4:0)-r.width*r.height*16-r.width*16-(PALETTE_INTERVALS+1)*16-CHUNK*16-256-densityGpuToneBytes()+(this.tone?.diagnostics().retainedBytes??0):0,estimatedPeakBytes:r?r.bytes+(this.tone?.sourceTargetBytes()??0)+(this.tone?.sourceTargetBytes()?r.width*r.height*4:0)+(r.sourceNoise?256*256*4*2+1024*3*4*2:0):0,frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r?.count??0};}
  private context(){
   if(this.gl?.isContextLost()){this.reset();throw new Error('GPU 持续密度上下文已丢失');}
   if(!this.gl){checked(typeof OffscreenCanvas!=='undefined','OffscreenCanvas 不可用');const gl=new OffscreenCanvas(1,1).getContext('webgl2',{antialias:false,depth:false,alpha:false});checked(Boolean(gl),'WebGL2 不可用');this.gl=gl!;checked(Boolean(gl!.getExtension('EXT_color_buffer_float')),'GPU 缺少 EXT_color_buffer_float');checked(Boolean(gl!.getExtension('EXT_float_blend')),'GPU 缺少 EXT_float_blend');}
@@ -217,7 +217,7 @@ export class IteratedDensityGpu {
   try{return this.run(job,options);}catch(e){this.reset();throw e;}
  }
  private prepareSourceSplat(job:IteratedFrameJob,cancel?:()=>boolean){
-  const gl=this.gl!,r=this.resources!,facts=job.samilaSplat;if(!facts)return;checked(r.bytes+256*256*4*2+1024*3*4*2<=MAX_BYTES,'源 Samila LUT 超过 768 MiB 工作预算');
+  const gl=this.gl!,r=this.resources!,facts=job.samilaSplat;if(!facts)return;checked(r.bytes+(this.tone?.sourceTargetBytes()??0)+256*256*4*2+1024*3*4*2<=MAX_BYTES,'源 Samila LUT 超过 768 MiB 工作预算');
   if(!r.splatPath){
    // The source resolves primitive support by drawing sixteen points and reading
    // finite positive mass, not by trusting ALIASED_POINT_SIZE_RANGE.
@@ -285,6 +285,9 @@ export class IteratedDensityGpu {
  present(job:DensityToneJob,isCancelled?:()=>boolean,view?:PreparedDensityView):{pixels:Uint8ClampedArray;occupiedPixels:number;maxCount:number;toneBackend:'cpu'|'webgl2';warnings:string[]} {
   try{
    checkCancelled(isCancelled);const r=this.resources;checked(Boolean(r),'GPU 密度状态为空');const captured=view&&isCapturedDensityView(view)?view:undefined,admission=captured?{reason:'源 Map/Sym 相机视图在浮点墨迹上执行共享 CPU 采样与调色'}:prepareDensityGpuTone(job);let reason=admission.reason,destination:Uint8ClampedArray|undefined;
+   if(!job.sourcePresentation)this.tone?.releaseSourcePresentation();
+   const sourceTarget=job.sourcePresentation?sourceSamilaPresentationBytes(r!.width,r!.height):0;
+   checked(r!.bytes+sourceTarget+r!.width*r!.height*4+(r!.sourceNoise?256*256*4*2+1024*3*4*2:0)<=MAX_BYTES,'GPU 完整呈现目标及输出超过 768 MiB 工作预算');
    if(admission.plan){this.tone??=new DensityGpuTone(this.context());const result=this.tone.render(r!.ink,r!.width,r!.height,admission.plan,isCancelled,view&&!isCapturedDensityView(view)?view:undefined);if(!result.needsCpu)return{...result,toneBackend:'webgl2',warnings:[]};destination=result.pixels;reason='当前像素位于密度取样、色板相位或调色边界的 float32 敏感区';}
    const rgba=this.readback(),pixels=toneDensityRgbaPrepared(r!.width,r!.height,rgba,job,isCancelled,destination,view);let occupiedPixels=0,maxCount=0;
    for(let i=3;i<rgba.length;i+=4){if((i&65535)===3)checkCancelled(isCancelled);if(rgba[i]>0)occupiedPixels++;maxCount=Math.max(maxCount,rgba[i]);}
@@ -296,7 +299,7 @@ export class IteratedDensityGpu {
  }
  /** Explicit diagnostic snapshot, bounded by particle count, never used per frame. */
  readParticles():{positionsAndMetric:Float32Array;invalidCounts:Uint32Array;validity:Uint8Array}{
-  try{const gl=this.context(),r=this.resources;checked(Boolean(r),'GPU 粒子状态为空');const state=r!;checked(state.bytes+state.count*21+state.tw*16<=MAX_BYTES,'GPU 粒子诊断回读超过 768 MiB');
+  try{const gl=this.context(),r=this.resources;checked(Boolean(r),'GPU 粒子状态为空');const state=r!;checked(state.bytes+(this.tone?.sourceTargetBytes()??0)+state.count*21+state.tw*16<=MAX_BYTES,'GPU 粒子诊断回读超过 768 MiB');
    const positionsAndMetric=new Float32Array(state.count*4),invalidCounts=new Uint32Array(state.count),validity=new Uint8Array(state.count),metadata=new Uint32Array(state.tw*4);
    if(state.storage==='buffer'){gl.bindBuffer(gl.COPY_READ_BUFFER,state.positions[state.side]);gl.getBufferSubData(gl.COPY_READ_BUFFER,0,positionsAndMetric);gl.bindBuffer(gl.COPY_READ_BUFFER,null);}else{this.target(this.stateTexture(),state.tw,state.th);for(let y=0;y<state.th;y++){const n=Math.min(state.tw,state.count-y*state.tw);gl.readPixels(0,y,n,1,gl.RGBA,gl.FLOAT,positionsAndMetric.subarray(y*state.tw*4,(y*state.tw+n)*4));}}
    this.target(this.counterTexture(),state.tw,state.th);for(let y=0;y<state.th;y++){const n=Math.min(state.tw,state.count-y*state.tw);gl.readPixels(0,y,n,1,gl.RGBA_INTEGER,gl.UNSIGNED_INT,metadata);for(let x=0;x<n;x++){invalidCounts[y*state.tw+x]=metadata[x*4];validity[y*state.tw+x]=metadata[x*4+1]&1;}}

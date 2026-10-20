@@ -1,3 +1,4 @@
+import {prepareSourceSamilaSampling,sourceSamilaPresentationModel,sourceSamilaPresentationIndex,sourceSamilaPresentPixel,type SOURCE_SAMILA_PRESENTATION_MODEL} from './sourceSamilaPresentation';
 import type {ControlSpec, GenerateContext, Palette, SceneDocument, SceneOutput, Settings, DensityProjection, DensityBounds, DensityStats} from '../types';
 export type {DensityProjection, DensityBounds, DensityStats} from '../types';
 import {numberSetting} from './expression';
@@ -104,17 +105,17 @@ function toneSettings(s:Settings):DensityTone {
   return{toneMap:select(s,'toneMap','log',['linear','log']) as DensityTone['toneMap'],exposure:numberSetting(s,'exposure',0,-16,16),gamma:numberSetting(s,'gamma',2.2,.1,8),contrast:numberSetting(s,'contrast',1,0,8),brightness:numberSetting(s,'brightness',0,-1,1),saturation:numberSetting(s,'saturation',1,0,4),dynamicRange:numberSetting(s,'dynamicRange',32,.001,1e9),paletteMode:select(s,'paletteMode','density',['density','source']) as DensityTone['paletteMode'],transparentBackground:boolean(s,'transparentBackground',false),background};
 }
 /** Sole validated presentation input shared by CPU and GPU backends. */
-interface DensityToneBase {tone:DensityTone;palette:Palette;background:[number,number,number];gain:number;inverseGamma:number;logWhite:number;}
+interface DensityToneBase {sourcePresentation?:{model:typeof SOURCE_SAMILA_PRESENTATION_MODEL};tone:DensityTone;palette:Palette;background:[number,number,number];gain:number;inverseGamma:number;logWhite:number;}
 export type DensityToneJob=DensityToneBase&({model:'white-point-v1'}|{model:'normalized-v2';normalization:DensityNormalization}|{model:'samila-normalized-v2';normalization:SamilaNormalization;branch:SamilaToneBranch});
 export function densityAcceptsSignedMass(job:DensityToneJob):boolean{return job.model==='samila-normalized-v2'&&job.normalization.splat.model==='samila-splat-1.7.8';}
 export function prepareDensityTone(palette:Palette,settings:Settings={},facts?:DensityNormalizationFacts|SamilaToneFacts):DensityToneJob {
- const model=densityToneModel(settings);
+ const sourceModel=sourceSamilaPresentationModel(settings),model=densityToneModel(settings);
  if(model==='samila-normalized-v2'){
   if(!facts||facts.kind!=='samila')throw new Error('Samila 归一调色需要持续累积器提供真实批次事实');
   const parsed=samilaToneParameters(settings,palette),normalization=deriveSamilaNormalization(facts),background=String(settings.background??'#0a0c14');
   if(!/^#[0-9a-f]{6}$/i.test(background))throw new Error('密度背景必须为 #RRGGBB');
   const {branch,...values}=parsed,tone:DensityTone={...values,toneMap:'log',exposure:0,paletteMode:'source',background,transparentBackground:boolean(settings,'transparentBackground',false)};
-  return{model,normalization,branch,tone,palette:validatePalette(palette),background:hexRGB(background),gain:1,inverseGamma:1/tone.gamma,logWhite:Math.log(1000)};
+  return{model,...(sourceModel?{sourcePresentation:{model:sourceModel}}:{}),normalization,branch,tone,palette:validatePalette(palette),background:hexRGB(background),gain:1,inverseGamma:1/tone.gamma,logWhite:Math.log(1000)};
  }
  if(model==='normalized-v2'){
   if(!facts||facts.kind==='samila')throw new Error('归一调色需要持续累积器提供真实批次事实');
@@ -164,14 +165,16 @@ function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number
   const captured=view&&isCapturedDensityView(view)?view:undefined,samila=view&&!isCapturedDensityView(view)?view:undefined;
   // Interpolate floating sums AND mass before nonlinear tone mapping. Reuse
   // one four-channel sample; presentation never copies the full ink buffer.
+  const sourceSampling=samila&&job.sourcePresentation?prepareSourceSamilaSampling(samila,width,height):undefined;
   const sampled=captured?new Float64Array(4):undefined;
   const sampleColor=sampled?(_index:number,channel:number)=>sampled[channel]:colorSum;
   for(let i=0;i<width*height;i++){
     if(i%16384===0&&isCancelled?.())throw new DOMException('密度映射已取消','AbortError');
     if(captured){sampled!.fill(0);for(const tap of sampleCapturedDensity(captured,i%width,Math.floor(i/width))){sampled![3]+=mass(tap.index)*tap.weight;if(colorSum)for(let k=0;k<3;k++)sampled![k]+=colorSum(tap.index,k)*tap.weight;}}
-    const source=samila?samilaSourceIndex(samila,i%width,Math.floor(i/width)):i,count=sampled?sampled[3]:source<0?0:mass(source),offset=i*4;
+    const source=samila?(sourceSampling?sourceSamilaPresentationIndex(sourceSampling,i%width,Math.floor(i/width)):samilaSourceIndex(samila,i%width,Math.floor(i/width))):i,count=sampled?sampled[3]:source<0?0:mass(source),offset=i*4;
     if(!Number.isFinite(count)||(count<0&&!densityAcceptsSignedMass(job)))throw new Error('密度权重必须是非负有限数值');
     if(source>=0&&job.model==='samila-normalized-v2'&&![sampleColor!(source,0),sampleColor!(source,1),sampleColor!(source,2)].every(Number.isFinite))throw new Error('密度 RGB 累积包含非有限值');
+    if(job.sourcePresentation){pixels.set(sourceSamilaPresentPixel(job,count,source<0?[0,0,0]:[sampleColor!(source,0),sampleColor!(source,1),sampleColor!(source,2)]),offset);continue;}
     if(!count||job.model!=='white-point-v1'&&count<=1e-12){if(!tone.transparentBackground){for(let k=0;k<3;k++)pixels[offset+k]=Math.round(bg[k]*255);pixels[offset+3]=255;}continue;}
     if(job.model==='samila-normalized-v2'){
       const value=samilaDensityValue(Math.log(count)-Math.log(job.normalization.scale),tone.contrast,tone.brightness,tone.dynamicRange),rgb=[sampleColor!(source,0)/count,sampleColor!(source,1)/count,sampleColor!(source,2)/count];

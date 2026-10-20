@@ -29,6 +29,12 @@ describe('straight RGBA PNG delivery',()=>{
   const input=new Uint8ClampedArray(129*79*4);let seed=9;for(let i=0;i<input.length;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;input[i]=seed>>>24;}
   expect((await decode(await encodeRgbaPng(input,129,79))).pixels).toEqual(new Uint8Array(input));
  });
+ it('copies framebuffer RGB into opaque video rows without alpha multiplication or input mutation',async()=>{
+  const input=new Uint8ClampedArray([213,7,91,0,17,99,241,1,5,87,209,127,255,66,33,254]),before=input.slice();
+  const result=await decode(await encodeRgbaPng(input,2,2,undefined,{alpha:'opaque'}));
+  expect([...result.pixels]).toEqual([213,7,91,255,17,99,241,255,5,87,209,255,255,66,33,255]);
+  expect(input).toEqual(before);
+ });
  it('rejects invalid dimensions and incomplete input before encoding',async()=>{
   await expect(encodeRgbaPng(new Uint8ClampedArray(4),0,1)).rejects.toThrow('dimensions');
   await expect(encodeRgbaPng(new Uint8ClampedArray(3),1,1)).rejects.toThrow('complete');

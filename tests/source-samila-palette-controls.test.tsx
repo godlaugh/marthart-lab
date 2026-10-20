@@ -12,6 +12,9 @@ describe('source Samila palette consumers',()=>{
   const html=renderToStaticMarkup(<I18nProvider language="en"><SourceSamilaPaletteEditor scene={scene} onChange={()=>{}}/></I18nProvider>);
   expect(html).toContain('value="cosine" selected');expect(html).toContain('A R');expect(html).not.toMatch(/[\u3400-\u9fff]/);
   expect(visibleIteratedControls(scene.kind,scene.settings,definition('samila').controls,scene.timeline,scene.palette).some(c=>c.key==='colorPhase')).toBe(false);
+  expect(visibleIteratedControls(scene.kind,scene.settings,definition('samila').controls,scene.timeline,scene.palette).some(c=>c.key==='transparentBackground')).toBe(false);
+  const legacy={...scene.settings};delete legacy.samilaPresentationModel;
+  expect(visibleIteratedControls(scene.kind,legacy,definition('samila').controls,scene.timeline,scene.palette).some(c=>c.key==='transparentBackground')).toBe(true);
   scene.palette.mode='linear';
   expect(visibleIteratedControls(scene.kind,scene.settings,definition('samila').controls,scene.timeline,scene.palette).some(c=>c.key==='colorPhase')).toBe(true);
  });

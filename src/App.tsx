@@ -1,5 +1,6 @@
 import {SourceSamilaPaletteEditor} from './components/SourceSamilaPaletteEditor';
 import {usesSourceSamilaSplat} from './engine/sourceSamilaSplat';
+import {usesSourceSamilaPresentation} from './engine/sourceSamilaPresentation';
 import {usesSamilaSourceProjection} from './engine/samilaProjection';
 import {SourcePerlinCpuControls} from './components/SourcePerlinCpuControls';
 import {sourcePerlinPreviewViewport} from './engine/sourcePerlinViewport';
@@ -1301,7 +1302,7 @@ export default function App() {
                         ["showGrid", t("辅助网格")],
                         ["showAxes", t("坐标轴")],
                           ["transparentBackground", t("透明背景")],
-                      ].filter(([key])=>(!(usesSourceSurfaceHost(scene)||usesSourceAttractor(scene))||key!=='wireframe')&&bouncingCanvasControl(scene,key)&&rootsAppearanceControlVisible(scene,key)).map(([key, label]) => (
+                      ].filter(([key])=>(!usesSourceSamilaPresentation(scene)||key!=='transparentBackground')&&(!(usesSourceSurfaceHost(scene)||usesSourceAttractor(scene))||key!=='wireframe')&&bouncingCanvasControl(scene,key)&&rootsAppearanceControlVisible(scene,key)).map(([key, label]) => (
                         <Control
                           key={key}
                           spec={{ key, label, group: "", type: "toggle" }}

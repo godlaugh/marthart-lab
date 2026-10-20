@@ -1,5 +1,6 @@
 import {importSourceSamilaAppearance,importSourceSamilaPalette} from './sourceSamilaAppearanceImport';
 import {SAMILA_SOURCE_SPLAT_MODEL,usesSourceSamilaSplat} from './sourceSamilaSplat';
+import {SOURCE_SAMILA_PRESENTATION_MODEL} from './sourceSamilaPresentation';
 import {importSourceSamilaTimeline} from './sourceSamilaTimelineImport';
 import {SAMILA_SCENE_SEQUENCE} from './sourceSamilaReplay';
 import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera,CAPTURED_DENSITY_CAMERA_ACTIONS} from './sourceCameraMode';
@@ -1343,7 +1344,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
-export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
+export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';samilaPresentation?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
 
 /** Import original MathArt JSON while retaining every original value separately. */
 export function parseLegacyScene(text:string,options:LegacyImportOptions={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
@@ -1424,6 +1425,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  }
  if(sourceSamila&&options.samilaSplat!=='legacy-v1'){
   scene.settings.samilaSplatModel=SAMILA_SOURCE_SPLAT_MODEL;
+  if(options.samilaPresentation!=='legacy-v1')scene.settings.samilaPresentationModel=SOURCE_SAMILA_PRESENTATION_MODEL;
   const parsed=importSourceSamilaAppearance(r.peek(['settings']),path=>r.numberToken(path));
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   Object.assign(scene.settings,parsed.value.settings);

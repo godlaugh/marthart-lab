@@ -290,7 +290,7 @@ export function ExportDialog({
         }else{
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
-          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png');
+          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourceSamilaAlpha:kind==='video'?'opaque':'preserve',isCancelled:()=>cancelRef.current});
         }
         checkCancelled();
         if (kind === "image") {
