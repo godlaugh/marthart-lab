@@ -146,7 +146,7 @@ export class SourcePerlinCpuTarget{
  private device:SourcePerlinCpuDevice;private failed=false;private disposed=false;
  private framebuffer?:WebGLFramebuffer;private texture?:WebGLTexture;
  private multisample?:WebGLFramebuffer;private renderbuffer?:WebGLRenderbuffer;
- private gpu?:SourcePerlinGpuDrawing;private gpuChannel?:SourcePerlinGpuChannel;private gpuPixels?:Uint32Array;private gpuBytes=0;
+ private gpu?:SourcePerlinGpuDrawing;private gpuChannel?:SourcePerlinGpuChannel;private gpuPixels?:Uint32Array;private gpuBytes=0;private gpuReleasePending=false;
  private drawCount=0;
  constructor(options:SourcePerlinCpuTargetOptions){
   if(!options||!Number.isSafeInteger(options.width)||!Number.isSafeInteger(options.height)||options.width<1||options.height<1||!Number.isSafeInteger(options.density)||options.density<1||![0,2,4,8].includes(options.samples)||!colorValid(options.initialColor))throw new SourcePerlinCpuTargetError('input','Invalid Perlin CPU target dimensions, samples or initial color.');
@@ -194,6 +194,17 @@ export class SourcePerlinCpuTarget{
  /** Reserve caller-owned postprocessing storage through both capture draws.
   * The operation is synchronous; device allocations consult this reservation. */
  withWorkingBytes<T>(bytes:number,run:()=>T):T{this.check();return this.device.withWorkingBytes(bytes,run);}
+ /** A Scene reset releases its shader/channel bindings, while the canvas and
+  * its accumulated pixels outlive that Scene. Failed release retains both
+  * ownership and the full reservation until a retry completes. This cleanup
+  * also works for failed targets; it does not revive a poisoned target/device. */
+ releaseSceneGpuBindings():void{
+  if(!this.gpu&&!this.gpuChannel&&!this.gpuPixels&&this.gpuBytes===0)return;
+  this.gpuReleasePending=true;
+  this.gpu?.dispose();
+  this.device.resize(this,this.targetBytes);
+  this.gpu=undefined;this.gpuChannel=undefined;this.gpuPixels=undefined;this.gpuBytes=0;this.gpuReleasePending=false;
+ }
  /** Opaque source GPU draw into this same target history, without readback or
   * pixel upload. Six retained flow images can be declared by the host; the
   * selected identity alone controls this target's lazy shader/texture reuse. */
@@ -203,8 +214,8 @@ export class SourcePerlinCpuTarget{
    if(!frame||frame.width!==this.physicalWidth||frame.height!==this.physicalHeight)throw new SourcePerlinCpuTargetError('input','Perlin GPU frame must match the target physical dimensions.');
    const facts=sourcePerlinGpuChannelLayout(channel),prepared=prepareSourcePerlinGpuFrame(frame,facts.size),sourceBytes=retainedSourceBytes===undefined?facts.sourceBytes:retainedSourceBytes;
    if(!Number.isSafeInteger(sourceBytes)||sourceBytes<facts.sourceBytes)throw new SourcePerlinCpuTargetError('input','Perlin retained source bytes must cover the selected channel backing.');
+   if(this.gpuReleasePending||channel!==this.gpuChannel)this.releaseSceneGpuBindings();
    if(channel===this.gpuChannel&&(channel.pixels!==this.gpuPixels||channel.size!==this.gpu?.size))throw new SourcePerlinCpuTargetError('input','Perlin GPU channel identity changed its backing or size.');
-   if(channel!==this.gpuChannel){this.gpu?.dispose();this.gpu=undefined;this.gpuChannel=undefined;this.gpuPixels=undefined;this.gpuBytes=0;this.device.resize(this,this.targetBytes);}
    const bytes=sourceBytes+facts.resourceBytes;
    this.device.resize(this,this.targetBytes+bytes);this.gpuBytes=bytes;this.device.budget(prepared.palette.buffer.byteLength);
    if(!this.gpu){this.gpu=new SourcePerlinGpuDrawing(channel);this.gpuChannel=channel;this.gpuPixels=channel.pixels;}
@@ -343,7 +354,7 @@ export class SourcePerlinCpuTarget{
   }catch(error){this.poison();throw error;}
  }
  diagnostics(){this.check();return{draws:this.drawCount,width:this.width,height:this.height,physicalWidth:this.physicalWidth,physicalHeight:this.physicalHeight,samples:this.options.samples,targetRepresentationBytes:this.targetBytes,gpuRepresentationBytes:this.gpuBytes,deviceRepresentationBytes:this.device.bytes,deviceTargets:this.device.targetCount,initialized:!!this.framebuffer};}
- private releaseResources(){this.gpu?.dispose();this.gpu=undefined;this.gpuChannel=undefined;this.gpuPixels=undefined;this.gpuBytes=0;this.releaseAttachments();}
+ private releaseResources(){this.releaseSceneGpuBindings();this.releaseAttachments();}
  private releaseAttachments(){
   const g=this.device.gl;if(!g)return;
   g.deleteFramebuffer(this.multisample??null);g.deleteRenderbuffer(this.renderbuffer??null);g.deleteFramebuffer(this.framebuffer??null);g.deleteTexture(this.texture??null);

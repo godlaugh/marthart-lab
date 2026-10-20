@@ -18,32 +18,36 @@ export function withPerlinFreshRecording(scene:SceneDocument,simulationFps:numbe
   throw new SourcePerlinRecordingError('input','Perlin 录制模拟帧率必须为 1–120 的整数');
  return {...scene,timeline:{...scene.timeline,fps:simulationFps}};
 }
-export interface PerlinFreshRecordingPlan {
- readonly policy:'fresh-local-source-queue-replay';
- readonly simulationFps:number;readonly encoderFps:number;
+export interface PerlinRecordingClock {
+ readonly simulationFps:number;
  readonly warmupUpdates:1;readonly updates:number;readonly encodedFrames:number;
  readonly firstEncodedUpdate:2|null;readonly lastDisplayFrame:number;
  readonly completionReason:'animation-queue';
 }
+export interface PerlinFreshRecordingPlan extends PerlinRecordingClock {
+ readonly policy:'fresh-local-source-queue-replay';readonly encoderFps:number;
+}
 /** Scene.isAutoRecordingComplete inherits manager.isFinished. MathArt.draw
  * updates, renders, discards its one warmup (or encodes), THEN tests completion.
- * Empty/one-update queues therefore encode zero frames. The shared clock owns
- * float32 folding and one-child-per-frame advancement; span*fps is not a count.
- * This scalar plan never establishes successful model updates or rendering. */
+ * The clock owns float32 folding and one-child-per-frame advancement. This
+ * scalar plan does not choose a configuration snapshot or framebuffer lifetime. */
+export function planPerlinRecordingClock(scene:SceneDocument,simulationFps:number,isCancelled?:()=>boolean):PerlinRecordingClock {
+ if(isCancelled?.())throw new SourcePerlinRecordingError('cancelled','Perlin 录制规划已取消');
+ const configured=withPerlinFreshRecording(scene,simulationFps);
+ const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(configured)!,configured.timeline.tracks,simulationFps,{particleActions:'perlin',isCancelled});
+ const updates=Math.max(1,layout.updates);
+ if((updates-1)/simulationFps>86400)throw new SourcePerlinRecordingError('capacity','Perlin 录制规划超过本地 24 小时帧域');
+ return {simulationFps,warmupUpdates:1,updates,encodedFrames:updates-1,firstEncodedUpdate:updates>1?2:null,lastDisplayFrame:updates-1,completionReason:'animation-queue'};
+}
 export function planPerlinFreshRecording(scene:SceneDocument,options:{simulationFps:number;encoderFps:number;isCancelled?:()=>boolean}):PerlinFreshRecordingPlan {
  if(options.isCancelled?.())throw new SourcePerlinRecordingError('cancelled','Perlin 录制规划已取消');
  if(!Number.isSafeInteger(options.encoderFps)||options.encoderFps<1||options.encoderFps>120)
   throw new SourcePerlinRecordingError('input','Perlin 视频编码帧率必须为 1–120 的整数');
- const fresh=withPerlinFreshRecording(scene,options.simulationFps);
- const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(fresh)!,fresh.timeline.tracks,options.simulationFps,{particleActions:'perlin',isCancelled:options.isCancelled});
- const updates=Math.max(1,layout.updates);
- if((updates-1)/options.simulationFps>86400)throw new SourcePerlinRecordingError('capacity','Perlin 录制规划超过本地 24 小时帧域');
- return {policy:'fresh-local-source-queue-replay',simulationFps:options.simulationFps,encoderFps:options.encoderFps,
-  warmupUpdates:1,updates,encodedFrames:updates-1,firstEncodedUpdate:updates>1?2:null,lastDisplayFrame:updates-1,completionReason:'animation-queue'};
+ return {...planPerlinRecordingClock(scene,options.simulationFps,options.isCancelled),policy:'fresh-local-source-queue-replay',encoderFps:options.encoderFps};
 }
 /** Validate facts from the actual retained render, including the discarded
  * warmup. Never turn a prediction into permission to encode a missing frame. */
-export function assertPerlinRecordingFrame(output:SceneOutput,plan:PerlinFreshRecordingPlan,displayFrame:number):void {
+export function assertPerlinRecordingFrame(output:SceneOutput,plan:PerlinRecordingClock,displayFrame:number):void {
  const frame=output.type==='raster'?output.sourcePerlinFrame:undefined;
  if(!Number.isSafeInteger(displayFrame)||displayFrame<0||displayFrame>plan.lastDisplayFrame||!frame||
   frame.frameIndex!==displayFrame||frame.queueComplete!==(displayFrame===plan.lastDisplayFrame))

@@ -152,6 +152,54 @@ const result=await page.evaluate(async()=>{
    a.dispose();b.draw(base);assert(b.diagnostics().deviceTargets===1,'GPU owner disposal invalidated sibling');b.dispose();
   }
  });
+ run('Scene GPU release preserves CPU and GPU canvas history on the same device',()=>{
+  for(const samples of [0,4]){
+   const a=new Target({...opts,samples}),b=a.createSibling(opts),channel=gpuChannel(),frame={...gpuFrame(),renderStyle:1};
+   a.draw({...base,background:[.2,.4,.6,1]});b.draw({...base,background:[.7,.3,.1,1]});
+   const cpu=a.readPixels(),sibling=b.readPixels(),cpuFacts=a.diagnostics(),contextCount=contexts.length;
+   a.releaseSceneGpuBindings();assert(a.readPixels().every((v,i)=>v===cpu[i]),'Unbound CPU canvas changed');
+   assert(JSON.stringify(a.diagnostics())===JSON.stringify(cpuFacts),'Empty GPU release changed CPU diagnostics');
+   a.drawGpu(frame,channel,undefined,channel.pixels.byteLength*6);
+   const gpu=a.readPixels(),before=a.diagnostics(),resourceCount=live.size;
+   assert(gpu.some((v,i)=>i%4!==3&&v>0),'GPU history fixture is black');
+   a.releaseSceneGpuBindings();const after=a.diagnostics();
+   assert(after.gpuRepresentationBytes===0&&before.gpuRepresentationBytes>0,'Scene GPU reservation survived release');
+   assert(before.deviceRepresentationBytes-after.deviceRepresentationBytes===before.gpuRepresentationBytes,'GPU reservation was not removed exactly');
+   assert(after.targetRepresentationBytes===before.targetRepresentationBytes&&after.deviceTargets===before.deviceTargets&&after.initialized&&after.draws===before.draws,'Scene release changed attachments or draw count');
+   assert(live.size===resourceCount-4,'Scene release did not release only two textures, VAO and program');
+   assert(a.readPixels().every((v,i)=>v===gpu[i]),'Scene release changed existing GPU canvas pixels');
+   assert(b.readPixels().every((v,i)=>v===sibling[i]),'Scene release modified sibling curve pixels');
+   a.releaseSceneGpuBindings();assert(contexts.length===contextCount,'Scene release created another graphics context');
+   const nextChannel={size:512,pixels:new Uint32Array(512*512).fill(0xffc0a020)},nextFrame={...frame,palette:new Uint32Array(256).fill(0xff30b070)};
+   const oracle=new SourcePerlinGpu(nextChannel),expected=oracle.render(nextFrame);oracle.dispose();
+   a.drawGpu(nextFrame,nextChannel);const replaced=a.readPixels();
+   assert(replaced.every((v,i)=>v===expected[i]),'New Scene GPU content differs from standalone shader');
+   assert(replaced.some((v,i)=>v!==gpu[i]),'New Scene fixture did not change GPU content');
+   a.releaseSceneGpuBindings();a.draw({...base,background:[0,0,0,.25],accumulation:true});
+   assert(a.readPixels().every((v,i)=>i%4===3?v===255:Math.abs(v-Math.round(replaced[i]*.75))<=1),'CPU accumulation lost the released GPU image');
+   a.dispose();a.releaseSceneGpuBindings();b.dispose();
+  }
+ });
+ run('failed partial Scene GPU cleanup retains accounting and retries without losing canvas',()=>{
+  for(const resume of ['release','same-channel-draw','target-dispose']){
+   const a=new Target(opts),b=a.createSibling(opts),channel=gpuChannel(),frame={...gpuFrame(),renderStyle:1};b.draw(base);a.drawGpu(frame,channel);
+   const pixels=a.readPixels(),before=a.diagnostics(),old=WebGL2RenderingContext.prototype.deleteTexture;let injected=false,caught;
+   // Throw after the first real texture delete. The remaining GPU handles,
+   // including its program, must remain owned and conservatively reserved.
+   WebGL2RenderingContext.prototype.deleteTexture=function(texture){const result=old.call(this,texture);if(texture&&!injected){injected=true;throw Error('Injected partial GPU release failure');}return result;};
+   try{try{resume==='target-dispose'?a.dispose():a.releaseSceneGpuBindings();}catch(error){caught=error;}}finally{WebGL2RenderingContext.prototype.deleteTexture=old;}
+   assert(caught?.message==='Injected partial GPU release failure','GPU disposal failure was swallowed');
+   assert(JSON.stringify(a.diagnostics())===JSON.stringify(before),'Failed GPU release lost owner reservation');
+   assert(a.readPixels().every((v,i)=>v===pixels[i]),'Failed GPU release changed target pixels');
+   if(resume==='target-dispose'){a.dispose();assert(b.diagnostics().deviceTargets===1,'Dispose retry retained target');}
+   else{
+    if(resume==='release'){a.releaseSceneGpuBindings();assert(a.diagnostics().gpuRepresentationBytes===0,'Release retry retained GPU reservation');}
+    else{a.drawGpu(frame,channel);assert(a.readPixels().every((v,i)=>v===pixels[i]),'Same-channel draw reused partially released GPU resources');}
+    a.dispose();
+   }
+   b.draw(base);b.dispose();
+  }
+ });
  run('GPU source reservations and malformed frames fail before context allocation',()=>{
   for(const kind of ['total-capacity','source-underflow','source-null','wrong-dimensions','cancelled']){
    const a=new Target(opts),channel=gpuChannel(),frame=gpuFrame(),before=contexts.length;
