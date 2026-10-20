@@ -15,7 +15,7 @@ export function supportsGradientOffsets(scene:Pick<SceneDocument,'kind'|'setting
 /** The selected color producer owns which palette an animation can affect.
  * Omitted legacy gradient models still mean the local palette; only newly
  * authored source-color actions receive the source offset default. */
-export function gradientAnimationCapabilities(scene:Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'attractorSource'|'perlinGpuSource'|'perlinCpuSource'>>){
+export function gradientAnimationCapabilities(scene:Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'attractorSource'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>>){
  const sourceSurface=usesSourceSurfaceGeometry(scene),sourceAttractor=usesSourceAttractor(scene),sourcePerlin=usesSourcePerlin(scene),sourceParticles=sourceSurface||sourceAttractor||sourcePerlin,sourceRoots=scene.kind==='roots'&&usesRootsSourceDensity(scene.settings),sourceFractal=usesFractalSourceColor(scene),localPalette=!sourceParticles&&!sourceRoots&&!sourceFractal&&(scene.kind!=='domain'||parseDomainColorVersion(scene.settings.domainColorVersion)==='local-v1');
  const defaultAnimation:GradientAnimation=sourceParticles?{...SOURCE_PARTICLE_GRADIENT_DEFAULT}:localPalette||sourceRoots?{mode:'offset_cycle',speed:.1,interpolation:'rgb'}:{model:'offsets',mode:'hue_rotate',speed:60,interpolation:'oklab',affectInside:true,affectOutside:true};
  return{localPalette,offsets:sourceParticles||supportsGradientOffsets(scene),defaultAnimation,paletteOffsetTarget:sourceRoots?'settings.rootSourcePaletteOffset':sourceFractal?'fractalColor.paletteOffset':localPalette?'palette.offset':'settings.paletteOffset',

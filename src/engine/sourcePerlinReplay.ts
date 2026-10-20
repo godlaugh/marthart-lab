@@ -1,19 +1,19 @@
 import type {SceneDocument} from '../types';
 import {SourcePerlinColorRuntime} from './sourcePerlinColorRuntime';
 import {parseSourcePerlinCpuDocument} from './sourcePerlinCpuDocument';
-import {usesSourcePerlinCpu} from './sourcePerlinIdentity';
+import {usesSourcePerlinCpu,usesSourcePerlinGpu,sourcePerlinCpuConfiguration,sourcePerlinGpuConfiguration} from './sourcePerlinIdentity';
 import type {SourcePerlinGpuDocumentPayload} from './sourcePerlinGpuDocument';
 import {SourcePerlinParameterRuntime} from './sourcePerlinParameterRuntime';
 import {OrdinarySourceCameraTimelineSession,ORDINARY_CAMERA_SEQUENCE} from './ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
-import {parseSourcePerlinGpuDocument,usesSourcePerlinGpu} from './sourcePerlinGpuDocument';
+import {parseSourcePerlinGpuDocument} from './sourcePerlinGpuDocument';
 
 /** The same queue owns image time, palette refresh and parameter actions. GPU
  * pixels have no frame history, but palette texture construction does: stopping
  * a gradient must retain the last displayed palette, even on a cold seek. */
 export function createSourcePerlinGpuReplay(scene:SceneDocument,isCancelled?:()=>boolean){
  if(!usesSourcePerlinGpu(scene))throw new Error('缺少源 Perlin GPU 配置');
- const parsed=parseSourcePerlinGpuDocument(scene.perlinGpuSource);
+ const parsed=parseSourcePerlinGpuDocument(sourcePerlinGpuConfiguration(scene));
  if(!parsed.ok)throw new Error(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
  return createScalarReplay(scene,parsed.value,'gpu',isCancelled);
 }
@@ -44,5 +44,5 @@ function createScalarReplay<T extends Pick<SourcePerlinGpuDocumentPayload,'palet
 export function replaySourcePerlinCamera(scene:SceneDocument,time:number){
  // Perlin has no particle tracking. Camera queries need scalar queue state only;
  // actual geometry and framebuffer history belong to the generation session.
- const owner=usesSourcePerlinCpu(scene)?(()=>{const parsed=parseSourcePerlinCpuDocument(scene.perlinCpuSource);if(!parsed.ok)throw new Error(parsed.error.reason);return createScalarReplay(scene,parsed.value,'cpu');})():createSourcePerlinGpuReplay(scene);try{return owner.timeline.evaluate(time);}finally{owner.timeline.reset();}
+ const owner=usesSourcePerlinCpu(scene)?(()=>{const parsed=parseSourcePerlinCpuDocument(sourcePerlinCpuConfiguration(scene));if(!parsed.ok)throw new Error(parsed.error.reason);return createScalarReplay(scene,parsed.value,'cpu');})():createSourcePerlinGpuReplay(scene);try{return owner.timeline.evaluate(time);}finally{owner.timeline.reset();}
 }

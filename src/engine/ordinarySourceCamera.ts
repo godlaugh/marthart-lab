@@ -7,8 +7,8 @@ export interface OrdinarySourceCameraEvaluation {time:number;camera:SourceCamera
 export interface OrdinarySourceCameraFrame extends OrdinarySourceCameraEvaluation {
  model:typeof SOURCE_CAMERA_MODEL;viewport:SourceCameraViewport;
 }
-type Scene=Pick<SceneDocument,'kind'|'settings'|'sourceCamera'|'perlinGpuSource'|'perlinCpuSource'>;
-export function ordinarySourceCameraGeometry(scene:Pick<SceneDocument,'kind'|'settings'|'perlinGpuSource'|'perlinCpuSource'>):boolean {
+type Scene=Pick<SceneDocument,'kind'|'settings'|'sourceCamera'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>;
+export function ordinarySourceCameraGeometry(scene:Pick<SceneDocument,'kind'|'settings'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>):boolean {
  if(usesSourcePerlin(scene))return true;
  if(scene.kind==='surface'||scene.kind==='implicit')return true;
  if(scene.kind==='attractor')return scene.settings.presentation!=='density';

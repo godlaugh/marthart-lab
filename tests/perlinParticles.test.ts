@@ -127,16 +127,16 @@ describe('continuous production boundaries',()=>{
  });
  it('imports actual probability/step/trail settings without dropping persistence semantics',()=>{
   const {scene:s}=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'legacy',settings:{cpu_render_style:'PARTICLES',particle_count:4,step_size:.5,respawn_rate:.1,use_accumulation_buffer:true,accumulation_fade_alpha:255,trail_lifetime:12,dot_size:.8}}));
-  expect(s.perlinCpuSource).toMatchObject({cpuStyle:'particles',particles:{count:4,stepSize:.5,respawnRate:Math.fround(.1)},display:{accumulation:true,accumulationFadeAlpha:255,trailLifetime:12,dotSize:Math.fround(.8)}});
+  expect(s.perlinSource).toMatchObject({cpuStyle:'particles',particles:{count:4,stepSize:.5,respawnRate:Math.fround(.1)},display:{accumulation:true,accumulationFadeAlpha:255,trailLifetime:12,dotSize:Math.fround(.8)}});
  });
  it('preserves long trail lifetimes while bounding the actual requested history, not an unvisited future',()=>{
   const s=scene({particleDisplay:'trails',particleCount:1,simulationFps:2,trailLifetime:120,trailStride:2});const out=geometry(generatePerlinParticles(s,{...context,time:120}));expect(out.trails!.positions.length/3).toBe(121);expect(out.trails!.alphas![0]).toBe(0);expect(out.trails!.alphas![120]).toBe(1);
   expect(geometry(generatePerlinParticles(scene({particleDisplay:'trails',particleCount:20000,simulationFps:120,trailLifetime:3600,trailStride:1}),{...context,time:0})).positions.length/3).toBe(20000);
-  const {scene:imported}=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'long',settings:{trail_lifetime:120,particle_count:4}}));expect(imported.perlinCpuSource?.display.trailLifetime).toBe(120);
+  const {scene:imported}=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'long',settings:{trail_lifetime:120,particle_count:4}}));expect(imported.perlinSource?.display.trailLifetime).toBe(120);
  });
  it('preserves zero-size/zero-speed source controls and high finite respawn probabilities',()=>{
   const {scene:s}=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'zero',settings:{particle_count:15000,step_size:0,noise_scale:0,dot_size:0,respawn_rate:1-Number.EPSILON,use_accumulation_buffer:true}}));
-  expect(s.perlinCpuSource).toMatchObject({particles:{count:15000,stepSize:0,respawnRate:1},parameters:{noise_scale:0},display:{dotSize:0,accumulation:true}});
+  expect(s.perlinSource).toMatchObject({particles:{count:15000,stepSize:0,respawnRate:1},parameters:{noise_scale:0},display:{dotSize:0,accumulation:true}});
  });
  it('rejects malformed settings and over-budget expansion before doing unbounded work',()=>{
   for(const patch of [{particleCount:1.5},{simulationFps:0},{particleDisplay:'fake'},{particleSpeed:-1},{respawnRate:-1},{trailStride:0},{particleRadius:-1},{particleDomainWidth:0},{flow:'fake'},{seed:-1},{presentation:'density'},{particleCount:20000,particleDisplay:'trails',simulationFps:120,trailLifetime:60,trailStride:1}] as Settings[])expect(()=>generatePerlinParticles(scene(patch),context)).toThrow();

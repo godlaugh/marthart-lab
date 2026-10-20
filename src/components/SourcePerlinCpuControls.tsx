@@ -2,15 +2,15 @@ import {useState} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
 import {SourcePerlinDraftField} from './SourcePerlinDraftField';
-import {usesSourcePerlinCpu} from '../engine/sourcePerlinIdentity';
+import {usesSourcePerlinCpu,sourcePerlinCpuConfiguration} from '../engine/sourcePerlinIdentity';
 import {parseSourcePerlinCpuDocument,type SourcePerlinCpuDocumentPayload as Config} from '../engine/sourcePerlinCpuDocument';
 
 type Props={scene:SceneDocument;onChange:(scene:SceneDocument)=>void;tab?:'geometry'|'appearance'|'all'};
 export function SourcePerlinCpuControls({scene,onChange,tab='all'}:Props){
  const {t}=useI18n(),[error,setError]=useState('');
- if(!usesSourcePerlinCpu(scene)||!scene.perlinCpuSource)return null;
- const source=scene.perlinCpuSource;
- const emit=(candidate:Config)=>{const parsed=parseSourcePerlinCpuDocument(candidate);if(!parsed.ok)return `${parsed.error.path.join('.')}: ${t(parsed.error.reason)}`;onChange({...scene,perlinCpuSource:parsed.value});setError('');return undefined;};
+ const source=sourcePerlinCpuConfiguration(scene);
+ if(!usesSourcePerlinCpu(scene)||!source)return null;
+ const emit=(candidate:Config)=>{const parsed=parseSourcePerlinCpuDocument(candidate);if(!parsed.ok)return `${parsed.error.path.join('.')}: ${t(parsed.error.reason)}`;onChange(scene.perlinSource?{...scene,perlinSource:{...scene.perlinSource,...parsed.value}}:{...scene,perlinCpuSource:parsed.value});setError('');return undefined;};
  const field=(id:string,label:string,value:string,commit:(text:string)=>string|undefined,multiline=false)=><SourcePerlinDraftField key={`${id}:${value}`} prefix="source-perlin-cpu" id={id} label={t(label)} value={value} commit={commit} multiline={multiline}/>;
  const numeric=<K extends 'particles'|'curves'|'display'|'parameters'>(group:K,key:keyof Config[K],id:string,label:string)=>field(id,label,String(source[group][key]),raw=>{
   if(!raw.trim()||!Number.isFinite(Number(raw)))return t('请输入有限数值');

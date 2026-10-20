@@ -2,7 +2,9 @@ import {SourcePerlinDraftField} from './SourcePerlinDraftField';
 import {useState, type ReactNode} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
-import {parseSourcePerlinGpuDocument, usesSourcePerlinGpu, type SourcePerlinGpuDocumentPayload} from '../engine/sourcePerlinGpuDocument';
+import {parseSourcePerlinGpuDocument, type SourcePerlinGpuDocumentPayload} from '../engine/sourcePerlinGpuDocument';
+
+import {usesSourcePerlinGpu,sourcePerlinGpuConfiguration} from '../engine/sourcePerlinIdentity';
 
 type Props = {scene:SceneDocument; onChange:(scene:SceneDocument)=>void; tab?:'geometry'|'appearance'|'all'};
 type Commit = (text:string)=>string|undefined;
@@ -21,12 +23,13 @@ const appearanceFields:readonly (readonly [UniformKey,string])[]=[
 /** Canonical source GPU authoring only: no local Perlin settings are rewritten. */
 export function SourcePerlinGpuControls({scene,onChange,tab='all'}:Props){
  const {t}=useI18n(),[error,setError]=useState('');
- if(!usesSourcePerlinGpu(scene)||!scene.perlinGpuSource)return null;
- const source=scene.perlinGpuSource;
+ const source=sourcePerlinGpuConfiguration(scene);
+ if(!usesSourcePerlinGpu(scene)||!source)return null;
  const emit=(candidate:SourcePerlinGpuDocumentPayload):string|undefined=>{
   const parsed=parseSourcePerlinGpuDocument(candidate);
   if(!parsed.ok){const path=parsed.error.path.join('.');return path?`${path}: ${t(parsed.error.reason)}`:t(parsed.error.reason);}
-  onChange({...scene,perlinGpuSource:parsed.value});setError('');return undefined;
+  const {textureStyle,uniforms,...common}=parsed.value;
+  onChange(scene.perlinSource?{...scene,perlinSource:{...scene.perlinSource,...common,gpu:{textureStyle,uniforms}}}:{...scene,perlinGpuSource:parsed.value});setError('');return undefined;
  };
  const field=(id:string,label:string,value:string,commit:Commit,multiline=false,numeric=false)=><SourcePerlinDraftField
   key={`${id}:${value}`} id={id} label={t(label)} value={value} commit={commit} multiline={multiline} numeric={numeric}/>;

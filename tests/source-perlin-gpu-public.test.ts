@@ -9,16 +9,16 @@ const imported=()=>parseLegacyScene(JSON.stringify(source())).scene;
 describe('source Perlin GPU public authoring and replay',()=>{
  it('imports source settings once and preserves original source evidence',()=>{
   const result=parseLegacyScene(JSON.stringify(source()));expect(result.source).toEqual(source());
-  const scene=result.scene;expect(scene.perlinGpuSource?.uniforms.brightness).toBe(2);expect(scene.perlinGpuSource?.seed).toBe('1771842692935');
+  const scene=result.scene;expect(scene.perlinSource?.gpu.uniforms.brightness).toBe(2);expect(scene.perlinSource?.seed).toBe('1771842692935');
   expect(scene.timeline.tracks[0].actions?.map(a=>a.method)).toEqual(['gradientStart','paramStart']);expect(scene.timeline.tracks[0].actions?.[1].perlinParameters?.parameters[0].name).toBe('noise_scale');
  });
  it('saves canonical edits without reimporting original values',()=>{
-  const scene=imported();scene.perlinGpuSource!.uniforms={...scene.perlinGpuSource!.uniforms,brightness:3};scene.perlinGpuSource!.seed='-9223372036854775808';
-  const reopened=parseScene(serializeScene(scene));expect(reopened.perlinGpuSource).toEqual(scene.perlinGpuSource);expect(serializeScene(reopened)).toBe(serializeScene(scene));
+  const scene=imported();scene.perlinSource!.gpu.uniforms={...scene.perlinSource!.gpu.uniforms,brightness:3};scene.perlinSource!.seed='-9223372036854775808';
+  const reopened=parseScene(serializeScene(scene));expect(reopened.perlinSource).toEqual(scene.perlinSource);expect(serializeScene(reopened)).toBe(serializeScene(scene));
  });
  it('roundtrips retained source numeric tokens through the actual project-file path',()=>{
   const raw=JSON.stringify({...source(),settings:{...source().settings,seed:9007199254740992,gpu_render_style:1,gpu_march_steps:8,noise_scale:.01}}).replace('9007199254740992','9007199254740993');
-  const scene=parseProjectFile(raw).scene;expect(scene.perlinGpuSource?.seed).toBe('9007199254740993');
+  const scene=parseProjectFile(raw).scene;expect(scene.perlinSource?.seed).toBe('9007199254740993');
   const reopened=parseScene(serializeScene(scene));expect(reopened.provenance?.sourceNumberTokens).toEqual(scene.provenance?.sourceNumberTokens);
   expect(reopened.provenance?.sourceNumberTokens?.some(item=>item.path.join('.')==='settings.gpu_march_steps')).toBe(true);
   expect(reopened.provenance?.sourceNumberTokens?.some(item=>item.path.includes('noise_scale')&&item.path.at(-1)==='min')).toBe(true);

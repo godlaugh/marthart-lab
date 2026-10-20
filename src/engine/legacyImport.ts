@@ -1,7 +1,5 @@
-import {sourcePerlinBackendFromSettings} from './sourcePerlinDocumentConfig';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
-import {importSourcePerlinCpuDocument} from './sourcePerlinCpuDocument';
-import {importSourcePerlinGpuDocument} from './sourcePerlinGpuDocument';
+import {importSourcePerlinDocument} from './sourcePerlinDocument';
 import {importSourcePerlinGradientGroup} from './sourcePerlinGradientImport';
 import {importSourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import {importSourceBouncingDocument} from './sourceBouncingDocument';
@@ -1346,9 +1344,6 @@ function projectResolution(r:Reader,scene:SceneDocument):void {
 function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'legacy-v1'}={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
  const r=new Reader(source,metadata,sourceText),version=r.str('config_version',true);if(version!=='1.0.0'&&version!=='1.0')fail(`不支持 config_version=${version}`);
  const type=r.str('type',true)!,kind=TYPES[type.toUpperCase()];if(!kind)fail(`未知场景类型 ${type}`);const def=definitions.find(d=>d.kind===kind)!;const scene=createScene(def);
- const perlinBackend=kind==='perlin'?sourcePerlinBackendFromSettings(r.peek(['settings'])):undefined;
- if(perlinBackend&&!perlinBackend.ok)fail(`源 Perlin ${perlinBackend.error.path.join('.')}: ${perlinBackend.error.reason}`);
- const perlinGpuInput=perlinBackend?.ok&&perlinBackend.value==='gpu';
  if(ordinaryFamily(kind))r.validateNativeObjects();
  const ordinaryScope=ordinaryFamily(kind)?ordinaryResult(prepareOrdinarySourceScalarScope(kind,{parameters:r.peek(['parameters']),memberOrder:(kind==='surface'||kind==='implicit')&&r.has(['parameters'])?r.sourceKeys(['parameters']):undefined})):undefined;
  if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
@@ -1367,22 +1362,13 @@ function importLegacyValue(source:ObjectValue,options:{samilaCamera?:'auto'|'leg
  const surfaceBackend=kind==='surface'?r.peek(['settings','render_mode']):undefined;
  if(typeof surfaceMode==='string'&&surfaceMode.toUpperCase()==='MESH'||typeof surfaceBackend==='string'&&surfaceBackend.toUpperCase()==='GPU'||ordinaryStructure?.some(clip=>clip.type==='surface_mode_transition'))ordinarySurfaceHostGeometry(r,scene);
  else if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
- if(perlinGpuInput){
-  const parsed=importSourcePerlinGpuDocument(r.peek(['settings']),r.peek(['palette']),{defaultSeed:String(Date.now()),numberToken:path=>r.numberToken(path)});
+ if(kind==='perlin'){
+  const parsed=importSourcePerlinDocument(r.peek(['settings']),r.peek(['palette']),{defaultSeed:String(Date.now()),numberToken:path=>r.numberToken(path)});
   if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
-  const facts=parsed.value;scene.perlinGpuSource=facts.configuration;
+  const facts=parsed.value;scene.perlinSource=facts.configuration;
   for(const path of facts.consumedPaths)r.use(path);
   for(const path of facts.numericPaths)r.retainNumberToken(path);
-  r.warnings.push(...facts.diagnostics,'源 Perlin GPU 使用原包着色器适配和独立 Processing 纹理；原版完整画面仍待验收。');
-  Object.assign(scene.settings,{scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1});
- }
- if(kind==='perlin'&&!perlinGpuInput){
-  const parsed=importSourcePerlinCpuDocument(r.peek(['settings']),r.peek(['palette']),{defaultSeed:String(Date.now()),numberToken:path=>r.numberToken(path)});
-  if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
-  const facts=parsed.value;scene.perlinCpuSource=facts.configuration;
-  for(const path of facts.consumedPaths)r.use(path);
-  for(const path of facts.numericPaths)r.retainNumberToken(path);
-  r.warnings.push(...facts.diagnostics,'源 Perlin CPU 按固定帧率重放；原版 JVM／JOGL 完整画面仍待验收。');
+  r.warnings.push(...facts.diagnostics,'源 Perlin 保留 CPU 与 GPU 设置，GPU 使用原包着色器适配；原版 JVM／JOGL 完整画面仍待验收。');
   Object.assign(scene.settings,{scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1});
  }
  // Definitions supply explicit application defaults for omitted optional settings.

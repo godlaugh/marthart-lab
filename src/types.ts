@@ -1,3 +1,4 @@
+import type {SourcePerlinDocumentPayload} from './engine/sourcePerlinDocument';
 import type {SourcePerlinCpuDocumentPayload} from './engine/sourcePerlinCpuDocument';
 import type {SourcePerlinGpuDocumentPayload} from './engine/sourcePerlinGpuDocument';
 import type {SourceBouncingView} from './engine/sourceBouncingNavigation';
@@ -210,6 +211,9 @@ export interface SceneDocument {
   surfaceSource?: SourceSurfaceMeshConfiguration;
   /** Canonical native Attractor authoring. Omission keeps the local model. */
   attractorSource?: SourceAttractorDocumentPayload;
+  /** Complete authored Perlin configuration; both backend settings are retained. */
+  perlinSource?: SourcePerlinDocumentPayload;
+  /** Legacy single-backend payloads remain readable when provenance is incomplete. */
   perlinGpuSource?: SourcePerlinGpuDocumentPayload;
   perlinCpuSource?: SourcePerlinCpuDocumentPayload;
   /** Explicit source identity; omission preserves the existing local model. */

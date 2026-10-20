@@ -1,5 +1,6 @@
+import {parseSourcePerlinDocument,migrateSourcePerlinDocument} from './sourcePerlinDocument';
 import {replaySourcePerlinCamera} from './sourcePerlinReplay';
-import {usesSourcePerlin,usesSourcePerlinCpu} from './sourcePerlinIdentity';
+import {usesSourcePerlin} from './sourcePerlinIdentity';
 import {parseSourcePerlinCpuDocument} from './sourcePerlinCpuDocument';
 import {parseSourcePerlinGpuDocument} from './sourcePerlinGpuDocument';
 import {usesSourceAttractor,parseSourceAttractorDocument,prepareSourceAttractorScene} from './sourceAttractorDocument';
@@ -209,14 +210,19 @@ export function parseSceneValue(data: unknown): SceneDocument {
     if(data.kind==='surface'||data.kind==='implicit')geometryColorModel({kind:data.kind,settings:data.settings as Settings});
     if(data.kind==='surface'||data.kind==='attractor'&&!usesSourceAttractor(data as unknown as SceneDocument))parseTrailAppearance(data.settings as Settings);
   }
-  if(data.perlinCpuSource!==undefined){
-    if(!usesSourcePerlinCpu(data as unknown as SceneDocument))fail('源 Perlin CPU 配置只能用于 Perlin 场景');
-    if(data.perlinGpuSource!==undefined)fail('同一作品只能有一个活动 Perlin 源后端');
-    const parsed=parseSourcePerlinCpuDocument(data.perlinCpuSource);if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);data.perlinCpuSource=parsed.value;
-  }
-  if(data.perlinGpuSource!==undefined){
-    if(!usesSourcePerlin(data as unknown as SceneDocument))fail('源 Perlin GPU 配置只能用于 Perlin 场景');
-    const parsed=parseSourcePerlinGpuDocument(data.perlinGpuSource);if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);data.perlinGpuSource=parsed.value;
+  const perlinPayloads=['perlinSource','perlinCpuSource','perlinGpuSource'].filter(key=>data[key]!==undefined);
+  if(perlinPayloads.length>1)fail('同一作品只能有一个活动 Perlin 源配置，不能混存完整与旧后端配置');
+  if(perlinPayloads.length&&data.kind!=='perlin')fail('源 Perlin 配置只能用于 Perlin 场景');
+  if(data.perlinSource!==undefined){
+    const parsed=parseSourcePerlinDocument(data.perlinSource);if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);data.perlinSource=parsed.value;
+  }else if(data.perlinCpuSource!==undefined||data.perlinGpuSource!==undefined){
+    if(data.perlinCpuSource!==undefined){
+      const parsed=parseSourcePerlinCpuDocument(data.perlinCpuSource);if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);data.perlinCpuSource=parsed.value;
+    }else{
+      const parsed=parseSourcePerlinGpuDocument(data.perlinGpuSource);if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);data.perlinGpuSource=parsed.value;
+    }
+    const migrated=migrateSourcePerlinDocument(data as unknown as SceneDocument);
+    if(migrated.status==='complete'){data.perlinSource=migrated.configuration;delete data.perlinCpuSource;delete data.perlinGpuSource;}
   }
   if(data.attractorSource!==undefined){
     if(!usesSourceAttractor(data as unknown as SceneDocument))fail('源吸引子配置只能用于吸引子场景');

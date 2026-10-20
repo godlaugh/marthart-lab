@@ -152,12 +152,14 @@ export function createPerlinConfigReader(rawSettings: unknown, options: SourcePe
   if(text.length>SOURCE_COLOR_TEXT_BUDGET)return fail('capacity',['settings',key],'颜色超过本地文本预算');
   try{return sourceConfigPackedColor(text);}catch(error){if(!(error instanceof SourceConfigColorError))throw error;diagnostics.push(`settings.${key}: 原版颜色解析失败，采用白色；原字段保留在 source。`);return 0xffffffff;}
  };
+ // JsonPerlinConfig compares only GPU, ignoring case but never trimming.
  const backend=(): 'cpu'|'gpu'=>{const value=read('render_mode');return typeof value==='string'&&javaEqualsIgnoreCaseAscii(value,'GPU')?'gpu':'cpu';};
  return {read,scalar,int,seed,parameters,palette,enumValue,boolean,packedColor,backend,consumedPaths,numericPaths,diagnostics};
 }
 
-/** JsonPerlinConfig compares only render_mode to GPU using equalsIgnoreCase,
- * without trim. Missing, null, invalid and other values retain/select CPU. */
-export function sourcePerlinBackendFromSettings(rawSettings:unknown):SourcePerlinDocumentResult<'cpu'|'gpu'>{
- return attempt(()=>createPerlinConfigReader(rawSettings).backend());
+export type SourcePerlinConfigReader = ReturnType<typeof createPerlinConfigReader>;
+/** Read shared authored values exactly once for a complete configuration. */
+export function readSourcePerlinCommonConfiguration(reader:SourcePerlinConfigReader,rawPalette:unknown){
+ const seed=reader.seed(),parameters=reader.parameters(),cpuStyle=reader.enumValue('cpu_render_style',{PARTICLES:'particles',FIELD_CURVES:'field-curves'} as const,'particles'),palette=reader.palette(rawPalette);
+ return {seed,palette,parameters,cpuStyle};
 }

@@ -2,7 +2,7 @@ import {createServer} from 'vite';
 import {chromium} from '@playwright/test';
 import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-const sourcePaths=['src/engine/sourcePerlinCpuTarget.ts','src/engine/sourceProcessingStroke.ts','src/engine/sourceProcessingPoints.ts','scripts/verify-source-perlin-target-resources.mjs'];
+const sourcePaths=['src/engine/sourcePerlinCpuTarget.ts','src/engine/sourcePerlinGpu.ts','src/engine/sourcePerlinGpuShader.ts','src/engine/sourceProcessingStroke.ts','src/engine/sourceProcessingPoints.ts','scripts/verify-source-perlin-target-resources.mjs'];
 const sourceHashes=()=>Promise.all(sourcePaths.map(async path=>[path,createHash('sha256').update(await readFile(path)).digest('hex')])).then(Object.fromEntries);
 const before=await sourceHashes();
 const report={at:new Date().toISOString(),scope:'Real Chromium WebGL2 shared target ownership, resource accounting, input rejection and failure recovery.',nativeParity:'Not established; this verifier covers device semantics, not JVM/JOGL frame parity.'};
@@ -13,6 +13,7 @@ browser=await chromium.launch({channel:'chrome',headless:true});
 const page=await browser.newPage();await page.route('**/shared-target',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'shared-target');
 const result=await page.evaluate(async()=>{
  const {SourcePerlinCpuTarget:Target}=await import('/src/engine/sourcePerlinCpuTarget.ts');
+ const {SourcePerlinGpu}=await import('/src/engine/sourcePerlinGpu.ts');
  const identity=new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]);
  const opts={width:7,height:5,density:1,samples:0,initialColor:[0,0,0,0]},base={projection:identity,background:[0,0,0,0],accumulation:false,primitives:[]};
  const live=new Set(),restores=[],contexts=[],tests=[];
@@ -25,6 +26,8 @@ const result=await page.evaluate(async()=>{
  const run=(name,fn)=>{fn();assert(live.size===0,`${name} leaked ${live.size}`);tests.push(name);};
  const runAsync=async(name,fn)=>{await fn();assert(live.size===0,`${name} leaked ${live.size}`);tests.push(name);};
  const emptyPrimitive=(backing=new ArrayBuffer(0))=>({kind:'lines',buffers:{positions:new Float32Array(backing,0,0),directions:new Float32Array(),colors:new Float32Array(),indices:new Uint16Array(),caches:[]}});
+ const gpuChannel=()=>({size:512,pixels:new Uint32Array(512*512).fill(0xff808080)});
+ const gpuFrame=()=>({width:opts.width,height:opts.height,palette:new Uint32Array(256).fill(0xff4080c0),time:.5,noiseFrequency:1.5,warpAmplitude:.1,warpFrequency:2,directionOffset:0,timeSpeed:1,marchSteps:1,stepSize:.008,brightness:1.7,vignettePower:.1,fiberStrength:.7,renderStyle:0});
  try{
  run('siblings share one context and survive parent disposal',()=>{
   const a=new Target(opts),b=a.createSibling(opts);b.draw({...base,background:[1,.5,.25,.5]});const n=contexts.length;
@@ -132,6 +135,41 @@ const result=await page.evaluate(async()=>{
   const a=new Target(opts),b=a.createSibling(opts);a.draw(base);let late;
   b.draw({...base,streamPrimitives:consume=>{late=consume;}});assert(b.diagnostics().draws===1,'Empty synchronous stream did not complete');
   fail(()=>late(emptyPrimitive()),'input');fail(()=>b.readPixels(),'failed');a.draw(base);assert(a.diagnostics().deviceTargets===1,'Late consumer retained target');a.dispose();b.dispose();
+ });
+ run('GPU drawing preserves shared target history, MSAA and sibling ownership',()=>{
+  for(const smooth of [false,true]){
+   const a=smooth?Target.createSmoothed(opts,4):new Target(opts),b=a.createSibling(opts),channel=gpuChannel(),frame=gpuFrame(),standalone=new SourcePerlinGpu(channel);
+   const reference=standalone.render(frame);standalone.dispose();
+   a.draw({...base,background:[1,0,0,1]});b.draw({...base,background:[0,1,0,.5]});const sibling=b.readPixels(),count=contexts.length;
+   a.drawGpu(frame,channel,undefined,channel.pixels.byteLength*6);assert(contexts.length===count,'GPU draw created another context');
+   const pixels=a.readPixels();assert(pixels.every((v,i)=>v===reference[i]),'Shared GPU differs from standalone shader');assert(b.readPixels().every((v,i)=>v===sibling[i]),'GPU overwrote sibling cache');
+   const resources=live.size,bytes=a.diagnostics().gpuRepresentationBytes;a.drawGpu(frame,channel,undefined,channel.pixels.byteLength*6);
+   assert(live.size===resources&&a.diagnostics().gpuRepresentationBytes===bytes,'Stable channel rebuilt GPU resources');
+   a.draw({...base,accumulation:true,background:[0,0,0,.25]});const faded=a.readPixels();
+   assert(faded.every((v,i)=>i%4===3?v===255:Math.abs(v-Math.round(pixels[i]*.75))<=1),'CPU fade did not retain GPU framebuffer pixels');
+   assert(a.diagnostics().gpuRepresentationBytes===bytes,'CPU switch released GPU resources');
+   a.drawGpu(frame,{...channel},undefined,channel.pixels.byteLength*6);assert(live.size===resources,'Changed channel leaked GPU resources');
+   a.dispose();b.draw(base);assert(b.diagnostics().deviceTargets===1,'GPU owner disposal invalidated sibling');b.dispose();
+  }
+ });
+ run('GPU source reservations and malformed frames fail before context allocation',()=>{
+  for(const kind of ['total-capacity','source-underflow','source-null','wrong-dimensions','cancelled']){
+   const a=new Target(opts),channel=gpuChannel(),frame=gpuFrame(),before=contexts.length;
+   fail(()=>a.drawGpu(kind==='wrong-dimensions'?{...frame,width:frame.width+1}:frame,channel,kind==='cancelled'?()=>true:undefined,kind==='source-underflow'?0:kind==='source-null'?null:kind==='total-capacity'?256*1024*1024:undefined),kind==='total-capacity'?'capacity':kind==='cancelled'?'cancelled':'input');
+   assert(contexts.length===before,'Invalid GPU request created context');fail(()=>a.readPixels(),'failed');a.dispose();
+  }
+ });
+ run('GPU allocation failure and changed channel backing preserve siblings',()=>{
+  for(const changed of [false,true]){
+   const a=new Target(opts),b=a.createSibling(opts),channel=gpuChannel();b.draw(base);a.draw(base);
+   if(changed){a.drawGpu(gpuFrame(),channel);channel.pixels=channel.pixels.slice();fail(()=>a.drawGpu(gpuFrame(),channel),'input');}
+   else{const old=WebGL2RenderingContext.prototype.createTexture;WebGL2RenderingContext.prototype.createTexture=()=>null;try{fail(()=>a.drawGpu(gpuFrame(),channel),'render');}finally{WebGL2RenderingContext.prototype.createTexture=old;}}
+   b.draw(base);assert(b.diagnostics().deviceTargets===1,'GPU failure retained consumer');a.dispose();b.dispose();
+  }
+ });
+ run('context loss releases CPU and GPU resources across the whole device',()=>{
+  const a=new Target(opts),b=a.createSibling(opts);a.drawGpu(gpuFrame(),gpuChannel());b.draw(base);contexts.at(-1).getExtension('WEBGL_lose_context').loseContext();
+  fail(()=>a.drawGpu(gpuFrame(),gpuChannel()),'render');fail(()=>b.readPixels(),'failed');assert(live.size===0,'GPU context loss leaked resources');a.dispose();b.dispose();
  });
  run('source smoothing selection reuses the returned target device',()=>{
   const before=contexts.length,a=Target.createSmoothed(opts,8),g=contexts.at(-1),expected=Math.min(8,g.getParameter(g.MAX_SAMPLES));

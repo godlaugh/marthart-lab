@@ -1,7 +1,7 @@
 import {SOURCE_PERLIN_CPU_FIELDS as sourceFields} from './sourcePerlinFields';
 import type { SourcePerlinParameterValues } from './sourcePerlinParameterRuntime';
-import type { SourcePerlinDocumentError, SourcePerlinDocumentResult, SourcePerlinDocumentImportOptions } from './sourcePerlinDocumentConfig';
-import { attempt, fail, finite, integer, seedText, exactKeys, parsePerlinPalette, parsePerlinParameters, parsePerlinCpuStyle, defaultPerlinParameters, createPerlinConfigReader } from './sourcePerlinDocumentConfig';
+import type { SourcePerlinDocumentError, SourcePerlinDocumentResult, SourcePerlinDocumentImportOptions, SourcePerlinConfigReader } from './sourcePerlinDocumentConfig';
+import { attempt, fail, finite, integer, seedText, exactKeys, parsePerlinPalette, parsePerlinParameters, parsePerlinCpuStyle, defaultPerlinParameters, createPerlinConfigReader, readSourcePerlinCommonConfiguration } from './sourcePerlinDocumentConfig';
 import { SOURCE_PERLIN_DEFAULT_PALETTE } from './sourcePerlinColorRuntime';
 
 export interface SourcePerlinCpuDocumentPayload {
@@ -81,14 +81,17 @@ export function parseSourcePerlinCpuDocument(raw:unknown):SourcePerlinCpuDocumen
 export function importSourcePerlinCpuDocument(rawSettings:unknown,rawPalette:unknown,options:SourcePerlinCpuDocumentImportOptions={}):SourcePerlinCpuDocumentResult<SourcePerlinCpuDocumentImportFacts>{return attempt(()=>{
  const r=createPerlinConfigReader(rawSettings,options);
  if(r.backend()==='gpu')return fail('unsupported',['settings','render_mode'],'原版 render_mode 选择了 GPU 路径');
- const result=defaults(r.seed());result.parameters=r.parameters();
- result.cpuStyle=r.enumValue('cpu_render_style',{PARTICLES:'particles',FIELD_CURVES:'field-curves'} as const,'particles');
+ const result={...readSourcePerlinCommonConfiguration(r,rawPalette),...readSourcePerlinCpuSettings(r)};
+ if(result.cpuStyle==='particles'&&result.particles.count<0)return fail('unsupported',['settings',sourceFields.particles.count],'原版负粒子数在初始化分配时失败');
+ return {configuration:result,consumedPaths:r.consumedPaths,numericPaths:r.numericPaths,diagnostics:r.diagnostics};
+});}
+/** Owns CPU-only field interpretation, reusable by complete import and legacy recovery. */
+export function readSourcePerlinCpuSettings(r:SourcePerlinConfigReader):Pick<SourcePerlinCpuDocumentPayload,'particles'|'curves'|'display'>{
+ const result=defaults('0');
  result.particles={count:r.int(sourceFields.particles.count,10000),stepSize:r.scalar(sourceFields.particles.stepSize,F(.15)),timeScale:r.scalar(sourceFields.particles.timeScale,0),respawnRate:r.scalar(sourceFields.particles.respawnRate,0),flowMode:r.enumValue(sourceFields.particles.flowMode,FLOWS,'ANGLE_FIELD'),angleMap:r.enumValue(sourceFields.particles.angleMap,ANGLES,'LINEAR')};
  const bounded=(key:string,fallback:number,lo:number,hi=Infinity)=>finite(Math.max(lo,Math.min(hi,r.scalar(key,fallback,true))),['settings',key]);
  const minRadius=bounded(sourceFields.curves.seedMinRadius,30,0);
  result.curves={count:Math.max(1,r.int(sourceFields.curves.count,3000)),length:Math.max(2,r.int(sourceFields.curves.length,70)),stepSize:bounded(sourceFields.curves.stepSize,2,F(.05)),alpha:bounded(sourceFields.curves.alpha,F(.35),F(.01),1),cellSize:Math.max(4,r.int(sourceFields.curves.cellSize,20)),noiseOctaves:Math.max(1,Math.min(6,r.int(sourceFields.curves.noiseOctaves,2))),noiseOffset:r.scalar(sourceFields.curves.noiseOffset,0),sampling:r.enumValue(sourceFields.curves.sampling,SAMPLING,'jittered-grid'),colorMode:r.enumValue(sourceFields.curves.colorMode,COLORS,'seed-space'),seedCircleCount:Math.max(0,r.int(sourceFields.curves.seedCircleCount,50)),seedMinRadius:minRadius,seedMaxRadius:bounded(sourceFields.curves.seedMaxRadius,40,minRadius)};
  result.display={dotSize:r.scalar(sourceFields.display.dotSize,2),lineWeight:r.scalar(sourceFields.display.lineWeight,1),trailLifetime:r.scalar(sourceFields.display.trailLifetime,4),fadeTrails:r.boolean(sourceFields.display.fadeTrails,true),showTrails:r.boolean(sourceFields.display.showTrails,true),accumulation:r.boolean(sourceFields.display.accumulation,false),accumulationFadeAlpha:r.scalar(sourceFields.display.accumulationFadeAlpha,6),backgroundColor:r.packedColor(sourceFields.display.backgroundColor,'#000000')};
- result.palette=r.palette(rawPalette);
- if(result.cpuStyle==='particles'&&result.particles.count<0)return fail('unsupported',['settings',sourceFields.particles.count],'原版负粒子数在初始化分配时失败');
- return {configuration:result,consumedPaths:r.consumedPaths,numericPaths:r.numericPaths,diagnostics:r.diagnostics};
-});}
+ return {particles:result.particles,curves:result.curves,display:result.display};
+}

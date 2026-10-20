@@ -4,7 +4,10 @@ import {GenerationCleanupState} from '../engine/generationCleanup';
 import {SourcePerlinCpuModel} from '../engine/sourcePerlinCpuModel';
 import {SourcePerlinCpuTarget} from '../engine/sourcePerlinCpuTarget';
 import {parseSourcePerlinCpuDocument} from '../engine/sourcePerlinCpuDocument';
-import {usesSourcePerlinCpu} from '../engine/sourcePerlinIdentity';
+import {sourcePerlinCpuConfiguration} from '../engine/sourcePerlinIdentity';
+import {parseSourcePerlinDocument} from '../engine/sourcePerlinDocument';
+import {SourcePerlinFlowResources} from '../engine/sourcePerlinFlowResources';
+import {sourcePerlinGpuLayout,sourcePerlinFlowTextureSize} from '../engine/sourcePerlinGpu';
 import {OrdinarySourceCameraTimelineSession,ORDINARY_CAMERA_SEQUENCE} from '../engine/ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame} from '../engine/ordinarySourceCamera';
 
@@ -31,19 +34,23 @@ function samplePixels(pixels:Uint8ClampedArray,sw:number,sh:number,width:number,
 }
 /** A retained worker replay owns model, scene history and transparent curve
  * cache together. Rewind or a changed logical target rebuilds all three. */
-export class SourcePerlinCpuSession{
+export class SourcePerlinSession{
  private readonly cleanup=new GenerationCleanupState();
  private key='';private model?:SourcePerlinCpuModel;private target?:SourcePerlinCpuTarget;
  private timeline?:OrdinarySourceCameraTimelineSession;private cancelled?:()=>boolean;
+ private flow?:SourcePerlinFlowResources;private backend:'cpu'|'gpu'='cpu';
  private constructions=0;private work=0;
  private reserve=(units:number)=>{if(!Number.isSafeInteger(units)||units<0||this.work+units>20_000_000)throw new Error('Perlin CPU 单次请求超过 2000 万处理项预算；请分段播放或减少轨迹规模');this.work+=units;};
- reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{this.model?.dispose();this.model=undefined;this.target?.dispose();this.target=undefined;this.timeline?.reset();this.timeline=undefined;this.key='';this.cancelled=undefined;this.constructions=0;},failures);}
- diagnostics(){return{constructions:this.constructions,target:this.target?.diagnostics(),model:this.model?.diagnostics()};}
+ reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{this.model?.dispose();this.model=undefined;this.target?.dispose();this.target=undefined;this.flow?.dispose();this.flow=undefined;this.timeline?.reset();this.timeline=undefined;this.key='';this.cancelled=undefined;this.constructions=0;},failures);}
+ diagnostics(){return{constructions:this.constructions,target:this.target?.diagnostics(),model:this.model?.diagnostics(),flow:this.flow?.diagnostics()};}
+ diagnosticSnapshot(){return this.model?.diagnosticSnapshot();}
  generate(scene:SceneDocument,context:GenerateContext):SceneOutput{
   this.cleanup.prepare();const started=performance.now();
   try{
-   if(!usesSourcePerlinCpu(scene))throw new Error('缺少源 Perlin CPU 配置');
-   const parsed=parseSourcePerlinCpuDocument(scene.perlinCpuSource);if(!parsed.ok)throw new Error(`Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
+   const unified=scene.perlinSource===undefined?undefined:parseSourcePerlinDocument(scene.perlinSource);
+   if(unified&&!unified.ok)throw new Error(`Perlin ${unified.error.path.join('.')}: ${unified.error.reason}`);
+   const complete=unified?.ok?unified.value:undefined;
+   const parsed=parseSourcePerlinCpuDocument(sourcePerlinCpuConfiguration(scene));if(!parsed.ok)throw new Error(`Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
    const config=parsed.value,view=viewport(context),camera=ordinarySourceCameraInitial(scene);
    if(!camera||scene.timeline.schedule!==ORDINARY_CAMERA_SEQUENCE)throw new Error('源 Perlin CPU 需要原版顺序时间线');
    const initial=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera}},context),kind=initial.viewport.target;
@@ -54,26 +61,41 @@ export class SourcePerlinCpuSession{
    const width=kind==='primary'?initial.viewport.logicalWidth:Math.round(context.width/density),height=kind==='primary'?initial.viewport.logicalHeight:Math.round(context.height/density);
    if(width<1||height<1)throw new Error('Perlin 导出尺寸小于一个逻辑像素');
    if(kind==='primary'&&(width!==view.width||height!==view.height))throw new Error('Perlin 主画布尺寸与模拟参考尺寸不一致');
-   const key=JSON.stringify([scene.id,config,scene.sourceCamera,scene.timeline,view,width,height,kind],(_k,v)=>typeof v==='number'?{number:Object.is(v,-0)?'-0':String(v)}:v);
+   const requestedBackend=complete?.backend??'cpu';
+   // Backend selection is a live flag, not part of initialization identity.
+   const key=JSON.stringify([scene.id,config,complete?.gpu,scene.sourceCamera,scene.timeline,view,width,height,kind],(_k,v)=>typeof v==='number'?{number:Object.is(v,-0)?'-0':String(v)}:v);
+   const display=(final:boolean)=>{
+    const model=this.model!,target=this.target!;
+    if(this.backend==='gpu'){
+     const gpu=complete!.gpu;
+     sourcePerlinGpuLayout(target.physicalWidth,target.physicalHeight,gpu.uniforms.marchSteps);
+     // GPU display, including a skipped intermediate framebuffer, owns lazy
+     // palette/flow construction. Subsequent CPU setters observe its noise.
+     const facts=model.gpuDisplayFacts(),style=Math.max(0,Math.min(5,gpu.textureStyle)) as 0|1|2|3|4|5;
+     const channel=this.flow!.channel(style,sourcePerlinFlowTextureSize(target.physicalWidth,target.physicalHeight));
+     if(final)target.drawGpu({...gpu.uniforms,...facts,width:target.physicalWidth,height:target.physicalHeight},channel,()=>this.cancelled?.()??false,this.flow!.diagnostics().retainedBytes);
+    }else if(final||config.display.accumulation||config.cpuStyle==='field-curves')model.draw({target,kind,sourcePixelDensity:view.pixelDensity});
+   };
    if(key!==this.key){
-    this.reset();this.key=key;
+    this.reset();this.key=key;this.backend=requestedBackend;
     this.timeline=new OrdinarySourceCameraTimelineSession(camera,scene.timeline.tracks,scene.timeline.fps,{
      particleActions:'perlin',isCancelled:()=>this.cancelled?.()??false,
      createParticles:()=>{
-      this.model?.dispose();this.model=undefined;this.target?.dispose();this.target=undefined;
+      this.model?.dispose();this.model=undefined;this.target?.dispose();this.target=undefined;this.flow?.dispose();this.flow=undefined;
       // Offscreen creation clears to the configured background before fading.
       // A fresh local preview uses the same explicit background; native scene
       // reload may retain a previous scene background and is not inferred here.
       const options={width,height,density,initialColor:sourcePerlinBackgroundRgba(config.display.backgroundColor,false,0)};
       this.target=kind==='primary'?SourcePerlinCpuTarget.createSmoothed(options,8):new SourcePerlinCpuTarget({...options,samples:0});
-      const model=this.model=new SourcePerlinCpuModel({config,sourceWidth:view.width,sourceHeight:view.height,curveCacheSamples:4,reserve:this.reserve,isCancelled:()=>this.cancelled?.()??false});this.constructions++;
+      const flow=this.flow=new SourcePerlinFlowResources({seed:config.seed,isCancelled:()=>this.cancelled?.()??false});
+      const model=this.model=new SourcePerlinCpuModel({config,sourceWidth:view.width,sourceHeight:view.height,curveCacheSamples:4,backend:this.backend,noise:flow.noise,reserve:this.reserve,isCancelled:()=>this.cancelled?.()??false});this.constructions++;
       return{bind:()=>{throw new Error('原版 Perlin 不支持粒子跟踪');},
        update:frame=>model.update(frame.time,frame.deltaTime),displayFrame:(_frameIndex,final)=>{
         // Nonaccumulating particle display only clears and draws the current
         // retained trails. Intermediate cold-seek images have no consumer and
         // no model/cache effects. Still execute every motion/color/trail update.
         // Curve caches and accumulation retain display history and cannot skip.
-        if(final||config.display.accumulation||config.cpuStyle==='field-curves')model.draw({target:this.target!,kind,sourcePixelDensity:view.pixelDensity});
+        display(final);
        },
        setShowTrails:enabled=>model.setShowTrails(enabled),
        beginPerlinParameterActions:actions=>model.beginPerlinParameterActions(actions),interpolatePerlinParameterActions:(eased,finished,dt)=>model.interpolatePerlinParameterActions(eased,finished,dt),
@@ -83,12 +105,19 @@ export class SourcePerlinCpuSession{
     });
    }
    this.cancelled=context.isCancelled;this.work=0;
-   const frame=this.timeline!.evaluate(context.time),target=this.target!,facts=this.model!.diagnostics();
+   const switched=this.backend!==requestedBackend;
+   if(switched){this.backend=requestedBackend;this.model?.setBackend(requestedBackend);}
+   const previousDraws=this.target?.diagnostics().draws;
+   const frame=this.timeline!.evaluate(context.time),target=this.target!;
+   // A paused backend switch redraws the retained scene without another clock
+   // update. Ordinary replay intentionally emits nothing for the same frame.
+   if(switched&&target.diagnostics().draws===previousDraws)display(true);
+   const facts=this.model!.diagnostics();
    const pixels=samplePixels(target.readPixels(context.isCancelled),target.physicalWidth,target.physicalHeight,context.width,context.height,context.isCancelled);
-   return{type:'raster',pixels,width:context.width,height:context.height,dimension:2,cameraResolved:true,backend:'cpu',sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},{...context,sourceViewport:{...initial.viewport,logicalWidth:width,logicalHeight:height}}),
+   return{type:'raster',pixels,width:context.width,height:context.height,dimension:2,cameraResolved:true,backend:this.backend==='cpu'?'cpu':'webgl2',sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},{...context,sourceViewport:{...initial.viewport,logicalWidth:width,logicalHeight:height}}),
     sourcePerlinFrame:{sourceViewport:view,samples:target.diagnostics().samples,frameIndex:frame.frameIndex,updates:facts.updates},
-    stats:{samples:config.cpuStyle==='particles'?config.particles.count:config.curves.count*config.curves.length,generated:context.width*context.height,invalid:0,elapsedMs:performance.now()-started},
-    warnings:['源 Perlin CPU 按固定帧率执行运动与累积绘制；原版 JVM／JOGL 整图尚未验收。'],
+    stats:{samples:this.backend==='gpu'?context.width*context.height:config.cpuStyle==='particles'?config.particles.count:config.curves.count*config.curves.length,generated:context.width*context.height,invalid:0,elapsedMs:performance.now()-started},
+    warnings:['源 Perlin 保留 CPU/GPU 运行状态；倒退或修改配置会按当前后端重放。原版 JVM／JOGL 整图尚未验收。'],
    };
   }catch(error){this.reset([error]);throw error;}finally{this.cancelled=undefined;}
  }

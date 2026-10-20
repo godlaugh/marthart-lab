@@ -12,13 +12,14 @@ try{
  const bytes=await readFile(jar);if(hash(bytes)!=='a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018')throw Error('Pinned JAR changed');
  const reference=JSON.parse(execFileSync('python3',['-c',"import sys,zipfile,json;z=zipfile.ZipFile(sys.argv[1]);print(json.dumps({n:z.read('data/shader/perlin_noise_'+n+'.glsl').decode() for n in ['vert','frag']}))",jar],{encoding:'utf8'}));
  report.reference={jarSha256:hash(bytes),shaders:Object.fromEntries(Object.entries(reference).map(([k,v])=>[k,hash(v)]))};
- const paths=['src/engine/sourcePerlinGpu.ts','src/engine/sourcePerlinGpuShader.ts','src/engine/sourcePerlinFlowTexture.ts','src/engine/sourcePerlinSeed.ts','src/engine/sourceProcessingNoise.ts','src/engine/sourcePerlinColorRuntime.ts','src/engine/sourcePerlinParameterRuntime.ts','src/engine/ordinarySourceCameraTimeline.ts','scripts/verify-source-perlin-gpu.mjs'];
+ const paths=['src/engine/sourcePerlinCpuTarget.ts','src/engine/sourceProcessingStroke.ts','src/engine/sourceProcessingPoints.ts','src/engine/sourcePerlinGpu.ts','src/engine/sourcePerlinGpuShader.ts','src/engine/sourcePerlinFlowTexture.ts','src/engine/sourcePerlinSeed.ts','src/engine/sourceProcessingNoise.ts','src/engine/sourcePerlinColorRuntime.ts','src/engine/sourcePerlinParameterRuntime.ts','src/engine/ordinarySourceCameraTimeline.ts','scripts/verify-source-perlin-gpu.mjs'];
  const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));const before=await hashes();
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();
  browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/perlin-source-oracle',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'perlin-source-oracle');
  const result=await page.evaluate(async reference=>{
   const {SourcePerlinGpu}=await import('/src/engine/sourcePerlinGpu.ts');
+  const {SourcePerlinCpuTarget}=await import('/src/engine/sourcePerlinCpuTarget.ts');
   const {SourcePerlinFlowTexture}=await import('/src/engine/sourcePerlinFlowTexture.ts');
   const {SourcePerlinColorRuntime}=await import('/src/engine/sourcePerlinColorRuntime.ts');
   const {SourcePerlinParameterRuntime}=await import('/src/engine/sourcePerlinParameterRuntime.ts');
@@ -61,7 +62,14 @@ try{
   const results=[],palette=new Uint32Array(256);for(let i=0;i<256;i++)palette[i]=((i%2?0x33000000:0xdd000000)|((70+i*.7)<<16)|((50+i*.6)<<8)|(110+i*.5))>>>0;
   const base={width:256,height:160,palette,time:1.25,noiseFrequency:1.5,warpAmplitude:.1,warpFrequency:2,directionOffset:0,timeSpeed:1,marchSteps:32,stepSize:.008,brightness:1.7,vignettePower:.1,fiberStrength:.78,renderStyle:0};
   let preview;
-  async function compare(gpu,input,channel,label){const a=gpu.render(input),b=draw(input,channel);let differing=0,maxDelta=0;for(let i=0;i<a.length;i++){if(a[i]!==b[i])differing++;maxDelta=Math.max(maxDelta,Math.abs(a[i]-b[i]));}check(differing===0,`${label} differs ${differing} channels delta${maxDelta}`);check(a.every((v,i)=>i%4!==3||v===255),'Output alpha must be opaque');results.push({label,pixels:input.width*input.height,differing,maxDelta,sha256:await digest(a)});return a;}
+  async function compare(gpu,input,channel,label){
+   const a=gpu.render(input),b=draw(input,channel);let differing=0,maxDelta=0,sharedDiffering=0;
+   for(let i=0;i<a.length;i++){if(a[i]!==b[i])differing++;maxDelta=Math.max(maxDelta,Math.abs(a[i]-b[i]));}
+   check(differing===0,`${label} differs ${differing} channels delta${maxDelta}`);check(a.every((v,i)=>i%4!==3||v===255),'Output alpha must be opaque');
+   const shared=new SourcePerlinCpuTarget({width:input.width,height:input.height,density:1,samples:0,initialColor:[1,0,0,.5]});
+   try{shared.drawGpu(input,channel);const pixels=shared.readPixels();for(let i=0;i<pixels.length;i++)if(pixels[i]!==b[i])sharedDiffering++;check(sharedDiffering===0,`${label} shared target differs ${sharedDiffering} channels`);}finally{shared.dispose();}
+   results.push({label,pixels:input.width*input.height,differing,maxDelta,sharedDiffering,sha256:await digest(a)});return a;
+  }
   for(let style=0;style<6;style++){
    const channel={size:512,pixels:new SourcePerlinFlowTexture({seed:'1771842692935',style,size:512}).generate()},gpu=new SourcePerlinGpu(channel);
    try{

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { importSourcePerlinCpuDocument, parseSourcePerlinCpuDocument } from '../src/engine/sourcePerlinCpuDocument';
 import { importSourcePerlinGpuDocument } from '../src/engine/sourcePerlinGpuDocument';
-import { sourcePerlinBackendFromSettings } from '../src/engine/sourcePerlinDocumentConfig';
 const F=Math.fround;
 function imported(settings:Record<string,unknown>={},palette:unknown=undefined,options:Parameters<typeof importSourcePerlinCpuDocument>[2]={defaultSeed:'999'}){
  const result=importSourcePerlinCpuDocument(settings,palette,options);
@@ -23,11 +22,6 @@ describe('original Perlin CPU document configuration',()=>{
   for(const render_mode of ['CPU',' GPU ',undefined,null,true,1,{},[]])expect(imported({seed:'1',render_mode}).configuration.cpuStyle).toBe('particles');
   for(const settings of [null,[],1,'CPU'])expect(importSourcePerlinCpuDocument(settings,undefined)).toMatchObject({ok:false,error:{kind:'input',path:['settings']}});
   expect(importSourcePerlinCpuDocument(undefined,undefined,{defaultSeed:'7'})).toMatchObject({ok:true,value:{configuration:{seed:'7'}}});
- });
- it('exposes one result-valued backend owner for outer dispatch and both importers',()=>{
-  for(const value of [undefined,{}, {render_mode:' GPU '},{render_mode:null}])expect(sourcePerlinBackendFromSettings(value)).toEqual({ok:true,value:'cpu'});
-  expect(sourcePerlinBackendFromSettings({render_mode:'gPu'})).toEqual({ok:true,value:'gpu'});
-  expect(sourcePerlinBackendFromSettings(null)).toMatchObject({ok:false,error:{kind:'input',path:['settings']}});
  });
  it('uses source enum defaults and Java trim, with exactly two sampling values',()=>{
   const value=imported({cpu_render_style:' field_curves\t',flow_mode:' swirl_field ',angle_map:'soft_power',curve_sampling_mode:' random ',curve_color_mode:' position '}).configuration;

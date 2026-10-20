@@ -1,5 +1,5 @@
 import { sourcePerlinSeed } from './sourcePerlinSeed';
-import { SourceProcessingNoise } from './sourceProcessingNoise';
+import { SourceProcessingNoise, SourceProcessingNoiseState } from './sourceProcessingNoise';
 
 const F = Math.fround;
 const mul = (a: number, b: number): number => F(a * F(b));
@@ -55,13 +55,26 @@ export class SourcePerlinFlowTexture {
  }
  sample(x: number, y: number): number { return this.argb(this.scalar(x, y)); }
  generate(): Uint32Array {
+  return this.generatePixels();
+ }
+ /** buildFlowTexture creates its image before reseeding the shared PApplet.
+  * This synchronous operation leaves the shared noise at this style's seed;
+  * cancellation after reseeding does not roll it back. Formula ownership stays
+  * here, identical to the independent texture generator. */
+ generateWithNoise(noise:SourceProcessingNoiseState):Uint32Array{
+  if(!(noise instanceof SourceProcessingNoiseState))throw new SourcePerlinFlowTextureError('input','Shared Processing noise state is required.');
+  return this.generatePixels(noise);
+ }
+ private generatePixels(shared?:SourceProcessingNoiseState):Uint32Array{
   this.checkCancelled();
   const pixels = new Uint32Array(this.size * this.size);
+  if(shared)shared.reseed(BigInt(this.noiseSeed));
+  const noise=shared??this.noise;
   for (let y = 0; y < this.size; y++) {
    const v = F(F(y) / F(this.size));
    for (let x = 0; x < this.size; x++) {
     if ((x & 255) === 0) this.checkCancelled();
-    pixels[y * this.size + x] = this.argb(this.value(F(F(x) / F(this.size)), v));
+    pixels[y * this.size + x] = this.argb(this.value(F(F(x) / F(this.size)), v,noise));
    }
   }
   this.checkCancelled();
@@ -72,8 +85,8 @@ export class SourcePerlinFlowTexture {
   const gray = Math.trunc(mul(F(mul(value, 255) / 255), 255));
   return (0xff000000 | (gray << 16) | (gray << 8) | gray) >>> 0;
  }
- private value(u: number, v: number): number {
-  const n = (x: number, y: number, z: number): number => this.noise.sample(x, y, F(z));
+ private value(u: number, v: number,noise:Pick<SourceProcessingNoise,'sample'>=this.noise): number {
+  const n = (x: number, y: number, z: number): number => noise.sample(x, y, F(z));
   let q: number;
   switch (this.style) {
    case 0: {

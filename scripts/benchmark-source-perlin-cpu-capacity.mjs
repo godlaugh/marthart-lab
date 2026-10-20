@@ -80,13 +80,19 @@ try {
       input.timeline[0].duration = Math.max(originalWaitDuration, lifetime + 2);
       const scene = parseProjectFile(JSON.stringify(input)).scene;
       scene.timeline.fps = 30;
-      if (scene.perlinCpuSource.particles.count !== count || scene.perlinCpuSource.display.trailLifetime !== lifetime) throw Error('Requested count/lifetime changed');
+      // Archived baseline uses the former CPU-only public payload/session.
+      const payload = scene.perlinSource ?? scene.perlinCpuSource;
+      const documentContract = scene.perlinSource ? 'unified' : 'legacy-cpu';
+      if (!payload) throw Error('Measured revision has no supported Perlin CPU payload');
+      if (payload.particles.count !== count || payload.display.trailLifetime !== lifetime) throw Error('Requested count/lifetime changed');
       const session = new TemporalGenerationSession();
+      const owner = session.sourcePerlin ?? session.sourcePerlinCpu;
+      if (!owner) throw Error('Measured revision has no supported Perlin session owner');
       const frames = [], endTime = lifetime + 1;
       const times = mode === 'continuous-through-expiry' ? Array.from({ length: endTime * 30 + 1 }, (_, i) => i / 30) : [endTime];
-      const result = { count, lifetime, endTime, mode, timelineDerivative: { originalWaitDuration, measuredWaitDuration: input.timeline[0].duration }, canonical: {
-        count: scene.perlinCpuSource.particles.count, lifetime: scene.perlinCpuSource.display.trailLifetime,
-        accumulation: scene.perlinCpuSource.display.accumulation, showTrails: scene.perlinCpuSource.display.showTrails, seed: scene.perlinCpuSource.seed,
+      const result = { count, lifetime, endTime, mode, documentContract, timelineDerivative: { originalWaitDuration, measuredWaitDuration: input.timeline[0].duration }, canonical: {
+        count: payload.particles.count, lifetime: payload.display.trailLifetime,
+        accumulation: payload.display.accumulation, showTrails: payload.display.showTrails, seed: payload.seed,
       }, frames };
       let output, lastDiagnostics;
       const runStart = performance.now();
@@ -98,7 +104,7 @@ try {
               sourcePerlinViewport: { width: 320, height: 240, pixelDensity: 1 },
               sourceViewport: { logicalWidth: 320, logicalHeight: 240, referenceLogicalHeight: 240, target: 'primary', projectionPass: 'perspective' },
             }, session);
-            lastDiagnostics = session.sourcePerlinCpu.diagnostics();
+            lastDiagnostics = owner.diagnostics();
             const expectedFrame = Math.round(time * 30);
             if (output.sourcePerlinFrame.frameIndex !== expectedFrame || output.sourcePerlinFrame.updates !== expectedFrame + 1 || lastDiagnostics.model.updates !== expectedFrame + 1) {
               throw Error(`Requested ${time}s / frame ${expectedFrame} did not advance model: ${JSON.stringify(output.sourcePerlinFrame)}`);
@@ -111,7 +117,7 @@ try {
           } catch (error) {
             result.failure = { requestedTime: time, elapsedMs: performance.now() - callStart, name: error.name, code: error.code,
               message: error.message, stack: error.stack, lastSuccessfulDiagnostics: lastDiagnostics,
-              afterFailureDiagnostics: session.sourcePerlinCpu.diagnostics(),
+              afterFailureDiagnostics: owner.diagnostics(),
             };
             break;
           }
@@ -134,7 +140,7 @@ try {
         return result;
       } finally {
         session.reset();
-        result.afterResetDiagnostics = session.sourcePerlinCpu.diagnostics();
+        result.afterResetDiagnostics = owner.diagnostics();
       }
     }, { source, count, lifetime, mode });
     const metricAfter = await metrics();

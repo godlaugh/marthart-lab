@@ -72,7 +72,7 @@ describe('source project file through production ordinary camera timeline',()=>{
  it('preserves the Perlin camera queue independently of trails and accumulation',()=>{
   for(const show_trails of [true,false])expect(parse('PERLIN',{settings:{show_trails,use_accumulation_buffer:false}}).scene.settings.sourceCameraProjection).toBe('perspective');
   const raster=parse('PERLIN',{camera:{theta:1},settings:{use_accumulation_buffer:true}});
-  expect(raster.scene.sourceCamera).toMatchObject({configuration:{family:'perlin',theta:1}});expect(raster.scene.perlinCpuSource?.display.accumulation).toBe(true);expect(raster.warnings.join()).not.toContain('尚未接入原版几何相机');
+  expect(raster.scene.sourceCamera).toMatchObject({configuration:{family:'perlin',theta:1}});expect(raster.scene.perlinSource?.display.accumulation).toBe(true);expect(raster.warnings.join()).not.toContain('尚未接入原版几何相机');
  });
  it('retains explicit capacity and numeric formatting limits at the file boundary',()=>{
   expect(()=>parse('SURFACE',{camera:{phi:1+2**-24}})).toThrow('source-number-text-unknown');

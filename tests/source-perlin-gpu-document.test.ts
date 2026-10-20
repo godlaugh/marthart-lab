@@ -1,5 +1,6 @@
+import {usesSourcePerlinGpu} from '../src/engine/sourcePerlinIdentity';
 import { describe, expect, it } from 'vitest';
-import { importSourcePerlinGpuDocument, parseSourcePerlinGpuDocument, usesSourcePerlinGpu, type SourcePerlinGpuDocumentPayload } from '../src/engine/sourcePerlinGpuDocument';
+import { importSourcePerlinGpuDocument, parseSourcePerlinGpuDocument, type SourcePerlinGpuDocumentPayload } from '../src/engine/sourcePerlinGpuDocument';
 import { SOURCE_PERLIN_DEFAULT_PALETTE } from '../src/engine/sourcePerlinColorRuntime';
 
 const F = Math.fround;

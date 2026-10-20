@@ -21,9 +21,9 @@ describe('Perlin CPU source numeric provenance persistence',()=>{
   const paths=new Set(imported.provenance!.sourceNumberTokens!.map(row=>key(row.path)));
   for(const path of config.value.numericPaths)expect(paths.has(key(path)),key(path)).toBe(true);
   expect(paths.has('settings.particle_count')).toBe(true);expect(paths.has('settings.noise_scale')).toBe(true);
-  expect(imported.perlinCpuSource).toMatchObject({seed:'1771842692935',particles:{count:6500,flowMode:'SWIRL_FIELD'},parameters:{noise_scale:10}});
+  expect(imported.perlinSource).toMatchObject({seed:'1771842692935',particles:{count:6500,flowMode:'SWIRL_FIELD'},parameters:{noise_scale:10}});
   const text=serializeScene(imported),reopened=parseScene(text);
-  expect(reopened.perlinCpuSource).toEqual(imported.perlinCpuSource);
+  expect(reopened.perlinSource).toEqual(imported.perlinSource);
   expect(reopened.provenance?.sourceNumberTokens).toEqual(imported.provenance?.sourceNumberTokens);
   expect(serializeScene(reopened)).toBe(text);
  });
@@ -31,9 +31,9 @@ describe('Perlin CPU source numeric provenance persistence',()=>{
   for(const style of ['PARTICLES','FIELD_CURVES']){
    const input=structuredClone(source);input.settings.cpu_render_style=style;input.settings.curve_count=8;input.settings.curve_length=24;
    const scene=parseProjectFile(JSON.stringify(input)).scene,originalTokens=structuredClone(scene.provenance!.sourceNumberTokens);
-   scene.perlinCpuSource!.particles.count=24;scene.perlinCpuSource!.seed='9007199254740993';
+   scene.perlinSource!.particles.count=24;scene.perlinSource!.seed='9007199254740993';
    const reopened=parseScene(serializeScene(scene));
-   expect(reopened.perlinCpuSource).toEqual(scene.perlinCpuSource);expect(reopened.provenance!.sourceNumberTokens).toEqual(originalTokens);
+   expect(reopened.perlinSource).toEqual(scene.perlinSource);expect(reopened.provenance!.sourceNumberTokens).toEqual(originalTokens);
   }
  });
  it('registers every CPU importer numeric slot including enum/bool fallback values',()=>{

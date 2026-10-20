@@ -9,7 +9,7 @@ export const isRaymarchScene=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scen
 export const hasContinuousDensity=(scene:Pick<SceneDocument,'kind'|'settings'>)=>['map','symmetry','samila'].includes(scene.kind)&&scene.settings.iteratedMode==='continuous';
 export const hasProgressiveRoots=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='roots'&&scene.settings.rootsMode==='progressive';
 export const hasMathematicalPlane=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='domain'||scene.kind==='fractal'&&scene.settings.formula!=='mandelbulb_3d'||scene.kind==='bouncing'&&scene.settings.bouncingPresentation==='raster'||hasContinuousDensity(scene)||hasProgressiveRoots(scene);
-type CameraCapabilities=Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'sourceCamera'|'attractorSource'|'perlinGpuSource'|'perlinCpuSource'>>;
+type CameraCapabilities=Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'sourceCamera'|'attractorSource'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>>;
 /** Explicit authored marker; never infer source semantics from a scene family. */
 export const usesOrdinarySourceCamera=(scene:CameraCapabilities)=>scene.sourceCamera!==undefined;
 const ordinaryMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking']);
