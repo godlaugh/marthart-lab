@@ -1,3 +1,4 @@
+import {packSourceProcessingMatrix as matrix,applySourceProcessingMatrix as apply,translateSourceProcessingMatrix as translate,rotateSourceProcessingMatrix as rotate,sourceProcessingCameraMatrix as cameraMatrix,sourceProcessingPerspective as perspective,sourceProcessingOrthographic as orthographic,SourceProcessingMatrixError} from './sourceProcessingMatrix';
 /** MathArt 1.7.8 Scene/CameraController contract shared by source renderers.
  * Legacy local orbit documents retain their own model. Input is decoded numeric source facts, NOT native JSON expressions.
  * Source: CameraController.applyTransform; Scene.<init>/applyPerspective/render;
@@ -64,7 +65,7 @@ function triple(value:unknown,path:string):SourceCameraVec3 {
  if(!Array.isArray(value)||value.length!==3)throw new CameraBoundaryError(path,'triple-required');
  return Object.freeze(value.map((x,i)=>scalar(x,`${path}[${i}]`))) as unknown as SourceCameraVec3;
 }
-function attempt<T>(run:()=>T):SourceCameraResult<T>{try{return{ok:true,value:run()};}catch(error){if(error instanceof CameraBoundaryError)return{ok:false,error};throw error;}}
+function attempt<T>(run:()=>T):SourceCameraResult<T>{try{return{ok:true,value:run()};}catch(error){if(error instanceof SourceProcessingMatrixError)return{ok:false,error:new CameraBoundaryError('projection','singular-camera')};if(error instanceof CameraBoundaryError)return{ok:false,error};throw error;}}
 /** Owns controller -> Scene -> family configuration -> evaluated frame precedence.
  * Rates and tracking lifetimes belong to the future timeline owner, not this snapshot. */
 export function resolveSourceCamera(input:unknown):SourceCameraResult<SourceCameraResolution>{return attempt(()=>{
@@ -134,68 +135,8 @@ const add = (a: number, b: number) => F(a + b);
 const sub = (a: number, b: number) => F(a - b);
 const mul = (a: number, b: number) => F(a * b);
 const div = (a: number, b: number) => F(a / b);
-const EPS = 2 ** -23; // Retained PGL FLOAT_EPS initialization.
 const finite = (values: readonly number[]) => values.every(Number.isFinite);
-function matrix(rowMajor: number[]): SourceCameraMatrix {
-  const columnMajor = new Float32Array(16);
-  for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) columnMajor[col * 4 + row] = rowMajor[row * 4 + col];
-  return Object.freeze({ rowMajor: Object.freeze(rowMajor), columnMajor });
-}
-/** PMatrix3D.apply: four separately rounded products, then left-associated sums. */
-function apply(a: number[], b: readonly number[]): void {
-  const out = new Array<number>(16);
-  for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
-    const i = row * 4;
-    out[i + col] = add(add(add(mul(a[i], b[col]), mul(a[i + 1], b[col + 4])), mul(a[i + 2], b[col + 8])), mul(a[i + 3], b[col + 12]));
-  }
-  a.splice(0, 16, ...out);
-}
-/** translate's final addition is existing m03 + ((x*m00+y*m01)+z*m02). */
-function translate(a: number[], x: number, y: number, z: number): void {
-  for (let i = 0; i < 16; i += 4) a[i + 3] = add(a[i + 3], add(add(mul(x, a[i]), mul(y, a[i + 1])), mul(z, a[i + 2])));
-}
-function rotate(a: number[], axis: 'x' | 'z', angle: number): void {
-  // PGraphicsOpenGL.rotateX/Z route through rotateImpl -> PMatrix3D.rotate
-  // (angle,axis), NOT the specialized PMatrix rotateX/Z methods. Rodrigues'
-  // t+c on the axis must not be replaced with 1 (e.g. angle=1.58F differs).
-  const c = F(Math.cos(angle)), s = F(Math.sin(angle)), t = sub(1, c);
-  const x = axis === 'x' ? 1 : 0, y = 0, z = axis === 'z' ? 1 : 0;
-  const product = (a: number, b: number) => mul(mul(t, a), b);
-  apply(a, [add(product(x, x), c), sub(product(x, y), mul(s, z)), add(product(x, z), mul(s, y)), 0,
-    add(product(x, y), mul(s, z)), add(product(y, y), c), sub(product(y, z), mul(s, x)), 0,
-    sub(product(x, z), mul(s, y)), add(product(y, z), mul(s, x)), add(product(z, z), c), 0, 0, 0, 0, 1]);
-}
-function length3(a: SourceCameraVec3): number { return F(Math.sqrt(add(add(mul(a[0], a[0]), mul(a[1], a[1])), mul(a[2], a[2])))); }
-function normalize(a: SourceCameraVec3): SourceCameraVec3 {
-  const length = length3(a);
-  if (!Number.isFinite(length) || length === 0) throw new CameraBoundaryError('projection', 'singular-camera');
-  return length >= EPS ? [div(a[0], length), div(a[1], length), div(a[2], length)] : a;
-}
-function cameraMatrix(width: number, height: number, cameraZ: number): number[] {
-  // Complete retained camera(eye=(W/2,H/2,Z), target=(W/2,H/2,0), up=(0,1,0)).
-  // Do not replace normalizations with identity: float sqrt(z*z) changes low bits.
-  const z = normalize([0, 0, cameraZ]);
-  const x0: SourceCameraVec3 = [sub(mul(1, z[2]), mul(0, z[1])), add(mul(-0, z[2]), mul(0, z[0])), sub(mul(0, z[1]), mul(1, z[0]))];
-  const y0: SourceCameraVec3 = [sub(mul(z[1], x0[2]), mul(z[2], x0[1])), add(mul(-z[0], x0[2]), mul(z[2], x0[0])), sub(mul(z[0], x0[1]), mul(z[1], x0[0]))];
-  const x = normalize(x0), y = normalize(y0);
-  const result = [x[0], x[1], x[2], 0, y[0], y[1], y[2], 0, z[0], z[1], z[2], 0, 0, 0, 0, 1];
-  translate(result, -div(width, 2), -div(height, 2), -cameraZ);
-  return result;
-}
-function perspective(fov: number, aspect: number, near: number, far: number): number[] {
-  const top = mul(near, F(Math.tan(div(fov, 2)))), bottom = -top;
-  const left = mul(bottom, aspect), right = mul(top, aspect);
-  const twiceNear = mul(2, near), w = sub(right, left), h = sub(top, bottom), d = sub(far, near);
-  return [div(twiceNear, w), 0, div(add(right, left), w), 0, 0, div(-twiceNear, h), div(add(top, bottom), h), 0, 0, 0, div(-add(far, near), d), div(-mul(twiceNear, far), d), 0, 0, -1, 0];
-}
-function orthographic(width: number, height: number): { values: number[]; far: number } {
-  // Wrapper camera() uses Processing's default PI/3 camera, then ortho().
-  const defaultZ = div(div(height, 2), F(Math.tan(div(F(Math.PI / 3), 2))));
-  const far = mul(length3([0, 0, defaultZ]), 10);
-  const left = div(-width, 2), right = div(width, 2), bottom = div(-height, 2), top = div(height, 2);
-  const w = sub(right, left), h = sub(top, bottom);
-  return { far, values: [div(2, w), 0, 0, div(-add(right, left), w), 0, -div(2, h), 0, div(-add(top, bottom), h), 0, 0, div(-2, far), div(-far, far), 0, 0, 0, 1] };
-}
+
 
 
 /** Only ordinary Scene matrices; no object transform, accumulation cache, pixel

@@ -35,6 +35,102 @@ function writeStrokeVertex(input:Float32Array,m:readonly number[],a:number,b:num
  }
  directions[o+3]=width;
 }
+/** One source segment emits A+, A-, B-, B+ for every stroke topology. */
+function writeStrokeSegment(input:Float32Array,m:readonly number[],a:number,b:number,positions:Float32Array,directions:Float32Array,vertex:number,half:number,negativeHalf:number):void {
+ writeStrokeVertex(input,m,a*3,b*3,positions,directions,vertex*4,half);
+ writeStrokeVertex(input,m,a*3,b*3,positions,directions,(vertex+1)*4,negativeHalf);
+ writeStrokeVertex(input,m,b*3,a*3,positions,directions,(vertex+2)*4,negativeHalf);
+ writeStrokeVertex(input,m,b*3,a*3,positions,directions,(vertex+3)*4,half);
+}
+export interface SourceProcessingStrokeCache {
+ readonly vertexOffset:number;readonly indexOffset:number;readonly vertexCount:number;readonly indexCount:number;
+}
+export interface SourceProcessingOpenStrokeInput {
+ readonly positions:Float32Array;
+ /** Independent beginShape(POLYGON)/endShape(OPEN) ranges, with final sentinel. */
+ readonly polygonOffsets:Uint32Array;
+ /** Already parsed normalized RGBA, one vec4 per input vertex. */
+ readonly colors:Float32Array;
+ readonly rowMajor:readonly number[];
+ readonly lineWidth:number;
+ readonly isCancelled?:()=>boolean;
+}
+export interface SourceProcessingOpenStrokeBuffers {
+ readonly positions:Float32Array;readonly directions:Float32Array;readonly colors:Float32Array;
+ readonly indices:Uint16Array;readonly caches:readonly SourceProcessingStrokeCache[];
+}
+export class SourceProcessingStrokeError extends Error {
+ constructor(readonly code:'input'|'capacity'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceProcessingStrokeError';}
+}
+export const SOURCE_PROCESSING_OPEN_STROKE_LIMITS=Object.freeze({maxBufferBytes:MAX_BUFFER_BYTES,maxCacheVertices:32767});
+/** Source immediate P3D open POLYGON strokes. Index caches persist across these
+ * shapes, while previous-edge state resets at every shape. A rollover join
+ * deliberately uses the previous edge START color (addLineSegment3D PC 463).
+ * Capacity accounts for all three vec4 arrays, uint16 indices and four 64-bit
+ * cache counters. No point-count cap or zero-length simplification is applied. */
+export function sourceProcessingOpenStrokeBuffers(input:SourceProcessingOpenStrokeInput):SourceProcessingOpenStrokeBuffers {
+ if(!input||typeof input!=='object')throw new SourceProcessingStrokeError('input','Missing Processing polygon stroke input.');
+ const {positions:xyz,polygonOffsets,colors:rgba,rowMajor:m,lineWidth,isCancelled}=input;
+ const check=()=>{if(isCancelled?.())throw new SourceProcessingStrokeError('cancelled','Processing stroke expansion cancelled.');};
+ check();
+ if(!(xyz instanceof Float32Array)||xyz.length%3!==0||!(polygonOffsets instanceof Uint32Array)||polygonOffsets.length<1||polygonOffsets[0]!==0||polygonOffsets[polygonOffsets.length-1]!==xyz.length/3||!(rgba instanceof Float32Array)||rgba.length!==xyz.length/3*4||!Array.isArray(m)||m.length!==16||m.some(v=>typeof v!=='number'))throw new SourceProcessingStrokeError('input','Invalid Processing polygon stroke buffers.');
+ if(!Number.isFinite(F(lineWidth))||lineWidth<=0)throw new SourceProcessingStrokeError('input','Invalid Processing stroke width.');
+ for(let i=1;i<polygonOffsets.length;i++){
+  if((i&1023)===0)check();
+  if(polygonOffsets[i]<polygonOffsets[i-1]||polygonOffsets[i]>xyz.length/3)throw new SourceProcessingStrokeError('input','Invalid Processing polygon offsets.');
+ }
+ for(let i=0;i<rgba.length;i++){
+  if((i&4095)===0)check();
+  if(!Number.isFinite(rgba[i])||rgba[i]<0||rgba[i]>1)throw new SourceProcessingStrokeError('input','Processing stroke colors must be parsed normalized RGBA.');
+ }
+ const scaledWidth=F(F(lineWidth)*sourceProcessingTransformScale(m)),joins=!(scaledWidth<2),half=F(scaledWidth/2),negativeHalf=F(-scaledWidth/2);
+ type EdgeVisitor=(a:number,b:number,vertex:number,index:number,base:number,previous0:number,previous1:number,rollover:boolean,join:boolean)=>void;
+ const walk=(visit?:EdgeVisitor)=>{
+  const caches:{vertexOffset:number;indexOffset:number;vertexCount:number;indexCount:number}[]=[];
+  let vertex=0,index=0,flushVertexStart=0,cache:typeof caches[number]|undefined;
+  for(let polygon=0;polygon+1<polygonOffsets.length;polygon++){
+   check();
+   const start=polygonOffsets[polygon],end=polygonOffsets[polygon+1];
+   if(end-start<3)continue;
+   let previous0=-1,previous1=-1;
+   for(let a=start;a+1<end;a++){
+    if((a&1023)===0)check();
+    const join=joins&&previous0>=0;
+    const rollover=cache!==undefined&&cache.vertexCount+4+(join?1:0)>=32768;
+    if(!cache||rollover){cache={vertexOffset:vertex,indexOffset:index,vertexCount:0,indexCount:0};caches.push(cache);}
+    const base=cache.vertexCount,addedVertices=4+(join?(rollover?3:1):0),addedIndices=6+(join?6:0);
+    if((vertex+addedVertices)*48+(index+addedIndices)*2+caches.length*32>MAX_BUFFER_BYTES)throw new SourceProcessingStrokeError('capacity','Processing polygon expansion exceeds 256 MiB local capacity.');
+    visit?.(a,a+1,vertex,index,base,previous0,previous1,rollover,join);
+    vertex+=addedVertices;index+=addedIndices;cache.vertexCount+=addedVertices;cache.indexCount+=addedIndices;
+    previous0=base+2;previous1=base+3;
+   }
+   // endShape checks total tessellation size after the whole shape, not edge.
+   if(vertex-flushVertexStart>=32768){cache=undefined;flushVertexStart=vertex;}
+  }
+  return {caches,vertex,index};
+ };
+ const layout=walk();check();
+ const positions=new Float32Array(layout.vertex*4),directions=new Float32Array(layout.vertex*4),colors=new Float32Array(layout.vertex*4),indices=new Uint16Array(layout.index);
+ const color=(vertex:number,source:number)=>{for(let c=0;c<4;c++)colors[vertex*4+c]=rgba[source*4+c];};
+ walk((a,b,vertex,index,base,previous0,previous1,rollover,join)=>{
+  writeStrokeSegment(xyz,m,a,b,positions,directions,vertex,half,negativeHalf);
+  color(vertex,a);color(vertex+1,a);color(vertex+2,b);color(vertex+3,b);
+  indices.set([base,base+1,base+2,base+2,base+1,base+3],index);
+  if(!join)return;
+  writeStrokeVertex(xyz,m,a*3,undefined,positions,directions,(vertex+4)*4,0);
+  if(rollover){
+   color(vertex+4,a-1);
+   writeStrokeVertex(xyz,m,a*3,(a-1)*3,positions,directions,(vertex+5)*4,negativeHalf);
+   writeStrokeVertex(xyz,m,a*3,(a-1)*3,positions,directions,(vertex+6)*4,half);
+   color(vertex+5,a-1);color(vertex+6,a-1);
+   indices.set([base+4,base+5,base,base+4,base+6,base+1],index+6);
+  }else{
+   color(vertex+4,a);
+   indices.set([base+4,previous0,base,base+4,previous1,base+1],index+6);
+  }
+ });
+ check();return {positions,directions,colors,indices,caches:layout.caches};
+}
 /** The boundary producer currently admits 3..200 points. This bound also keeps
  * one immediate shape below Processing's short-index cache rollover threshold.
  * Capacity includes position/direction vec4 and uint32 indices, not host color. */
@@ -56,7 +152,7 @@ export function sourceProcessingClosedStrokeBuffers(input:Float32Array,lineWidth
  const triangle=(a:number,b:number,c:number)=>{indices[index++]=a;indices[index++]=b;indices[index++]=c;};
  for(let edge=0;edge<count;edge++){
   const a=edge,b=(edge+1)%count,base=vertex;
-  write(a,b,half);write(a,b,negativeHalf);write(b,a,negativeHalf);write(b,a,half);
+  writeStrokeSegment(input,m,a,b,positions,directions,vertex,half,negativeHalf);vertex+=4;
   triangle(base,base+1,base+2);triangle(base+2,base+1,base+3);
   if(joins&&edge>0){
    write(a,undefined,0);
@@ -90,10 +186,7 @@ function expandLineBuffers(input:Float32Array,lineWidth:number,plan:SourceCamera
  const positions=new Float32Array(count*16),directions=new Float32Array(count*16),indices=new Uint32Array(count*6);
  for(let pair=0;pair<count;pair++){
   const base=pair*16,aIndex=sourceIndices?sourceIndices[pair*2]:pair*2,bIndex=sourceIndices?sourceIndices[pair*2+1]:pair*2+1;
-  for(let v=0;v<4;v++){
-   const a=(v<2?aIndex:bIndex)*3,b=(v<2?bIndex:aIndex)*3,o=base+v*4;
-   writeStrokeVertex(input,m,a,b,positions,directions,o,v===0||v===3?halfWidth:-halfWidth);
-  }
+  writeStrokeSegment(input,m,aIndex,bIndex,positions,directions,base/4,halfWidth,-halfWidth);
   const i=pair*6,v=pair*4;
   indices[i]=v;indices[i+1]=v+1;indices[i+2]=v+2;indices[i+3]=v+2;indices[i+4]=v+1;indices[i+5]=v+3;
  }

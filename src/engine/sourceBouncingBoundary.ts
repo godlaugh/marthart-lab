@@ -3,6 +3,7 @@ import type {SourceBouncingDisplay} from './sourceBouncingVisualConfig';
 import type {SourceBouncingResult,SourceBouncingError} from './sourceBouncingConfig';
 import {SOURCE_CAMERA_MODEL,type SourceCameraPlan} from './sourceCamera';
 import {writeSourceEyePosition} from './sourceProcessingGeometry';
+import {sourceProcessingSinLut,sourceProcessingCosLut} from './sourceProcessingTrig';
 
 export interface SourceBouncingBoundaryPath {
  readonly positions:Float32Array;readonly closed:true;readonly lineWidth:number;readonly packedColor:number;
@@ -11,10 +12,6 @@ export interface SourceBouncingBoundaryPath {
 }
 export const SOURCE_BOUNCING_BOUNDARY_LIMITS=Object.freeze({polygonVertices:64,ellipseVertices:200,pathBytes:200*3*4});
 const F=Math.fround,EPS=2**-23;
-// Processing PGraphics.<clinit> PC25–64. This retains the float angle and
-// host-libm sin/cos boundary; native JVM last-bit equivalence is not established.
-const sin=new Float32Array(720),cos=new Float32Array(720);
-for(let i=0;i<720;i++){const angle=F(F(F(i)*F(Math.PI/180))*.5);sin[i]=F(Math.sin(angle));cos[i]=F(Math.cos(angle));}
 class Failure extends Error {constructor(readonly detail:SourceBouncingError){super(detail.reason);}}
 function fail(kind:SourceBouncingError['kind'],path:readonly string[],reason:string):never{throw new Failure({kind,path,reason});}
 function finite(raw:unknown,path:readonly string[]):number{if(typeof raw!=='number')fail('input',path,'必须为数值');const value=F(raw);if(!Number.isFinite(value))fail('nonfinite',path,'边界坐标或样式不能表示为有限 Float32');return value;}
@@ -73,6 +70,6 @@ export function prepareSourceBouncingBoundary(boundary:SourceBouncingUpdate['bou
  // makes larger finite int saturation immaterial to this bounded result.
  const detail=Math.min(200,Math.max(20,Number.isNaN(requested)?0:Math.trunc(requested))),step=F(720/detail),positions=new Float32Array(detail*3);
  let angle=0;
- for(let i=0;i<detail;i++){const index=Math.trunc(angle);positions[i*3]=F(centerX+F(cos[index]*rx));positions[i*3+1]=F(centerY+F(sin[index]*ry));positions[i*3+2]=0;angle=F(F(angle+step)%720);}
+ for(let i=0;i<detail;i++){const index=Math.trunc(angle);positions[i*3]=F(centerX+F(sourceProcessingCosLut(index)*rx));positions[i*3+1]=F(centerY+F(sourceProcessingSinLut(index)*ry));positions[i*3+2]=0;angle=F(F(angle+step)%720);}
  return finish(positions,detail);
  }catch(error){if(error instanceof Failure)return{ok:false,error:error.detail};throw error;}}

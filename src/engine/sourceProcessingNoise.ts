@@ -1,10 +1,9 @@
 import { JavaSourceRandom48 } from './javaSourceRandom';
+import { sourceProcessingCosLut } from './sourceProcessingTrig';
 
 const F = Math.fround;
 const javaInt = (value: number): number => Number.isNaN(value) ? 0 : Math.max(-2147483648, Math.min(2147483647, Math.trunc(value)));
-// PGraphics.<clinit>: F(cos(F(F(i * DEG_TO_RAD) * .5))).
-const COS = Float32Array.from({ length: 720 }, (_, i) => F(Math.cos(F(F(i * F(Math.PI / 180)) * .5))));
-const fade = (t: number): number => F(.5 * F(1 - COS[javaInt(F(t * 360)) % 720]));
+const fade = (t: number): number => F(.5 * F(1 - sourceProcessingCosLut(javaInt(F(t * 360)) % 720)));
 const lerp = (a: number, b: number, t: number): number => F(a + F(t * F(b - a)));
 
 /** Processing's seeded value noise, not permutation/gradient Perlin noise.
