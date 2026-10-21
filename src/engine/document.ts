@@ -1,3 +1,4 @@
+import {DOMAIN_SCENE_SEQUENCE,resolveSourceDomainTimeline} from './sourceDomainTimeline';
 import {FRACTAL_SCENE_SEQUENCE,parseSourceFractalDocument} from './sourceFractalDocument';
 import {prepareSourceFractalScene} from './sourceFractalTimeline';
 import {parseSourceIteratedDraft} from './sourceIteratedDraft';
@@ -129,6 +130,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   delete data.evaluatedCamera; // Runtime facts are rebuilt from the document at each requested time.
   delete data.evaluatedRootsCamera;
   delete data.evaluatedDomainGradient;
+  delete data.evaluatedDomainScene;
   delete data.evaluatedFractalGradient;
   delete data.runtimeSamilaViewport;
   delete data.domainRender; // Delivered execution facts are not authored rules.
@@ -305,7 +307,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   )
     fail("时间线无效");
   for (const track of t.tracks) {
-    const ordinaryDuration=record(track)&&(data.kind==='fractal'&&t.schedule===FRACTAL_SCENE_SEQUENCE&&['wait','animate'].includes(String(track.type))||data.sourceCamera!==undefined&&t.schedule==='ordinary-camera-sequence-v1'&&['wait','animate','align','param'].includes(String(track.type))||data.kind==='samila'&&t.schedule==='samila-scene-sequence-v1'&&['wait','animate'].includes(String(track.type)));
+    const ordinaryDuration=record(track)&&(data.kind==='domain'&&t.schedule===DOMAIN_SCENE_SEQUENCE&&['wait','animate'].includes(String(track.type))||data.kind==='fractal'&&t.schedule===FRACTAL_SCENE_SEQUENCE&&['wait','animate'].includes(String(track.type))||data.sourceCamera!==undefined&&t.schedule==='ordinary-camera-sequence-v1'&&['wait','animate','align','param'].includes(String(track.type))||data.kind==='samila'&&t.schedule==='samila-scene-sequence-v1'&&['wait','animate'].includes(String(track.type)));
     const zeroDuration=record(track)&&(ordinaryDuration||['animate','spirograph_finish_wait'].includes(String(track.type))||track.type==='wait'&&usesSpirographFrameClock(data as unknown as SceneDocument)||track.type==='trails'&&(usesSourceSurfaceGeometry(data as unknown as SceneDocument)||usesSourcePerlin(data as unknown as SceneDocument)));
     if (
       !record(track) ||
@@ -323,6 +325,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   validateTimelineSchedule(data as unknown as SceneDocument);
   if(data.fractalSource!==undefined)prepareSourceFractalScene(data as unknown as SceneDocument);
   if(t.schedule===SAMILA_SCENE_SEQUENCE)resolveSourceSamilaTimeline(data as unknown as SceneDocument);
+  if(t.schedule===DOMAIN_SCENE_SEQUENCE)resolveSourceDomainTimeline(data as unknown as SceneDocument);
   if(t.schedule==='roots-camera-sequence-v1'||t.schedule==='roots-scene-sequence-v1')prepareRootsCameraTimeline(data as unknown as SceneDocument);
   if(usesSpirographFrameClock(data as unknown as SceneDocument)){
     spirographSimulationFps(data as unknown as SceneDocument);
@@ -355,7 +358,7 @@ export interface SavedWorkspace {
   recovered?: boolean;
   startupError?: string;
 }
-export function persistentScene(scene:SceneDocument):SceneDocument {const {evaluatedFractalScene:_fractalScene,evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _fractalScene;void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
+export function persistentScene(scene:SceneDocument):SceneDocument {const {evaluatedDomainScene:_domainScene,evaluatedFractalScene:_fractalScene,evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _domainScene;void _fractalScene;void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
 /** JSON numbers retain negative zero on parse, but stringify ordinarily loses it.
  * Source animation division observes that sign. Keep the standard serializer
  * and inject only the standard raw numeric token, never a shadow field. */

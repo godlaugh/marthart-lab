@@ -10,7 +10,7 @@ export function domainParameterBinding(name:string):DomainParameterBinding {
  if(Object.hasOwn(DOMAIN_LEVEL_DEFAULTS,name))return{kind:'curve',key:name as DomainLevelKey};
  return{kind:'parameter',name};
 }
-export function readDomainParameterBinding(scene:SceneDocument,binding:DomainParameterBinding):number|undefined {
+export function readDomainParameterBinding(scene:Pick<SceneDocument,'settings'|'parameters'>,binding:DomainParameterBinding):number|undefined {
  if(binding.kind==='blank')return undefined;
  if(binding.kind==='curve')return domainLevelValue(scene.settings[binding.key],binding.key);
  if(binding.kind==='scale'){
@@ -27,7 +27,7 @@ export function normalizedDomainParameterValue(binding:DomainParameterBinding,va
  return binding.kind==='scale'?Math.max(1e-9,value):value;
 }
 /** Already-normalized evaluated scalar; never parse a target or normalize twice. */
-export function applyDomainParameterBinding(scene:SceneDocument,binding:DomainParameterBinding,value:number):void {
+export function applyDomainParameterBinding(scene:Pick<SceneDocument,'settings'|'parameters'>,binding:DomainParameterBinding,value:number):void {
  if(binding.kind==='blank')return;
  if(binding.kind==='parameter')Object.defineProperty(scene.parameters,binding.name,{value,writable:true,configurable:true,enumerable:true});
  else if(binding.kind==='scale')scene.settings.scale=value;

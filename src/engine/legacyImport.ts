@@ -1,3 +1,4 @@
+import {DOMAIN_SCENE_SEQUENCE} from './sourceDomainTimeline';
 import {importSourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
 import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument';
 import {prepareSourceFractalScene} from './sourceFractalTimeline';
@@ -837,7 +838,8 @@ function domainParameterAction(r:Reader,path:readonly string[],method:string,def
   operations.push({model:'domain-registry-1.7.8',scope:{kind:'all'}});
  }else{
   if(Object.keys(params).length>128)fail(`${pathLabel(paramsPath!)} 超过本地单动作128项参数配置容量`);
-  for(const name of Object.keys(params)){
+  // Native buildParamActionAnimations walks JSONObject.keys (HashMap.keySet).
+  for(const name of r.sourceKeys(paramsPath!)){
    const p=[...paramsPath!,name];
    if(!isObject(params[name])){r.acknowledge(p,'原版跳过非对象参数项');continue;}
    if(!r.domainBoolean([...p,'enable'])){r.acknowledge(p,'原版跳过禁用参数项，不修改已有参数配置');continue;}
@@ -861,18 +863,19 @@ function domainGradient(r:Reader,path:readonly string[]):GradientAnimation {
  return{model:'offsets',mode:Object.hasOwn(modes,mode)?modes[mode]:'hue_rotate',interpolation:Object.hasOwn(spaces,interpolation)?spaces[interpolation]:'oklab',speed:wrapper?Math.max(0,r.domainDouble([...wrapper,'speed'],60,true)):60,affectInside:wrapper?r.domainBoolean([...wrapper,'affectInside'],true,'default'):true,affectOutside:wrapper?r.domainBoolean([...wrapper,'affectOutside'],true,'default'):true};
 }
 function domainTimeline(r:Reader,s:SceneDocument):void {
+ s.timeline={...s.timeline,schedule:DOMAIN_SCENE_SEQUENCE,tracks:[]};
  const defaults=domainEdge(r,['settings','param_edge_easing'],DEFAULT_EDGE_EASING),clips=r.peek(['timeline']);
  if(clips===undefined)return;
  if(!Array.isArray(clips)||clips.length>1000)fail('timeline 应为最多 1000 段的数组');
- s.timeline.tracks=[];let cursor=0;
+ let cursor=0;
  if(!clips.length){r.use(['timeline']);return;}
  for(let i=0;i<clips.length;i++){
   const path=['timeline',String(i)];r.object(path);
   if(!r.domainBoolean([...path,'enabled'])){r.acknowledge(path,'原版跳过禁用时间片段，不读取片段类型、时长或动作');continue;}
   const originalType=r.str([...path,'type'],true)!,type=originalType.toLowerCase(),duration=r.domainScalar([...path,'duration'],1,'float32');
-  if(duration<0||duration>86400)fail(`${pathLabel(path)}.duration 超出本地 0–86400 秒容量`);
+  if(Math.abs(duration)>86400)fail(`${pathLabel(path)}.duration 超出本地 ±86400 秒容量`);
   const easing=type==='animate'?domainEasing(r,[...path,'easing'],'sine-in-out'):'sine-in-out';
-  const track:AnimationTrack={id:crypto.randomUUID(),type:type==='animate'||duration===0?'animate':'wait',target:'timeline.wait',label:originalType,from:0,to:0,start:cursor,duration,easing,pingPong:false,enabled:true};
+  const track:AnimationTrack={id:crypto.randomUUID(),type:type==='animate'?'animate':'wait',target:'timeline.wait',label:originalType,from:0,to:0,start:0,duration,easing,pingPong:false,enabled:true};
   if(type==='animate'){
    const actions=r.peek([...path,'actions']);if(actions!==undefined&&(!Array.isArray(actions)||actions.length>64))fail(`${pathLabel(path)}.actions 应为最多64个动作的数组`);
    track.actions=[];track.target='camera.actions';
@@ -890,15 +893,13 @@ function domainTimeline(r:Reader,s:SceneDocument):void {
    }
    if(Array.isArray(actions)&&!actions.length)r.use([...path,'actions']);
   }else if(type!=='wait')r.warnings.push(`${pathLabel(path)}：原版将 ${originalType} 作为等待片段，保留时长；原值保留在 source。`);
-  // A zero-duration wait is represented as an empty instantaneous group; the
-  // deterministic local clock does not model a native queue's extra frame.
-  if(track.type==='animate'&&!track.actions)track.actions=[];
-  try{validateTimelineExtensions(track,'domain');}catch(error){fail(`${pathLabel(path)}：${error instanceof Error?error.message:String(error)}`);}
-  s.timeline.tracks.push(track);cursor+=duration;if(cursor>86400)fail('时间线超过 24 小时');
+  try{validateTimelineExtensions(track,'domain',DOMAIN_SCENE_SEQUENCE);}catch(error){fail(`${pathLabel(path)}：${error instanceof Error?error.message:String(error)}`);}
+  s.timeline.tracks.push(track);cursor+=Math.max(0,duration);if(cursor>86400)fail('时间线超过 24 小时');
  }
  if(cursor>0)s.timeline.duration=cursor;
  try{validateTimelineCapacity(s.timeline.tracks);}catch(error){fail(error instanceof Error?error.message:String(error));}
- if(s.timeline.tracks.some(t=>t.actions?.some(a=>a.domainParameters)))r.warnings.push('域参数使用持久注册表；具名配置按本地 JSON 键顺序执行，原版 HashMap 次序未复现。采用 60 Hz 确定回放，首次 dt=0 不改写参数；原版实时帧时钟与队列帧延迟未逐帧对照。');
+ resolveTimeline(s);
+ r.warnings.push('域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。');
 }
 // Original positional argument order comes from AnimationRegistry and the public guide.
 function legacyAction(r:Reader,s:SceneDocument,path:string,baseline:SceneDocument,ignoreActionEnabled=false):AnimationAction|undefined {

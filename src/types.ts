@@ -2,6 +2,7 @@ import type {SourceFractalRecordingFrameInput,SourceFractalRecordingFrame} from 
 import type {SourceFractalZoomTarget} from './engine/sourceFractalZoom';
 import type {SourceFractalDocumentPayload,SourceFractalActionsPayload} from './engine/sourceFractalDocument';
 import type {SourceFractalEvaluation} from './engine/sourceFractalTimeline';
+import type {SourceDomainEvaluation} from './engine/sourceDomainTimeline';
 import type {SourceIteratedDraft} from './engine/sourceIteratedDraft';
 import type {SourceMapConfiguration} from './engine/sourceMapConfig';
 import type {SourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
@@ -259,6 +260,7 @@ export interface SceneDocument {
   /** Runtime camera facts, never a replacement for rootsPresentation.camera. */
   evaluatedRootsCamera?:RootsSceneFrame;
   evaluatedDomainGradient?: EvaluatedDomainGradient;
+  evaluatedDomainScene?: SourceDomainEvaluation;
   /** Active source gradient interpolation; rebuilt for each evaluated frame. */
   evaluatedFractalGradient?: FractalSourcePaletteRuntime;
   /** Runtime-only source screen rotation, in radians, separate from authored degrees. */
@@ -286,7 +288,7 @@ export interface SceneDocument {
     /** Sequential profiles derive absolute positions through resolveTimeline.
      * Spirograph reads track.start as a pre-clip delay; Roots ignores it and
      * uses explicit waits. duration is the caller's minimum playback span. */
-    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1' | 'ordinary-camera-sequence-v1' | 'samila-scene-sequence-v1' | 'fractal-scene-sequence-v1';
+    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1' | 'ordinary-camera-sequence-v1' | 'samila-scene-sequence-v1' | 'fractal-scene-sequence-v1' | 'domain-scene-sequence-v1';
   };
   favorite: boolean;
   formulas?: FormulaConfig;
@@ -325,7 +327,7 @@ export interface Preset {
   settings?: Settings;
   /** Complete authored content, produced through the document's owning importer.
    * This branch replaces defaults; empty maps and omitted fields are meaningful. */
-  document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
+  document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedDomainScene" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
 }
 export interface GeometryOutput {
   /** Implicit work counts include confirmed attempts before a CPU replay;

@@ -1,3 +1,4 @@
+import {DOMAIN_SCENE_SEQUENCE,usesSourceDomain,validateSourceDomainTrack,resolveSourceDomainTimeline,replaySourceDomain,replaySourceDomainFrame,bindSourceDomainFrame} from './sourceDomainTimeline';
 import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument';
 import {bindSourceFractalFrame,replaySourceFractal,replaySourceFractalFrame,resolveSourceFractalTimeline,validateSourceFractalTrack} from './sourceFractalTimeline';
 import {SOURCE_EASING_NAMES} from './sourceEasing';
@@ -105,6 +106,7 @@ export const ACTIONS = [
 const cameraMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','track','stopTracking','ambient','stopAmbient']);
 export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument,clock:'fixed'|'realtime'='fixed'):string[]{
+ if(usesSourceDomain(scene))return ['域着色使用逐帧顺序队列；参数、渐变和旋转共同更新。固定回放以时间线帧率代替宿主观测帧率，跳转会重建初始状态。'];
  if(usesSourceFractal(scene))return [clock==='realtime'?'暂停保留当前画面；跳转会从初始配置重建。修改时间线后，请在播放时点击“应用场景”。':'按固定帧率回放；跳转会从初始配置重建。'];
  if(usesSourceSamilaTimeline(scene)){const frame=replaySourceSamilaTimeline(scene,0);return[...frame.diagnostics.map(d=>d.message),...(clock==='fixed'?['源 Samila 队列按固定帧率回放；仅 theta 参与密度显示，其他相机分量保留运行状态。']:[])];}
  if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
@@ -152,6 +154,7 @@ export function validateFractalKeyframes(track:AnimationTrack):NonNullable<Anima
   return frames;
 }
 export function clipDuration(track: AnimationTrack, scene: SceneDocument): number {
+  if(usesSourceDomain(scene)){validateSourceDomainTrack(track);return Math.max(0,track.duration);}
   if(usesSourceFractal(scene)){validateSourceFractalTrack(track);return Math.max(0,track.duration);}
   if(usesSpirographFrameClock(scene))return interactiveSpirographFrames.timeline(scene).tracks.find(item=>item.id===track.id)?.duration??track.duration;
   if (track.type === 'spirograph_finish_wait') {
@@ -177,6 +180,7 @@ export function clipDuration(track: AnimationTrack, scene: SceneDocument): numbe
 }
 export function validateTimelineSchedule(scene:SceneDocument):void {
   const schedule=scene.timeline.schedule;
+  if(usesSourceDomain(scene)){for(const track of scene.timeline.tracks)validateSourceDomainTrack(track);return;}
   if(usesSourceFractal(scene)){if(schedule!==FRACTAL_SCENE_SEQUENCE)throw Error('源分形必须使用逐帧队列');for(const track of scene.timeline.tracks)validateSourceFractalTrack(track);return;}
   if(scene.sourceCamera&&schedule!=='ordinary-camera-sequence-v1')throw new Error('原版几何相机必须使用对应的顺序时间线');
   if(schedule!==undefined&&!(usesSourceSamilaTimeline(scene)||(schedule==='ordinary-camera-sequence-v1'&&!!scene.sourceCamera)||(schedule==='spirograph-sequence-v1'&&scene.kind==='spirograph')||((schedule==='roots-camera-sequence-v1'||schedule==='roots-scene-sequence-v1')&&scene.kind==='roots')))throw new Error('时间线顺序规则无效');
@@ -199,6 +203,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
+  if(usesSourceDomain(scene))return resolveSourceDomainTimeline(scene);
   if(usesSourceFractal(scene))return resolveSourceFractalTimeline(scene);
   if(usesSourceSamilaTimeline(scene))return resolveSourceSamilaTimeline(scene);
   if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:sourceParticleActionFamily(scene),surfaceMode:usesSourceSurfaceHost(scene)?scene.surfaceSource?.mode:undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
@@ -251,6 +256,7 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   if(scene.rootsMath)copied.rootsMath=structuredClone(scene.rootsMath);
   if(scene.rootsPresentation)copied.rootsPresentation=structuredClone(scene.rootsPresentation);
   delete copied.evaluatedDomainGradient;
+  delete copied.evaluatedDomainScene;
   delete copied.evaluatedFractalGradient;
   delete copied.evaluatedFractalScene;
   if(scene.fractalSource)copied.fractalSource=structuredClone(scene.fractalSource);
@@ -442,6 +448,7 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
 export type SourceParticleActionFamily='surface'|'attractor'|'perlin'|'symmetry'|'symmetry-parameters'|'map-parameters';
 export function sourceParticleActionFamily(scene:SceneDocument):SourceParticleActionFamily|undefined{return usesSourceMapParameters(scene)?'map-parameters':usesSourceSymmetryParameters(scene)?'symmetry-parameters':usesSourcePerlin(scene)?'perlin':usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':usesSourceSymmetryGradient(scene)?'symmetry':undefined;}
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceFamily?:SourceParticleActionFamily):void{
+ if(schedule===DOMAIN_SCENE_SEQUENCE){if(sceneKind!=='domain')throw Error('域着色源队列仅用于域着色作品');validateSourceDomainTrack(track);return;}
  if(schedule===FRACTAL_SCENE_SEQUENCE){if(sceneKind!=='fractal')throw Error('源分形队列仅用于分形作品');validateSourceFractalTrack(track);return;}
  if(track.fractalSource!==undefined)throw Error('源分形动作缺少对应队列');
  const sourceSurface=sourceFamily==='surface',sourcePerlin=sourceFamily==='perlin';
@@ -483,9 +490,13 @@ export function sceneAtFractalFrame(scene:SceneDocument,displayFrame:number,isCa
  if(!usesSourceFractal(scene))throw Error('分形录制帧需要完整源分形配置');
  const out=copyState(scene);for(const target of bindSourceFractalFrame(out,replaySourceFractalFrame(scene,displayFrame,isCancelled)))recordWrittenTarget(out,target);return out;
 }
+export function sceneAtDomainFrame(scene:SceneDocument,displayFrame:number,isCancelled?:()=>boolean):SceneDocument {
+ if(!usesSourceDomain(scene))throw Error('域着色逐帧回放需要显式源队列');const out=copyState(scene);for(const target of bindSourceDomainFrame(out,replaySourceDomainFrame(scene,displayFrame,isCancelled)))recordWrittenTarget(out,target);return out;
+}
 /** Pure evaluation: starts are ordered chronologically, ties follow document order. */
 export function sceneAtTime(scene: SceneDocument, position: number, options?:{isCancelled?:()=>boolean}): SceneDocument {
   finite(position, '时间位置');
+  if(usesSourceDomain(scene)){const out=copyState(scene);for(const target of bindSourceDomainFrame(out,replaySourceDomain(scene,position,options?.isCancelled)))recordWrittenTarget(out,target);return out;}
   if(usesSourceFractal(scene)){const out=copyState(scene);for(const target of bindSourceFractalFrame(out,replaySourceFractal(scene,position,options?.isCancelled)))recordWrittenTarget(out,target);return out;}
   if(usesSourceBouncing(scene)){
     const prepared=prepareSourceBouncingScene(scene);if(!prepared.ok)throw new Error(prepared.error.reason);
@@ -853,6 +864,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
 }
 
 export function createAnimationTrack(scene: SceneDocument, type: AnimationClipType = 'numeric', start = 0): AnimationTrack {
+  if(usesSourceDomain(scene)){if(!['wait','animate'].includes(type))throw Error('域着色源队列只支持等待和动作组合');return{id:crypto.randomUUID(),type,target:type==='wait'?'timeline.wait':'camera.actions',from:0,to:0,start:0,duration:1,easing:'sine-in-out',pingPong:false,enabled:true,...(type==='animate'?{actions:[{id:crypto.randomUUID(),method:'domainRotate',enabled:true,args:{speed:.2}}]}:{})};}
   if(usesSourceFractal(scene)){
     if(!['wait','animate','fractal_zoom'].includes(type))throw Error('源分形只支持等待、动画和目标缩放');
     const track:AnimationTrack={id:crypto.randomUUID(),type,target:type==='wait'?'timeline.wait':type==='animate'?'fractal.actions':'settings.zoom',from:0,to:0,start:0,duration:1,easing:'sine-in-out',pingPong:false,enabled:true};

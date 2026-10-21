@@ -94,7 +94,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "provenance": {
         "kind": "MathArt Studio",
@@ -133,6 +134,7 @@ export const domainGuideExamples:Preset[]=[
         "warnings": [
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
           "演示时长设为 20 秒；指南未指定时长。"
         ],
@@ -241,7 +243,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "provenance": {
         "kind": "MathArt Studio",
@@ -280,6 +283,7 @@ export const domainGuideExamples:Preset[]=[
         "warnings": [
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
           "演示时长设为 20 秒；指南未指定时长。"
         ],
@@ -429,7 +433,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "provenance": {
         "kind": "MathArt Studio",
@@ -492,7 +497,7 @@ export const domainGuideExamples:Preset[]=[
         "warnings": [
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
-          "域参数使用持久注册表；具名配置按本地 JSON 键顺序执行，原版 HashMap 次序未复现。采用 60 Hz 确定回放，首次 dt=0 不改写参数；原版实时帧时钟与队列帧延迟未逐帧对照。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
           "演示时长设为 20 秒；指南未指定时长。",
           "指南只给出振荡范围；此演示从 0 秒启动，step 设为 0.02，采用默认边沿缓动。"
@@ -644,7 +649,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "provenance": {
         "kind": "MathArt Studio",
@@ -707,7 +713,7 @@ export const domainGuideExamples:Preset[]=[
         "warnings": [
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
-          "域参数使用持久注册表；具名配置按本地 JSON 键顺序执行，原版 HashMap 次序未复现。采用 60 Hz 确定回放，首次 dt=0 不改写参数；原版实时帧时钟与队列帧延迟未逐帧对照。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
           "演示时长设为 20 秒；指南未指定时长。",
           "指南只给出振荡范围；此演示从 0 秒启动，step 设为 0.02，采用默认边沿缓动。"
@@ -822,7 +828,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "domainSourcePalette": {
         "colors": [
@@ -951,6 +958,7 @@ export const domainGuideExamples:Preset[]=[
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
           "公式内容、居中锚点、颜色和相对缩放已导入；位置转换至 1280×720 参考画布，原版窗口尺寸及 JLaTeXMath 字体度量未逐帧对照，可在公式标注面板调整。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "以下字段尚未映射，保留在 source，当前绘制/动画不会应用：isUserScene, timeline.0.easing, timeline.0.label, settings.show_trails, settings.line_weight, settings.trail_lifetime。"
         ],
         "reference": {
@@ -1063,7 +1071,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "domainSourcePalette": {
         "colors": [
@@ -1174,6 +1183,7 @@ export const domainGuideExamples:Preset[]=[
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
           "公式内容、居中锚点、颜色和相对缩放已导入；位置转换至 1280×720 参考画布，原版窗口尺寸及 JLaTeXMath 字体度量未逐帧对照，可在公式标注面板调整。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "以下字段尚未映射，保留在 source，当前绘制/动画不会应用：isUserScene, timeline.0.easing, timeline.0.label, settings.show_trails, settings.line_weight, settings.trail_lifetime。"
         ],
         "reference": {
@@ -1286,7 +1296,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "domainSourcePalette": {
         "colors": [
@@ -1397,6 +1408,7 @@ export const domainGuideExamples:Preset[]=[
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
           "公式内容、居中锚点、颜色和相对缩放已导入；位置转换至 1280×720 参考画布，原版窗口尺寸及 JLaTeXMath 字体度量未逐帧对照，可在公式标注面板调整。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "以下字段尚未映射，保留在 source，当前绘制/动画不会应用：isUserScene, timeline.0.easing, timeline.0.label, settings.show_trails, settings.line_weight, settings.trail_lifetime。"
         ],
         "reference": {
@@ -1505,7 +1517,8 @@ export const domainGuideExamples:Preset[]=[
             "pingPong": false,
             "enabled": true
           }
-        ]
+        ],
+        "schedule": "domain-scene-sequence-v1"
       },
       "provenance": {
         "kind": "MathArt Studio",
@@ -1544,6 +1557,7 @@ export const domainGuideExamples:Preset[]=[
         "warnings": [
           "新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。",
           "Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。",
+          "域着色按源顺序队列逐帧回放，参数、渐变和旋转共同更新；固定回放使用文档帧率作为宿主帧率输入，原版实时窗口与像素仍未对照。",
           "指南未给出的配色、锐度及迭代字段使用 RuntimeConfig 默认值；背景和超采样使用本地默认值。",
           "演示时长设为 20 秒；指南未指定时长。"
         ],

@@ -28,4 +28,7 @@ export interface DomainRenderFacts {
  readonly view:PreparedDomainViewport;
  readonly constant:[number,number];
  readonly sourceConstantUpload?:boolean;
+ /** Numerical clock that produced these pixels. Frame zero is the first
+  * update; requested seconds select an ordinal, not a partial native dt. */
+ readonly sourceClock?:{readonly displayFrame:number;readonly simulationFps:number;readonly parameterFps:number;readonly sceneTime:number;readonly rawDt:number;readonly activeDt:number;readonly queueIndex:number;readonly queueComplete:boolean;readonly rotationRate:number;readonly paletteOffset:number};
 }

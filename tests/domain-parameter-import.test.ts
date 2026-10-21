@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene} from '../src/engine/document';
-import {domainParameterFrame,sceneAtTime} from '../src/engine/timeline';
+import {sceneAtTime} from '../src/engine/timeline';
 
 const base={config_version:'1.0.0',type:'DOMAIN_COLORING',name:'Source parameter import',domainColoring:{formula:'z'},settings:{render_mode:'CPU'}};
 const read=(changes:Record<string,unknown>={})=>parseProjectFile(JSON.stringify({...base,...changes}));
@@ -39,7 +39,7 @@ describe('public Domain source registry import',()=>{
   const {scene,warnings}=read(raw),ops=scene.timeline.tracks[0].actions![0].domainParameters!;
   expect(ops[0].configuration).toMatchObject({min:-1,max:Math.PI/2,step:Math.fround(.1)});
   expect(ops[1].configuration).toMatchObject({min:0,max:3,step:.001});expect(warnings.join()).toContain('原版标量转换规则');
-  const frame=domainParameterFrame(sceneAtTime(scene,0))!;expect(frame.entries[0].maximum).toBe(Math.fround(Math.PI/2));
+  const frame=sceneAtTime(scene,0).evaluatedDomainScene!.parameterState;expect(frame.entries.find(e=>e.name==='x')!.configuration.max).toBe(Math.fround(Math.PI/2));
   expect(scene.provenance!.original).toMatchObject(raw);
  });
  it('inherits edge doubles without expression evaluation or easing-name normalization',()=>{
@@ -60,17 +60,19 @@ describe('public Domain source registry import',()=>{
   Object.assign(parameters,{scale:99,phaseDensity:88});
   const config=Object.fromEntries([...names.map((name,i)=>[name,{min:i+20,max:i+20,step:0}]),['new-name',{min:7,max:7,step:0}],['scale',{min:2,max:2,step:0}],['phaseDensity',{min:5,max:5,step:0}]]);
   const {scene}=read({parameters,timeline:[clip([action('paramStart',{parameters:config})])]});
-  const start=sceneAtTime(scene,0);expect(start.parameters).toEqual(parameters);expect(Object.hasOwn(start.parameters,'new-name')).toBe(false);
+  expect(scene.parameters).toEqual(parameters);expect(Object.hasOwn(scene.parameters,'new-name')).toBe(false);
+  // Display ordinal zero already executes the first native object update.
+  const start=sceneAtTime(scene,0);expect(start.parameters['new-name']).toBe(7);
   const later=sceneAtTime(scene,.1);expect(later.parameters['a.b']).toBe(20);expect(later.parameters.__proto__).toBe(23);expect(Object.getPrototypeOf(later.parameters)).toBe(Object.prototype);
   expect(later.parameters['']).toBe(parameters['']);expect(later.parameters['\u00a0']).toBe(25);expect(later.parameters['\u0000']).toBe(26);expect(later.parameters[' scale ']).toBe(27);
   expect(later.settings.scale).toBe(2);expect(later.settings.phaseDensity).toBe(5);expect(later.parameters.scale).toBe(99);expect(later.parameters.phaseDensity).toBe(88);expect(later.parameters['new-name']).toBe(7);
-  expect(sceneAtTime(parseScene(JSON.stringify(scene)),.1)).toEqual(later);expect(sceneAtTime(scene,0).parameters).toEqual(parameters);
+  expect(sceneAtTime(parseScene(JSON.stringify(scene)),.1)).toEqual(later);expect(sceneAtTime(scene,0).parameters).toEqual(start.parameters);expect(scene.parameters).toEqual(parameters);
  });
  it('keeps a disabled-only named Stop from becoming StopAll',()=>{
   const {scene}=read({parameters:{x:0},timeline:[clip([action('paramStart',{parameters:{x:{min:-1,max:1,step:.01}}})],{duration:0}),clip([action('paramStop',{parameters:{x:{enable:false}}})]),{type:'wait',duration:2}]});
-  expect(domainParameterFrame(sceneAtTime(scene,2))!.running).toBe(true);
+  expect(sceneAtTime(scene,2).evaluatedDomainScene!.parameterState.running).toBe(true);
   const all=structuredClone(scene);all.timeline.tracks[1].actions![0].domainParameters=[{model:'domain-registry-1.7.8',scope:{kind:'all'}}];
-  expect(domainParameterFrame(sceneAtTime(all,2))!.running).toBe(false);
+  expect(sceneAtTime(all,2).evaluatedDomainScene!.parameterState.running).toBe(false);
  });
  it('retains source duration fallback, exact easing lookup and unknown-type hold',()=>{
   const {scene}=read({timeline:[clip([]),clip([],{duration:'PI/2',easing:'linear'}),clip([],{duration:'',easing:'LINEAR'}),{type:'wait',duration:'1e3+1',easing:{ignored:true}},{type:' param ',duration:2}]});

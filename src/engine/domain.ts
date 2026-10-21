@@ -48,6 +48,8 @@ export function generateDomain(scene:SceneDocument,context:GenerateContext,sessi
   };
   const output=renderDomainModel(model,context,started,recover);
   output.domainRender={policy,requested,effective:{formula:model.execution.version,color:model.colorVersion,viewport:model.view.version,backend:output.backend??'cpu'},route,trigger,sticky,view:model.view,constant:[...model.constant],sourceConstantUpload:model.sourceConstantUpload};
+  const frame=scene.evaluatedDomainScene;
+  if(frame)output.domainRender={...output.domainRender,sourceClock:{displayFrame:frame.displayFrame,simulationFps:frame.simulationFps,parameterFps:frame.parameterFps,sceneTime:frame.clock.sceneTime,rawDt:frame.clock.rawDt,activeDt:frame.clock.activeDt,queueIndex:frame.clock.queueIndex,queueComplete:frame.clock.queueComplete,rotationRate:frame.rotationRate,paletteOffset:frame.paletteOffset}};
   if(route==='source-cpu-failure')output.warnings=[`域着色整链 CPU 回退${sticky?'（保留本作品此前的 GPU 失败状态）':''}：${trigger!.reason}；当前图像使用 CPU 公式、CPU 坐标和 CPU 着色。`,...(output.warnings??[])];
   if(route==='source-cpu-forced')output.warnings=['域着色已显式选择完整 CPU 渲染链；所选公式、视口和色板规则仍保留在作品中。',...(output.warnings??[])];
   return output;

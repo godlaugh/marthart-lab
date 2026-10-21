@@ -1,0 +1,2466 @@
+{
+  "scope": {
+    "originalSceneManager": true,
+    "originalDomainColoringSceneUpdate": true,
+    "originalDomainMobjectUpdate": true,
+    "originalSetupTimeline": true,
+    "originalConfigConstructor": false,
+    "originalMobjectConstructor": false,
+    "sceneConstructOrRender": false,
+    "windowOrGL": false,
+    "parameterAndGradientAnimators": "original constructors, retained inactive",
+    "initialization": "JNI AllocObject PApplet/JsonDomainConfig/DomainMobject; original setters for explicit initial angle/rate; parent frameRate=37; original Scene constructor with raw JSON field and original add/setupTimeline/setRenderMode",
+    "scope": "Five bounded traces; actual fixed 4fps first case, explicitly prescribed renderStep sequence for remaining cases; paused gate and queue/order execute in original Scene. Does not establish full UI/live/recording lifecycle or active parameter/gradient behavior."
+  },
+  "provenance": {
+    "artifactPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "coreSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+    "jvmPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home/lib/server/libjvm.dylib",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "classes": {
+      "mathart/domaincoloring/DomainColoringMobject": "686cb8652a1c2f0e4d696a375ad04285bf24903a0e7c71ef221c14c38a837c38",
+      "mathart/domaincoloring/DomainColoringScene": "b8f116b692be3cd7fe78d61d110be8129b45a917c2a3facd3d83d6eae8945190",
+      "mathart/domaincoloring/animation/DomainParamAnimation": "520cfbe82bb78cd069643173648d5d9b877163c04614c6102afdc71f79d661ec",
+      "mathart/domaincoloring/animation/DomainParameterAnimator": "e8e3ddfcf9fbfc73acaf8729812bcb571c22e1a1c1cbd606c102a8502f6d5094",
+      "mathart/domaincoloring/config/JsonDomainColoringConfig": "9679de5eccd992a84fe0e748e2d97014fcedbdaa5a77c6d02f357d05f557ada2",
+      "mathart/scene/Scene": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "mathart/scene/SceneManager": "973ee64fef4c06b615eab028ae0668db1917ac1b7db47a62b0a73fc278b760e7",
+      "mathart/animation/Animation": "63b961d5b29c2b70c7b6ddb7e10af117d586a8c408592f4ab1a5cbb238f68212",
+      "mathart/animation/AnimationGroup": "2b31113da7c66415bf723cbbea37e9fe601144a8de9be91a2a236d04971324d8",
+      "mathart/animation/gradient/GradientAnimator": "fdff4ef0cfaa79d38aa51e577b4075d2257db143d709b6b0b156584be63c7095"
+    },
+    "harnessSha256": "51444d3ba66fca33c3f39d4151950aa19cc9ea049debd3d24ab9c2fd3ddc00e2",
+    "runnerSha256": "6f7de7ed54912ee67f1808ae81830965b84de28b2fd4aab951e334020863eb31",
+    "stdoutSha256": [
+      "1ce8d5928600dcad81eefa97bb4233923ab10ba9c56b408198cb1c671abfb224",
+      "1ce8d5928600dcad81eefa97bb4233923ab10ba9c56b408198cb1c671abfb224"
+    ]
+  },
+  "cases": [
+    {
+      "id": 0,
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 1,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "domainRotate",
+                "args": [
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "driver": "original-fixed-4fps",
+      "initialRotation": {
+        "value": 0,
+        "bits": "00000000"
+      },
+      "initialRate": {
+        "value": 0,
+        "bits": "00000000"
+      },
+      "pAppletFrameRate": 37,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "remaining": {
+          "value": 1,
+          "bits": "3f800000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "finishedAtFrameStart": true,
+        "queue": [
+          {
+            "duration": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "runTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "started": false,
+            "finished": false
+          }
+        ]
+      },
+      "frames": [
+        {
+          "index": 0,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.125,
+              "bits": "3e000000"
+            },
+            "rotationRate": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "sceneTime": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0.75,
+              "bits": "3f400000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "runTime": {
+                  "value": 0.25,
+                  "bits": "3e800000"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.375,
+              "bits": "3ec00000"
+            },
+            "rotationRate": {
+              "value": 0.5,
+              "bits": "3f000000"
+            },
+            "sceneTime": {
+              "value": 0.5,
+              "bits": "3f000000"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0.5,
+              "bits": "3f000000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "runTime": {
+                  "value": 0.5,
+                  "bits": "3f000000"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.75,
+              "bits": "3f400000"
+            },
+            "rotationRate": {
+              "value": 0.75,
+              "bits": "3f400000"
+            },
+            "sceneTime": {
+              "value": 0.75,
+              "bits": "3f400000"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "runTime": {
+                  "value": 0.75,
+                  "bits": "3f400000"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 1.25,
+              "bits": "3fa00000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "runTime": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 1.5,
+              "bits": "3fc00000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 1.25,
+              "bits": "3fa00000"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "runTime": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 1.75,
+              "bits": "3fe00000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 1.5,
+              "bits": "3fc00000"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "runTime": {
+                  "value": 1,
+                  "bits": "3f800000"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "input": {
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 0.3
+          }
+        ]
+      },
+      "driver": "prescribed-renderStep-through-original-Scene",
+      "initialRotation": {
+        "value": 0,
+        "bits": "00000000"
+      },
+      "initialRate": {
+        "value": 1,
+        "bits": "3f800000"
+      },
+      "pAppletFrameRate": 37,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 1,
+          "bits": "3f800000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "remaining": {
+          "value": 0.30000001192092896,
+          "bits": "3e99999a"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "finishedAtFrameStart": true,
+        "queue": [
+          {
+            "duration": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "runTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "started": false,
+            "finished": false
+          }
+        ]
+      },
+      "frames": [
+        {
+          "index": 0,
+          "inputStep": {
+            "value": 0,
+            "bits": "00000000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0.20000001788139343,
+              "bits": "3e4cccce"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0.20000001788139343,
+              "bits": "3e4cccce"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "inputStep": {
+            "value": 0.15000000596046448,
+            "bits": "3e19999a"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.5,
+              "bits": "3f000000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "rawDt": {
+              "value": 0.15000000596046448,
+              "bits": "3e19999a"
+            },
+            "remaining": {
+              "value": 0.050000011920928955,
+              "bits": "3d4cccd0"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.25,
+                  "bits": "3e800000"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "inputStep": {
+            "value": 0.20000000298023224,
+            "bits": "3e4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.75,
+              "bits": "3f400000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rawDt": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.8500000238418579,
+              "bits": "3f59999a"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.4000000059604645,
+              "bits": "3ecccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 0.8500000238418579,
+              "bits": "3f59999a"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.4000000059604645,
+              "bits": "3ecccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 7,
+          "inputStep": {
+            "value": 0.05000000074505806,
+            "bits": "3d4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.9000000357627869,
+              "bits": "3f666667"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.45000001788139343,
+              "bits": "3ee66667"
+            },
+            "rawDt": {
+              "value": 0.05000000074505806,
+              "bits": "3d4ccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 8,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 1.1500000953674316,
+              "bits": "3f933334"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.7000000476837158,
+              "bits": "3f333334"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "domainRotate",
+                "args": [
+                  0.7
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          },
+          {
+            "type": "animate",
+            "duration": 0.15,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "domainRotate",
+                "args": [
+                  0
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "driver": "prescribed-renderStep-through-original-Scene",
+      "initialRotation": {
+        "value": 0.30000001192092896,
+        "bits": "3e99999a"
+      },
+      "initialRate": {
+        "value": 0.10000000149011612,
+        "bits": "3dcccccd"
+      },
+      "pAppletFrameRate": 37,
+      "initial": {
+        "rotation": {
+          "value": 0.30000001192092896,
+          "bits": "3e99999a"
+        },
+        "rotationRate": {
+          "value": 0.10000000149011612,
+          "bits": "3dcccccd"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "remaining": {
+          "value": 0.550000011920929,
+          "bits": "3f0ccccd"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "finishedAtFrameStart": true,
+        "queue": [
+          {
+            "duration": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "runTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "started": false,
+            "finished": false
+          },
+          {
+            "duration": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "runTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "started": false,
+            "finished": false
+          },
+          {
+            "duration": {
+              "value": 0.15000000596046448,
+              "bits": "3e19999a"
+            },
+            "runTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "started": false,
+            "finished": false
+          }
+        ]
+      },
+      "frames": [
+        {
+          "index": 0,
+          "inputStep": {
+            "value": 0,
+            "bits": "00000000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0.550000011920929,
+              "bits": "3f0ccccd"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": true,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.36000001430511475,
+              "bits": "3eb851ec"
+            },
+            "rotationRate": {
+              "value": 0.29999998211860657,
+              "bits": "3e999999"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0.45000001788139343,
+              "bits": "3ee66667"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 0.36000001430511475,
+              "bits": "3eb851ec"
+            },
+            "rotationRate": {
+              "value": 0.29999998211860657,
+              "bits": "3e999999"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0.45000001788139343,
+              "bits": "3ee66667"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "inputStep": {
+            "value": 0.15000000596046448,
+            "bits": "3e19999a"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.5400000214576721,
+              "bits": "3f0a3d71"
+            },
+            "rotationRate": {
+              "value": 0.5999999642372131,
+              "bits": "3f199999"
+            },
+            "sceneTime": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "rawDt": {
+              "value": 0.15000000596046448,
+              "bits": "3e19999a"
+            },
+            "remaining": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.25,
+                  "bits": "3e800000"
+                },
+                "started": true,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "inputStep": {
+            "value": 0.20000000298023224,
+            "bits": "3e4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.8199999928474426,
+              "bits": "3f51eb85"
+            },
+            "rotationRate": {
+              "value": 0.699999988079071,
+              "bits": "3f333333"
+            },
+            "sceneTime": {
+              "value": 0.44999998807907104,
+              "bits": "3ee66666"
+            },
+            "rawDt": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "remaining": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "queueIndex": 1,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.44999998807907104,
+                  "bits": "3ee66666"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.9599999785423279,
+              "bits": "3f75c28f"
+            },
+            "rotationRate": {
+              "value": 0.699999988079071,
+              "bits": "3f333333"
+            },
+            "sceneTime": {
+              "value": 0.550000011920929,
+              "bits": "3f0ccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0.15000000596046448,
+              "bits": "3e19999a"
+            },
+            "queueIndex": 2,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.44999998807907104,
+                  "bits": "3ee66666"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 0.9599999785423279,
+              "bits": "3f75c28f"
+            },
+            "rotationRate": {
+              "value": 0.699999988079071,
+              "bits": "3f333333"
+            },
+            "sceneTime": {
+              "value": 0.550000011920929,
+              "bits": "3f0ccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0.15000000596046448,
+              "bits": "3e19999a"
+            },
+            "queueIndex": 2,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.44999998807907104,
+                  "bits": "3ee66666"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": false,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 7,
+          "inputStep": {
+            "value": 0.05000000074505806,
+            "bits": "3d4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 1.006666660308838,
+              "bits": "3f80da74"
+            },
+            "rotationRate": {
+              "value": 0.46666666865348816,
+              "bits": "3eeeeeef"
+            },
+            "sceneTime": {
+              "value": 0.6000000238418579,
+              "bits": "3f19999a"
+            },
+            "rawDt": {
+              "value": 0.05000000074505806,
+              "bits": "3d4ccccd"
+            },
+            "remaining": {
+              "value": 0.10000000894069672,
+              "bits": "3dccccce"
+            },
+            "queueIndex": 2,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.44999998807907104,
+                  "bits": "3ee66666"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0.05000000074505806,
+                  "bits": "3d4ccccd"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 8,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 1.006666660308838,
+              "bits": "3f80da74"
+            },
+            "rotationRate": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "sceneTime": {
+              "value": 0.7000000476837158,
+              "bits": "3f333334"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 3,
+            "complete": true,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.44999998807907104,
+                  "bits": "3ee66666"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": true
+              },
+              {
+                "duration": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "runTime": {
+                  "value": 0.15000000596046448,
+                  "bits": "3e19999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "input": {
+        "timeline": []
+      },
+      "driver": "prescribed-renderStep-through-original-Scene",
+      "initialRotation": {
+        "value": 16777216,
+        "bits": "4b800000"
+      },
+      "initialRate": {
+        "value": 1,
+        "bits": "3f800000"
+      },
+      "pAppletFrameRate": 37,
+      "initial": {
+        "rotation": {
+          "value": 16777216,
+          "bits": "4b800000"
+        },
+        "rotationRate": {
+          "value": 1,
+          "bits": "3f800000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "remaining": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "queueIndex": 0,
+        "complete": true,
+        "finishedAtFrameStart": true,
+        "queue": []
+      },
+      "frames": [
+        {
+          "index": 0,
+          "inputStep": {
+            "value": 0,
+            "bits": "00000000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 1,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 2,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 3,
+          "inputStep": {
+            "value": 0.15000000596046448,
+            "bits": "3e19999a"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "rawDt": {
+              "value": 0.15000000596046448,
+              "bits": "3e19999a"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 4,
+          "inputStep": {
+            "value": 0.20000000298023224,
+            "bits": "3e4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.44999998807907104,
+              "bits": "3ee66666"
+            },
+            "rawDt": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 5,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.550000011920929,
+              "bits": "3f0ccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 6,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.550000011920929,
+              "bits": "3f0ccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 7,
+          "inputStep": {
+            "value": 0.05000000074505806,
+            "bits": "3d4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.6000000238418579,
+              "bits": "3f19999a"
+            },
+            "rawDt": {
+              "value": 0.05000000074505806,
+              "bits": "3d4ccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        },
+        {
+          "index": 8,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 16777216,
+              "bits": "4b800000"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.8500000238418579,
+              "bits": "3f59999a"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": []
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "input": {
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 0.3
+          }
+        ]
+      },
+      "driver": "prescribed-renderStep-through-original-Scene",
+      "initialRotation": {
+        "value": 0,
+        "bits": "00000000"
+      },
+      "initialRate": {
+        "value": 0.10000000149011612,
+        "bits": "3dcccccd"
+      },
+      "pAppletFrameRate": 37,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0.10000000149011612,
+          "bits": "3dcccccd"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "remaining": {
+          "value": 0.30000001192092896,
+          "bits": "3e99999a"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "finishedAtFrameStart": true,
+        "queue": [
+          {
+            "duration": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "runTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "started": false,
+            "finished": false
+          }
+        ]
+      },
+      "frames": [
+        {
+          "index": 0,
+          "inputStep": {
+            "value": 0,
+            "bits": "00000000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0,
+                  "bits": "00000000"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.020000001415610313,
+              "bits": "3ca3d70b"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0.20000001788139343,
+              "bits": "3e4cccce"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 0.020000001415610313,
+              "bits": "3ca3d70b"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0.20000001788139343,
+              "bits": "3e4cccce"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.10000000149011612,
+                  "bits": "3dcccccd"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "inputStep": {
+            "value": 0.15000000596046448,
+            "bits": "3e19999a"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.05000000447034836,
+              "bits": "3d4cccce"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "rawDt": {
+              "value": 0.15000000596046448,
+              "bits": "3e19999a"
+            },
+            "remaining": {
+              "value": 0.050000011920928955,
+              "bits": "3d4cccd0"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.25,
+                  "bits": "3e800000"
+                },
+                "started": true,
+                "finished": false
+              }
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "inputStep": {
+            "value": 0.20000000298023224,
+            "bits": "3e4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.07500001043081284,
+              "bits": "3d99999b"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rawDt": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": false,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.08500000834465027,
+              "bits": "3dae147c"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.4000000059604645,
+              "bits": "3ecccccd"
+            },
+            "rawDt": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "inputStep": {
+            "value": 0.10000000149011612,
+            "bits": "3dcccccd"
+          },
+          "paused": true,
+          "state": {
+            "rotation": {
+              "value": 0.08500000834465027,
+              "bits": "3dae147c"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.4000000059604645,
+              "bits": "3ecccccd"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 7,
+          "inputStep": {
+            "value": 0.05000000074505806,
+            "bits": "3d4ccccd"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.09000001102685928,
+              "bits": "3db851ed"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.45000001788139343,
+              "bits": "3ee66667"
+            },
+            "rawDt": {
+              "value": 0.05000000074505806,
+              "bits": "3d4ccccd"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        },
+        {
+          "index": 8,
+          "inputStep": {
+            "value": 0.25,
+            "bits": "3e800000"
+          },
+          "paused": false,
+          "state": {
+            "rotation": {
+              "value": 0.11500000953674316,
+              "bits": "3deb8520"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0.7000000476837158,
+              "bits": "3f333334"
+            },
+            "rawDt": {
+              "value": 0.25,
+              "bits": "3e800000"
+            },
+            "remaining": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "finishedAtFrameStart": true,
+            "queue": [
+              {
+                "duration": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "runTime": {
+                  "value": 0.30000001192092896,
+                  "bits": "3e99999a"
+                },
+                "started": true,
+                "finished": true
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
