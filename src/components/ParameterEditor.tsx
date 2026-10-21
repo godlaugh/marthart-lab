@@ -1,3 +1,4 @@
+import {usesSourceSymmetryMath} from '../engine/sourceSymmetryMath';
 import {useEffect,useRef,useState} from 'react';
 import {X} from 'lucide-react';
 import {useI18n} from '../i18n';
@@ -40,5 +41,10 @@ export function ParameterEditor({scene,onChange}:{scene:SceneDocument;onChange:(
  const state=readParameterEditing(scene);
  return <div className="parameter-editor">{state.error&&<div role="alert" className="export-error"><p>{t(state.error)}</p><p>{t('编辑范围数据无效；公式计算和参数值保持原样。可重置范围后继续编辑。')}</p>{scene.kind==='samila'&&<button onClick={()=>onChange(resetParameterRanges(scene),'metadata')}>{t('重置编辑范围')}</button>}</div>}
   {state.specs.map(spec=><ParameterRow key={`${scene.id}:${spec.name}`} scene={scene} spec={spec} onChange={onChange} metadataError={!!state.error}/>)}
+  {usesSourceSymmetryMath(scene)&&<details className="muted"><summary>{t('对称参数如何影响图案')}</summary>
+   <p>{t('阶数 n 决定公式的 n 重旋转关系；有限采样不保证画面完整对称。')}</p>
+   <p>{t('omega = 0 时公式同时具有镜像关系；非零 omega 保留 n 重旋转关系，并打破原有镜像关系。')}</p>
+   <p>{t('gamma 调整复共轭项的强度，并非固定角度的旋转。要旋转画面，请使用相机角度。')}</p>
+  </details>}
  </div>;
 }
