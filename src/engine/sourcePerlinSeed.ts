@@ -1,3 +1,4 @@
+import {sourceJavaMix64} from './sourceJavaHash';
 import {parseRootsSignedLongText} from './rootsSourceOrder';
 import {isJavaSourceLong} from './javaSourceRandom';
 export class SourcePerlinSeedError extends Error {
@@ -6,10 +7,7 @@ export class SourcePerlinSeedError extends Error {
 /** Signed long Murmur finalizer used by both constructor and curve RNG. */
 export function sourcePerlinMix64(seed:bigint):bigint{
  if(!isJavaSourceLong(seed))throw new SourcePerlinSeedError('input','Perlin mix64 requires a signed Java long.');
- let value=BigInt.asUintN(64,seed);
- value=BigInt.asUintN(64,(value^(value>>33n))* -49064778989728563n);
- value=BigInt.asUintN(64,(value^(value>>33n))* -4265267296055464877n);
- return BigInt.asIntN(64,value^(value>>33n));
+ return sourceJavaMix64(seed);
 }
 /** Constructor only mixes seeds outside signed int32. Random uses the full
  * resulting long; Processing noise uses its sign-extended low int32 bits. */

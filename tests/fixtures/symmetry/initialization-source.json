@@ -1,0 +1,1769 @@
+{
+  "scope": "Independent Python static-derived computation; no original JVM/GL execution. Points are initialization only, before warmup.",
+  "directOrderedRuntimeParameters": [
+    {
+      "id": "ordered-standard-default",
+      "batchSize": 262144,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "-8731920909288535892",
+      "initialStateSeedHex": "86d1fc325b0d08ac",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "0ab5fd24c747914babf4d46a3da8ee08cde8e26a8048cb04078c61c07d040e63",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3aa8757c",
+            "3ac59f01",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3ac4264a",
+            "3abb2c83",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3ad979ed",
+            "3af70ea4",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3abeb460",
+            "3ac82d7d",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3a92953c",
+            "3a84d8b3",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3ab29428",
+            "3aa6e95a",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3af3dff1",
+            "3aba2779",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 512,
+      "paddingTexels": 0,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "ordered-parameter-reversal",
+      "batchSize": 262144,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "symmetry_degree",
+          3.0
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "lambda",
+          2.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "-4716867311959706169",
+      "initialStateSeedHex": "be8a522bb9fd75c7",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "cc7c78465189754630427982e0120e26d99e7a0403310a6be8a49de345513d83",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3aef120a",
+            "3a9913af",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3a947d68",
+            "3ac3b86f",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3ab0b771",
+            "3aaa1e1a",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3af84191",
+            "3ab34cd1",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3aebb856",
+            "3a9e0791",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3abdc111",
+            "3af73446",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3af409a3",
+            "3aa453fe",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 512,
+      "paddingTexels": 0,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "degenerate-x",
+      "batchSize": 7,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "3730374421975369968",
+      "initialStateSeedHex": "33c4f3c5bd0b88f0",
+      "xBoundsFloat32Bits": [
+        "3e000000",
+        "3e000000"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 7,
+      "prefixRgbaFloat32LittleEndianSha256": "a4a77e673310581732d87f492c7eb4f4610e01d258d72e7dbaac4387e06e8adb",
+      "nextFloatCallsInPrefix": 7,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "3ad06424",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "3a9c49f8",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "3a950a70",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 6,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "3a851e45",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 3,
+      "paddingTexels": 2,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "degenerate-y",
+      "batchSize": 7,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "3730374421975369968",
+      "initialStateSeedHex": "33c4f3c5bd0b88f0",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "bf000000",
+        "bf000000"
+      ],
+      "examinedPrefixParticles": 7,
+      "prefixRgbaFloat32LittleEndianSha256": "45dcf71fbe06ec9895d54b106acf0cd0ea1449d0557f1a58e44cf1b0778bef41",
+      "nextFloatCallsInPrefix": 7,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3ad06424",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3a9c49f8",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3a950a70",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 6,
+          "xyzmFloat32Bits": [
+            "3a851e45",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 3,
+      "paddingTexels": 2,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "degenerate-both",
+      "batchSize": 7,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "3730374421975369968",
+      "initialStateSeedHex": "33c4f3c5bd0b88f0",
+      "xBoundsFloat32Bits": [
+        "3e000000",
+        "3e000000"
+      ],
+      "yBoundsFloat32Bits": [
+        "bf000000",
+        "bf000000"
+      ],
+      "examinedPrefixParticles": 7,
+      "prefixRgbaFloat32LittleEndianSha256": "4a357fbc9be4421b15e3f2451505fcb4ef8ce4c13cc04c20c787e5697b1b5554",
+      "nextFloatCallsInPrefix": 0,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 6,
+          "xyzmFloat32Bits": [
+            "3e000000",
+            "bf000000",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 3,
+      "paddingTexels": 2,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "float32-rounding-and-reversed-bounds",
+      "batchSize": 7,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "3730374421975369968",
+      "initialStateSeedHex": "33c4f3c5bd0b88f0",
+      "xBoundsFloat32Bits": [
+        "3f800000",
+        "3f800001"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 7,
+      "prefixRgbaFloat32LittleEndianSha256": "e84fa2e923303090e1e6d9b0221f66e699b8f28ef0e6dd1b4a3f547cf40fb655",
+      "nextFloatCallsInPrefix": 14,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3f800001",
+            "3a9c49f8",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3f800000",
+            "3ae07435",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3f800000",
+            "3a910c38",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 6,
+          "xyzmFloat32Bits": [
+            "3f800001",
+            "3aac27d4",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 3,
+      "paddingTexels": 2,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "signed-zero-both",
+      "batchSize": 3,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "-131353594699263297",
+      "initialStateSeedHex": "fe2d5699fffad2bf",
+      "xBoundsFloat32Bits": [
+        "80000000",
+        "00000000"
+      ],
+      "yBoundsFloat32Bits": [
+        "80000000",
+        "00000000"
+      ],
+      "examinedPrefixParticles": 3,
+      "prefixRgbaFloat32LittleEndianSha256": "ef3a83e7d2070b04c3ba9092eb359966e480f7dc3c5bc82c430a48186ad9e3d9",
+      "nextFloatCallsInPrefix": 0,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "80000000",
+            "80000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "80000000",
+            "80000000",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "80000000",
+            "80000000",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 2,
+      "paddingTexels": 1,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "chunk-boundary-65536",
+      "batchSize": 65538,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "3869241361686833565",
+      "initialStateSeedHex": "35b24e84b197a99d",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "8adf0c084da775ac987a7b6f78867bdbbb8aee462f44bce23ffdd140210541a4",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3b02097e",
+            "3a8c5c98",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3aa4479e",
+            "3a97fce3",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3a8f1031",
+            "3b0288e0",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3aa76c71",
+            "3ac7c28b",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3acc8c96",
+            "3ac4ae65",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3a8512c1",
+            "3aeddd0d",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3adec493",
+            "3aa0bf56",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 257,
+      "paddingTexels": 511,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    },
+    {
+      "id": "padding-does-not-consume",
+      "batchSize": 3,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "-131353594699263297",
+      "initialStateSeedHex": "fe2d5699fffad2bf",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 3,
+      "prefixRgbaFloat32LittleEndianSha256": "b0944c3d7889a2570163408956abc15db6164c5b9a3ab179aa2de7c9f4b8fd50",
+      "nextFloatCallsInPrefix": 6,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3afe3fec",
+            "3ad7b479",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3ae7e650",
+            "3ab4bdbe",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3ab432cb",
+            "3ab1162a",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 2,
+      "paddingTexels": 1,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false
+    }
+  ],
+  "boundedJsonFixtures": [
+    {
+      "id": "missing-parameters-standard",
+      "batchSize": 262144,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "-8731920909288535892",
+      "initialStateSeedHex": "86d1fc325b0d08ac",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "0ab5fd24c747914babf4d46a3da8ee08cde8e26a8048cb04078c61c07d040e63",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3aa8757c",
+            "3ac59f01",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3ac4264a",
+            "3abb2c83",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3ad979ed",
+            "3af70ea4",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3abeb460",
+            "3ac82d7d",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3a92953c",
+            "3a84d8b3",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3ab29428",
+            "3aa6e95a",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3af3dff1",
+            "3aba2779",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 512,
+      "paddingTexels": 0,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false,
+      "rawSourceInput": {},
+      "jsonHashMapKeyOrder": [],
+      "scope": "Bounded source-derived JSON fixture adapter; not native JSON execution"
+    },
+    {
+      "id": "missing-parameters-modified",
+      "batchSize": 262144,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "delta",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ],
+        [
+          "delta_power",
+          1.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "7864723169658290464",
+      "initialStateSeedHex": "6d251c0dc0444120",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "b9dda1198b450b2717faca81346f29e757221d956e1a9788a948a6ce4a9b16e1",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3a852736",
+            "3a8a629f",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3af7a6aa",
+            "3aaee323",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3a8abff2",
+            "3af7cc90",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3aef228a",
+            "3a8bde02",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3afcbae5",
+            "3a868afa",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3a8efad4",
+            "3af6a2fa",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3ae4c7ec",
+            "3a928b20",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 512,
+      "paddingTexels": 0,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false,
+      "rawSourceInput": {
+        "equation": {
+          "template": "modified"
+        }
+      },
+      "jsonHashMapKeyOrder": [],
+      "scope": "Bounded source-derived JSON fixture adapter; not native JSON execution"
+    },
+    {
+      "id": "empty-parameters-standard",
+      "batchSize": 262144,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "lambda",
+          2.0
+        ],
+        [
+          "alpha",
+          -2.43
+        ],
+        [
+          "beta",
+          1.0
+        ],
+        [
+          "gamma",
+          0.05
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "symmetry_degree",
+          3.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "-8731920909288535892",
+      "initialStateSeedHex": "86d1fc325b0d08ac",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "0ab5fd24c747914babf4d46a3da8ee08cde8e26a8048cb04078c61c07d040e63",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3aa8757c",
+            "3ac59f01",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3ac4264a",
+            "3abb2c83",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3ad979ed",
+            "3af70ea4",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3abeb460",
+            "3ac82d7d",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3a92953c",
+            "3a84d8b3",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3ab29428",
+            "3aa6e95a",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3af3dff1",
+            "3aba2779",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 512,
+      "paddingTexels": 0,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false,
+      "rawSourceInput": {
+        "parameters": {}
+      },
+      "jsonHashMapKeyOrder": [],
+      "scope": "Bounded source-derived JSON fixture adapter; not native JSON execution"
+    },
+    {
+      "id": "partial-no-default-merge",
+      "batchSize": 262144,
+      "runtimeSymmetryDegree": 3,
+      "orderedParameters": [
+        [
+          "gamma",
+          0.3
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "7952599591831829329",
+      "initialStateSeedHex": "6e5d4f31b00d7b51",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "d63742dee4451bf7686599ea87d9ad8dbc28582361e59f281c34c7b9757cfaee",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3ae82b78",
+            "3aa1a9ff",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3a940ab4",
+            "3af6adce",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3aa80be1",
+            "3ad82d28",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3af12a1c",
+            "3ae56012",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3ac859c8",
+            "3ac63980",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3a8a0c67",
+            "3a8f7782",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3aeb8302",
+            "3a97d9ee",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 512,
+      "paddingTexels": 0,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false,
+      "rawSourceInput": {
+        "parameters": {
+          "gamma": 0.3
+        }
+      },
+      "jsonHashMapKeyOrder": [
+        "gamma"
+      ],
+      "scope": "Bounded source-derived JSON fixture adapter; not native JSON execution"
+    },
+    {
+      "id": "filter-no-trim-and-rounded-power",
+      "batchSize": 262144,
+      "runtimeSymmetryDegree": 4,
+      "orderedParameters": [
+        [
+          "a",
+          1.0
+        ],
+        [
+          "delta_power",
+          3.0
+        ],
+        [
+          " z ",
+          2.0
+        ],
+        [
+          "symmetry_degree",
+          4.9
+        ],
+        [
+          "delta",
+          0.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "6104955483409901648",
+      "initialStateSeedHex": "54b928aaae386850",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "62f0abf87d3a160bcd7ba485b5f50de2f36407fcaeb34455913ac768239aeb5d",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3a8b8cd1",
+            "3ad78864",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3abbb578",
+            "3ada4faf",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3aefe272",
+            "3af2b3fa",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3addc197",
+            "3a90478f",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3adb5814",
+            "3aa1a4c0",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3aac9c98",
+            "3a8d2291",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3ae8450d",
+            "3acedef5",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 512,
+      "paddingTexels": 0,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false,
+      "rawSourceInput": {
+        "equation": {
+          "template": "modified"
+        },
+        "parameters": {
+          " z ": 2,
+          "a": true,
+          "bad": {},
+          "delta_power": 2.6,
+          "symmetry_degree": 4.9,
+          "use_modified_equation": true
+        }
+      },
+      "jsonHashMapKeyOrder": [
+        "a",
+        "delta_power",
+        "bad",
+        " z ",
+        "use_modified_equation",
+        "symmetry_degree"
+      ],
+      "scope": "Bounded source-derived JSON fixture adapter; not native JSON execution"
+    },
+    {
+      "id": "bundled-Emperors-Cloak",
+      "batchSize": 6562144,
+      "runtimeSymmetryDegree": 12,
+      "orderedParameters": [
+        [
+          "lambda",
+          -2.4
+        ],
+        [
+          "delta_power",
+          1.0
+        ],
+        [
+          "alpha",
+          2.2
+        ],
+        [
+          "delta",
+          0.0
+        ],
+        [
+          "omega",
+          0.0
+        ],
+        [
+          "beta",
+          -0.1
+        ],
+        [
+          "gamma",
+          0.5
+        ],
+        [
+          "symmetry_degree",
+          12.0
+        ]
+      ],
+      "initialStateSeedSignedDecimal": "-7177969083545469003",
+      "initialStateSeedHex": "9c62bb2626893fb5",
+      "xBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "yBoundsFloat32Bits": [
+        "3a83126f",
+        "3b03126f"
+      ],
+      "examinedPrefixParticles": 65538,
+      "prefixRgbaFloat32LittleEndianSha256": "9f8d2f396215a9ca5812b70e0ae9075bf4d78c52a5d48fc6f7022b349f2714ee",
+      "nextFloatCallsInPrefix": 131076,
+      "selected": [
+        {
+          "particle": 0,
+          "xyzmFloat32Bits": [
+            "3acd92a4",
+            "3afdfd72",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 1,
+          "xyzmFloat32Bits": [
+            "3a84c69d",
+            "3a96f50a",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 2,
+          "xyzmFloat32Bits": [
+            "3ad34f30",
+            "3ac0568a",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65534,
+          "xyzmFloat32Bits": [
+            "3adf25f2",
+            "3a98865e",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65535,
+          "xyzmFloat32Bits": [
+            "3abf8496",
+            "3ad58f1e",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65536,
+          "xyzmFloat32Bits": [
+            "3ab00179",
+            "3ab8c9df",
+            "00000000",
+            "00000000"
+          ]
+        },
+        {
+          "particle": 65537,
+          "xyzmFloat32Bits": [
+            "3ad30914",
+            "3b013006",
+            "00000000",
+            "00000000"
+          ]
+        }
+      ],
+      "nativeTextureSide": 2562,
+      "paddingTexels": 1700,
+      "paddingValueBits": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000"
+      ],
+      "paddingConsumesRandom": false,
+      "rawSourceInput": {
+        "settings": {
+          "scale_z": 0,
+          "scale_y": 185,
+          "batch_size": 6562144,
+          "invert": false,
+          "scale_x": 185,
+          "accumulation_decay": 1,
+          "burn_in_steps": 100,
+          "dynamic_range": 0.10000000149011612,
+          "show_trails": true,
+          "saturation": 1,
+          "iterations_per_frame": 1,
+          "brightness": 0.6272727251052856,
+          "background_color": "#FFFFFF",
+          "trail_lifetime": 4,
+          "render_mode": "GPU",
+          "contrast": 1.128889799118042,
+          "line_weight": 0.6800000071525574,
+          "offset_x": 0,
+          "dot_size": 1.5,
+          "offset_y": 0,
+          "gamma": 1.3978304862976074,
+          "offset_z": 0
+        },
+        "equation": {
+          "template": "standard",
+          "formula": "p = lambda + alpha*|z|² + beta*Re(z^n)\nx' = p*x + gamma*Re(z^{n-1}) - omega*y\ny' = p*y - gamma*Im(z^{n-1}) + omega*x"
+        },
+        "main_equation": {
+          "color": "#FFFFFF",
+          "scale": 0.25,
+          "position": [
+            0,
+            100
+          ],
+          "enabled": false
+        },
+        "name": "Emperors_Cloak",
+        "description": "Emperor's Cloak - 五重对称混沌吸引子",
+        "timeline": [
+          {
+            "duration": 1,
+            "label": "Animate",
+            "type": "animate",
+            "easing": "SINE_IN_OUT",
+            "actions": [
+              {
+                "args": [
+                  0,
+                  0.10000000149011612,
+                  0
+                ],
+                "method": "ambient"
+              },
+              {
+                "args": [
+                  {
+                    "targetDomain": "SYMMETRY_CHAOS",
+                    "parameters": {
+                      "gamma": {
+                        "min": 0.30000001192092896,
+                        "max": 0.6000000238418579,
+                        "enable": true,
+                        "step": 0.0003
+                      }
+                    }
+                  }
+                ],
+                "method": "paramStart"
+              }
+            ]
+          },
+          {
+            "duration": 10,
+            "label": "等待",
+            "type": "wait",
+            "easing": "SINE_IN_OUT"
+          }
+        ],
+        "palette": [
+          "#FA845A",
+          "#FB9657",
+          "#FBA853",
+          "#FBB94E",
+          "#F0C652",
+          "#C7C46D",
+          "#9BC081",
+          "#65BB91",
+          "#45AD95",
+          "#4E9890",
+          "#53848A",
+          "#556F84",
+          "#587C7D",
+          "#5B9475",
+          "#5DAC69",
+          "#5FC456"
+        ],
+        "type": "SYMMETRY_CHAOS",
+        "camera": {
+          "phi": "0",
+          "theta": "0",
+          "gamma": "0"
+        },
+        "parameters": {
+          "lambda": -2.4,
+          "delta_power": 1,
+          "alpha": 2.2,
+          "delta": 0,
+          "omega": 0,
+          "beta": -0.1,
+          "gamma": 0.5,
+          "symmetry_degree": 12
+        },
+        "config_version": "1.0.0",
+        "isUserScene": true
+      },
+      "jsonHashMapKeyOrder": [
+        "lambda",
+        "delta_power",
+        "alpha",
+        "delta",
+        "omega",
+        "beta",
+        "gamma",
+        "symmetry_degree"
+      ],
+      "scope": "Bounded source-derived JSON fixture adapter; not native JSON execution"
+    }
+  ],
+  "provenance": {
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "oracleSha256": "7adc5392ea77f128b379ef6a93e05e6e0dbe223644d0654562b65f5b2fff8203",
+    "fixturesSha256": "1666da80bc13361c3567b2f15bbef8d133397125608c1f3be4ae57d7adf8d025",
+    "method": "Independent Python computation from retained class instructions; not original JVM execution."
+  }
+}

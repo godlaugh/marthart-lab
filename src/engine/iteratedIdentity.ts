@@ -1,3 +1,4 @@
+import {sourceSymmetryInitialSeed} from './sourceSymmetryConfig';
 import {usesSourceSymmetryMath} from './sourceSymmetryMath';
 import {usesSourceSamilaSampling} from './sourceSamilaSampling';
 import {usesSourceSamilaTimeline} from './sourceSamilaReplay';
@@ -7,7 +8,7 @@ const ownKeys=['iteratedMode','iteratedCameraModel','sourceCameraProjection','sa
 /** All state-affecting settings consumed by this owner enter its replay identity.
  * Tone and metadata are evaluated only at presentation, and cannot mutate ink. */
 export function inputScene(scene:SceneDocument):SceneDocument {const settings:Settings={},sourceSymmetry=usesSourceSymmetryMath(scene),source=usesSamilaSourceProjection(scene),sourceClock=usesSourceSamilaTimeline(scene),sourceSampling=usesSourceSamilaSampling(scene);for(const k of ownKeys)if(scene.settings[k]!==undefined&&(!sourceSymmetry||k!=='escapeRadius')&&(!sourceSampling||!['seed','recordTrails'].includes(k))&&(!sourceClock||k!=='iteratedFps')&&(!source||!SAMILA_SOURCE_DORMANT_CONTROLS.includes(k)||['iteratedMode','samilaHistoryModel','densityProjection'].includes(k)))settings[k]=scene.settings[k];return{...scene,settings};}
-function facts(scene:SceneDocument,width:number,height:number){return{kind:scene.kind,equations:scene.equations,parameters:scene.parameters,settings:scene.settings,palette:scene.palette,timeline:scene.timeline,sourceCamera:scene.sourceCamera,width,height};}
+function facts(scene:SceneDocument,width:number,height:number){return{kind:scene.kind,equations:scene.equations,parameters:scene.parameters,settings:scene.settings,palette:scene.palette,timeline:scene.timeline,sourceCamera:scene.sourceCamera,symmetrySource:scene.symmetrySource,symmetryInitialSeed:scene.symmetrySource?sourceSymmetryInitialSeed(scene.symmetrySource):undefined,width,height};}
 export function identity(scene:SceneDocument,width:number,height:number){return JSON.stringify(facts(scene,width,height));}
 
 export function iteratedBaselineKey(scene:SceneDocument):string{return JSON.stringify({id:scene.id,input:facts(inputScene(scene),0,0)});}

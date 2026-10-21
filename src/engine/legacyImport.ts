@@ -1,3 +1,4 @@
+import {importSourceSymmetryParameters,createSourceSymmetryConfiguration,usesSourceSymmetryConfiguration,sourceSymmetryDegree,sourceSymmetryTemplate,sourceSymmetryFloat} from './sourceSymmetryConfig';
 import {SOURCE_SYMMETRY_MATH,usesSourceSymmetryMath} from './sourceSymmetryMath';
 import {importSourceSamilaAppearance,importSourceSamilaPalette} from './sourceSamilaAppearanceImport';
 import {SAMILA_SOURCE_SPLAT_MODEL,usesSourceSamilaSplat} from './sourceSamilaSplat';
@@ -349,12 +350,13 @@ function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
 
 function iteratedLegacy(r:Reader,s:SceneDocument){
  s.settings.iteratedMode='continuous';s.settings.iteratedFps=60;s.settings.paletteMode='source';s.settings.iteratedColor=s.kind==='samila'?'noise':'step';
- if(usesSourceSamilaSplat(s)){
+ if(usesSourceSamilaSplat(s)||usesSourceSymmetryConfiguration(s)){
   const count=Math.max(1,r.sourceInt(['settings','batch_size'],262144));
-  if(count>8000000)fail('源 Samila batch_size 超过本地 8000000 样本容量');
+  if(count>8000000)fail('源 '+s.kind+' batch_size 超过本地 8000000 样本容量');
   s.settings.batchSize=count;r.retainNumberToken(['settings','batch_size']);
+  if(usesSourceSymmetryConfiguration(s)){const steps=Math.max(1,r.sourceInt(['settings','iterations_per_frame'],1));if(steps>16)fail('源 Symmetry iterations_per_frame 超过本地每帧 16 次容量');s.settings.iterationsPerFrame=steps;r.retainNumberToken(['settings','iterations_per_frame']);}
  }else{count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);}
- if(!usesSourceSamilaMath(s))seed(r,s,'settings.seed');
+ if(!usesSourceSamilaMath(s)&&!usesSourceSymmetryConfiguration(s))seed(r,s,'settings.seed');
  if(!usesSourceSamilaSplat(s))for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const)numberTo(r,s,'settings.'+old,key,{min,max});
  if(s.kind==='map'||s.kind==='symmetry'){
   for(const [old,key,fallback,sourceMin,sourceMax,legacyMin,legacyMax]of [['gamma','Gamma',2.2,.1,10,.1,8],['contrast','Contrast',1,.1,2,0,8],['brightness','Brightness',s.kind==='map'?.3:.5,-.5,1.5,-1,1],['saturation','Saturation',.8,0,1,0,4],['dynamic_range','DynamicRange',s.kind==='map'?.2:.5,.1,1,.001,1e9]]as const){
@@ -407,20 +409,26 @@ function implicit(r:Reader,s:SceneDocument){
 function symmetry(r:Reader,s:SceneDocument){
  const glsl=r.use('equation.glsl');if(glsl!==undefined&&glsl!==null){if(typeof glsl!=='string'||glsl.length>MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH)fail('equation.glsl 应为最多 65536 字符的文本');s.equations.glsl=glsl;}
  const formula=r.use('equation.formula');if(formula!==undefined&&formula!==null){if(typeof formula!=='string'||formula.length>8192)fail('equation.formula 应为最多 8192 字符的说明文字');s.equations.formula=formula;}
- if(hasSymmetryCustom(s)){
+ if(usesSourceSymmetryConfiguration(s)){
+  s.settings.degree=sourceSymmetryDegree(s.parameters);
+ }else if(hasSymmetryCustom(s)){
   // Native config getter: missing -> 3, Double.intValue -> max(2, value).
   // The authored parameter itself is independent and remains the uniform input.
   const degree=s.parameters.symmetry_degree??3;
   s.settings.degree=Math.max(2,Math.min(2147483647,Math.trunc(degree)));
   if(s.settings.degree!==degree)r.warnings.push(`symmetry_degree 的编译阶数按原版整数转换为 ${s.settings.degree}；参数原值 ${degree} 保留供 uniform 使用。`);
  }else numberTo(r,s,'parameters.symmetry_degree','degree',{min:2,max:50,integer:true});
- iteratedLegacy(r,s);count(r,s,'settings.burn_in_steps','burnIn',100000,0);
- s.settings.initialMode='box';for(const axis of ['X','Y'])for(const edge of ['Min','Max']){const key='initial'+axis+edge;s.settings[key]=edge==='Min'?.001:.002;numberTo(r,s,`settings.${axis.toLowerCase()}0_${edge.toLowerCase()}`,key);}
- const template=r.str('equation.template')??'standard';s.settings.template=template;
+ iteratedLegacy(r,s);
+ if(usesSourceSymmetryConfiguration(s)){const burn=Math.max(0,r.sourceInt(['settings','burn_in_steps'],100));if(burn>100000)fail('源 Symmetry burn_in_steps 超过本地 100000 次容量');s.settings.burnIn=burn;r.retainNumberToken(['settings','burn_in_steps']);}
+ else count(r,s,'settings.burn_in_steps','burnIn',100000,0);
+ s.settings.initialMode='box';for(const axis of ['X','Y'])for(const edge of ['Min','Max']){const key='initial'+axis+edge;s.settings[key]=edge==='Min'?.001:.002;const path=['settings',axis.toLowerCase()+'0_'+edge.toLowerCase()];if(usesSourceSymmetryConfiguration(s)){const parsed=sourceSymmetryFloat(r.use(path),Number(s.settings[key]));if(!parsed.ok)fail(parsed.error.reason);s.settings[key]=parsed.value;r.retainNumberToken(path);}else numberTo(r,s,path.join('.'),key);}
+ if(usesSourceSymmetryConfiguration(s))for(const axis of ['X','Y']){const lo=Number(s.settings['initial'+axis+'Min']),hi=Number(s.settings['initial'+axis+'Max']);s.settings['initial'+axis+'Min']=Math.min(lo,hi);s.settings['initial'+axis+'Max']=Math.max(lo,hi);}
+ const template=usesSourceSymmetryConfiguration(s)?String(s.settings.template):r.str('equation.template')??'standard';s.settings.template=template;
  if(!['standard','modified'].includes(template))r.warnings.push(hasSymmetryCustom(s)?`未知对称模板 ${template} 已保留；当前使用自定义 GLSL。`:`未知对称模板 ${template}，保留标识；生成器会明确报错。`);
  // Preserve dormant built-in settings without restricting custom uniforms.
  // The template-switch owner validates them when custom GLSL is removed.
- numberTo(r,s,'parameters.delta_power','deltaPower',hasSymmetryCustom(s)?{}:{min:1,max:6,integer:true});
+ if(usesSourceSymmetryConfiguration(s))s.settings.deltaPower=s.parameters.delta_power??1;
+ else numberTo(r,s,'parameters.delta_power','deltaPower',hasSymmetryCustom(s)?{}:{min:1,max:6,integer:true});
  if(s.settings.iteratedBackend!=='cpu')s.settings.symmetryMathModel=SOURCE_SYMMETRY_MATH;
  if(formula!==undefined&&formula!==null)r.warnings.push('equation.formula 已保留为只读说明；实际计算使用非空 equation.glsl 或所选模板。');
 }
@@ -1399,8 +1407,18 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   r.validateNativeObjects();sourceBouncing(r,scene);projectResolution(r,scene);r.remaining();
   return{scene,warnings:r.warnings,source,...(r.sourceNumberTokens.length?{sourceNumberTokens:r.sourceNumberTokens}:{})};
  }
+ const sourceSymmetry=kind==='symmetry'&&options.iteratedMath!=='legacy-v1'&&String(r.peek(['settings','render_mode'])??'GPU').toUpperCase()!=='CPU';
  const sourceSamila=kind==='samila'&&options.samilaMath!=='legacy-v1'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1';
- scene.parameters=sourceSamila?{}:kind==='perlin'?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ scene.parameters=sourceSymmetry?{}:sourceSamila?{}:kind==='perlin'?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ if(sourceSymmetry){
+  r.validateNativeObjects();const raw=r.peek(['parameters']);if(r.has(['parameters'])&&!isObject(raw))fail('源 Symmetry parameters 需要对象');const order=isObject(raw)?r.sourceKeys(['parameters']):[];
+  const selected=sourceSymmetryTemplate(r.peek(['equation']),r.has(['equation']),raw);if(!selected.ok)fail(selected.error.reason);const template=selected.value;scene.settings.template=template;r.use(['equation','template']);
+  const parsed=importSourceSymmetryParameters(raw,order,template);if(!parsed.ok)fail(parsed.error.reason);
+  scene.parameters=parsed.value.parameters;r.use(['parameters']);for(const key of order)r.retainNumberToken(['parameters',key]);
+  const created=createSourceSymmetryConfiguration(Math.max(1,r.sourceInt(['settings','batch_size'],262144)),parsed.value.ordered);if(!created.ok)fail(created.error.reason);
+  scene.symmetrySource=created.value;
+  r.warnings.push('源 Symmetry 使用构造参数顺序计算种子并以 Java Random 初始化；时间线/重播保留构造种子，检查器编辑重建配置并重新计算。本地项目保存此构造状态，原版整窗效果仍未验收。');
+ }
  if(ordinaryScope&&(kind==='surface'||kind==='implicit')){r.use(['parameters']);for(const key of Object.keys(scene.parameters)){if(!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)||['constructor','prototype'].includes(key))fail(`parameters.${key} 参数名不受本地公式模型支持`);r.retainNumberToken(['parameters',key]);}}
  if(kind==='attractor'){for(const key of Object.keys(scene.parameters)){r.use(['parameters',key]);r.retainNumberToken(['parameters',key]);}if(r.has(['parameters'])&&!Object.keys(scene.parameters).length)r.use(['parameters']);ordinaryAttractorGeometry(r,scene);}
  // Source geometry and queue share parsed dispatch facts. Select its owner

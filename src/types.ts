@@ -1,3 +1,4 @@
+import type {SourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import type {SourceSamilaParameterAction} from './engine/sourceSamilaParameter';
 import type {SourceSamilaPresentationFacts} from './engine/sourceSamilaPresentation';
 import type {SourcePerlinDocumentPayload} from './engine/sourcePerlinDocument';
@@ -218,6 +219,7 @@ export interface SceneDocument {
   /** Canonical native Attractor authoring. Omission keeps the local model. */
   attractorSource?: SourceAttractorDocumentPayload;
   /** Complete authored Perlin configuration; both backend settings are retained. */
+  symmetrySource?:SourceSymmetryConfiguration;
   perlinSource?: SourcePerlinDocumentPayload;
   /** Legacy single-backend payloads remain readable when provenance is incomplete. */
   perlinGpuSource?: SourcePerlinGpuDocumentPayload;

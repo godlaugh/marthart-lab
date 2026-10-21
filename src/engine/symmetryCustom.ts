@@ -50,8 +50,8 @@ function compileDegreeValue(value:unknown):number {
 /** Authored scene only: callers must pass the base document, not sceneAtTime.
  * Desktop getSymmetryDegreeValue returns a signed Java int, with a minimum of
  * two. Its custom source has no built-in editor's degree-50 upper bound. */
-export function symmetryCustomCompileDegree(authored:Pick<SceneDocument,'settings'>):number {
- return compileDegreeValue(authored.settings.degree??SYMMETRY_DEFAULT_SETTINGS.degree);
+export function symmetryCustomCompileDegree(authored:Pick<SceneDocument,'settings'>&Partial<Pick<SceneDocument,'symmetrySource'>>):number {
+ return compileDegreeValue(authored.symmetrySource?authored.symmetrySource.construction.degree:authored.settings.degree??SYMMETRY_DEFAULT_SETTINGS.degree);
 }
 /** Document/UI identifier budget, separate from GLSL compiler name validity.
  * Coordinates, time and MathJS function names are ordinary native uniforms. */

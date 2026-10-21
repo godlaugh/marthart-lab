@@ -41,12 +41,12 @@ describe('source Symmetry numerical contract at the document boundary',()=>{
   const selected=withSymmetryTemplate(scene,'modified');expect(usesSourceSymmetryMath(selected)).toBe(true);
   expect(prepareIteratedFrame(selected,0,0).field).toMatchObject({parameters:{deltaPower:3}});
  });
- it('keeps arbitrary custom correction uniforms and rejects an invalid built-in switch',()=>{
+ it('normalizes native correction power before custom or built-in kernel selection',()=>{
   const value=raw();value.parameters.delta_power=7.5;Object.assign(value.equation,{glsl:'void calculate_next(in vec3 p,out vec3 n,out float m){n=p*delta_power;m=0.;}'});
   const scene=parseProjectFile(JSON.stringify(value)).scene;
-  expect(scene.parameters.delta_power).toBe(7.5);expect(scene.settings.deltaPower).toBe(7.5);
+  expect(scene.parameters.delta_power).toBe(8);expect(scene.settings.deltaPower).toBe(8);
   expect(prepareIteratedFrame(scene,0,0).field.kind).toBe('symmetry-custom');
-  expect(()=>withSymmetryTemplate(scene,'modified')).toThrow('修正幂次');
+  expect(prepareIteratedFrame(withSymmetryTemplate(scene,'modified'),0,0).field).toMatchObject({parameters:{deltaPower:8}});
   expect(scene.equations.glsl).toContain('p*delta_power');
  });
  it('offers only applicable controls and describes GPU failure accurately',()=>{

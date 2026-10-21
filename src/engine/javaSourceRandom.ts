@@ -35,9 +35,12 @@ export class JavaSourceRandom48 {
  }
  nextDouble(): number { return (this.next(26) * 134217728 + this.next(27)) * 2 ** -53; }
  /** Exact affine jump, O(log count), without constructing/discarding samples. */
- skipDraws(count: bigint | number): void {
+ skipDraws(count: bigint | number): void { this.skip(count,2n); }
+ /** Random.nextFloat consumes one LCG step, including bounded chunk jumps. */
+ skipFloatDraws(count: bigint | number): void { this.skip(count,1n); }
+ private skip(count: bigint | number,stride:bigint): void {
   if (typeof count !== 'number' && typeof count !== 'bigint' || typeof count === 'number' && (!Number.isSafeInteger(count) || count < 0) || typeof count === 'bigint' && count < 0n) throw new RangeError('Source random draw count must be a nonnegative exact integer.');
-  let steps = BigInt(count) * 2n, multiplier = MULTIPLIER, increment = INCREMENT, m = 1n, c = 0n;
+  let steps = BigInt(count) * stride, multiplier = MULTIPLIER, increment = INCREMENT, m = 1n, c = 0n;
   // The full-period LCG repeats after 2^48 steps. Reduction also bounds work
   // for callers holding arbitrarily large bigint sample ordinals.
   steps &= MASK;

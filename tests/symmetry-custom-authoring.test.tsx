@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {parseLegacyScene} from '../src/engine/legacyImport';
+import {parseLegacyScene as parseSourceScene} from '../src/engine/legacyImport';
 import {parseScene,persistentScene,createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import {withSymmetryTemplate,withSymmetryCustomSource} from '../src/engine/symmetryEditing';
@@ -13,6 +13,8 @@ import {hasSymmetryCustom,MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH} from '../src/engine
 import {createAnimationTrack,sceneAtTime} from '../src/engine/timeline';
 import type {AnimationTrack} from '../src/types';
 
+// These compatibility tests select the pre-source configuration model explicitly.
+const parseLegacyScene:typeof parseSourceScene=(text,options={})=>parseSourceScene(text,{iteratedMath:'legacy-v1',...options});
 const source='\n// Caller source, preserved exactly.\nuniform float gain;\nuniform float delta;\nvoid calculate_next(in vec3 pos, out vec3 nextPos, out float stepMetric) {\n nextPos=vec3(pos.x*gain+0.01, pos.y+delta, 9.0); stepMetric=-2.0;\n}\n';
 const legacy=(glsl:unknown)=>({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Custom source test',equation:{glsl,formula:'Caller display: <x> & "gain"',template:'standard'},parameters:{gain:1.234567891,delta:3.1415926535,lambda:9.123456789,symmetry_degree:5},settings:{batch_size:32,render_mode:'GPU',burn_in_steps:0}});
 // This suite retains the established local numeric/oscillator authoring model.
@@ -84,7 +86,7 @@ describe('custom Symmetry imported authoring and persistence',()=>{
   expect(mainEquation(saved)).toContain('calculate\\_next');expect(mainEquation(saved)).not.toContain('lambda');
   saved.formulas=defaultFormulas();saved.formulas.main.visible=true;saved.formulas.main.latex='g(x)=x^2';expect(formulaLabels(saved)[0].latex).toBe('g(x)=x^2');
  });
- it('separates native imported compile-degree conversion from unconstrained runtime uniform values',()=>{
+ it('preserves legacy custom compile-degree conversion and unconstrained uniforms',()=>{
   for(const [raw,expected]of [[undefined,3],[1.25,2],[5.75,5],[51,51],[1e300,2147483647],[-1e300,2]] as const){
    const input={...legacy(source),parameters:{delta_power:-27.5,...(raw===undefined?{}:{symmetry_degree:raw})}};
    const result=parseLegacyScene(JSON.stringify(input)),scene=reload(result.scene);

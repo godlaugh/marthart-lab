@@ -1,3 +1,4 @@
+import {editSourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import {sourceSamilaApplyIdentity} from './engine/sourceSamilaIdentity';
 import {usesSourceSamilaSampling} from './engine/sourceSamilaSampling';
 import {SourceSamilaPaletteEditor} from './components/SourceSamilaPaletteEditor';
@@ -347,6 +348,7 @@ export default function App() {
   function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceSamilaSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
   function edit(next: SceneDocument, samilaDirty=false, samilaDisplay=true) {
+    try{next=editSourceSymmetryConfiguration(sceneRef.current,next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(samilaDisplay&&usesSourceSamilaSampling(next))samilaDisplayRequested.current=true;
