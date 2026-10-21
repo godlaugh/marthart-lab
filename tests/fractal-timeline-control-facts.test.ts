@@ -10,7 +10,7 @@ const zoomKeys=['centerX','centerY','centerXLow','centerYLow','zoom'];
 
 describe('direct timeline writers expose successful control facts',()=>{
  it('marks all five fractal keyframe fields even when the first write equals the authored value',()=>{
-  const s=scene(),track=createAnimationTrack(s,'fractal_zoom',0);track.duration=2;track.interpolation='linear';track.keyframes=[{time:0,centerX:0,centerY:0,centerXLow:0,centerYLow:0,zoom:1},{time:2,centerX:2,centerY:-4,centerXLow:1e-25,centerYLow:-1e-25,zoom:3}];s.timeline.tracks=[track];
+  const s=scene(),track=createAnimationTrack(s,'fractal_zoom',0);delete track.sourceFractalZoom;track.duration=2;track.interpolation='linear';track.keyframes=[{time:0,centerX:0,centerY:0,centerXLow:0,centerYLow:0,zoom:1},{time:2,centerX:2,centerY:-4,centerXLow:1e-25,centerYLow:-1e-25,zoom:3}];s.timeline.tracks=[track];
   const first=sceneAtTime(s,0);expect(controlled(first,zoomKeys)).toEqual([true,true,true,true,true]);expect(first.settings.zoom).toBe(s.settings.zoom);expect(controlled(s,zoomKeys)).toEqual([false,false,false,false,false]);
   const endpoint=sceneAtTime(s,2),held=sceneAtTime(s,8),cold=sceneAtTime(parseScene(serializeScene(s)),8);
   expect(held.settings.zoom).toBe(3);expect(held.settings.centerX).toBe(2);expect(held.settings.centerY).toBe(-4);expect(held.settings.centerXLow).toBe(1e-25);expect(held.settings.centerYLow).toBe(-1e-25);

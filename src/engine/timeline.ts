@@ -1,3 +1,5 @@
+import {SOURCE_EASING_NAMES} from './sourceEasing';
+import {parseSourceFractalZoomTarget,evaluateSourceFractalZoom} from './sourceFractalZoom';
 import {usesSourceMapParameters,validateSourceMapParameters} from './sourceMapParameterIdentity';
 import {usesSourceSymmetryParameters,validateSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {usesSourceSymmetryGradient} from './sourceSymmetryGradient';
@@ -433,6 +435,11 @@ export type SourceParticleActionFamily='surface'|'attractor'|'perlin'|'symmetry'
 export function sourceParticleActionFamily(scene:SceneDocument):SourceParticleActionFamily|undefined{return usesSourceMapParameters(scene)?'map-parameters':usesSourceSymmetryParameters(scene)?'symmetry-parameters':usesSourcePerlin(scene)?'perlin':usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':usesSourceSymmetryGradient(scene)?'symmetry':undefined;}
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceFamily?:SourceParticleActionFamily):void{
  const sourceSurface=sourceFamily==='surface',sourcePerlin=sourceFamily==='perlin';
+ if(track.sourceFractalZoom!==undefined){
+  if(track.type!=='fractal_zoom'||sceneKind!=='fractal'||track.keyframes!==undefined||track.interpolation!==undefined||track.pingPong||(track.repeat??1)!==1)throw Error('原版分形目标缩放不能混用关键帧、往返或重复');
+  const parsed=parseSourceFractalZoomTarget(track.sourceFractalZoom);if(!parsed.ok)throw Error(parsed.error.reason);
+  if(!SOURCE_EASING_NAMES.includes(track.easing)||!Number.isFinite(track.duration)||track.duration<Math.fround(1e-4)||track.duration>86400)throw Error('原版分形缩放曲线或时长无效');
+ }
  if(Array.isArray(track.actions))for(const action of track.actions){if(action?.samilaParameters!==undefined){if(sceneKind!=='samila'||schedule!==SAMILA_SCENE_SEQUENCE||!['paramStart','paramStop'].includes(action.method))throw new Error('Samila 源参数只适用于源 Samila 队列');const parsed=normalizeSourceSamilaParameterAction(action.samilaParameters);if(!parsed.ok)throw new Error(parsed.error.reason);}}
  if(Array.isArray(track.actions))for(const action of track.actions){if(action?.perlinParameters!==undefined){if(!sourcePerlin||!['paramStart','paramStop'].includes(action.method))throw new Error('Perlin 源参数只能用于源 Perlin 作品');const parsed=parseSourcePerlinParameterAction(action.perlinParameters);if(!parsed.ok)throw new Error(parsed.error.reason);}}
  if(track.spirographWait!==undefined&&(track.spirographWait!=='visual-or-deadline-v1'||track.type!=='spirograph_finish_wait'||sceneKind!==undefined&&sceneKind!=='spirograph'))throw new Error('旋轮完成等待规则无效');
@@ -456,7 +463,7 @@ function validateTrack(track: AnimationTrack, scene: SceneDocument) {
   if (!Number.isFinite(track.start) || track.start < 0) throw new Error('片段起点必须是非负有限数值');
   if (!CLIP_TYPES.some(item => item.type === (track.type ?? 'numeric'))) throw new Error(`未知片段类型 ${track.type}`);
   if (track.actions && (!Array.isArray(track.actions) || track.actions.length > 64)) throw new Error('单片段最多64个动作');
-  validateTimelineExtensions(track,scene.kind,scene.timeline.schedule,sourceParticleActionFamily(scene));clipProgress(track, track.start, clipDuration(track, scene));
+  validateTimelineExtensions(track,scene.kind,scene.timeline.schedule,sourceParticleActionFamily(scene));if(!track.sourceFractalZoom)clipProgress(track, track.start, clipDuration(track, scene));
 }
 
 type TimelineEvaluator = (position: number, base: SceneDocument) => SceneDocument;
@@ -799,6 +806,15 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
     }
     if (type === 'fractal_zoom') {
       if (scene.kind !== 'fractal') throw new Error('分形缩放仅适用于分形场景');
+      if(track.sourceFractalZoom!==undefined){
+        const parsed=parseSourceFractalZoomTarget(track.sourceFractalZoom);if(!parsed.ok)throw Error(parsed.error.reason);const target=parsed.value,initial={centerX:Number(baseline.settings.centerX),centerY:Number(baseline.settings.centerY),centerXLow:Number(baseline.settings.centerXLow??0),centerYLow:Number(baseline.settings.centerYLow??0),zoom:Number(baseline.settings.zoom)};
+        plans.push({start:track.start,apply:(out,at)=>{
+          const value=evaluateSourceFractalZoom(initial,target,track.easing,(at-track.start)/Math.max(Math.fround(1e-4),Math.fround(track.duration)));if(!value.ok)throw Error(value.error.reason);Object.assign(out.settings,value.value);
+          refreshCameraSetting(out,'zoom');
+          for(const key of ['centerX','centerY','centerXLow','centerYLow','zoom'])recordWrittenTarget(out,'settings.'+key);
+        }});
+        continue;
+      }
       const frames = validateFractalKeyframes(track);
       plans.push({ start: track.start, apply: (out, at) => {
         const elapsed = clamp(clipProgress({ ...track, easing: 'linear' }, at)) * track.duration;
@@ -837,7 +853,7 @@ export function createAnimationTrack(scene: SceneDocument, type: AnimationClipTy
   if (type === 'animate') { const method=supportsCameraAction(scene,'rotateTheta')?'rotateTheta':scene.kind==='fractal'?'fractalRotate':scene.kind==='domain'?'domainRotate':scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)!=='local-v1'?'spirographRotate':gradientAnimationCapabilities(scene).localPalette||gradientAnimationCapabilities(scene).offsets?'gradientStart':'paramStart';track.target = 'camera.actions'; track.actions = [{ id: crypto.randomUUID(), method, args: method==='rotateTheta'?{ angle: Math.PI / 2 }:method==='gradientStart'||method==='paramStart'?{}:{speed:.2}, enabled: true }]; }
   if (type === 'align') { track.target = 'camera.orientation'; track.orientation = supportsCameraActions(scene)?{theta:0,phi:0,gamma:0}:{theta:0}; track.alignMode='next-turn'; }
   if (type === 'param') track.parameterAnimations = [{ target, ...(parameterAnimationSuggestion(scene,target)??{min:from-1,max:from+1}), step: 1, enabled: true }];
-  if (type === 'fractal_zoom') { track.target = 'settings.zoom'; const centerX = Number(scene.settings.centerX ?? 0), centerY = Number(scene.settings.centerY ?? 0), centerXLow=Number(scene.settings.centerXLow??0),centerYLow=Number(scene.settings.centerYLow??0),zoom = Number(scene.settings.zoom ?? 1); track.keyframes = [{ time: 0, centerX, centerY,centerXLow,centerYLow, zoom }, { time: duration, centerX, centerY,centerXLow,centerYLow, zoom: Math.min(1e28,zoom * 10) }]; track.interpolation = 'exponential'; }
+  if (type === 'fractal_zoom') { track.target = 'settings.zoom'; const centerX = Number(scene.settings.centerX ?? 0), centerY = Number(scene.settings.centerY ?? 0), centerXLow=Number(scene.settings.centerXLow??0),centerYLow=Number(scene.settings.centerYLow??0),zoom = Number(scene.settings.zoom ?? 1); track.sourceFractalZoom={model:'mathart-1.7.8-target',centerX,centerY,centerXLow,centerYLow,zoom:Math.min(1e28,zoom*10),maxZoom:1e300}; }
   if (type === 'surface_mode_transition') { track.target = 'settings.surfaceBlend'; track.surfaceMode = (usesSourceSurfaceHost(scene)?scene.surfaceSource!.mode:scene.settings.renderMode) === 'points' ? 'mesh' : 'points'; }
   if (type === 'trails') { track.target = 'settings.recordTrails'; track.trailsEnabled = true;if(usesSourceSurfaceGeometry(scene)||usesSourcePerlin(scene)){track.duration=0;track.easing='linear';if(usesSourcePerlin(scene))track.target='settings.showTrails';} }
   if (type === 'wait' || type === 'spirograph_finish_wait') track.target = 'timeline.wait';

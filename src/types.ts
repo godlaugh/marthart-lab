@@ -1,3 +1,4 @@
+import type {SourceFractalZoomTarget} from './engine/sourceFractalZoom';
 import type {SourceIteratedDraft} from './engine/sourceIteratedDraft';
 import type {SourceMapConfiguration} from './engine/sourceMapConfig';
 import type {SourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
@@ -187,6 +188,8 @@ export interface AnimationTrack {
   replaceParameters?:boolean;
   orientation?: { theta?: number; phi?: number; gamma?: number };
   alignMode?: "absolute" | "next-turn";
+  /** Native target captures the effective viewport at clip start. */
+  sourceFractalZoom?:SourceFractalZoomTarget;
   keyframes?: { time: number; centerX: number; centerY: number; centerXLow?: number; centerYLow?: number; zoom: number; easing?: string }[];
   interpolation?: "linear" | "exponential";
   gradient?: GradientAnimation;

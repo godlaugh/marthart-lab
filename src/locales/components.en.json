@@ -866,5 +866,15 @@
   "应用场景": "Apply scene",
   "有未应用的修改；当前动画继续使用运行配置。": "Unapplied changes; the animation continues using the running configuration.",
   "放弃未应用修改": "Discard unapplied changes",
-  "自定义 GLSL 需要 GPU 首帧验证": "Custom GLSL requires GPU first-frame validation"
+  "自定义 GLSL 需要 GPU 首帧验证": "Custom GLSL requires GPU first-frame validation",
+  "中心移动方式": "Center motion",
+  "随缩放移动到目标": "Zoom-aware target",
+  "关键帧线性中心": "Linear-center keyframes",
+  "从片段开始时的视口出发，按缩放倍率移动中心；起点会跟随之前的动画和视口修改。": "Starts from the viewport at the beginning of this clip. Center motion follows the zoom ratio; previous animations and viewport edits update the start.",
+  "目标中心 X": "Target center X",
+  "目标中心 Y": "Target center Y",
+  "目标 X 低位": "Target X low",
+  "目标 Y 低位": "Target Y low",
+  "目标缩放": "Target zoom",
+  "缩放上限": "Maximum zoom"
 }

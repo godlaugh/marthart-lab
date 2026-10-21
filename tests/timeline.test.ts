@@ -358,12 +358,12 @@ describe('layered spirograph completion waits', () => {
 
 describe('deep zoom keyframe precision',()=>{
  it('interpolates high/low pairs without rounding away motion below double precision',()=>{
-  const document=scene({kind:'fractal'}),clip=createAnimationTrack(document,'fractal_zoom',0);clip.duration=2;clip.easing='linear';clip.keyframes=[{time:0,centerX:1,centerXLow:1e-20,centerY:-1,centerYLow:-3e-20,zoom:1e18},{time:2,centerX:1,centerXLow:3e-20,centerY:-1,centerYLow:-1e-20,zoom:1e22}];document.timeline.tracks=[clip];
+  const document=scene({kind:'fractal'}),clip=createAnimationTrack(document,'fractal_zoom',0);delete clip.sourceFractalZoom;clip.duration=2;clip.easing='linear';clip.keyframes=[{time:0,centerX:1,centerXLow:1e-20,centerY:-1,centerYLow:-3e-20,zoom:1e18},{time:2,centerX:1,centerXLow:3e-20,centerY:-1,centerYLow:-1e-20,zoom:1e22}];document.timeline.tracks=[clip];
   const middle=sceneAtTime(document,1);expect(middle.settings.centerX).toBe(1);expect(middle.settings.centerXLow).toBeCloseTo(2e-20,30);expect(middle.settings.centerYLow).toBeCloseTo(-2e-20,30);expect(Number(middle.settings.zoom)/1e20).toBeCloseTo(1,12);
   expect(sceneAtTime(document,0).settings.centerXLow).toBe(1e-20);expect(sceneAtTime(document,2).settings.centerXLow).toBe(3e-20);
  });
  it('captures low parts from the current viewport and rejects malformed low parts at the owner boundary',()=>{
-  const document=scene({kind:'fractal'});Object.assign(document.settings,{centerX:1,centerY:0,centerXLow:1e-22,centerYLow:2e-22,zoom:1e28});const clip=createAnimationTrack(document,'fractal_zoom');expect(clip.keyframes![0].centerXLow).toBe(1e-22);expect(clip.keyframes![1].zoom).toBe(1e28);document.timeline.tracks=[clip];clip.keyframes![0].centerYLow=NaN;expect(()=>validateFractalKeyframes(clip)).toThrow('centerYLow');expect(()=>sceneAtTime(document,1)).toThrow('有限数值');
+  const document=scene({kind:'fractal'});Object.assign(document.settings,{centerX:1,centerY:0,centerXLow:1e-22,centerYLow:2e-22,zoom:1e28});const clip=createAnimationTrack(document,'fractal_zoom');expect(clip.sourceFractalZoom!.centerXLow).toBe(1e-22);expect(clip.sourceFractalZoom!.zoom).toBe(1e28);document.timeline.tracks=[clip];clip.sourceFractalZoom!.centerYLow=NaN;expect(()=>sceneAtTime(document,1)).toThrow('有限数值');
  });
 });
 

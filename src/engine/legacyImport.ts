@@ -1,3 +1,4 @@
+import {normalizeSourceFractalCenter,parseSourceFractalZoomTarget} from './sourceFractalZoom';
 import {importSourceMapPresentationSettings} from './sourceMapPresentationSettings';
 import {importSourceConfigBackground} from './sourceConfigBackground';
 import {SOURCE_MAP_PRESENTATION_MODEL} from './sourceMapPresentation';
@@ -60,7 +61,7 @@ import {hasSymmetryCustom,MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH,symmetryCustomParame
 import {parseDomainSourcePalette} from './domainSourceColor';
 import {parseDomainNativeParameters} from './domainNativeParameters';
 import {prepareDomainNativeConstant} from './domainNativeConstants';
-import {parseDomainSourceDouble,prepareDomainSourceObjectScalar,prepareDomainSourceScalar} from './domainSourceScalar';
+import {parseDomainSourceFloat,parseDomainSourceDouble,prepareDomainSourceObjectScalar,prepareDomainSourceScalar} from './domainSourceScalar';
 import {parseSpirographVersion} from './spirographModel';
 import {normalizeFractalDistancePower} from './fractalDistance';
 import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalPrecision';
@@ -591,7 +592,8 @@ const bulbParameterAliases:Record<string,string>={phase_shift:'bulbPhaseShift',p
 function fractal(r:Reader,s:SceneDocument){
  const f=r.str('fractal.formula_id')??r.str('fractal.type')?.toLowerCase();if(!f)fail('缺少 fractal.formula_id');s.settings.formula=f;
  const supported=definitions.find(d=>d.kind==='fractal')!.controls.find(c=>c.key==='formula')!.options!.map(v=>v.value);if(!supported.includes(f))r.warnings.push(`分形公式 ${f} 尚未实现；保留标识，生成器会明确报错，不替换为其他公式。`);
- const variant=r.str('fractal.type');if(variant)s.settings.variant=variant.toLowerCase();Object.assign(s.settings,legacyZoomTarget(r,'fractal',{centerX:Number(s.settings.centerX),centerY:Number(s.settings.centerY),zoom:Number(s.settings.zoom)}));for(const k of ['rotation','iterations'])numberTo(r,s,'fractal.'+k,k);
+ const variant=r.str('fractal.type');if(variant)s.settings.variant=variant.toLowerCase();Object.assign(s.settings,legacyZoomTarget(r,'fractal',{centerX:Number(s.settings.centerX),centerY:Number(s.settings.centerY),zoom:Number(s.settings.zoom)}));
+ const x=normalizeSourceFractalCenter(Number(s.settings.centerX),Number(s.settings.centerXLow??0)),y=normalizeSourceFractalCenter(Number(s.settings.centerY),Number(s.settings.centerYLow??0));Object.assign(s.settings,{centerX:x[0],centerXLow:x[1],centerY:y[0],centerYLow:y[1],zoom:Math.max(1e-6,Number(s.settings.zoom))});for(const k of ['rotation','iterations'])numberTo(r,s,'fractal.'+k,k);
  const sourceNumerics=f==='newton'||f==='nova',renderMethod=r.str('fractal.render_method'),precision=sourceNumerics&&r.peek('fractal.perturbation_precision')===null?(r.use('fractal.perturbation_precision'),undefined):r.str('fractal.perturbation_precision');
  const methods:Record<string,string>={ONEPASS:'one-pass',MULTIPASS:'multi-pass',GUESSING:'guessing'};
  if(renderMethod){if(methods[renderMethod.toUpperCase()])s.settings.renderMethod=methods[renderMethod.toUpperCase()];else r.warnings.push(`fractal.render_method=${renderMethod} 未识别，保留 source。`);}
@@ -920,6 +922,31 @@ function legacyOscillators(r:Reader,s:SceneDocument,path:string,baseline:SceneDo
  }
  return result;
 }
+/** Fractal target scalar owner; explicit JSON null reaches the source scalar
+ * parser as its string sentinel, unlike an absent field. */
+function sourceZoomScalar(r:Reader,path:string,fallback:number):number {
+ const raw=r.use(path);if(raw===undefined)return fallback;
+ const result=prepareDomainSourceScalar(typeof raw==='number'||typeof raw==='string'?raw:JSON.stringify(raw),{fallback:0,precision:'float64'});
+ if(!result.ok)fail(`${path} 超出本地标量解析容量 ${result.error.resource}=${result.error.limit}`);
+ return result.facts.value;
+}
+function sourceZoomFloat(r:Reader,path:string,fallback:number):number {
+ const raw=r.peek(path);if(raw===undefined)return fallback;
+ if(typeof raw==='string'){
+  const parsed=parseDomainSourceFloat(raw);if(parsed.ok){r.use(path);return parsed.value;}
+  if(parsed.error.kind==='capacity')fail(`${path} 超出本地标量解析容量 characters=${parsed.error.limit}`);
+ }
+ return Math.fround(sourceZoomScalar(r,path,fallback));
+}
+function sourceZoomTarget(r:Reader,path:string,fallback:{centerX:number;centerY:number;centerXLow:number;centerYLow:number;zoom:number}){
+ const target={centerX:sourceZoomScalar(r,path+'.centerX',fallback.centerX),centerY:sourceZoomScalar(r,path+'.centerY',fallback.centerY),centerXLow:sourceZoomScalar(r,path+'.centerXLo',fallback.centerXLow),centerYLow:sourceZoomScalar(r,path+'.centerYLo',fallback.centerYLow),zoom:sourceZoomScalar(r,path+'.zoom',fallback.zoom)};
+ for(const [name,fields] of [['center_hi_lo',['centerX','centerXLow','centerY','centerYLow']],['center',['centerX','centerY']]] as const){
+  const values=r.peek(path+'.'+name);if(values===undefined)continue;
+  if(!Array.isArray(values))fail(`${path}.${name} 必须为数组`);
+  if(values.length>=fields.length)fields.forEach((key,i)=>{target[key]=sourceZoomScalar(r,`${path}.${name}.${i}`,target[key]);});
+ }
+ return target;
+}
 function legacyZoomTarget(r:Reader,path:string,fallback:{centerX:number;centerY:number;centerXLow?:number;centerYLow?:number;zoom:number}){
  let centerX=r.num(path+'.centerX')??fallback.centerX,centerY=r.num(path+'.centerY')??fallback.centerY,zoom=r.num(path+'.zoom')??fallback.zoom;
  let centerXLow=r.num(path+'.centerXLo')??fallback.centerXLow??0,centerYLow=r.num(path+'.centerYLo')??fallback.centerYLow??0;
@@ -1198,10 +1225,12 @@ function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarSc
  if(!clips.length){r.use('timeline');return;}
  for(let i=0;i<clips.length;i++){
   const path='timeline.'+i;if(!isObject(clips[i]))fail(`${path} 不是对象`);
-  const originalType=r.str(path+'.type',true)!,type=originalType.toLowerCase(),duration=r.num(path+'.duration',s.parameters)??0,enabled=r.bool(path+'.enabled')??true,label=r.str(path+'.label')??originalType;
-  if(duration<0||duration>86400)fail(`${path}.duration 超出 0–86400 秒`);
-  const easingValue=r.str(path+'.easing')??'SINE_IN_OUT',easing=easingValue.toLowerCase().replaceAll('_','-');
-  if(!EASING_NAMES.includes(easing)){r.warnings.push(`${path}.easing=${easingValue} 未支持，整个片段仅保留在 source。`);if(enabled)cursor+=duration;continue;}
+  const originalType=r.str(path+'.type',true)!,type=originalType.toLowerCase(),sourceZoom=s.kind==='fractal'&&type==='fractal_zoom',enabled=r.bool(path+'.enabled')??true,label=r.str(path+'.label')??originalType;
+  if(sourceZoom&&!enabled)continue;
+  const duration=sourceZoom?Math.max(Math.fround(1e-4),sourceZoomFloat(r,path+'.duration',4)):r.num(path+'.duration',s.parameters)??0;
+  if(!Number.isFinite(duration)||duration<0||duration>86400)fail(`${path}.duration 超出 0–86400 秒`);
+  const sourceEasing=sourceZoom?r.use(path+'.easing'):undefined,easingValue=sourceZoom?(typeof sourceEasing==='string'?sourceEasing:'SINE_IN_OUT'):r.str(path+'.easing')??'SINE_IN_OUT',easing=sourceZoom?(lookupSourceEasing(easingValue)??'sine-in-out'):easingValue.toLowerCase().replaceAll('_','-');
+  if(!sourceZoom&&!EASING_NAMES.includes(easing)){r.warnings.push(`${path}.easing=${easingValue} 未支持，整个片段仅保留在 source。`);if(enabled)cursor+=duration;continue;}
   if(duration===0&&!['animate','spirograph_finish_wait'].includes(type)){r.warnings.push(`${path}：零时长 ${type} 未加入执行轨道，原值保留 source。`);continue;}
   const track:AnimationTrack={id:crypto.randomUUID(),type:type==='hold'?'wait':type as AnimationTrack['type'],target:'timeline.wait',label,from:0,to:0,start:cursor,duration,easing,pingPong:false,enabled};
   let cachedBaseline:SceneDocument|undefined;const before=()=>cachedBaseline??=sceneAtTime({...s,timeline:{...s.timeline,duration:Math.max(.01,cursor)}},cursor);
@@ -1225,15 +1254,17 @@ function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarSc
   }else if(type==='fractal_zoom'){
    if(s.kind!=='fractal'){mapped=false;r.warnings.push(`${path}：分形缩放仅适用于分形场景。`);}
    else{
-    const state=before(),initial={centerX:Number(state.settings.centerX),centerY:Number(state.settings.centerY),centerXLow:Number(state.settings.centerXLow??0),centerYLow:Number(state.settings.centerYLow??0),zoom:Number(state.settings.zoom)};
-    let target=legacyZoomTarget(r,path,initial);const keys=r.peek(path+'.keys');
-    if(keys!==undefined){if(!Array.isArray(keys)||keys.length>256)fail(`${path}.keys 应为最多256个关键帧的数组`);let selected=-1,selectedTime=-Infinity;
-     for(let j=0;j<keys.length;j++){if(!isObject(keys[j]))fail(`${path}.keys.${j} 不是对象`);const time=r.num(`${path}.keys.${j}.time`)??0;if(time>=selectedTime){selected=j;selectedTime=time;}}
-     if(selected>=0)target=legacyZoomTarget(r,`${path}.keys.${selected}`,target);
-     r.warnings.push(`${path}.keys：按 v1.7.8 静态解析语义选择最大 time（并列取后者）作为目标；其他键仍保留 source，不伪造逐关键帧播放。`);
+    const initial={centerX:Number(s.settings.centerX),centerY:Number(s.settings.centerY),centerXLow:Number(s.settings.centerXLow??0),centerYLow:Number(s.settings.centerYLow??0),zoom:Number(s.settings.zoom)};
+    let target=sourceZoomTarget(r,path,initial);const keys=r.peek(path+'.keys');
+    if(keys!==undefined){if(!Array.isArray(keys)||keys.length>256)fail(`${path}.keys 应为最多256个目标候选的数组`);let selected=-1;const times=new Map<number,number>(),time=(j:number)=>{if(!times.has(j))times.set(j,sourceZoomFloat(r,`${path}.keys.${j}.time`,0));return times.get(j)!;};
+     for(let j=0;j<keys.length;j++){if(!isObject(keys[j]))fail(`${path}.keys.${j} 不是对象`);if(selected<0||time(j)>=time(selected))selected=j;}
+     if(selected>=0)target=sourceZoomTarget(r,`${path}.keys.${selected}`,target);
+     r.warnings.push(`${path}.keys：按 v1.7.8 最大 Float32 time（并列取后者）选择目标，其他候选保留在 source。`);
     }
-    track.target='settings.zoom';track.keyframes=[{time:0,...initial},{time:duration,...target}];track.interpolation='exponential';
-    r.warnings.push(`${path}：缩放使用对数插值、中心使用线性插值；中心低位已保留；原版缩放感知中心插值尚未复现。`);
+    const maximum=sourceZoomScalar(r,path+'.max_zoom',1e300),parsed=parseSourceFractalZoomTarget({model:'mathart-1.7.8-target',...target,zoom:Math.max(1e-9,target.zoom),maxZoom:Math.max(1,Number.isFinite(maximum)?maximum:1e300)});
+    if(!parsed.ok)fail(`${path}：${parsed.error.reason}`);
+    track.target='settings.zoom';track.sourceFractalZoom=parsed.value;
+    r.warnings.push(`${path}：采用原版目标缩放与高低位中心轨迹；片段时间仍按本地时间轴计算，原版逐帧队列时序待验。`);
    }
   }else if(type==='spirograph_finish_wait'){
    mapped=false;r.warnings.push(`${path}：完成等待仅适用于旋轮场景。`);
@@ -1360,7 +1391,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
    if(bounded!==duration)r.warnings.push(`${path}.duration=${duration} 按原版完成等待范围调整为 ${bounded} 秒；原值保留在 source。`);
    duration=bounded;
   }
-  if(duration<0||duration>86400)fail(`${path}.duration 超出本地 0–86400 秒范围`);
+  if(!Number.isFinite(duration)||duration<0||duration>86400)fail(`${path}.duration 超出本地 0–86400 秒范围`);
   const label=r.str(path+'.label')??originalType;
   const track:AnimationTrack={id:crypto.randomUUID(),type:'wait',target:'timeline.wait',label,start:0,duration,from:0,to:0,easing:'sine-in-out',pingPong:false,enabled:true};
   if(type==='spirograph_finish_wait'){track.type='spirograph_finish_wait';track.spirographWait='visual-or-deadline-v1';}

@@ -314,7 +314,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
     )
       fail("动画轨道无效");
     validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],sourceParticleActionFamily(data as unknown as SceneDocument));
-    if(track.type==='fractal_zoom')track.keyframes=validateFractalKeyframes(track as unknown as AnimationTrack);
+    if(track.type==='fractal_zoom'&&track.sourceFractalZoom===undefined)track.keyframes=validateFractalKeyframes(track as unknown as AnimationTrack);
   }
   validateTimelineSchedule(data as unknown as SceneDocument);
   if(t.schedule===SAMILA_SCENE_SEQUENCE)resolveSourceSamilaTimeline(data as unknown as SceneDocument);
