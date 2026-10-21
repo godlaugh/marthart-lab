@@ -61,3 +61,5 @@ node scripts/verify-source-symmetry-frame-plan.mjs .cache/symmetry-frame-plan-ne
 GPU 参数专项约 33.20 秒，运行时并行执行了全量测试与构建；界面/导出约 12.62 秒。不能把这两个数字当作受控性能基准。单独的更新/显示回归耗时约 2.38 秒，250 ms 采样进程族 CPU 约 6.19 秒、峰值 RSS 约 1.36 GiB（含浏览器和 Vite）。RSS 可能重复计算共享页，采样会漏掉峰值或短进程，CPU 为观察下界，未区分短时 PID 复用。未测 GPU 内存或 token；没有等价的受控前后及冷热性能比较，不作性能提升结论。
 
 本轮累积清除验证覆盖固定帧回放中未暂停、没有原版 replayPending 的状态。还需核对原版编辑触发的重建/重播、原版暂停与重播标志、真实窗口的渲染与完整图像。共享队列沿用已验证的 Scene 时钟；本轮没有重新执行原版 Scene + JOGL 整条渲染链。2.0 总 Goal 保持进行中。
+
+后续进展：[编辑路径与共享会话验收](source-symmetry-session-validation.zh-CN.md)。固定预览已复用独立会话；GPU 分帧重播和界面事件接入仍待完成。
