@@ -33,7 +33,7 @@ bool finiteVector(vec3 v){return finiteFloat(v.x)&&finiteFloat(v.y)&&finiteFloat
 const QUAD=HEADER+`void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}`;
 const EMPTY=HEADER+'out vec4 color;void main(){color=vec4(0.);}';
 const HISTORY_COPY=HEADER+`uniform sampler2D previousInk;uniform float decay,densityCeiling;out vec4 result;void main(){result=texelFetch(previousInk,ivec2(gl_FragCoord.xy),0)*decay;if(result.a>densityCeiling){result.rgb*=densityCeiling/result.a;result.a=densityCeiling;}}`;
-const MAX_BYTES=768*1024*1024,CHUNK=65536,PALETTE_INTERVALS=4096;
+const MAX_BYTES=768*1024*1024,CHUNK=65536,SEED_STAGING_BYTES=CHUNK*24,PALETTE_INTERVALS=4096;
 const finite32=(v:number)=>Number.isFinite(v)&&Number.isFinite(Math.fround(v));
 const checked=(v:boolean,message:string)=>{if(!v)throw new Error(message);};
 function checkBounds(b:DensityBounds){checked([b.minX,b.maxX,b.minY,b.maxY].every(finite32)&&Math.fround(b.maxX)>Math.fround(b.minX)&&Math.fround(b.maxY)>Math.fround(b.minY)&&finite32(Math.fround(b.maxX)-Math.fround(b.minX))&&finite32(Math.fround(b.maxY)-Math.fround(b.minY)),'GPU 视口在 float32 中退化');}
@@ -46,7 +46,7 @@ export function iteratedGpuBytes(count:number,width:number,height:number,texture
  checked(Number.isInteger(count)&&count>0&&count<=8_000_000,'GPU 粒子数须为 1–8000000');
  checked([width,height,textureWidth].every(n=>Number.isInteger(n)&&n>0&&n<=16384),'GPU 密度尺寸无效');
  const tw=Math.min(textureWidth,count),th=Math.ceil(count/tw),capacity=tw*th,reduce=Math.ceil(tw/2)*Math.ceil(th/2);
- return (sourcePresentation?sourceDensityPresentationBytes(width,height):0)+(sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
+ return (sourcePresentation?sourceDensityPresentationBytes(width,height):0)+(sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+SEED_STAGING_BYTES+512+densityGpuToneBytes();
 }
 export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';sourceSymmetry?:true;}
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
@@ -157,7 +157,7 @@ export class IteratedDensityGpu {
  private readonly observeSourceDraw?:SourceSamilaDrawObserver;
  constructor(options:{observeSourceDraw?:SourceSamilaDrawObserver}={}){if(options.observeSourceDraw!==undefined&&typeof options.observeSourceDraw!=='function')throw Error('源 Samila 绘制观察接口无效');this.observeSourceDraw=options.observeSourceDraw;}
  private tone?:DensityGpuTone;private gl?:WebGL2RenderingContext;private programs=new Map<string,Program>();private resources?:Resources;private bounds?:DensityBounds;private structuralKey='';private frame=-1;
- diagnostics(){if(this.direct){const r=this.direct;return{cleanupPending:this.cleanupPending,resourceModel:r.plan.model,retainedBytes:r.plan.residentBytes+(r.sourceNoise?256*256*4:0)+(r.sourcePalette?1024*3*4:0)+(this.tone?.diagnostics().retainedBytes??0),estimatedPeakBytes:r.plan.estimatedBytes+(this.tone?.sourceTargetBytes()??0)+(this.tone?.sourceTargetBytes()?r.width*r.height*4:0),frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r.count,statisticsBytes:r.plan.statisticsBytes,observationBytes:r.plan.observationBytes};}const r=this.resources;return{cleanupPending:this.cleanupPending,retainedBytesAccuracy:this.pendingAllocation?'allocation-upper-bound':'known-storage',pendingAllocationBytes:this.pendingAllocationBytes,retainedBytes:r?r.bytes-(r.paletteFormat==='source-rgb1024'?(PALETTE_INTERVALS+1)*16-1024*12:0)+(r.sourceNoise?256*256*4+1024*3*4:0)-r.width*r.height*16-r.width*16-(PALETTE_INTERVALS+1)*16-CHUNK*16-256-densityGpuToneBytes()+(this.tone?.diagnostics().retainedBytes??0):this.pendingAllocationBytes,estimatedPeakBytes:r?r.bytes+(this.tone?.sourceTargetBytes()??0)+(this.tone?.sourceTargetBytes()?r.width*r.height*4:0)+(r.sourceNoise?256*256*4*2+1024*3*4*2:0):0,frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r?.count??0};}
+ diagnostics(){if(this.direct){const r=this.direct;return{cleanupPending:this.cleanupPending,resourceModel:r.plan.model,retainedBytes:r.plan.residentBytes+(r.sourceNoise?256*256*4:0)+(r.sourcePalette?1024*3*4:0)+(this.tone?.diagnostics().retainedBytes??0),estimatedPeakBytes:r.plan.estimatedBytes+(this.tone?.sourceTargetBytes()??0)+(this.tone?.sourceTargetBytes()?r.width*r.height*4:0),frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r.count,statisticsBytes:r.plan.statisticsBytes,observationBytes:r.plan.observationBytes};}const r=this.resources;return{cleanupPending:this.cleanupPending,retainedBytesAccuracy:this.pendingAllocation?'allocation-upper-bound':'known-storage',pendingAllocationBytes:this.pendingAllocationBytes,retainedBytes:r?r.bytes-(r.paletteFormat==='source-rgb1024'?(PALETTE_INTERVALS+1)*16-1024*12:0)+(r.sourceNoise?256*256*4+1024*3*4:0)-r.width*r.height*16-r.width*16-(PALETTE_INTERVALS+1)*16-SEED_STAGING_BYTES-256-densityGpuToneBytes()+(this.tone?.diagnostics().retainedBytes??0):this.pendingAllocationBytes,estimatedPeakBytes:r?r.bytes+(this.tone?.sourceTargetBytes()??0)+(this.tone?.sourceTargetBytes()?r.width*r.height*4:0)+(r.sourceNoise?256*256*4*2+1024*3*4*2:0):0,frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r?.count??0};}
  private context(){
   if(this.gl?.isContextLost()){this.reset();throw new Error('GPU 持续密度上下文已丢失');}
   if(!this.gl){checked(typeof OffscreenCanvas!=='undefined','OffscreenCanvas 不可用');const gl=new OffscreenCanvas(1,1).getContext('webgl2',{antialias:false,depth:false,alpha:false});checked(Boolean(gl),'WebGL2 不可用');this.gl=gl!;checked(Boolean(gl!.getExtension('EXT_color_buffer_float')),'GPU 缺少 EXT_color_buffer_float');checked(Boolean(gl!.getExtension('EXT_float_blend')),'GPU 缺少 EXT_float_blend');}
@@ -210,10 +210,16 @@ export class IteratedDensityGpu {
  /** Initial seeds have one owner. Upload bounded rows directly for texture
   * states; no duplicated CPU orbit or whole-capacity staging array is retained. */
  private uploadInitial(values:Float32Array,offset:number){
-  const gl=this.gl!,r=this.resources!;
-  if(r.storage==='buffer'){gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*16,values);return;}
-  this.texture(this.stateTexture(),0);let consumed=0;
-  while(consumed<values.length/4){const at=offset+consumed,x=at%r.tw,y=Math.floor(at/r.tw),n=Math.min(r.tw-x,values.length/4-consumed);gl.texSubImage2D(gl.TEXTURE_2D,0,x,y,n,1,gl.RGBA,gl.FLOAT,values.subarray(consumed*4,(consumed+n)*4));consumed+=n;}
+  const gl=this.gl!,r=this.resources!,count=values.length/4,metadata=new Uint32Array(count*2);
+  // Finite seeds are valid before the first object update. Reset error flags at
+  // the seed owner, including when a display occurs without any iteration.
+  for(let i=0;i<count;i++)metadata[i*2+1]=1;
+  if(r.storage==='buffer'){gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*16,values);gl.bindBuffer(gl.ARRAY_BUFFER,r.counters[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*8,metadata);return;}
+  let consumed=0;
+  while(consumed<count){const at=offset+consumed,x=at%r.tw,y=Math.floor(at/r.tw),n=Math.min(r.tw-x,count-consumed);
+   this.texture(this.stateTexture(),0);gl.texSubImage2D(gl.TEXTURE_2D,0,x,y,n,1,gl.RGBA,gl.FLOAT,values.subarray(consumed*4,(consumed+n)*4));
+   this.texture(this.counterTexture(),1);gl.texSubImage2D(gl.TEXTURE_2D,0,x,y,n,1,gl.RG_INTEGER,gl.UNSIGNED_INT,metadata.subarray(consumed*2,(consumed+n)*2));consumed+=n;
+  }
  }
  private iterateCustom(job:IteratedFrameJob,source:IteratedGpuFieldSource,steps:number,serial:number,resetCounter:boolean,cancel?:()=>boolean){
   const gl=this.gl!,r=this.resources!,cfg=job.config,p=this.program('custom:'+source.key,QUAD,source.source);
@@ -329,6 +335,8 @@ export class IteratedDensityGpu {
  private run(job:IteratedFrameJob,options:IteratedGpuOptions):IteratedGpuFacts {
   checkCancelled(options.isCancelled);const source=job.samilaSampling?undefined:iteratedGpuFieldSource(job.field);const cfg=job.config;checked(['map','symmetry','samila'].includes(job.kind),'GPU 持续密度类型无效');const customStorage=job.field.kind==='symmetry-custom',samila=job.kind==='samila',boundedHistory=samila&&cfg.samilaHistoryModel==='bounded-v2',history=job.history;
   checked(!history||boundedHistory,'GPU 历史规则与模型不匹配');
+  const symmetryFrame=job.symmetryFrame,warmup=symmetryFrame?.warmupSteps??(options.resetParticles?cfg.burn:0),iterations=symmetryFrame?.iterationSteps??cfg.iterations;
+  if(symmetryFrame)checked(job.kind==='symmetry'&&symmetryFrame.model==='symmetry-frame-1.7.8'&&Number.isSafeInteger(warmup)&&warmup>=0&&warmup<=cfg.burn&&iterations===(symmetryFrame.objectUpdated?cfg.iterations:0)&&(!warmup||symmetryFrame.objectUpdated),'GPU Symmetry 更新计划无效');
   if(job.samilaSampling){checked(samila&&!!job.samilaSplat&&job.field.kind==='samila'&&job.field.mathModel==='mathart-1.7.8'&&!!job.samilaProjection&&!!history,'源 Samila PCG 缺少已解析场/历史事实');validateSourceSamilaSamplingBatch(job.samilaSampling,cfg.count,history!.passes,job.frame);}
   if(boundedHistory)checked(!!history&&history.densityCeiling===SAMILA_HISTORY_CEILING&&[0,1,6].includes(history.passes)&&history.samples===cfg.count*history.passes&&(job.samilaSampling!==undefined||history.randomFrames.length===history.passes&&history.randomFrames.every(f=>Number.isSafeInteger(f)&&f>=0)&&new Set(history.randomFrames).size===history.passes)&&(history.passes>0)===cfg.record,'GPU Samila 缺少有效历史帧事实');
   checked(Number.isSafeInteger(job.frame)&&job.frame>=0&&(samila||cfg.burn+1+job.frame*16+cfg.iterations<=0xffffffff),'GPU 随机序号超出 32 位');
@@ -347,8 +355,9 @@ export class IteratedDensityGpu {
   if(options.clearInk||options.resetParticles){this.target(r.ink,r.width,r.height);gl.clearBufferfv(gl.COLOR,0,new Float32Array(4));}
   if(options.resetParticles&&!samila){
    for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const initial=iteratedInitialChunk(cfg,offset,Math.min(CHUNK,cfg.count-offset));this.uploadInitial(initial,offset);}
-   let first=true;for(let offset=0;offset<cfg.burn||first;offset+=256){const n=Math.min(256,cfg.burn-offset);this.iterate(job,source,n,offset+1,first,options.isCancelled);first=false;}
+
   }
+  if(!samila)for(let offset=0;offset<warmup;offset+=256)this.iterate(job,source,Math.min(256,warmup-offset),offset+1,offset===0,options.isCancelled);
   // One history copy per fixed frame, before all compensation batches.
   if(boundedHistory){
    checkCancelled(options.isCancelled);const p=this.program('samila-history-copy',QUAD,HISTORY_COPY);gl.useProgram(p.value);gl.disable(gl.BLEND);this.texture(r.ink,0);this.i(p,'previousInk',0);this.f(p,'decay',cfg.decay);this.f(p,'densityCeiling',history!.densityCeiling);this.target(r.inkScratch!,r.width,r.height);gl.drawArrays(gl.TRIANGLES,0,3);[r.ink,r.inkScratch]=[r.inkScratch!,r.ink];
@@ -364,7 +373,8 @@ export class IteratedDensityGpu {
   for(let pass=0;pass<randomFrames.length;pass++){
    checkCancelled(options.isCancelled);const randomFrame=randomFrames[pass];
   if(samila&&cfg.record){const field=job.field;if(field.kind!=='samila')throw new Error('Samila 帧标签不一致');for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const seeds=iteratedSamilaSeedChunk({...cfg,seed:cfg.sampleSeed??cfg.seed},randomFrame,field.lo,field.hi,offset,Math.min(CHUNK,cfg.count-offset),field.mathModel!==undefined);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*16,seeds);}}
-  if(!samila||cfg.record){this.iterate(job,source,cfg.iterations,samila?0:cfg.burn+1+job.frame*16,samila||!options.resetParticles,options.isCancelled);this.uploadState();}
+  if((!samila||cfg.record)&&iterations>0)this.iterate(job,source,iterations,samila?0:cfg.burn+1+job.frame*16,samila||!options.resetParticles&&warmup===0,options.isCancelled);
+  if(options.resetParticles||warmup>0||iterations>0&&(!samila||cfg.record))this.uploadState();
   if(customStorage){const errors=this.reduce(this.program('custom-errors-first',QUAD,CUSTOM_ERRORS_FIRST),this.program('custom-errors-reduce',QUAD,CUSTOM_ERRORS_REDUCE),true,()=>{},options.isCancelled);checked(errors[0]===0,'自定义对称公式超过单次调用的循环工作预算');}
   if(job.sourceCamera||job.samilaProjection)this.bounds={minX:-1,maxX:1,minY:-1,maxY:1};else if(options.bounds)this.bounds={...options.bounds};else if(!this.bounds||job.frame===0&&pass===0)this.bounds=samila&&!cfg.record?{minX:-options.width/options.height,maxX:options.width/options.height,minY:-1,maxY:1}:this.autoBounds(job,options);const bounds=this.bounds!;
   const stat=samila&&!cfg.record?new Uint32Array(4):this.reduce(this.program('stats-first',QUAD,STATS_FIRST),this.program('stats-reduce',QUAD,STATS_REDUCE),true,p=>{this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r!.width,r!.height);this.f(p,'radius',job.symmetrySplat?sourceSymmetryPointDiameter(job.symmetrySplat)/2-.5:job.samilaSplat?sourceSamilaPointDiameter(job.samilaSplat)/2-.5:cfg.pointSize/2);this.i(p,'recording',cfg.record?1:0);this.i(p,'sourcePointClip',(job.samilaSplat??job.symmetrySplat)?.path==='points'?1:0);},options.isCancelled);
@@ -375,11 +385,11 @@ export class IteratedDensityGpu {
    gl.bindVertexArray(r.drawVao);this.texture(this.stateTexture(),0);this.i(p,'states',0);this.texture(this.counterTexture(),1);this.i(p,'counters',1);this.i(p,'stateWidth',r.tw);gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.ONE,gl.ONE);
    try{for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);this.i(p,'particleOffset',offset);gl.drawArraysInstanced(pointSplat?.path==='points'?gl.POINTS:gl.TRIANGLES,0,pointSplat?.path==='points'?1:6,Math.min(CHUNK,cfg.count-offset));}}finally{gl.disable(gl.BLEND);gl.bindVertexArray(null);}
   }
-   invalid+=stat[0]+stat[1]*4294967296;accepted+=stat[2];clipped+=stat[3];sampleInvalid+=cfg.record?cfg.count-stat[2]-stat[3]:0;
+   if(!symmetryFrame||symmetryFrame.objectUpdated)invalid+=stat[0]+stat[1]*4294967296;accepted+=stat[2];clipped+=stat[3];sampleInvalid+=cfg.record?cfg.count-stat[2]-stat[3]:0;
   }
 
   checked(gl.getError()===gl.NO_ERROR&&!gl.isContextLost(),'GPU 持续密度执行失败');checkCancelled(options.isCancelled);this.structuralKey=job.structuralKey;this.frame=job.frame;
-  return{bounds:{...this.bounds!},steps:history?history.samples:samila&&!cfg.record?0:cfg.count*(cfg.iterations+(options.resetParticles?cfg.burn:0)),invalid,accepted,clipped,sampleInvalid};
+  return{bounds:{...this.bounds!},steps:history?history.samples:samila&&!cfg.record?0:cfg.count*(iterations+warmup),invalid,accepted,clipped,sampleInvalid};
  }
  /** Tone borrows immutable ink. Unsupported/sensitive presentation uses the same
   * shared CPU tone on float ink; it never restarts or mixes mathematical states. */

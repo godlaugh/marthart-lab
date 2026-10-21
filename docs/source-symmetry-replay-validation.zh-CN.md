@@ -68,3 +68,5 @@ python3 scripts/verify-source-symmetry-replay.py \
 ```
 
 实际完成初次采集和一次独立重跑，146 组完整输出全部相等；C 使用 `-Wall -Wextra -Werror` 编译通过。重跑外层耗时约 1.19 秒，采样进程族 CPU 0.66 秒、峰值 RSS 约 172 MiB。250 ms 采样会遗漏短进程和峰值、可能重复计算共享页；CPU 是采样下界。未做受控冷/热性能对比，GPU 内存和 token 成本未测。生产代码未改动，本轮没有重跑应用全量测试。
+
+后续进展：[空队列与结束后的粒子绘制已接入并验收](source-symmetry-frame-plan-validation.zh-CN.md)。实时暂停显示、编辑触发重建及原版完整窗口对照仍待完成。
