@@ -4,21 +4,38 @@ import {replaySourceSurface,type SourceSurfaceParticles} from '../engine/sourceS
 import type {OrdinarySourceCameraFrame} from '../engine/ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from '../engine/ordinarySourceCamera';
 import {usesSourceSurfaceHost} from '../engine/sourceSurfaceIdentity';
+import type {SourceSurfaceHost} from '../engine/sourceSurfaceHost';
 import {replaySourceSurfaceHost} from '../engine/sourceSurfaceScene';
 import {sourceSurfaceMeshAppearance} from '../engine/sourceSurfaceMeshRenderer';
 
-export function generateSourceSurface(scene:SceneDocument,context:GenerateContext):SceneOutput {
- const started=performance.now();
- // Projection admission precedes full particle allocation. Later camera facts
- // are paired with positions from that SAME replay, not reevaluated by a view.
- const initial=ordinarySourceCameraInitial(scene)!;
+export type SourceSurfaceDisplayState=
+ |{kind:'host';frame:OrdinarySourceCameraFrame;snapshot:ReturnType<SourceSurfaceHost['snapshot']>}
+ |{kind:'points';frame:OrdinarySourceCameraFrame;points:ReturnType<SourceSurfaceParticles['snapshot']>};
+/** Admission runs before allocating a fresh numerical producer. */
+export function validateSourceSurfacePresentation(scene:SceneDocument,context:GenerateContext):void {
+ const initial=ordinarySourceCameraInitial(scene);if(!initial)throw Error('原版曲面需要源相机');
  const initialFrame=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera:initial}},context);
- let frame:OrdinarySourceCameraFrame,points:ReturnType<SourceSurfaceParticles['snapshot']>;
+ const prepared=prepareOrdinarySourceFrame(initialFrame);
+ if(!usesSourceSurfaceHost(scene))sourceParticlePointAppearance(scene.settings.pointSize,prepared,context.sourcePointPixelDensity);
+}
+export function generateSourceSurface(scene:SceneDocument,context:GenerateContext):SceneOutput {
+ const started=performance.now();validateSourceSurfacePresentation(scene,context);
+ if(usesSourceSurfaceHost(scene)){
+  const replay=replaySourceSurfaceHost(scene,context.time,'all',context.isCancelled);
+  return presentSourceSurfaceFrame(scene,context,{kind:'host',frame:replay.frame,snapshot:replay.host.snapshot()},started);
+ }
+ const replay=replaySourceSurface(scene,context.time,'all',context.isCancelled);
+ return presentSourceSurfaceFrame(scene,context,{kind:'points',frame:replay.frame,points:replay.particles.snapshot()},started);
+}
+/** Rendering consumes one producer-owned frame; it never reconstructs a queue
+ * or interprets authored parameter values as the current animation state. */
+export function presentSourceSurfaceFrame(scene:SceneDocument,context:GenerateContext,state:SourceSurfaceDisplayState,started=performance.now()):SceneOutput {
+ const frame=state.frame;let points:ReturnType<SourceSurfaceParticles['snapshot']>;
  const configuration=usesSourceSurfaceHost(scene)?scene.surfaceSource:undefined;
  let pointRadius=scene.settings.pointSize,trailWidth=Number(scene.settings.trailWidth);
  if(configuration){
-  prepareOrdinarySourceFrame(initialFrame);
-  const replay=replaySourceSurfaceHost(scene,context.time,'all',context.isCancelled),snapshot=replay.host.snapshot();frame=replay.frame;
+  if(state.kind!=='host')throw Error('曲面展示帧与宿主配置不匹配');
+  const snapshot=state.snapshot;
   if('gpuPoints' in snapshot){
    const sourceCameraFrame=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),gpu=snapshot.gpuPoints;
    return{type:'geometry',topology:'points',backend:'webgl2',positions:new Float32Array(),sourceGpuPoints:gpu.frame,
@@ -48,13 +65,13 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
     sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},context),
     temporal:{time:frame.time,windowStart:frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:0,cacheHits:0},
     stats:{samples:configuration.mesh.uSegments*configuration.mesh.vSegments,generated:positions.length/3,invalid:0,elapsedMs:performance.now()-started},
-    warnings:[...mesh.diagnostics,...frame.diagnostics.map(d=>d.message),'原版 CPU 曲面按固定帧率回放；GPU 与原版完整画面一致性仍待完成。'],
+    warnings:[...mesh.diagnostics,...frame.diagnostics.map(d=>d.message),'原版 CPU 曲面采用源队列与 Float32 更新；原版完整画面一致性仍待完成。'],
    };
   }
   points=snapshot.points;pointRadius=configuration.points.dotRadius;trailWidth=configuration.points.lineWeight;
  }else{
-  sourceParticlePointAppearance(pointRadius,prepareOrdinarySourceFrame(initialFrame),context.sourcePointPixelDensity);
-  const replay=replaySourceSurface(scene,context.time,'all',context.isCancelled);frame=replay.frame;points=replay.particles.snapshot();
+  if(state.kind!=='points')throw Error('曲面展示帧与点配置不匹配');
+  points=state.points;
  }
  const {positions,particleIds,trails,colors,pointAlphas,diagnostics}=points;
  let trailOutput;
@@ -67,6 +84,6 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
   sourceCameraFrame,sourcePointAppearance,...(configuration?{sourceBackgroundColor:configuration.backgroundColor,sourceSurfaceOverlayAlpha:frame.surfaceTransition!.overlayAlpha}:{}),
   temporal:{time:frame.time,windowStart:trails?Math.min(frame.time,trails.oldestTime):frame.time,frames:frame.frameIndex+1,samplingFps:scene.timeline.fps,recordedPoints:trails?.records??0,cacheHits:0},
   stats:{samples:particleIds.length,generated:particleIds.length,invalid:0,elapsedMs:performance.now()-started},
-  warnings:[...diagnostics,...frame.diagnostics.map(d=>d.message),'原版曲面粒子采用固定帧率、源索引与 Float32 运动；静态色板与边界点渐隐已按源规则接入；圆形光照点与纹理采用保留着色器规则；动态渐变按源回调顺序和历史年龄采样；原版应用完整画面尚未一致性验收。'],
+  warnings:[...diagnostics,...frame.diagnostics.map(d=>d.message),'原版曲面粒子采用源队列、源索引与 Float32 运动；静态色板与边界点渐隐已按源规则接入；圆形光照点与纹理采用保留着色器规则；动态渐变按源回调顺序和历史年龄采样；原版应用完整画面尚未一致性验收。'],
  };
 }

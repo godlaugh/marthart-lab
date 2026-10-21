@@ -1,3 +1,4 @@
+import {sourceSurfaceWorkBudget} from './sourceSurfaceWork';
 import {sourceSurfaceParameterFrameRate} from './sourceSurfaceFrame';
 import {SourceParticleTrailHistory,type SourceParticleTrails} from './sourceParticleTrails';
 import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction,type SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
@@ -22,14 +23,14 @@ export function replaySourceSurface(scene:SceneDocument,time:number,coverage:'al
  const frame=evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,time,{isCancelled,particleActions:'surface',createParticles:()=>particles=prepared.create(coverage,isCancelled)});
  return{frame,particles:particles!};
 }
-const F=Math.fround,MAX_PARTICLES=512*512,MAX_WORK=20_000_000;
+const F=Math.fround,MAX_PARTICLES=512*512;
 export class SourceSurfaceParticleError extends Error {
  constructor(readonly code:'input'|'unsupported'|'capacity'|'arithmetic'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceSurfaceParticleError';}
 }
 interface Axis {min:number;max:number;count:number;speed:number;periodic:boolean;flowing:boolean;}
 export interface PreparedSourceSurfaceParticles {
  readonly count:number;readonly operationsPerPosition:number;
- create(coverage:'all'|'tracked',isCancelled?:()=>boolean):SourceSurfaceParticles;
+ create(coverage:'all'|'tracked',isCancelled?:()=>boolean,reserve?:(units:number)=>void):SourceSurfaceParticles;
 }
 function fail(code:SourceSurfaceParticleError['code'],message:string):never{throw new SourceSurfaceParticleError(code,message);}
 function scalar(raw:unknown,label:string):number {
@@ -65,7 +66,7 @@ export function prepareSourceSurfaceParticles(scene:SceneDocument):PreparedSourc
  const scales=['X','Y','Z'].map(a=>scalar(s['scale'+a],'scale'+a)),offsets=['X','Y','Z'].map(a=>scalar(s['offset'+a],'offset'+a));
  const surfaceFunction=prepareSourceSurfaceFunction({equations:scene.equations,parameters:scene.parameters,scales,offsets});
  const operations=surfaceFunction.operations;
- return{count,operationsPerPosition:operations,create:(coverage,isCancelled)=>new SourceSurfaceParticles({u,v,count,surfaceFunction:surfaceFunction.create(),frameRate:F(scene.timeline.fps),operations,trails,palette,fadePoints},coverage,isCancelled)};
+ return{count,operationsPerPosition:operations,create:(coverage,isCancelled,reserve)=>new SourceSurfaceParticles({reserve,u,v,count,surfaceFunction:surfaceFunction.create(),frameRate:F(scene.timeline.fps),operations,trails,palette,fadePoints},coverage,isCancelled)};
 }
 interface Configuration {gpu?:boolean;reserve?:(units:number)=>void;surfaceFunction:SourceSurfaceFunction;frameRate:number;palette?:SourceSurfacePalette;fadePoints:boolean;u:Axis;v:Axis;count:number;operations:number;trails:{show:boolean;record:boolean;fade:boolean;lifetime:number};}
 export interface SourceSurfacePointRuntimeOptions {
@@ -121,6 +122,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly boundaryPoint=new Float32Array(3);
  private recording:boolean;
  private used=0;
+ private readonly reserveBudget:(units:number)=>void;
  private failure:unknown;
  private failed=false;
  private lastFrame=-1;
@@ -128,6 +130,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly targets=new Map<number,Float32Array>();
  private trackedSlot=0;
  constructor(private readonly config:Configuration,private readonly coverage:'all'|'tracked',private readonly isCancelled?:()=>boolean){
+  this.reserveBudget=config.reserve??sourceSurfaceWorkBudget();
   const capacity=coverage==='all'?config.count:Math.min(config.count,4096);
   this.state=new Float32Array(capacity*4);this.positions=new Float32Array(capacity*3);this.surfaceFunction=config.surfaceFunction;
   this.recording=config.trails.record;
@@ -159,7 +162,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
   try{this.check();return operation();}catch(error){this.failed=true;this.failure=error;throw error;}
  }
  private reserve(count=1){this.reserveWork(count*(this.config.operations+24));}
- private reserveWork(units:number){this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','原版曲面粒子回放超过本地 2000 万工作单位预算');this.config.reserve?.(units);}
+ private reserveWork(units:number){this.check();this.used+=units;this.reserveBudget(units);}
  /** Shared expression/transform owner for heads and seam endpoints. Boundary
   * nonfinite results become source break records; CPU invalid heads reject.
   * GPU retains native nonfinite tracking facts; the camera validates only

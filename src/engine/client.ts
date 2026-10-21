@@ -26,6 +26,12 @@ function validOutputFormulas(output:SceneOutput,required=false):boolean {
 function recordingRaster(value:unknown,family:string):value is SourceRecordingRaster {
   const v=value as SourceRecordingRaster|undefined;return !!v&&v.type==='raster'&&Number.isSafeInteger(v.width)&&v.width>0&&Number.isSafeInteger(v.height)&&v.height>0&&v.pixels instanceof Uint8ClampedArray&&v.pixels.byteLength===v.width*v.height*4&&(family==='domain'?!!v.domainLive&&!!v.domainRender:family==='fractal'?!!v.fractalLive&&!!v.fractalRender:family==='perlin'?!!v.sourcePerlinFrame:family==='map'?!!v.mapLive:family==='symmetry'&&!!v.symmetryLive);
 }
+function validSurfaceOutput(output:SceneOutput,input:GenerationInput):boolean {
+ const expected=input.surfaceLive;
+ if(!expected||output.type!=='geometry'||!output.surfaceLive)return false;
+ const live=output.surfaceLive,frame=live.frame,a=output.sourceCameraFrame?.camera,b=frame?.camera,v=output.sourceCameraFrame?.viewport,w=input.sourceViewport;
+ return live.sessionId===expected.sessionId&&live.revision===expected.revision&&live.paused===expected.clock?.paused&&['update','snapshot'].includes(live.renderKind)&&['worker-wall-clock','injected'].includes(live.clockSource)&&Number.isSafeInteger(live.constructions)&&live.constructions>0&&!!frame&&Number.isSafeInteger(frame.frameIndex)&&frame.frameIndex>=0&&Number.isFinite(frame.time)&&Number.isFinite(frame.sceneTime)&&Number.isFinite(frame.rawDt)&&Number.isFinite(frame.activeDt)&&Number.isSafeInteger(frame.queueIndex)&&frame.queueIndex>=0&&typeof frame.queueComplete==='boolean'&&output.temporal?.time===frame.time&&output.sourceCameraFrame?.time===frame.time&&output.sourceCameraFrame?.frameIndex===frame.frameIndex&&!!a&&!!b&&a.phi===b.phi&&a.theta===b.theta&&a.gamma===b.gamma&&a.zoom===b.zoom&&a.focalDistance===b.focalDistance&&Array.isArray(a.center)&&Array.isArray(b.center)&&a.center.length===3&&b.center.length===3&&a.center.every((x,i)=>x===b.center[i])&&!!v&&!!w&&v.logicalWidth===w.logicalWidth&&v.logicalHeight===w.logicalHeight&&v.referenceLogicalHeight===w.referenceLogicalHeight&&v.target===w.target&&v.projectionPass===w.projectionPass;
+}
 type Completed={id:number;scene:SceneDocument;context:GenerationInput;output:SceneOutput};
 type LiveRasterRequest={sessionId:string;revision:number;paused:boolean;actualFrameRate:number};
 function validFractalOutput(output:SceneOutput,request:LiveRasterRequest,target:'primary'|'offscreen'='primary',renderKind:'update'|'snapshot'='update',clock:'realtime-source-queue'|'fixed-source-queue'='realtime-source-queue'):boolean {
@@ -133,11 +139,12 @@ function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:
  return preview.width===source.width&&preview.height===source.height&&validCurrentImage(capture,size,scale,base)&&matchesSize(capture.fractalRender?.logicalSize,base.logicalWidth,base.logicalHeight)&&matchesSize(capture.fractalRender?.requestedSize,base.width,base.height)&&matchesSize(capture.fractalRender?.rasterSize,base.width,base.height);
 }
 type Pending =
+  | {operation:'surface-current';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-parameters';source:Completed;scene:SceneDocument;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'iterated-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'iterated-parameters';source:Completed;scene:SceneDocument;resolve:()=>void;reject:(error:Error)=>void}
-  | {operation:'samila-playback'|'symmetry-playback'|'map-playback'|'fractal-playback'|'domain-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
+  | {operation:'samila-playback'|'symmetry-playback'|'map-playback'|'fractal-playback'|'domain-playback'|'surface-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'source-recording-begin';source:Completed;handle:SourceRecordingHandle;resolve:(value:SourceRecordingStart)=>void;reject:(error:Error)=>void}
   | {operation:'source-recording-frame';handle:SourceRecordingHandle;family:string;displayFrame:number;actualFrameRate?:number;resolve:(value:SourceRecordingRaster)=>void;reject:(error:Error)=>void}
   | {operation:'source-recording-finish';handle:SourceRecordingHandle;family:string;resolve:(value:SourceRecordingStop)=>void;reject:(error:Error)=>void}
@@ -157,7 +164,7 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease};
-  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback');}
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-current'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
@@ -176,6 +183,12 @@ export class Generator {
       if (data.sessionId !== this.sessionId) return;
       const p = this.pending.get(data.id);
       if (!p) return;
+      if(p.operation==='surface-current'){
+        if(data.operation!=='surface-current'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'曲面当前帧响应身份不匹配'));return;}
+        const output=data.output,before=p.source.output;
+        if(!validSurfaceOutput(output,p.source.context)||output.type!=='geometry'||before.type!=='geometry'||output.surfaceLive?.renderKind!=='snapshot'||JSON.stringify(output.surfaceLive.frame)!==JSON.stringify(before.surfaceLive?.frame)){this.invalidate(new Error('曲面当前帧响应状态不匹配'));return;}
+        this.pending.delete(data.id);this.completed={...p.source,id:data.id,output};p.resolve(output);return;
+      }
       if(p.operation==='domain-navigation'){
         if(data.operation!=='domain-navigation'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'域着色视口响应身份不匹配'));return;}
         const before=p.source.output,output=data.output,live=p.source.context.domainLive;
@@ -196,14 +209,14 @@ export class Generator {
         if(data.operation!=='iterated-parameters'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'迭代参数响应身份不匹配'));return;}
         this.pending.delete(data.id);this.completed={...p.source,scene:p.scene};p.resolve();return;
       }
-      if(p.operation==='samila-playback' ||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback'){
+      if(p.operation==='samila-playback' ||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback'||p.operation==='surface-playback'){
         // A control acknowledgement changes the clock, not the completed image
         // capability. Any uncertain acknowledgement retires this worker so a
         // later draw cannot silently use an unknown paused/running state.
-        if((data.operation!=='samila-playback'&&data.operation!=='symmetry-playback'&&data.operation!=='map-playback'&&data.operation!=='fractal-playback'&&data.operation!=='domain-playback')||data.operation!==p.operation||'error' in data||data.sourceId!==p.source.id||data.paused!==p.paused||data.id!==this.currentInputId){
+        if((data.operation!=='samila-playback'&&data.operation!=='symmetry-playback'&&data.operation!=='map-playback'&&data.operation!=='fractal-playback'&&data.operation!=='domain-playback'&&data.operation!=='surface-playback')||data.operation!==p.operation||'error' in data||data.sourceId!==p.source.id||data.paused!==p.paused||data.id!==this.currentInputId){
           this.invalidate(new Error('error' in data?data.error:'实时场景后台播放响应身份不匹配'));return;
         }
-        this.pending.delete(data.id);this.completed=p.source;p.resolve();return;
+        this.pending.delete(data.id);this.completed=p.operation==='surface-playback'?{...p.source,context:{...p.source.context,surfaceLive:{...p.source.context.surfaceLive!,clock:{...p.source.context.surfaceLive!.clock,paused:p.paused}}}}:p.source;p.resolve();return;
       }
       if(isSourceRecordingOperation(p.operation)&&'handle' in p){
         const family=p.operation==='source-recording-begin'?p.source.scene.kind:p.family;
@@ -251,6 +264,7 @@ export class Generator {
       }
       if (data.operation === 'generate-progress') {
         if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,usesSourceFractal(p.scene))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
+        if(p.operation==='generate'&&p.context.surfaceLive&&!validSurfaceOutput(data.output,p.context)){this.invalidate(new Error('曲面实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.domain&&!validDomainOutput(data.output,p.domain,p.context)){this.invalidate(new Error('域着色实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.fractal&&!validFractalOutput(data.output,p.fractal)){this.invalidate(new Error('分形实时进度响应身份或状态不匹配'));return;}
         if (p.operation === 'generate') p.onProgress?.(data.output);
@@ -272,11 +286,12 @@ export class Generator {
           if(data.retainedSourceId!==undefined&&!retained){const error=new FractalLiveGenerationError('分形实时预览保留身份不匹配',false);p.reject(error);this.invalidate(error);return;}
           if(retained)this.completed=p.source;
           p.reject(new FractalLiveGenerationError(data.error,retained));
-        }else if(p.operation==='generate'&&p.domain){const error=new Error(data.error);p.reject(error);this.invalidate(error);}else p.reject(new Error(data.error));
+        }else if(p.operation==='generate'&&(p.domain||p.context.surfaceLive)){const error=new Error(data.error);p.reject(error);this.invalidate(error);}else p.reject(new Error(data.error));
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
       else if (p.operation === 'generate' && data.operation === 'generate') {
         if(!p.fractal&&!validOutputFormulas(data.output,usesSourceFractal(p.scene))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
+        if(p.context.surfaceLive&&!validSurfaceOutput(data.output,p.context)){const error=new Error('曲面实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.domain&&!validDomainOutput(data.output,p.domain,p.context)){const error=new Error('域着色实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.fractal&&!validFractalOutput(data.output,p.fractal)){p.reject(new Error('分形实时响应身份或状态不匹配'));this.invalidate(new Error('分形实时响应身份或状态不匹配'));return;}
         if(data.id===this.currentInputId)this.completed={id:data.id,scene:p.scene,context:p.context,output:data.output};
@@ -359,14 +374,21 @@ export class Generator {
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'iterated-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'iterated-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene,writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
   }
+  currentSurface(output:SceneOutput):Promise<SceneOutput>{
+    const source=this.completed;
+    if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||source.scene.kind!=='surface'||output.type!=='geometry'||!output.surfaceLive)return Promise.reject(new Error('曲面当前帧需要当前已完成的主预览'));
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'surface-current',source,resolve,reject});try{this.worker!.postMessage({operation:'surface-current',sessionId:this.sessionId,id,sourceId:source.id} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+  }
+  setSurfacePaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('surface-playback',output,paused,timestampMs);}
   setSamilaPaused(output:SceneOutput,paused:boolean):Promise<void>{return this.setLivePaused('samila-playback',output,paused);}
   setMapPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('map-playback',output,paused,timestampMs);}
   setSymmetryPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('symmetry-playback',output,paused,timestampMs);}
   setDomainPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('domain-playback',output,paused,timestampMs);}
   setFractalPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('fractal-playback',output,paused,timestampMs);}
-  private setLivePaused(operation:'samila-playback'|'symmetry-playback'|'map-playback'|'fractal-playback'|'domain-playback',output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
+  private setLivePaused(operation:'samila-playback'|'symmetry-playback'|'map-playback'|'fractal-playback'|'domain-playback'|'surface-playback',output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
     const source=this.completed;
-    const valid=output.type==='raster'&&(operation==='domain-playback'?source?.scene.kind==='domain'&&!!output.domainLive&&!!output.domainRender:operation==='fractal-playback'?source?.scene.kind==='fractal'&&!!output.fractalLive&&!!output.fractalRender:operation==='samila-playback'
+    const valid=operation==='surface-playback'?output.type==='geometry'&&source?.scene.kind==='surface'&&!!output.surfaceLive:output.type==='raster'&&(operation==='domain-playback'?source?.scene.kind==='domain'&&!!output.domainLive&&!!output.domainRender:operation==='fractal-playback'?source?.scene.kind==='fractal'&&!!output.fractalLive&&!!output.fractalRender:operation==='samila-playback'
       ?source?.scene.kind==='samila'&&output.samilaLive?.target==='primary'&&output.samilaLive.clock==='realtime-source-queue'
       :source?.scene.kind===(operation==='map-playback'?'map':'symmetry')&&output[operation==='map-playback'?'mapLive':'symmetryLive']?.clock==='realtime-source-queue'&&output.sourceCameraFrame?.viewport.target==='primary');
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||!valid)

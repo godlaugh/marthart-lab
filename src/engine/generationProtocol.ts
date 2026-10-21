@@ -75,6 +75,8 @@ type IteratedPlaybackOperation='symmetry-playback'|'map-playback';
 type IteratedPlaybackRequest={ [Operation in IteratedPlaybackOperation]:{operation:Operation;id:number;sourceId:number;paused:boolean;timestampMs?:number} }[IteratedPlaybackOperation];
 type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Operation;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5} }[PausedCaptureOperation];
 export type GenerationRequest = { sessionId: number } & (
+  | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
+  | {operation:'surface-current';id:number;sourceId:number}
   | {operation:'domain-navigation';id:number;sourceId:number;event:import('./sourceDomainLiveSession').SourceDomainNavigationEvent}
   | {operation:'domain-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
   | {operation:'iterated-navigation';id:number;sourceId:number;event:import('./sourceIteratedNavigation').SourceIteratedNavigationEvent}
@@ -95,6 +97,8 @@ export type GenerationRequest = { sessionId: number } & (
   | { operation: 'roots-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
 export type GenerationPayload =
+  | {operation:'surface-playback';id:number;sourceId:number;paused:boolean}
+  | {operation:'surface-current';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-navigation';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-parameters';id:number;sourceId:number}
   | {operation:'iterated-navigation';id:number;sourceId:number;output:SceneOutput}

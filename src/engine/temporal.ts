@@ -1,3 +1,4 @@
+import {SourceSurfaceLiveSession} from './sourceSurfaceLiveSession';
 import {SourceDomainLiveSession} from './sourceDomainLiveSession';
 import {usesSourceFractal} from './sourceFractalDocument';
 import {SourceFractalLiveSession} from './sourceFractalLiveSession';
@@ -78,6 +79,7 @@ export class TemporalGenerationSession {
   readonly sourceSymmetry = new SourceIteratedSession('symmetry');
   readonly sourceMap = new SourceIteratedSession('map');
   readonly sourceSamila = new SourceSamilaSession();
+  readonly sourceSurface = new SourceSurfaceLiveSession();
   readonly sourceDomain = new SourceDomainLiveSession();
   readonly sourceFractal = new SourceFractalLiveSession();
   readonly iterated = new IteratedDensitySession();
@@ -88,9 +90,10 @@ export class TemporalGenerationSession {
   readonly domain = new DomainRenderSession();
   readonly spirograph = new SpirographFrameSession();
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
-  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSymmetry.reset();this.sourceMap.reset();this.sourceSamila.reset();this.sourceFractal.reset();this.sourceDomain.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
+  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSymmetry.reset();this.sourceMap.reset();this.sourceSamila.reset();this.sourceFractal.reset();this.sourceDomain.reset();this.sourceSurface.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
     this.cleanup.prepare();
+    if(context.surfaceLive===undefined)this.sourceSurface.reset();
     if(context.domainLive===undefined)this.sourceDomain.reset();
     if(context.fractalLive===undefined)this.sourceFractal.reset();
     if(context.mapLive===undefined)this.sourceMap.reset();else this.iterated.reset();
@@ -393,6 +396,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
   if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
+    if(context.surfaceLive!==undefined){owner.select(scene,context);return owner.sourceSurface.generate(scene,context);}
     if(context.domainLive!==undefined){owner.select(scene,context);return owner.sourceDomain.generate(scene,context);}
     if(context.fractalLive!==undefined){owner.select(scene,context);return owner.sourceFractal.generate(scene,context);}
     if(context.mapLive!==undefined){owner.select(scene,context);return owner.sourceMap.generate(scene,context);}

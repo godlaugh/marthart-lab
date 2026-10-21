@@ -36,6 +36,7 @@ self.onmessage = (
   let captureSource:typeof completed;
   let recordingSource:typeof completed;
   let generationSource:typeof completed;
+  let surfaceSource:typeof completed;
   const leaseAtEntry=recording;
   let captureRendered=false;
   let captureSourceMatched=false;
@@ -43,6 +44,19 @@ self.onmessage = (
     // A failed release keeps the old owner and must still answer this request.
     if(recording&&(owner!==sessionId||!isSourceRecordingOperation(operation)))throw new Error('源场景录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
+    if(event.data.operation==='surface-playback'||event.data.operation==='surface-current'){
+      const source=surfaceSource=completed,live=source?.context.surfaceLive;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='surface'||!live||!temporalSession.sourceSurface.matchesCompletedPrimary(source.scene,source.context))throw Error('曲面操作对应的实时主预览已过期');
+      if(event.data.operation==='surface-playback'){
+        temporalSession.sourceSurface.setPaused(event.data.paused,event.data.timestampMs);
+        completed={...source,context:{...source.context,surfaceLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
+        send({operation:'surface-playback',id,sourceId:source.id,paused:event.data.paused});
+      }else{
+        const output=temporalSession.sourceSurface.current(source.scene,source.context);completed={...source,id};
+        send({operation:'surface-current',id,sourceId:source.id,output},outputBuffers(output));
+      }
+      return;
+    }
     if(event.data.operation==='domain-navigation'){
       const source=completed;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='domain')throw Error('域着色视口对应的主预览已过期');
@@ -223,7 +237,7 @@ self.onmessage = (
       return;
     }
     const { context } = event.data;
-    generationSource=context.fractalLive?completed:undefined;
+    generationSource=context.fractalLive||context.surfaceLive?completed:undefined;
     completed=undefined;
     const output = generateScene(scene, { ...context, onStatus: event.data.wantsStatus ? status => send({operation:'generate-status',id,status}) : undefined, onProgress: output => {
       output.dimension ??= definition(scene.kind).dimension;
@@ -255,6 +269,11 @@ self.onmessage = (
         :temporalSession.rootsNative.matchesCompletedPrimary(captureSource.scene,captureSource.context));
       completed=retained?captureSource:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:captureSource!.id}:{})});
+    }else if(surfaceSource||operation==='generate'&&generationSource?.context.surfaceLive){
+      const source=surfaceSource??generationSource!;
+      const retained=owner===sessionId&&temporalSession.sourceSurface.matchesCompletedPrimary(source.scene,source.context);
+      completed=retained?source:undefined;
+      send({id,operation,error:message,...(retained?{retainedSourceId:source.id}:{})});
     }else if(operation==='generate'&&generationSource?.context.fractalLive){
       const retained=owner===sessionId&&temporalSession.sourceFractal.matchesCompletedPrimary(generationSource.scene,generationSource.context);
       completed=retained?generationSource:undefined;

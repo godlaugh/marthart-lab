@@ -1,3 +1,4 @@
+import {sourceSurfaceWorkBudget} from './sourceSurfaceWork';
 import {SourceSurfaceGpuPoints} from './sourceSurfaceGpuPoints';
 import {sourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
 import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
@@ -14,12 +15,13 @@ export interface SourceSurfaceHostOptions {
  configuration:SourceSurfaceMeshConfiguration;
  equations:Readonly<Record<string,string>>;parameters:Readonly<Record<string,number>>;
  palette?:SourceSurfacePalette;frameRate:number;coverage:'all'|'tracked';isCancelled?:()=>boolean;
+ /** Parent operation budget; omission bounds the entire fixed replay. */
+ reserve?:(units:number)=>void;
 }
 export class SourceSurfaceHostError extends Error {
  constructor(readonly code:'input'|'unsupported'|'capacity'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceSurfaceHostError';}
 }
 type Surface={mode:'points';runtime:SourceSurfaceParticles|SourceSurfaceGpuPoints;function:SourceSurfaceFunction}|{mode:'mesh';runtime:SourceSurfaceMeshRuntime;function:SourceSurfaceFunction};
-const MAX_WORK=20_000_000;
 function fail(code:SourceSurfaceHostError['code'],message:string):never{throw new SourceSurfaceHostError(code,message);}
 
 /** GenericSurfaceScene owns two distinct references: setupTimeline's initial
@@ -36,9 +38,11 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
  private readonly gpuFunction?:ReturnType<typeof sourceSurfaceGpuFunction>;
  private readonly palette?:SourceSurfacePalette;
  private readonly options:Pick<SourceSurfaceHostOptions,'frameRate'|'coverage'|'isCancelled'>;
+ private readonly reserveBudget:(units:number)=>void;
  private used=0;private failed=false;private failure:unknown;
  private lastDisplay=-1;private lastUpdate=-1;private createdAt=0;private replacements=0;
  constructor(options:SourceSurfaceHostOptions){
+  this.reserveBudget=options.reserve??sourceSurfaceWorkBudget();
   this.options={frameRate:options.frameRate,coverage:options.coverage,isCancelled:options.isCancelled};
   const parsed=parseSourceSurfaceMeshConfiguration(options.configuration);
   if(!parsed.ok)fail('input',`原版曲面宿主配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
@@ -53,7 +57,7 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
  }
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())fail('cancelled','曲面宿主回放已取消');}
  private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}}
- private reserve=(units:number)=>{this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','曲面模式切换累计超过本地 2000 万工作单位预算');};
+ private reserve=(units:number)=>{this.check();this.used+=units;this.reserveBudget(units);};
  private construct(mode:SourceSurfaceMode,surfaceFunction:SourceSurfaceFunction):Surface {
   const common={configuration:this.configuration,surfaceFunction,operationsPerPosition:this.prepared.operations,frameRate:this.options.frameRate,palette:this.palette,coverage:this.options.coverage,gpuFunction:this.gpuFunction,isCancelled:this.options.isCancelled,reserve:this.reserve};
   if(this.gpuFunction&&mode==='points')return{mode:'points',runtime:new SourceSurfaceGpuPoints(common,this.gpuFunction),function:surfaceFunction};
@@ -85,7 +89,7 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
   this.current.runtime.update({...frame,frameIndex:frame.frameIndex-this.createdAt});this.lastUpdate=frame.frameIndex;
  });}
  displayFrame(frameIndex:number,final:boolean){this.guarded(()=>{
-  if(!Number.isInteger(frameIndex)||frameIndex!==this.lastDisplay+1||typeof final!=='boolean')fail('input','曲面宿主显示帧顺序无效');
+  if(!Number.isInteger(frameIndex)||frameIndex<0||frameIndex<this.lastUpdate||frameIndex!==this.lastDisplay&&frameIndex!==this.lastDisplay+1||typeof final!=='boolean')fail('input','曲面宿主显示帧顺序无效');
   if(this.current.mode==='mesh')this.current.runtime.display(frameIndex-this.createdAt,1,final);
   this.lastDisplay=frameIndex;
  });}

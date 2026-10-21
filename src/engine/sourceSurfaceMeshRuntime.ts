@@ -1,3 +1,4 @@
+import {sourceSurfaceWorkBudget} from './sourceSurfaceWork';
 import {sourceSurfaceParameterFrameRate} from './sourceSurfaceFrame';
 import type {SourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
 import type {SourceSurfaceGpuMeshFrame} from './sourceSurfaceGpuMesh';
@@ -11,7 +12,7 @@ import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,smoothSourceSurfacePalette,sourceSu
 import {SourceGradientRuntime,type SourceGradientAction,type SourceGradientSnapshot} from './sourceGradientRuntime';
 import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction,type SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
 
-const F=Math.fround,MAX_WORK=20_000_000;
+const F=Math.fround;
 export class SourceSurfaceMeshRuntimeError extends Error {
  constructor(readonly code:'input'|'unsupported'|'capacity'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceSurfaceMeshRuntimeError';}
 }
@@ -63,6 +64,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  private readonly tracking=new Float32Array(4);
  private trackingIndex=0;private animationTime=0;private lastUpdate=-1;private lastDisplay=-1;
  private retired=false;
+ private readonly reserveBudget:(units:number)=>void;
  private used=0;private failed=false;private failure:unknown;
  private rendered?:SourceSurfaceMeshRuntimeSnapshot;
  private colorRevision=0;
@@ -73,7 +75,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  private wireCache?:{revision:number;frame:SourceSurfaceMeshWireframeFrame};
  private mappedColorCache?:{revision:number;colorRevision:number;packed:Uint32Array};
  constructor(options:SourceSurfaceMeshRuntimeOptions){
-  this.options={...options};
+  this.options={...options};this.reserveBudget=options.reserve??sourceSurfaceWorkBudget();
   const parsed=parseSourceSurfaceMeshConfiguration(options.configuration);
   if(!parsed.ok)fail(parsed.error.kind==='capacity'?'capacity':'input',`原版网格配置无效：${parsed.error.path.join('.')} ${parsed.error.reason}`);
   this.configuration=parsed.value;
@@ -118,7 +120,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  }
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())fail('cancelled','原版曲面网格回放已取消');}
  private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;this.rendered=undefined;this.geometryCache=undefined;this.wireCache=undefined;this.mappedColorCache=undefined;this.gpuShape=undefined;this.gpuShapeColors=undefined;this.gpuSeamsCache=undefined;throw error;}}
- private reserve(units:number){this.check();this.used+=units;if(this.used>MAX_WORK)fail('capacity','原版曲面网格超过本地 2000 万工作单位预算');this.options.reserve?.(units);}
+ private reserve(units:number){this.check();this.used+=units;this.reserveBudget(units);}
  private position(u:number,v:number,out:Float32Array,offset=0,includeOffset=true){this.reserve(this.options.operationsPerPosition+12);return this.options.surfaceFunction.position(u,v,out,offset,includeOffset);}
  private select(index:number){
   this.reserve(1);this.trackingIndex=index;this.tracking[0]=this.initialUv[index*2];this.tracking[1]=this.initialUv[index*2+1];
@@ -203,7 +205,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
   * completed queues. snapshot never creates geometry or initializes U shift. */
  display(frameIndex:number,lineScale=1,publish=true):void{this.guarded(()=>{
   if(this.retired)fail('input','已移出的网格不再显示');
-  if(!Number.isInteger(frameIndex)||frameIndex<0||this.lastDisplay>=0&&frameIndex!==this.lastDisplay+1||frameIndex<this.lastUpdate||this.lastDisplay<0&&this.lastUpdate>=0&&frameIndex!==this.lastUpdate)fail('input','原版网格显示帧顺序无效');
+  if(!Number.isInteger(frameIndex)||frameIndex<0||this.lastDisplay>=0&&frameIndex!==this.lastDisplay&&frameIndex!==this.lastDisplay+1||frameIndex<this.lastUpdate||this.lastDisplay<0&&this.lastUpdate>=0&&frameIndex!==this.lastUpdate)fail('input','原版网格显示帧顺序无效');
   this.reserve(1);
   if(this.options.coverage==='tracked'){this.lastDisplay=frameIndex;this.rendered=undefined;return;}
   const revision=this.options.surfaceFunction.revision;
