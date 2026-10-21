@@ -1,5 +1,6 @@
+import {prepareSourceSnapshotMap,parseSourceSnapshotMap,type SourceSnapshotMap} from './sourceSnapshotMapOrder';
 import {prepareRootsSourceMemberOrder} from './rootsSourceOrder';
-import {sourceJavaMix64} from './sourceJavaHash';
+import {sourceJavaMix64,sourceJavaStringHash} from './sourceJavaHash';
 import type {SceneDocument} from '../types';
 import type {SymmetryParameters} from '../scenes/iterated';
 import {parseDomainSourceDouble} from './domainSourceScalar';
@@ -12,6 +13,7 @@ export type SourceSymmetryEntry=readonly [string,number];
  * them. Saving this local document retains the same simulation anchor. */
 export interface SourceSymmetryConfiguration {
  model:typeof SOURCE_SYMMETRY_CONFIG;
+ editorMap?:SourceSnapshotMap;
  construction:{batchSize:number;degree:number;parameters:SourceSymmetryEntry[]};
 }
 export type SourceSymmetryResult<T>={ok:true;value:T}|{ok:false;error:{kind:'input'|'capacity';reason:string}};
@@ -62,8 +64,8 @@ export function importSourceSymmetryParameters(raw:unknown,order:readonly string
  if(template==='modified'){if(!values.has('delta'))values.set('delta',0);if(!values.has('delta_power'))values.set('delta_power',1);}
  const ordered=[...values];return{ok:true,value:{parameters:Object.fromEntries(ordered),ordered}};
 }
-export function createSourceSymmetryConfiguration(batchSize:number,ordered:readonly SourceSymmetryEntry[]):SourceSymmetryResult<SourceSymmetryConfiguration>{
- return parseSourceSymmetryConfiguration({model:SOURCE_SYMMETRY_CONFIG,construction:{batchSize,degree:sourceSymmetryDegree(Object.fromEntries(ordered)),parameters:ordered}});
+export function createSourceSymmetryConfiguration(batchSize:number,ordered:readonly SourceSymmetryEntry[],editorMap?:SourceSnapshotMap):SourceSymmetryResult<SourceSymmetryConfiguration>{
+ return parseSourceSymmetryConfiguration({model:SOURCE_SYMMETRY_CONFIG,...(editorMap?{editorMap}:{}),construction:{batchSize,degree:sourceSymmetryDegree(Object.fromEntries(ordered)),parameters:ordered}});
 }
 export function parseSourceSymmetryConfiguration(raw:unknown):SourceSymmetryResult<SourceSymmetryConfiguration>{
  if(!record(raw)||raw.model!==SOURCE_SYMMETRY_CONFIG||!record(raw.construction))return error('源 Symmetry 构造配置无效');
@@ -76,7 +78,10 @@ export function parseSourceSymmetryConfiguration(raw:unknown):SourceSymmetryResu
   seen.add(row[0]);entries.push([row[0],row[1]]);
  }
  const degree=sourceSymmetryDegree(Object.fromEntries(entries));if(c.degree!==degree)return error('源 Symmetry 构造阶数与参数不一致');
- return{ok:true,value:{model:SOURCE_SYMMETRY_CONFIG,construction:{batchSize:c.batchSize as number,degree,parameters:entries}}};
+ const keys=entries.map(([key])=>key);
+ const editor=raw.editorMap===undefined?prepareSourceSnapshotMap(keys):parseSourceSnapshotMap(raw.editorMap);if(!editor.ok)return error(editor.error.reason,editor.error.kind);
+ if(editor.keys.length!==keys.length||editor.keys.some(key=>!seen.has(key)))return error('源 Symmetry 编辑参数树与构造参数不匹配');
+ return{ok:true,value:{model:SOURCE_SYMMETRY_CONFIG,editorMap:editor.state,construction:{batchSize:c.batchSize as number,degree,parameters:entries}}};
 }
 export function usesSourceSymmetryConfiguration(scene:Pick<SceneDocument,'kind'|'symmetrySource'>):boolean {
  if(scene.symmetrySource===undefined)return false;
@@ -87,7 +92,7 @@ const mix=(seed:bigint,value:bigint)=>sourceJavaMix64(seed^value);
 export function sourceSymmetryInitialSeed(configuration:SourceSymmetryConfiguration):string {
  const c=configuration.construction;let seed=mix(mix(-7046029254386353131n,BigInt(c.batchSize)),BigInt(c.degree));
  const bits=new DataView(new ArrayBuffer(8));
- for(const [key,value]of c.parameters){let hash=0;for(let i=0;i<key.length;i++)hash=(Math.imul(hash,31)+key.charCodeAt(i))|0;bits.setFloat64(0,value);seed=mix(mix(seed,BigInt(hash)),bits.getBigInt64(0));}
+ for(const [key,value]of c.parameters){const hash=sourceJavaStringHash(key);bits.setFloat64(0,value);seed=mix(mix(seed,BigInt(hash)),bits.getBigInt64(0));}
  return String(seed);
 }
 /** Native missing/nonfinite/overflow uniforms are zero; degree is intentionally
@@ -96,15 +101,6 @@ export function sourceSymmetryFieldParameters(scene:SceneDocument):SymmetryParam
  const p=scene.parameters,f=(key:string)=>{const value=Object.hasOwn(p,key)?Math.fround(p[key]):0;return Number.isFinite(value)?value:0;};
  if(scene.settings.template!=='standard'&&scene.settings.template!=='modified')throw Error('未知源 Symmetry 模板');
  return{lambda:f('lambda'),alpha:f('alpha'),beta:f('beta'),gamma:f('gamma'),omega:f('omega'),delta:f('delta'),n:f('symmetry_degree'),deltaPower:f('delta_power'),template:scene.settings.template};
-}
-/** Local edit insertion order is retained, then a fresh JSONObject HashMap is
- * traversed as on native config reload. SnapshotStateMap collision insertion
- * order in the native inspector remains unverified. */
-function runtimeOrder(scene:SceneDocument):SourceSymmetryEntry[]{
- const keys=scene.symmetrySource!.construction.parameters.map(([key])=>key).filter(key=>Object.hasOwn(scene.parameters,key));
- const known=new Set(keys);for(const key of Object.keys(scene.parameters))if(!known.has(key))keys.push(key);
- const ordered=prepareRootsSourceMemberOrder(keys);if(!ordered.ok)throw Error('源 Symmetry 重建参数顺序失败：'+JSON.stringify(ordered.error));
- return ordered.value.keys.map(key=>[key,scene.parameters[key]]);
 }
 export function editSourceSymmetryConfiguration(before:SceneDocument,next:SceneDocument):SceneDocument {
  if(!usesSourceSymmetryConfiguration(next))return next;
@@ -115,7 +111,11 @@ export function editSourceSymmetryConfiguration(before:SceneDocument,next:SceneD
  const changed=structural.some(key=>!Object.is(before.settings[key],next.settings[key]))||before.equations.glsl!==next.equations.glsl||Object.keys(before.parameters).length!==Object.keys(parameters).length||Object.entries(parameters).some(([key,value])=>!Object.hasOwn(before.parameters,key)||!Object.is(value,before.parameters[key]));
  next={...next,settings:{...next.settings,degree:sourceSymmetryDegree(parameters),deltaPower:parameters.delta_power??1}};
  if(!changed)return next;
- const parsed=importSourceSymmetryParameters(next.parameters,runtimeOrder(next).map(([key])=>key),String(next.settings.template));if(!parsed.ok)throw Error(parsed.error.reason);
- const created=createSourceSymmetryConfiguration(Number(next.settings.batchSize),parsed.value.ordered);if(!created.ok)throw Error(created.error.reason);
+ const anchor=next.symmetrySource!,previous=anchor.editorMap===undefined?prepareSourceSnapshotMap(anchor.construction.parameters.map(([key])=>key)):parseSourceSnapshotMap(anchor.editorMap);if(!previous.ok)throw Error(previous.error.reason);
+ const editor=prepareSourceSnapshotMap(Object.keys(next.parameters),previous.state);if(!editor.ok)throw Error(editor.error.reason);
+ const json=prepareRootsSourceMemberOrder(editor.keys);if(!json.ok)throw Error('源 Symmetry 重建 JSON 参数顺序失败：'+JSON.stringify(json.error));
+ const parsed=importSourceSymmetryParameters(next.parameters,json.value.keys,String(next.settings.template));if(!parsed.ok)throw Error(parsed.error.reason);
+ const retained=prepareSourceSnapshotMap(parsed.value.ordered.map(([key])=>key),editor.state);if(!retained.ok)throw Error(retained.error.reason);
+ const created=createSourceSymmetryConfiguration(Number(next.settings.batchSize),parsed.value.ordered,retained.state);if(!created.ok)throw Error(created.error.reason);
  return{...next,parameters:parsed.value.parameters,settings:{...next.settings,degree:created.value.construction.degree,deltaPower:parsed.value.parameters.delta_power??1},symmetrySource:created.value};
 }

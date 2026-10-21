@@ -2,6 +2,8 @@
 
 2026-10-21。**源 JSON 导入的默认值、构造种子和初始点流已修复；原版整窗效果仍未验收。** 本轮没有操作原生窗口，也没有重新打包或替换 1.0 Apple Silicon 应用。
 
+后续更新：[编辑顺序与原版 JVM 验证](source-symmetry-editor-order-validation.zh-CN.md)已解决下文当时未验证的有限参数编辑树顺序；整窗验收仍待完成。
+
 这是对[上一轮初始化差异审计](symmetry-initialization-audit.zh-CN.md)的后续。原版目标固定为 MathArt 1.7.8，JAR SHA-256 为 `a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018`。
 
 ## 修复内容

@@ -1,3 +1,4 @@
+import {sourceJavaStringHash} from './sourceJavaHash';
 import { sourceJavaDecimalDigit } from './rootsSourceCharacters';
 import { sourceNumberTokenValid } from './sourceNumberTokens';
 /** Retained JRE String-key HashMap insertion/iteration, used once at native
@@ -23,9 +24,7 @@ interface Entry {
  parent: Entry | null; left: Entry | null; right: Entry | null; red: boolean; tree: boolean;
 }
 function entry(key: string, index: number): Entry {
- let hash = 0;
- // Java String.hashCode consumes UTF-16 code units, including isolated surrogates.
- for (let i = 0; i < key.length; i++) hash = (Math.imul(31, hash) + key.charCodeAt(i)) | 0;
+ const hash=sourceJavaStringHash(key);
  return { key, index, hash: hash ^ (hash >>> 16), next: null, prev: null, parent: null, left: null, right: null, red: false, tree: false };
 }
 function compare(a: Entry, b: Entry): number {
