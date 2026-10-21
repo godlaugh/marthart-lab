@@ -119,8 +119,10 @@ function perlinParameterPath(path:readonly unknown[]):boolean {
  const tail=path.slice(path[5]==='0'?6:5);
  return tail.length===3&&tail[0]==='parameters'&&typeof tail[1]==='string'&&(SOURCE_PERLIN_PARAMETER_NAMES as readonly string[]).includes(tail[1])&&['step','min','max'].includes(String(tail[2]));
 }
+const mapSettingFields=new Set(['batch_size','iterations_per_frame','burn_in_steps','dimension','x0_min','x0_max','y0_min','y0_max']);
 const symmetrySettingFields=new Set([...SOURCE_SYMMETRY_PROJECT_VISUAL_NUMBER_FIELDS,'batch_size','iterations_per_frame','burn_in_steps','x0_min','x0_max','y0_min','y0_max']);
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
+ if(family==='map'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&mapSettingFields.has(path[1]))return true;
  if(family==='symmetry'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&symmetrySettingFields.has(path[1]))return true;
  if(family==='perlin'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&perlinFields.has(path[1])||perlinParameterPath(path)))return true;
  if(family==='attractor'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&attractorSettingFields.has(path[1])||path.length===2&&path[0]==='initialization'&&typeof path[1]==='string'&&attractorWarmupFields.has(path[1])||path.length===3&&path[0]==='initialization'&&path[1]==='bounds'&&typeof path[2]==='string'&&attractorBoundsFields.has(path[2])))return true;

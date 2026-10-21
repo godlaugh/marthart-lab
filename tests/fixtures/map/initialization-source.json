@@ -1,0 +1,81 @@
+{
+  "provenance": {
+    "scope": "Original MapAttractorMobject computeInitialStateSeed/randomInRange called in bundled headless JVM via AllocObject synthetic fields. Sampling loop mirrors uploadInitialState; no GL/uploadInitialState execution or config constructor.",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "classEntry": "mathart/mapattractor/MapAttractorMobject.class",
+    "classSha256": "83902164c81f1354e55f21ed60e70ee142b792afd049fee331b9e879f8060d8c",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "harnessSha256": "989511e0e3cc2acde46776f0985a9bbc1971da08072edb413a1fcef6ffc5f0ac",
+    "oracleSha256": "595610dece125ad6f3fc532fb4441535f73716f2a2d2539954a939894cb3020c",
+    "inputSha256": "422d1d512653b84484b819a0ee031e484e1f2d10eeba74c099af96672f25d4ba",
+    "methodPC": {
+      "computeInitialStateSeed": {
+        "dimension": 11,
+        "batch": 22,
+        "rawEquations": [
+          32,
+          42,
+          52
+        ],
+        "parameterKey": 101,
+        "doubleBits": 134,
+        "parameterValue": 137
+      },
+      "mixSeed": {
+        "unsignedShift33": [
+          11,
+          29,
+          47
+        ],
+        "multiply": [
+          20,
+          38
+        ]
+      },
+      "randomInRange": {
+        "compare": 2,
+        "degenerateReturn": 7,
+        "nextFloat": 10,
+        "floatSubtract": 15,
+        "floatMultiply": 16,
+        "floatAdd": 17
+      },
+      "uploadInitialState": {
+        "randomConstructor": 8,
+        "x": 57,
+        "y": 76,
+        "dimension3Test": 90,
+        "zNextFloat": 94,
+        "zMultiply": 98,
+        "zSubtract": 100,
+        "zeroMetric": 112
+      }
+    },
+    "limitations": [
+      "Original computeInitialStateSeed and randomInRange executed on synthetic AllocObject fields; no config constructor or import roundtrip is exercised.",
+      "The sampling loop mirrors original uploadInitialState. Z uses original Random.nextFloat and C float multiply/subtract; uploadInitialState and GL were not executed.",
+      "Each case retains eight samples only; batchSize contributes to the seed but the full native texture was not uploaded.",
+      "reversed-raw-range exercises randomInRange directly before constructor normalization; it is not an admissible prepared initialization boundary."
+    ],
+    "classpathIdentity": {
+      "jars": 108,
+      "sha256": "e49b95a95057d1945b11d8e2caae69eea3149e1f60b4350ea020d4168e0a88bb",
+      "encoding": "UTF-8 compact JSON of ordered [{name,sha256}] entries; full list retained with native oracle manifest"
+    }
+  },
+  "cases": [
+    {"dimension":2,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[-0.1,0.3],[-1,1]],"id":"base-2d","preparedRange":true,"initialStateSeed":"-3242254942490798887","samplesFloatBits":[[1049359771,1053436836,0,0],[3139501888,3205570592,0,0],[1039482883,3212630914,0,0],[1040094701,1059655172,0,0],[1049831003,1042948512,0,0],[1029581850,1059364912,0,0],[1048733601,3197479072,0,0],[3156558000,1062994754,0,0]]},
+    {"dimension":3,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[-0.1,0.3],[-1,1]],"id":"base-3d","preparedRange":true,"initialStateSeed":"4774111955416635163","samplesFloatBits":[[1035050835,3204061416,3208398206,0],[1035603299,1052372304,3202334700,0],[1045134212,3205582320,3203118896,0],[3173965671,1027607360,1057913728,0],[3180818685,1059451438,1050108040,0],[1048603853,1052748880,3187950400,0],[1043670206,1063433406,1045196768,0],[1035977373,3208572402,3206317506,0]]},
+    {"dimension":2,"batchSize":18,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[-0.1,0.3],[-1,1]],"id":"batch","preparedRange":true,"initialStateSeed":"6848539778965207039","samplesFloatBits":[[1043887584,3204721880,0,0],[3180474141,1048595456,0,0],[1048883830,3205506174,0,0],[3179373828,3201861484,0,0],[1040878856,1057461186,0,0],[3162866612,1055792416,0,0],[3178441383,1035468560,0,0],[1007263336,3212054560,0,0]]},
+    {"dimension":2,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["d",1.21],["c",0.1],["b",1.3],["a",1.7]],"bounds":[[-0.1,0.3],[-1,1]],"id":"reverse-parameters","preparedRange":true,"initialStateSeed":"-6883768263888123816","samplesFloatBits":[[1033773447,3205168774,0,0],[3168395444,3202613292,0,0],[3176450528,3196965832,0,0],[3156048976,1053819368,0,0],[1049962696,1062764000,0,0],[1047220912,3211169772,0,0],[1038773969,1051574020,0,0],[1035077447,1048886448,0,0]]},
+    {"dimension":2,"batchSize":17,"equations":[" sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[-0.1,0.3],[-1,1]],"id":"raw-whitespace","preparedRange":true,"initialStateSeed":"-7809590440091468317","samplesFloatBits":[[3171435558,3180194576,0,0],[1049574825,3185848208,0,0],[1049608600,3207485194,0,0],[1026297122,3201675408,0,0],[1048030256,3200118272,0,0],[1048755952,1050784564,0,0],[1034438823,1051758156,0,0],[3183366960,1051069204,0,0]]},
+    {"dimension":2,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["Aa",-0.0],["BB",0.0],["\ud83d\ude00",1.2],["\ud800",-1.2]],"bounds":[[-0.1,0.3],[-1,1]],"id":"utf16-keys","preparedRange":true,"initialStateSeed":"8911260193559930042","samplesFloatBits":[[1042494666,1058369320,0,0],[1048267214,3210147612,0,0],[1048990717,1030764576,0,0],[1042174312,3211982678,0,0],[1037119357,3196665204,0,0],[1045987932,1057079314,0,0],[3170895476,3205829254,0,0],[1028808678,3189236440,0,0]]},
+    {"dimension":2,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[0.2,0.2],[-1,1]],"id":"equal-x-2d","preparedRange":true,"initialStateSeed":"-3242254942490798887","samplesFloatBits":[[1045220557,1063118338,0,0],[1045220557,1053436836,0,0],[1045220557,3204654332,0,0],[1045220557,3205570592,0,0],[1045220557,1036664848,0,0],[1045220557,3212630914,0,0],[1045220557,1039723936,0,0],[1045220557,1059655172,0,0]]},
+    {"dimension":3,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[0.2,0.2],[-1,1]],"id":"equal-x-3d","preparedRange":true,"initialStateSeed":"4774111955416635163","samplesFloatBits":[[1045220557,3179799392,3204061416,0],[1045220557,3208398206,3174791712,0],[1045220557,1052372304,3202334700,0],[1045220557,1056748744,3205582320,0],[1045220557,3203118896,3208029648,0],[1045220557,1027607360,1057913728,0],[1045220557,3210651294,1059451438,0],[1045220557,1050108040,1061228544,0]]},
+    {"dimension":3,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[0.2,0.2],[0.3,0.3]],"id":"equal-both-3d","preparedRange":true,"initialStateSeed":"4774111955416635163","samplesFloatBits":[[1045220557,1050253722,3179799392,0],[1045220557,1050253722,3204061416,0],[1045220557,1050253722,3208398206,0],[1045220557,1050253722,3174791712,0],[1045220557,1050253722,1052372304,0],[1045220557,1050253722,3202334700,0],[1045220557,1050253722,1056748744,0],[1045220557,1050253722,3205582320,0]]},
+    {"dimension":2,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[1,-1],[-2,-3]],"id":"reversed-raw-range","preparedRange":false,"initialStateSeed":"-3242254942490798887","samplesFloatBits":[[1065353216,3221225472,0,0],[1065353216,3221225472,0,0],[1065353216,3221225472,0,0],[1065353216,3221225472,0,0],[1065353216,3221225472,0,0],[1065353216,3221225472,0,0],[1065353216,3221225472,0,0],[1065353216,3221225472,0,0]]},
+    {"dimension":3,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[1,1.00000001],[-0.0,0.0]],"id":"float-collapse","preparedRange":true,"initialStateSeed":"4774111955416635163","samplesFloatBits":[[1065353216,2147483648,3179799392,0],[1065353216,2147483648,3204061416,0],[1065353216,2147483648,3208398206,0],[1065353216,2147483648,3174791712,0],[1065353216,2147483648,1052372304,0],[1065353216,2147483648,3202334700,0],[1065353216,2147483648,1056748744,0],[1065353216,2147483648,3205582320,0]]},
+    {"dimension":2,"batchSize":17,"equations":["sin(a*y)+b*cos(a*x)","sin(c*x)+d*cos(c*y)","0"],"parameters":[["a",1.7],["b",1.3],["c",0.1],["d",1.21]],"bounds":[[10000000000.0,10000002000.0],[-3e-12,7e-12]],"id":"large-float-rounding","preparedRange":true,"initialStateSeed":"-3242254942490798887","samplesFloatBits":[[1343554299,747361664,0,0],[1343554297,2875908808,0,0],[1343554298,2890844546,0,0],[1343554298,750422739,0,0],[1343554299,742863286,0,0],[1343554298,750223273,0,0],[1343554299,722965056,0,0],[1343554297,752717683,0,0]]},
+    {"id":"base-config-default-fields","dimension":2,"batchSize":262144,"equations":["sin(a*y) + c*cos(a*x)","sin(b*x) + d*cos(b*y)",""],"parameters":[["a",-1.7],["b",1.8],["c",1.6],["d",0.9]],"bounds":[[-1,1],[-1,1]],"preparedRange":true,"initialStateSeed":"-6403718357489375000","samplesFloatBits":[[1059880054,3198788904,0,0],[3183874544,3205052790,0,0],[1059195310,1060669198,0,0],[1054404652,3202044440,0,0],[3209668336,1051595820,0,0],[3210519560,1057910166,0,0],[1057641732,3173288544,0,0],[1060853938,1051433012,0,0]]}
+  ]
+}

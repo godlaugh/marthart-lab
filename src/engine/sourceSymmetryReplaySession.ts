@@ -49,7 +49,7 @@ export class SourceSymmetryReplaySession {
  display(job:IteratedFrameJob,options:Omit<IteratedGpuOptions,'resetParticles'|'clearInk'>,event:SourceSymmetryDisplayEvent):SourceSymmetryDisplayFacts {
   this.cleanup.prepare();if(this.failed||this.busy)throw Error('Symmetry 显示需要重置失败会话');
   const cfg=job.config;
-  if(job.kind!=='symmetry'||!job.symmetrySplat||!job.symmetryPalette||!cfg.sourceSymmetrySeed||!cfg.record)throw Error('Symmetry 重播需要完整源 GPU 配置与粒子绘制');
+  if(job.kind!=='symmetry'||!job.symmetrySplat||!job.symmetryPalette||!cfg.sourceInitialSeed||!cfg.record)throw Error('Symmetry 重播需要完整源 GPU 配置与粒子绘制');
   if(!event||['paused','parameterChanged','cameraChanged'].some(key=>typeof event[key as keyof SourceSymmetryDisplayEvent]!=='boolean'))throw Error('Symmetry 显示事件无效');
   if(!Array.isArray(event.updates)||event.updates.length>2)throw Error('Symmetry 有序更新事件无效');
   const resized=this.initialized&&(options.width!==this.width||options.height!==this.height);

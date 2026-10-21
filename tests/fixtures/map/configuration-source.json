@@ -1,0 +1,2315 @@
+{
+  "scope": "Original bundled JVM direct JsonMapAttractorConfig and ProjectState.fromJson/toJson then config. Pure constructors/getters and compiler. No Mobject/display/GL or native GUI.",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+  "classes": [
+    {
+      "entry": "mathart/mapattractor/config/BaseMapAttractorConfig.class",
+      "sha256": "954024906370abd8cb93f270b11e81c0078dec49e5011be2070e652373648d7f"
+    },
+    {
+      "entry": "mathart/mapattractor/config/JsonMapAttractorConfig.class",
+      "sha256": "344b186b6f4bd3dc7cb77315f62e0f36f43ef9d73e787e4cd0998e310e27988f"
+    },
+    {
+      "entry": "mathart/mapattractor/MapAttractorMobject.class",
+      "sha256": "83902164c81f1354e55f21ed60e70ee142b792afd049fee331b9e879f8060d8c"
+    },
+    {
+      "entry": "mathart/ui/state/ProjectState.class",
+      "sha256": "14804c181e4cc0911ccfc219736381c432998d6d5c9b4e41b2072a03c2cce9d5"
+    }
+  ],
+  "harnessSha256": "1bc66bb82c93a28e30e368d0f047b714f9b79892310ca41be63f845d3fc2bebf",
+  "inputSha256": "1696688fcd3459de8b21da995dcfcf83d4c03111ebae98e26cc73146689742b4",
+  "originalResultsSha256": "9f25fd67182f1e6e344e9c768161ceb4655015aae67b411b400aa9d556d47e10",
+  "reduction": "Raw config getters, ordered parameters and ProjectState exported editor values only; parsed decimal getter strings into numeric JSON. No original GL execution. Signed-zero Mobject bounds are covered separately by static constructor assertions.",
+  "cases": [
+    {
+      "id": "missing-all",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR"
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": ""
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "empty-settings",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "3d-missing",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": 3
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "p2 + x - x*y"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ],
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "3d-empty-equations",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": 3
+        },
+        "equations": {
+          "x_next": "",
+          "y_next": "",
+          "z_next": ""
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "p0 + y - y*z",
+              "y": "p1 + z - x*z",
+              "z": "p2 + x - x*y"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ],
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "p0 + y - y*z",
+              "y": "p1 + z - x*z",
+              "z": "p2 + x - x*y"
+            },
+            "parameters": [
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "",
+            "y": "",
+            "z": ""
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "3d-space-equations",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": 3
+        },
+        "equations": {
+          "x_next": " ",
+          "y_next": " ",
+          "z_next": " "
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": " ",
+              "y": " ",
+              "z": " "
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ],
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "p0 + y - y*z",
+              "y": "p1 + z - x*z",
+              "z": "p2 + x - x*y"
+            },
+            "parameters": [
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "",
+            "y": "",
+            "z": ""
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "3d-custom",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": 3
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {
+          "alpha": 1
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": [
+              [
+                "alpha",
+                1.0
+              ],
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": [
+              [
+                "alpha",
+                1.0
+              ],
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {
+            "alpha": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "3d-one-p",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": 3
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {
+          "p0": 2
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": [
+              [
+                "p0",
+                2.0
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": [
+              [
+                "p0",
+                2.0
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {
+            "p0": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "empty-parameters",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "parameters": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": ""
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "ordered-parameters",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "x",
+          "y_next": "y"
+        },
+        "parameters": {
+          "zeta": 1,
+          "alpha": 2,
+          "Aa": 3,
+          "BB": 4,
+          "theta": 5
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": ""
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "zeta",
+                1.0
+              ],
+              [
+                "Aa",
+                3.0
+              ],
+              [
+                "BB",
+                4.0
+              ],
+              [
+                "alpha",
+                2.0
+              ],
+              [
+                "theta",
+                5.0
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {
+            "zeta": 1,
+            "Aa": 3,
+            "BB": 4,
+            "alpha": 2,
+            "theta": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "reversed-bounds",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "x0_min": 5,
+          "x0_max": -2,
+          "y0_min": 4,
+          "y0_max": -3
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -2.0,
+              "xMax": 5.0,
+              "yMin": -3.0,
+              "yMax": 4.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "equal-bounds",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "x0_min": 0.25,
+          "x0_max": 0.25
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": 0.25,
+              "xMax": 0.25,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "negative-counts",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": -3,
+          "iterations_per_frame": -2,
+          "burn_in_steps": -1
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 1,
+            "dimension": 2,
+            "burnIn": 0,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "decimal-counts",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": 3.9,
+          "iterations_per_frame": 17.2,
+          "burn_in_steps": 5.9
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 3,
+            "dimension": 2,
+            "burnIn": 5,
+            "iterations": 17,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "dimension-four",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": 4
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "dimension-string",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": "3"
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "p2 + x - x*y"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ],
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "settings-formula",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "x0_min": "1/3",
+          "x0_max": "2/3",
+          "y0_min": "bad",
+          "y0_max": "2"
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": 0.3333333432674408,
+              "xMax": 0.6666666865348816,
+              "yMin": 0.0,
+              "yMax": 2.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "raw-whitespace",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "  x  ",
+          "y_next": " y ",
+          "z_next": " "
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": ""
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": []
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "seed-ignored",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "seed": 1234
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "parameter-string",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "alpha*x",
+          "y_next": "y"
+        },
+        "parameters": {
+          "alpha": "1.25"
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": ""
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "alpha*x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "alpha",
+                1.25
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "alpha*x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {
+            "alpha": 1.25
+          }
+        }
+      ]
+    },
+    {
+      "id": "parameter-expression",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "alpha*x",
+          "y_next": "y"
+        },
+        "parameters": {
+          "alpha": "1/3"
+        }
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": ""
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "alpha*x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "alpha",
+                0.0
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "alpha*x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {
+            "alpha": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "missing-all-with-settings",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "sin(a*y) + c*cos(a*x)",
+              "y": "sin(b*x) + d*cos(b*y)",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "empty-parameters-with-settings",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "parameters": {},
+        "settings": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        },
+        {
+          "entry": "project",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        }
+      ]
+    },
+    {
+      "id": "ordered-parameters-with-settings",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "x",
+          "y_next": "y"
+        },
+        "parameters": {
+          "zeta": 1,
+          "alpha": 2,
+          "Aa": 3,
+          "BB": 4,
+          "theta": 5
+        },
+        "settings": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "zeta",
+                1.0
+              ],
+              [
+                "Aa",
+                3.0
+              ],
+              [
+                "BB",
+                4.0
+              ],
+              [
+                "alpha",
+                2.0
+              ],
+              [
+                "theta",
+                5.0
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "zeta",
+                1.0
+              ],
+              [
+                "Aa",
+                3.0
+              ],
+              [
+                "BB",
+                4.0
+              ],
+              [
+                "alpha",
+                2.0
+              ],
+              [
+                "theta",
+                5.0
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {
+            "zeta": 1,
+            "Aa": 3,
+            "BB": 4,
+            "alpha": 2,
+            "theta": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "raw-whitespace-with-settings",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "  x  ",
+          "y_next": " y ",
+          "z_next": " "
+        },
+        "settings": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "  x  ",
+              "y": " y ",
+              "z": " "
+            },
+            "parameters": [
+              [
+                "a",
+                -1.7
+              ],
+              [
+                "b",
+                1.8
+              ],
+              [
+                "c",
+                1.6
+              ],
+              [
+                "d",
+                0.9
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": []
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "parameter-string-with-settings",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "alpha*x",
+          "y_next": "y"
+        },
+        "parameters": {
+          "alpha": "1.25"
+        },
+        "settings": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "alpha*x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "alpha",
+                1.25
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "alpha*x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "alpha",
+                1.25
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "alpha*x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {
+            "alpha": 1.25
+          }
+        }
+      ]
+    },
+    {
+      "id": "parameter-expression-with-settings",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "equations": {
+          "x_next": "alpha*x",
+          "y_next": "y"
+        },
+        "parameters": {
+          "alpha": "1/3"
+        },
+        "settings": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "error": "java.lang.RuntimeException: JSONObject[\"alpha\"] is not a number."
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "alpha*x",
+              "y": "y",
+              "z": "0.0"
+            },
+            "parameters": [
+              [
+                "alpha",
+                0.0
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "alpha*x",
+            "y": "y",
+            "z": ""
+          },
+          "editorParameters": {
+            "alpha": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reversed-bounds-explicit-math",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "x0_min": 5,
+          "x0_max": -2,
+          "y0_min": 4,
+          "y0_max": -3
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -2.0,
+              "xMax": 5.0,
+              "yMin": -3.0,
+              "yMax": 4.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -2.0,
+              "xMax": 5.0,
+              "yMin": -3.0,
+              "yMax": 4.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "negative-counts-explicit-math",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": -3,
+          "iterations_per_frame": -2,
+          "burn_in_steps": -1
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 1,
+            "dimension": 2,
+            "burnIn": 0,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 1,
+            "dimension": 2,
+            "burnIn": 0,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "decimal-counts-explicit-math",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": 3.9,
+          "iterations_per_frame": 17.2,
+          "burn_in_steps": 5.9
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 3,
+            "dimension": 2,
+            "burnIn": 5,
+            "iterations": 17,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 3,
+            "dimension": 2,
+            "burnIn": 5,
+            "iterations": 17,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "dimension-four-explicit-math",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": 4
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": [
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "dimension-string-explicit-math",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "dimension": "3"
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": [
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 3,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 1.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": [
+              [
+                "p0",
+                0.9
+              ],
+              [
+                "p1",
+                1.2
+              ],
+              [
+                "p2",
+                0.7
+              ]
+            ]
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {}
+        }
+      ]
+    },
+    {
+      "id": "settings-formula-explicit-math",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "x0_min": "1/3",
+          "x0_max": "2/3",
+          "y0_min": "bad",
+          "y0_max": "2"
+        },
+        "equations": {
+          "x_next": "x",
+          "y_next": "y",
+          "z_next": "z"
+        },
+        "parameters": {}
+      },
+      "routes": [
+        {
+          "entry": "runtime-config",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": 0.3333333432674408,
+              "xMax": 0.6666666865348816,
+              "yMin": 0.0,
+              "yMax": 2.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          }
+        },
+        {
+          "entry": "project",
+          "construction": {
+            "batchSize": 262144,
+            "dimension": 2,
+            "burnIn": 100,
+            "iterations": 1,
+            "initial": {
+              "xMin": -1.0,
+              "xMax": 1.0,
+              "yMin": -1.0,
+              "yMax": 2.0
+            },
+            "equations": {
+              "x": "x",
+              "y": "y",
+              "z": "z"
+            },
+            "parameters": []
+          },
+          "editorEquations": {
+            "x": "x",
+            "y": "y",
+            "z": "z"
+          },
+          "editorParameters": {}
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+import {importSourceMapConfiguration} from './sourceMapConfig';
+import {withSourceMapConfiguration} from './sourceMapScene';
 import {SOURCE_MAP_MATH} from './sourceMapMath';
 import {usesSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {SOURCE_SYMMETRY_GRADIENT_MODEL,usesSourceSymmetryGradient} from './sourceSymmetryGradient';
@@ -356,13 +358,14 @@ function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
 
 function iteratedLegacy(r:Reader,s:SceneDocument){
  s.settings.iteratedMode='continuous';s.settings.iteratedFps=60;s.settings.paletteMode='source';s.settings.iteratedColor=s.kind==='samila'?'noise':'step';
- if(usesSourceSamilaSplat(s)||usesSourceSymmetryConfiguration(s)){
+ if(s.mapSource){s.settings.batchSize=s.mapSource.construction.batchSize;s.settings.iterationsPerFrame=s.mapSource.construction.iterations;}
+ else if(usesSourceSamilaSplat(s)||usesSourceSymmetryConfiguration(s)){
   const count=usesSourceSymmetryConfiguration(s)?s.symmetrySource!.construction.batchSize:Math.max(1,r.sourceInt(['settings','batch_size'],262144));
   if(count>8000000)fail('源 '+s.kind+' batch_size 超过本地 8000000 样本容量');
   s.settings.batchSize=count;r.retainNumberToken(['settings','batch_size']);
   if(usesSourceSymmetryConfiguration(s)){const steps=Math.max(1,r.sourceInt(['settings','iterations_per_frame'],1));if(steps>16)fail('源 Symmetry iterations_per_frame 超过本地每帧 16 次容量');s.settings.iterationsPerFrame=steps;r.retainNumberToken(['settings','iterations_per_frame']);}
  }else{count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);}
- if(!usesSourceSamilaMath(s)&&!usesSourceSymmetryConfiguration(s))seed(r,s,'settings.seed');
+ if(!s.mapSource&&!usesSourceSamilaMath(s)&&!usesSourceSymmetryConfiguration(s))seed(r,s,'settings.seed');
  if(!usesSourceSamilaSplat(s)&&!usesSourceSymmetryProject(s))for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const)numberTo(r,s,'settings.'+old,key,{min,max});
  if(s.kind==='map'||s.kind==='symmetry'){
   if(!usesSourceSymmetryProject(s))for(const [old,key,fallback,sourceMin,sourceMax,legacyMin,legacyMax]of [['gamma','Gamma',2.2,.1,10,.1,8],['contrast','Contrast',1,.1,2,0,8],['brightness','Brightness',s.kind==='map'?.3:.5,-.5,1.5,-1,1],['saturation','Saturation',.8,0,1,0,4],['dynamic_range','DynamicRange',s.kind==='map'?.2:.5,.1,1,.001,1e9]]as const){
@@ -384,13 +387,14 @@ function iteratedLegacy(r:Reader,s:SceneDocument){
  if(s.kind==='samila'&&!usesSourceSamilaSplat(s)){numberTo(r,s,'settings.alpha','alpha',{min:0,max:1});booleanTo(r,s,'settings.show_trails','showTrails');numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:3600});}
  else if(s.kind!=='samila'){if(r.has('settings.show_trails'))r.acknowledge('settings.show_trails','Map/Symmetry 密度由 accumulation_decay 控制；此通用拖尾标记未作为线段历史');if(r.has('settings.trail_lifetime'))r.acknowledge('settings.trail_lifetime','Map/Symmetry 的包内密度管线采用逐帧 accumulation_decay，不将通用寿命字段误作另一层衰减');}
  const custom=hasSymmetryCustom(s);
- const forcedGpu=usesSourceSamilaSplat(s)||usesSourceSymmetryProject(s);const backend=forcedGpu?undefined:r.str('settings.render_mode');if(forcedGpu)s.settings.iteratedBackend='gpu';if(usesSourceSymmetryProject(s)&&r.has('settings.render_mode'))r.acknowledge('settings.render_mode','原版 Symmetry 项目加载固定输出 GPU；原后端字段不参与渲染选择');if(backend){const mode=backend.toUpperCase();if(!['CPU','GPU','AUTO'].includes(mode))fail('未知持续批次 render_mode');s.settings.iteratedBackend=mode==='CPU'?'cpu':mode==='GPU'?'gpu':'auto';}
+ const forcedGpu=!!s.mapSource||usesSourceSamilaSplat(s)||usesSourceSymmetryProject(s);const backend=forcedGpu?undefined:r.str('settings.render_mode');if(forcedGpu)s.settings.iteratedBackend='gpu';if(usesSourceSymmetryProject(s)&&r.has('settings.render_mode'))r.acknowledge('settings.render_mode','原版 Symmetry 项目加载固定输出 GPU；原后端字段不参与渲染选择');if(backend){const mode=backend.toUpperCase();if(!['CPU','GPU','AUTO'].includes(mode))fail('未知持续批次 render_mode');s.settings.iteratedBackend=mode==='CPU'?'cpu':mode==='GPU'?'gpu':'auto';}
  if(usesSourceSamilaSplat(s))r.warnings.push('Samila 使用源噪声查找表、散点核与固定 60 Hz 衰减公式；本地随机流、最终窗口合成与热调整尺寸尚未证明原版整图一致。');
  else r.warnings.push(custom
   ?'自定义 GLSL 源码与参数已保留；持续批次使用 WebGL2 片元着色器，最后一次 calculate_next 写出的 stepMetric 用于颜色。CPU 选择或 GPU 不可用时明确报错；不改用内置公式。GLSL ES 3.00 支持与循环预算有明确限制，原版像素、随机序列及性能未对照。'
   :'持续批次按固定 60 Hz 重放：Map/Symmetry 保留并行状态并对最后一步距离着色，Samila 每帧产生新的确定随机样本。随机序列、视口适配、噪声颜色及色调链独立实现；原版像素与帧率相关 Replay 过渡未验证。');
 }
 function mapAttractor(r:Reader,s:SceneDocument){
+ if(s.mapSource){iteratedLegacy(r,s);return;}
  equation(r,s,'equations.x_next','x');equation(r,s,'equations.y_next','y');
  const dimension=r.num('settings.dimension')??2;if(dimension!==2&&dimension!==3)fail('映射 dimension 必须为 2 或 3');s.settings.dimension=dimension;
  const z=r.str('equations.z_next');s.equations.z=z?.trim()?z:'z';
@@ -1367,7 +1371,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
-export interface LegacyImportOptions {symmetryEntry?:'runtime-config'|'project';samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';samilaPresentation?:'auto'|'legacy-v1';samilaSampling?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';iteratedMath?:'auto'|'legacy-v1';}
+export interface LegacyImportOptions {sourceEntry?:'runtime-config'|'project';symmetryEntry?:'runtime-config'|'project';samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';samilaPresentation?:'auto'|'legacy-v1';samilaSampling?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';iteratedMath?:'auto'|'legacy-v1';}
 
 /** Decode source runtime configuration, retaining every original value. The
  * file adapter selects the separate ProjectState normalization boundary. */
@@ -1387,7 +1391,7 @@ function readProjectJson(text:string,selectFormat=false):ProjectJson {
 export function parseProjectFile(text:string):{format:'local'|'mathart';scene:SceneDocument;warnings:string[]} {
  const{source,metadata,text:sourceText}=readProjectJson(text,true);
  if(source.version===1){const scene=parseSceneValue(source);serializeScene(scene);return{format:'local',scene,warnings:[]};}
- const imported=importLegacyValue(source,{symmetryEntry:'project'},metadata,sourceText);
+ const imported=importLegacyValue(source,{sourceEntry:'project',symmetryEntry:'project'},metadata,sourceText);
  const scene=sceneWithImportedProvenance(imported);serializeScene(scene);
  return{format:'mathart',scene,warnings:imported.warnings};
 }
@@ -1419,8 +1423,16 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   return{scene,warnings:r.warnings,source,...(r.sourceNumberTokens.length?{sourceNumberTokens:r.sourceNumberTokens}:{})};
  }
  const sourceSymmetry=kind==='symmetry'&&options.iteratedMath!=='legacy-v1'&&(options.symmetryEntry==='project'||String(r.peek(['settings','render_mode'])??'GPU').toUpperCase()!=='CPU');
+ const sourceMap=kind==='map'&&options.iteratedMath!=='legacy-v1'&&(options.sourceEntry==='project'||String(r.peek(['settings','render_mode'])??'GPU').toUpperCase()==='GPU');
  const sourceSamila=kind==='samila'&&options.samilaMath!=='legacy-v1'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1';
- scene.parameters=sourceSymmetry?{}:sourceSamila?{}:kind==='perlin'?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ scene.parameters=sourceMap?{}:sourceSymmetry?{}:sourceSamila?{}:kind==='perlin'?{}:kind==='attractor'?importSourceAttractorParameters(r.peek(['parameters'])):ordinaryScope&&(kind==='surface'||kind==='implicit')?{...ordinaryScope.parameterValues}:kind==='domain'?r.nativeDomainParameters('parameters'):kind==='roots'?scene.parameters:numericParameters(r,'parameters',kind==='symmetry');if(kind!=='roots')scene.equations={};
+ if(sourceMap){
+  const parsed=importSourceMapConfiguration(source,{entry:options.sourceEntry??'runtime-config',numberToken:path=>r.numberToken(path),memberKeys:path=>r.sourceKeys(path)});
+  if(!parsed.ok)fail('源 Map '+parsed.error.reason);
+  const facts=parsed.value;Object.assign(scene,withSourceMapConfiguration(scene,facts.configuration,facts.parameters));
+  for(const path of facts.consumedPaths)r.use(path);for(const path of facts.numericPaths)r.retainNumberToken(path);r.warnings.push(...facts.diagnostics);
+  r.warnings.push('Map 保存原版构造配置、有序参数和 Java Random 初态；时间线参数变化保留种子，编辑重建后更新。实时更新顺序、点覆盖、累积与原版整窗效果仍待对照。');
+ }
  if(sourceSymmetry){
   r.validateNativeObjects();if(r.has('settings')&&!isObject(r.peek('settings')))fail('源 Symmetry settings 需要对象');const raw=r.peek(['parameters']);if(r.has(['parameters'])&&!isObject(raw))fail('源 Symmetry parameters 需要对象');const order=isObject(raw)?r.sourceKeys(['parameters']):[];
   const selected=sourceSymmetryTemplate(r.peek(['equation']),r.has(['equation']),raw);if(!selected.ok)fail(selected.error.reason);const template=selected.value;scene.settings.template=template;r.use(['equation','template']);
@@ -1490,7 +1502,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  if(options.iteratedMath==='legacy-v1')delete scene.settings.symmetryMathModel;
  if(kind==='map'&&options.iteratedMath!=='legacy-v1'&&scene.settings.iteratedBackend!=='cpu'){
   scene.settings.mapMathModel=SOURCE_MAP_MATH;
-  r.warnings.push('Map 使用源公式语法与 GPU Float32 迭代，保留非有限数学状态；无内置 t/time 或科学计数法，GPU 不可用时明确报错。初始化、时钟、累积与最终整图仍待源流程对照。');
+  r.warnings.push('Map 使用源公式语法与 GPU Float32 迭代，保留非有限数学状态；无内置 t/time 或科学计数法，GPU 不可用时明确报错。时钟、累积与最终整图仍待源流程对照。');
  }
  if((kind==='map'||kind==='symmetry')&&options.iteratedCamera!=='legacy-v1')scene.settings.iteratedCameraModel=CAPTURED_DENSITY_CAMERA_MODEL;
  if(ordinaryScope&&(!['map','symmetry'].includes(kind)||options.iteratedCamera!=='legacy-v1'))ordinaryCamera(r,scene,ordinaryScope);

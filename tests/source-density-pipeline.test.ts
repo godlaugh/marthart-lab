@@ -10,7 +10,7 @@ function source(kind:'map'|'symmetry'='map',timeline:unknown[]=[]){return {confi
 const action=(method:string,args:unknown[])=>({type:'animate',duration:1,easing:'LINEAR',actions:[{method,args}]});
 // These raster/cancellation tests exercise the existing CPU camera pipeline.
 // The file-adapter tests below and headless browser verifier cover project GPU routing.
-function fixture(kind:'map'|'symmetry'='map',timeline:unknown[]=[]){const text=JSON.stringify(source(kind,timeline));const scene=kind==='symmetry'?parseLegacyScene(text,{iteratedMath:'legacy-v1',symmetryEntry:'runtime-config'}).scene:parseProjectFile(text).scene;scene.timeline.fps=4;scene.settings.iteratedFps=4;scene.settings.pointSize=2;return scene;}
+function fixture(kind:'map'|'symmetry'='map',timeline:unknown[]=[]){const text=JSON.stringify(source(kind,timeline));const scene=parseLegacyScene(text,{iteratedMath:'legacy-v1',sourceEntry:'runtime-config',symmetryEntry:'runtime-config'}).scene;scene.timeline.fps=4;scene.settings.iteratedFps=4;scene.settings.pointSize=2;return scene;}
 const context=(scene:SceneDocument,time=0,width=64,height=48,target:'primary'|'offscreen'='primary')=>({time,width,height,quality:'export' as const,sourceViewport:ordinarySourceViewport(scene,width,height,target,48)});
 function pixels(output:SceneOutput){if(output.type!=='raster')throw Error('Expected raster');return output.pixels;}
 const mass=(ink:Float32Array|Float64Array)=>{let n=0;for(let i=3;i<ink.length;i+=4)n+=ink[i];return n;};

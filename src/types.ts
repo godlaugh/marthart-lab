@@ -1,3 +1,4 @@
+import type {SourceMapConfiguration} from './engine/sourceMapConfig';
 import type {SourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import type {SourceSamilaParameterAction} from './engine/sourceSamilaParameter';
 import type {SourceSamilaPresentationFacts} from './engine/sourceSamilaPresentation';
@@ -224,6 +225,7 @@ export interface SceneDocument {
   attractorSource?: SourceAttractorDocumentPayload;
   /** Complete authored Perlin configuration; both backend settings are retained. */
   symmetrySource?:SourceSymmetryConfiguration;
+  mapSource?:SourceMapConfiguration;
   perlinSource?: SourcePerlinDocumentPayload;
   /** Legacy single-backend payloads remain readable when provenance is incomplete. */
   perlinGpuSource?: SourcePerlinGpuDocumentPayload;

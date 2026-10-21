@@ -17,7 +17,7 @@ describe('source Symmetry constructor and Random stream',()=>{
  for(const row of fixture.directOrderedRuntimeParameters)it(row.id,()=>{
   const cfg=createSourceSymmetryConfiguration(row.batchSize,row.orderedParameters.map(([k,v])=>[String(k),Number(v)]));if(!cfg.ok)throw Error(cfg.error.reason);
   const seed=sourceSymmetryInitialSeed(cfg.value);expect(seed).toBe(row.initialStateSeedSignedDecimal);
-  const config={sourceSymmetrySeed:seed,seed:0,dimension:2 as const,count:row.batchSize,bounds:[row.xBoundsFloat32Bits.map(f32),row.yBoundsFloat32Bits.map(f32),[0,0]] as [number,number][]};
+  const config={sourceInitialSeed:seed,seed:0,dimension:2 as const,count:row.batchSize,bounds:[row.xBoundsFloat32Bits.map(f32),row.yBoundsFloat32Bits.map(f32),[0,0]] as [number,number][]};
   for(const point of row.selected)expect(bits(iteratedInitialChunk(config,point.particle,1))).toEqual(point.xyzmFloat32Bits);
   const hash=createHash('sha256');for(let offset=0;offset<row.examinedPrefixParticles;offset+=65536){const block=iteratedInitialChunk(config,offset,Math.min(65536,row.examinedPrefixParticles-offset));hash.update(new Uint8Array(block.buffer));}
   expect(hash.digest('hex')).toBe(row.prefixRgbaFloat32LittleEndianSha256);
@@ -56,10 +56,10 @@ describe('source Symmetry constructor and Random stream',()=>{
   const corrupt=structuredClone(scene.symmetrySource!);corrupt.construction.parameters.push(['omega',0]);expect(parseSourceSymmetryConfiguration(corrupt).ok).toBe(false);
  });
  it('rebuilds after inspector coefficients, but preserves the authored anchor during runtime parameter evaluation',()=>{
-  const scene=imported(),seed=prepareIteratedFrame(scene,0,0).config.sourceSymmetrySeed;
+  const scene=imported(),seed=prepareIteratedFrame(scene,0,0).config.sourceInitialSeed;
   const changed={...scene,parameters:{...scene.parameters,alpha:-2.5}};
-  const runtime=prepareIteratedFrame(changed,0,0);expect(runtime.config.sourceSymmetrySeed).toBe(seed);
-  const rebuilt=editSourceSymmetryConfiguration(scene,changed);expect(prepareIteratedFrame(rebuilt,0,0).config.sourceSymmetrySeed).not.toBe(seed);
+  const runtime=prepareIteratedFrame(changed,0,0);expect(runtime.config.sourceInitialSeed).toBe(seed);
+  const rebuilt=editSourceSymmetryConfiguration(scene,changed);expect(prepareIteratedFrame(rebuilt,0,0).config.sourceInitialSeed).not.toBe(seed);
   expect(iteratedBaselineKey(rebuilt)).not.toBe(iteratedBaselineKey(scene));
   const batch=editSourceSymmetryConfiguration(scene,{...scene,settings:{...scene.settings,batchSize:17}});expect(prepareIteratedFrame(batch,0,0).config.count).toBe(17);
   const camera=editSourceSymmetryConfiguration(scene,{...scene,camera:{...scene.camera}});expect(camera.symmetrySource).toBe(scene.symmetrySource);

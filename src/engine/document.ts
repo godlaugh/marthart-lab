@@ -1,3 +1,4 @@
+import {parseSourceMapConfiguration} from './sourceMapConfig';
 import {validateSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {validateSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {validateSourceSymmetryPresentation} from './sourceSymmetryPresentation';
@@ -166,12 +167,13 @@ export function parseSceneValue(data: unknown): SceneDocument {
   for (const [k, v] of Object.entries(data.equations as object))
     if (typeof v !== "string" || v.length > (data.kind==='symmetry'&&k==='glsl'?MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH:8192) || k.length > 100)
       fail("公式无效");
+  if(data.mapSource!==undefined){if(data.kind!=='map')fail('源 Map 构造配置不属于此场景');const parsed=parseSourceMapConfiguration(data.mapSource);if(!parsed.ok)fail(parsed.error.reason);data.mapSource=parsed.value;}
   if(data.symmetrySource!==undefined){if(data.kind!=='symmetry')fail('源 Symmetry 构造配置不属于此场景');const parsed=parseSourceSymmetryConfiguration(data.symmetrySource);if(!parsed.ok)fail(parsed.error.reason);data.symmetrySource=parsed.value;}
   const domainExecution=data.kind==='domain'?parseDomainIterationVersion((data.settings as Settings).domainIterationVersion):undefined;
   if(domainExecution==='mathart-1.7.8-cpu'||domainExecution==='mathart-1.7.8-gpu')data.parameters=parseDomainNativeParameters(data.parameters);
   else for (const [k, v] of Object.entries(data.parameters as object))
     if (
-      (!usesSourceAttractor(data as unknown as SceneDocument)&&(data.kind==='symmetry'?(usesSourceSymmetryConfiguration(data as unknown as SceneDocument)?false:!!symmetryCustomParameterNameError(k)):!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(k))) ||
+      (!(data.kind==='map'&&data.mapSource!==undefined)&&!usesSourceAttractor(data as unknown as SceneDocument)&&(data.kind==='symmetry'?(usesSourceSymmetryConfiguration(data as unknown as SceneDocument)?false:!!symmetryCustomParameterNameError(k)):!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(k))) ||
       typeof v !== "number" ||
       !Number.isFinite(v)
     )

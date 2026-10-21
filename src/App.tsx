@@ -1,3 +1,4 @@
+import {editSourceMapScene} from './engine/sourceMapScene';
 import {sourceLivePreviewKind} from './engine/sourceLivePreview';
 import {sourceSymmetryApplyIdentity,sourceSymmetryReplayIdentity,SOURCE_SYMMETRY_REPLAY_SETTINGS} from './engine/sourceSymmetryIdentity';
 import {usesSourceSymmetryPresentation} from './engine/sourceSymmetryPresentation';
@@ -360,7 +361,7 @@ export default function App() {
   function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
   function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'symmetry-replay') {
-    try{next=editSourceSymmetryConfiguration(sceneRef.current,next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    try{next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next));}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(display&&sourceLivePreviewKind(next))liveDisplayRequested.current=true;
@@ -1232,7 +1233,7 @@ export default function App() {
                   {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={edit} onRestart={()=>{rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
                   <RootsDensityColorControls scene={scene} onChange={edit} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsColor:undefined}/>
                   {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} section="formula"/>:!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&<SettingsFields
-                    controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls),scene.timeline,scene.palette,scene.equations)).filter(control=>{
+                    controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls),scene.timeline,scene.palette,scene.equations,scene.mapSource)).filter(control=>{
                       if(!isMeshMaterialControlVisible(scene,control.key)||!rootMathControlVisible(scene,control.key)||!rootsPresentationControlVisible(scene,control.key))return false;
                       if(usesSourceSurfaceParticles(scene)&&control.key==='colorMetric')return false;
                       const historyControls=['showTrails','recordTrails','fadeTrails','trailLifetime','trailSampleRate','trailWidth'];

@@ -1,6 +1,6 @@
 import {JavaSourceRandom48} from './javaSourceRandom';
 /** Seed identity is owned here, independent of CPU/GPU implementations. */
-export interface IteratedSeedConfig {count:number;sourceSymmetrySeed?:string;seed:number;dimension:2|3;bounds:[number,number][];}
+export interface IteratedSeedConfig {count:number;sourceInitialSeed?:string;seed:number;dimension:2|3;bounds:[number,number][];}
 type Point3=[number,number,number];
 const MAX_BATCH=8_000_000;
 /** Independent counter PRNG: sample identity does not depend on traversal/chunk size.
@@ -24,14 +24,18 @@ export function iteratedSamilaSeedChunk(cfg:Pick<IteratedSeedConfig,'seed'|'coun
 }
 function seedChunk(cfg:IteratedSeedConfig,offset:number,count:number,serial:number):Float32Array {
  if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(count)||offset<0||count<0||count>65536||offset+count>cfg.count||!Number.isSafeInteger(cfg.count)||cfg.count<1||cfg.count>MAX_BATCH||![2,3].includes(cfg.dimension)||!Number.isInteger(cfg.seed)||cfg.seed<0||cfg.seed>0xffffffff||cfg.bounds.length!==3||cfg.bounds.some(b=>b.length!==2||!b.every(Number.isFinite)||b[1]<b[0]))throw new Error('持续粒子初始块边界无效');
- if(cfg.sourceSymmetrySeed!==undefined){
-  if(cfg.dimension!==2||serial!==0||!/^[-]?[0-9]{1,19}$/.test(cfg.sourceSymmetrySeed))throw Error('源 Symmetry 初态随机地址无效');
-  const rng=new JavaSourceRandom48(BigInt(cfg.sourceSymmetrySeed));
+ if(cfg.sourceInitialSeed!==undefined){
+  if(serial!==0||!/^[-]?[0-9]{1,19}$/.test(cfg.sourceInitialSeed))throw Error('源初态随机地址无效');
+  const rng=new JavaSourceRandom48(BigInt(cfg.sourceInitialSeed));
   const axes=cfg.bounds.slice(0,2).map(([lo,hi])=>[Math.fround(lo),Math.fround(hi)]);
-  if(axes.flat().some(v=>!Number.isFinite(v)))throw Error('源 Symmetry 初始盒超出 float32');
-  rng.skipFloatDraws(offset*axes.filter(([lo,hi])=>hi>lo).length);
+  if(axes.flat().some(v=>!Number.isFinite(v)))throw Error('源初始盒超出 float32');
+  rng.skipFloatDraws(offset*(axes.filter(([lo,hi])=>hi>lo).length+(cfg.dimension===3?1:0)));
   const out=new Float32Array(count*4);
-  for(let j=0;j<count;j++)for(let axis=0;axis<2;axis++){const [lo,hi]=axes[axis];out[j*4+axis]=hi<=lo?lo:Math.fround(lo+Math.fround(rng.nextFloat()*Math.fround(hi-lo)));}
+  for(let j=0;j<count;j++){
+   for(let axis=0;axis<2;axis++){const [lo,hi]=axes[axis];out[j*4+axis]=hi<=lo?lo:Math.fround(lo+Math.fround(rng.nextFloat()*Math.fround(hi-lo)));}
+   // Native 3D Map always draws Z in [-1,1], independently of X/Y collapse.
+   if(cfg.dimension===3)out[j*4+2]=Math.fround(Math.fround(rng.nextFloat()*2)-1);
+  }
   return out;
  }
  const out=new Float32Array(count*4);
