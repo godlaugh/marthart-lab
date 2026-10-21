@@ -115,7 +115,7 @@ Samila 新导入还启用 `mathart-1.7.8` 数学版本：根 `samila` 数学对�
 
 源 Samila 的实时预览已接入独立热会话：参数、尺寸和外观编辑按各自规则保留或清空当前墨迹；暂停 PNG 复用场景并依次绘制导出画面和主预览。普通暂停／恢复通过独立后台消息保存、还原相机角度并重设计时，暂停等待不计入恢复后的推进。队列结束后参数停止更新，相机与绘制继续；改名和保存不额外采样。时间跳转仍是本地重建，视频仍独立重算。实测及边界见 [热显示与截图验证](docs/samila-hot-display-validation.zh-CN.md) 和 [实时播放验证](docs/samila-realtime-clock-validation.zh-CN.md)，原生调度、随机流与整窗一致性仍未证明。
 
-该采样版本的 GPU 在同一次绘制中完成采样、公式、映射、投影及旋转，并在 fragment 阶段取色；不再保存中间粒子坐标。普通浏览器的重复编译仍存在严格坐标差异，原 shader 自身也已复现。按已有 macOS 桌面图形配置运行后，220 组完整图像和世界坐标均逐位相同，见 [Samila GPU 缓存与严格对照](docs/samila-gpu-cache-validation.zh-CN.md)；原生整窗仍未验收。早期直接绘制验证与保留限制见 [Samila GPU 直接绘制验证](docs/samila-direct-gpu-validation.zh-CN.md)。后续将分块统计留在 GPU 汇总，并复用固定纹理的完整性验证；已测大批次四边形约 49.7 → 15.4 ms，54 帧像素和统计不变，范围与成本见 [统计读回优化验证](docs/samila-direct-statistics-validation.zh-CN.md)。
+该采样版本的 GPU 在同一次绘制中完成采样、公式、映射、投影及旋转，并在 fragment 阶段取色；不再保存中间粒子坐标。普通浏览器的重复编译仍存在严格坐标差异，原 shader 自身也已复现。按已有 macOS 桌面图形配置运行后，220 组完整图像和世界坐标均逐位相同，见 [Samila GPU 缓存与严格对照](docs/samila-gpu-cache-validation.zh-CN.md)；项目安装的 Electron 44.7.2 也已完成相同矩阵，见 [Electron 验证](docs/samila-electron-validation.zh-CN.md)。原生整窗仍未验收。早期直接绘制验证与保留限制见 [Samila GPU 直接绘制验证](docs/samila-direct-gpu-validation.zh-CN.md)。后续将分块统计留在 GPU 汇总，并复用固定纹理的完整性验证；已测大批次四边形约 49.7 → 15.4 ms，54 帧像素和统计不变，范围与成本见 [统计读回优化验证](docs/samila-direct-statistics-validation.zh-CN.md)。
 
 映射和对称混沌的连续模式可启用归一化调色，以完成的批次数和保存的参考画布尺寸计算亮度。白点与归一化模式各自保留参数；切回单批次时使用白点参数。GPU 调色遇到精度敏感像素时会回退到 CPU，并在状态栏说明原因。5 百万粒子、原生 4K 已验证，但默认 gamma 的回退开销仍影响速度。
 
