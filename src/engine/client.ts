@@ -60,7 +60,7 @@ function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:
   if(live.updateOrdinal!==before.updateOrdinal||live.sceneTime!==before.sceneTime||live.queueIndex!==before.queueIndex||live.queueComplete!==before.queueComplete||live.rawDt!==0||live.activeDt!==0||live.objectUpdates!==0||JSON.stringify(live.presentation.evaluatedFractalScene)!==JSON.stringify(before.presentation.evaluatedFractalScene)||JSON.stringify(live.presentation.evaluatedFractalGradient)!==JSON.stringify(before.presentation.evaluatedFractalGradient))return false;
  }
  const {capture,preview}=result,facts=capture.fractalCurrentImage;
- return preview.width===source.width&&preview.height===source.height&&capture.width===size.width*scale&&capture.height===size.height*scale&&facts?.model==='local-current-numerical-snapshot'&&facts.baseSize?.[0]===size.width&&facts.baseSize?.[1]===size.height&&facts.scale===scale&&facts.resampling===(scale===1?'none':'openjdk21-software-bicubic');
+ return preview.width===source.width&&preview.height===source.height&&capture.width===size.width&&capture.height===size.height&&facts?.model==='local-current-numerical-snapshot'&&facts.stage==='base-before-formulas'&&Array.isArray(facts.baseSize)&&facts.baseSize.length===2&&facts.baseSize[0]===size.width&&facts.baseSize[1]===size.height&&facts.scale===scale&&!('resampling' in facts);
 }
 type Pending =
   | {operation:'iterated-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}

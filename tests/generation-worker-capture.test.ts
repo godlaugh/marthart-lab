@@ -186,7 +186,8 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   const response=send({operation:'fractal-paused-capture',id:3,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
   if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
   expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5,fractalLive:{...live.fractalLive,clock:{...live.fractalLive!.clock,paused:true}}},{additionalBytes:0});
-  expect(response.result.capture).toMatchObject({width:3,height:5,fractalCurrentImage:{model:'local-current-numerical-snapshot',baseSize:[3,5],scale:1,resampling:'none'}});
+  expect(response.result.capture).toMatchObject({width:3,height:5});
+  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',baseSize:[3,5],scale:1});
   expect(response.result.capture.pixels).toBe(originalPixels);expect(response.result.capture.pixels).toEqual(expectedPixels);
   expect(response.result.capture.sourcePausedImage).toBeUndefined();expect(response.result.capture.rootsPausedImage).toBeUndefined();
   const transfers=worker.postMessage.mock.calls.at(-1)![1].transfer;
@@ -195,12 +196,29 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   const resumed=send({operation:'fractal-playback',id:4,sessionId:7,sourceId:3,paused:false,timestampMs:1400});
   expect(resumed).toEqual({operation:'fractal-playback',id:4,sessionId:7,sourceId:3,paused:false});expect(owners.fractal.setPaused).toHaveBeenLastCalledWith(false,1400);expect(owners.generate).toHaveBeenCalledOnce();
  });
- it('budgets only local upscaling from the requested dimensions',()=>{
-  start();const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:3});
+ it.each([3,5] as const)('transfers unchanged base pixels before formulas and final scale %s',scale=>{
+  start();const capture=raster(3,5),preview=raster(32,24);capture.pixels.set([0,25,190,80,250,99,7,255]);
+  const originalPixels=capture.pixels,originalBuffer=originalPixels.buffer,expectedPixels=originalPixels.slice();
+  owners.fractal.capturePaused.mockReturnValue({capture,preview});
+  const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale});
   if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
-  const upscale=prepareSourcePausedUpscale(3,5,3);
-  expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5},{additionalBytes:upscale.peakBytes-upscale.inputBytes});
-  expect(response.result.capture).toMatchObject({width:9,height:15,fractalCurrentImage:{model:'local-current-numerical-snapshot',baseSize:[3,5],scale:3,resampling:'openjdk21-software-bicubic'}});
+  expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5},{additionalBytes:0});
+  expect(response.result.capture).toMatchObject({width:3,height:5});
+  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',baseSize:[3,5],scale});
+  expect(response.result.capture.pixels).toBe(originalPixels);expect(response.result.capture.pixels.buffer).toBe(originalBuffer);expect(response.result.capture.pixels).toEqual(expectedPixels);
+  expect(response.result.capture.sourcePausedImage).toBeUndefined();expect(response.result.capture.rootsPausedImage).toBeUndefined();
+  const transfers=worker.postMessage.mock.calls.at(-1)![1].transfer;
+  expect(new Set(transfers)).toEqual(new Set([originalBuffer,preview.pixels.buffer]));expect(transfers).toHaveLength(2);
+  expect(owners.generate).toHaveBeenCalledOnce();
+ });
+ it('rejects an over-budget final scale before capturing and preserves the owner-confirmed primary',()=>{
+  start();
+  // The 2048² base fits the raster budget; its requested 5× final image does not.
+  const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:2048,height:2048},scale:5});
+  expect(response).toHaveProperty('error');expect(response).toHaveProperty('retainedSourceId',1);
+  expect(owners.fractal.capturePaused).not.toHaveBeenCalled();expect(owners.fractal.matchesCompletedPrimary).toHaveBeenLastCalledWith(liveScene,live);
+  const paused=send({operation:'fractal-playback',id:3,sessionId:7,sourceId:1,paused:true});
+  expect(paused).toEqual({operation:'fractal-playback',id:3,sessionId:7,sourceId:1,paused:true});expect(owners.fractal.setPaused).toHaveBeenCalledWith(true,undefined);
   expect(owners.generate).toHaveBeenCalledOnce();
  });
  it.each([true,false])('retains a rejected capture only when the owner still confirms its primary: %s',retained=>{

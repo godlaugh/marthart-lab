@@ -136,8 +136,10 @@ self.onmessage = (
       // actual physical base dimensions differ from the user's requested size.
       const base=perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height};
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
-      if(upscale)validateRasterRequest({time:0,quality:'export',width:upscale.width,height:upscale.height});
-      const additionalBytes=(fractal?0:sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4)+(upscale?upscale.peakBytes-upscale.inputBytes:0);
+      if(upscale||fractal)validateRasterRequest({time:0,quality:'export',width:upscale?.width??base.width,height:upscale?.height??base.height});
+      // Fractal's formula composition and whole-image enhancement/upscale run
+      // after this base capture is delivered, under a separate resource owner.
+      const additionalBytes=fractal?0:sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);
       // The request carries only a completed-frame capability. The worker owns
       // scene history and its original primary context; no fresh replay occurs.
       completed=undefined;
@@ -152,12 +154,14 @@ self.onmessage = (
       if(result.capture.type!=='raster'||result.preview.type!=='raster')throw new Error('暂停截图没有生成图像');
       const captureWidth=result.capture.width,captureHeight=result.capture.height;
       if(captureWidth!==base.width||captureHeight!==base.height)throw new Error('暂停截图实际尺寸与已核验的后处理预算不一致');
-      const enhanced=fractal?result.capture.pixels:enhanceSourcePausedImage(result.capture.pixels,captureWidth,captureHeight);
-      result.capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,captureWidth,captureHeight,scale);
-      result.capture.width=upscale?.width??captureWidth;result.capture.height=upscale?.height??captureHeight;
-      const imageFacts={enhancement:'mathart-1.7.8-scale1' as const,baseSize:[captureWidth,captureHeight] as const,scale,resampling:upscale?'openjdk21-software-bicubic' as const:'none' as const,originalRuntimeCompared:false as const};
-      if(fractal)result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',baseSize:[captureWidth,captureHeight],scale,resampling:imageFacts.resampling};
-      else if(perlin||samila||iterated)result.capture.sourcePausedImage=imageFacts;else result.capture.rootsPausedImage=imageFacts;
+      if(fractal)result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',baseSize:[captureWidth,captureHeight],scale};
+      else{
+        const enhanced=enhanceSourcePausedImage(result.capture.pixels,captureWidth,captureHeight);
+        result.capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,captureWidth,captureHeight,scale);
+        result.capture.width=upscale?.width??captureWidth;result.capture.height=upscale?.height??captureHeight;
+        const imageFacts={enhancement:'mathart-1.7.8-scale1' as const,baseSize:[captureWidth,captureHeight] as const,scale,resampling:upscale?'openjdk21-software-bicubic' as const:'none' as const,originalRuntimeCompared:false as const};
+        if(perlin||samila||iterated)result.capture.sourcePausedImage=imageFacts;else result.capture.rootsPausedImage=imageFacts;
+      }
       completed={...source,id};
       send({operation:event.data.operation,id,result:{capture:result.capture,preview:result.preview}},[...new Set([...outputBuffers(result.capture),...outputBuffers(result.preview)])]);
       return;

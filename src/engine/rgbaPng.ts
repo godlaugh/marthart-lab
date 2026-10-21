@@ -4,7 +4,7 @@ const signature=new Uint8Array([137,80,78,71,13,10,26,10]);
 // Local retained byte-storage bound: up to one maximum raster input and three
 // raster-sized encoding representations. Compressor/browser native workspaces
 // and the preview Worker are separate; this is not a process heap/RSS limit.
-const MAX_STORAGE_BYTES=MAX_RASTER_PIXELS*4*4;
+export const MAX_RGBA_PNG_STORAGE_BYTES=MAX_RASTER_PIXELS*4*4;
 const crcTable=Uint32Array.from({length:256},(_,value)=>{
  let crc=value;for(let bit=0;bit<8;bit++)crc=(crc&1)?0xedb88320^(crc>>>1):crc>>>1;return crc>>>0;
 });
@@ -32,7 +32,7 @@ export async function encodeRgbaPng(pixels:Uint8ClampedArray,width:number,height
  const admit=(nextPartBytes:number,temporaryBytes=0)=>{
   // Include the final Blob copy while parts are still reachable, and two
   // scanlines (one queued, one consumed). Count full retained backing storage.
-  if(pixels.buffer.byteLength+2*nextPartBytes+2*(width*4+1)+crcTable.byteLength+temporaryBytes>MAX_STORAGE_BYTES)
+  if(pixels.buffer.byteLength+2*nextPartBytes+2*(width*4+1)+crcTable.byteLength+temporaryBytes>MAX_RGBA_PNG_STORAGE_BYTES)
    throw new Error('PNG encoding exceeds the 512 MiB retained byte-storage budget');
  };
  admit(partBytes);

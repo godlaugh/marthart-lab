@@ -21,11 +21,11 @@ function rendered(s:SceneDocument,c=context()):SceneOutput {
  // real host. No simulated renderer is evidence of real WebGL pixels.
  return new SourceFractalLiveSession((_scene,ctx)=>({type:'raster',width:ctx.width,height:ctx.height,pixels:new Uint8ClampedArray(ctx.width*ctx.height*4),stats:{samples:1,generated:1,invalid:0},fractalRender:{} as NonNullable<Extract<SceneOutput,{type:'raster'}>['fractalRender']>})).generate(s,c);
 }
-function captured(s:SceneDocument,c=context()):PausedCaptureResult {
+function captured(s:SceneDocument,c=context(),scale:1|3|5=1):PausedCaptureResult {
  const render=(_scene:SceneDocument,ctx:GenerationInput):SceneOutput=>({type:'raster',width:ctx.width,height:ctx.height,pixels:new Uint8ClampedArray(ctx.width*ctx.height*4),stats:{samples:1,generated:1,invalid:0},fractalRender:{} as NonNullable<Extract<SceneOutput,{type:'raster'}>['fractalRender']>});
  const owner=new SourceFractalLiveSession(render);owner.generate(s,c);
  const result=owner.capturePaused(s,{...c,width:3,height:5});
- result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',baseSize:[3,5],scale:1,resampling:'none'};return result;
+ result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',baseSize:[3,5],scale};return result;
 }
 const flush=async()=>{for(let i=0;i<6;i++)await Promise.resolve();};
 afterEach(()=>vi.unstubAllGlobals());
@@ -75,16 +75,30 @@ describe('Fractal live worker client contract',()=>{
   expect(control).toMatchObject({operation:'fractal-playback',sourceId:captureRequest.id});
   w.emit({operation:'fractal-playback',sessionId:control.sessionId,id:control.id,sourceId:captureRequest.id,paused:false});await pause;expect(w.terminated).toBe(false);generator.dispose();
  });
- for(const mismatch of ['target','revision','ordinal','state','size','facts','labels'] as const)it(`invalidates a current PNG with mismatched ${mismatch}`,async()=>{
+ for(const scale of [3,5] as const)it(`accepts base-size pixels with pending ${scale}× processing and retains the live preview`,async()=>{
+  FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);const generator=new Generator(),s=scene(),c=context(),first=generator.generate(s,c),worker=FakeWorker.instances[0],request=worker.messages[0],output=rendered(s,c);
+  worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});await first;
+  const pending=generator.captureFractalPaused(output,{width:3,height:5},scale),captureRequest=worker.messages.at(-1)!,result=captured(s,c,scale);
+  expect(captureRequest).toMatchObject({operation:'fractal-paused-capture',size:{width:3,height:5},scale});
+  worker.emit({operation:'fractal-paused-capture',id:captureRequest.id,sessionId:captureRequest.sessionId,result});
+  const capturedResult=await pending;expect(capturedResult).toBe(result);expect(capturedResult.capture).toMatchObject({width:3,height:5,fractalCurrentImage:{stage:'base-before-formulas',scale}});expect(capturedResult.capture.pixels.byteLength).toBe(60);
+  const pause=generator.setFractalPaused(result.preview,false),control=worker.messages.at(-1)!;
+  worker.emit({operation:'fractal-playback',id:control.id,sessionId:control.sessionId,sourceId:captureRequest.id,paused:false});await pause;expect(worker.terminated).toBe(false);generator.dispose();
+ });
+ for(const mismatch of ['target','revision','ordinal','state','size','facts','labels','missing-stage','old-resampling','already-scaled','base-size'] as const)it(`invalidates a current PNG with mismatched ${mismatch}`,async()=>{
   FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);const generator=new Generator(),s=scene(),first=generator.generate(s,context()),w=FakeWorker.instances[0],request=w.messages[0],output=rendered(s);
   w.emit({operation:'generate',sessionId:request.sessionId,id:request.id,output});await first;
-  const capture=generator.captureFractalPaused(output,{width:3,height:5}).catch(e=>e),captureRequest=w.messages.at(-1)!,result=captured(s);
+  const scale=mismatch==='already-scaled'?3:1,capture=generator.captureFractalPaused(output,{width:3,height:5},scale).catch(e=>e),captureRequest=w.messages.at(-1)!,result=captured(s,context(),scale);
   if(mismatch==='target')result.capture.fractalLive!.target='primary';
   else if(mismatch==='revision')result.preview.fractalLive!.revision++;
   else if(mismatch==='ordinal')result.capture.fractalLive!.updateOrdinal++;
   else if(mismatch==='state'){const frame=result.preview.fractalLive!.presentation.evaluatedFractalScene!;result.preview.fractalLive!.presentation.evaluatedFractalScene={...frame,formula:{...frame.formula,native:{...frame.formula.native,bailout:100}}};}
   else if(mismatch==='size'){result.capture.width=5;result.capture.height=3;}
   else if(mismatch==='labels')delete result.capture.formulaPresentation;
+  else if(mismatch==='missing-stage')Reflect.deleteProperty(result.capture.fractalCurrentImage!,'stage');
+  else if(mismatch==='old-resampling')Object.assign(result.capture.fractalCurrentImage!,{resampling:'none'});
+  else if(mismatch==='already-scaled'){result.capture.width=9;result.capture.height=15;result.capture.pixels=new Uint8ClampedArray(9*15*4);}
+  else if(mismatch==='base-size')Object.assign(result.capture.fractalCurrentImage!,{baseSize:[3,5,99]});
   else delete result.capture.fractalCurrentImage;
   w.emit({operation:'fractal-paused-capture',sessionId:captureRequest.sessionId,id:captureRequest.id,result});expect(await capture).toMatchObject({previewRetained:false,message:expect.stringContaining('不匹配')});expect(w.terminated).toBe(true);
  });

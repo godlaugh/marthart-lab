@@ -410,7 +410,8 @@ export interface RootsProgress {
 export interface RasterOutput {
   formulaPresentation?:FormulaPresentation;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveFacts;
-  fractalCurrentImage?:{model:'local-current-numerical-snapshot';baseSize:readonly[number,number];scale:1|3|5;resampling:'none'|'openjdk21-software-bicubic'};
+  /** Base-size current pixels; formula composition and whole-image PNG processing are still pending. */
+  fractalCurrentImage?:{model:'local-current-numerical-snapshot';stage:'base-before-formulas';baseSize:readonly[number,number];scale:1|3|5};
   /** Actual completed source recording draw, never a planning prediction. */
   fractalRecording?:SourceFractalRecordingFrame;
   /** Numeric and navigation facts owned by this delivered source Fractal image. */
