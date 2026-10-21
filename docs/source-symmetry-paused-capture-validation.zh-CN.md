@@ -40,7 +40,7 @@
 
 `scripts/verify-source-symmetry-capture.mjs` 使用实际 WebGL 和 Worker，覆盖四种组合：普通累积/重播 × 同尺寸/异尺寸。确认双显示顺序、暂停零粒子更新、队列时间不变、锚点保留、主画布归一参考、重播推进/取消、粒子保留、容量拒绝不损坏预览、取消后清理和新会话重试。实际 Worker 的增强 RGBA 与独立同输入会话结果全量相等，旧输出不可选择新捕获，放大后可以恢复播放。
 
-`scripts/verify-source-symmetry-capture-ui.mjs` 在 1×、2× 屏幕密度下操作真实编辑器、导出窗口、文件服务与下载，覆盖同尺寸、异尺寸、3×/5× 放大、独立固定时间导出和返回播放。逐一校验 PNG CRC、解码全部 RGBA，再与 Worker 返回的完整像素比较；还确认主预览实际收到恢复后的输出。PNG 解码器由 Samila/Symmetry 验收脚本共用。
+`scripts/verify-source-iterated-capture-ui.mjs` 在 1×、2× 屏幕密度下操作真实编辑器、导出窗口、文件服务与下载，覆盖同尺寸、异尺寸、3×/5× 放大、独立固定时间导出和返回播放。逐一校验 PNG CRC、解码全部 RGBA，再与 Worker 返回的完整像素比较；还确认主预览实际收到恢复后的输出。PNG 解码器由 Samila/Symmetry 验收脚本共用。
 
 首次 UI 测试中，测试公式把粒子压在极小区域，2× 密度下缩小到 66×46 的目标没有占用像素，因此「非空图」断言失败。保留该失败报告，改用明确展开粒子的小负载公式（2,048 粒子、16 预热步），未放宽像素一致性断言，也没有将失败记为通过。此自定义公式是功能测试数据，不是原版作品效果验收。
 
@@ -66,7 +66,7 @@
 
 ```sh
 node scripts/verify-source-symmetry-capture.mjs NEW_OWNER_REPORT_DIRECTORY
-node scripts/verify-source-symmetry-capture-ui.mjs NEW_UI_REPORT_DIRECTORY
+node scripts/verify-source-iterated-capture-ui.mjs NEW_UI_REPORT_DIRECTORY
 ```
 
 脚本要求新的输出目录，并检查运行前后的源摘要一致；自行关闭浏览器和服务。费用采样为 250 毫秒进程族观察，可能漏掉短进程和峰值，CPU 为观察下界，RSS 会重复计入共享页，未排除 PID 复用；GPU 实际内存与每个任务的 agent token 未测量。每次启动新进程，内部有连续热会话；未独立拆分系统缓存冷/热成本，也无等价旧版捕获链路性能基线，不声称性能提升。

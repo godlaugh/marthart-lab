@@ -3,9 +3,9 @@ import type {GenerationRequest,GenerationResponse} from '../src/engine/generatio
 import type {GenerationInput,SceneDocument,SceneOutput} from '../src/types';
 import {sourcePausedImageBytes} from '../src/engine/sourcePausedImage';
 import {prepareSourcePausedUpscale} from '../src/engine/sourcePausedUpscale';
-const owners=vi.hoisted(()=>({generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},samila:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()}}));
+const owners=vi.hoisted(()=>({map:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},symmetry:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},samila:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()}}));
 vi.mock('../src/engine/temporal',()=>({generateScene:owners.generate,TemporalGenerationSession:class{
- sourcePerlin=owners.perlin;rootsNative=owners.roots;sourceSamila=owners.samila;reset=owners.reset;
+ sourceMap=owners.map;sourceSymmetry=owners.symmetry;sourcePerlin=owners.perlin;rootsNative=owners.roots;sourceSamila=owners.samila;reset=owners.reset;
 }}));
 vi.mock('../src/scenes',()=>({definition:()=>({dimension:2})}));
 const raster=(width:number,height:number):Extract<SceneOutput,{type:'raster'}>=>({type:'raster',width,height,pixels:new Uint8ClampedArray(width*height*4).fill(127),stats:{samples:1,generated:width*height,invalid:0,elapsedMs:0}});
@@ -22,6 +22,7 @@ beforeEach(async()=>{
  owners.perlin.capturePaused.mockReturnValue({capture:raster(4,6),preview:raster(32,24)});
  owners.samila.matchesCompletedPrimary.mockReturnValue(true);owners.samila.capturePaused.mockReturnValue({capture:raster(4,6),preview:raster(32,24)});
  owners.roots.capturePaused.mockReturnValue({capture:raster(3,5),preview:raster(32,24)});
+ for(const family of ['map','symmetry'] as const){owners[family].matchesCompletedPrimary.mockReturnValue(true);owners[family].capturePaused.mockReturnValue({capture:raster(4,6),preview:raster(32,24)});}
  worker={postMessage:vi.fn()};vi.stubGlobal('self',worker);await import('../src/engine/generate.worker');
 });
 afterEach(()=>vi.unstubAllGlobals());
@@ -130,5 +131,42 @@ describe('Samila independent playback worker routing',()=>{
   const scene={kind:'samila',id:'one'} as SceneDocument;
   send({operation:'generate',id:3,sessionId:7,scene,context:{...context,samilaLive:{sessionId:'one',pixelDensity:1,clock:{paused:false}}}});
   expect(send({operation:'samila-playback',id:4,sessionId:7,sourceId:1,paused:true})).toHaveProperty('error');expect(owners.samila.setPaused).not.toHaveBeenCalled();
+ });
+});
+
+
+describe.each(['map','symmetry'] as const)('%s live Worker transport',family=>{
+ const key=family==='map'?'mapLive':'symmetryLive',playback=family==='map'?'map-playback':'symmetry-playback',capture=family==='map'?'map-paused-capture':'symmetry-paused-capture';
+ const liveScene={kind:family,id:'iterated'} as SceneDocument;
+ const live:GenerationInput={...context,sourcePointPixelDensity:2,[key]:{sessionId:'iterated',renderFps:60,replayRevision:0,clock:{paused:false,timestampMs:1000}}};
+ const start=()=>send({operation:'generate',id:1,sessionId:7,scene:liveScene,context:live});
+ it('routes playback without a display and capture through the retained family owner, with renewed capability',()=>{
+  start();expect(send({operation:playback,id:2,sessionId:7,sourceId:1,paused:true,timestampMs:1200})).toEqual({operation:playback,id:2,sessionId:7,sourceId:1,paused:true});
+  expect(owners[family].setPaused).toHaveBeenCalledWith(true,1200);expect(owners.generate).toHaveBeenCalledOnce();
+  const response=send({operation:capture,id:3,sessionId:7,sourceId:1,size:{width:3,height:5},scale:5});
+  if(response.operation!==capture||!('result' in response))throw Error('capture');
+  expect(owners[family].capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5,[key]:{...live[key],clock:{...live[key]!.clock,paused:true}}},{additionalBytes:sourcePausedImageBytes(4,6)-96+prepareSourcePausedUpscale(4,6,5).peakBytes-96});
+  expect(response.result.capture).toMatchObject({width:20,height:30,sourcePausedImage:{scale:5,baseSize:[4,6]}});
+  expect(owners[family==='map'?'symmetry':'map'].capturePaused).not.toHaveBeenCalled();
+  expect(send({operation:playback,id:4,sessionId:7,sourceId:3,paused:false})).not.toHaveProperty('error');expect(owners.generate).toHaveBeenCalledOnce();
+ });
+ it.each([true,false])('retains preflight failure only from current family owner: %s',retained=>{
+  start();owners[family].matchesCompletedPrimary.mockReturnValue(retained);owners[family].capturePaused.mockImplementation(()=>{throw Error('before or after mutation');});
+  const response=send({operation:capture,id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
+  expect(response).toHaveProperty('error');expect('retainedSourceId' in response?response.retainedSourceId:undefined).toBe(retained?1:undefined);
+  expect(owners[family].matchesCompletedPrimary).toHaveBeenCalledWith(liveScene,live);
+  expect(owners[family==='map'?'symmetry':'map'].matchesCompletedPrimary).not.toHaveBeenCalled();
+ });
+ it('rejects foreign family playback, offscreen and stale source without changing either clock',()=>{
+  start();expect(send({operation:family==='map'?'symmetry-playback':'map-playback',id:2,sessionId:7,sourceId:1,paused:true})).toHaveProperty('error');
+  expect(send({operation:playback,id:3,sessionId:7,sourceId:999,paused:true})).toHaveProperty('error');
+  send({operation:'generate',id:4,sessionId:7,scene:liveScene,context:{...live,sourceViewport:{...live.sourceViewport!,target:'offscreen'}}});
+  expect(send({operation:playback,id:5,sessionId:7,sourceId:4,paused:true})).toHaveProperty('error');
+  expect(owners.map.setPaused).not.toHaveBeenCalled();expect(owners.symmetry.setPaused).not.toHaveBeenCalled();
+ });
+ it('rejects post-render malformed pixels without retaining the old capability',()=>{
+  start();owners[family].capturePaused.mockReturnValue({capture:raster(3,5),preview:raster(32,24)});
+  const response=send({operation:capture,id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
+  expect(response).toHaveProperty('error');expect(response).not.toHaveProperty('retainedSourceId');expect(owners[family].matchesCompletedPrimary).not.toHaveBeenCalled();
  });
 });

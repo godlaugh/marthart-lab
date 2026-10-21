@@ -202,3 +202,43 @@ describe('Samila independent playback capability',()=>{
   expect(await p).toBeInstanceOf(Error);expect(w.terminated).toBe(true);await expect(g.setSamilaPaused(live,false)).rejects.toThrow('已完成');g.dispose();
  });
 });
+
+describe.each(['map','symmetry'] as const)('%s live client capability',family=>{
+ const key=family==='map'?'mapLive':'symmetryLive',playback=family==='map'?'map-playback':'symmetry-playback',capture=family==='map'?'map-paused-capture':'symmetry-paused-capture';
+ const set=family==='map'?'setMapPaused':'setSymmetryPaused',save=family==='map'?'captureMapPaused':'captureSymmetryPaused';
+ const live={...output,[key]:{sessionId:'live',clock:'realtime-source-queue'},sourceCameraFrame:{viewport:{target:'primary'}}} as SceneOutput;
+ async function ready(frame=live){
+  const g=setup(),p=g.generate(createScene(definition(family)),ctx),w=FakeWorker.instances[0],r=w.messages[0];w.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await p;return{g,w,r};
+ }
+ it('requires exact completed output and preserves it through clock acknowledgements',async()=>{
+  const {g,w,r}=await ready();await expect(g[set]({...live},true)).rejects.toThrow('已完成');
+  for(const paused of [true,false]){const p=g[set](live,paused,1234),c=w.messages.at(-1)!;expect(c).toMatchObject({operation:playback,sourceId:r.id,paused,timestampMs:1234});
+   await expect(g.generate(createScene(definition(family)),ctx)).rejects.toThrow('尚未完成');
+   w.emit({operation:playback,id:c.id,sessionId:c.sessionId,sourceId:r.id,paused});await p;
+  }
+  const p=g[save](live,{width:3,height:5},3),c=w.messages.at(-1)!;expect(c).toMatchObject({operation:capture,sourceId:r.id,scale:3});
+  const preview={...live};w.emit({operation:capture,id:c.id,sessionId:c.sessionId,result:{capture:live as Extract<SceneOutput,{type:'raster'}>,preview:preview as Extract<SceneOutput,{type:'raster'}>}});await p;
+  await expect(g[save](live,{width:3,height:5})).rejects.toThrow('过期');
+  const pause=g[set](preview,true),control=w.messages.at(-1)!;expect(control).toHaveProperty('sourceId',c.id);w.emit({operation:playback,id:control.id,sessionId:control.sessionId,sourceId:c.id,paused:true});await pause;g.dispose();
+ });
+ it('rejects another family and offscreen result before posting any control',async()=>{
+  const {g,w}=await ready();const count=w.messages.length;
+  await expect(g[family==='map'?'setSymmetryPaused':'setMapPaused'](live,true)).rejects.toThrow('已完成');
+  await expect(g[family==='map'?'captureSymmetryPaused':'captureMapPaused'](live,{width:2,height:2})).rejects.toThrow('过期');expect(w.messages).toHaveLength(count);g.dispose();
+  const offscreen={...live,sourceCameraFrame:{viewport:{target:'offscreen'}}} as SceneOutput,other=await ready(offscreen);
+  await expect(other.g[set](offscreen,true)).rejects.toThrow('已完成');await expect(other.g[save](offscreen,{width:2,height:2})).rejects.toThrow('过期');other.g.dispose();
+ });
+ it.each(['source','operation','paused','error','send'] as const)('invalidates uncertain %s playback acknowledgement',async failure=>{
+  const {g,w,r}=await ready();if(failure==='send')w.postMessage=()=>{throw Error('send');};
+  const p=g[set](live,true).catch(e=>e),c=w.messages.at(-1)!;
+  if(failure==='error')w.emit({operation:playback,id:c.id,sessionId:c.sessionId,error:'failed',retainedSourceId:r.id});
+  else if(failure==='operation')w.emit({operation:family==='map'?'symmetry-playback':'map-playback',id:c.id,sessionId:c.sessionId,sourceId:r.id,paused:true});
+  else if(failure!=='send')w.emit({operation:playback,id:c.id,sessionId:c.sessionId,sourceId:failure==='source'?999:r.id,paused:failure!=='paused'});
+  expect(await p).toBeInstanceOf(Error);expect(w.terminated).toBe(true);await expect(g[set](live,false)).rejects.toThrow('已完成');g.dispose();
+ });
+ it.each([true,false])('restores capture only with matching owner retention evidence: %s',retained=>{
+  return (async()=>{const {g,w,r}=await ready(),p=g[save](live,{width:2,height:2}).catch(e=>e),c=w.messages.at(-1)!;
+   w.emit({operation:capture,id:c.id,sessionId:c.sessionId,error:'capacity',retainedSourceId:retained?r.id:999});expect(await p).toMatchObject({name:family==='map'?'MapPausedCaptureError':'SymmetryPausedCaptureError',previewRetained:retained});
+   if(retained){const q=g[set](live,true),control=w.messages.at(-1)!;w.emit({operation:playback,id:control.id,sessionId:control.sessionId,sourceId:r.id,paused:true});await q;}else await expect(g[set](live,true)).rejects.toThrow('已完成');g.dispose();})();
+ });
+});

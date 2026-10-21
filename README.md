@@ -69,7 +69,7 @@ npm run desktop:test
 
 当前仍处于 2.0 场景补全阶段。曲面 CPU 点／网格的导入、统一配置编辑、保存重开、切换时间线和黑色淡入淡出已接通，并完成实际 PNG 与 MP4 导出验证；GPU 点与网格也已完成本地导入、回放及 PNG／MP4 验证。吸引子源 CPU／GPU 的导入、编辑、保存重开、回放、PNG／MP4 导出也已接通，其它剩余差异仍待完成。原版整图一致性验收仍为 0/11，现有 1.0 应用包未替换。具体行为和验证边界见[曲面中文验证记录](docs/source-surface-validation.zh-CN.md)。
 
-**Map 实时核心（2026-10-21，M3）**：共享 Map／Symmetry 状态所有者已接入生成 Worker，实际 GPU 验证了更新顺序、暂停累积、颜色与点尺寸热事件、相机清墨、重播及四种暂停截图组合。Map 编辑器和播放／截图控制仍待接通；原版整窗验收仍为 0/11，见[中文验证记录](docs/source-map-live-validation.zh-CN.md)。
+**Map 实时界面（2026-10-21，M3）**：播放／暂停、迭代次数热更新、变换重播、暂停 PNG 截图已接入共享会话。Map 与 Symmetry 的实际界面操作、普通屏／高分屏截图、保存重开及 PNG／MP4 验证通过。参数编辑和相机角度仍存在与原版检查器不同的应用时机，原版整窗验收仍为 0/11。见[中文验收记录](docs/source-map-live-ui-validation.zh-CN.md)及此前的[核心验证](docs/source-map-live-validation.zh-CN.md)。
 
 **Map 最终呈现（2026-10-21，M3）**：新源项目已使用原最终调色、主画布参考尺寸和背景 RGBA 规则。47 组原 shader 对照零差；实际背景编辑、保存重开、PNG／MP4 通过。351 个测试文件／6,593 项测试及 Web 构建通过。实时会话与原版整窗对照仍待完成，详见[中文验收记录](docs/source-map-presentation-validation.zh-CN.md)。
 

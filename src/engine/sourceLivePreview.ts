@@ -9,12 +9,12 @@ import {usesSourceSymmetryPresentation} from './sourceSymmetryPresentation';
  * their saved models, including legacy parameter/timeline behavior. Local
  * delayed accumulation and disabled recording retain fixed reconstruction; the
  * native live mobject always has a zero origin and draws each normal display. */
-export function sourceLivePreviewKind(scene:SceneDocument):'samila'|'symmetry'|undefined {
+export function sourceLivePreviewKind(scene:SceneDocument):'samila'|'map'|'symmetry'|undefined {
  if(usesSourceSamilaSampling(scene))return 'samila';
- if(sourceIteratedLiveKind(scene)==='symmetry')return 'symmetry';
+ return sourceIteratedLiveKind(scene);
 }
 
-/** Shared core readiness; Map UI admission follows once its event adapter is wired. */
+/** Shared core and editor readiness for native iterated lifetimes. */
 export function sourceIteratedLiveKind(scene:SceneDocument):'map'|'symmetry'|undefined {
  if(scene.settings.iteratedBackend==='cpu'||(scene.settings.iteratedStartTime!==undefined&&scene.settings.iteratedStartTime!==0)||scene.settings.recordTrails===false)return;
  if(usesSourceMapParameters(scene)&&usesSourceMapPresentation(scene))return 'map';

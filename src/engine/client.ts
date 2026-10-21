@@ -12,7 +12,7 @@ function recordingRaster(value:unknown):value is PerlinRecordingRaster {
 }
 type Completed={id:number;scene:SceneDocument;output:SceneOutput};
 type Pending =
-  | {operation:'samila-playback'|'symmetry-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
+  | {operation:'samila-playback'|'symmetry-playback'|'map-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'perlin-recording-begin';source:Completed;handle:PerlinRecordingHandle;resolve:(value:PerlinRecordingStart)=>void;reject:(error:Error)=>void}
   | {operation:'perlin-recording-frame';handle:PerlinRecordingHandle;displayFrame:number;resolve:(value:PerlinRecordingRaster)=>void;reject:(error:Error)=>void}
   | {operation:'perlin-recording-finish';handle:PerlinRecordingHandle;resolve:(value:PerlinRecordingStop)=>void;reject:(error:Error)=>void}
@@ -31,7 +31,7 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:PerlinRecordingHandle;usable:boolean};
-  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='samila-playback'||p.operation==='symmetry-playback');}
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new PerlinRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
@@ -50,11 +50,11 @@ export class Generator {
       if (data.sessionId !== this.sessionId) return;
       const p = this.pending.get(data.id);
       if (!p) return;
-      if(p.operation==='samila-playback'||p.operation==='symmetry-playback'){
+      if(p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'){
         // A control acknowledgement changes the clock, not the completed image
         // capability. Any uncertain acknowledgement retires this worker so a
         // later draw cannot silently use an unknown paused/running state.
-        if((data.operation!=='samila-playback'&&data.operation!=='symmetry-playback')||data.operation!==p.operation||'error' in data||data.sourceId!==p.source.id||data.paused!==p.paused||data.id!==this.currentInputId){
+        if((data.operation!=='samila-playback'&&data.operation!=='symmetry-playback'&&data.operation!=='map-playback')||data.operation!==p.operation||'error' in data||data.sourceId!==p.source.id||data.paused!==p.paused||data.id!==this.currentInputId){
           this.invalidate(new Error('error' in data?data.error:'实时场景后台播放响应身份不匹配'));return;
         }
         this.pending.delete(data.id);this.completed=p.source;p.resolve();return;
@@ -135,7 +135,7 @@ export class Generator {
     onStatus?: (status: GenerationStatus) => void,
   ): Promise<SceneOutput> {
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能生成其它场景'));
-    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
+    if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     this.ensure();
     const id = ++this.counter;
     this.currentInputId=id;this.completed=undefined;
@@ -156,14 +156,16 @@ export class Generator {
   captureSamilaPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{
     return this.capturePaused('samila-paused-capture',output,size,scale);
   }
+  captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('map-paused-capture',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('symmetry-paused-capture',output,size,scale);}
   setSamilaPaused(output:SceneOutput,paused:boolean):Promise<void>{return this.setLivePaused('samila-playback',output,paused);}
+  setMapPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('map-playback',output,paused,timestampMs);}
   setSymmetryPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('symmetry-playback',output,paused,timestampMs);}
-  private setLivePaused(operation:'samila-playback'|'symmetry-playback',output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
+  private setLivePaused(operation:'samila-playback'|'symmetry-playback'|'map-playback',output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
     const source=this.completed;
     const valid=output.type==='raster'&&(operation==='samila-playback'
       ?source?.scene.kind==='samila'&&output.samilaLive?.target==='primary'&&output.samilaLive.clock==='realtime-source-queue'
-      :source?.scene.kind==='symmetry'&&output.symmetryLive?.clock==='realtime-source-queue'&&output.sourceCameraFrame?.viewport.target==='primary');
+      :source?.scene.kind===(operation==='map-playback'?'map':'symmetry')&&output[operation==='map-playback'?'mapLive':'symmetryLive']?.clock==='realtime-source-queue'&&output.sourceCameraFrame?.viewport.target==='primary');
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||!valid)
       return Promise.reject(new Error('实时播放控制需要当前已完成的主预览'));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
@@ -176,7 +178,7 @@ export class Generator {
   private capturePaused(operation:PausedCaptureOperation,output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能截图'));
     const source=this.completed,roots=operation==='roots-paused-capture',contract=pausedCaptureContracts[operation];
-    const eligible=output.type==='raster'&&(roots?!!output.rootsPresentation:operation==='symmetry-paused-capture'?!!output.symmetryLive&&output.sourceCameraFrame?.viewport.target==='primary'&&source?.scene.kind==='symmetry':operation==='samila-paused-capture'?output.samilaLive?.target==='primary'&&source?.scene.kind==='samila':!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
+    const eligible=output.type==='raster'&&(roots?!!output.rootsPresentation:operation==='symmetry-paused-capture'||operation==='map-paused-capture'?!!output[operation==='map-paused-capture'?'mapLive':'symmetryLive']&&output.sourceCameraFrame?.viewport.target==='primary'&&source?.scene.kind===(operation==='map-paused-capture'?'map':'symmetry'):operation==='samila-paused-capture'?output.samilaLive?.target==='primary'&&source?.scene.kind==='samila':!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
     if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
       return Promise.reject(new Error(`当前${contract.label}画面尚未完成或已过期，请等待预览完成后重试`));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
@@ -227,7 +229,7 @@ export class Generator {
   }
   searchStable(scene: SceneDocument, options: StableSearchOptions = {}, onProgress?: (progress: StableSearchProgress) => void): Promise<StableSearchResult> {
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
-    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
+    if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     this.ensure();
     const id = ++this.counter;
     return new Promise((resolve, reject) => {
@@ -238,7 +240,7 @@ export class Generator {
   }
   planSpirographRecording(scene:SceneDocument,startFrame:number,fps:number):Promise<SpirographRecordingPlan>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
-    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
+    if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     this.ensure();const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'spirograph-recording-plan',resolve,reject});
@@ -248,7 +250,7 @@ export class Generator {
   }
   planPerlinFreshRecording(scene:SceneDocument,simulationFps:number,encoderFps:number):Promise<PerlinFreshRecordingPlan>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
-    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
+    if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     this.ensure();const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'perlin-recording-plan',resolve,reject});
@@ -258,7 +260,7 @@ export class Generator {
   }
   planRootsFreshRecording(scene:SceneDocument,simulationFps:number,encoderFps:number):Promise<RootsFreshRecordingPlan>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
-    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
+    if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     this.ensure();const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'roots-recording-plan',resolve,reject});
@@ -268,7 +270,7 @@ export class Generator {
   }
   exploreComplex(scene: SceneDocument, options: ComplexExploreOptions, onProgress?: (progress: ComplexExploreProgress) => void): Promise<ComplexExploreResult> {
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
-    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
+    if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     this.ensure();
     const id = ++this.counter;
     return new Promise((resolve, reject) => {

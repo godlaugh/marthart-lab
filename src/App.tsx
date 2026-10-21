@@ -1,7 +1,7 @@
 import {usesSourceMapPresentation} from './engine/sourceMapPresentation';
 import {editSourceMapScene} from './engine/sourceMapScene';
 import {sourceLivePreviewKind} from './engine/sourceLivePreview';
-import {sourceIteratedApplyIdentity,sourceIteratedReplayIdentity,SOURCE_ITERATED_REPLAY_SETTINGS} from './engine/sourceIteratedLiveIdentity';
+import {SOURCE_MAP_RUNTIME_SETTINGS,sourceIteratedApplyIdentity,sourceIteratedReplayIdentity,SOURCE_ITERATED_REPLAY_SETTINGS} from './engine/sourceIteratedLiveIdentity';
 import {usesSourceSymmetryPresentation} from './engine/sourceSymmetryPresentation';
 import {editSourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import {sourceSamilaApplyIdentity} from './engine/sourceSamilaIdentity';
@@ -293,14 +293,19 @@ export default function App() {
     bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
   }
-  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'symmetry-replay') {
+  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'iterated-replay'|'map-runtime'|'map-apply') {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
-    if(sourceLivePreviewKind(current)!=='symmetry'&&sourceLivePreviewKind(next)==='symmetry'){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}
-    if(sourceLivePreviewKind(current)==='symmetry'&&sourceLivePreviewKind(next)==='symmetry'){
-      if(sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)){
+    const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
+    if(nextLive==='map'||nextLive==='symmetry'){
+      if(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||nextLive==='map'&&(intent==='map-apply'||!Object.is(current.settings.pointSize,next.settings.pointSize))){
         replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);
-      }else if(intent==='symmetry-replay'||sourceIteratedReplayIdentity(current)!==sourceIteratedReplayIdentity(next))symmetryReplayRevision.current++;
+      }else{
+        if(intent==='iterated-replay'||sourceIteratedReplayIdentity(current)!==sourceIteratedReplayIdentity(next))iteratedReplayRevision.current++;
+        if(nextLive==='map'){
+          if(intent==='map-runtime'||SOURCE_MAP_RUNTIME_SETTINGS.some(key=>!Object.is(current.settings[key],next.settings[key])))mapRuntimeRevision.current++;
+        }
+      }
     }
 
     if(usesSourceBouncing(next)){
@@ -349,10 +354,11 @@ export default function App() {
   }
   const rootsSessionId=useRef(crypto.randomUUID());
   const liveSessionId=useRef(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
-  const symmetryReplayRevision=useRef(0),symmetryStartAt=useRef<number|undefined>(0);
-  const symmetryReplayPending=sourceLivePreviewKind(scene)==='symmetry'&&!error&&!previewCancelled&&outputScene===scene&&output?.type==='raster'&&output.symmetryLive?.sessionId===liveSessionId.current&&output.symmetryLive.display.replayActive===true;
-  const replayPendingRef=useRef(false);replayPendingRef.current=symmetryReplayPending;
-  function replaceLiveSession(startAt=0){liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;symmetryReplayRevision.current=0;symmetryStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
+  const iteratedReplayRevision=useRef(0),iteratedStartAt=useRef<number|undefined>(0),mapRuntimeRevision=useRef(0);
+  const iteratedLiveFacts=output?.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
+  const iteratedReplayPending=!!iteratedLiveFacts&&!error&&!previewCancelled&&outputScene===scene&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true;
+  const replayPendingRef=useRef(false);replayPendingRef.current=iteratedReplayPending;
+  function replaceLiveSession(startAt=0){liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
     if(!sourceLivePreviewKind(sceneRef.current))return;
     playingRef.current=false;setPlaying(false);replaceLiveSession(Math.max(0,timeRef.current));
@@ -361,7 +367,7 @@ export default function App() {
   }
   function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
-  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'symmetry-replay') {
+  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'iterated-replay'|'map-runtime'|'map-apply') {
     try{next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next));}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
@@ -386,7 +392,7 @@ export default function App() {
       const settings=scene.kind==='samila'&&key==='samilaHistoryModel'
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
-      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,sourceLivePreviewKind(scene)==='symmetry'&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'symmetry-replay':undefined);
+      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':sourceLivePreviewKind(scene)==='map'&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'map-apply':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {
@@ -506,7 +512,7 @@ export default function App() {
       // Stop scheduling immediately; a running display completes before the
       // queue acknowledges pause. Resume starts scheduling only after its ack.
       playingRef.current=false;setPlaying(false);
-      void queue[liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
+      void queue[liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
         if(livePlaybackTransition.current!==ticket||liveSessionId.current!==sessionId)return;
         liveLastFrameAt.current=undefined;playingRef.current=value;setPlaying(value);
         if(value)setPickingJulia(false);
@@ -671,19 +677,20 @@ export default function App() {
       prev = now;
       id = requestAnimationFrame(tick);
     }
-    if (playing||symmetryReplayPending) {id = requestAnimationFrame(tick);}
+    if (playing||iteratedReplayPending) {id = requestAnimationFrame(tick);}
     return () => cancelAnimationFrame(id);
-  }, [playing,symmetryReplayPending, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
+  }, [playing,iteratedReplayPending, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
       output:(output,time,source)=>{
         // Retire replay scheduling before the queue clears its busy flag. A RAF
         // can run before React commits the delivered output.
-        replayPendingRef.current=source===sceneRef.current&&output.type==='raster'&&output.symmetryLive?.sessionId===liveSessionId.current&&output.symmetryLive.display.replayActive===true;
+        const live=output.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
+        replayPendingRef.current=source===sceneRef.current&&live?.sessionId===liveSessionId.current&&live.display.replayActive===true;
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
-        if(output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.symmetryLive)){
+        if(output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||live)){
           timeRef.current=time;playbackClock.current=time;setTime(time);
         }
       },
@@ -713,7 +720,7 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:symmetryReplayRevision.current,startAt:symmetryStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined);
     liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:sourceLivePreviewKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
@@ -1306,7 +1313,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'symmetry-replay':undefined)}/>}
+                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-replay':undefined)}/>}
                       {!usesSourceSamilaSplat(scene)&&!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
@@ -1461,13 +1468,13 @@ export default function App() {
           sourceSymmetryToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceSymmetryPresentation?.reference:undefined}
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}
           samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
-          symmetryPixelDensity={sourceLivePreviewKind(scene)==='symmetry'?viewportMeasurement?.pixelRatio:undefined}
-          currentSymmetryCapture={sourceLivePreviewKind(scene)==='symmetry'?{
+          iteratedPixelDensity={iteratedLiveFacts?viewportMeasurement?.pixelRatio:undefined}
+          currentIteratedCapture={sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
             size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
-            ready:completedFrameReady&&output?.type==='raster'&&output.symmetryLive?.sessionId===liveSessionId.current,
+            ready:completedFrameReady&&iteratedLiveFacts?.sessionId===liveSessionId.current,
             capture:async(size,scale)=>{
-              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Symmetry 画面尚未完成或已过期，请等待预览完成后重试');
-              return generationQueue.current.captureSymmetryPaused(output,size,scale);
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前迭代场景画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current[scene.kind==='map'?'captureMapPaused':'captureSymmetryPaused'](output,size,scale);
             },
           }:undefined}
           currentSamilaCapture={usesSourceSamilaSampling(scene)?{

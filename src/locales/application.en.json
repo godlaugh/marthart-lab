@@ -1245,5 +1245,8 @@
   "对称参数如何影响图案": "How symmetry parameters shape the image",
   "阶数 n 决定公式的 n 重旋转关系；有限采样不保证画面完整对称。": "Order n makes the formula respect rotations by 360°/n. Finite sampling does not guarantee a fully symmetric image.",
   "omega = 0 时公式同时具有镜像关系；非零 omega 保留 n 重旋转关系，并打破原有镜像关系。": "With omega = 0 the formula also respects reflection. Nonzero omega preserves n-fold rotation and breaks those reflection relations.",
-  "gamma 调整复共轭项的强度，并非固定角度的旋转。要旋转画面，请使用相机角度。": "gamma changes the strength of the complex-conjugate term, not a fixed rotation angle. Use the camera angles to rotate the image."
+  "gamma 调整复共轭项的强度，并非固定角度的旋转。要旋转画面，请使用相机角度。": "gamma changes the strength of the complex-conjugate term, not a fixed rotation angle. Use the camera angles to rotate the image.",
+  "Map 图像来源": "Map image source",
+  "当前迭代场景画面尚未完成或已过期，请等待预览完成后重试": "The current iterated scene is unfinished or out of date. Wait for the preview and try again.",
+  "Map 按实际经过时间运行。暂停后的变换和颜色设置会按源规则重播；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。": "Map runs in real time. Transform and color edits while paused replay according to the source rules. Particles and active parameter animations keep updating after the queue ends. Seeking rebuilds each frame; video export recalculates at the selected frame rate."
 }

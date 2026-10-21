@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {parseProjectFile} from '../src/engine/legacyImport';
+import {parseLegacyScene,parseProjectFile} from '../src/engine/legacyImport';
 import {sourceLivePreviewKind} from '../src/engine/sourceLivePreview';
 import {sourceQueuePresentedScene} from '../src/engine/sourceQueuePresentation';
 import {ordinarySourceCameraInitial,ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
@@ -15,6 +15,12 @@ describe('source live preview compatibility and delivered presentation',()=>{
   }
   expect(sourceLivePreviewKind({...source,settings:{...source.settings,iteratedBackend:'cpu'}})).toBeUndefined();
   expect(sourceLivePreviewKind({...source,settings:{...source.settings,iteratedStartTime:.2}})).toBeUndefined();
+  expect(sourceLivePreviewKind({...source,settings:{...source.settings,recordTrails:false}})).toBeUndefined();
+ });
+ it('admits Map only with source parameter/presentation contracts and uses its delivered camera',()=>{
+  const source=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'MAP_ATTRACTOR',name:'Map live',equations:{x_next:'x',y_next:'y'},parameters:{a:1},settings:{batch_size:4},timeline:[]}),{sourceEntry:'runtime-config'}).scene;
+  expect(sourceLivePreviewKind(source)).toBe('map');
+  for(const key of ['mapParameterModel','mapPresentationModel']){const old=structuredClone(source);delete old.settings[key];expect(sourceLivePreviewKind(old)).toBeUndefined();}
   expect(sourceLivePreviewKind({...source,settings:{...source.settings,recordTrails:false}})).toBeUndefined();
  });
  it('presents the delivered live camera even at signed time, without fixed reconstruction or authored changes',()=>{

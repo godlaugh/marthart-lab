@@ -25,8 +25,8 @@ export type RootsPausedCaptureSize=PausedCaptureSize;
 export type RootsPausedCaptureResult=PausedCaptureResult;
 export type PerlinPausedCaptureSize=PausedCaptureSize;
 export type PerlinPausedCaptureResult=PausedCaptureResult;
-export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture'|'samila-paused-capture'|'symmetry-paused-capture';
-export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture'||operation==='samila-paused-capture'||operation==='symmetry-paused-capture';}
+export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture'|'samila-paused-capture'|'symmetry-paused-capture'|'map-paused-capture';
+export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture'||operation==='samila-paused-capture'||operation==='symmetry-paused-capture'||operation==='map-paused-capture';}
 /** Only the owning worker can confirm that a rejected capture retained its
  * completed preview. Message text or an input/capacity error tag is not proof. */
 export class PausedCaptureError extends Error {
@@ -44,18 +44,24 @@ export class SamilaPausedCaptureError extends PausedCaptureError {
 export class SymmetryPausedCaptureError extends PausedCaptureError {
  constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='SymmetryPausedCaptureError';}
 }
+export class MapPausedCaptureError extends PausedCaptureError {
+ constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='MapPausedCaptureError';}
+}
 /** The operation owns its label and error type across client and queue. */
 export const pausedCaptureContracts={
  'roots-paused-capture':{label:'复根',Error:RootsPausedCaptureError},
  'perlin-paused-capture':{label:'Perlin',Error:PerlinPausedCaptureError},
  'samila-paused-capture':{label:'Samila',Error:SamilaPausedCaptureError},
  'symmetry-paused-capture':{label:'Symmetry',Error:SymmetryPausedCaptureError},
+ 'map-paused-capture':{label:'Map',Error:MapPausedCaptureError},
 } satisfies Record<PausedCaptureOperation,{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
 
+type IteratedPlaybackOperation='symmetry-playback'|'map-playback';
+type IteratedPlaybackRequest={ [Operation in IteratedPlaybackOperation]:{operation:Operation;id:number;sourceId:number;paused:boolean;timestampMs?:number} }[IteratedPlaybackOperation];
 type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Operation;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5} }[PausedCaptureOperation];
 export type GenerationRequest = { sessionId: number } & (
   | { operation: 'generate'; id: number; scene: SceneDocument; context: GenerationInput; wantsStatus?:true }
-  | {operation:'symmetry-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
+  | IteratedPlaybackRequest
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
   | PausedCaptureRequest
   | {operation:'perlin-recording-begin';id:number;sourceId:number;options:PerlinRecordingOptions}
@@ -67,7 +73,7 @@ export type GenerationRequest = { sessionId: number } & (
   | { operation: 'roots-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
 export type GenerationPayload =
-  | {operation:'symmetry-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
+  | {operation:IteratedPlaybackOperation;id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'perlin-recording-begin';id:number;recordingId:number;result:Omit<PerlinRecordingStart,'handle'>}
   | {operation:'perlin-recording-frame';id:number;recordingId:number;displayFrame:number;output:PerlinRecordingRaster}

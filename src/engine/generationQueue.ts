@@ -12,12 +12,14 @@ import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
 interface GeneratorPort {
   generate(scene:SceneDocument,context:Context,onProgress?:(output:SceneOutput)=>void):Promise<SceneOutput>;
+  setMapPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSymmetryPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSamilaPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   cancel():void;
   dispose():void;
   captureRootsPaused?(output:SceneOutput,size:RootsPausedCaptureSize,scale?:1|3|5):Promise<RootsPausedCaptureResult>;
   capturePerlinPaused?(output:SceneOutput,size:PerlinPausedCaptureSize,scale?:1|3|5):Promise<PerlinPausedCaptureResult>;
+  captureMapPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSymmetryPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSamilaPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   beginPerlinRecording?(output:SceneOutput,options:PerlinRecordingOptions):Promise<PerlinRecordingStart>;
@@ -33,11 +35,12 @@ export interface PerlinRecordingConsumer {
 function metadataContext(context:Context):Context {
   // After initialization, realtime time is display feedback, not a seek.
   // A metadata edit queued during that display may still hold its old value.
-  return (context.samilaLive?.clock||context.symmetryLive)?{...context,time:0}:context;
+  return (context.samilaLive?.clock||context.symmetryLive||context.mapLive)?{...context,time:0}:context;
 }
-type LiveKey='samilaLive'|'symmetryLive';
-const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
-const liveIdentity=(request:Request)=>liveKey(request)==='symmetryLive'?sourceIteratedSceneIdentity(request.scene):sourceSamilaSceneIdentity(request.scene);
+type LiveKey='samilaLive'|'symmetryLive'|'mapLive';
+const playbackMethods={samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused'} as const;
+const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
+const liveIdentity=(request:Request)=>liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:PerlinRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.
@@ -110,7 +113,7 @@ export class GenerationQueue {
     // identical. Retain its GPU work, but publish only the latest request.
     const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
-    void this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time)).then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+    void this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time)).then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
       if(publishable()&&error.name!=='AbortError')this.callbacks.error(error);
     }).finally(()=>{
       if(!current())return;
@@ -120,14 +123,15 @@ export class GenerationQueue {
     });
   }
   private outputTime(output:SceneOutput,request:Request):number{
-    return output.type==='raster'?(output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:request.context.time)):request.context.time;
+    return output.type==='raster'?(output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:request.context.time)):request.context.time;
   }
   /** A transport transition waits for the running display and then owns the
    * completed source. It never renders an extra display or uses an old UI frame. */
   setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
+  setMapPaused(paused:boolean):Promise<void>{return this.setLivePaused('mapLive',paused);}
   setSymmetryPaused(paused:boolean):Promise<void>{return this.setLivePaused('symmetryLive',paused);}
   private setLivePaused(key:LiveKey,paused:boolean):Promise<void>{
-    const live=this.latest?.context[key],method=key==='symmetryLive'?'setSymmetryPaused':'setSamilaPaused';
+    const live=this.latest?.context[key],method=playbackMethods[key];
     if(this.disposed||this.playbackOwner||this.captureOwner||this.recordingOwner||!this.latest||liveKey(this.latest)!==key||!live?.sessionId||!live.clock||!this.generator[method])
       return Promise.reject(new Error('请等待当前实时场景后台操作完成后再切换播放状态'));
     return new Promise((resolve,reject)=>{
@@ -143,7 +147,7 @@ export class GenerationQueue {
     if(!owner||owner.started||!source)return;
     if(liveKey(source.request)!==owner.key||source.request.context[owner.key]?.sessionId!==owner.sessionId){this.rejectPlayback();this.start();return;}
     owner.started=true;
-    void this.generator[owner.key==='symmetryLive'?'setSymmetryPaused':'setSamilaPaused']!(source.output,owner.paused).then(()=>{
+    void this.generator[playbackMethods[owner.key]]!(source.output,owner.paused).then(()=>{
       if(this.playbackOwner!==owner||this.disposed)return;
       // Deferred edits also belong to this clock transition. Their contexts
       // were snapshotted before the acknowledgement, so normalize here once.
@@ -170,10 +174,11 @@ export class GenerationQueue {
   captureSamilaPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{
     return this.capturePaused('captureSamilaPaused',output,size,scale);
   }
+  captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureMapPaused',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureSymmetryPaused',output,size,scale);}
-  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
+  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
     if(this.recordingOwner&&!this.recordingOwner.active)await this.retryPerlinRecordingCleanup();
-    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':'samila-paused-capture'];
+    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':method==='captureMapPaused'?'map-paused-capture':'samila-paused-capture'];
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!capture)
       throw new Error(`请等待当前${contract.label}预览完成后再保存暂停画面`);
     const cached=this.completedLive;this.completedLive=undefined;

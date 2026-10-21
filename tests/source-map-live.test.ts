@@ -8,11 +8,14 @@ import {snapshotGenerationInput} from '../src/engine/generationInput';
 import {editSourceMapScene} from '../src/engine/sourceMapScene';
 const make=()=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'MAP_ATTRACTOR',name:'Map live boundary',equations:{x_next:'x+gain',y_next:'y'},parameters:{gain:.001,colorSpeed:.75},settings:{batch_size:4,burn_in_steps:3,color_speed:.5,color_phase:180},timeline:[]}),{sourceEntry:'runtime-config'}).scene;
 describe('Map live event ownership',()=>{
- it('retains construction for hot color, dot, tone, transforms and camera angles, but not explicit construction edits',()=>{
+ it('retains construction for hot color, dot, tone, transforms and camera angles, while background edits reconstruct',()=>{
   const s=make(),key=sourceIteratedApplyIdentity(s);
-  for(const settings of ([{pointSize:.5},{colorSpeed:.8,colorPhase:40},{normalizedBrightness:.4,mapBackgroundAlpha:0},{scaleX:2},{stepMetricMin:-1}] as Settings[]))expect(sourceIteratedApplyIdentity({...s,settings:{...s.settings,...settings}})).toBe(key);
+  for(const settings of ([{pointSize:.5},{colorSpeed:.8,colorPhase:40},{normalizedBrightness:.4},{scaleX:2},{stepMetricMin:-1}] as Settings[]))expect(sourceIteratedApplyIdentity({...s,settings:{...s.settings,...settings}})).toBe(key);
   expect(sourceIteratedApplyIdentity({...s,sourceCamera:{...s.sourceCamera!,frame:{...s.sourceCamera!.frame,phi:.3}}})).toBe(key);
-  const changed=editSourceMapScene(s,{...s,settings:{...s.settings,iterationsPerFrame:3}});expect(sourceIteratedApplyIdentity(changed)).not.toBe(key);
+  const changed=editSourceMapScene(s,{...s,settings:{...s.settings,iterationsPerFrame:3}});expect(sourceIteratedApplyIdentity(changed)).toBe(key);
+  expect(changed.mapSource!.construction.parameters).toEqual(s.mapSource!.construction.parameters);
+  expect(changed.mapSource!.construction.equations).toEqual(s.mapSource!.construction.equations);
+  expect(sourceIteratedApplyIdentity({...s,settings:{...s.settings,mapBackgroundAlpha:0}})).not.toBe(key);
  });
  it('ignores unused palette and metadata but includes source alpha and signed-zero authored settings in capture identity',()=>{
   const s=make(),key=sourceIteratedSceneIdentity(s);

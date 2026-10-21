@@ -126,8 +126,16 @@ export function importSourceMapConfiguration(document:unknown,options:SourceMapI
  * construction anchor. Unchanged engine-injected parameters never become new
  * ProjectState authoring entries merely because a setting was edited. */
 export function editSourceMapConfiguration(anchor:SourceMapConfiguration,before:SourceMapEditState,next:SourceMapEditState):SourceMapResult<{configuration:SourceMapConfiguration;parameters:Record<string,number>}>{return attempt(()=>{
- const valid=unwrap(parseSourceMapConfiguration(anchor),[]);const changed=before.batchSize!==next.batchSize||before.dimension!==next.dimension||before.burnIn!==next.burnIn||before.iterations!==next.iterations||(['x','y','z'] as const).some(a=>before.equations[a]!==next.equations[a])||(['xMin','xMax','yMin','yMax'] as const).some(k=>!Object.is(before.initial[k],next.initial[k]))||Object.keys(before.parameters).length!==Object.keys(next.parameters).length||Object.entries(next.parameters).some(([k,v])=>!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v));
- if(!changed)return{configuration:anchor,parameters:{...next.parameters}};
+ const valid=unwrap(parseSourceMapConfiguration(anchor),[]);const constructionChanged=before.batchSize!==next.batchSize||before.dimension!==next.dimension||before.burnIn!==next.burnIn||(['x','y','z'] as const).some(a=>before.equations[a]!==next.equations[a])||(['xMin','xMax','yMin','yMax'] as const).some(k=>!Object.is(before.initial[k],next.initial[k]))||Object.keys(before.parameters).length!==Object.keys(next.parameters).length||Object.entries(next.parameters).some(([k,v])=>!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v));
+ if(!constructionChanged&&before.iterations===next.iterations)return{configuration:anchor,parameters:{...next.parameters}};
+ // The native iterations inspector writes only its runtime setting. Preserve
+ // raw constructor equations and parameter order: editor Apply normalization
+ // would change the retained seed despite no new mobject being constructed.
+ if(!constructionChanged){
+  const configuration=unwrap(parseSourceMapConfiguration({...valid,construction:{...valid.construction,iterations:next.iterations}}),[]);
+  return{configuration,parameters:{...next.parameters}};
+ }
+
  const values=new Map(valid.editorParameters??valid.construction.parameters);
  for(const k of Object.keys(before.parameters))if(!Object.hasOwn(next.parameters,k))values.delete(k);
  for(const [k,v]of Object.entries(next.parameters))if(!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v))values.set(k,v);

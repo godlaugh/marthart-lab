@@ -9,7 +9,7 @@ const flush=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
 function fixture(){
  const requests:{scene:SceneDocument;context:GenerationInput;resolve:(value:SceneOutput)=>void;reject:(error:Error)=>void}[]=[],captures:{resolve:(value:{capture:SceneOutput;preview:SceneOutput})=>void;reject:(error:Error)=>void}[]=[];
  const port={generate:vi.fn((scene:SceneDocument,context:GenerationInput)=>new Promise<SceneOutput>((resolve,reject)=>requests.push({scene,context,resolve,reject}))),captureSamilaPaused:vi.fn(()=>new Promise<{capture:Extract<SceneOutput,{type:'raster'}>;preview:Extract<SceneOutput,{type:'raster'}>}>((resolve,reject)=>captures.push({resolve:resolve as (v:{capture:SceneOutput;preview:SceneOutput})=>void,reject}))),cancel:vi.fn(),dispose:vi.fn()};
- Object.assign(port,{captureSymmetryPaused:port.captureSamilaPaused});
+ Object.assign(port,{captureSymmetryPaused:port.captureSamilaPaused,captureMapPaused:port.captureSamilaPaused});
  const callbacks={output:vi.fn(),error:vi.fn(),busy:vi.fn()};return{queue:new GenerationQueue(port,callbacks),port,callbacks,requests,captures};
 }
 describe('live Samila request identity and capture lease',()=>{
@@ -37,9 +37,9 @@ describe('live Samila request identity and capture lease',()=>{
  });
 });
 
-describe.each(['samila','symmetry'] as const)('%s capture lease',kind=>{
- const key=kind==='symmetry'?'symmetryLive':'samilaLive',method=kind==='symmetry'?'captureSymmetryPaused':'captureSamilaPaused';
- const live:GenerationInput=kind==='samila'?context:{time:1,width:32,height:24,quality:'preview',symmetryLive:{sessionId:'live',renderFps:60,replayRevision:0,clock:{paused:true}}};
+describe.each(['samila','symmetry','map'] as const)('%s capture lease',kind=>{
+ const key=kind==='map'?'mapLive':kind==='symmetry'?'symmetryLive':'samilaLive',method=kind==='map'?'captureMapPaused':kind==='symmetry'?'captureSymmetryPaused':'captureSamilaPaused';
+ const live:GenerationInput=kind==='samila'?context:{time:1,width:32,height:24,quality:'preview',[key]:{sessionId:'live',renderFps:60,replayRevision:0,clock:{paused:true}}};
  it.each(['replace','cancel','dispose'] as const)('defers %s until the two-display capture finishes',async action=>{
   const f=fixture(),s=createScene(definition(kind));f.queue.request(s,live);f.requests[0].resolve(output);await flush();
   const pending=f.queue[method](output,{width:4,height:4}),caught=pending.catch(e=>e);
@@ -51,11 +51,11 @@ describe.each(['samila','symmetry'] as const)('%s capture lease',kind=>{
  });
 });
 
-describe.each(['samila','symmetry'] as const)('%s playback transition ordering',kind=>{
- const key=kind==='symmetry'?'symmetryLive':'samilaLive',method=kind==='symmetry'?'setSymmetryPaused':'setSamilaPaused';
- const live:GenerationInput=kind==='samila'?{...context,samilaLive:{...context.samilaLive!,clock:{paused:false}}}:{time:1,width:32,height:24,quality:'preview',symmetryLive:{sessionId:'live',renderFps:60,replayRevision:0,clock:{paused:false}}};
+describe.each(['samila','symmetry','map'] as const)('%s playback transition ordering',kind=>{
+ const key=kind==='map'?'mapLive':kind==='symmetry'?'symmetryLive':'samilaLive',method=kind==='map'?'setMapPaused':kind==='symmetry'?'setSymmetryPaused':'setSamilaPaused';
+ const live:GenerationInput=kind==='samila'?{...context,samilaLive:{...context.samilaLive!,clock:{paused:false}}}:{time:1,width:32,height:24,quality:'preview',[key]:{sessionId:'live',renderFps:60,replayRevision:0,clock:{paused:false}}};
  const samilaFrame=(time:number):SceneOutput=>({...output,samilaLive:{sessionId:'live',target:'primary',displayIndex:2,accumulationPasses:1,anchorTheta:0,parameterChanged:false,cleared:false,clock:'realtime-source-queue',runtime:{sceneTime:time,rawDt:.2,activeDt:.2,queueIndex:0,queueComplete:false,parameterWriteRevision:0,phi:0,theta:0,gamma:0,paused:false,updates:2,clockSource:'worker-wall-clock'}}});
- const frame=(time:number):SceneOutput=>kind==='samila'?samilaFrame(time):{...output,symmetryLive:{sessionId:'live',clock:'realtime-source-queue',clockSource:'worker-wall-clock',sceneTime:time,rawDt:.2,activeDt:.2,queueIndex:0,queueComplete:false,paused:false,objectUpdates:2,replayRevision:0,display:{displayIndex:2,replayed:false,resized:false,cleared:false,passes:1,accumulationPasses:2,warmupApplied:true,replayActive:false,remainingBurnInSteps:0,remainingReplaySteps:0,phases:[],gpu:{steps:1,accepted:1,invalid:0,clipped:0,sampleInvalid:0,bounds:{minX:0,maxX:1,minY:0,maxY:1}}}}};
+ const frame=(time:number):SceneOutput=>kind==='samila'?samilaFrame(time):{...output,[key]:{sessionId:'live',clock:'realtime-source-queue',clockSource:'worker-wall-clock',sceneTime:time,rawDt:.2,activeDt:.2,queueIndex:0,queueComplete:false,paused:false,objectUpdates:2,replayRevision:0,display:{displayIndex:2,replayed:false,resized:false,cleared:false,passes:1,accumulationPasses:2,warmupApplied:true,replayActive:false,remainingBurnInSteps:0,remainingReplaySteps:0,phases:[],gpu:{steps:1,accepted:1,invalid:0,clipped:0,sampleInvalid:0,bounds:{minX:0,maxX:1,minY:0,maxY:1}}}}};
  function playbackFixture(){
   const f=fixture(),controls:{resolve:()=>void;reject:(error:Error)=>void}[]=[];
   const control=vi.fn((_output:SceneOutput,_paused:boolean)=>new Promise<void>((resolve,reject)=>controls.push({resolve,reject})));

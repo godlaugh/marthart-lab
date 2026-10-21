@@ -19,7 +19,7 @@ Samila 与 Symmetry 共用当前界面的播放会话标识、控制消息所有
 
 ## 实际执行的验收
 
-新的 `scripts/verify-source-symmetry-live-ui.mjs` 操作真正的 App、Worker 和 WebGL，不替换生成结果。1× 运行通过 11 项核心流程；最终 2× 运行通过 13 项，包含兼容性切换和原版项目样例。
+新的 `scripts/verify-source-iterated-live-ui.mjs` 操作真正的 App、Worker 和 WebGL，不替换生成结果。1× 运行通过 11 项核心流程；最终 2× 运行通过 13 项，包含兼容性切换和原版项目样例。
 
 | 流程 | 观察结果 |
 |---|---|
@@ -51,7 +51,7 @@ Samila 与 Symmetry 共用当前界面的播放会话标识、控制消息所有
 - 源摘要前后稳定，浏览器与 Vite 已关闭。本地报告、图片和构建产物不提交 Git。
 
 ```sh
-node scripts/verify-source-symmetry-live-ui.mjs .cache/source-symmetry-replay/new-ui-run 2 --preset
+node scripts/verify-source-iterated-live-ui.mjs .cache/source-symmetry-replay/new-ui-run 2 --preset
 ```
 
 `--preset` 需要本机已下载的固定原版 JAR；省略它可运行自包含的小负载交互验收。
