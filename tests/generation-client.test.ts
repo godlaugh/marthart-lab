@@ -151,3 +151,27 @@ describe('generation status protocol ownership',()=>{
   const g=setup(),progress=vi.fn(),pending=g.generate(scene(),ctx,progress),rejected=pending.catch(e=>e),worker=FakeWorker.instances[0],request=worker.messages[0];expect('wantsStatus' in request).toBe(false);worker.emit({operation:'generate-status',id:request.id,sessionId:request.sessionId,status});worker.onerror?.({message:'worker failed'});expect((await rejected).message).toBe('worker failed');expect(worker.terminated).toBe(true);worker.emit({operation:'generate-progress',id:request.id,sessionId:request.sessionId,output});expect(progress).not.toHaveBeenCalled();g.dispose();
  });
 });
+
+describe('Samila live capture capability',()=>{
+ const liveOutput:SceneOutput={...output,samilaLive:{sessionId:'live',target:'primary',displayIndex:3,accumulationPasses:4,anchorTheta:0,parameterChanged:false,cleared:false,clock:'fixed-source-queue'}};
+ it('keeps runtime context by value and transfers capability to the two-display result',async()=>{
+  const g=setup(),s=createScene(definition('samila')),live={sessionId:'live',pixelDensity:2,dirtyRevision:4};
+  const pending=g.generate(s,{...ctx,samilaLive:live}),w=FakeWorker.instances[0],r=w.messages[0];live.dirtyRevision=8;
+  expect(r.operation==='generate'&&r.context.samilaLive).toEqual({sessionId:'live',pixelDensity:2,dirtyRevision:4});
+  w.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:liveOutput});await pending;
+  await expect(g.captureSamilaPaused({...liveOutput},{width:3,height:5})).rejects.toThrow('过期');
+  const capture=g.captureSamilaPaused(liveOutput,{width:3,height:5},3),c=w.messages.at(-1)!;expect(c).toMatchObject({operation:'samila-paused-capture',sourceId:r.id,scale:3});
+  const preview={...liveOutput};w.emit({operation:'samila-paused-capture',id:c.id,sessionId:c.sessionId,result:{capture:liveOutput,preview}});await capture;
+  await expect(g.captureSamilaPaused(liveOutput,{width:3,height:5})).rejects.toThrow('过期');
+  const next=g.captureSamilaPaused(preview,{width:3,height:5}),caught=next.catch(e=>e),n=w.messages.at(-1)!;
+  w.emit({operation:'samila-paused-capture',id:n.id,sessionId:n.sessionId,error:'preflight',retainedSourceId:c.id});expect(await caught).toMatchObject({name:'SamilaPausedCaptureError',previewRetained:true});g.dispose();
+ });
+ it('rejects cold replay and cross-family retention evidence',async()=>{
+  for(const frame of [output,liveOutput]){
+   const g=setup(),pending=g.generate(createScene(definition('samila')),ctx),w=FakeWorker.instances[0],r=w.messages[0];w.emit({operation:'generate',id:r.id,sessionId:r.sessionId,output:frame});await pending;
+   if(!frame.samilaLive)await expect(g.captureSamilaPaused(frame,{width:1,height:1})).rejects.toThrow('过期');
+   else {const p=g.captureSamilaPaused(frame,{width:1,height:1}),caught=p.catch(e=>e),c=w.messages.at(-1)!;w.emit({operation:'perlin-paused-capture',id:c.id,sessionId:c.sessionId,error:'same text',retainedSourceId:r.id});expect(await caught).toMatchObject({name:'SamilaPausedCaptureError',previewRetained:false});}
+   g.dispose();
+  }
+ });
+});

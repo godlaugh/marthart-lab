@@ -1,3 +1,4 @@
+import {SourceSamilaSession} from './sourceSamilaSession';
 import {usesSourcePerlinCpu} from './sourcePerlinIdentity';
 import {SourcePerlinSession} from '../scenes/sourcePerlin';
 import {usesSourcePerlinGpu} from './sourcePerlinIdentity';
@@ -67,6 +68,7 @@ export class TemporalGenerationSession {
   readonly bouncing = new BouncingRasterSession();
   readonly sourceBouncing = new SourceBouncingSession();
   readonly sourceAttractor = new SourceAttractorSession();
+  readonly sourceSamila = new SourceSamilaSession();
   readonly iterated = new IteratedDensitySession();
   readonly roots = new RootsDensitySession();
   readonly rootsNative = new RootsNativePresentationSession();
@@ -75,9 +77,10 @@ export class TemporalGenerationSession {
   readonly domain = new DomainRenderSession();
   readonly spirograph = new SpirographFrameSession();
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
-  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
+  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSamila.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
     this.cleanup.prepare();
+    if(context.samilaLive===undefined)this.sourceSamila.reset();else this.iterated.reset();
     if(!scene.perlinSource&&!usesSourcePerlinCpu(scene))this.sourcePerlin.reset();
     if(scene.perlinSource||!usesSourcePerlinGpu(scene))this.sourcePerlinGpu.reset();
     if(!usesSourceAttractor(scene))this.sourceAttractor.reset();
@@ -115,7 +118,7 @@ export class TemporalGenerationSession {
       const oldest = this.frames.keys().next().value!; this.bytes -= frameBytes(this.frames.get(oldest)!); this.frames.delete(oldest);
     }
   }
-  diagnostics() { return { retainedBytes: this.bytes + this.sourcePerlinGpu.diagnostics().retainedBytes + this.sourceAttractor.diagnostics().retainedBytes + this.sourceBouncing.diagnostics().retainedBytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),sourcePerlin:this.sourcePerlin.diagnostics(),sourcePerlinGpu:this.sourcePerlinGpu.diagnostics(),bouncing:this.bouncing.diagnostics(),sourceBouncing:this.sourceBouncing.diagnostics(),sourceAttractor:this.sourceAttractor.diagnostics(),iterated:this.iterated.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
+  diagnostics() { return { retainedBytes: this.bytes + this.sourceSamila.diagnostics().retainedBytes + this.sourcePerlinGpu.diagnostics().retainedBytes + this.sourceAttractor.diagnostics().retainedBytes + this.sourceBouncing.diagnostics().retainedBytes + this.perlin.diagnostics().retainedBytes+this.bouncing.diagnostics().retainedBytes+this.iterated.diagnostics().retainedBytes+this.roots.diagnostics().retainedBytes+this.rootsNative.diagnostics().retainedBytes+this.attractor.diagnostics().retainedBytes+this.tracking.diagnostics().estimatedRetainedBytes, retainedFrames: this.frames.size, cacheHits: this.cacheHits, perlin: this.perlin.diagnostics(),sourcePerlin:this.sourcePerlin.diagnostics(),sourcePerlinGpu:this.sourcePerlinGpu.diagnostics(),bouncing:this.bouncing.diagnostics(),sourceBouncing:this.sourceBouncing.diagnostics(),sourceAttractor:this.sourceAttractor.diagnostics(),iterated:this.iterated.diagnostics(),sourceSamila:this.sourceSamila.diagnostics(),roots:this.roots.diagnostics(),rootsNative:this.rootsNative.diagnostics(),attractor:this.attractor.diagnostics(),tracking:this.tracking.diagnostics() }; }
 }
 
 /** Grid is anchored at zero; arbitrary seek time adds one final exact-time sample. */
@@ -365,6 +368,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
   if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
+    if(context.samilaLive!==undefined){owner.select(scene,context);return owner.sourceSamila.generate(scene,context);}
     if(scene.perlinSource||usesSourcePerlinCpu(scene)){owner.select(scene,context);return owner.sourcePerlin.generate(scene,context);}
     if(usesSourcePerlinGpu(scene)){owner.select(scene,context);return owner.sourcePerlinGpu.generate(scene,context);}
     if(usesSourceBouncing(scene)){owner.select(scene,context);return owner.sourceBouncing.generate(scene,context);}

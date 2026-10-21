@@ -1,3 +1,5 @@
+import {sourceSamilaApplyIdentity} from './engine/sourceSamilaIdentity';
+import {usesSourceSamilaSampling} from './engine/sourceSamilaSampling';
 import {SourceSamilaPaletteEditor} from './components/SourceSamilaPaletteEditor';
 import {usesSourceSamilaSplat} from './engine/sourceSamilaSplat';
 import {usesSourceSamilaPresentation} from './engine/sourceSamilaPresentation';
@@ -286,6 +288,7 @@ export default function App() {
   }
   function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument)) {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
+    if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     if(usesSourceBouncing(next)){
       bouncingPresented.current=false;
       if(!usesSourceBouncing(current)||sourceBouncingInitializationKey(current.bouncingSource!.configuration)!==sourceBouncingInitializationKey(next.bouncingSource!.configuration)){
@@ -302,7 +305,7 @@ export default function App() {
       // not advance time while the new host measurement is still pending.
       autoPlayPending.current=autoPlayPending.current||playingRef.current;
       playingRef.current=false;setPlaying(false);
-      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();
+      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceSamilaSession();
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
       if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
@@ -331,9 +334,15 @@ export default function App() {
     setToast(t(message));
   }
   const rootsSessionId=useRef(crypto.randomUUID());
-  function edit(next: SceneDocument) {
+  const samilaSessionId=useRef(crypto.randomUUID()),samilaDirtyRevision=useRef(0),samilaDisplayRequested=useRef(false);
+  function replaceSamilaSession(){samilaSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;}
+  function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceSamilaSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
+  function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
+  function edit(next: SceneDocument, samilaDirty=false, samilaDisplay=true) {
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    if(samilaDisplay&&usesSourceSamilaSampling(next))samilaDisplayRequested.current=true;
+    if(samilaDirty)dirtySamila();
     history.current.push(sceneRef.current);
     if (history.current.length > 40) history.current.shift();
     future.current=[];
@@ -353,7 +362,7 @@ export default function App() {
       const settings=scene.kind==='samila'&&key==='samilaHistoryModel'
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
-      edit({...scene,settings});
+      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key));
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {
@@ -362,7 +371,7 @@ export default function App() {
   }
   function load(next: SceneDocument, source: 'library' | 'document') {
     showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
-    rootsSessionId.current=crypto.randomUUID();
+    rootsSessionId.current=crypto.randomUUID();replaceSamilaSession();
     // A file/new document is a new renderer instance even when its saved id
     // matches the open work. Ordinary edits retain the current failure latch.
     if(source==='document'){generationQueue.current?.cancel();setPreviewCancelled(false);}
@@ -404,14 +413,14 @@ export default function App() {
   function validateName(name:string){return !name.trim()||name.length>300?"场景名称需为 1–300 个字符":undefined;}
   function renameScene(name:string){
     const value=name.trim();if(!value||value.length>300){notify(t("场景名称需为 1–300 个字符"));return;}
-    edit({...scene,name:value});
+    edit({...scene,name:value},false,false);
     setSaved(current=>current.map(item=>item.id===scene.id?{...item,name:value}:item));
     if(saved.some(item=>item.id===scene.id))setLibrary(current=>touchArtwork(current,scene.id));
   }
   function changeArtworkMetadata(item:SceneDocument,values:Partial<Pick<SceneDocument,'name'|'favorite'>>){
     setSaved(current=>current.map(doc=>doc.id===item.id?{...doc,...values}:doc));
     if(drafts.current[item.id])drafts.current[item.id]={...drafts.current[item.id],...values};
-    if(sceneRef.current.id===item.id)edit({...workingDocument(item),...values});
+    if(sceneRef.current.id===item.id)edit({...workingDocument(item),...values},false,false);
     setLibrary(current=>touchArtwork(current,item.id));
   }
   function createArtwork(kind:SceneKind,folderId:string|null){
@@ -457,6 +466,7 @@ export default function App() {
     setGenerationRevision(value=>value+1);
   }
   function seek(value:number) {
+    if(usesSourceSamilaSampling(sceneRef.current)){replaceSamilaSession();setGenerationRevision(n=>n+1);}
     autoPlayPending.current=false;
     playbackClock.current=value;
     setTime(value);
@@ -645,8 +655,9 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceSplat?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0);
-  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:samilaSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!samilaDisplayRequested.current?'metadata':undefined);
+    samilaDisplayRequested.current=false;
+  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:usesSourceSamilaSampling(scene)||playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;playbackStartedAt.current=performance.now();setPlaying(true);}
   },[output,outputScene,presentedSource,scene,generationActive,error,recording,previewCancelled]);
@@ -951,7 +962,7 @@ export default function App() {
               renderPending={generationActive}
               planeFrameReady={completedFrameReady}
               time={renderTime}
-              pixelRatio={previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio}
+              pixelRatio={usesSourceSamilaSampling(scene)?Math.round(previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio):previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio}
               onCamera={cameraChanged}
               onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
               onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}))}
@@ -966,7 +977,7 @@ export default function App() {
                 if(playingRef.current)return;
                 const next=commitSamilaViewport(sceneRef.current,expected,view);if(!next)return;
                 if(begin){history.current.push(expected);if(history.current.length>40)history.current.shift();future.current=[];}
-                setScene(next);return next;
+                dirtySamila();setScene(next);return next;
               }}
               onRootsPresentation={(expected,rootsPresentation,begin)=>{
                 if(playingRef.current||sceneRef.current!==expected||!usesRootsNativePresentation(expected))return;
@@ -1098,7 +1109,7 @@ export default function App() {
                       <summary>{t(scene.kind==='bouncing'?'初始位置公式':"数学公式")}<span className="mono">ƒ(x)</span>
                       </summary>
                       <div className="section-body">
-                        <EquationEditor scene={scene} equations={def.equations} draft={formulaDraft} onChange={setFormulaDraft} applyOnBlur={experience.applyEquationsOnBlur} onApply={()=>edit({...scene,equations:{...formulaDraft}})}/>
+                        <EquationEditor scene={scene} equations={def.equations} draft={formulaDraft} onChange={setFormulaDraft} applyOnBlur={experience.applyEquationsOnBlur} onApply={()=>{restartSamila();edit({...scene,equations:{...formulaDraft}});}}/>
 
                       </div>
                     </details>
@@ -1117,7 +1128,7 @@ export default function App() {
                     </summary>
                     <div className="section-body">
                       {genericParameterNotice(scene)&&<p className="muted">{t(genericParameterNotice(scene)!)}</p>}
-                      {scene.kind==='symmetry'||scene.kind==='samila'?<ParameterEditor scene={scene} onChange={edit}/>:Object.entries(scene.parameters).map(([key, value]) => (
+                      {scene.kind==='symmetry'||scene.kind==='samila'?<ParameterEditor scene={scene} onChange={(next,intent)=>{if(intent==='structure')restartSamila();edit(next,intent==='value',intent!=='metadata');}}/>:Object.entries(scene.parameters).map(([key, value]) => (
                         <div className="parameter-row" key={key}>
                           <label
                             htmlFor={`param-${key}`}
@@ -1228,7 +1239,7 @@ export default function App() {
                   <SpirographEditor key={`layers:${scene.id}`} scene={scene} time={time} completedFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined} onChange={edit}/>
                   {scene.kind==='roots'&&!usesRootsNativeMath(scene)&&<RootsParameterEditor scene={scene} onChange={edit}/>}
                   {experience.formulaPanel&&<FormulaEditor scene={scene} onChange={edit}/>}
-                  <details className="inspector-section"><summary>{t("场景说明")}</summary><div className="section-body"><label className="equation-field"><span>{t("描述")}</span><textarea aria-label={t("场景描述")} maxLength={300} rows={4} value={scene.description??''} onChange={e=>{const value=e.target.value;if(value.length<=300||(scene.description??'').length>300&&value.length<(scene.description??'').length)edit({...scene,description:value});}}/></label><p className="muted" aria-live="polite">{(scene.description??'').length} / 300 {t('字符')}{(scene.description??'').length>300?' · '+t('已保留导入的长描述'):''}</p>{def.presets.some(p=>scene.id===`preset:${def.kind}:${p.id}`)&&<p className="muted">{t("正在编辑内置示例的本地草稿；保存时会创建独立作品。")}</p>}</div></details>
+                  <details className="inspector-section"><summary>{t("场景说明")}</summary><div className="section-body"><label className="equation-field"><span>{t("描述")}</span><textarea aria-label={t("场景描述")} maxLength={300} rows={4} value={scene.description??''} onChange={e=>{const value=e.target.value;if(value.length<=300||(scene.description??'').length>300&&value.length<(scene.description??'').length)edit({...scene,description:value},false,false);}}/></label><p className="muted" aria-live="polite">{(scene.description??'').length} / 300 {t('字符')}{(scene.description??'').length>300?' · '+t('已保留导入的长描述'):''}</p>{def.presets.some(p=>scene.id===`preset:${def.kind}:${p.id}`)&&<p className="muted">{t("正在编辑内置示例的本地草稿；保存时会创建独立作品。")}</p>}</div></details>
                 </>
               ) : (
                 <>
@@ -1237,7 +1248,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
+                      {usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
                       {!usesSourceSamilaSplat(scene)&&!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
@@ -1389,6 +1400,15 @@ export default function App() {
           previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
           previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourcePointAppearance?.referencePixelDensity:undefined}
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}
+          samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
+          currentSamilaCapture={usesSourceSamilaSampling(scene)?{
+            size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
+            ready:completedFrameReady&&output?.type==='raster'&&output.samilaLive?.sessionId===samilaSessionId.current,
+            capture:async(size,scale)=>{
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Samila 画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current.captureSamilaPaused(output,size,scale);
+            },
+          }:undefined}
           currentPerlinCapture={scene.perlinSource?{
             size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
             ready:completedFrameReady,

@@ -1,5 +1,5 @@
 import {planPerlinRecordingClock,assertPerlinRecordingFrame,type PerlinRecordingClock} from '../engine/sourcePerlinRecording';
-import {prepareSourcePerlinCaptureSize} from '../engine/sourcePerlinCaptureSize';
+import {prepareSourcePausedCaptureSize} from '../engine/sourcePausedCaptureSize';
 import {sourcePerlinBackgroundRgba} from '../engine/sourcePerlinBackground';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {GenerationCleanupState} from '../engine/generationCleanup';
@@ -86,7 +86,7 @@ export class SourcePerlinSession{
   if(!last||!this.matchesCompletedPrimary(scene,c)||!this.configuration)throw new Error('Perlin 暂停截图需要同实例最后完成的主预览');
   if(c.sourceViewport?.target!=='offscreen'||c.sourceViewport.projectionPass!==last.context.sourceViewport?.projectionPass||c.sourceViewport.referenceLogicalHeight!==last.context.sourceViewport.referenceLogicalHeight)throw new Error('Perlin 暂停截图需要原预览的离屏参考尺寸与投影');
   if(c.isCancelled?.())throw new DOMException('Perlin 已取消','AbortError');
-  const size=prepareSourcePerlinCaptureSize(c,last.metadata.sourcePerlinFrame!.sourceViewport.pixelDensity),primary=this.target!,started=performance.now();
+  const size=prepareSourcePausedCaptureSize(c,last.metadata.sourcePerlinFrame!.sourceViewport.pixelDensity),primary=this.target!,started=performance.now();
   // Both targets reserve their readbacks. Count the optional sampled preview
   // alongside those readbacks and all later enhancement/upscale storage.
   const previewSampleBytes=primary.physicalWidth===last.metadata.width&&primary.physicalHeight===last.metadata.height?0:last.metadata.width*last.metadata.height*4;
@@ -128,7 +128,7 @@ export class SourcePerlinSession{
  },failures);}
  diagnostics(){return{constructions:this.constructions,target:this.target?.diagnostics(),exportTarget:this.exportTarget?.diagnostics(),model:this.model?.diagnostics(),flow:this.flow?.diagnostics(),appliedBackend:this.applied?.complete?.backend,recording:this.recording?{nextFrame:this.recording.next,complete:this.recording.frame?.queueComplete}:undefined};}
  diagnosticSnapshot(){return this.model?.diagnosticSnapshot();}
- private ensureExportTarget(size:ReturnType<typeof prepareSourcePerlinCaptureSize>,background:readonly[number,number,number,number]){
+ private ensureExportTarget(size:ReturnType<typeof prepareSourcePausedCaptureSize>,background:readonly[number,number,number,number]){
   if(this.exportTarget&&this.exportTarget.width===size.logicalWidth&&this.exportTarget.height===size.logicalHeight)return this.exportTarget;
   const next=this.target!.createSibling({width:size.logicalWidth,height:size.logicalHeight,density:size.density,samples:0,initialColor:background});
   // Retain both owners until release succeeds. Failed cleanup cannot leave a
@@ -217,7 +217,7 @@ export class SourcePerlinSession{
   if(context.width!==this.completed!.metadata.width||context.height!==this.completed!.metadata.height)throw new Error('Perlin 录制的主预览输出尺寸已改变');
   if(context.isCancelled?.())throw new DOMException('Perlin 已取消','AbortError');
   const clock=planPerlinRecordingClock(this.applied.document,options.simulationFps,context.isCancelled);
-  const size=prepareSourcePerlinCaptureSize(options,this.binding!.density);
+  const size=prepareSourcePausedCaptureSize(options,this.binding!.density);
   // Restore initialization inputs without reverting unrelated current labels,
   // project metadata or source provenance held by the caller.
   const effective={...structuredClone(scene),perlinSource:structuredClone(this.applied.complete),

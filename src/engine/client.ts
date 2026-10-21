@@ -3,7 +3,7 @@ import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
 import type { GenerationRequest, GenerationResponse, RootsPausedCaptureResult, RootsPausedCaptureSize, PerlinPausedCaptureResult, PerlinPausedCaptureSize, PausedCaptureOperation, PausedCaptureResult, PausedCaptureSize, PerlinRecordingOptions, PerlinRecordingHandle, PerlinRecordingStart, PerlinRecordingStop, PerlinRecordingRaster } from './generationProtocol';
-import {RootsPausedCaptureError,PerlinPausedCaptureError,isPausedCaptureOperation,PerlinRecordingOperationError,isPerlinRecordingOperation} from './generationProtocol';
+import {pausedCaptureContracts,isPausedCaptureOperation,PerlinRecordingOperationError,isPerlinRecordingOperation} from './generationProtocol';
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
@@ -93,7 +93,7 @@ export class Generator {
         if(isPausedCaptureOperation(p.operation)&&'source' in p&&!('handle' in p)){
           const retained=data.operation===p.operation&&'retainedSourceId' in data&&data.retainedSourceId===p.source.id&&data.id===this.currentInputId;
           if(retained)this.completed=p.source;
-          p.reject(p.operation==='roots-paused-capture'?new RootsPausedCaptureError(data.error,retained):new PerlinPausedCaptureError(data.error,retained));
+          p.reject(new pausedCaptureContracts[p.operation].Error(data.error,retained));
         }else p.reject(new Error(data.error));
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
@@ -141,12 +141,15 @@ export class Generator {
   capturePerlinPaused(output:SceneOutput,size:PerlinPausedCaptureSize,scale:1|3|5=1):Promise<PerlinPausedCaptureResult>{
     return this.capturePaused('perlin-paused-capture',output,size,scale);
   }
+  captureSamilaPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{
+    return this.capturePaused('samila-paused-capture',output,size,scale);
+  }
   private capturePaused(operation:PausedCaptureOperation,output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能截图'));
-    const source=this.completed,roots=operation==='roots-paused-capture';
-    const eligible=output.type==='raster'&&(roots?!!output.rootsPresentation:!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
+    const source=this.completed,roots=operation==='roots-paused-capture',contract=pausedCaptureContracts[operation];
+    const eligible=output.type==='raster'&&(roots?!!output.rootsPresentation:operation==='samila-paused-capture'?output.samilaLive?.target==='primary'&&source?.scene.kind==='samila':!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
     if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
-      return Promise.reject(new Error(`当前${roots?'复根':'Perlin'}画面尚未完成或已过期，请等待预览完成后重试`));
+      return Promise.reject(new Error(`当前${contract.label}画面尚未完成或已过期，请等待预览完成后重试`));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation,source,resolve,reject});
@@ -157,7 +160,7 @@ export class Generator {
         // retention requires an explicit acknowledgement from its live owner.
         const retained=roots&&this.currentInputId===id&&this.worker!==null;if(retained)this.completed=source;
         const message=error instanceof Error?error.message:String(error);
-        reject(roots?new RootsPausedCaptureError(message,retained):new PerlinPausedCaptureError(message,retained));
+        reject(new contract.Error(message,retained));
       }
     });
   }

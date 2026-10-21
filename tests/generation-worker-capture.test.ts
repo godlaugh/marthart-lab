@@ -3,9 +3,9 @@ import type {GenerationRequest,GenerationResponse} from '../src/engine/generatio
 import type {GenerationInput,SceneDocument,SceneOutput} from '../src/types';
 import {sourcePausedImageBytes} from '../src/engine/sourcePausedImage';
 import {prepareSourcePausedUpscale} from '../src/engine/sourcePausedUpscale';
-const owners=vi.hoisted(()=>({generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()}}));
+const owners=vi.hoisted(()=>({generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},samila:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()}}));
 vi.mock('../src/engine/temporal',()=>({generateScene:owners.generate,TemporalGenerationSession:class{
- sourcePerlin=owners.perlin;rootsNative=owners.roots;reset=owners.reset;
+ sourcePerlin=owners.perlin;rootsNative=owners.roots;sourceSamila=owners.samila;reset=owners.reset;
 }}));
 vi.mock('../src/scenes',()=>({definition:()=>({dimension:2})}));
 const raster=(width:number,height:number):Extract<SceneOutput,{type:'raster'}>=>({type:'raster',width,height,pixels:new Uint8ClampedArray(width*height*4).fill(127),stats:{samples:1,generated:width*height,invalid:0,elapsedMs:0}});
@@ -20,6 +20,7 @@ beforeEach(async()=>{
  vi.resetModules();vi.clearAllMocks();owners.generate.mockReturnValue(raster(32,24));
  owners.perlin.matchesCompletedPrimary.mockReturnValue(true);owners.roots.matchesCompletedPrimary.mockReturnValue(false);
  owners.perlin.capturePaused.mockReturnValue({capture:raster(4,6),preview:raster(32,24)});
+ owners.samila.matchesCompletedPrimary.mockReturnValue(true);owners.samila.capturePaused.mockReturnValue({capture:raster(4,6),preview:raster(32,24)});
  owners.roots.capturePaused.mockReturnValue({capture:raster(3,5),preview:raster(32,24)});
  worker={postMessage:vi.fn()};vi.stubGlobal('self',worker);await import('../src/engine/generate.worker');
 });
@@ -84,5 +85,30 @@ describe('paused capture worker ownership and routing',()=>{
   const response=send({operation:'perlin-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
   expect(response).toHaveProperty('error');expect(response).not.toHaveProperty('retainedSourceId');expect(owners.perlin.matchesCompletedPrimary).not.toHaveBeenCalled();
   const retry=send({operation:'perlin-paused-capture',id:3,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});expect(retry).toHaveProperty('error');expect(owners.perlin.capturePaused).toHaveBeenCalledTimes(1);
+ });
+});
+
+describe('Samila paused capture shares the owner and image postprocessing',()=>{
+ const samilaScene={kind:'samila',id:'live'} as SceneDocument;
+ const liveContext:GenerationInput={time:2,quality:'preview',width:32,height:24,samilaPrimaryPixelHeight:24,samilaLive:{sessionId:'one',pixelDensity:2,dirtyRevision:4}};
+ function start(){send({operation:'generate',id:1,sessionId:7,scene:samilaScene,context:liveContext});}
+ it('routes once to the live owner, uses inherited density, publishes both frames and renews capability',()=>{
+  start();const result=send({operation:'samila-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:3});
+  expect(result.operation).toBe('samila-paused-capture');if(result.operation!=='samila-paused-capture'||!('result' in result))throw Error('capture');
+  expect(owners.generate).toHaveBeenCalledOnce();expect(owners.perlin.capturePaused).not.toHaveBeenCalled();expect(owners.roots.capturePaused).not.toHaveBeenCalled();
+  expect(owners.samila.capturePaused).toHaveBeenCalledWith(samilaScene,{...liveContext,quality:'export',width:3,height:5},{additionalBytes:sourcePausedImageBytes(4,6)-4*6*4+prepareSourcePausedUpscale(4,6,3).peakBytes-4*6*4});
+  expect(result.result.capture).toMatchObject({width:12,height:18,sourcePausedImage:{baseSize:[4,6],scale:3,originalRuntimeCompared:false}});
+  send({operation:'samila-paused-capture',id:3,sessionId:7,sourceId:2,size:{width:3,height:5},scale:1});expect(owners.samila.capturePaused).toHaveBeenCalledTimes(2);
+ });
+ it.each([true,false])('retains a rejected capture only when Samila owner confirms %s',retained=>{
+  start();owners.samila.matchesCompletedPrimary.mockReturnValue(retained);owners.samila.capturePaused.mockImplementation(()=>{throw Error('partial or preflight');});
+  const response=send({operation:'samila-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
+  expect(response).toHaveProperty('error');expect('retainedSourceId' in response?response.retainedSourceId:undefined).toBe(retained?1:undefined);
+  expect(owners.samila.matchesCompletedPrimary).toHaveBeenCalledWith(samilaScene,liveContext);expect(owners.perlin.matchesCompletedPrimary).not.toHaveBeenCalled();
+ });
+ it('does not recover old capability after successful draws but invalid result dimensions',()=>{
+  start();owners.samila.capturePaused.mockReturnValue({capture:raster(3,5),preview:raster(32,24)});
+  const response=send({operation:'samila-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
+  expect(response).toHaveProperty('error');expect(response).not.toHaveProperty('retainedSourceId');expect(owners.samila.matchesCompletedPrimary).not.toHaveBeenCalled();
  });
 });

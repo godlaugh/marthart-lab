@@ -17,10 +17,13 @@ export function validateSourceSamilaSplat(scene:Pick<SceneDocument,'kind'|'setti
  prepareSourceSamilaSplat(scene,{width:1,height:1,path:'points'});sourceSamilaDecay(scene.settings);sourceSamilaFloat(scene.settings,'alpha',.1);sourceSamilaFloat(scene.settings,'colorPhase',180);sourceSamilaUsesPaletteLut(scene.settings,scene.palette);sourceSamilaPaletteLut(scene.palette);
 }
 export function sourceSamilaDecay(settings:Settings):number {
- const accumulation=clamp(sourceSamilaFloat(settings,'accumulationDecay',1)),lifetime=sourceSamilaFloat(settings,'trailLifetime',4),show=settings.showTrails??true;
+ const accumulation=clamp(sourceSamilaFloat(settings,'accumulationDecay',1));return clamp(F(sourceSamilaTrailDecay(settings)*accumulation));
+}
+/** Constructor-only trail coefficient; hot runtime settings do not recalculate it. */
+export function sourceSamilaTrailDecay(settings:Settings):number {
+ const lifetime=sourceSamilaFloat(settings,'trailLifetime',4),show=settings.showTrails??true;
  if(typeof show!=='boolean')throw Error('源 Samila showTrails 必须为布尔值');
- const trail=!show||lifetime<=0?1:F(Math.max(.01,Math.min(1,Math.pow(.01,1/F(lifetime*60)))));
- return clamp(F(trail*accumulation));
+ return !show||lifetime<=0?1:F(Math.max(.01,Math.min(1,Math.pow(.01,1/F(lifetime*60)))));
 }
 export function prepareSourceSamilaSplat(scene:Pick<SceneDocument,'kind'|'settings'>,context:{width:number;height:number;primaryPixelHeight?:number;path:'points'|'quad'}):SourceSamilaSplatFacts|undefined {
  if(!usesSourceSamilaSplat(scene))return;

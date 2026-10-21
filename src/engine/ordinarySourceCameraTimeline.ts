@@ -250,6 +250,9 @@ export class OrdinarySourceCameraTimelineSession {
   this.initial=structuredClone(initial);this.tracks=structuredClone(tracks);this.options={...options};
  }
  evaluate(time:number):OrdinarySourceCameraFrame{try{return evaluateTimeline(this.initial,this.tracks,this.fps,time,this.options,this.cache);}catch(error){this.reset();throw error;}}
+ /** Explicit hot angle write; queued destinations and captured child starts
+  * remain unchanged, as on CameraController. Only an owned replay is writable. */
+ writeTheta(theta:number):void {const value=float(theta,'源相机热 theta');if(!this.cache.size)throw new OrdinarySourceCameraTimelineError('input','源相机热写入需要已初始化队列');for(const replay of this.cache.values())replay.camera.theta=value;}
  reset():void{this.cache.clear();}
 }
 export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions={}):OrdinarySourceCameraFrame {

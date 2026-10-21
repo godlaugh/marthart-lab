@@ -1231,5 +1231,8 @@
   "请等待当前预览完成并暂停后再录制": "Wait for the current preview to finish and pause before recording.",
   "使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。停止后停留在实际末帧，方便检查。": "Restart recording with the last applied configuration, retaining accumulation on the primary canvas and same-size export canvas. Stop at the actual final frame for inspection.",
   "恢复上次应用的模拟配置和后端，首帧预热后按源队列结束停止。导出尺寸变化会重建导出画布。模拟帧率决定运动步长，编码帧率决定播放速度。": "Restore the last applied simulation configuration and backend. Discard one warmup frame, then stop when the source queue ends. Resizing recreates the export canvas. Simulation FPS controls motion; encoder FPS controls playback speed.",
-  "实际视频尺寸：{width} × {height} 像素。": "Actual video size: {width} × {height} pixels."
+  "实际视频尺寸：{width} × {height} 像素。": "Actual video size: {width} × {height} pixels.",
+  "Samila 图像来源": "Samila image source",
+  "截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。": "Capturing adds one sample batch, then redraws the preview with another batch. Animation time stays unchanged. Changing dimensions clears the accumulated image.",
+  "从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。": "Replay from the initial state with independent random samples. The current preview’s accumulated image is not copied."
 }

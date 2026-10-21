@@ -28,7 +28,7 @@ export class SourceSamilaParameterRuntime {
   const narrowed=F(duration);if(!Number.isFinite(narrowed))throw Error('源 Samila 参数片段时长必须为有限 Float32');sourceEase(easing,0);
   this.children=actions.map(action=>{const parsed=normalizeSourceSamilaParameterAction(action);if(!parsed.ok)throw Error(parsed.error.reason);this.reserve(1+parsed.value.parameters.length);return{kind:parsed.value.kind,entries:parsed.value.parameters.map(p=>this.entry(p)),runtime:0,duration:narrowed,easing,finished:false};});
  }
- private write(name:string,value:number):void {
+ write(name:string,value:number):void {
   // Mobject.updateParameter ignores null/blank names, but permits new names.
   if(isJavaBlank(name))return;if(!Number.isFinite(value))throw Error('源 Samila 参数动画产生非有限数值');
   Object.defineProperty(this.values,name,{value,writable:true,enumerable:true,configurable:true});this.writes++;if(!Number.isSafeInteger(this.writes))throw Error('源 Samila 参数写入计数超出容量');

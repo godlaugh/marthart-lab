@@ -25,8 +25,8 @@ export type RootsPausedCaptureSize=PausedCaptureSize;
 export type RootsPausedCaptureResult=PausedCaptureResult;
 export type PerlinPausedCaptureSize=PausedCaptureSize;
 export type PerlinPausedCaptureResult=PausedCaptureResult;
-export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture';
-export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture';}
+export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture'|'samila-paused-capture';
+export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture'||operation==='samila-paused-capture';}
 /** Only the owning worker can confirm that a rejected capture retained its
  * completed preview. Message text or an input/capacity error tag is not proof. */
 export class PausedCaptureError extends Error {
@@ -38,6 +38,15 @@ export class RootsPausedCaptureError extends PausedCaptureError {
 export class PerlinPausedCaptureError extends PausedCaptureError {
   constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='PerlinPausedCaptureError';}
 }
+export class SamilaPausedCaptureError extends PausedCaptureError {
+  constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='SamilaPausedCaptureError';}
+}
+/** The operation owns its label and error type across client and queue. */
+export const pausedCaptureContracts={
+ 'roots-paused-capture':{label:'复根',Error:RootsPausedCaptureError},
+ 'perlin-paused-capture':{label:'Perlin',Error:PerlinPausedCaptureError},
+ 'samila-paused-capture':{label:'Samila',Error:SamilaPausedCaptureError},
+} satisfies Record<PausedCaptureOperation,{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
 
 type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Operation;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5} }[PausedCaptureOperation];
 export type GenerationRequest = { sessionId: number } & (

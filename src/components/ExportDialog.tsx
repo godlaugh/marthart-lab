@@ -1,6 +1,7 @@
+import {usesSourceSamilaSampling} from '../engine/sourceSamilaSampling';
 import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
 import {withPerlinFreshRecording,assertPerlinRecordingFrame} from '../engine/sourcePerlinRecording';
-import {prepareSourcePerlinCaptureSize} from '../engine/sourcePerlinCaptureSize';
+import {prepareSourcePausedCaptureSize} from '../engine/sourcePausedCaptureSize';
 import {usesSourcePerlin} from '../engine/sourcePerlinIdentity';
 import {sourceQueuePresentedScene} from '../engine/sourceQueuePresentation';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
@@ -36,6 +37,8 @@ export function ExportDialog({
   previewPointPixelDensity,
   samilaPrimaryPixelHeight,
   currentRootsCapture,
+  currentSamilaCapture,
+  samilaPixelDensity,
   currentPerlinCapture,
   currentPerlinRecording,
   currentSourceBouncingFrame,
@@ -49,6 +52,8 @@ export function ExportDialog({
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   previewPointPixelDensity?:number;
   samilaPrimaryPixelHeight?:number;
+  samilaPixelDensity?:number;
+  currentSamilaCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentPerlinCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentPerlinRecording?:{ready:boolean;record:(options:PerlinRecordingOptions,consumer:PerlinRecordingConsumer,signal?:AbortSignal)=>Promise<void>};
@@ -57,11 +62,11 @@ export function ExportDialog({
   onDone: (message: string) => void;
 }) {
   const {t}=useI18n();
-  const sourceBouncing=usesSourceBouncing(scene),sourcePerlin=!!scene.perlinSource;
-  const currentPausedCapture=sourcePerlin?currentPerlinCapture:currentRootsCapture;
+  const sourceBouncing=usesSourceBouncing(scene),sourcePerlin=!!scene.perlinSource,sourceSamila=usesSourceSamilaSampling(scene);
+  const currentPausedCapture=sourcePerlin?currentPerlinCapture:sourceSamila?currentSamilaCapture:currentRootsCapture;
   const [bouncingStart,setBouncingStart]=useState<'current'|'seed'>('seed');
   const sourceFrames=usesSpirographFrameClock(scene);
-  const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>usesRootsNativePresentation(scene)||sourcePerlin?'current':'replay');
+  const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila?'current':'replay');
   const [pausedImageScale,setPausedImageScale]=useState<1|3|5>(1);
   const [rootsVideoMode,setRootsVideoMode]=useState<'duration'|'source'>(()=>usesRootsGradientTimeline(scene)?'source':'duration');
   const [perlinVideoMode,setPerlinVideoMode]=useState<'duration'|'source'|'retained'>('duration');
@@ -94,9 +99,9 @@ export function ExportDialog({
   const [width,height]=resolution==='custom'?[customWidth,customHeight]:resolution.split('x').map(Number);
   const retainedPerlin=kind==='video'&&sourcePerlin&&perlinVideoMode==='retained';
   const perlinQueueVideo=perlinFrames||retainedPerlin;
-  const pausedSourceImage=kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin)&&sourceImageMode==='current';
+  const pausedSourceImage=kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
-  if(sourcePerlin&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePerlinCaptureSize({width,height},sourcePerlinViewport?.pixelDensity??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  if((sourcePerlin||sourceSamila)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let upscaleError=pausedSizeError;
   if(pausedSourceImage&&pausedImageScale!==1){try{const size=prepareSourcePausedUpscale(outputBase.width,outputBase.height,pausedImageScale);validateRasterRequest({time:0,quality:'export',width:size.width,height:size.height});}catch(error){upscaleError=error instanceof Error?error.message:String(error);}}
   let dimensionError='';
@@ -372,6 +377,7 @@ export function ExportDialog({
         </p>
         {domainFrames.length>0&&<details open data-testid="domain-export-rendering"><summary>{t('本次导出的实际执行规则')}</summary>{domainFrames.map(item=><div key={item.key}><p>{t('已完成帧 {first}–{last}',{first:item.first+1,last:item.last+1})}</p><DomainRenderSummary facts={item.facts}/></div>)}{domainFrames.length>1&&<p>{t('本次导出使用了多种执行路径；以下范围记录各路径首次和最后出现的帧，不表示中间所有帧相同。')}</p>}{domainRoutesTruncated&&<p>{t('执行路径详情超过 16 项，后续不同路径未全部列出。')}</p>}</details>}
         {sourceBouncing&&<p role="status" className="muted">{t(kind==='image'?'PNG 保存当前已呈现检查点，不推进模拟；尺寸变化只改变输出投影。':'源弹跳离线逐帧录制，使用源时钟的预热与停止规则。')}{!currentSourceBouncingFrame?.ready&&t('请等待当前预览完成并暂停后再导出。')}</p>}
+        {sourceSamila&&<p role="status" className="muted">{t(pausedSourceImage?'截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。':'从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。')}</p>}
         {sourcePerlin&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。':retainedPerlin?'使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。停止后停留在实际末帧，方便检查。':'从当前配置的初始状态重放，不保留预览中的后端切换历史。')}</p>}
         {retainedPerlin&&<><p className="muted">{t('实际视频尺寸：{width} × {height} 像素。',{width:videoWidth,height:videoHeight})}</p>{!working&&!currentPerlinRecording?.ready&&<p role="status" className="muted">{t('请等待当前预览完成并暂停后再录制')}</p>}{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         {usesRootsNativePresentation(scene)&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像；尺寸变化会清空密度墨迹，点云截图使用独立的累积画布。':'空间复根导出会从初始采样重放到所选时间，使用当前相机和导出尺寸；预览中的历史墨迹与点云拖影不会复制。')}</p>}
@@ -395,7 +401,7 @@ export function ExportDialog({
           >
             <Film size={15} />{t("动画视频")}</button>
         </div>
-        {kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin)&&<label className="field"><span>{t(sourcePerlin?'Perlin 图像来源':'复根图像来源')}</span><select aria-label={t(sourcePerlin?'Perlin 图像来源':'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
+        {kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila)&&<label className="field"><span>{t(sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':'复根图像来源')}</span><select aria-label={t(sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
         {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t('先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:outputBase.width*pausedImageScale,height:outputBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         <label className="field">
           <span>{t("文件格式")}</span>

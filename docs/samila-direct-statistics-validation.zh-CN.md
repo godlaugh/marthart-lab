@@ -72,3 +72,5 @@ node scripts/benchmark-source-samila-draw.mjs .cache/stats-quad-proof . quad pro
 原包对照与界面／导出复跑步骤见 [直接绘制验证](samila-direct-gpu-validation.zh-CN.md)。这里的通过范围是本地实现与明确输入的参照，不是原生 JVM／JOGL 整窗一致性验收。
 
 Samila 每次 display 的采样、热参数修改、尺寸变化和暂停截图生命周期仍须完成；全体场景原生整窗对照仍为 0/11。1.0 Apple Silicon 安装包未重新打包或替换。
+
+后续进展：实时显示、热修改和暂停截图已另行实现并验证，见 [Samila 实时绘制与暂停截图验证](samila-hot-display-validation.zh-CN.md)。本页保留当时的性能测量与严格坐标失败记录；原生宿主时序和整图验收仍未完成。

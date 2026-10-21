@@ -18,6 +18,11 @@ export function selectSamilaHistoryModel(settings:Settings,value:unknown):Settin
  const model=samilaHistoryModel({samilaHistoryModel:value});
  return{...settings,samilaHistoryModel:model,...(model==='legacy-v1'&&settings.densityToneModel==='samila-normalized-v2'?{densityToneModel:'white-point-v1'}:{})};
 }
+/** Shared source parameter acknowledgement; comparison is Java double. */
+export function samilaParametersChanged(parameters:Readonly<Record<string,number>>,previous:Readonly<Record<string,number>>):boolean {
+ const keys=Object.keys(parameters);if(keys.some(key=>!Number.isFinite(parameters[key])))throw Error('Samila 历史参数必须有限');
+ return keys.length!==Object.keys(previous).length||keys.some(key=>!Object.hasOwn(previous,key)||Math.abs(parameters[key]-previous[key])>PARAMETER_EPSILON);
+}
 const checkedProduct=(a:number,b:number)=>{const value=a*b;if(!Number.isSafeInteger(value)||value<0)throw new Error('Samila 历史采样计数超出安全整数范围');return value;};
 /** Acknowledged parameters are updated only on a parameter clear, not on an
  * unrelated field/structural clear. Small changes accumulate against that same
@@ -26,7 +31,7 @@ export function prepareSamilaHistoryFrame(input:{parameters:Readonly<Record<stri
  const {parameters,fieldKey,frame,count,record}=input;
  if(!Number.isSafeInteger(frame)||frame<0||!Number.isSafeInteger(count)||count<1||count>8_000_000||typeof record!=='boolean')throw new Error('Samila 历史帧边界无效');
  const keys=Object.keys(parameters).sort();if(keys.some(key=>!Number.isFinite(parameters[key])))throw new Error('Samila 历史参数必须有限');
- const changed=!!previous&&(keys.length!==Object.keys(previous.parameters).length||keys.some(key=>!Object.hasOwn(previous.parameters,key)||Math.abs(parameters[key]-previous.parameters[key])>PARAMETER_EPSILON));
+ const changed=!!previous&&samilaParametersChanged(parameters,previous.parameters);
  const passes=record?(changed?COMPENSATION_PASSES:1):0,samples=checkedProduct(count,passes),first=checkedProduct(frame,COMPENSATION_PASSES);
  const randomFrames=Array.from({length:passes},(_,pass)=>{const value=first+pass;if(!Number.isSafeInteger(value))throw new Error('Samila 随机批次地址超出安全整数范围');return value;});
  return{model:'bounded-v2',clear:forceClear||!previous||changed||previous.fieldKey!==fieldKey,passes,samples,randomFrames,densityCeiling:SAMILA_HISTORY_CEILING,next:{parameters:!previous||changed?Object.fromEntries(keys.map(key=>[key,parameters[key]])):previous.parameters,fieldKey}};
