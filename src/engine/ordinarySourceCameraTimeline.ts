@@ -45,6 +45,8 @@ export interface OrdinarySourceCameraParticles {
   * Includes waits and frames with no target reads; stops when the queue was
   * already complete at frame start. This is not CameraController's raw dt. */
  update(frame:OrdinaryCameraParticleFrame):void;
+ /** Scene subclasses may update their object again after the base camera update. */
+ afterSceneUpdate?(frame:OrdinaryCameraParticleFrame&{paused:boolean}):void;
  /** Scene.display follows camera update on every rendered frame, including
   * completed queues. Mesh seam/cache initialization belongs to this event. */
  displayFrame?(frameIndex:number,final:boolean):void;
@@ -378,6 +380,7 @@ function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySo
    }
    finite(camera.focalDistance);finite(camera.zoom);camera.center.forEach(finite);
    }
+   check(options);replay.particles?.afterSceneUpdate?.({frameIndex,time:facts.sceneTime,deltaTime:facts.rawDt,paused});
    check(options);replay.particles?.displayFrame?.(frameIndex,final);
    replay.frameIndex=frameIndex;
 }

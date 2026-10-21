@@ -74,7 +74,7 @@ export type IteratedField =
  | {kind:'symmetry';mathModel?:typeof SOURCE_SYMMETRY_MATH;parameters:SymmetryParameters;time:number}
  | {kind:'symmetry-custom';plan:PreparedSymmetryCustomSource;uniforms:Readonly<Record<string,number>>;parameters:Readonly<Record<string,number>>;time:number}
  | {kind:'samila';mathModel?:SourceSamilaMathModel;equations:{f1:string;f2:string};parameters:Record<string,number>;mapping:string;projection:string;lo:number;hi:number;rotation:number;time:number};
-export interface IteratedFrameJob {symmetryFrame?:SourceSymmetryFramePlan;samilaSampling?:SourceSamilaSamplingFacts;symmetrySplat?:SourceSymmetrySplatFacts;symmetryPalette?:SourceSymmetryPaletteFacts;samilaSplat?:SourceSamilaSplatFacts;samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
+export interface IteratedFrameJob {symmetryUpdates?:readonly IteratedField[];symmetryFrame?:SourceSymmetryFramePlan;samilaSampling?:SourceSamilaSamplingFacts;symmetrySplat?:SourceSymmetrySplatFacts;symmetryPalette?:SourceSymmetryPaletteFacts;samilaSplat?:SourceSamilaSplatFacts;samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
 function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:SceneDocument):IteratedField {
  const p={...scene.parameters};for(const [key,v]of Object.entries(p))finite(v,`参数 ${key}`);
  if(scene.kind==='symmetry'){
@@ -247,7 +247,13 @@ export class IteratedDensitySession {
     const parameterFrame=sourceSymmetryParameterFrame(snapshot);
     if(usesSourceSymmetryParameters(baseScene)&&!parameterFrame)throw Error('源 Symmetry 缺少同帧参数快照');
     const resetParticles=s.structuralKey!==job.structuralKey,clear=(job.history?.clear??(resetParticles||(parameterFrame?parameterFrame.changed:s.fieldKey!==job.fieldKey)))||job.sourceCamera?.clearInk===true;
-    if(usesSourceSymmetryGradient(baseScene)){const event=sourceSymmetryUpdateEvent(snapshot);if(!event)throw Error('源 Symmetry 缺少同帧对象更新事件');job.symmetryFrame=prepareSourceSymmetryFramePlan(event,!resetParticles&&(s.symmetryFrame?.warmupApplied??false),cfg.burn,cfg.iterations);}
+    if(usesSourceSymmetryGradient(baseScene)){
+     const event=sourceSymmetryUpdateEvent(snapshot);if(!event)throw Error('源 Symmetry 缺少同帧对象更新事件');
+     // Only the field changes between object calls; reuse this display's
+     // normalized configuration instead of rebuilding its palette and camera.
+     job.symmetryUpdates=event.calls.map(call=>parseField({...snapshot,parameters:call.parameters?{...call.parameters}:snapshot.parameters},cfg,call.time,baseScene));
+     job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:event.frameIndex,updateCount:event.calls.length},!resetParticles&&(s.symmetryFrame?.warmupApplied??false),cfg.burn,cfg.iterations);
+    }
     if(!job.history)preflight(base.kind==='samila'?samples:cfg.count*(job.symmetryFrame?job.symmetryFrame.warmupSteps+job.symmetryFrame.iterationSteps:cfg.iterations+(resetParticles?cfg.burn:0)));
     if(cfg.record&&!job.history){pixelTests+=job.symmetrySplat?sourceSymmetrySplatPixelTests(job.symmetrySplat,cfg.count):cfg.count*(Math.ceil(job.samilaSplat?Math.max(sourceSamilaPointDiameter(job.samilaSplat),Math.max(Math.fround(job.samilaSplat.radius*Math.fround(.6)),Math.fround(.8))):cfg.pointSize)+2)**2;if(pixelTests>MAX_PIXEL_TESTS)throw new Error('GPU 持续密度单次累积像素测试上界超过 20 亿；请减少点尺寸、批次或时间');}
     if(clear)clearInk(s);if(resetParticles)s.replays++;

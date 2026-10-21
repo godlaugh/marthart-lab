@@ -1,9 +1,9 @@
-import type {IteratedFrameJob} from '../scenes/iteratedDensity';
+import type {IteratedFrameJob,IteratedField} from '../scenes/iteratedDensity';
 import {IteratedDensityGpu,type IteratedGpuOptions,type IteratedGpuFacts} from './iteratedDensityGpu';
 import {prepareSourceSymmetryFramePlan,prepareSourceSymmetryReplayFrame,type SourceSymmetryFramePlan} from './sourceSymmetryFramePlan';
 import {sourceSymmetrySplatPixelTests} from './sourceSymmetrySplat';
 import {GenerationCleanupState} from './generationCleanup';
-export interface SourceSymmetryDisplayEvent {updated:boolean;paused:boolean;parameterChanged:boolean;cameraChanged:boolean;}
+export interface SourceSymmetryDisplayEvent {updates:readonly IteratedField[];paused:boolean;parameterChanged:boolean;cameraChanged:boolean;}
 export interface SourceSymmetryDisplayFacts {
  displayIndex:number;replayed:boolean;cleared:boolean;passes:number;accumulationPasses:number;
  warmupApplied:boolean;replayActive:boolean;remainingBurnInSteps:number;remainingReplaySteps:number;
@@ -41,10 +41,11 @@ export class SourceSymmetryReplaySession {
   this.cleanup.prepare();if(this.failed||this.busy)throw Error('Symmetry 显示需要重置失败会话');
   const cfg=job.config;
   if(job.kind!=='symmetry'||!job.symmetrySplat||!job.symmetryPalette||!cfg.sourceSymmetrySeed||!cfg.record)throw Error('Symmetry 重播需要完整源 GPU 配置与粒子绘制');
-  if(!event||['updated','paused','parameterChanged','cameraChanged'].some(key=>typeof event[key as keyof SourceSymmetryDisplayEvent]!=='boolean'))throw Error('Symmetry 显示事件无效');
+  if(!event||['paused','parameterChanged','cameraChanged'].some(key=>typeof event[key as keyof SourceSymmetryDisplayEvent]!=='boolean'))throw Error('Symmetry 显示事件无效');
+  if(!Array.isArray(event.updates)||event.updates.length>2)throw Error('Symmetry 有序更新事件无效');
   if(this.initialized&&(options.width!==this.width||options.height!==this.height))throw Error('Symmetry 重播会话尺寸改变需要显式重建');
   // Validate steps with the ordinary producer before any GPU mutation.
-  const ordinary=prepareSourceSymmetryFramePlan({frameIndex:this.displayIndex,updated:event.updated},this.warmup,cfg.burn,cfg.iterations);
+  const ordinary=prepareSourceSymmetryFramePlan({frameIndex:this.displayIndex,updateCount:event.updates.length},this.warmup,cfg.burn,cfg.iterations);
   const replay=this.usesReplayDisplay,starting=this.initialized&&this.pending;
   const remaining=starting?Math.max(64,Math.min(256,cfg.burn)):this.remainingReplay;
   const frames=starting?Math.max(1,Math.floor(Math.fround(Math.fround(.5)*Math.fround(Math.max(1,this.renderFps)))+.5)):this.targetFrames;
@@ -58,7 +59,7 @@ export class SourceSymmetryReplaySession {
   if(retainedPasses+draws>0x7fffffff||!Number.isSafeInteger(this.displayIndex+1)||!Number.isSafeInteger(this.gpuFrame+10))throw Error('Symmetry 显示计数超出容量');
   const phases:SourceSymmetryDisplayFacts['phases'][number][]=[],total:IteratedGpuFacts={bounds:{minX:-1,maxX:1,minY:-1,maxY:1},steps:0,invalid:0,accepted:0,clipped:0,sampleInvalid:0};
   const execute=(kind:'update'|'display'|'replay',plan:SourceSymmetryFramePlan,draw:boolean,resetParticles:boolean,clearInk:boolean,decay:number)=>{
-   const frame=this.gpuFrame++,phase={...job,frame,config:{...cfg,record:draw,decay},symmetryFrame:{...plan,frameIndex:frame}};
+   const frame=this.gpuFrame++,phase={...job,frame,symmetryUpdates:kind==='replay'?undefined:event.updates,config:{...cfg,record:draw,decay},symmetryFrame:{...plan,frameIndex:frame}};
    const result=this.gpu.step(phase,{...options,resetParticles,clearInk});total.bounds=result.bounds;total.steps+=result.steps;total.invalid+=result.invalid;
    if(draw){total.accepted+=result.accepted;total.clipped+=result.clipped;total.sampleInvalid+=result.sampleInvalid;}
    phases.push({kind,warmupSteps:plan.warmupSteps,iterationSteps:plan.iterationSteps,draw,resetParticles});
@@ -72,7 +73,7 @@ export class SourceSymmetryReplaySession {
     this.warmup=ordinary.warmupApplied;this.pending=false;if(clear)this.passes=0;this.passes++;
    }else{
     // update precedes display even when display will discard the old trajectory.
-    if(event.updated){execute('update',ordinary,false,false,false,1);this.warmup=ordinary.warmupApplied;}
+    if(event.updates.length){execute('update',ordinary,false,false,false,1);this.warmup=ordinary.warmupApplied;}
     if(starting){this.remainingBurn=cfg.burn;this.remainingReplay=remaining;this.replayIndex=0;this.targetFrames=frames;this.burnBudget=burnBudget;this.warmup=false;this.passes=0;this.pending=false;this.active=true;clear=true;}
     for(let i=0;i<Math.max(1,draws);i++)execute('replay',prepareSourceSymmetryReplayFrame(this.displayIndex,i===0?burn:0,i<draws?cfg.iterations:0),i<draws,starting&&i===0,clear&&i===0,1);
     this.remainingBurn-=burn;this.remainingReplay-=draws;if(draws>0)this.replayIndex++;this.passes+=draws;

@@ -1,6 +1,6 @@
 # Symmetry 调度结论更正：原版每帧会调用几次 update
 
-2026-10-21。接入实时生成前发现并验证了此前遗漏的场景覆写：`GenericSymmetryChaosScene.update(boolean)` 在通用 `Scene.update` 返回后，还会直接调用一次 Mobject.update。**当前 MathArt Lab 的对称时间线及 GPU 帧计划仍只覆盖通用路径，需要修正后才能接入界面。** 此前“空队列不更新、队列结束后粒子冻结”的原版行为判断不成立。
+2026-10-21。接入实时生成前发现并验证了此前遗漏的场景覆写：`GenericSymmetryChaosScene.update(boolean)` 在通用 `Scene.update` 返回后，还会直接调用一次 Mobject.update。发现时 MathArt Lab 的对称时间线及 GPU 帧计划只覆盖通用路径。**后续已修正并通过本地 GPU 与公开操作验证，见[调度修复验收](source-symmetry-dispatch-validation.zh-CN.md)。** 此前“空队列不更新、队列结束后粒子冻结”的原版行为判断不成立。
 
 ## 本轮实际执行
 
@@ -30,7 +30,7 @@ pending 或 replayActive 不改变这些次数。原版 `shouldDeferParamAnimato
 4. 空队列和结束队列的未暂停帧仍执行一次更新。重播期间也遵循该调度，再执行已有的显示重播阶段。
 5. 更新固定预览、定位、导出、实时会话与测试，删除旧的布尔更新事件假设；以本轮原版调用记录校验新事件顺序。
 
-这次优先纠正证据，尚未改动生产调度代码，也未完成 Worker/编辑器接入。不能把此前全量测试通过当成该缺陷已解决的证明。
+本报告最初提交仅纠正证据。后续已修复有序调度并重验公开预览、定位和导出；新增的实时编辑重播所有者仍待 Worker/编辑器接入。旧全量测试通过不能作为本缺陷已解决的证明，新验证记录见上方链接。
 
 ## 复验与边界
 

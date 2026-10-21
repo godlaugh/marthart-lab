@@ -34,16 +34,17 @@ describe('Symmetry parameters from public project through shared display frames'
   expect(snapshot.parameters.lambda).toBe(Math.fround(.4));expect(job.field.parameters.lambda).toBe(Math.fround(.4));expect(job.config.seed).toBe(base.config.seed);expect(job.structuralKey).toBe(base.structuralKey);expect(scene).toEqual(before);
   const full=replaySourceSymmetryTimeline(scene,.1);expect(full.palette.offset).not.toBe(scene.palette.offset);expect(snapshot.evaluatedSourceCamera).toEqual(full.frame);expect(snapshot.parameters).toEqual(full.parameters!.values);
  });
- it('keeps wait updates, freezes completed queues, and reconstructs cold/warm/backward values identically',()=>{
-  const scene=read([animate([start({lambda:{step:.05,min:-1,max:1}})],.1),{type:'wait',duration:.1}]);
+ it('keeps updating through waits and completed queues, and reconstructs cold/warm/backward values identically',()=>{
+  const scene=read([animate([start({lambda:{step:.003,min:-1,max:1,edgeEasing:{floor:1}}})],.1),{type:'wait',duration:.1}]);
+  scene.timeline.duration=1;
   const frames=Array.from({length:18},(_,i)=>sceneAtTime(scene,i/scene.timeline.fps));
-  expect(frames[7].parameters.lambda).not.toBe(frames[5].parameters.lambda);expect(frames[17].parameters).toEqual(frames[15].parameters);
+  expect(frames[7].parameters.lambda).not.toBe(frames[5].parameters.lambda);expect(frames[17].parameters.lambda).toBeGreaterThan(frames[15].parameters.lambda);
   for(const i of [15,0,3,16,1]){const warm=sceneAtTime(scene,i/scene.timeline.fps);expect(warm.parameters).toEqual(frames[i].parameters);clearSourceSymmetryTimelineCache();expect(sceneAtTime(scene,i/scene.timeline.fps).parameters).toEqual(frames[i].parameters);}
  });
  it('acknowledges all double parameters at the native threshold, including sub-Float32 writes and unused names',()=>{
   const scene=read([animate([start({lambda:{step:8e-10,min:-1,max:1,edgeEasing:{floor:1}}})],0),{type:'wait',duration:1}]);
   const frames=Array.from({length:6},(_,i)=>{const s=sceneAtTime(scene,i/scene.timeline.fps);return {s,f:sourceSymmetryParameterFrame(s)!};});
-  expect(frames.map(x=>x.f.changed)).toEqual([true,false,true,false,true,false]);
+  expect(frames.map(x=>x.f.changed)).toEqual([true,true,true,true,true,true]);
   expect(new Set(frames.map(x=>Math.fround(x.s.parameters.lambda))).size).toBe(1);expect(frames[2].s.parameters.lambda).not.toBe(frames[0].s.parameters.lambda);
   const extra=read([animate([start({'unused.name':{min:.5,max:.5}})])]);expect(sourceSymmetryParameterFrame(sceneAtTime(extra,0))!.values['unused.name']).toBe(.5);
  });

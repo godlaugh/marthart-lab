@@ -1,6 +1,6 @@
 # Symmetry 编辑路径与共享会话验收
 
-> **后续证据更正（2026-10-21）**：原版 GenericSymmetryChaosScene 在通用更新后还会额外更新 Mobject；未暂停时，队列进行中调用两次，空/结束队列调用一次。本文按通用 Scene 推导的完整时序结论不能作为原版一致性证明。生产调度修正尚未完成，见[调用链复验与修正要求](source-symmetry-dispatch-correction.zh-CN.md)。
+> **后续证据更正（2026-10-21）**：原版 GenericSymmetryChaosScene 在通用更新后还会额外更新 Mobject；未暂停时，队列进行中调用两次，空/结束队列调用一次。本文按通用 Scene 推导的完整时序结论不能作为原版一致性证明。生产调度现已修正，见[最新修复验收](source-symmetry-dispatch-validation.zh-CN.md)及[原版调用链证据](source-symmetry-dispatch-correction.zh-CN.md)；本文保留为历史记录。
 
 2026-10-21。共享时间线现已提供独立会话，固定时间预览继续使用同一套参数、渐变和相机状态。新增实时步进及暂停接口，并允许重播显示跳过参数快照确认。**这一步完成了状态所有权整理，尚未把色板/变换编辑后的 GPU 分帧重播接入界面。** 1.0 安装应用未重新打包。
 

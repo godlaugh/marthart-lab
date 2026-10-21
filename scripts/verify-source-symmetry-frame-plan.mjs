@@ -1,5 +1,5 @@
 /** Real GPU / public generation checks of source update-vs-display scheduling.
- * The source queue semantics are derived from retained Scene/Mobject bytecode;
+ * The source dispatch is verified against the original GenericSymmetry scene;
  * this does not execute the original native application window. */
 import {chromium} from '@playwright/test';
 import {createServer} from 'vite';
@@ -17,12 +17,12 @@ try{
   const {iteratedInitialChunk}=await import('/src/engine/iteratedSeed.ts'),{prepareSourceSymmetryFramePlan}=await import('/src/engine/sourceSymmetryFramePlan.ts');
   const {ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts');
   const assert=(v,m)=>{if(!v)throw Error(m);},equal=(a,b)=>a.length===b.length&&a.every((v,i)=>Object.is(v,b[i])),mass=ink=>ink.reduce((sum,v,i)=>sum+(i%4===3?v:0),0);
-  const make=(custom,timeline=[])=>{const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Frame cadence',settings:{batch_size:9,burn_in_steps:3,scale_x:1,scale_y:1,scale_z:1},palette:['#ffffff','#ffffff'],...(custom?{equation:{glsl:'void calculate_next(in vec3 p,out vec3 n,out float m){n=p+vec3(.01,0.,0.);m=.01;}'}}:{}),timeline})).scene;s.settings.iterationsPerFrame=2;return parseScene(serializeScene(s));};
+  const make=(custom,timeline=[])=>{const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Frame cadence',settings:{batch_size:9,burn_in_steps:3,scale_x:1,scale_y:1,scale_z:1},palette:['#ffffff','#ffffff'],...(custom?{equation:{glsl:'void calculate_next(in vec3 p,out vec3 n,out float m){n=p+vec3(.01,0.,0.);m=.01;}'}}:{}),timeline})).scene;s.timeline.duration=1;s.settings.iterationsPerFrame=2;return parseScene(serializeScene(s));};
   const rows=[];
   for(const custom of [false,true]){
    const scene=make(custom),gpu=new IteratedDensityGpu(),row={storage:custom?'texture':'buffer',frames:[]};rows.push(row);let warm=false,previous,expected,previousMass;
    try{for(const [frame,updated]of [false,true,false,true,false].entries()){
-    const job=prepareIteratedFrame(scene,frame/scene.timeline.fps,frame);job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:frame,updated},warm,job.config.burn,job.config.iterations);warm=job.symmetryFrame.warmupApplied;
+    const job=prepareIteratedFrame(scene,frame/scene.timeline.fps,frame);job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:frame,updateCount:Number(updated)},warm,job.config.burn,job.config.iterations);warm=job.symmetryFrame.warmupApplied;
     if(frame===0)expected=iteratedInitialChunk(job.config,0,job.config.count);
     const facts=gpu.step(job,{width:64,height:48,projection:'xy',padding:0,bounds:{minX:-2,maxX:2,minY:-2,maxY:2},resetParticles:frame===0,clearInk:frame===0}),particles=gpu.readParticles(),inkMass=mass(gpu.readback());
     if(frame===0){assert(equal(particles.positionsAndMetric,expected),'Initial seed changed on display');assert(particles.validity.every(v=>v===1),'Initial seeds invalid');assert(particles.invalidCounts.every(v=>v===0),'Initial error counter dirty');assert(inkMass>0,'Initial seeds not drawn');}
@@ -32,7 +32,7 @@ try{
     row.frames.push({frame,updated,steps:facts.steps,inkMass,plan:job.symmetryFrame});previous=particles;previousMass=inkMass;
    }
    // Reset an existing allocation: both metadata and positions must come from seeds.
-   const reset=prepareIteratedFrame(scene,0,0);reset.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:0,updated:false},false,reset.config.burn,reset.config.iterations);
+   const reset=prepareIteratedFrame(scene,0,0);reset.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:0,updateCount:0},false,reset.config.burn,reset.config.iterations);
    gpu.step(reset,{width:64,height:48,projection:'xy',padding:0,bounds:{minX:-2,maxX:2,minY:-2,maxY:2},resetParticles:true,clearInk:true});const resetState=gpu.readParticles();assert(equal(resetState.positionsAndMetric,iteratedInitialChunk(reset.config,0,reset.config.count))&&resetState.invalidCounts.every(v=>v===0)&&resetState.validity.every(v=>v===1),'Reset failed');row.resetPassed=true;
    }finally{gpu.dispose();assert(gpu.diagnostics().retainedBytes===0,'GPU cleanup retained bytes');}
   }
@@ -41,27 +41,36 @@ try{
   const invalidScene=make(true);invalidScene.equations.glsl='void calculate_next(in vec3 p,out vec3 n,out float m){n=vec3(1./(p.z-p.z));m=1.;}';
   const invalidGpu=new IteratedDensityGpu(),invalidRows=[];
   try{for(let frame=0;frame<3;frame++){
-   const job=prepareIteratedFrame(invalidScene,frame/30,frame),updated=frame===0;job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:frame,updated},frame!==0,job.config.burn,job.config.iterations);
+   const job=prepareIteratedFrame(invalidScene,frame/30,frame),updated=frame===0;job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:frame,updateCount:Number(updated)},frame!==0,job.config.burn,job.config.iterations);
    const facts=invalidGpu.step(job,{width:32,height:24,projection:'xy',padding:0,bounds:{minX:-2,maxX:2,minY:-2,maxY:2},resetParticles:frame!==1,clearInk:frame!==1}),particles=invalidGpu.readParticles();
    if(frame===0)assert(facts.invalid>0&&particles.validity.every(v=>v===0),'Nonfinite fixture did not become invalid');
    if(frame===1)assert(facts.invalid===0&&facts.sampleInvalid===job.config.count&&particles.validity.every(v=>v===0),'Frozen invalid sample counted as new math');
    if(frame===2)assert(facts.invalid===0&&particles.validity.every(v=>v===1)&&particles.invalidCounts.every(v=>v===0),'Reset retained failed metadata');
    invalidRows.push({frame,steps:facts.steps,invalid:facts.invalid,sampleInvalid:facts.sampleInvalid});
   }}finally{invalidGpu.dispose();assert(invalidGpu.diagnostics().retainedBytes===0,'Invalid state cleanup');}
+  // Both object calls contribute failures to this display, without erasing
+  // first-call metadata or retaining last display's failures.
+  const orderedInvalidGpu=new IteratedDensityGpu(),orderedInvalidRows=[];
+  try{for(let frame=0;frame<2;frame++){
+   const job=prepareIteratedFrame(invalidScene,frame/30,frame);job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:frame,updateCount:2},frame>0,job.config.burn,job.config.iterations);job.symmetryUpdates=[job.field,job.field];
+   const facts=orderedInvalidGpu.step(job,{width:32,height:24,projection:'xy',padding:0,bounds:{minX:-2,maxX:2,minY:-2,maxY:2},resetParticles:frame===0,clearInk:frame===0});
+   const expected=job.symmetryFrame.warmupSteps+2*job.config.iterations;
+   assert(facts.invalid===job.config.count*expected&&orderedInvalidGpu.readParticles().invalidCounts.every(v=>v===expected),'Ordered calls lost or retained error counters');orderedInvalidRows.push({frame,invalid:facts.invalid,expected});
+  }}finally{orderedInvalidGpu.dispose();assert(orderedInvalidGpu.diagnostics().retainedBytes===0,'Ordered invalid cleanup');}
   const publicRows=[];
   for(const custom of [false,true])for(const queue of ['empty','zero','short']){
    const scene=make(custom,queue==='empty'?[]:[{type:'wait',duration:queue==='zero'?0:.1}]),session=new IteratedDensitySession(),row={custom,queue,frames:[]};publicRows.push(row);
    const context=time=>({time,quality:'export',width:64,height:48,sourceViewport:ordinarySourceViewport(scene,64,48,'primary',48)});
    try{let last;
     for(const time of [0,.1,.2,.3]){const output=session.generate(scene,context(time));assert(output.type==='raster'&&output.backend==='webgl2','Public GPU output unavailable');assert(output.symmetryFrame,'Missing source frame facts');
-     if(queue==='empty')assert(output.stats.samples===0&&!output.symmetryFrame.warmupApplied,'Empty queue performed math');
-     if(time>=.2&&last){assert(output.stats.samples===last.stats.samples,'Finished queue kept iterating');assert(output.temporal.recordedPoints>last.temporal.recordedPoints,'Finished queue stopped display');}
+     if(queue==='empty')assert(output.symmetryFrame.objectUpdates===1&&output.symmetryFrame.warmupApplied,'Empty queue must update once');
+     if(time>=.2&&last){assert(output.symmetryFrame.objectUpdates===1&&output.stats.samples>last.stats.samples,'Finished queue stopped iterating');assert(output.temporal.recordedPoints>last.temporal.recordedPoints,'Finished queue stopped display');}
      row.frames.push({time,steps:output.stats.samples,displayFrames:output.temporal.frames,recordedPoints:output.temporal.recordedPoints,plan:output.symmetryFrame});last=output;
     }
     const backward=session.generate(scene,context(0)),fresh=new IteratedDensitySession();try{const expected=fresh.generate(scene,context(0));assert(equal(backward.pixels,expected.pixels)&&backward.stats.samples===expected.stats.samples,'Backward reconstruction differs');}finally{fresh.reset();assert(fresh.diagnostics().retainedBytes===0,'Fresh session cleanup');}row.backwardPassed=true;
    }finally{session.reset();assert(session.diagnostics().retainedBytes===0,'Public session cleanup');}
   }
-  return{environment:navigator.userAgent,rows,invalidRows,publicRows};
+  return{environment:navigator.userAgent,rows,invalidRows,orderedInvalidRows,publicRows};
  });
  report.sourceAfter=await snapshot();if(JSON.stringify(report.sourceBefore)!==JSON.stringify(report.sourceAfter))throw Error('Source changed during verification');report.status='passed';
 }catch(e){report.status='failed';report.error=String(e.stack??e);process.exitCode=1;}

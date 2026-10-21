@@ -13,6 +13,6 @@ describe('source replay GPU boundary',()=>{
  it('rejects work outside the supported replay domain before GPU allocation',()=>{
   for(const n of [-1,257,Infinity,NaN,.5])expect(()=>sourceSymmetryReplayBudget(n,30,0)).toThrow();
   for(const [frame,burn,iterations]of [[-1,0,0],[0,100001,0],[0,0,17],[0,0,-1],[0,NaN,0]])expect(()=>prepareSourceSymmetryReplayFrame(frame,burn,iterations)).toThrow();
-  expect(prepareSourceSymmetryReplayFrame(4,12,0)).toMatchObject({phase:'replay',objectUpdated:false,warmupSteps:12,iterationSteps:0});
+  expect(prepareSourceSymmetryReplayFrame(4,12,0)).toMatchObject({phase:'replay',objectUpdates:0,warmupSteps:12,iterationSteps:0});
  });
 });

@@ -2,7 +2,7 @@ import type {SceneDocument} from '../types';
 import {SourceSymmetryGradientRuntime,usesSourceSymmetryGradient,validateSourceSymmetryGradient,type SourceSymmetryPaletteFrame} from './sourceSymmetryGradient';
 import {OrdinarySourceCameraTimelineSession,type OrdinarySourceCameraFrame} from './ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
-import type {SourceSymmetryUpdateEvent} from './sourceSymmetryFramePlan';
+import type {SourceSymmetryUpdateEvent,SourceSymmetryObjectUpdate} from './sourceSymmetryFramePlan';
 import {SourceSymmetryParameterRuntime} from './sourceSymmetryParameterRuntime';
 import {usesSourceSymmetryParameters,validateSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {isJavaBlank} from './sourceJavaText';
@@ -25,6 +25,7 @@ export class SourceSymmetryTimelineSession {
  private palette?:SourceSymmetryPaletteFrame;
  private parameters?:SourceSymmetryParameterFrame;
  private updatedFrame=-1;
+ private calls:SourceSymmetryObjectUpdate[]=[];
  private work=0;
  private acknowledgeParameters=true;
  private index=-1;
@@ -35,7 +36,7 @@ export class SourceSymmetryTimelineSession {
   const offset=scene.palette.offset,sourceParameters=usesSourceSymmetryParameters(scene),initialValues=Object.entries(scene.parameters);
   this.session=new OrdinarySourceCameraTimelineSession(initial,scene.timeline.tracks,scene.timeline.fps,{particleActions:sourceParameters?'symmetry-parameters':'symmetry',createParticles:()=>{
    const runtime=new SourceSymmetryGradientRuntime(offset);
-   this.updatedFrame=-1;this.palette=Object.freeze({offset});
+   this.updatedFrame=-1;this.calls=[];this.palette=Object.freeze({offset});
    const values=new Map(initialValues);let acknowledged=new Map<string,number>();
    const snapshot=(changed:boolean)=>Object.freeze({values:Object.freeze(Object.fromEntries(values)),changed});
    this.parameters=sourceParameters?snapshot(false):undefined;
@@ -44,11 +45,19 @@ export class SourceSymmetryTimelineSession {
     write:(name,value)=>{if(!isJavaBlank(name))values.set(name,value);},
     reserve:units=>this.reserve(units),
    }):undefined;
+   const update=(frame:{frameIndex:number;time:number;deltaTime:number})=>{
+    if(this.updatedFrame!==frame.frameIndex){this.calls=[];this.updatedFrame=frame.frameIndex;}
+    parameters?.update(frame.deltaTime,60);runtime.update(frame.deltaTime);
+    if(parameters)this.reserve(values.size);
+    this.calls.push(Object.freeze({time:frame.time,deltaTime:frame.deltaTime,...(parameters?{parameters:Object.freeze(Object.fromEntries(values))}:{})}));
+   };
    return{bind(){throw Error('原版 Symmetry 不支持粒子跟踪');},
     beginSymmetryParameterActions:actions=>parameters!.begin(actions),advanceSymmetryParameterActions:dt=>parameters!.advance(dt),
     beginGradientActions:actions=>runtime.begin(actions),interpolateGradientActions:(eased,finished)=>runtime.interpolate(eased,finished),
-    update:frame=>{parameters?.update(frame.deltaTime,60);runtime.update(frame.deltaTime);this.updatedFrame=frame.frameIndex;},
-    displayFrame:()=>{
+    update,
+    afterSceneUpdate:frame=>{if(!frame.paused)update(frame);},
+    displayFrame:frameIndex=>{
+     if(this.updatedFrame!==frameIndex)this.calls=[];
      this.palette=runtime.display();
      if(parameters){
       // Compare doubles against the last acknowledged display, never the
@@ -65,7 +74,7 @@ export class SourceSymmetryTimelineSession {
  private run(operation:()=>OrdinarySourceCameraFrame):SourceSymmetryTimelineResult{
   this.work=0;
   try{const frame=operation();this.index=frame.frameIndex;
-   return{frame,palette:this.palette!,update:{frameIndex:frame.frameIndex,updated:frame.frameIndex>=0&&this.updatedFrame===frame.frameIndex},...(this.parameters?{parameters:this.parameters}:{})};
+   return{frame,palette:this.palette!,update:{frameIndex:frame.frameIndex,calls:Object.freeze([...this.calls])},...(this.parameters?{parameters:this.parameters}:{})};
   }catch(error){this.reset();throw error;}
   finally{this.acknowledgeParameters=true;}
  }
@@ -82,7 +91,7 @@ export class SourceSymmetryTimelineSession {
   * mode; it is not an operation advertised by the original native scene. */
  reconstruct(time:number){return this.run(()=>this.session.reconstruct(time));}
  writeAngles(angles:Parameters<OrdinarySourceCameraTimelineSession['writeAngles']>[0]){this.session.writeAngles(angles);}
- reset(){this.session.reset();this.palette=undefined;this.parameters=undefined;this.index=-1;this.updatedFrame=-1;this.work=0;this.acknowledgeParameters=true;}
+ reset(){this.session.reset();this.palette=undefined;this.parameters=undefined;this.index=-1;this.updatedFrame=-1;this.calls=[];this.work=0;this.acknowledgeParameters=true;}
 }
 /** Three bounded forward lanes cover display lookahead, frame zero and density
  * replay. Keys include every scalar producer input; no frame history is cached. */

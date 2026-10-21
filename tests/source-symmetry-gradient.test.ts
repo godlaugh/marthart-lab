@@ -53,10 +53,10 @@ describe('Symmetry original gradient callbacks and effective LUT',()=>{
   const times=[1.2,0,.2,.3,1,.1,.9],warm=times.map(t=>replaySourceSymmetryTimeline(scene,t));
   times.forEach((t,i)=>{clearSourceSymmetryTimelineCache();expect(replaySourceSymmetryTimeline(scene,t)).toEqual(warm[i]);});
  });
- it('retains the displayed palette after the source queue stops updating objects',()=>{
+ it('continues gradient updates after the source queue completes',()=>{
   const scene=parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:{mode:'CROSS_FADE',speed:240}}]))).scene;
   const first=replaySourceSymmetryTimeline(scene,2),later=replaySourceSymmetryTimeline(scene,3);
-  expect(first.frame.queueComplete).toBe(true);expect(later.palette).toEqual(first.palette);
+  expect(first.frame.queueComplete).toBe(true);expect(first.update.calls).toHaveLength(1);expect(later.update.calls).toHaveLength(1);expect(later.palette).not.toEqual(first.palette);
   expect(later.palette.runtime?.cyclic).toBe(true);
  });
  it('reconstructs from owned inputs even after the original caller object is edited',()=>{
