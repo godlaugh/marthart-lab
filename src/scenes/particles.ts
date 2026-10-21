@@ -1,3 +1,4 @@
+import {usesSourceMapMath} from '../engine/sourceMapMath';
 import {usesSourceSamilaMath} from '../engine/sourceSamilaMath';
 import {mapDimension} from '../engine/mapDimension';
 import {hasSymmetryCustom} from '../engine/symmetryCustom';
@@ -68,6 +69,7 @@ class Geometry {
 function budget(requested:number,limit:number,g:Geometry,label:string):number {if(requested>limit)g.warnings.push(`${label}请求 ${requested}，本次资源预算为 ${limit}；已生成前 ${limit} 个样本。`);return Math.min(requested,limit);}
 
 function generateMap(scene:SceneDocument,c:GenerateContext):SceneOutput {
+  usesSourceMapMath(scene);
   if(scene.settings.iteratedMode==='continuous')return generateIteratedDensity(scene,c);
   const s=scene.settings,requested=integer(s,'count',60000,1,1000000),limit=c.quality==='export'?500000:120000;
   const g=new Geometry(Math.min(requested,limit),'points',scene),count=budget(requested,limit,g,'映射点数'),dimension=mapDimension(s);

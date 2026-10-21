@@ -1,3 +1,4 @@
+import {SOURCE_MAP_MATH} from './sourceMapMath';
 import {usesSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {SOURCE_SYMMETRY_GRADIENT_MODEL,usesSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {SOURCE_SYMMETRY_PRESENTATION_MODEL} from './sourceSymmetryPresentation';
@@ -1487,6 +1488,10 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  if(kind==='samila'&&!usesSamilaSourceProjection(scene)&&r.has('camera')){r.object('camera');samilaTheta=r.num('camera.theta',scene.parameters);}
  if(kind==='samila'&&samilaTheta!==undefined&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaCameraTheta:samilaTheta});
  if(options.iteratedMath==='legacy-v1')delete scene.settings.symmetryMathModel;
+ if(kind==='map'&&options.iteratedMath!=='legacy-v1'&&scene.settings.iteratedBackend!=='cpu'){
+  scene.settings.mapMathModel=SOURCE_MAP_MATH;
+  r.warnings.push('Map 使用源公式语法与 GPU Float32 迭代，保留非有限数学状态；无内置 t/time 或科学计数法，GPU 不可用时明确报错。初始化、时钟、累积与最终整图仍待源流程对照。');
+ }
  if((kind==='map'||kind==='symmetry')&&options.iteratedCamera!=='legacy-v1')scene.settings.iteratedCameraModel=CAPTURED_DENSITY_CAMERA_MODEL;
  if(ordinaryScope&&(!['map','symmetry'].includes(kind)||options.iteratedCamera!=='legacy-v1'))ordinaryCamera(r,scene,ordinaryScope);
  if(usesCapturedDensityCamera(scene))r.warnings.push('Map/Symmetry 已启用源相机捕获投影：Map 相机变化清空密度，Symmetry 角度变化保留密度旋转；新窗口与导出按本地固定时钟重放，随机序列、点覆盖和原版完整画面仍未对照。');

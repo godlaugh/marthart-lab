@@ -1,3 +1,4 @@
+import {sourceMapGpuField,prepareSourceMapExpressions} from './sourceMapMath';
 import {sourceSymmetryPaletteLut} from './sourceSymmetryPalette';
 import {sourceSymmetryPointDiameter,sourceSymmetrySplatPixelTests} from './sourceSymmetrySplat';
 import {compileSourceSamilaDirect,type SourceSamilaDrawObserver} from './sourceSamilaGpuDirect';
@@ -48,7 +49,7 @@ export function iteratedGpuBytes(count:number,width:number,height:number,texture
  const tw=Math.min(textureWidth,count),th=Math.ceil(count/tw),capacity=tw*th,reduce=Math.ceil(tw/2)*Math.ceil(th/2);
  return (sourcePresentation?sourceDensityPresentationBytes(width,height):0)+(sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+SEED_STAGING_BYTES+512+densityGpuToneBytes();
 }
-export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';sourceSymmetry?:true;}
+export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';sourceCalculateNext?:true;}
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
  * Parameter values remain uniforms and never enter a shader-cache key. */
 export function iteratedGpuFieldSource(field:IteratedField):IteratedGpuFieldSource {
@@ -63,6 +64,7 @@ export function iteratedGpuFieldSource(field:IteratedField):IteratedGpuFieldSour
 vec3 nextPoint(vec3 p){float r=length(p.xy),theta=r==0.?0.:atan(p.y,p.x),rn=pow(r,q5),rp=pow(r,q5-1.);float gain=q0+q1*r*r+q2*rn*cos(q5*theta)+q6*r*cos(q5*q7*theta);return vec3(gain*p.x+q3*rp*cos((q5-1.)*theta)-q4*p.y,gain*p.y-q3*rp*sin((q5-1.)*theta)+q4*p.x,0.);}`;
   return{source,uniforms,key:'symmetry'};
  }
+ if(field.mathModel)return sourceMapGpuField(field);
  const names=Object.keys(field.parameters).sort(),reserved=new Set(['x','y','z','t','time','nx','ny','nz','x_next','y_next','z_next','constructor','prototype','__proto__']);
  checked(!names.some(n=>reserved.has(n)),'GPU 映射参数覆盖保留变量');
  const base=[...names,'t','time'],values=[...names.map(n=>field.parameters[n]),field.time,field.time];checked(values.every(finite32),'映射参数超出 GPU float32');
@@ -87,8 +89,8 @@ for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=nextPoint(p);valid=!bad(next)
 newState=vec4(p,metric);newMetadata=uvec2(invalid,valid?1u:0u);gl_Position=vec4(0.);}`;
 // Source update preserves even nonfinite state; local diagnostics may hide an
 // invalid splat but must never reseed or clamp the mathematical trajectory.
-const SOURCE_SYMMETRY_STEP_MAIN=`void main(){vec3 p=oldState.xyz;float metric=oldState.w;uint invalid=resetCounter==1?0u:oldMetadata.r;bool valid=(oldMetadata.g&1u)!=0u;
-for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=p;float nextMetric=metric;calculate_next(p,next,nextMetric);next.z=0.;p=next;metric=nextMetric;valid=finiteVector(p)&&finiteFloat(metric);if(!valid)invalid++;}
+const SOURCE_CALCULATE_NEXT_STEP_MAIN=`void main(){vec3 p=oldState.xyz;float metric=oldState.w;uint invalid=resetCounter==1?0u:oldMetadata.r;bool valid=(oldMetadata.g&1u)!=0u;
+for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=p;float nextMetric=metric;calculate_next(p,next,nextMetric);if(dimension==2)next.z=0.;p=next;metric=nextMetric;valid=finiteVector(p)&&finiteFloat(metric);if(!valid)invalid++;}
 newState=vec4(p,metric);newMetadata=uvec2(invalid,valid?1u:0u);gl_Position=vec4(0.);}`;
 const TRANSFORM=`${FLOAT_CLASSIFY}
 uniform vec3 scale,offset;uniform vec2 turn;uniform ivec2 axes;
@@ -156,6 +158,13 @@ export class IteratedDensityGpu {
  private direct?:SourceSamilaGpuResources;private cleanupPending=false;private pendingAllocation?:()=>void;private pendingAllocationBytes=0;
  private readonly observeSourceDraw?:SourceSamilaDrawObserver;
  constructor(options:{observeSourceDraw?:SourceSamilaDrawObserver}={}){if(options.observeSourceDraw!==undefined&&typeof options.observeSourceDraw!=='function')throw Error('源 Samila 绘制观察接口无效');this.observeSourceDraw=options.observeSourceDraw;}
+ private mapExpressions?:{identity:string;plan:ReturnType<typeof prepareSourceMapExpressions>};
+ private fieldSource(field:IteratedField):IteratedGpuFieldSource {
+  if(field.kind!=='map'||!field.mathModel)return iteratedGpuFieldSource(field);
+  const keys=Object.keys(field.parameters).sort(),identity=JSON.stringify([field.mathModel,field.dimension,field.equations.x,field.equations.y,field.dimension===3?field.equations.z:undefined,keys]);
+  if(this.mapExpressions?.identity!==identity)this.mapExpressions={identity,plan:prepareSourceMapExpressions(field.equations,keys,field.dimension)};
+  return this.mapExpressions.plan.bind(field.parameters);
+ }
  private tone?:DensityGpuTone;private gl?:WebGL2RenderingContext;private programs=new Map<string,Program>();private resources?:Resources;private bounds?:DensityBounds;private structuralKey='';private frame=-1;
  diagnostics(){if(this.direct){const r=this.direct;return{cleanupPending:this.cleanupPending,resourceModel:r.plan.model,retainedBytes:r.plan.residentBytes+(r.sourceNoise?256*256*4:0)+(r.sourcePalette?1024*3*4:0)+(this.tone?.diagnostics().retainedBytes??0),estimatedPeakBytes:r.plan.estimatedBytes+(this.tone?.sourceTargetBytes()??0)+(this.tone?.sourceTargetBytes()?r.width*r.height*4:0),frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r.count,statisticsBytes:r.plan.statisticsBytes,observationBytes:r.plan.observationBytes};}const r=this.resources;return{cleanupPending:this.cleanupPending,retainedBytesAccuracy:this.pendingAllocation?'allocation-upper-bound':'known-storage',pendingAllocationBytes:this.pendingAllocationBytes,retainedBytes:r?r.bytes-(r.paletteFormat==='source-rgb1024'?(PALETTE_INTERVALS+1)*16-1024*12:0)+(r.sourceNoise?256*256*4+1024*3*4:0)-r.width*r.height*16-r.width*16-(PALETTE_INTERVALS+1)*16-SEED_STAGING_BYTES-256-densityGpuToneBytes()+(this.tone?.diagnostics().retainedBytes??0)+this.pendingAllocationBytes:this.pendingAllocationBytes,estimatedPeakBytes:r?r.bytes+this.pendingAllocationBytes+(this.tone?.sourceTargetBytes()??0)+(this.tone?.sourceTargetBytes()?r.width*r.height*4:0)+(r.sourceNoise?256*256*4*2+1024*3*4*2:0):0,frame:this.frame,programs:this.programs.size+(this.tone?.diagnostics().programs??0),particleCount:r?.count??0};}
  private context(){
@@ -244,7 +253,7 @@ export class IteratedDensityGpu {
  private setBounds(p:Program,b:DensityBounds){checkBounds(b);this.gl!.uniform4f(this.location(p,'bounds'),Math.fround(b.minX),Math.fround(b.maxX),Math.fround(b.minY),Math.fround(b.maxY));}
  private iterate(job:IteratedFrameJob,source:IteratedGpuFieldSource,steps:number,serial:number,resetCounter:boolean,cancel?:()=>boolean){
   if(source.stage==='fragment'){this.iterateCustom(job,source,steps,serial,resetCounter,cancel);return;}
-  const gl=this.gl!,r=this.resources!,p=this.program('step:'+source.key,STEP+source.source+(source.sourceSymmetry?SOURCE_SYMMETRY_STEP_MAIN:STEP_MAIN),EMPTY,['newState','newMetadata']);
+  const gl=this.gl!,r=this.resources!,p=this.program('step:'+source.key,STEP+source.source+(source.sourceCalculateNext?SOURCE_CALCULATE_NEXT_STEP_MAIN:STEP_MAIN),EMPTY,['newState','newMetadata']);
   checked(Object.keys(source.uniforms).length+16<=gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS),'GPU 公式 uniform 容量不足');gl.useProgram(p.value);for(const [name,value]of Object.entries(source.uniforms))this.f(p,name,value);
   const cfg=job.config;gl.uniform1ui(this.location(p,'seed'),cfg.seed);gl.uniform1ui(this.location(p,'serialBase'),serial);gl.uniform3f(this.location(p,'lower'),...cfg.bounds.map(v=>Math.fround(v[0])) as [number,number,number]);gl.uniform3f(this.location(p,'upper'),...cfg.bounds.map(v=>Math.fround(v[1])) as [number,number,number]);this.i(p,'dimension',cfg.dimension);this.i(p,'samila',job.kind==='samila'?1:0);this.i(p,'resetCounter',resetCounter?1:0);this.i(p,'steps',steps);this.f(p,'escapeRadius',cfg.escape);
   const next=1-r.side;gl.bindVertexArray(r.vao);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,r.counters[r.side]);gl.enableVertexAttribArray(1);gl.vertexAttribIPointer(1,2,gl.UNSIGNED_INT,0,0);gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,r.feedback);gl.enable(gl.RASTERIZER_DISCARD);
@@ -377,7 +386,7 @@ export class IteratedDensityGpu {
   return{bounds:{...this.bounds},steps:batch.sampleCount,invalid,accepted,clipped,sampleInvalid:invalid};
  }
  private run(job:IteratedFrameJob,options:IteratedGpuOptions):IteratedGpuFacts {
-  checkCancelled(options.isCancelled);const source=job.samilaSampling?undefined:iteratedGpuFieldSource(job.field);const cfg=job.config;checked(['map','symmetry','samila'].includes(job.kind),'GPU 持续密度类型无效');const customStorage=job.field.kind==='symmetry-custom',samila=job.kind==='samila',boundedHistory=samila&&cfg.samilaHistoryModel==='bounded-v2',history=job.history;
+  checkCancelled(options.isCancelled);const source=job.samilaSampling?undefined:this.fieldSource(job.field);const cfg=job.config;checked(['map','symmetry','samila'].includes(job.kind),'GPU 持续密度类型无效');const customStorage=job.field.kind==='symmetry-custom',samila=job.kind==='samila',boundedHistory=samila&&cfg.samilaHistoryModel==='bounded-v2',history=job.history;
   checked(!history||boundedHistory,'GPU 历史规则与模型不匹配');
   const symmetryFrame=job.symmetryFrame,warmup=symmetryFrame?.warmupSteps??(options.resetParticles?cfg.burn:0),iterations=symmetryFrame?.iterationSteps??cfg.iterations;
   if(symmetryFrame)checked(job.kind==='symmetry'&&symmetryFrame.model==='symmetry-frame-1.7.8'&&Number.isSafeInteger(warmup)&&warmup>=0&&warmup<=cfg.burn&&(symmetryFrame.phase==='replay'?symmetryFrame.objectUpdates===0&&(iterations===0||iterations===cfg.iterations):symmetryFrame.phase===undefined&&Number.isInteger(symmetryFrame.objectUpdates)&&symmetryFrame.objectUpdates>=0&&symmetryFrame.objectUpdates<=2&&iterations===symmetryFrame.objectUpdates*cfg.iterations&&(!warmup||symmetryFrame.objectUpdates>0)),'GPU Symmetry 更新计划无效');
@@ -404,7 +413,7 @@ export class IteratedDensityGpu {
    for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const initial=iteratedInitialChunk(cfg,offset,Math.min(CHUNK,cfg.count-offset));this.uploadInitial(initial,offset);}
 
   }
-  const updateSources=updateFields?.map(field=>iteratedGpuFieldSource(field));
+  const updateSources=updateFields?.map(field=>this.fieldSource(field));
   if(updateSources)for(const updateSource of updateSources)checked(Object.keys(updateSource.uniforms).length+16<=gl.getParameter(updateSource.stage==='fragment'?gl.MAX_FRAGMENT_UNIFORM_VECTORS:gl.MAX_VERTEX_UNIFORM_VECTORS),'源 Symmetry 更新 uniform 容量不足');
   if(!samila)for(let offset=0;offset<warmup;offset+=256)this.iterate(updateFields?.[0]?{...job,field:updateFields[0]}:job,updateSources?.[0]??source,Math.min(256,warmup-offset),offset+1,offset===0,options.isCancelled);
   if(updateFields)for(let i=0;i<updateFields.length;i++)this.iterate({...job,field:updateFields[i]},updateSources![i],cfg.iterations,cfg.burn+1+job.frame*32+i*cfg.iterations,i===0&&!options.resetParticles&&warmup===0,options.isCancelled);
@@ -473,6 +482,6 @@ export class IteratedDensityGpu {
   }catch(e){this.reset();throw e;}
  }
  private releaseResources(){if(this.pendingAllocation){this.pendingAllocation();this.pendingAllocation=undefined;this.pendingAllocationBytes=0;}this.direct?.dispose();this.direct=undefined;this.tone?.dispose();this.tone=undefined;const gl=this.gl,r=this.resources;if(gl&&r){r.positions.forEach(b=>gl.deleteBuffer(b));r.counters.forEach(b=>gl.deleteBuffer(b));[...r.stateTextures,...r.counterTextures,r.ink,...(r.inkScratch?[r.inkScratch]:[]),r.palette,r.noise,...(r.sourceNoise?[r.sourceNoise]:[]),...(r.sourcePalette?[r.sourcePalette]:[]),...r.floatReduce,...r.uintReduce].forEach(t=>gl.deleteTexture(t));gl.deleteFramebuffer(r.framebuffer);gl.deleteTransformFeedback(r.feedback);gl.deleteVertexArray(r.vao);gl.deleteVertexArray(r.drawVao);}this.resources=undefined;this.bounds=undefined;this.structuralKey='';this.frame=-1;}
- reset(){this.cleanupPending=true;this.releaseResources();const gl=this.gl;if(gl){gl.useProgram(null);for(const p of this.programs.values())gl.deleteProgram(p.value);this.programs.clear();gl.getExtension('WEBGL_lose_context')?.loseContext();}this.gl=undefined;this.cleanupPending=false;}
+ reset(){this.cleanupPending=true;this.mapExpressions=undefined;this.releaseResources();const gl=this.gl;if(gl){gl.useProgram(null);for(const p of this.programs.values())gl.deleteProgram(p.value);this.programs.clear();gl.getExtension('WEBGL_lose_context')?.loseContext();}this.gl=undefined;this.cleanupPending=false;}
  dispose(){this.reset();}
 }

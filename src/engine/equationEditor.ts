@@ -1,3 +1,5 @@
+import {usesSourceMapMath,prepareSourceMapExpressions,sourceMapVariables,sourceMapFunctionNames} from './sourceMapMath';
+import {mapDimension} from './mapDimension';
 import {usesSourceSamilaMath} from './sourceSamilaMath';
 import {prepareSourceSamilaExpressions,SOURCE_SAMILA_EXPRESSION_VARIABLES,sourceSamilaFunctionNames} from './sourceSamilaExpression';
 import {usesRootsNativeMath} from './rootsMathConfig';
@@ -69,6 +71,12 @@ function analyzeLocalEquation(scene:SceneDocument,key:string,source:string):Equa
 export function analyzeEquationDraft(scene:SceneDocument,draft:Record<string,string>):Record<string,EquationAnalysis>{
  const entries=Object.entries(draft);
  if(usesRootsNativeMath(scene))return Object.fromEntries(entries.map(([key])=>[key,{suggestions:[],warnings:['本地多项式保留但未使用；源数学使用独立系数表，不验证休眠的本地公式。']}]));
+ if(scene.settings.mapMathModel!==undefined&&scene.settings.mapMathModel!=='legacy-v1'){
+  const result=Object.fromEntries(entries.map(([key])=>[key,{sourceReal:true,suggestions:[...sourceMapFunctionNames.map(name=>({name,kind:'function' as const})),...sourceMapVariables(Object.keys(scene.parameters),key==='y'?'y':key==='z'?'z':'x').map(name=>({name,kind:'variable' as const}))]} as EquationAnalysis]));
+  try{usesSourceMapMath(scene);const equations={...scene.equations,...draft};prepareSourceMapExpressions({x:equations.x??'',y:equations.y??'',z:equations.z},Object.keys(scene.parameters),mapDimension(scene.settings));}
+  catch(error){for(const analysis of Object.values(result))analysis.error={message:error instanceof Error?error.message:String(error)};}
+  return result;
+ }
  if(scene.settings.samilaMathModel!==undefined){
   const variables=[...new Set([...SOURCE_SAMILA_EXPRESSION_VARIABLES,...Object.keys(scene.parameters)])],suggestions:EquationSuggestion[]=[...sourceSamilaFunctionNames.map(name=>({name,kind:'function' as const})),...variables.map(name=>({name,kind:'variable' as const}))];
   const result=Object.fromEntries(entries.map(([key])=>[key,{suggestions,sourceReal:true} as EquationAnalysis]));

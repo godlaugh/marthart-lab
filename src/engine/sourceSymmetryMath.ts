@@ -119,5 +119,5 @@ export function sourceSymmetryGpuField(parameters:SymmetryParameters){
  const q=parameters,modified=q.template==='modified';
  const uniforms:Record<string,number>={lambda:q.lambda,alpha:q.alpha,beta:q.beta,gamma:q.gamma,omega:q.omega,symmetry_degree:q.n,...(modified?{delta:q.delta??0,delta_power:q.deltaPower??1}:{})};
  if(!Object.values(uniforms).every(v=>Number.isFinite(v)&&Number.isFinite(Math.fround(v))))throw new Error('源 Symmetry 参数超出 GPU float32');
- return {source:modified?MODIFIED:STANDARD,uniforms,key:SOURCE_SYMMETRY_MATH+':'+(modified?'modified':'standard'),sourceSymmetry:true as const};
+ return {source:modified?MODIFIED:STANDARD,uniforms,key:SOURCE_SYMMETRY_MATH+':'+(modified?'modified':'standard'),sourceCalculateNext:true as const};
 }
