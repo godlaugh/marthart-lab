@@ -26,6 +26,7 @@ export class SourceIteratedTimelineSession {
  private readonly session:OrdinarySourceCameraTimelineSession;
  private palette?:SourceSymmetryPaletteFrame;
  private parameters?:SourceIterationParameterFrame;
+ private parameterWriter?: (changes:readonly (readonly [string,number])[])=>void;
  private mapColors?:SourceMapRuntimeColors;
  private updatedFrame=-1;
  private calls:SourceIterationObjectUpdate[]=[];
@@ -45,6 +46,11 @@ export class SourceIteratedTimelineSession {
    const values=new Map(initialValues);let acknowledged=new Map<string,number>(map?initialValues:[]);
    const snapshot=(changed:boolean)=>Object.freeze({values:Object.freeze(Object.fromEntries(values)),changed});
    this.parameters=sourceParameters?snapshot(false):undefined;
+   this.parameterWriter=sourceParameters?changes=>{
+    for(const [name,value]of changes)if(!values.has(name)||!Number.isFinite(value))throw Error('已有迭代参数热更新无效');
+    for(const [name,value]of changes)if(!isJavaBlank(name))values.set(name,value);
+    this.parameters=snapshot(false);
+   }:undefined;
    const parameters=sourceParameters?new SourceIteratedParameterRuntime({
     read:name=>map&&isSourceMapColorTarget(name)?this.mapColors![name]:isJavaBlank(name)?undefined:values.get(name),
     write:(name,value)=>{if(map&&isSourceMapColorTarget(name))this.mapColors=Object.freeze({...this.mapColors!,[name]:sourceMapColorValue(name,value)});else if(!isJavaBlank(name))values.set(name,value);},
@@ -109,8 +115,9 @@ export class SourceIteratedTimelineSession {
   const replay=Math.abs(Math.fround(before.colorSpeed-next.colorSpeed))>Math.fround(1e-6)||Math.abs(Math.fround(before.colorPhase-next.colorPhase))>Math.fround(1e-6);
   this.mapColors=next;return replay;
  }
+ writeParameters(changes:readonly (readonly [string,number])[]){if(!this.parameterWriter)throw Error('迭代参数运行时尚未初始化');this.parameterWriter(changes);}
  writeAngles(angles:Parameters<OrdinarySourceCameraTimelineSession['writeAngles']>[0]){this.session.writeAngles(angles);}
- reset(){this.session.reset();this.palette=undefined;this.parameters=undefined;this.mapColors=undefined;this.index=-1;this.updatedFrame=-1;this.calls=[];this.work=0;this.acknowledgeParameters=true;}
+ reset(){this.session.reset();this.parameterWriter=undefined;this.palette=undefined;this.parameters=undefined;this.mapColors=undefined;this.index=-1;this.updatedFrame=-1;this.calls=[];this.work=0;this.acknowledgeParameters=true;}
 }
 /** Three bounded forward lanes cover display lookahead, frame zero and density
  * replay. Keys include every scalar producer input; no frame history is cached. */

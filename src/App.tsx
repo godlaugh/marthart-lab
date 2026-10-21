@@ -1,3 +1,4 @@
+import {sourceIteratedParameterChanges} from './engine/sourceIteratedParameterEdit';
 import {usesSourceMapPresentation} from './engine/sourceMapPresentation';
 import {editSourceMapScene} from './engine/sourceMapScene';
 import {sourceLivePreviewKind} from './engine/sourceLivePreview';
@@ -45,6 +46,7 @@ import {changeMapDimension} from './engine/mapDimension';
 import {reconcileEquationDraft} from './engine/equationEditor';
 import {BouncingPolygonEditor} from './components/BouncingPolygonEditor';
 import {PerlinPresetControls} from './components/PerlinPresetControls';
+import {SourceParameterInput} from './components/SourceParameterInput';
 import {ParameterEditor} from './components/ParameterEditor';
 import {matchingPerlinPreset} from './engine/perlinPreset';
 import {densityToneControlSettings,initializeNormalizedDensity} from './engine/densityNormalization';
@@ -293,12 +295,12 @@ export default function App() {
     bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
   }
-  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'iterated-replay'|'map-runtime'|'map-apply') {
+  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'iterated-replay'|'map-runtime'|'map-apply'|'iterated-parameters') {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
     if(nextLive==='map'||nextLive==='symmetry'){
-      if(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||nextLive==='map'&&(intent==='map-apply'||!Object.is(current.settings.pointSize,next.settings.pointSize))){
+      if(!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(current,next))&&(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||nextLive==='map'&&(intent==='map-apply'||!Object.is(current.settings.pointSize,next.settings.pointSize)))){
         replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);
       }else{
         if(intent==='iterated-replay'||sourceIteratedReplayIdentity(current)!==sourceIteratedReplayIdentity(next))iteratedReplayRevision.current++;
@@ -367,8 +369,15 @@ export default function App() {
   }
   function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
-  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'iterated-replay'|'map-runtime'|'map-apply') {
-    try{next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next));}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+  const pendingParameterWrites=useRef(new Map<string,number>());
+  function editParameter(next:SceneDocument,name:string){
+    if(sourceLivePreviewKind(next)==='map'||sourceLivePreviewKind(next)==='symmetry'){
+      edit(next,false,false,'iterated-parameters');
+      if(Object.is(sceneRef.current.parameters[name],next.parameters[name]))pendingParameterWrites.current.set(name,next.parameters[name]);
+    }else edit(next,true);
+  }
+  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'iterated-replay'|'map-runtime'|'map-apply'|'iterated-parameters') {
+    try{next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':'apply'),intent==='iterated-parameters'?'parameters':'apply');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(display&&sourceLivePreviewKind(next))liveDisplayRequested.current=true;
@@ -723,8 +732,8 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined);
-    liveDisplayRequested.current=false;
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:sourceLivePreviewKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;play(true);}
@@ -1196,7 +1205,7 @@ export default function App() {
                     </summary>
                     <div className="section-body">
                       {genericParameterNotice(scene)&&<p className="muted">{t(genericParameterNotice(scene)!)}</p>}
-                      {scene.kind==='symmetry'||scene.kind==='samila'?<ParameterEditor scene={scene} onChange={(next,intent)=>{if(intent==='structure')restartSamila();edit(next,intent==='value',intent!=='metadata');}}/>:Object.entries(scene.parameters).map(([key, value]) => (
+                      {scene.kind==='symmetry'||scene.kind==='samila'?<ParameterEditor scene={scene} onChange={(next,intent,name)=>{if(intent==='value'&&name){editParameter(next,name);return;}if(intent==='structure')restartSamila();edit(next,intent==='value',intent!=='metadata');}}/>:Object.entries(scene.parameters).map(([key, value]) => (
                         <div className="parameter-row" key={key}>
                           <label
                             htmlFor={`param-${key}`}
@@ -1204,7 +1213,7 @@ export default function App() {
                           >
                             {key}
                           </label>
-                          <input
+                          {sourceLivePreviewKind(scene)==='map'?<SourceParameterInput name={key} value={value} step={.01} onCommit={value=>editParameter({...scene,parameters:{...scene.parameters,[key]:value}},key)}/>:<input
                             id={`param-${key}`}
                             aria-label={t("参数 {value0}",{value0:key})}
                             type="number"
@@ -1222,7 +1231,7 @@ export default function App() {
                                 });
                             }}
                           />
-                          {supportsGenericParameters(scene)&&<button
+                          }{supportsGenericParameters(scene)&&<button
                             title={t("删除参数 {value0}",{value0:key})}
                             onClick={() => {
                               const parameters = { ...scene.parameters };

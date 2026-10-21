@@ -1,3 +1,4 @@
+import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {snapshotGenerationInput} from './generationInput';
 import {planSourceIteratedRecording,assertSourceIteratedRecordingFrame,sourceIteratedRecordingSize} from './sourceIteratedRecording';
@@ -56,14 +57,15 @@ export class SourceIteratedSession {
  private readonly cleanup=new GenerationCleanupState();
  private timeline?:SourceIteratedTimelineSession;private replay?:SourceIteratedReplaySession;private clock?:SourceSceneHostClock;
  private applied?:SceneDocument;
+ private particleConstruction?:Pick<SceneDocument,'mapSource'|'symmetrySource'>;
  private recording?:{handle:object;clock:SourceQueueRecordingClock;primary:GenerateContext;target:GenerateContext;next:number};
  private authored?:SceneDocument;private frame?:SourceIteratedTimelineResult;private anchor?:CapturedDensityAnchor;
  private sessionId='';private shape='';private startAt?:number;private revision=0;private busy=false;private failed=false;
  private steps=0;private accepted=0;private invalid=0;private clipped=0;private sampleInvalid=0;private deposited=0;private displays=0;
  private completed?:{context:GenerateContext;identity:string};private lastUpdatePaused=false;
  private requestSteps=0;private requestPixels=0;
- reset(failures:readonly unknown[]=[]){this.failed=true;this.cleanup.reset(()=>{this.replay?.reset();this.replay=undefined;this.timeline?.reset();this.timeline=undefined;this.clock=undefined;this.authored=undefined;this.applied=undefined;this.recording=undefined;this.completed=undefined;this.lastUpdatePaused=false;this.frame=undefined;this.anchor=undefined;this.sessionId='';this.shape='';this.startAt=undefined;this.revision=0;this.runtimeRevision=0;this.dotSizeRevision=0;this.runtimePointSize=undefined;this.steps=0;this.accepted=0;this.invalid=0;this.clipped=0;this.sampleInvalid=0;this.deposited=0;this.displays=0;this.failed=false;},failures);}
- diagnostics(){return{family:this.family,recording:this.recording?{next:this.recording.next,clock:{...this.recording.clock}}:undefined,runtimeRevision:this.runtimeRevision,dotSizeRevision:this.dotSizeRevision,runtimePointSize:this.runtimePointSize,failed:this.failed,sessionId:this.sessionId,displays:this.displays,steps:this.steps,clock:this.clock?.diagnostics(),replay:this.replay?.diagnostics(),frame:this.frame?structuredClone(this.frame):undefined,anchor:this.anchor?structuredClone(this.anchor):undefined,retainedBytes:(this.replay?.diagnostics().gpu.retainedBytes??0)+(this.authored?identity(this.authored).length*2:0)+(this.applied?identity(this.applied).length*2:0)+this.shape.length*2+(this.completed?this.completed.identity.length*2:0)};}
+ reset(failures:readonly unknown[]=[]){this.failed=true;this.cleanup.reset(()=>{this.replay?.reset();this.replay=undefined;this.timeline?.reset();this.timeline=undefined;this.clock=undefined;this.authored=undefined;this.applied=undefined;this.particleConstruction=undefined;this.recording=undefined;this.completed=undefined;this.lastUpdatePaused=false;this.frame=undefined;this.anchor=undefined;this.sessionId='';this.shape='';this.startAt=undefined;this.revision=0;this.runtimeRevision=0;this.dotSizeRevision=0;this.runtimePointSize=undefined;this.steps=0;this.accepted=0;this.invalid=0;this.clipped=0;this.sampleInvalid=0;this.deposited=0;this.displays=0;this.failed=false;},failures);}
+ diagnostics(){return{family:this.family,recording:this.recording?{next:this.recording.next,clock:{...this.recording.clock}}:undefined,runtimeRevision:this.runtimeRevision,dotSizeRevision:this.dotSizeRevision,runtimePointSize:this.runtimePointSize,failed:this.failed,sessionId:this.sessionId,displays:this.displays,steps:this.steps,clock:this.clock?.diagnostics(),replay:this.replay?.diagnostics(),frame:this.frame?structuredClone(this.frame):undefined,anchor:this.anchor?structuredClone(this.anchor):undefined,retainedBytes:(this.replay?.diagnostics().gpu.retainedBytes??0)+(this.authored?identity(this.authored).length*2:0)+(this.applied?identity(this.applied).length*2:0)+(this.particleConstruction?identity(this.particleConstruction).length*2:0)+this.shape.length*2+(this.completed?this.completed.identity.length*2:0)};}
  snapshotInk(){if(this.failed||!this.replay)throw Error('迭代场景 实时累积不可读');return this.replay.readback();}
  readParticles(){if(this.failed||!this.replay)throw Error('迭代场景 实时粒子不可读');return this.replay.readParticles();}
  setPaused(paused:boolean,timestampMs?:number){
@@ -71,6 +73,14 @@ export class SourceIteratedSession {
   this.cleanup.prepare();const restore=this.clock.setPaused(paused,this.timeline.snapshot().frame.camera,timestampMs);
   if(restore)this.timeline.writeAngles(restore);this.frame=this.timeline.snapshot();
   if(this.completed){this.live(this.completed.context)!.clock={...this.live(this.completed.context)!.clock,paused};this.completed.identity=this.captureIdentity(this.authored!,this.completed.context);}
+ }
+ /** A parameter control writes runtime uniforms, without update/display/reseed.
+  * Applied recording config and constructor seed stay owned by initialization. */
+ updateParameters(before:SceneDocument,next:SceneDocument,c:GenerateContext,writes?:readonly (readonly [string,number])[]){
+  if(!this.matchesCompletedPrimary(before,c)||!this.authored||!this.timeline)throw Error('迭代参数更新需要匹配的已完成主预览');
+  const changes=sourceIteratedParameterChanges(before,next,writes);if(!changes)throw Error('该编辑不是已有迭代参数热更新');
+  this.timeline.writeParameters(changes);this.authored=structuredClone(next);this.shape=sourceIteratedApplyIdentity(next);this.frame=this.timeline.snapshot();
+  this.completed!.identity=this.captureIdentity(next,c);
  }
  private advance(c:GenerateContext,dt:number,paused:boolean,reconstructing=false){
   cancel(c);const replaying=this.replay!.willReplayDisplay(c.width,c.height);
@@ -81,13 +91,15 @@ export class SourceIteratedSession {
   cancel(c);const replaying=this.replay!.willReplayDisplay(c.width,c.height);this.frame=frame;
   const scene={...this.authored!,settings:{...this.authored!.settings,...frame.mapColors,...(this.runtimePointSize!==undefined?{pointSize:this.runtimePointSize}:{})},parameters:{...frame.parameters!.values},evaluatedSourceCamera:frame.frame};
   bindSourceIterationFrame(scene,frame.palette,frame.update,frame.parameters);
-  const sourceFrame=ordinarySourceCameraFrame(scene,c),plan=prepareOrdinarySourceFrame(sourceFrame),job=prepareIteratedFrame(scene,frame.frame.sceneTime,this.displays,this.authored);
+  const anchor={...this.authored!,...this.particleConstruction};
+  if(anchor.mapSource&&this.authored!.mapSource)anchor.mapSource={...anchor.mapSource,construction:{...anchor.mapSource.construction,iterations:this.authored!.mapSource.construction.iterations}};
+  const sourceFrame=ordinarySourceCameraFrame(scene,c),plan=prepareOrdinarySourceFrame(sourceFrame),job=prepareIteratedFrame(scene,frame.frame.sceneTime,this.displays,anchor);
   // During replay native display skips camera capture and parameter snapshot.
   let cameraChanged=false;
   if(!replaying){const captured=prepareCapturedDensityCamera(this.family,plan,this.anchor);this.anchor=captured.anchor;cameraChanged=captured.clearInk;}
   job.sourceCamera={anchor:this.anchor!,clearInk:cameraChanged};
   job.densitySplat=prepareSourceDensitySplat(this.family,job.config.pointSize,plan.displayScale);
-  const updates=frame.update.calls.map(call=>prepareIteratedField({...scene,parameters:{...call.parameters!}},job.config,call.time,this.authored!));
+  const updates=frame.update.calls.map(call=>prepareIteratedField({...scene,parameters:{...call.parameters!}},job.config,call.time,anchor));
   if(reconstructing){
    this.requestSteps+=job.config.count*((!this.replay!.diagnostics().warmupApplied&&updates.length?job.config.burn:0)+updates.length*job.config.iterations);
    this.requestPixels+=sourceDensitySplatPixelTests(job.densitySplat,job.config.count);
@@ -136,7 +148,7 @@ export class SourceIteratedSession {
   }catch(error){this.reset([error]);throw error;}finally{this.busy=false;}
  }
  private initialize(scene:SceneDocument,live:SourceIteratedLiveContext){
-  this.reset();this.applied=structuredClone(scene);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
+  this.reset();this.particleConstruction=structuredClone({mapSource:scene.mapSource,symmetrySource:scene.symmetrySource});this.applied=structuredClone(scene);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
   this.sessionId=live.sessionId;this.startAt=live.startAt;this.revision=live.replayRevision;
   this.timeline=new SourceIteratedTimelineSession(scene);this.frame=this.timeline.snapshot();
   this.clock=new SourceSceneHostClock(live.clock.paused,this.frame.frame.camera);this.replay=new SourceIteratedReplaySession(this.family,live.renderFps);

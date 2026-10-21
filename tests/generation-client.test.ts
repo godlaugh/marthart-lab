@@ -221,6 +221,22 @@ describe.each(['map','symmetry'] as const)('%s live client capability',family=>{
   await expect(g[save](live,{width:3,height:5})).rejects.toThrow('过期');
   const pause=g[set](preview,true),control=w.messages.at(-1)!;expect(control).toHaveProperty('sourceId',c.id);w.emit({operation:playback,id:control.id,sessionId:control.sessionId,sourceId:c.id,paused:true});await pause;g.dispose();
  });
+ it.each(['source','operation','error','send'] as const)('invalidates uncertain parameter acknowledgement: %s',async failure=>{
+  const {g,w,r}=await ready(),next=createScene(definition(family));if(failure==='send')w.postMessage=()=>{throw Error('send');};
+  const pending=g.updateIteratedParameters(live,next,[['gain',.2]]).catch(e=>e),c=w.messages.at(-1)!;
+  if(failure==='error')w.emit({operation:'iterated-parameters',id:c.id,sessionId:c.sessionId,error:'rejected'});
+  else if(failure==='operation')w.emit({operation:playback,id:c.id,sessionId:c.sessionId,sourceId:r.id,paused:true});
+  else if(failure!=='send')w.emit({operation:'iterated-parameters',id:c.id,sessionId:c.sessionId,sourceId:999});
+  expect(await pending).toBeInstanceOf(Error);expect(w.terminated).toBe(true);await expect(g[set](live,false)).rejects.toThrow('已完成');g.dispose();
+ });
+ it('retains exact image through repeated parameter controls and refuses interleaved draws',async()=>{
+  const {g,w,r}=await ready(),next=createScene(definition(family));
+  await expect(g.updateIteratedParameters({...live},next,[['gain',.2]])).rejects.toThrow('已完成');
+  for(const value of [.2,.2,.3]){const pending=g.updateIteratedParameters(live,next,[['gain',value]]),c=w.messages.at(-1)!;
+   await expect(g.generate(next,ctx)).rejects.toThrow('尚未完成');
+   w.emit({operation:'iterated-parameters',id:c.id,sessionId:c.sessionId,sourceId:r.id});await pending;
+  }expect(w.terminated).toBe(false);g.dispose();
+ });
  it('rejects another family and offscreen result before posting any control',async()=>{
   const {g,w}=await ready();const count=w.messages.length;
   await expect(g[family==='map'?'setSymmetryPaused':'setMapPaused'](live,true)).rejects.toThrow('已完成');

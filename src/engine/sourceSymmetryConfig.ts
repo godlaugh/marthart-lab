@@ -129,11 +129,21 @@ export function sourceSymmetryFieldParameters(scene:SceneDocument):SymmetryParam
  if(scene.settings.template!=='standard'&&scene.settings.template!=='modified')throw Error('未知源 Symmetry 模板');
  return{lambda:f('lambda'),alpha:f('alpha'),beta:f('beta'),gamma:f('gamma'),omega:f('omega'),delta:f('delta'),n:f('symmetry_degree'),deltaPower:f('delta_power'),template:scene.settings.template};
 }
-export function editSourceSymmetryConfiguration(before:SceneDocument,next:SceneDocument):SceneDocument {
+export function editSourceSymmetryConfiguration(before:SceneDocument,next:SceneDocument,intent:'apply'|'parameters'='apply'):SceneDocument {
  if(!usesSourceSymmetryConfiguration(next))return next;
  let parameters=next.parameters;
  for(const [setting,key]of [['degree','symmetry_degree'],['deltaPower','delta_power']])if(next.settings[setting]!==before.settings[setting])parameters={...parameters,[key]:Number(next.settings[setting])};
  next={...next,parameters};
+ const existing=Object.keys(before.parameters).length===Object.keys(parameters).length&&Object.keys(before.parameters).every(k=>Object.hasOwn(parameters,k));
+ const valueOnly=existing&&!(next.settings.template==='modified'&&!Object.is(before.parameters.delta_power,parameters.delta_power))&&Object.entries(parameters).some(([k,v])=>!Object.is(before.parameters[k],v))&&JSON.stringify({...before,parameters:null})===JSON.stringify({...next,parameters:null});
+ if(intent==='parameters'&&valueOnly){
+  const anchor=next.symmetrySource!,patch=(entries:SourceSymmetryEntry[])=>entries.map(([k,v])=>[k,!Object.is(before.parameters[k],parameters[k])&&Object.hasOwn(parameters,k)?parameters[k]:v] as SourceSymmetryEntry);
+  if(Object.values(parameters).some(v=>!Number.isFinite(v)))throw Error('源 Symmetry 参数需要有限数值');
+  const values=anchor.editorParameters?new Map(patch(anchor.editorParameters)):undefined;
+  if(values)for(const [k,v]of Object.entries(parameters))if(!Object.is(before.parameters[k],v))values.set(k,v);
+  const tree=values?prepareSourceSnapshotMap([...values.keys()],anchor.editorMap):undefined;if(tree&&!tree.ok)throw Error(tree.error.reason);
+  return{...next,parameters,settings:{...next.settings,degree:sourceSymmetryDegree(parameters),deltaPower:parameters.delta_power??1},symmetrySource:{...anchor,construction:{...anchor.construction,degree:sourceSymmetryDegree(parameters),parameters:patch(anchor.construction.parameters)},...(values?{editorParameters:[...values],editorMap:tree!.ok?tree!.state:undefined}:{})}};
+ }
  const structural=['batchSize','degree','deltaPower','initialMode','initialRange','initialXMin','initialXMax','initialYMin','initialYMax','template'];
  const changed=structural.some(key=>!Object.is(before.settings[key],next.settings[key]))||before.equations.glsl!==next.equations.glsl||Object.keys(before.parameters).length!==Object.keys(parameters).length||Object.entries(parameters).some(([key,value])=>!Object.hasOwn(before.parameters,key)||!Object.is(value,before.parameters[key]));
  next={...next,settings:{...next.settings,degree:sourceSymmetryDegree(parameters),deltaPower:parameters.delta_power??1}};

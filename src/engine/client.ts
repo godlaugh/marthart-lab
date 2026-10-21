@@ -12,6 +12,7 @@ function recordingRaster(value:unknown,family:string):value is SourceRecordingRa
 }
 type Completed={id:number;scene:SceneDocument;output:SceneOutput};
 type Pending =
+  | {operation:'iterated-parameters';source:Completed;scene:SceneDocument;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'samila-playback'|'symmetry-playback'|'map-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'source-recording-begin';source:Completed;handle:SourceRecordingHandle;resolve:(value:SourceRecordingStart)=>void;reject:(error:Error)=>void}
   | {operation:'source-recording-frame';handle:SourceRecordingHandle;family:string;displayFrame:number;resolve:(value:SourceRecordingRaster)=>void;reject:(error:Error)=>void}
@@ -31,7 +32,7 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean};
-  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback');}
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
@@ -50,7 +51,11 @@ export class Generator {
       if (data.sessionId !== this.sessionId) return;
       const p = this.pending.get(data.id);
       if (!p) return;
-      if(p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'){
+      if(p.operation==='iterated-parameters'){
+        if(data.operation!=='iterated-parameters'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'迭代参数响应身份不匹配'));return;}
+        this.pending.delete(data.id);this.completed={...p.source,scene:p.scene};p.resolve();return;
+      }
+      if(p.operation==='samila-playback' ||p.operation==='symmetry-playback'||p.operation==='map-playback'){
         // A control acknowledgement changes the clock, not the completed image
         // capability. Any uncertain acknowledgement retires this worker so a
         // later draw cannot silently use an unknown paused/running state.
@@ -159,6 +164,12 @@ export class Generator {
   }
   captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('map-paused-capture',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('symmetry-paused-capture',output,size,scale);}
+  updateIteratedParameters(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>{
+    const source=this.completed;
+    if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代参数更新需要当前已完成的主预览'));
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'iterated-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'iterated-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene,writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+  }
   setSamilaPaused(output:SceneOutput,paused:boolean):Promise<void>{return this.setLivePaused('samila-playback',output,paused);}
   setMapPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('map-playback',output,paused,timestampMs);}
   setSymmetryPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('symmetry-playback',output,paused,timestampMs);}

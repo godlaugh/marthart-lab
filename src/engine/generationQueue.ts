@@ -1,3 +1,4 @@
+import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
 import {sourceIteratedSceneIdentity} from './sourceIteratedLiveIdentity';
 import {sourceSamilaSceneIdentity} from './sourceSamilaIdentity';
 import {snapshotGenerationInput} from './generationInput';
@@ -11,6 +12,7 @@ import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
 interface GeneratorPort {
+  updateIteratedParameters?(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>;
   generate(scene:SceneDocument,context:Context,onProgress?:(output:SceneOutput)=>void):Promise<SceneOutput>;
   setMapPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSymmetryPaused?(output:SceneOutput,paused:boolean):Promise<void>;
@@ -27,7 +29,7 @@ interface GeneratorPort {
   finishSourceRecording?(handle:SourceRecordingHandle):Promise<SourceRecordingStop>;
   hasSourceRecording?(handle:SourceRecordingHandle):boolean;
 }
-interface Request {scene:SceneDocument;context:Context;intent?:'metadata';}
+interface Request {scene:SceneDocument;context:Context;intent?:'metadata';parameterWrites?:readonly (readonly [string,number])[];}
 export interface SourceRecordingConsumer {
   /** Finish the encoder before releasing fixed-step runtime ownership. */
   complete?:(start:SourceRecordingStart)=>void|Promise<void>;
@@ -68,7 +70,7 @@ export class GenerationQueue {
   constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void}){
     if(retiredQueues.size)void retryRetiredGenerationQueueCleanup().catch(error=>{if(!this.disposed)this.callbacks.error(error);});
   }
-  request(scene:SceneDocument,context:Context,delayMs=0,intent?:'metadata'){
+  request(scene:SceneDocument,context:Context,delayMs=0,intent?:'metadata',parameterWrites?:readonly (readonly [string,number])[]){
     if(this.disposed)return;
     const previous=this.latest?.scene,sceneChanged=previous!==scene;
     const sameIterated=!!previous&&previous.id===scene.id&&previous.kind===scene.kind&&retainsIteratedCompiler(previous)&&retainsIteratedCompiler(scene);
@@ -83,7 +85,9 @@ export class GenerationQueue {
     const previousNative=!!previous&&usesRootsNativePresentation(previous);
     const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
-    this.latest={scene,context:snapshotGenerationInput(context),intent};
+    const carried=sameLive&&this.latest!==this.running&&this.latest!==this.completedLive?.request?this.latest?.parameterWrites:undefined;
+    const writes=new Map([...(carried??[]),...(parameterWrites??[])]);
+    this.latest={scene,context:snapshotGenerationInput(context),intent,...(writes.size?{parameterWrites:[...writes].filter(([k,v])=>Object.is(scene.parameters[k],v))}:{})};
     // A recording leases this exact worker, including while begin is pending.
     // Keep only the newest editor request without cancelling that lease.
     if(this.recordingOwner){this.callbacks.busy(true);this.retryRecordingInBackground();return;}
@@ -105,7 +109,7 @@ export class GenerationQueue {
     const request=this.latest,cached=this.completedLive;
     // Metadata edits rebind the exact completed capability, without a draw.
     // The owner supplies the render identity; transport facts must also match.
-    if(cached&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
+    if(cached&&!request.parameterWrites?.length&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
       this.completedLive={request,output:cached.output};
       this.callbacks.output(cached.output,this.outputTime(cached.output,request),request.scene);this.callbacks.busy(false);return;
     }
@@ -115,7 +119,13 @@ export class GenerationQueue {
     // identical. Retain its GPU work, but publish only the latest request.
     const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
-    void this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time)).then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+    const parameterEdit=cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
+    const generate=()=>this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time));
+    const operation=parameterEdit?this.generator.updateIteratedParameters!(cached!.output,request.scene,parameterEdit).then(()=>{
+      if(!current())throw new DOMException('迭代参数会话已更换','AbortError');
+      return request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
+    }):generate();
+    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
       if(publishable()&&error.name!=='AbortError')this.callbacks.error(error);
     }).finally(()=>{
       if(!current())return;

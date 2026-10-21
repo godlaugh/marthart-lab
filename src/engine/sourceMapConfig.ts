@@ -125,8 +125,18 @@ export function importSourceMapConfiguration(document:unknown,options:SourceMapI
 /** Explicit inspector edit only. Runtime timeline evaluation must keep the old
  * construction anchor. Unchanged engine-injected parameters never become new
  * ProjectState authoring entries merely because a setting was edited. */
-export function editSourceMapConfiguration(anchor:SourceMapConfiguration,before:SourceMapEditState,next:SourceMapEditState):SourceMapResult<{configuration:SourceMapConfiguration;parameters:Record<string,number>}>{return attempt(()=>{
- const valid=unwrap(parseSourceMapConfiguration(anchor),[]);const constructionChanged=before.batchSize!==next.batchSize||before.dimension!==next.dimension||before.burnIn!==next.burnIn||(['x','y','z'] as const).some(a=>before.equations[a]!==next.equations[a])||(['xMin','xMax','yMin','yMax'] as const).some(k=>!Object.is(before.initial[k],next.initial[k]))||Object.keys(before.parameters).length!==Object.keys(next.parameters).length||Object.entries(next.parameters).some(([k,v])=>!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v));
+export function editSourceMapConfiguration(anchor:SourceMapConfiguration,before:SourceMapEditState,next:SourceMapEditState,intent:'apply'|'parameters'='apply'):SourceMapResult<{configuration:SourceMapConfiguration;parameters:Record<string,number>}>{return attempt(()=>{
+ const valid=unwrap(parseSourceMapConfiguration(anchor),[]);
+ const sameKeys=Object.keys(before.parameters).length===Object.keys(next.parameters).length&&Object.keys(before.parameters).every(k=>Object.hasOwn(next.parameters,k));
+ const onlyValues=sameKeys&&Object.keys(next.parameters).some(k=>!Object.is(before.parameters[k],next.parameters[k]))&&JSON.stringify({...before,parameters:null})===JSON.stringify({...next,parameters:null});
+ if(intent==='parameters'&&onlyValues){
+  const patch=(entries:SourceMapEntry[])=>entries.map(([k,v])=>[k,Object.hasOwn(next.parameters,k)&&!Object.is(before.parameters[k],next.parameters[k])?finite(next.parameters[k],['parameters',k]):v] as SourceMapEntry);
+  const editor=valid.editorParameters?new Map(patch(valid.editorParameters)):undefined;
+  if(editor)for(const [k,v]of Object.entries(next.parameters))if(!Object.is(before.parameters[k],v))editor.set(k,finite(v,['parameters',k]));
+  const editorState=editor?snapshot([...editor.keys()],valid.editorMap):undefined;
+  return{configuration:{...valid,construction:{...valid.construction,parameters:patch(valid.construction.parameters)},...(editor?{editorParameters:[...editor],editorMap:editorState!.state}:{})},parameters:{...next.parameters}};
+ }
+ const constructionChanged=before.batchSize!==next.batchSize||before.dimension!==next.dimension||before.burnIn!==next.burnIn||(['x','y','z'] as const).some(a=>before.equations[a]!==next.equations[a])||(['xMin','xMax','yMin','yMax'] as const).some(k=>!Object.is(before.initial[k],next.initial[k]))||Object.keys(before.parameters).length!==Object.keys(next.parameters).length||Object.entries(next.parameters).some(([k,v])=>!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v));
  if(!constructionChanged&&before.iterations===next.iterations)return{configuration:anchor,parameters:{...next.parameters}};
  // The native iterations inspector writes only its runtime setting. Preserve
  // raw constructor equations and parameter order: editor Apply normalization
