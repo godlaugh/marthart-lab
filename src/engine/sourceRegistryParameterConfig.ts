@@ -1,4 +1,4 @@
-import type {OscillationEdgeEasing,SourceSurfaceParameterAction,SourceSurfaceParameterClip,SourceRegistryParameterConfiguration,SourceRegistryParameterModel,SourceRegistryParameterAction,SourceSymmetryParameterOperation} from '../types';
+import type {OscillationEdgeEasing,SourceSurfaceParameterAction,SourceSurfaceParameterClip,SourceRegistryParameterConfiguration,SourceRegistryParameterModel,SourceRegistryParameterAction,SourceSymmetryParameterOperation,SourceMapParameterOperation} from '../types';
 import type {OrdinarySourceScalarScope} from './ordinarySourceCameraImport';
 import {ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS} from './ordinarySourceCameraImport';
 import {parseDomainSourceDouble,parseDomainSourceFloat} from './domainSourceScalar';
@@ -8,9 +8,11 @@ import {sourceSurfaceGradientPayload} from './sourceSurfaceGradientConfig';
 
 export const SOURCE_SURFACE_PARAMETER_MODEL='surface-registry-1.7.8' as const;
 export const SOURCE_SYMMETRY_PARAMETER_MODEL='symmetry-registry-1.7.8' as const;
+export const SOURCE_MAP_PARAMETER_MODEL='map-registry-1.7.8' as const;
 export const SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT:Readonly<OscillationEdgeEasing>=Object.freeze({window:.5,floor:.25,easing:'sine-out'});
 export const SOURCE_SURFACE_PARAMETER_DEFAULT:Readonly<SourceRegistryParameterConfiguration>=Object.freeze({min:-100,max:100,step:Math.fround(.1),edgeEasing:SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT});
 export const SOURCE_SYMMETRY_PARAMETER_DEFAULT:Readonly<SourceRegistryParameterConfiguration>=Object.freeze({min:-1,max:1,step:Math.fround(.1),edgeEasing:SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT});
+export const SOURCE_MAP_PARAMETER_DEFAULT=SOURCE_SYMMETRY_PARAMETER_DEFAULT;
 export const SOURCE_REGISTRY_PARAMETER_FIELDS=['min','max','step','enable'] as const;
 export const SOURCE_REGISTRY_PARAMETER_EDGE_FIELDS=['window','floor','easing'] as const;
 export type SourceRegistryParameterError={kind:'input'|'capacity'|'nonfinite';path:readonly string[];reason:string};
@@ -44,6 +46,7 @@ export function parseSourceRegistryParameterActions<Model extends SourceRegistry
 }
 export const parseSourceSurfaceParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSurfaceParameterAction[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_SURFACE_PARAMETER_MODEL);
 export const parseSourceSymmetryParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSymmetryParameterOperation[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_SYMMETRY_PARAMETER_MODEL);
+export const parseSourceMapParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceMapParameterOperation[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_MAP_PARAMETER_MODEL);
 export function parseSourceSurfaceParameterClip(raw:unknown):SourceSurfaceParameterClip{
  if(!object(raw)||raw.model!==SOURCE_SURFACE_PARAMETER_MODEL)return fail('input',[],'需要源参数片段模型');keys(raw,['model','parameters'],[]);
  const seen=new Set<string>();let characters=0;return{model:SOURCE_SURFACE_PARAMETER_MODEL,parameters:bounded<unknown>(raw.parameters,['parameters']).map((item,index)=>{
@@ -105,13 +108,13 @@ function ordered(raw:Record<string,unknown>,path:readonly string[],options:Impor
 }
 /** JSONObject.getString(default) stringifies non-null values. A non-string
  * target cannot equal a recognized domain, so no Java display formatter is
- * needed. Surface excludes only FRACTAL; Symmetry admits two explicit names. */
+ * needed. Surface excludes only FRACTAL; Map/Symmetry admit their family and SURFACE. */
 function acceptsDomain(raw:unknown,model:SourceRegistryParameterModel):boolean {
  if(model===SOURCE_SURFACE_PARAMETER_MODEL)return typeof raw!=='string'||raw.toUpperCase()!=='FRACTAL';
  if(raw==null)return true;
  if(typeof raw!=='string')return false;
  const domain=javaTrim(raw).toUpperCase();
- return domain===''||domain==='SYMMETRY_CHAOS'||domain==='SURFACE';
+ return domain===''||domain==='SURFACE'||domain===(model===SOURCE_MAP_PARAMETER_MODEL?'MAP_ATTRACTOR':'SYMMETRY_CHAOS');
 }
 function importParameterAction<Model extends SourceRegistryParameterModel>(method:'paramStart'|'paramStop',args:unknown,options:ImportOptions,model:Model):SourceRegistryParameterResult<ImportFacts<SourceRegistryParameterAction<Model>[]>>{
  return attempt(()=>{
@@ -148,6 +151,11 @@ function importParameterAction<Model extends SourceRegistryParameterModel>(metho
  * importer separately skips actions whose args are neither arrays nor objects. */
 export function importSourceSymmetryParameterAction(method:'paramStart'|'paramStop',args:unknown,options:Omit<ImportOptions,'edgeDefaults'>):SourceRegistryParameterResult<ImportFacts<SourceSymmetryParameterOperation[]>> {
  return importParameterAction(method,args,options,SOURCE_SYMMETRY_PARAMETER_MODEL);
+}
+/** Map shares the Symmetry registry builder, except for its target domain.
+ * Its outer source Scene likewise skips non-array/non-object args. */
+export function importSourceMapParameterAction(method:'paramStart'|'paramStop',args:unknown,options:Omit<ImportOptions,'edgeDefaults'>):SourceRegistryParameterResult<ImportFacts<SourceMapParameterOperation[]>> {
+ return importParameterAction(method,args,options,SOURCE_MAP_PARAMETER_MODEL);
 }
 export function importSourceSurfaceParameterAction(method:'paramStart'|'paramStop',args:unknown,options:ImportOptions):SourceRegistryParameterResult<ImportFacts<SourceSurfaceParameterAction[]>> {
  return importParameterAction(method,args,options,SOURCE_SURFACE_PARAMETER_MODEL);

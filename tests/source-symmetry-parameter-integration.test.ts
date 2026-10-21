@@ -4,7 +4,7 @@ import {afterEach,describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {serializeScene,parseScene} from '../src/engine/document';
 import {sceneAtTime,resolveTimeline} from '../src/engine/timeline';
-import {clearSourceSymmetryTimelineCache,replaySourceSymmetryTimeline,sourceSymmetryParameterFrame} from '../src/engine/sourceSymmetryTimeline';
+import {clearSourceIteratedTimelineCache,replaySourceIteratedTimeline,sourceIterationParameterFrame} from '../src/engine/sourceIteratedTimeline';
 import {prepareIteratedFrame} from '../src/scenes/iteratedDensity';
 import {SOURCE_SYMMETRY_PARAMETER_MODEL as model} from '../src/engine/sourceRegistryParameterConfig';
 import {RegistryParameterActionsEditor} from '../src/components/Timeline';
@@ -15,7 +15,7 @@ const raw=(timeline:unknown[])=>({config_version:'1.0.0',type:'SYMMETRY_CHAOS',n
 const read=(timeline:unknown[])=>{const scene=parseProjectFile(JSON.stringify(raw(timeline))).scene;scene.timeline.fps=60;return scene;};
 const start=(parameters:unknown)=>({method:'paramStart',args:{parameters}});
 const animate=(actions:unknown[],duration=.2)=>({type:'animate',duration,easing:'LINEAR',actions});
-afterEach(clearSourceSymmetryTimelineCache);
+afterEach(clearSourceIteratedTimelineCache);
 describe('Symmetry parameters from public project through shared display frames',()=>{
  it('imports ordered named/all operations and preserves their saved form and number provenance',()=>{
   const text=JSON.stringify(raw([animate([start({'a.b':{step:.1,min:9,max:-2},lambda:{}}),{method:'paramStop',args:[{parameters:{lambda:{step:2}}}]},{method:'paramStart',args:[]}])])).replace('"step":0.1','"step":1e-1');
@@ -32,25 +32,25 @@ describe('Symmetry parameters from public project through shared display frames'
  it('writes parameters before GPU field preparation without changing authored construction or seed',()=>{
   const scene=read([animate([start({lambda:{min:.4,max:.4,step:0}}),{method:'gradientStart',args:{speed:60}},{method:'rotatePhi',args:[.5]}])]),before=structuredClone(scene),snapshot=sceneAtTime(scene,.1),job=prepareIteratedFrame(snapshot,.1,6,scene),base=prepareIteratedFrame(scene,0,0,scene);
   expect(snapshot.parameters.lambda).toBe(Math.fround(.4));expect(job.field.parameters.lambda).toBe(Math.fround(.4));expect(job.config.seed).toBe(base.config.seed);expect(job.structuralKey).toBe(base.structuralKey);expect(scene).toEqual(before);
-  const full=replaySourceSymmetryTimeline(scene,.1);expect(full.palette.offset).not.toBe(scene.palette.offset);expect(snapshot.evaluatedSourceCamera).toEqual(full.frame);expect(snapshot.parameters).toEqual(full.parameters!.values);
+  const full=replaySourceIteratedTimeline(scene,.1);expect(full.palette.offset).not.toBe(scene.palette.offset);expect(snapshot.evaluatedSourceCamera).toEqual(full.frame);expect(snapshot.parameters).toEqual(full.parameters!.values);
  });
  it('keeps updating through waits and completed queues, and reconstructs cold/warm/backward values identically',()=>{
   const scene=read([animate([start({lambda:{step:.003,min:-1,max:1,edgeEasing:{floor:1}}})],.1),{type:'wait',duration:.1}]);
   scene.timeline.duration=1;
   const frames=Array.from({length:18},(_,i)=>sceneAtTime(scene,i/scene.timeline.fps));
   expect(frames[7].parameters.lambda).not.toBe(frames[5].parameters.lambda);expect(frames[17].parameters.lambda).toBeGreaterThan(frames[15].parameters.lambda);
-  for(const i of [15,0,3,16,1]){const warm=sceneAtTime(scene,i/scene.timeline.fps);expect(warm.parameters).toEqual(frames[i].parameters);clearSourceSymmetryTimelineCache();expect(sceneAtTime(scene,i/scene.timeline.fps).parameters).toEqual(frames[i].parameters);}
+  for(const i of [15,0,3,16,1]){const warm=sceneAtTime(scene,i/scene.timeline.fps);expect(warm.parameters).toEqual(frames[i].parameters);clearSourceIteratedTimelineCache();expect(sceneAtTime(scene,i/scene.timeline.fps).parameters).toEqual(frames[i].parameters);}
  });
  it('acknowledges all double parameters at the native threshold, including sub-Float32 writes and unused names',()=>{
   const scene=read([animate([start({lambda:{step:8e-10,min:-1,max:1,edgeEasing:{floor:1}}})],0),{type:'wait',duration:1}]);
-  const frames=Array.from({length:6},(_,i)=>{const s=sceneAtTime(scene,i/scene.timeline.fps);return {s,f:sourceSymmetryParameterFrame(s)!};});
+  const frames=Array.from({length:6},(_,i)=>{const s=sceneAtTime(scene,i/scene.timeline.fps);return {s,f:sourceIterationParameterFrame(s)!};});
   expect(frames.map(x=>x.f.changed)).toEqual([true,true,true,true,true,true]);
   expect(new Set(frames.map(x=>Math.fround(x.s.parameters.lambda))).size).toBe(1);expect(frames[2].s.parameters.lambda).not.toBe(frames[0].s.parameters.lambda);
-  const extra=read([animate([start({'unused.name':{min:.5,max:.5}})])]);expect(sourceSymmetryParameterFrame(sceneAtTime(extra,0))!.values['unused.name']).toBe(.5);
+  const extra=read([animate([start({'unused.name':{min:.5,max:.5}})])]);expect(sourceIterationParameterFrame(sceneAtTime(extra,0))!.values['unused.name']).toBe(.5);
  });
  it('preserves old unmarked documents and rejects foreign/mixed/missing parameter models',()=>{
   const scene=read([animate([start({lambda:{}})])]);const old=structuredClone(scene);delete old.settings.symmetryParameterModel;old.timeline.tracks[0].actions=[];
-  expect(parseScene(serializeScene(old)).settings.symmetryParameterModel).toBeUndefined();expect(sourceSymmetryParameterFrame(sceneAtTime(old,.1))).toBeUndefined();
+  expect(parseScene(serializeScene(old)).settings.symmetryParameterModel).toBeUndefined();expect(sourceIterationParameterFrame(sceneAtTime(old,.1))).toBeUndefined();
   for(const mutate of [(s:typeof scene)=>{delete s.settings.symmetryParameterModel;},(s:typeof scene)=>{s.timeline.tracks[0].actions![0].parameters=[];},(s:typeof scene)=>{delete s.timeline.tracks[0].actions![0].symmetryParameters;},(s:typeof scene)=>{s.settings.symmetryParameterModel='unknown';}]){const bad=structuredClone(scene);mutate(bad);expect(()=>parseScene(serializeScene(bad))).toThrow();}
  });
  it('keeps negative child duration while clamping the native parameter group duration',()=>{

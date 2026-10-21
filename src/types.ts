@@ -135,7 +135,7 @@ export type DomainParameterAction = {
 };
 /** Source registry identities are names, never dotted local animation targets. */
 export interface SourceRegistryParameterConfiguration {min:number;max:number;step:number;edgeEasing:OscillationEdgeEasing;}
-export type SourceRegistryParameterModel='surface-registry-1.7.8'|'symmetry-registry-1.7.8';
+export type SourceRegistryParameterModel='surface-registry-1.7.8'|'symmetry-registry-1.7.8'|'map-registry-1.7.8';
 export type SourceRegistryParameterAction<Model extends SourceRegistryParameterModel> = {
   model:Model;
   scope:{kind:'all'}|{kind:'named';name:string};
@@ -143,6 +143,7 @@ export type SourceRegistryParameterAction<Model extends SourceRegistryParameterM
 };
 export type SourceSurfaceParameterAction=SourceRegistryParameterAction<'surface-registry-1.7.8'>;
 export type SourceSymmetryParameterOperation=SourceRegistryParameterAction<'symmetry-registry-1.7.8'>;
+export type SourceMapParameterOperation=SourceRegistryParameterAction<'map-registry-1.7.8'>;
 export interface SourceSurfaceParameterClip {
   model:'surface-registry-1.7.8';
   /** Standalone clips replace the registry, retaining disabled entries and
@@ -157,6 +158,7 @@ export interface AnimationAction {
   domainParameters?:DomainParameterAction[];
   surfaceParameters?:SourceSurfaceParameterAction[];
   symmetryParameters?:SourceSymmetryParameterOperation[];
+  mapParameters?:SourceMapParameterOperation[];
   /** Dedicated source Perlin child; admitted only by its source queue. */
   perlinParameters?:SourcePerlinParameterAction;
   /** Dedicated source Samila child; initial phase belongs to its queue runtime. */
@@ -414,7 +416,8 @@ export interface RasterOutput {
   /** Live display ownership, separate from cold fixed-frame replay. */
   symmetryLive?:import('./engine/sourceSymmetrySession').SourceSymmetryLiveFacts;
   samilaLive?:{sessionId:string;target:'primary'|'offscreen';displayIndex:number;accumulationPasses:number;anchorTheta:number;parameterChanged:boolean;cleared:boolean;clock:'fixed-source-queue'|'realtime-source-queue';runtime?:import('./engine/sourceSamilaSession').SourceSamilaRuntimeFacts};
-  symmetryFrame?:import('./engine/sourceSymmetryFramePlan').SourceSymmetryFramePlan;
+  symmetryFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
+  mapFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
   symmetryPalette?:import('./engine/sourceSymmetryPalette').SourceSymmetryPaletteFacts;
   symmetrySplat?:import('./engine/sourceSymmetrySplat').SourceSymmetrySplatFacts;
   samilaSplat?:{model:'samila-splat-1.7.8';referenceKind:'primary'|'local-output';primaryPixelHeight:number;nominalRadius:number;radius:number;path:'points'|'quad';encoding:'rgb-mass';noiseModel:'source-simplex-lut-256'};

@@ -5,19 +5,19 @@ import {createServer} from 'vite';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const out=process.argv[2];if(!out)throw Error('Supply a new output directory');await mkdir(out);
-const sources=['src/engine/sourceSymmetryReplaySession.ts','src/engine/sourceSymmetryFramePlan.ts','src/engine/iteratedDensityGpu.ts','src/scenes/iteratedDensity.ts','scripts/verify-source-symmetry-replay-gpu.mjs'];
+const sources=['src/engine/sourceIteratedReplaySession.ts','src/engine/sourceIterationFramePlan.ts','src/engine/iteratedDensityGpu.ts','src/scenes/iteratedDensity.ts','scripts/verify-source-symmetry-replay-gpu.mjs'];
 const snapshot=async()=>Object.fromEntries(await Promise.all(sources.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));
 const report={status:'running',nativeWindowExecuted:false,sourceBefore:await snapshot()},start=performance.now();let browser,server;
 try{
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage(),url=server.resolvedUrls.local[0];await page.route(url,r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(url);
  report.result=await page.evaluate(async()=>{
-  const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{prepareIteratedFrame}=await import('/src/scenes/iteratedDensity.ts'),{iteratedInitialChunk}=await import('/src/engine/iteratedSeed.ts'),{SourceSymmetryReplaySession}=await import('/src/engine/sourceSymmetryReplaySession.ts');
+  const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{prepareIteratedFrame}=await import('/src/scenes/iteratedDensity.ts'),{iteratedInitialChunk}=await import('/src/engine/iteratedSeed.ts'),{SourceIteratedReplaySession}=await import('/src/engine/sourceIteratedReplaySession.ts');
   const assert=(v,m)=>{if(!v)throw Error(m);},F=Math.fround,equal=(a,b)=>a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]));
   const options={width:48,height:32,projection:'xy',padding:0,bounds:{minX:-2,maxX:2,minY:-2,maxY:2}},idle={updates:[],paused:true,parameterChanged:false,cameraChanged:false};
   const make=(burn,count=4)=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Replay GPU',settings:{batch_size:count,burn_in_steps:burn,scale_x:1,scale_y:1,scale_z:1},palette:['#ffffff','#ffffff'],equation:{glsl:'void calculate_next(in vec3 p,out vec3 n,out float m){n=p+vec3(.00001,0.,0.);m=.00001;}'},timeline:[]})).scene;
   const rows=[];
   for(const [burn,updating,fps,initialUpdating=updating]of [[0,false,60],[100,false,60],[1000,false,60],[100,true,60],[100,false,30],[100,true,60,false]]){
-   const scene=make(burn);scene.timeline.fps=24;scene.settings.iterationsPerFrame=2;const owner=new SourceSymmetryReplaySession(fps),job=prepareIteratedFrame(scene,0,0),seeds=iteratedInitialChunk(job.config,0,job.config.count),row={burn,updating,fps,initialUpdating,frames:[]};rows.push(row);let expected=new Float32Array(seeds),serial=0;
+   const scene=make(burn);scene.timeline.fps=24;scene.settings.iterationsPerFrame=2;const owner=new SourceIteratedReplaySession('symmetry',fps),job=prepareIteratedFrame(scene,0,0),seeds=iteratedInitialChunk(job.config,0,job.config.count),row={burn,updating,fps,initialUpdating,frames:[]};rows.push(row);let expected=new Float32Array(seeds),serial=0;
    const advance=n=>{for(let k=0;k<n;k++)for(let i=0;i<expected.length;i+=4){expected[i]=F(expected[i]+F(.00001));expected[i+3]=F(.00001);}};
    const display=event=>owner.display({...job,frame:serial++},options,event);
    try{
@@ -53,7 +53,7 @@ try{
   // Two ordinary calls carry distinct parameter snapshots before the display
   // replay. Warmup belongs to the first call; replay uses the final snapshot.
   const ordered=make(3);ordered.equations.glsl='uniform float gain;void calculate_next(in vec3 p,out vec3 n,out float m){n=p+vec3(gain,0.,0.);m=gain;}';ordered.parameters.gain=.00002;ordered.settings.iterationsPerFrame=2;
-  const orderedJob=prepareIteratedFrame(ordered,0,0),firstField=prepareIteratedFrame({...ordered,parameters:{...ordered.parameters,gain:.00001}},0,0,ordered).field,orderedOwner=new SourceSymmetryReplaySession(60),orderedRows=[];
+  const orderedJob=prepareIteratedFrame(ordered,0,0),firstField=prepareIteratedFrame({...ordered,parameters:{...ordered.parameters,gain:.00001}},0,0,ordered).field,orderedOwner=new SourceIteratedReplaySession('symmetry',60),orderedRows=[];
   let expected=iteratedInitialChunk(orderedJob.config,0,orderedJob.config.count);
   const advanceOrdered=(gain,steps)=>{for(let k=0;k<steps;k++)for(let i=0;i<expected.length;i+=4){expected[i]=F(expected[i]+F(gain));expected[i+3]=F(gain);}};
   try{for(let frame=0;frame<3;frame++){
@@ -67,14 +67,14 @@ try{
   }}finally{orderedOwner.reset();assert(orderedOwner.diagnostics().gpu.retainedBytes===0,'Ordered replay cleanup');}
   // Exercise the original built-in field's buffer storage as well as custom
   // GLSL texture storage. A repeated event must reproduce identical seed/ink.
-  const builtin=make(3);delete builtin.equations.glsl;const builtinJob=prepareIteratedFrame(builtin,0,0),builtinOwner=new SourceSymmetryReplaySession(60);
+  const builtin=make(3);delete builtin.equations.glsl;const builtinJob=prepareIteratedFrame(builtin,0,0),builtinOwner=new SourceIteratedReplaySession('symmetry',60);
   try{assert(builtinJob.field.kind==='symmetry','Built-in fixture not selected');builtinOwner.display(builtinJob,options,idle);builtinOwner.requestReplay();builtinOwner.display(builtinJob,options,idle);const particles=builtinOwner.readParticles().positionsAndMetric,ink=builtinOwner.readback();builtinOwner.requestReplay();builtinOwner.display(builtinJob,options,idle);assert(equal(particles,builtinOwner.readParticles().positionsAndMetric)&&equal(ink,builtinOwner.readback()),'Built-in seed/ink replay differs');}finally{builtinOwner.reset();}
   // Larger completed workload: native built-in field, 65,536 particles and a
   // 640×480 accumulation target. No per-frame particle/ink readback overhead.
-  const large=make(100,65536);delete large.equations.glsl;const largeJob=prepareIteratedFrame(large,0,0),largeOwner=new SourceSymmetryReplaySession(60),largeOptions={...options,width:640,height:480};let representative;
+  const large=make(100,65536);delete large.equations.glsl;const largeJob=prepareIteratedFrame(large,0,0),largeOwner=new SourceIteratedReplaySession('symmetry',60),largeOptions={...options,width:640,height:480};let representative;
   try{const started=performance.now();largeOwner.display(largeJob,largeOptions,{...idle,updates:[largeJob.field],paused:false});largeOwner.requestReplay();let result,frames=0,steps=0;do{result=largeOwner.display(largeJob,largeOptions,idle);frames++;steps+=result.gpu.steps;assert(frames<100,'Large replay did not complete');}while(result.replayActive);const ink=largeOwner.readback();assert(ink.every(Number.isFinite),'Large replay produced invalid ink');representative={particles:largeJob.config.count,width:640,height:480,frames,steps,passes:result.accumulationPasses,elapsedMs:performance.now()-started,gpu:largeOwner.diagnostics().gpu};assert(frames===30&&result.accumulationPasses===100,'Large replay schedule');}finally{largeOwner.reset();assert(largeOwner.diagnostics().gpu.retainedBytes===0,'Large replay cleanup');}
   // Failure after mutation cannot be silently resumed. Reset is explicit.
-  const scene=make(0),job=prepareIteratedFrame(scene,0,0),failed=new SourceSymmetryReplaySession(60);let calls=0;
+  const scene=make(0),job=prepareIteratedFrame(scene,0,0),failed=new SourceIteratedReplaySession('symmetry',60);let calls=0;
   try{let thrown=false;try{failed.display(job,{...options,isCancelled:()=>++calls>6},idle);}catch{thrown=true;}assert(thrown&&failed.diagnostics().failed,'Cancellation did not fail closed');let rejected=false;try{failed.display(job,options,idle);}catch{rejected=true;}assert(rejected,'Failed generation resumed implicitly');failed.reset();assert(failed.display(job,options,idle).passes===1,'Explicit reset did not recover');}finally{failed.reset();}
   return{rows,orderedRows,representative,cancellationPassed:true,environment:navigator.userAgent};
  });

@@ -1,3 +1,5 @@
+import {importSourceMapColor} from './sourceMapRuntimeColors';
+import {usesSourceMapParameters} from './sourceMapParameterIdentity';
 import {importSourceMapConfiguration} from './sourceMapConfig';
 import {withSourceMapConfiguration} from './sourceMapScene';
 import {SOURCE_MAP_MATH} from './sourceMapMath';
@@ -25,7 +27,7 @@ import {importSourceAttractorConfig} from './sourceAttractorConfig';
 import {importSourceAttractorVisualConfig} from './sourceAttractorVisualConfig';
 import {importSourceParticleGradient} from './sourceParticleGradientImport';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
-import {SOURCE_SYMMETRY_PARAMETER_MODEL,importSourceSymmetryParameterAction,importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT,type SourceRegistryParameterResult} from './sourceRegistryParameterConfig';
+import {SOURCE_MAP_PARAMETER_MODEL,importSourceMapParameterAction,SOURCE_SYMMETRY_PARAMETER_MODEL,importSourceSymmetryParameterAction,importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT,type SourceRegistryParameterResult} from './sourceRegistryParameterConfig';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
 import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type SourceSurfaceGradientImportFacts} from './sourceSurfaceGradientConfig';
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
@@ -366,7 +368,8 @@ function iteratedLegacy(r:Reader,s:SceneDocument){
   if(usesSourceSymmetryConfiguration(s)){const steps=Math.max(1,r.sourceInt(['settings','iterations_per_frame'],1));if(steps>16)fail('源 Symmetry iterations_per_frame 超过本地每帧 16 次容量');s.settings.iterationsPerFrame=steps;r.retainNumberToken(['settings','iterations_per_frame']);}
  }else{count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);}
  if(!s.mapSource&&!usesSourceSamilaMath(s)&&!usesSourceSymmetryConfiguration(s))seed(r,s,'settings.seed');
- if(!usesSourceSamilaSplat(s)&&!usesSourceSymmetryProject(s))for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const)numberTo(r,s,'settings.'+old,key,{min,max});
+ if(!usesSourceSamilaSplat(s)&&!usesSourceSymmetryProject(s))for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const){if(s.mapSource&&(key==='colorSpeed'||key==='colorPhase'))continue;numberTo(r,s,'settings.'+old,key,{min,max});}
+ if(s.mapSource)for(const [source,key]of [['color_speed','colorSpeed'],['color_phase','colorPhase']] as const){const path=['settings',source],parsed=importSourceMapColor(key,r.use(path),s.mapSource.entry);if(!parsed.ok)fail(parsed.reason);s.settings[key]=parsed.value;r.retainNumberToken(path);}
  if(s.kind==='map'||s.kind==='symmetry'){
   if(!usesSourceSymmetryProject(s))for(const [old,key,fallback,sourceMin,sourceMax,legacyMin,legacyMax]of [['gamma','Gamma',2.2,.1,10,.1,8],['contrast','Contrast',1,.1,2,0,8],['brightness','Brightness',s.kind==='map'?.3:.5,-.5,1.5,-1,1],['saturation','Saturation',.8,0,1,0,4],['dynamic_range','DynamicRange',s.kind==='map'?.2:.5,.1,1,.001,1e9]]as const){
    const value=r.num('settings.'+old,s.parameters),effective=Math.min(sourceMax,Math.max(sourceMin,value??fallback));s.settings['normalized'+key]=effective;
@@ -1106,6 +1109,10 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
     }
 
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
+    if(usesSourceMapParameters(s)&&(method==='paramStart'||method==='paramStop')){
+     const mapParameters=sourceParameterImport(r,[...actionPath,'args'],importSourceMapParameterAction(method,raw,{scope,memberOrder:relative=>r.sourceKeys([...actionPath,'args',...relative])}));
+     if(mapParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,mapParameters});continue;
+    }
     if(usesSourceSymmetryParameters(s)&&(method==='paramStart'||method==='paramStop')){
      const symmetryParameters=sourceParameterImport(r,[...actionPath,'args'],importSourceSymmetryParameterAction(method,raw,{scope,memberOrder:relative=>r.sourceKeys([...actionPath,'args',...relative])}));
      if(symmetryParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,symmetryParameters});continue;
@@ -1507,6 +1514,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  if((kind==='map'||kind==='symmetry')&&options.iteratedCamera!=='legacy-v1')scene.settings.iteratedCameraModel=CAPTURED_DENSITY_CAMERA_MODEL;
  if(ordinaryScope&&(!['map','symmetry'].includes(kind)||options.iteratedCamera!=='legacy-v1'))ordinaryCamera(r,scene,ordinaryScope);
  if(usesCapturedDensityCamera(scene))r.warnings.push('Map/Symmetry 已启用源相机捕获投影：Map 相机变化清空密度，Symmetry 角度变化保留密度旋转；新窗口与导出按本地固定时钟重放，随机序列、点覆盖和原版完整画面仍未对照。');
+ if(scene.mapSource&&scene.sourceCamera)scene.settings.mapParameterModel=SOURCE_MAP_PARAMETER_MODEL;
  formulaAnnotations(r,scene);
  if(sourceSamila&&options.samilaTimeline!=='legacy-v1'){
   const parsed=importSourceSamilaTimeline(r.peek(['timeline']),{numberToken:path=>r.numberToken(path),memberKeys:path=>r.sourceKeys(path)});

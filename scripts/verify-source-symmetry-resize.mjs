@@ -5,22 +5,22 @@ import {createServer} from 'vite';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const out=process.argv[2];if(!out)throw Error('Supply a new output directory');await mkdir(out);
-const sources=['src/engine/sourceSymmetryReplaySession.ts','src/engine/sourceSymmetryFramePlan.ts','src/engine/iteratedDensityGpu.ts','src/scenes/iteratedDensity.ts','scripts/verify-source-symmetry-resize.mjs'];
+const sources=['src/engine/sourceIteratedReplaySession.ts','src/engine/sourceIterationFramePlan.ts','src/engine/iteratedDensityGpu.ts','src/scenes/iteratedDensity.ts','scripts/verify-source-symmetry-resize.mjs'];
 const snapshot=async()=>Object.fromEntries(await Promise.all(sources.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));
 const report={status:'running',nativeWindowExecuted:false,sourceBefore:await snapshot()},start=performance.now();let browser,server;
 try{
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage(),url=server.resolvedUrls.local[0];await page.route(url,r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(url);
  report.result=await page.evaluate(async()=>{
   const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{prepareIteratedFrame}=await import('/src/scenes/iteratedDensity.ts');
-  const {SourceSymmetryReplaySession}=await import('/src/engine/sourceSymmetryReplaySession.ts'),{IteratedDensityGpu}=await import('/src/engine/iteratedDensityGpu.ts');
-  const {prepareSourceSymmetryFramePlan}=await import('/src/engine/sourceSymmetryFramePlan.ts');
+  const {SourceIteratedReplaySession}=await import('/src/engine/sourceIteratedReplaySession.ts'),{IteratedDensityGpu}=await import('/src/engine/iteratedDensityGpu.ts');
+  const {prepareSourceIterationFramePlan}=await import('/src/engine/sourceIterationFramePlan.ts');
   const assert=(v,m)=>{if(!v)throw Error(m);},equal=(a,b)=>a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]));
   const particlesEqual=(a,b)=>equal(a.positionsAndMetric,b.positionsAndMetric)&&equal(a.validity,b.validity)&&equal(a.invalidCounts,b.invalidCounts);
   const options={width:48,height:32,projection:'xy',padding:0,bounds:{minX:-2,maxX:2,minY:-2,maxY:2}},idle={updates:[],paused:true,parameterChanged:false,cameraChanged:false};
   const make=(custom,burn=100)=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Resize lifecycle',settings:{batch_size:4,burn_in_steps:burn,scale_x:1,scale_y:1,scale_z:1},palette:['#ffffff','#ffffff'],...(custom?{equation:{glsl:'void calculate_next(in vec3 p,out vec3 n,out float m){n=p+vec3(.00001,0.,0.);m=.00001;}'}}:{}),timeline:[]})).scene;
   const rows=[];
   for(const custom of [false,true])for(const mode of ['ordinary','pending','active','burn-tail']){
-   const scene=make(custom,mode==='burn-tail'?1000:100),job=prepareIteratedFrame(scene,0,0),owner=new SourceSymmetryReplaySession(60);
+   const scene=make(custom,mode==='burn-tail'?1000:100),job=prepareIteratedFrame(scene,0,0),owner=new SourceIteratedReplaySession('symmetry',60);
    try{
     owner.display(job,options,{...idle,updates:[job.field],paused:false});
     if(mode!=='ordinary')owner.requestReplay();
@@ -41,14 +41,14 @@ try{
   }
   // An active replay leaves warmup false. Ordinary updates happen before the
   // native resize cancels replay: full warmup + both calls, with no seed reset.
-  const scene=make(true,3);scene.settings.iterationsPerFrame=2;const job=prepareIteratedFrame(scene,0,0),owner=new SourceSymmetryReplaySession(60);
+  const scene=make(true,3);scene.settings.iterationsPerFrame=2;const job=prepareIteratedFrame(scene,0,0),owner=new SourceIteratedReplaySession('symmetry',60);
   try{
    owner.display(job,options,{...idle,updates:[job.field],paused:false});owner.requestReplay();owner.display(job,options,idle);
    const expected=owner.readParticles().positionsAndMetric;for(let k=0;k<7;k++)for(let i=0;i<expected.length;i+=4){expected[i]=Math.fround(expected[i]+Math.fround(.00001));expected[i+3]=Math.fround(.00001);}
    const result=owner.display(job,{...options,width:63,height:37},{...idle,updates:[job.field,job.field],paused:false});
    assert(result.gpu.steps===28&&result.warmupApplied&&!result.replayed&&equal(owner.readParticles().positionsAndMetric,expected),'Unpaused resize changed update order or seed');
   }finally{owner.reset();}
-  const prepare=()=>{const job=prepareIteratedFrame(make(true,3),0,0);job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:0,updateCount:1},false,3,job.config.iterations);const gpu=new IteratedDensityGpu();gpu.step(job,{...options,resetParticles:true,clearInk:true});return{gpu,job};};
+  const prepare=()=>{const job=prepareIteratedFrame(make(true,3),0,0);job.iterationFrame=prepareSourceIterationFramePlan('symmetry',{frameIndex:0,updateCount:1},false,3,job.config.iterations);const gpu=new IteratedDensityGpu();gpu.step(job,{...options,resetParticles:true,clearInk:true});return{gpu,job};};
   // A no-op must preserve existing ink and frame sequence; invalid admission
   // must preserve a valid allocation. No GPU state is reconstructed here.
   const direct=prepare();try{

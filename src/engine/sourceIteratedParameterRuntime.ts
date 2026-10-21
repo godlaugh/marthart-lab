@@ -2,9 +2,9 @@ import type {OscillationEdgeEasing} from '../types';
 import {sourceEase} from './sourceEasing';
 import {sourceOscillationEdgeScale,wrapSourceOscillationPhase} from './sourceOscillationEdge';
 import {prepareRootsSourceMemberOrder} from './rootsSourceOrder';
-export interface SourceSymmetryParameterConfiguration {readonly min:number;readonly max:number;readonly step:number;readonly edgeEasing?:OscillationEdgeEasing;}
-export type SourceSymmetryParameterAction={readonly kind:'start'|'stop';readonly scope:{readonly kind:'all'}|{readonly kind:'named';readonly name:string};readonly configuration?:SourceSymmetryParameterConfiguration;readonly duration:number;readonly easing:string;};
-export interface SourceSymmetryParameterRuntimeOptions {
+export interface SourceIteratedParameterConfiguration {readonly min:number;readonly max:number;readonly step:number;readonly edgeEasing?:OscillationEdgeEasing;}
+export type SourceIteratedParameterAction={readonly kind:'start'|'stop';readonly scope:{readonly kind:'all'}|{readonly kind:'named';readonly name:string};readonly configuration?:SourceIteratedParameterConfiguration;readonly duration:number;readonly easing:string;};
+export interface SourceIteratedParameterRuntimeOptions {
  readonly read:(name:string)=>number|undefined;
  readonly write:(name:string,value:number)=>void;
  /** Shared replay work/cancellation owner; includes repeated phase reduction. */
@@ -12,30 +12,31 @@ export interface SourceSymmetryParameterRuntimeOptions {
 }
 interface Configuration {readonly min:number;readonly max:number;readonly step:number;readonly span:number;readonly middle:number;readonly half:number;readonly edge:Readonly<OscillationEdgeEasing>;}
 interface Entry {readonly name:string;readonly configuration:Configuration;phase?:number;scale:number;}
-interface Child {readonly action:SourceSymmetryParameterAction;runtime:number;finished:boolean;readonly captured?:ReadonlyMap<string,number>;}
+interface Child {readonly action:SourceIteratedParameterAction;runtime:number;finished:boolean;readonly captured?:ReadonlyMap<string,number>;}
 const F=Math.fround;
-const finite=(n:number,label:string)=>{if(typeof n!=='number'||!Number.isFinite(n))throw Error(`源 Symmetry 参数${label}必须有限`);return n;};
+const finite=(n:number,label:string)=>{if(typeof n!=='number'||!Number.isFinite(n))throw Error(`源迭代参数${label}必须有限`);return n;};
 const clamp=(x:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,x));
-function configuration(input:SourceSymmetryParameterConfiguration):Configuration {
+function configuration(input:SourceIteratedParameterConfiguration):Configuration {
  const lo=finite(input.min,'下界'),hi=finite(input.max,'上界'),step=finite(input.step,'步进'),min=Math.min(lo,hi),max=Math.max(lo,hi),span=finite(max-min,'范围'),middle=finite((min+max)*.5,'中值');
  const raw=input.edgeEasing??{window:.4,floor:.5,easing:'sine-out'},edge=Object.freeze({window:Math.max(1e-6,finite(raw.window,'端点窗口')),floor:clamp(finite(raw.floor,'端点速度'),0,1),easing:raw.easing});sourceEase(edge.easing,0);
  return Object.freeze({min,max,step,span,middle,half:span*.5,edge});
 }
-/** Original Symmetry registry and child clocks. Surface differs in range
+/** Original Map and Symmetry registry and child clocks. Their corresponding
+ * animator and Start/Stop methods have identical normalized bytecode. Surface differs in range
  * normalization, missing/out-of-range initial values, disabled entries, phase
  * wrapping and Start's clock. Target scalar writes and Scene scheduling remain
  * separate owners; this class does not render or request a replay. */
-export class SourceSymmetryParameterRuntime {
+export class SourceIteratedParameterRuntime {
  private readonly entries=new Map<string,Entry>();
  private order:readonly string[]=[];
  private children:Child[]=[];
  private active=false;
  private failed=false;
- private readonly options:SourceSymmetryParameterRuntimeOptions;
- constructor(options:SourceSymmetryParameterRuntimeOptions){if(!options||['read','write','reserve'].some(k=>typeof options[k as keyof SourceSymmetryParameterRuntimeOptions]!=='function'))throw Error('源 Symmetry 参数回调无效');this.options=Object.freeze({...options});}
+ private readonly options:SourceIteratedParameterRuntimeOptions;
+ constructor(options:SourceIteratedParameterRuntimeOptions){if(!options||['read','write','reserve'].some(k=>typeof options[k as keyof SourceIteratedParameterRuntimeOptions]!=='function'))throw Error('源迭代参数回调无效');this.options=Object.freeze({...options});}
  private spend(units=1){this.options.reserve(units);}
- private run(f:()=>void){if(this.failed)throw Error('源 Symmetry 参数状态已失败，需要重建');try{f();}catch(e){this.failed=true;throw e;}}
- private ensure(){if(this.failed)throw Error('源 Symmetry 参数状态已失败，需要重建');}
+ private run(f:()=>void){if(this.failed)throw Error('源迭代参数状态已失败，需要重建');try{f();}catch(e){this.failed=true;throw e;}}
+ private ensure(){if(this.failed)throw Error('源迭代参数状态已失败，需要重建');}
  snapshot(){this.ensure();return Object.freeze({running:this.active,phases:Object.freeze(Object.fromEntries(this.order.flatMap(name=>{const p=this.entries.get(name)!.phase;return p===undefined?[]:[[name,p]];}))),scales:Object.freeze(Object.fromEntries(this.order.map(name=>[name,this.entries.get(name)!.scale]))),children:Object.freeze(this.children.map(c=>Object.freeze({runtime:c.runtime,finished:c.finished})))});}
  private sync(entry:Entry){
   this.spend();const c=entry.configuration;if(c.span<=1e-6){entry.phase=0;return;}
@@ -46,16 +47,16 @@ export class SourceSymmetryParameterRuntime {
  private add(name:string,c:Configuration){
   this.spend(8+name.length);const previous=this.entries.get(name),entry:Entry={name,configuration:c,phase:previous?.phase,scale:1};
   this.entries.set(name,entry);
-  if(!previous){const order=prepareRootsSourceMemberOrder([...this.entries.keys()]);if(!order.ok)throw Error('源 Symmetry 参数注册表超过容量');this.order=order.value.keys;}
+  if(!previous){const order=prepareRootsSourceMemberOrder([...this.entries.keys()]);if(!order.ok)throw Error('源迭代参数注册表超过容量');this.order=order.value.keys;}
   if(this.active)this.sync(entry);
  }
- private scale(scope:SourceSymmetryParameterAction['scope'],value:number){for(const name of scope.kind==='all'?this.order:[scope.name]){this.spend();const entry=this.entries.get(name);if(entry)entry.scale=Math.max(0,value);}}
- begin(actions:readonly SourceSymmetryParameterAction[]):void {this.run(()=>{
-  if(!Array.isArray(actions)||actions.length>256)throw Error('源 Symmetry 参数子动画超过 256 项本地容量');
+ private scale(scope:SourceIteratedParameterAction['scope'],value:number){for(const name of scope.kind==='all'?this.order:[scope.name]){this.spend();const entry=this.entries.get(name);if(entry)entry.scale=Math.max(0,value);}}
+ begin(actions:readonly SourceIteratedParameterAction[]):void {this.run(()=>{
+  if(!Array.isArray(actions)||actions.length>256)throw Error('源迭代参数子动画超过 256 项本地容量');
   // Validate/detach before mutating the registry; every start precedes updates.
   const prepared=actions.map(input=>{
-   this.spend();if(!input||!['start','stop'].includes(input.kind)||!input.scope||!['all','named'].includes(input.scope.kind)||input.scope.kind==='named'&&typeof input.scope.name!=='string')throw Error('源 Symmetry 参数动作无效');
-   if(input.scope.kind==='named'&&input.scope.name.length>65536)throw Error('源 Symmetry 参数名称超过本地容量');
+   this.spend();if(!input||!['start','stop'].includes(input.kind)||!input.scope||!['all','named'].includes(input.scope.kind)||input.scope.kind==='named'&&typeof input.scope.name!=='string')throw Error('源迭代参数动作无效');
+   if(input.scope.kind==='named'&&input.scope.name.length>65536)throw Error('源迭代参数名称超过本地容量');
    const duration=finite(F(input.duration),'时长');sourceEase(input.easing,0);
    const needsConfig=input.kind==='start'&&input.scope.kind==='named';if(needsConfig!==Boolean(input.configuration))throw Error('仅具名开始参数动作需要配置');
    const config=input.configuration?configuration(input.configuration):undefined;

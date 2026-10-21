@@ -1,3 +1,4 @@
+import {validateSourceMapParameters} from './sourceMapParameterIdentity';
 import {parseSourceMapConfiguration} from './sourceMapConfig';
 import {validateSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {validateSourceSymmetryGradient} from './sourceSymmetryGradient';
@@ -281,7 +282,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   }
   validateSourceSamilaSplat(data as unknown as SceneDocument);
   validateSourceSamilaPresentation(data as unknown as SceneDocument);
-  validateSourceSymmetryPresentation(data as unknown as SceneDocument);validateSourceSymmetryGradient(data as unknown as SceneDocument);validateSourceSymmetryParameters(data as unknown as SceneDocument);
+  validateSourceSymmetryPresentation(data as unknown as SceneDocument);validateSourceSymmetryGradient(data as unknown as SceneDocument);validateSourceSymmetryParameters(data as unknown as SceneDocument);validateSourceMapParameters(data as unknown as SceneDocument);
   validateSourceSamilaSampling(data as unknown as SceneDocument);
   if(data.formulas!==undefined)data.formulas=validateFormulas(data.formulas);
   const t = data.timeline as Record<string, unknown>;

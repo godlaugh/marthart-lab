@@ -3,14 +3,14 @@ import {describe,it,expect} from 'vitest';
 import {importSourceSymmetryParameterAction,parseSourceSymmetryParameterActions,SOURCE_SYMMETRY_PARAMETER_MODEL as model,SOURCE_SYMMETRY_PARAMETER_DEFAULT,type SourceRegistryParameterResult} from '../src/engine/sourceRegistryParameterConfig';
 import {prepareOrdinarySourceScalarScope} from '../src/engine/ordinarySourceCameraImport';
 import {prepareRootsSourceMemberOrder} from '../src/engine/rootsSourceOrder';
-import {SourceSymmetryParameterRuntime,type SourceSymmetryParameterAction} from '../src/engine/sourceSymmetryParameterRuntime';
+import {SourceIteratedParameterRuntime,type SourceIteratedParameterAction} from '../src/engine/sourceIteratedParameterRuntime';
 import {isJavaBlank} from '../src/engine/sourceJavaText';
 import {lookupSourceEasing} from '../src/engine/sourceEasing';
 const take=<T>(result:SourceRegistryParameterResult<T>):T=>{if(!result.ok)throw Error(JSON.stringify(result.error));return result.value;};
 const prepared=prepareOrdinarySourceScalarScope('symmetry');if(!prepared.ok)throw Error('scope');const scope=prepared.value;
 function options(raw:unknown){return {scope,memberOrder:(path:readonly string[])=>{let value:unknown=raw;for(const part of path)value=(value as Record<string,unknown>)[part];const order=prepareRootsSourceMemberOrder(Object.keys(value as object));if(!order.ok)throw Error('order');return order.value.keys;}};}
 const action=(args:unknown,method:'paramStart'|'paramStop'='paramStart')=>take(importSourceSymmetryParameterAction(method,args,options(args)));
-type State={built?:SourceSymmetryParameterAction[];running:boolean;values:Record<string,number>;phases:Record<string,number>;scales:Record<string,number>;children:{runtime:number;finished:boolean}[]};
+type State={built?:SourceIteratedParameterAction[];running:boolean;values:Record<string,number>;phases:Record<string,number>;scales:Record<string,number>;children:{runtime:number;finished:boolean}[]};
 type Input={method:'paramStart'|'paramStop';args?:unknown;duration:number;easing:string};
 type Case={id:string;initial:State;steps:{dt:number;rate?:number;actions?:Input[]}[];frames:State[]};
 const fixture=JSON.parse(readFileSync(new URL('./fixtures/symmetry/parameter-runtime.json',import.meta.url),'utf8')) as {cases:Case[]};
@@ -19,7 +19,7 @@ const numbers=(actual:Readonly<Record<string,number>>,expected:Record<string,num
 describe('original Symmetry action builder through parameter runtime',()=>{
  for(const row of fixture.cases)it(row.id+' imports raw actions and reproduces all native snapshots',()=>{
   const values=new Map(Object.entries(row.initial.values));let work=0;
-  const runtime=new SourceSymmetryParameterRuntime({read:name=>isJavaBlank(name)?undefined:values.get(name),write:(name,value)=>{if(!isJavaBlank(name))values.set(name,value);},reserve:n=>{work+=n;if(work>100000)throw Error('work budget');}});
+  const runtime=new SourceIteratedParameterRuntime({read:name=>isJavaBlank(name)?undefined:values.get(name),write:(name,value)=>{if(!isJavaBlank(name))values.set(name,value);},reserve:n=>{work+=n;if(work>100000)throw Error('work budget');}});
   row.steps.forEach((step,i)=>{work=0;
    if(step.actions){
     const operations=step.actions.flatMap(input=>parseSourceSymmetryParameterActions(action(input.args,input.method).configuration,input.method).map(operation=>({kind:input.method==='paramStart'?'start' as const:'stop' as const,scope:operation.scope,...(operation.configuration?{configuration:operation.configuration}:{}),duration:Math.fround(input.duration),easing:lookupSourceEasing(input.easing)!})));

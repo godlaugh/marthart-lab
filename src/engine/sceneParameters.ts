@@ -1,3 +1,4 @@
+import {isSourceMapColorTarget} from './sourceMapRuntimeColors';
 import type {SceneDocument} from '../types';
 import {SAMILA_SCENE_SEQUENCE} from './sourceSamilaReplay';
 
@@ -17,6 +18,13 @@ export function parameterTimelineReferences(scene:Pick<SceneDocument,'timeline'>
    if(scene.timeline.schedule===SAMILA_SCENE_SEQUENCE){
     if(action.method==='paramStart')for(const p of action.samilaParameters?.parameters??[])add('parameters.'+p.name,track.enabled);
     continue; // Source stop acts on the drift registry, not a named initial value.
+   }
+   if(action.mapParameters){
+    for(const operation of action.mapParameters)if(operation.scope.kind==='named'){
+     const name=operation.scope.name,target=isSourceMapColorTarget(name)?'settings.'+name:'parameters.'+name;
+     out.push({target,trackId:track.id,kind:action.method==='paramStop'?'stop':'value',enabled:track.enabled});
+    }
+    continue; // Reserved color targets do not depend on same-named formula uniforms.
    }
    if(action.symmetryParameters){
     for(const operation of action.symmetryParameters)if(operation.scope.kind==='named')add('parameters.'+operation.scope.name,track.enabled,action.method==='paramStop'?'stop':'value');

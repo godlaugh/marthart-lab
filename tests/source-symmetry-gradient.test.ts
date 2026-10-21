@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {describe,it,expect,afterEach} from 'vitest';
 import {SourceSymmetryGradientRuntime} from '../src/engine/sourceSymmetryGradient';
-import {sourceSymmetryPaletteFrame,replaySourceSymmetryTimeline,clearSourceSymmetryTimelineCache} from '../src/engine/sourceSymmetryTimeline';
+import {sourceIterationPaletteFrame,replaySourceIteratedTimeline,clearSourceIteratedTimelineCache} from '../src/engine/sourceIteratedTimeline';
 import {sourceSymmetryPaletteLut,prepareSourceSymmetryPalette} from '../src/engine/sourceSymmetryPalette';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
@@ -15,7 +15,7 @@ type Frame={paletteOffset:number;insideGradientOffset:number;outsideGradientOffs
 const fixture=JSON.parse(readFileSync(new URL('./fixtures/symmetry/gradient-runtime.json',import.meta.url),'utf8')) as {cases:{id:string;document:unknown;offset:number;steps:Step[];frames:Frame[]}[]};
 const hash=(values:Float32Array)=>{const bytes=Buffer.alloc(values.length*4);values.forEach((v,i)=>bytes.writeFloatLE(v,i*4));return createHash('sha256').update(bytes).digest('hex');};
 const source=(actions:unknown[])=>({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Gradient',settings:{batch_size:8},palette:['#FF0000','#00FF00','#0000FF'],timeline:[{type:'animate',duration:.5,actions},{type:'wait',duration:1}]});
-afterEach(clearSourceSymmetryTimelineCache);
+afterEach(clearSourceIteratedTimelineCache);
 describe('Symmetry original gradient callbacks and effective LUT',()=>{
  for(const row of fixture.cases)it(row.id+' matches all native offsets and 1024 RGB entries at every display',()=>{
   const scene=parseProjectFile(JSON.stringify(row.document)).scene;scene.palette.offset=row.offset;
@@ -42,29 +42,29 @@ describe('Symmetry original gradient callbacks and effective LUT',()=>{
  });
  it('carries one source queue frame through public save/reopen and density job preparation',()=>{
   const scene=parseScene(serializeScene(parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:{mode:'HUE_ROTATE',speed:240}}]))).scene));
-  const current=sceneAtTime(scene,.4),frame=sourceSymmetryPaletteFrame(current)!;
+  const current=sceneAtTime(scene,.4),frame=sourceIterationPaletteFrame(current)!;
   expect(frame.runtime).toEqual({interpolation:'oklab',cyclic:true});expect(frame.offset).toBeGreaterThan(0);
   const job=prepareIteratedFrame(current,.4,12,scene);expect(job.symmetryPalette).toMatchObject({model:'source-rgb1024',frame});
   expect(job.config.fps).toBe(30);expect(current.evaluatedSourceCamera?.frameIndex).toBe(12);expect(scene.palette.offset).toBe(0);
-  const reopened=parseScene(serializeScene(current));expect(sourceSymmetryPaletteFrame(reopened)).toBeUndefined();
+  const reopened=parseScene(serializeScene(current));expect(sourceIterationPaletteFrame(reopened)).toBeUndefined();
  });
  it('makes lookahead, backward seek and warm replay agree with a fresh queue',()=>{
   const scene=parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:{mode:'PALETTE_MORPH',speed:360}}]))).scene;
-  const times=[1.2,0,.2,.3,1,.1,.9],warm=times.map(t=>replaySourceSymmetryTimeline(scene,t));
-  times.forEach((t,i)=>{clearSourceSymmetryTimelineCache();expect(replaySourceSymmetryTimeline(scene,t)).toEqual(warm[i]);});
+  const times=[1.2,0,.2,.3,1,.1,.9],warm=times.map(t=>replaySourceIteratedTimeline(scene,t));
+  times.forEach((t,i)=>{clearSourceIteratedTimelineCache();expect(replaySourceIteratedTimeline(scene,t)).toEqual(warm[i]);});
  });
  it('continues gradient updates after the source queue completes',()=>{
   const scene=parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:{mode:'CROSS_FADE',speed:240}}]))).scene;
-  const first=replaySourceSymmetryTimeline(scene,2),later=replaySourceSymmetryTimeline(scene,3);
+  const first=replaySourceIteratedTimeline(scene,2),later=replaySourceIteratedTimeline(scene,3);
   expect(first.frame.queueComplete).toBe(true);expect(first.update.calls).toHaveLength(1);expect(later.update.calls).toHaveLength(1);expect(later.palette).not.toEqual(first.palette);
   expect(later.palette.runtime?.cyclic).toBe(true);
  });
  it('reconstructs from owned inputs even after the original caller object is edited',()=>{
   const scene=parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:{speed:120}}]))).scene,unchanged=structuredClone(scene);
-  for(const time of [1,.5,.25])replaySourceSymmetryTimeline(scene,time);
+  for(const time of [1,.5,.25])replaySourceIteratedTimeline(scene,time);
   scene.palette.offset=.8;
-  const reconstructed=replaySourceSymmetryTimeline(unchanged,0);clearSourceSymmetryTimelineCache();
-  expect(reconstructed).toEqual(replaySourceSymmetryTimeline(unchanged,0));
+  const reconstructed=replaySourceIteratedTimeline(unchanged,0);clearSourceIteratedTimelineCache();
+  expect(reconstructed).toEqual(replaySourceIteratedTimeline(unchanged,0));
  });
  it('rejects mismatched markers, invalid disabled actions and unsupported animated palette extensions',()=>{
   const scene=parseProjectFile(JSON.stringify(source([{method:'gradientStart',args:{}}]))).scene;

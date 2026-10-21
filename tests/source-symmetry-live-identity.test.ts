@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {sourceSymmetryApplyIdentity} from '../src/engine/sourceSymmetryIdentity';
-import {SourceSymmetryReplaySession} from '../src/engine/sourceSymmetryReplaySession';
+import {SourceIteratedReplaySession} from '../src/engine/sourceIteratedReplaySession';
 import {PARAMETER_RANGES_KEY} from '../src/engine/parameterEditing';
 import {snapshotGenerationInput} from '../src/engine/generationInput';
 const make=()=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Live identity',parameters:{lambda:.25},settings:{batch_size:4,burn_in_steps:3},timeline:[]})).scene;
@@ -21,7 +21,7 @@ describe('Symmetry live ownership boundary',()=>{
   const copy=snapshotGenerationInput(context);context.symmetryLive.clock.timestampMs=9000;context.symmetryLive.replayRevision=2;expect(copy.symmetryLive).toMatchObject({replayRevision:1,clock:{timestampMs:1000},startAt:.2});
  });
  it('updates host frame rate independently of an existing replay budget',()=>{
-  const owner=new SourceSymmetryReplaySession(60);owner.setRenderFps(30);expect(owner.diagnostics().renderFps).toBe(30);
+  const owner=new SourceIteratedReplaySession('symmetry',60);owner.setRenderFps(30);expect(owner.diagnostics().renderFps).toBe(30);
   for(const value of [NaN,.5,2147483648])expect(()=>owner.setRenderFps(value)).toThrow('renderFps');expect(owner.diagnostics().renderFps).toBe(30);owner.reset();
  });
 });

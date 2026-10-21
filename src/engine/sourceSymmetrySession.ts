@@ -1,7 +1,7 @@
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareIteratedFrame,prepareIteratedField} from '../scenes/iteratedDensity';
-import {SourceSymmetryTimelineSession,bindSourceSymmetryPaletteFrame,type SourceSymmetryTimelineResult} from './sourceSymmetryTimeline';
-import {SourceSymmetryReplaySession,sourceSymmetryRenderFps,type SourceSymmetryDisplayFacts} from './sourceSymmetryReplaySession';
+import {SourceIteratedTimelineSession,bindSourceIterationFrame,type SourceIteratedTimelineResult} from './sourceIteratedTimeline';
+import {SourceIteratedReplaySession,sourceIteratedRenderFps,type SourceIteratedDisplayFacts} from './sourceIteratedReplaySession';
 import {SourceSceneHostClock,validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 import {sourceLivePreviewKind} from './sourceLivePreview';
 import {prepareSourceSymmetryTone,deriveSourceSymmetryNormalization} from './sourceSymmetryPresentation';
@@ -24,7 +24,7 @@ export interface SourceSymmetryLiveContext {
 export interface SourceSymmetryLiveFacts {
  sessionId:string;clock:'realtime-source-queue';clockSource:'worker-wall-clock'|'injected';
  sceneTime:number;rawDt:number;activeDt:number;queueIndex:number;queueComplete:boolean;paused:boolean;
- objectUpdates:number;replayRevision:number;display:SourceSymmetryDisplayFacts;
+ objectUpdates:number;replayRevision:number;display:SourceIteratedDisplayFacts;
 }
 type Raster=Extract<SceneOutput,{type:'raster'}>;
 const identity=(value:unknown)=>JSON.stringify(value);
@@ -32,7 +32,7 @@ const cancel=(c:GenerateContext)=>{if(c.isCancelled?.())throw new DOMException('
 function context(c:GenerateContext):SourceSymmetryLiveContext {
  const v=c.symmetryLive;
  if(!v||typeof v.sessionId!=='string'||!v.sessionId.length||!Number.isSafeInteger(v.replayRevision)||v.replayRevision<0)throw Error('Symmetry 实时会话上下文无效');
- sourceSymmetryRenderFps(v.renderFps);validateSourceSceneClockRequest(v.clock);
+ sourceIteratedRenderFps(v.renderFps);validateSourceSceneClockRequest(v.clock);
  if(v.startAt!==undefined&&(!Number.isFinite(v.startAt)||v.startAt<0||v.startAt>86400))throw Error('Symmetry 本地重建起点须为 0–86400 秒');
  if(c.samilaLive!==undefined)throw Error('一次生成不能同时拥有两个实时场景');
  return v;
@@ -41,8 +41,8 @@ function context(c:GenerateContext):SourceSymmetryLiveContext {
  * accumulation and captured camera stay together until explicit replacement. */
 export class SourceSymmetrySession {
  private readonly cleanup=new GenerationCleanupState();
- private timeline?:SourceSymmetryTimelineSession;private replay?:SourceSymmetryReplaySession;private clock?:SourceSceneHostClock;
- private authored?:SceneDocument;private frame?:SourceSymmetryTimelineResult;private anchor?:CapturedDensityAnchor;
+ private timeline?:SourceIteratedTimelineSession;private replay?:SourceIteratedReplaySession;private clock?:SourceSceneHostClock;
+ private authored?:SceneDocument;private frame?:SourceIteratedTimelineResult;private anchor?:CapturedDensityAnchor;
  private sessionId='';private shape='';private startAt?:number;private revision=0;private busy=false;private failed=false;
  private steps=0;private accepted=0;private invalid=0;private clipped=0;private sampleInvalid=0;private deposited=0;private displays=0;
  private completed?:{context:GenerateContext;identity:string};private lastUpdatePaused=false;
@@ -62,10 +62,10 @@ export class SourceSymmetrySession {
   const frame=this.timeline!.step(dt,{paused,acknowledgeParameters:!replaying});this.lastUpdatePaused=paused;
   return this.display(c,frame,paused,reconstructing);
  }
- private display(c:GenerateContext,frame:SourceSymmetryTimelineResult,paused:boolean,reconstructing=false){
+ private display(c:GenerateContext,frame:SourceIteratedTimelineResult,paused:boolean,reconstructing=false){
   cancel(c);const replaying=this.replay!.willReplayDisplay(c.width,c.height);this.frame=frame;
   const scene={...this.authored!,parameters:{...frame.parameters!.values},evaluatedSourceCamera:frame.frame};
-  bindSourceSymmetryPaletteFrame(scene,frame.palette,frame.update,frame.parameters);
+  bindSourceIterationFrame(scene,frame.palette,frame.update,frame.parameters);
   const sourceFrame=ordinarySourceCameraFrame(scene,c),plan=prepareOrdinarySourceFrame(sourceFrame),job=prepareIteratedFrame(scene,frame.frame.sceneTime,this.displays,this.authored);
   // During replay native display skips camera capture and parameter snapshot.
   let cameraChanged=false;
@@ -90,7 +90,7 @@ export class SourceSymmetrySession {
   if(!replace){this.clock!.assertPaused(live.clock.paused);if(live.replayRevision<this.revision)throw Error('Symmetry 编辑事件序号已过期');if(sourceSymmetryReplayIdentity(scene)!==sourceSymmetryReplayIdentity(this.authored!)&&live.replayRevision===this.revision)throw Error('Symmetry 调色板/变换编辑缺少显式重播事件');}
   this.busy=true;this.requestSteps=0;this.requestPixels=0;
   try{
-   if(replace){this.reset();this.authored=structuredClone(scene);this.shape=shape;this.sessionId=live.sessionId;this.startAt=live.startAt;this.revision=live.replayRevision;this.timeline=new SourceSymmetryTimelineSession(scene);this.frame=this.timeline.snapshot();this.clock=new SourceSceneHostClock(live.clock.paused,this.frame.frame.camera);this.replay=new SourceSymmetryReplaySession(live.renderFps);}
+   if(replace){this.reset();this.authored=structuredClone(scene);this.shape=shape;this.sessionId=live.sessionId;this.startAt=live.startAt;this.revision=live.replayRevision;this.timeline=new SourceIteratedTimelineSession(scene);this.frame=this.timeline.snapshot();this.clock=new SourceSceneHostClock(live.clock.paused,this.frame.frame.camera);this.replay=new SourceIteratedReplaySession('symmetry',live.renderFps);}
    else{
     const before=ordinarySourceCameraInitial(this.authored!)!,after=ordinarySourceCameraInitial(scene)!;
     if(['phi','theta','gamma'].some(key=>before[key as 'phi']!==after[key as 'phi']))this.timeline!.writeAngles({phi:after.phi,theta:after.theta,gamma:after.gamma});
