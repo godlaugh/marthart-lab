@@ -1455,9 +1455,10 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  if(sourceSymmetry){
   r.validateNativeObjects();if(r.has('settings')&&!isObject(r.peek('settings')))fail('源 Symmetry settings 需要对象');const raw=r.peek(['parameters']);if(r.has(['parameters'])&&!isObject(raw))fail('源 Symmetry parameters 需要对象');const order=isObject(raw)?r.sourceKeys(['parameters']):[];
   const selected=sourceSymmetryTemplate(r.peek(['equation']),r.has(['equation']),raw);if(!selected.ok)fail(selected.error.reason);const template=selected.value;scene.settings.template=template;r.use(['equation','template']);
-  const project=options.symmetryEntry==='project'?importSourceSymmetryProjectParameters(raw,order,template):undefined;const parsed=project??importSourceSymmetryParameters(raw,order,template);if(!parsed.ok)fail(parsed.error.reason);
+  const editor=importSourceSymmetryProjectParameters(raw,order,template);if(!editor.ok)fail(editor.error.reason);
+  const project=options.symmetryEntry==='project'?editor:undefined;const parsed=project??importSourceSymmetryParameters(raw,order,template);if(!parsed.ok)fail(parsed.error.reason);
   scene.parameters=parsed.value.parameters;r.use(['parameters']);for(const key of order)r.retainNumberToken(['parameters',key]);
-  const created=createSourceSymmetryConfiguration(Math.max(1,r.sourceInt(['settings','batch_size'],262144)),parsed.value.ordered,project?.ok?project.value.editorMap:undefined,project?.ok?project.value.editorParameters:undefined);if(!created.ok)fail(created.error.reason);
+  const created=createSourceSymmetryConfiguration(Math.max(1,r.sourceInt(['settings','batch_size'],262144)),parsed.value.ordered,editor.value.editorMap,editor.value.editorParameters,project?'project':'runtime-config');if(!created.ok)fail(created.error.reason);
   scene.symmetrySource=created.value;
   if(project?.ok)r.warnings.push('源 Symmetry 项目入口固定使用 GPU；GPU 不可用时明确报错，不回退到不同的 CPU 数学。');
   r.warnings.push('源 Symmetry 使用构造参数顺序计算种子并以 Java Random 初始化；时间线/重播保留构造种子，检查器编辑重建配置并重新计算。本地项目保存此构造状态，原版整窗效果仍未验收。');

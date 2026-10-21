@@ -1,0 +1,153 @@
+{
+  "cases": [
+    {
+      "id": "MAP_ATTRACTOR-absent",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        }
+      }
+    },
+    {
+      "id": "MAP_ATTRACTOR-empty",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "id": "MAP_ATTRACTOR-default",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "a": -1.7,
+          "b": 1.8,
+          "c": 1.6,
+          "d": 0.9
+        }
+      }
+    },
+    {
+      "id": "Map-raw-spaces",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "equations": {
+          "x_next": "  x + a  ",
+          "y_next": " y ",
+          "z_next": " "
+        },
+        "parameters": {
+          "a": 1.25,
+          "zeta": 2,
+          "Aa": 3,
+          "BB": 4
+        }
+      }
+    },
+    {
+      "id": "Map-empty-equations",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "MAP_ATTRACTOR",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "equations": {
+          "x_next": "",
+          "y_next": "",
+          "z_next": ""
+        },
+        "parameters": {
+          "a": 1.25,
+          "zeta": 2,
+          "Aa": 3,
+          "BB": 4
+        }
+      }
+    },
+    {
+      "id": "SYMMETRY_CHAOS-absent",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        }
+      }
+    },
+    {
+      "id": "SYMMETRY_CHAOS-empty",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "id": "SYMMETRY_CHAOS-default",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        }
+      }
+    },
+    {
+      "id": "Sym-standard-delta-power-2.25",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "equation": {
+          "template": "standard"
+        },
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3,
+          "delta_power": 2.25
+        }
+      }
+    }
+  ]
+}

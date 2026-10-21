@@ -115,18 +115,25 @@ export function importSourceMapConfiguration(document:unknown,options:SourceMapI
    if(n===undefined){if(entry==='runtime-config')fail('input',path,'原 JSONObject.getDouble 无法读取参数');n=0;diagnostics.push(`${path.join('.')}: 项目参数读取失败，原版使用0；原值留在source。`);}
    rows.push([key,finite(n,path)]);
   }
-  if(entry==='project'){editorParameters=rows;const state=snapshot(rows.map(([k])=>k));editorMap=state.state;const values=new Map(rows);c.parameters=jsonOrder(state.keys).map(k=>[k,values.get(k)!]);}else c.parameters=rows;
+  editorParameters=rows;const state=snapshot(rows.map(([k])=>k));editorMap=state.state;
+  if(entry==='project'){const values=new Map(rows);c.parameters=jsonOrder(state.keys).map(k=>[k,values.get(k)!]);}else c.parameters=rows.map(([k,v])=>[k,v]);
  }
- const editorEquations=entry==='project'?{...c.equations}:undefined;
+ // Keep editor facts even for direct runtime imports: missing parameters are
+ // different from defaults injected by the constructor.
+ if(editorParameters===undefined){editorParameters=[];editorMap=snapshot([]).state;}
+ const editorEquations={...c.equations};
  completeDimension(c);compile(c);
  const configuration=unwrap(createSourceMapConfiguration(c,{entry,settingsPresence:settings?'object':'absent',editorMap,editorParameters,editorEquations}),[]);
  return{configuration,parameters:Object.fromEntries(c.parameters),consumedPaths,numericPaths,diagnostics};
 });}
-/** Explicit inspector edit only. Runtime timeline evaluation must keep the old
+/** Inspector field edits normalize changed construction values; explicit Apply
+ * always exports the ProjectState, including equal-value/camera-only actions.
+ * Runtime timeline evaluation must keep the old
  * construction anchor. Unchanged engine-injected parameters never become new
  * ProjectState authoring entries merely because a setting was edited. */
-export function editSourceMapConfiguration(anchor:SourceMapConfiguration,before:SourceMapEditState,next:SourceMapEditState,intent:'apply'|'parameters'='apply'):SourceMapResult<{configuration:SourceMapConfiguration;parameters:Record<string,number>}>{return attempt(()=>{
+export function editSourceMapConfiguration(anchor:SourceMapConfiguration,before:SourceMapEditState,next:SourceMapEditState,intent:'edit'|'apply'|'parameters'='edit'):SourceMapResult<{configuration:SourceMapConfiguration;parameters:Record<string,number>}>{return attempt(()=>{
  const valid=unwrap(parseSourceMapConfiguration(anchor),[]);
+ if(intent==='apply'&&valid.editorParameters===undefined)fail('input',['editorParameters'],'源 Map 缺少编辑参数来源，请重新导入项目后应用');
  const sameKeys=Object.keys(before.parameters).length===Object.keys(next.parameters).length&&Object.keys(before.parameters).every(k=>Object.hasOwn(next.parameters,k));
  const onlyValues=sameKeys&&Object.keys(next.parameters).some(k=>!Object.is(before.parameters[k],next.parameters[k]))&&JSON.stringify({...before,parameters:null})===JSON.stringify({...next,parameters:null});
  if(intent==='parameters'&&onlyValues){
@@ -137,11 +144,11 @@ export function editSourceMapConfiguration(anchor:SourceMapConfiguration,before:
   return{configuration:{...valid,construction:{...valid.construction,parameters:patch(valid.construction.parameters)},...(editor?{editorParameters:[...editor],editorMap:editorState!.state}:{})},parameters:{...next.parameters}};
  }
  const constructionChanged=before.batchSize!==next.batchSize||before.dimension!==next.dimension||before.burnIn!==next.burnIn||(['x','y','z'] as const).some(a=>before.equations[a]!==next.equations[a])||(['xMin','xMax','yMin','yMax'] as const).some(k=>!Object.is(before.initial[k],next.initial[k]))||Object.keys(before.parameters).length!==Object.keys(next.parameters).length||Object.entries(next.parameters).some(([k,v])=>!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v));
- if(!constructionChanged&&before.iterations===next.iterations)return{configuration:anchor,parameters:{...next.parameters}};
+ if(intent!=='apply'&&!constructionChanged&&before.iterations===next.iterations)return{configuration:anchor,parameters:{...next.parameters}};
  // The native iterations inspector writes only its runtime setting. Preserve
  // raw constructor equations and parameter order: editor Apply normalization
  // would change the retained seed despite no new mobject being constructed.
- if(!constructionChanged){
+ if(intent!=='apply'&&!constructionChanged){
   const configuration=unwrap(parseSourceMapConfiguration({...valid,construction:{...valid.construction,iterations:next.iterations}}),[]);
   return{configuration,parameters:{...next.parameters}};
  }

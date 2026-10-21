@@ -49,18 +49,44 @@ try{
  await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const s=createScene(definition('map'));s.settings.count=8;s.settings.burnIn=0;saveWorkspace(localStorage,{scenes:[s],active:s.id,theme:'dark',language:'en',render:{quality:'low',frameRate:30}});});
  await page.goto(origin);await ready();await page.evaluate(async()=>{const{ArtRenderer}=await import('/src/engine/renderer.ts'),native=ArtRenderer.prototype.setOutput;ArtRenderer.prototype.setOutput=function(output,...args){const value=native.call(this,output,...args);window.__live.rendered.push({key:window.__live.owners.get(output),camera:args[0]?.evaluatedSourceCamera});return value;};});
  await page.locator('input[type=file]').setInputFiles({name:family+'-live.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(fixture))});await page.locator('#control-batchSize').waitFor();let initial=await ready();
- check(initial.output.iteratedLive.paused&&initial.request.context.iteratedLive.startAt===0,'Initial preview must explicitly reconstruct once while paused');check(initial.output[family+'Live']!==undefined,'Wrong live family');check(initial.output.stats.samples>0&&initial.output.backend==='webgl2','Initial preview missing mathematical warmup');await idle();
+ check(initial.output.iteratedLive.paused&&initial.request.context.iteratedLive.startAt===0,'Initial selection must build the local default preview while paused');check(initial.output[family+'Live']!==undefined,'Wrong live family');check(initial.output.stats.samples>0&&initial.output.backend==='webgl2','Initial preview missing mathematical warmup');await idle();
  check(await page.getByRole('combobox',{name:'Playback mode',exact:true}).count()===0,'Realtime UI advertises local loop semantics');record({name:'initial measured preview',frame:initial});
+ let appliedPreview;
+ for(let repeat=0;repeat<2;repeat++){
+  const before=await last();await page.getByTestId('iterated-apply').click();const reapplied=await changed(before);
+  check(reapplied.output.iteratedLive.sessionId!==before.output.iteratedLive.sessionId,'Equal-value Apply reused session');
+  check(reapplied.output.iteratedLive.paused&&reapplied.output.iteratedLive.sceneTime===0&&reapplied.output.iteratedLive.objectUpdates===0,'Equal-value Apply lost pause or advanced: '+JSON.stringify(reapplied.output.iteratedLive));
+  if(appliedPreview)check(reapplied.pixelHash===appliedPreview.pixelHash,'Repeated Apply changed deterministic ProjectState initial pixels');
+  appliedPreview=reapplied;
+  await idle();record({name:'equal-value Apply '+(repeat+1),before,reapplied});
+ }
+ if(family==='map'){
+  const before=await last(),field=page.locator('.equation-editors textarea').first(),value=await field.inputValue();
+  await field.fill('missing_apply_parameter');await page.getByTestId('iterated-apply').click();await idle();
+  const after=await last();check(after.key===before.key,'Invalid Apply replaced or advanced the current preview');
+  await field.fill(value);record({name:'invalid Apply preserves current session',before,after});
+ }
  const requests=await page.evaluate(()=>window.__live.requests.length);await page.getByRole('textbox',{name:'Scene name',exact:true}).fill('Renamed live symmetry');await page.getByRole('textbox',{name:'Scene name',exact:true}).blur();await page.waitForFunction(()=>document.querySelector('.viewport-caption h1')?.textContent==='Renamed live symmetry');await idle();check(await page.evaluate(()=>window.__live.requests.length)===requests,'Rename drew a frame');record({name:'metadata preserves completed frame'});
  await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(()=>window.__live.completed.filter(r=>r.output.iteratedLive?.paused===false).length>=4);const paused=await pause();check(paused.output.iteratedLive.sceneTime>initial.output.iteratedLive.sceneTime,'Playback time did not advance');check(paused.output.iteratedLive.queueComplete&&paused.output.iteratedLive.objectUpdates===1,'Completed queue did not continue mathematical updates');
  const count=await page.evaluate(()=>window.__live.completed.length);await page.waitForTimeout(350);await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(n=>window.__live.completed.length>n,count);const resumed=await last();check(resumed.output.iteratedLive.rawDt<.25,'Resume included pause duration');await pause();record({name:'play pause resume after queue completion',paused,resumed});
- const beforeCamera=await last(),savedAngles=beforeCamera.output.sourceCameraFrame.camera;
+ const beforeCamera=await last();
  await page.getByRole('textbox',{name:'Phi · radians',exact:true}).fill('0.45');await page.getByRole('button',{name:'Apply initial camera',exact:true}).click();const editedCamera=await changed(beforeCamera);
- check(editedCamera.output.sourceCameraFrame.camera.phi===Math.fround(.45),'Paused camera edit not displayed');
+ check(editedCamera.output.sourceCameraFrame.camera.phi===Math.fround(Math.fround(.45)+Math.fround(Math.fround(.1)*editedCamera.output.iteratedLive.activeDt)),'Paused camera Apply not displayed');
+ check(editedCamera.output.iteratedLive.sessionId!==beforeCamera.output.iteratedLive.sessionId&&editedCamera.output.iteratedLive.sceneTime===0&&editedCamera.output.iteratedLive.paused,'Camera Apply failed to rebuild from the initial paused display');
+ const appliedAngles=editedCamera.output.sourceCameraFrame.camera;
  const cameraCount=await page.evaluate(()=>window.__live.completed.length);await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(n=>window.__live.completed.length>n,cameraCount);await pause();
  const firstCamera=await page.evaluate(n=>window.__live.completed[n],cameraCount),F=Math.fround,dt=firstCamera.output.iteratedLive.rawDt;
- for(const [axis,rate]of[['phi',.1],['theta',.2],['gamma',.3]])check(firstCamera.output.sourceCameraFrame.camera[axis]===F(savedAngles[axis]+F(F(rate)*dt)),'Resume did not restore saved '+axis);
- record({name:'paused camera edit and resume restoration',editedCamera,firstCamera});
+ for(const [axis,rate]of[['phi',.1],['theta',.2],['gamma',.3]])check(firstCamera.output.sourceCameraFrame.camera[axis]===F(appliedAngles[axis]+F(F(rate)*dt)),'Resume did not animate the applied '+axis);
+ record({name:'paused camera Apply rebuild and resume',editedCamera,firstCamera});
+ await page.getByRole('button',{name:'Play',exact:true}).click();
+ await page.waitForFunction(()=>window.__live.completed.at(-1)?.output.iteratedLive?.paused===false);
+ const beforeRunningApply=await last(),runningCount=await page.evaluate(()=>window.__live.completed.length);
+ await page.getByTestId('iterated-apply').click();
+ await page.waitForFunction(({id,n})=>window.__live.completed.slice(n).some(r=>r.output.iteratedLive?.sessionId!==id),{id:beforeRunningApply.output.iteratedLive.sessionId,n:runningCount});
+ const runningApply=await page.evaluate(({id,n})=>window.__live.completed.slice(n).find(r=>r.output.iteratedLive?.sessionId!==id),{id:beforeRunningApply.output.iteratedLive.sessionId,n:runningCount});
+ check(!runningApply.output.iteratedLive.paused&&runningApply.request.context.iteratedLive.startAt===undefined,'Running Apply lost playback intent or restart');
+ await pause();record({name:'Apply while playing',beforeRunningApply,runningApply});
+
  const beforeTransform=await last();await page.locator('#control-scaleX').fill('1.2');await page.locator('#control-scaleX').blur();const transformed=await changed(beforeTransform);check(transformed.output.iteratedLive.sessionId===beforeTransform.output.iteratedLive.sessionId,'Transform replaced live owner');check(transformed.output.iteratedLive.replayRevision===1&&transformed.output.iteratedLive.display.replayed&&!transformed.output.iteratedLive.display.replayActive,'Paused transform replay did not finish');check(transformed.output.iteratedLive.sceneTime===beforeTransform.output.iteratedLive.sceneTime&&transformed.output.iteratedLive.objectUpdates===0,'Paused replay advanced ordinary time/math');await idle();
  await page.locator('#control-scaleX').fill('1.200');await page.locator('#control-scaleX').blur();const equalValue=await changed(transformed);check(equalValue.output.iteratedLive.replayRevision===2,'Equal numeric edit did not request replay');check(equalValue.pixelHash===transformed.pixelHash,'Equal paused replay differs');record({name:'paused transform and equal value replay',beforeTransform,transformed,equalValue});
  await page.getByRole('button',{name:'Undo',exact:true}).click();await idle();const undone=await last();check(undone.key===equalValue.key,'Equal-value undo redrew the scene');

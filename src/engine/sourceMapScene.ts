@@ -14,7 +14,7 @@ export function withSourceMapConfiguration(scene:SceneDocument,configuration:Sou
  return{...scene,mapSource:configuration,parameters,equations:{...c.equations},settings:{...scene.settings,mapMathModel:SOURCE_MAP_MATH,iteratedMode:'continuous',iteratedBackend:'gpu',batchSize:c.batchSize,dimension:c.dimension,burnIn:c.burnIn,iterationsPerFrame:c.iterations,initialMode:'box',initialXMin:c.initial.xMin,initialXMax:c.initial.xMax,initialYMin:c.initial.yMin,initialYMax:c.initial.yMax,initialZMin:-1,initialZMax:1}};
 }
 const editable=(scene:SceneDocument)=>({parameters:scene.parameters,equations:{x:scene.equations.x??'',y:scene.equations.y??'',z:scene.equations.z??''},batchSize:Number(scene.settings.batchSize),dimension:Number(scene.settings.dimension),initial:{xMin:Number(scene.settings.initialXMin),xMax:Number(scene.settings.initialXMax),yMin:Number(scene.settings.initialYMin),yMax:Number(scene.settings.initialYMax)},burnIn:Number(scene.settings.burnIn),iterations:Number(scene.settings.iterationsPerFrame)});
-export function editSourceMapScene(before:SceneDocument,next:SceneDocument,intent:'apply'|'parameters'='apply'):SceneDocument {
+export function editSourceMapScene(before:SceneDocument,next:SceneDocument,intent:'edit'|'apply'|'parameters'='edit'):SceneDocument {
  if(!usesSourceMapConfiguration(next))return next;
  const changed=editSourceMapConfiguration(next.mapSource!,editable(before),editable(next),intent);
  if(!changed.ok)throw Error(changed.error.reason);

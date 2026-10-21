@@ -854,7 +854,6 @@
   "使用运行时随机样本；参数改变时，采样量增至六倍。": "Uses runtime random samples. Parameter changes increase the sample count to six times the base batch.",
   "Samila 预览按实际经过时间连续运行，暂停期间不推进。片段按顺序执行；队列结束后参数停止更新，相机和绘制继续。时间跳转会重新建立画面；视频导出按所选帧率重新计算。": "Samila previews run continuously using elapsed time and stop advancing while paused. Clips execute in order; after the queue ends, parameters stop updating while the camera and drawing continue. Seeking rebuilds the image; video export recalculates frames at the selected frame rate.",
   "Symmetry 按实际经过时间运行。暂停后的调色板和变换编辑会重播画面；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。": "Symmetry runs in real time. Palette and transform edits replay the image while paused. Particles and active parameter animations continue after the queue ends. Seeking rebuilds the scene frame by frame; video export recomputes it at the selected frame rate.",
-  "暂停时修改角度会调整画面；恢复播放还原暂停前角度。修改缩放、中心或焦距会从头重建。": "While paused, angle edits adjust the image; resuming restores the angles saved at pause. Zoom, center or focal-distance edits rebuild from the beginning.",
   "迭代场景视频模式": "Iterated scene video mode",
   "队列在预热帧内已结束，没有可编码帧；请延长队列": "The queue ended during warmup with no frames to encode; extend the queue.",
   "录制实际尺寸与预检不一致，请等待预览完成后重试": "Recording dimensions differ from the preflight; wait for the preview and retry.",
@@ -862,5 +861,7 @@
   "制作级": "Production",
   "从上次应用的配置开始，首帧预热后按队列结束停止；编码完成后动画继续播放。帧率同时用于模拟和视频编码。": "Start from the last applied configuration, discard one warmup frame, then stop when the queue completes. The animation resumes after encoding finishes. One frame rate controls both simulation and video encoding.",
   "暂停时拖动平移、滚轮缩放；恢复播放保留平移和缩放。": "While paused, drag to pan and scroll to zoom. Pan and zoom are retained on resume.",
-  "暂停时拖动旋转、滚轮缩放；恢复播放还原旋转角度、保留缩放。": "While paused, drag to rotate and scroll to zoom. Resume restores rotation and retains zoom."
+  "暂停时拖动旋转、滚轮缩放；恢复播放还原旋转角度、保留缩放。": "While paused, drag to rotate and scroll to zoom. Resume restores rotation and retains zoom.",
+  "应用后从头重建场景，并保留当前播放或暂停状态。": "Applying rebuilds the scene from the beginning and keeps it playing or paused.",
+  "应用场景": "Apply scene"
 }

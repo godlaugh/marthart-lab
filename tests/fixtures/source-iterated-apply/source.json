@@ -1,0 +1,671 @@
+{
+  "provenance": {
+    "artifact": "MathArt 1.7.8",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "oracleSha256": "f85a1b9867d137ebdfefd323b28fb0eceb1709be3a242345ff9fd58d7893d0f6",
+    "inputSha256": "0817a50ca21db36303e4fff4159d786b5ae4d522b2ab87a8570dac7fe449bf8c",
+    "rawOracleOutputSha256": "1125cdad11a7a13a01e50ec88486bc44db1693e4be2ae118a8483fee17782cca",
+    "scope": "Original JVM pure ProjectState.fromJson/toJson, runtime config constructor and Mobject constructor/computeInitialStateSeed; no MathArtSession Apply invoked, no graphics/window. Route correspondence to Apply established independently by bytecode. Repeated Apply exports same unchanged ProjectState again.",
+    "numericEncoding": "Java Double.toString decimal strings; seed is signed Java long decimal. Parameter order arrays are observed iteration order. editorParameters are ProjectState SnapshotStateMap values, runtime parameters are Map config map or Symmetry Mobject runtimeEquationParams."
+  },
+  "cases": [
+    {
+      "id": "MAP_ATTRACTOR-absent",
+      "stages": [
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "sin(b*x) + d*cos(b*y)",
+          "route": "direct runtime config",
+          "seed": "3460583409591009549",
+          "RawEquationXNext": "sin(a*y) + c*cos(a*x)",
+          "parameters": {
+            "a": "-1.7",
+            "b": "1.8",
+            "c": "1.6",
+            "d": "0.9"
+          },
+          "parameterOrder": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ]
+        },
+        {
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "editorParameters": {},
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a",
+          "editorParameterOrder": []
+        },
+        {
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "editorParameters": {},
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a",
+          "editorParameterOrder": []
+        }
+      ]
+    },
+    {
+      "id": "MAP_ATTRACTOR-empty",
+      "stages": [
+        {
+          "route": "direct runtime config",
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a"
+        },
+        {
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "editorParameters": {},
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a",
+          "editorParameterOrder": []
+        },
+        {
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "editorParameters": {},
+          "error": "java.lang.IllegalArgumentException: Invalid MAP_ATTRACTOR equation 'x_next': Unknown variable: a",
+          "editorParameterOrder": []
+        }
+      ]
+    },
+    {
+      "id": "MAP_ATTRACTOR-default",
+      "stages": [
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "sin(b*x) + d*cos(b*y)",
+          "route": "direct runtime config",
+          "seed": "3460583409591009549",
+          "RawEquationXNext": "sin(a*y) + c*cos(a*x)",
+          "parameters": {
+            "a": "-1.7",
+            "b": "1.8",
+            "c": "1.6",
+            "d": "0.9"
+          },
+          "parameterOrder": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ]
+        },
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "sin(b*x) + d*cos(b*y)",
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "seed": "3460583409591009549",
+          "editorParameters": {
+            "a": "-1.7",
+            "b": "1.8",
+            "c": "1.6",
+            "d": "0.9"
+          },
+          "RawEquationXNext": "sin(a*y) + c*cos(a*x)",
+          "parameters": {
+            "a": "-1.7",
+            "b": "1.8",
+            "c": "1.6",
+            "d": "0.9"
+          },
+          "editorParameterOrder": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "parameterOrder": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ]
+        },
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "sin(b*x) + d*cos(b*y)",
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "seed": "3460583409591009549",
+          "editorParameters": {
+            "a": "-1.7",
+            "b": "1.8",
+            "c": "1.6",
+            "d": "0.9"
+          },
+          "RawEquationXNext": "sin(a*y) + c*cos(a*x)",
+          "parameters": {
+            "a": "-1.7",
+            "b": "1.8",
+            "c": "1.6",
+            "d": "0.9"
+          },
+          "editorParameterOrder": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "parameterOrder": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Map-raw-spaces",
+      "stages": [
+        {
+          "RawEquationZNext": " ",
+          "RawEquationYNext": " y ",
+          "route": "direct runtime config",
+          "seed": "2153270286405666403",
+          "RawEquationXNext": "  x + a  ",
+          "parameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "parameterOrder": [
+            "zeta",
+            "Aa",
+            "BB",
+            "a"
+          ]
+        },
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "y",
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "seed": "-2367282264799851980",
+          "editorParameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "RawEquationXNext": "x + a",
+          "parameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "editorParameterOrder": [
+            "a",
+            "zeta",
+            "Aa",
+            "BB"
+          ],
+          "parameterOrder": [
+            "zeta",
+            "Aa",
+            "BB",
+            "a"
+          ]
+        },
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "y",
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "seed": "-2367282264799851980",
+          "editorParameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "RawEquationXNext": "x + a",
+          "parameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "editorParameterOrder": [
+            "a",
+            "zeta",
+            "Aa",
+            "BB"
+          ],
+          "parameterOrder": [
+            "zeta",
+            "Aa",
+            "BB",
+            "a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Map-empty-equations",
+      "stages": [
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "",
+          "route": "direct runtime config",
+          "seed": "-7453885178268840457",
+          "RawEquationXNext": "",
+          "parameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "parameterOrder": [
+            "zeta",
+            "Aa",
+            "BB",
+            "a"
+          ]
+        },
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "",
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "seed": "-7453885178268840457",
+          "editorParameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "RawEquationXNext": "",
+          "parameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "editorParameterOrder": [
+            "a",
+            "zeta",
+            "Aa",
+            "BB"
+          ],
+          "parameterOrder": [
+            "zeta",
+            "Aa",
+            "BB",
+            "a"
+          ]
+        },
+        {
+          "RawEquationZNext": "0.0",
+          "RawEquationYNext": "",
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "seed": "-7453885178268840457",
+          "editorParameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "RawEquationXNext": "",
+          "parameters": {
+            "zeta": "2.0",
+            "Aa": "3.0",
+            "BB": "4.0",
+            "a": "1.25"
+          },
+          "editorParameterOrder": [
+            "a",
+            "zeta",
+            "Aa",
+            "BB"
+          ],
+          "parameterOrder": [
+            "zeta",
+            "Aa",
+            "BB",
+            "a"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SYMMETRY_CHAOS-absent",
+      "stages": [
+        {
+          "route": "direct runtime config",
+          "seed": "-3476768661433560873",
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "seed": "-3476768661433560873",
+          "editorParameters": {},
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [],
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "seed": "-3476768661433560873",
+          "editorParameters": {},
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [],
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SYMMETRY_CHAOS-empty",
+      "stages": [
+        {
+          "route": "direct runtime config",
+          "seed": "-3476768661433560873",
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "seed": "-3476768661433560873",
+          "editorParameters": {},
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [],
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "seed": "-3476768661433560873",
+          "editorParameters": {},
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [],
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "SYMMETRY_CHAOS-default",
+      "stages": [
+        {
+          "route": "direct runtime config",
+          "seed": "-3476768661433560873",
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "seed": "8562236325647494735",
+          "editorParameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "omega",
+            "beta",
+            "gamma",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "seed": "8562236325647494735",
+          "editorParameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "parameters": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "parameterOrder": [
+            "lambda",
+            "alpha",
+            "omega",
+            "beta",
+            "gamma",
+            "symmetry_degree"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Sym-standard-delta-power-2.25",
+      "stages": [
+        {
+          "route": "direct runtime config",
+          "seed": "-2568839366414455727",
+          "parameters": {
+            "lambda": "2.0",
+            "delta_power": "2.0",
+            "alpha": "-2.43",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "omega": "0.0",
+            "symmetry_degree": "3.0"
+          },
+          "parameterOrder": [
+            "lambda",
+            "delta_power",
+            "alpha",
+            "beta",
+            "gamma",
+            "omega",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "ProjectState.fromJson/toJson then config (Apply)",
+          "seed": "9009409553640183661",
+          "editorParameters": {
+            "lambda": "2.0",
+            "delta_power": "2.25",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "parameters": {
+            "lambda": "2.0",
+            "delta_power": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "delta_power",
+            "gamma",
+            "lambda"
+          ],
+          "parameterOrder": [
+            "lambda",
+            "delta_power",
+            "alpha",
+            "omega",
+            "beta",
+            "gamma",
+            "symmetry_degree"
+          ]
+        },
+        {
+          "route": "same ProjectState.toJson then config again (same-value Apply)",
+          "seed": "9009409553640183661",
+          "editorParameters": {
+            "lambda": "2.0",
+            "delta_power": "2.25",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "parameters": {
+            "lambda": "2.0",
+            "delta_power": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          },
+          "editorParameterOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "delta_power",
+            "gamma",
+            "lambda"
+          ],
+          "parameterOrder": [
+            "lambda",
+            "delta_power",
+            "alpha",
+            "omega",
+            "beta",
+            "gamma",
+            "symmetry_degree"
+          ]
+        }
+      ]
+    }
+  ]
+}

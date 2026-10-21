@@ -3,6 +3,7 @@ import {Check} from 'lucide-react';
 import type {SceneDefinition,SceneDocument} from '../types';
 import {analyzeEquationDraft,equationCompletion,equationTokens,insertEquationCompletion,type EquationAnalysis,type EquationSuggestion} from '../engine/equationEditor';
 import {useI18n} from '../i18n';
+import {sourceLivePreviewKind} from '../engine/sourceLivePreview';
 import {editableEquations} from '../engine/mapDimension';
 
 function EquationField({label,value,analysis,onChange,onApply,onBlur}:{label:string;value:string;analysis:EquationAnalysis;onChange:(value:string)=>void;onApply:()=>void;onBlur?:()=>void}){
@@ -53,7 +54,7 @@ export function EquationEditor({scene,equations,draft,onChange,onApply,applyOnBl
   },[equations,draft,scene]);
   const invalid=fields.some(field=>field.analysis.error);
   const dirty=fields.some(field=>field.value!==scene.equations[field.key]);
-  const apply=()=>{if(!invalid&&dirty)onApply();};
+  const apply=()=>{if(!invalid&&(dirty||sourceLivePreviewKind(scene)==='map'))onApply();};
   return <><div className="equation-editors">{fields.map(field=><EquationField key={field.key} label={t(field.label)} value={field.value} analysis={field.analysis} onChange={value=>onChange({...draft,[field.key]:value})} onApply={apply} onBlur={applyOnBlur?apply:undefined}/>)}</div>
     {fields.some(field=>field.analysis.native)&&<div className="formula-help">{t('原产物语法：函数名须紧邻左括号；未绑定变量按 0 求值。π 为普通变量，科学计数写法不作为数值解析。')}</div>}
     {fields.some(field=>field.analysis.sourceReal)&&<div className="formula-help">{t('源 Samila 实数语法：函数名紧邻左括号；x、y 为采样坐标，a–d 缺省为 0。其他变量必须显式声明为参数；不注入时间。')}</div>}

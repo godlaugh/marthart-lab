@@ -295,13 +295,13 @@ export default function App() {
     bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
   }
-  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'iterated-replay'|'map-runtime'|'map-apply'|'iterated-parameters') {
+  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'iterated-replay'|'map-runtime'|'iterated-apply'|'iterated-parameters') {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
     if(nextLive==='map'||nextLive==='symmetry'){
-      if(!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(current,next))&&(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||nextLive==='map'&&(intent==='map-apply'||!Object.is(current.settings.pointSize,next.settings.pointSize)))){
-        replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);
+      if(!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(current,next))&&(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||intent==='iterated-apply'||nextLive==='map'&&!Object.is(current.settings.pointSize,next.settings.pointSize))){
+        replaceLiveSession(intent==='iterated-apply'?undefined:0);playbackClock.current=0;timeRef.current=0;setTime(0);
       }else{
         if(intent==='iterated-replay'||sourceIteratedReplayIdentity(current)!==sourceIteratedReplayIdentity(next))iteratedReplayRevision.current++;
         if(nextLive==='map'){
@@ -326,7 +326,7 @@ export default function App() {
       // not advance time while the new host measurement is still pending.
       autoPlayPending.current=autoPlayPending.current||playingRef.current;
       playingRef.current=false;setPlaying(false);
-      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession();
+      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(0);
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
       if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
@@ -360,14 +360,14 @@ export default function App() {
   const iteratedLiveFacts=output?.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
   const iteratedReplayPending=!!iteratedLiveFacts&&!error&&!previewCancelled&&outputScene===scene&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true;
   const replayPendingRef=useRef(false);replayPendingRef.current=iteratedReplayPending;
-  function replaceLiveSession(startAt=0){liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
+  function replaceLiveSession(startAt:number|undefined){liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
     if(!sourceLivePreviewKind(sceneRef.current))return;
     playingRef.current=false;setPlaying(false);replaceLiveSession(Math.max(0,timeRef.current));
     // Retry is an explicit reconstruction, never continuation of failed ink.
     generationQueue.current?.cancel();setPreviewCancelled(true);
   }
-  function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
+  function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceLiveSession(0);playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
   const pendingParameterWrites=useRef(new Map<string,number>());
   function editParameter(next:SceneDocument,name:string){
@@ -376,8 +376,8 @@ export default function App() {
       if(Object.is(sceneRef.current.parameters[name],next.parameters[name]))pendingParameterWrites.current.set(name,next.parameters[name]);
     }else edit(next,true);
   }
-  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'iterated-replay'|'map-runtime'|'map-apply'|'iterated-parameters') {
-    try{next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':'apply'),intent==='iterated-parameters'?'parameters':'apply');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'iterated-replay'|'map-runtime'|'iterated-apply'|'iterated-parameters') {
+    try{next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit'),intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(display&&sourceLivePreviewKind(next))liveDisplayRequested.current=true;
@@ -386,6 +386,10 @@ export default function App() {
     if (history.current.length > 40) history.current.shift();
     future.current=[];
     setScene(next,intent);
+  }
+  function applyScene(next:SceneDocument){
+    const family=sourceLivePreviewKind(next);
+    edit(next,false,true,family==='map'||family==='symmetry'?'iterated-apply':undefined);
   }
   function retryDomainGpu(){
     if(sceneRef.current.kind!=='domain'||playingRef.current||recording)return;
@@ -401,7 +405,7 @@ export default function App() {
       const settings=scene.kind==='samila'&&key==='samilaHistoryModel'
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
-      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':sourceLivePreviewKind(scene)==='map'&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'map-apply':undefined);
+      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':sourceLivePreviewKind(scene)==='map'&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {
@@ -410,7 +414,7 @@ export default function App() {
   }
   function load(next: SceneDocument, source: 'library' | 'document') {
     showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
-    rootsSessionId.current=crypto.randomUUID();replaceLiveSession();
+    rootsSessionId.current=crypto.randomUUID();replaceLiveSession(0);
     // A file/new document is a new renderer instance even when its saved id
     // matches the open work. Ordinary edits retain the current failure latch.
     if(source==='document'){generationQueue.current?.cancel();setPreviewCancelled(false);}
@@ -1162,6 +1166,7 @@ export default function App() {
             </div>
             <div className="inspector-scroll">
               {!isCreationKind(scene.kind)&&<p className="section-body muted" role="note">{t('此场景的完整创作支持计划于 2.0。已有项目数据可继续保存和备份。')}</p>}
+              {(sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry')&&<div className="section-body"><button data-testid="iterated-apply" disabled={recording} onClick={()=>applyScene(scene.kind==='map'?{...scene,equations:{...formulaDraft}}:scene)}>{t('应用场景')}</button></div>}
               <ProjectResolutionControls resolution={scene.projectResolution} onChange={projectResolution=>{
                 const next={...scene};
                 if(projectResolution)next.projectResolution=projectResolution;else delete next.projectResolution;
@@ -1183,14 +1188,14 @@ export default function App() {
               )}
               {sourceBouncing?<SourceBouncingControls key={`source-bouncing:${scene.id}:${tab}`} scene={scene} tab={tab} onChange={edit}/>:tab === "geometry" ? (
                 <>
-                  <SymmetryFormula scene={scene} onChange={edit}/>
+                  <SymmetryFormula scene={scene} onChange={applyScene}/>
                   {scene.kind==='perlin'&&!usesSourcePerlin(scene)&&<PerlinPresetControls scene={scene} preset={perlinPreset} onChange={edit}/>}
                   {experience.equations&&!usesRootsNativeMath(scene)&&def.equations.length > 0 && (
                     <details open className="inspector-section">
                       <summary>{t(scene.kind==='bouncing'?'初始位置公式':"数学公式")}<span className="mono">ƒ(x)</span>
                       </summary>
                       <div className="section-body">
-                        <EquationEditor scene={scene} equations={def.equations} draft={formulaDraft} onChange={setFormulaDraft} applyOnBlur={experience.applyEquationsOnBlur} onApply={()=>{restartSamila();edit({...scene,equations:{...formulaDraft}});}}/>
+                        <EquationEditor scene={scene} equations={def.equations} draft={formulaDraft} onChange={setFormulaDraft} applyOnBlur={experience.applyEquationsOnBlur} onApply={()=>{restartSamila();applyScene({...scene,equations:{...formulaDraft}});}}/>
 
                       </div>
                     </details>
@@ -1287,7 +1292,7 @@ export default function App() {
                   <SourcePerlinGpuControls key={`source-perlin:${scene.id}`} scene={scene} onChange={edit} tab="geometry"/>
                   <SourceAttractorControls key={`source-attractor:${scene.id}`} scene={scene} onChange={edit}/>
                   <SourceSurfaceControls key={`source-mesh:${scene.id}`} scene={scene} onChange={edit}/>
-                  {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={edit} disabled={playing||recording}/>}
+                  {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={applyScene} disabled={recording||playing&&sourceLivePreviewKind(scene)!=='map'&&sourceLivePreviewKind(scene)!=='symmetry'}/>}
                   {scene.kind==='samila'&&<details open className="inspector-section"><summary>{t('Samila 相机')}</summary><div className="section-body">
                     <p className="muted">{t(samilaSourceProjection?'原版视口：拖动按画布比例平移，滚轮围绕原点缩放。调整视图会清空并重新采样；不会自动适配边界。':'启用后切换为持续批次、限幅历史与 XY 投影。相机旋转保留累积图像；编辑起始角会重新计算历史。')}</p>
                     {!samilaCameraActive&&<button disabled={busy||playing} onClick={()=>edit({...scene,settings:initializeSamilaCamera(scene.settings)})}>{t('启用锚定 theta 相机')}</button>}
