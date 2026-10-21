@@ -17,12 +17,14 @@ const MAX_SAMPLES=65536,MAX_BYTES=768*1024*1024,MAX_DRAW_WORK=2_000_000;
  * reference/cache copy, plus the new cache, copy and GPU texture. Driver
  * Native color additionally charges old/new LUT representations, returned RGBA
  * bytes and a mixed 52-byte/pixel MRT target. Driver internal storage and the
- * caller's final assembled image/color arrays are not included. */
+ * caller's final assembled image/color arrays are not included. Raster requests
+ * also charge the uint32 permutation; in-place heap sorting uses constant scratch. Row readbacks
+ * never exceed count, including holes coalesced between requested pixels. */
 export function fractalSourceGpuBytes(width:number,height:number,count:number,referenceLength:number,direct=false,sourceColor=false):number {
  require([width,height].every(n=>Number.isSafeInteger(n)&&n>0&&n<=16384),'Source fractal dimensions exceed the image capacity','capacity');
  require(Number.isSafeInteger(count)&&count>=0&&count<=MAX_SAMPLES,'Source fractal batch exceeds 65536 samples','capacity');
  require(Number.isSafeInteger(referenceLength)&&referenceLength>=0&&referenceLength<=2048,'Source reference exceeds 2048 entries','capacity');
- return (direct?0:width*height*(sourceColor?52:64))+(sourceColor?5*SOURCE_COLOR_LUT_BYTES+count*4:0)+count*(16+16+STRIDE*4*4)+referenceLength*16*3+2048*16*3+1025*2*4*4*2+6*4*4;
+ return (direct?0:width*height*(sourceColor?52:64)+count*4)+(sourceColor?5*SOURCE_COLOR_LUT_BYTES+count*4:0)+count*(16+16+STRIDE*4*4)+referenceLength*16*3+2048*16*3+1025*2*4*4*2+6*4*4;
 }
 function bytes(length:number):Uint8Array {try{return new Uint8Array(length);}catch(cause){throw new FractalSourceGpuError('Source fractal byte buffer allocation failed','capacity',{cause});}}
 function floats(length:number):Float32Array {try{return new Float32Array(length);}catch(cause){throw new FractalSourceGpuError('Source fractal typed buffer allocation failed','capacity',{cause});}}
@@ -206,16 +208,39 @@ export class FractalSourceNewtonGpu {
    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.referenceTexture!);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,this.referenceTexture!);
    gl.bindVertexArray(this.quadVao!);gl.bindFramebuffer(gl.FRAMEBUFFER,this.rasterFbo!);gl.viewport(0,0,width,height);gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.disable(gl.DITHER);gl.disable(gl.RASTERIZER_DISCARD);gl.enable(gl.SCISSOR_TEST);
   });
-  for(let first=0;first<points.length/2;){
-   cancel(isCancelled);const x=points[first*2],y=points[first*2+1];let n=1;
-   while(n<drawCount&&first+n<points.length/2&&points[(first+n)*2]===x+n&&points[(first+n)*2+1]===y)n++;
+  // The sampler owns request order. Guessing supplies block corners/centers,
+  // with holes and duplicate pixels; submitting each in caller order forces a
+  // GPU synchronization per point. Sort indices, read bounded row spans, then
+  // scatter requested records back without changing fragment interpolation.
+  let order:Uint32Array;
+  try{order=new Uint32Array(points.length/2);}
+  catch(cause){throw new FractalSourceGpuError('Source fractal raster permutation allocation failed','capacity',{cause});}
+  const later=(a:number,b:number)=>points[a*2+1]>points[b*2+1]||(points[a*2+1]===points[b*2+1]&&points[a*2]>points[b*2]);
+  let sorted=true;
+  for(let i=0;i<order.length;i++){order[i]=i;if(i&&later(i-1,i))sorted=false;}
+  // Avoid runtime-dependent comparator-sort copies at the capacity boundary.
+  // Already ordered One Pass batches keep the linear path.
+  if(!sorted){
+   const sift=(root:number,end:number)=>{for(let child=root*2+1;child<end;child=root*2+1){
+    if(child+1<end&&later(order[child+1],order[child]))child++;
+    if(!later(order[child],order[root]))break;
+    const value=order[root];order[root]=order[child];order[child]=value;root=child;
+   }};
+   for(let root=Math.floor(order.length/2)-1;root>=0;root--)sift(root,order.length);
+   for(let end=order.length-1;end>0;end--){const value=order[0];order[0]=order[end];order[end]=value;sift(0,end);}
+  }
+  for(let first=0;first<order.length;){
+   cancel(isCancelled);const x=points[order[first]*2],y=points[order[first]*2+1];let end=first+1;
+   while(end<order.length&&points[order[end]*2+1]===y&&points[order[end]*2]-x<drawCount)end++;
+   const n=points[order[end-1]*2]-x+1;
+   let nativeRgba:Uint8Array|undefined;
    device(()=>{gl.scissor(x,height-1-y,n,1);gl.drawArrays(gl.TRIANGLES,0,6);});this.checkDevice('raster draw');this.draws++;this.rasterDraws++;
    const attachments:Float32Array[]=[];
    for(let attachment=0;attachment<4;attachment++){
     if(colorPlan&&attachment===2){
      const rgba=bytes(n*4);rgba.fill(0xa5);device(()=>{gl.readBuffer(gl.COLOR_ATTACHMENT0+attachment);gl.readPixels(x,height-1-y,n,1,gl.RGBA,gl.UNSIGNED_BYTE,rgba);});this.checkDevice('native color readback');
      if(rgba.some(v=>v===0xa5)){const again=bytes(rgba.length);again.fill(0x5a);device(()=>gl.readPixels(x,height-1-y,n,1,gl.RGBA,gl.UNSIGNED_BYTE,again));this.checkDevice('native color readback confirmation');require(rgba.every((v,i)=>v===again[i]),'Source fractal returned incomplete native color bytes','device');}
-     out.sourceRGBA!.set(rgba,first*4);attachments.push(new Float32Array());continue;
+     nativeRgba=rgba;attachments.push(new Float32Array());continue;
     }
     const data=floats(n*4),bits=new Uint32Array(data.buffer);bits.fill(0x7fc0f00d);
     device(()=>{gl.readBuffer(gl.COLOR_ATTACHMENT0+attachment);gl.readPixels(x,height-1-y,n,1,gl.RGBA,gl.FLOAT,data);});this.checkDevice('raster readback');
@@ -225,8 +250,9 @@ export class FractalSourceNewtonGpu {
     }
     attachments.push(data);
    }
-   for(let j=0;j<n;j++){
-    const o=first+j,k=j*4,z=attachments[0],t=attachments[1];const facts=decodeFractalSourceTerminal(t[k],t[k+1],maxIter);
+   for(let j=first;j<end;j++){
+    const o=order[j],k=(points[o*2]-x)*4,z=attachments[0],t=attachments[1];
+    if(nativeRgba)out.sourceRGBA!.set(nativeRgba.subarray(k,k+4),o*4);const facts=decodeFractalSourceTerminal(t[k],t[k+1],maxIter);
     const derivative=plan.isJulia?1:0,measured=facts.converged?Math.fround(Math.sqrt(t[k+2])):0;
     out.values.set([z[k],z[k+2],facts.steps,facts.converged?4:1,derivative,0,t[k+3],0],o*8);
     out.residual.set([z[k+1],z[k+3],measured,0,measured,0,facts.converged?1:0,facts.iteration],o*8);
@@ -235,7 +261,7 @@ export class FractalSourceNewtonGpu {
     out.source.set([facts.startedPerturb?1:0,facts.glitches,facts.ordinarySteps,facts.perturbSteps],o*4);
     this.samples++;if(colorPlan){this.colorSamples++;this.colorPlanKey=colorPlan.key;}else this.colorPlanKey=undefined;this.glitches+=facts.glitches;this.perturbSamples+=facts.startedPerturb?1:0;this.ordinarySteps+=facts.ordinarySteps;this.perturbSteps+=facts.perturbSteps;
    }
-   first+=n;
+   first=end;
   }
   device(()=>{gl.disable(gl.SCISSOR_TEST);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindVertexArray(null);gl.activeTexture(gl.TEXTURE0);});
  }

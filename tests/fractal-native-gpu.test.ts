@@ -19,7 +19,7 @@ const plan=(v:Partial<typeof view>={})=>parseFractalSourcePlan(config(),{...view
 const pixels=new Float32Array([0,0,2,1]);
 function caught(fn:()=>unknown):unknown{try{fn();}catch(e){return e;}throw Error('Expected failure');}
 type Handle={kind:string;id:number};
-interface Failure {throwAt?:string;deleteAt?:string;compile?:boolean;link?:boolean;nullAt?:string;framebuffer?:boolean;shortRead?:boolean;shortColorRead?:boolean;invalidRecord?:boolean;nanPayload?:boolean;lost?:boolean;floatAttachment?:boolean;textureLimit?:number;deleteGlError?:boolean;}
+interface Failure {coordinatePayload?:boolean;throwAt?:string;deleteAt?:string;compile?:boolean;link?:boolean;nullAt?:string;framebuffer?:boolean;shortRead?:boolean;shortColorRead?:boolean;invalidRecord?:boolean;nanPayload?:boolean;lost?:boolean;floatAttachment?:boolean;textureLimit?:number;deleteGlError?:boolean;}
 /** Protocol/resource contract double only. Real GLSL arithmetic is validated
  * separately against the retained original shaders in a real browser. */
 function device(failure:Failure={}){
@@ -39,11 +39,11 @@ function device(failure:Failure={}){
   drawArrays:op('drawArrays',(_mode,_first,n)=>{if(tf)drawCount=n;}),texImage2D:op('texImage2D',(_t,_l,format,w,h)=>{uploads.push(w*h);textureFormats.push(format);textureUploads.push({format,width:w,height:h,texture:boundTexture});}),bindTexture:op('bindTexture',(_t,texture)=>{textureBindings.push(texture);boundTexture=texture;}),
   scissor:op('scissor',(...values)=>scissors.push(values)),readBuffer:op('readBuffer',value=>{attachment=value-constant('COLOR_ATTACHMENT0');}),
   readPixels:op('readPixels',(_x,_y,width,_h,_format,_type,out:Float32Array|Uint8Array)=>{
-   if(out instanceof Uint8Array){const rgba=Uint8Array.from({length:out.length},(_,i)=>[165,7,250,255][i%4]);out.set(rgba.subarray(0,failure.shortColorRead?out.length-1:out.length));return;}
+   if(out instanceof Uint8Array){const rgba=Uint8Array.from({length:out.length},(_,i)=>(failure.coordinatePayload?[_x+(i>>2),_y,250,255]:[165,7,250,255])[i%4]);out.set(rgba.subarray(0,failure.shortColorRead?out.length-1:out.length));return;}
    const output=new Float32Array(width*4),bits=new Uint32Array(output.buffer);
    for(let i=0;i<width;i++){
     const k=i*4;const perturb=uniforms.get('u_usePerturbation')??0;
-    output.set(attachment===0?[2,0,0,0]:attachment===1?[failure.invalidRecord?-1:0,perturb?10:0,0,1]:[1,0,0,0],k);
+    output.set(attachment===0?(failure.coordinatePayload?[_x+i,0,_y,0]:[2,0,0,0]):attachment===1?[failure.invalidRecord?-1:0,perturb?10:0,0,1]:[1,0,0,0],k);
     if(failure.nanPayload&&attachment===0)bits[k]=0x7fc0f00d;
    }
    out.set(output.subarray(0,failure.shortRead?out.length-1:out.length));
@@ -157,9 +157,26 @@ describe('fragment packing and bounded raster submission',()=>{
   [0,14,{iteration:0,steps:1,converged:false,startedPerturb:true,glitches:1,perturbSteps:1,ordinarySteps:0}],
  ] as const)('decodes actual terminal %s/%s', (iteration,packed,expected)=>expect(decodeFractalSourceTerminal(iteration,packed,2048)).toEqual(expected));
  it.each([[0,8],[1,26],[2,4],[2048,0],[0,NaN],[0,16392]])('rejects impossible terminal %s/%s',(iteration,packed)=>expect(()=>decodeFractalSourceTerminal(iteration,packed,2048)).toThrow());
- it('renders only requested contiguous row spans, preserving duplicates and holes',()=>{
+ it('coalesces bounded row spans while preserving requested sample counts and duplicates',()=>{
   const d=device(),gpu=new FractalSourceNewtonGpu(),p=plan();const points=new Float32Array([0,0,1,0,2,0,0,1,2,1,2,1]);
-  gpu.sample(points,3,2,view,config(),p);expect(d.scissors).toEqual([[0,1,3,1],[0,0,1,1],[2,0,1,1],[2,0,1,1]]);expect(gpu.diagnostics()).toMatchObject({samples:6,draws:4,rasterDraws:4,rasterAllocations:1});gpu.dispose();
+  gpu.sample(points,3,2,view,config(),p);expect(d.scissors).toEqual([[0,1,3,1],[0,0,3,1]]);expect(gpu.diagnostics()).toMatchObject({samples:6,draws:2,rasterDraws:2,rasterAllocations:1});gpu.dispose();
+ });
+});
+describe('sparse raster ownership',()=>{
+ it('scatters color and orbit records into caller order, including duplicate pixels',()=>{
+  const d=device({coordinatePayload:true}),gpu=new FractalSourceNewtonGpu();
+  const points=new Float32Array([2,1,0,0,1,0,2,1]),batch=gpu.sample(points,3,2,view,config(),plan(),undefined,undefined,colorPlan());
+  expect(Array.from(batch.sourceRGBA!)).toEqual([2,0,250,255,0,1,250,255,1,1,250,255,2,0,250,255]);
+  expect([0,1,2,3].map(i=>Array.from(batch.values!.slice(i*8,i*8+2)))).toEqual([[2,0],[0,1],[1,1],[2,0]]);
+  expect(d.scissors).toEqual([[0,1,2,1],[2,0,1,1]]);expect(gpu.diagnostics().samples).toBe(4);gpu.dispose();expect(d.live.size).toBe(0);
+ });
+ it('bounds gap-inclusive draw work and readbacks at high iteration counts',()=>{
+  const d=device(),gpu=new FractalSourceNewtonGpu(),c={...config(),iterations:2048};
+  const p=parseFractalSourcePlan(c,view,{logicalWidth:200,logicalHeight:1,provenance:'requested-output-local'},{precision:'high'});
+  const points=Float32Array.from({length:200},(_,i)=>i%2?0:i);
+  gpu.sample(points,200,1,view,c,p);
+  expect(d.scissors).toEqual([[0,0,61,1],[62,0,61,1],[124,0,61,1],[186,0,13,1]]);
+  expect(d.scissors.every(row=>row[2]*2048*16<=2_000_000)).toBe(true);expect(gpu.diagnostics().samples).toBe(100);gpu.dispose();
  });
 });
 describe('shared trap texture transfer',()=>{
