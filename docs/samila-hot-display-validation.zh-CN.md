@@ -1,5 +1,7 @@
 # Samila 实时绘制与暂停截图验证
 
+后续已补充实时墙钟及独立暂停／恢复，见 [实时播放验证](samila-realtime-clock-validation.zh-CN.md)。下文保留首次热显示接入时的验证范围与历史结果。
+
 本轮把源 Samila 的预览从“按时间重放并缓存一帧”接到独立的实时绘制会话。每次真正绘制都会使用一个新的随机字并新增采样；同一个动画时刻可以有多次绘制。暂停截图复用该会话，先绘制导出图像，再绘制主预览，所以截图结束后的预览也会变化。
 
 1.0 Apple Silicon 应用没有重新打包或替换。本轮修改的是 2.0 分支中的 Web 预览与导出流程。
@@ -40,7 +42,7 @@
 | 小数 DPR | DPR 1.5 首次预览可用；本地明确选择整数密度 2，并实际设置画布，不伪装成原生 DPI 证据 |
 | 冷重放视频回归 | 192 × 128、3 fps、3 帧，ffprobe 通过；上传帧 RGB／不透明 alpha 与独立 Worker 输出匹配，原预览没有额外采样 |
 
-实际界面最终报告为 `.cache/source-samila-hot-public-final/report.json`，附 `report.md`，34.88 秒。GPU／Worker 报告为 `.cache/source-samila-hot-complete/report.json`，附可读版本。两个最终报告的 400 个源文件 SHA-256 与当前源码一致，各脚本也核对运行前后身份；浏览器、Vite 与临时导出服务均已清理。耗时是功能检查记录，不是性能基准。全量日志为 `.cache/samila-hot-tests.log`，最终构建日志为 `.cache/samila-hot-build-final.log`。
+实际界面最终报告为 `.cache/source-samila-hot-public-final/report.json`，附 `report.md`，34.88 秒。GPU／Worker 报告为 `.cache/source-samila-hot-complete/report.json`，附可读版本。两个最终报告的 400 个源文件 SHA-256 与当时提交 `1e9ad5d` 的源码一致，各脚本也核对运行前后身份；浏览器、Vite 与临时导出服务均已清理。耗时是功能检查记录，不是性能基准。全量日志为 `.cache/samila-hot-tests.log`，最终构建日志为 `.cache/samila-hot-build-final.log`。
 
 复跑需要已安装的 Chrome、本地锁定依赖和原包证据。在 `studio/` 使用锁定 Node 执行：
 

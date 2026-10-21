@@ -1,3 +1,4 @@
+import {usesSourceSamilaSampling} from '../engine/sourceSamilaSampling';
 import {usesSourceSamilaTimeline} from '../engine/sourceSamilaReplay';
 import {SOURCE_SAMILA_PARAMETER_MODEL} from '../engine/sourceSamilaParameter';
 import {SamilaParameterActionsEditor} from './SamilaParameterActionsEditor';
@@ -174,7 +175,7 @@ function ActionEditor({ action, scene, targets, onChange }: { action: AnimationA
 
 export function Timeline({ scene, time, playing, finalPreview=false, onTime, onPlay, onChange }: Props) {
   const {t}=useI18n();
-  const samilaSource=usesSourceSamilaTimeline(scene),experience=bouncingExperience(scene),gradientCapabilities=gradientAnimationCapabilities(scene),frameClock=usesSpirographFrameClock(scene),rootsCamera=usesRootsCameraTimeline(scene),rootsGradient=usesRootsGradientTimeline(scene),ordinaryCamera=usesOrdinarySourceCamera(scene);
+  const samilaRealtime=usesSourceSamilaSampling(scene),samilaSource=usesSourceSamilaTimeline(scene),experience=bouncingExperience(scene),gradientCapabilities=gradientAnimationCapabilities(scene),frameClock=usesSpirographFrameClock(scene),rootsCamera=usesRootsCameraTimeline(scene),rootsGradient=usesRootsGradientTimeline(scene),ordinaryCamera=usesOrdinarySourceCamera(scene);
   const [expanded, setExpanded] = useState(true), [selected, setSelected] = useState<string | null>(null), [newType, setNewType] = useState<AnimationClipType>(experience.continuous||frameClock||rootsCamera||ordinaryCamera||samilaSource?'wait':'numeric'), [dropTime, setDropTime] = useState<number | null>(null);
   const [creationError,setCreationError]=useState('');
   const rail = useRef<HTMLDivElement>(null), latest = useRef({ scene, onChange }); latest.current = { scene, onChange };
@@ -233,17 +234,17 @@ export function Timeline({ scene, time, playing, finalPreview=false, onTime, onP
   const name = (clip: AnimationTrack) => clip.label || t(CLIP_TYPES.find(item => item.type === clip.type)?.label || clip.target);
   return <section className={`timeline ${expanded ? '' : 'collapsed'}`} aria-label={t("动画时间线")}>
     <div className="timeline-toolbar"><button title={t("返回起点")} onClick={() => { onPlay(false); onTime(0); }}><SkipBack size={14} /></button><button className="play-button" aria-label={playing ? t("暂停") : t("播放")} disabled={!!experience.error} onClick={() => onPlay(!playing)}>{playing ? <Pause size={15} /> : <Play size={15} />}</button>
-      <span className="time-readout">{time.toFixed(2)} <span>{frameClock?t('秒 · 离线逐帧预览'):experience.continuous?t('秒 · 连续运行'):`/ ${timeline.duration.toFixed(2)} s`}</span></span>
+      <span className="time-readout">{time.toFixed(2)} <span>{frameClock?t('秒 · 离线逐帧预览'):experience.continuous||samilaRealtime?t('秒 · 连续运行'):`/ ${timeline.duration.toFixed(2)} s`}</span></span>
       {finalPreview&&<span className="muted final-preview" title={t('点击播放或录制将从头开始')}>{t('最终效果预览')}</span>}
-      {!experience.continuous&&!frameClock&&<select aria-label={t("播放模式")} value={timeline.playbackMode ?? (timeline.loop ? 'loop' : 'once')} onChange={e => update({ playbackMode: e.target.value as 'once' | 'loop' | 'ping-pong', loop: e.target.value !== 'once' })}><option value="once">{t("单次播放")}</option><option value="loop">{t("循环播放")}</option><option value="ping-pong">{t("往返播放")}</option></select>}
-      {(experience.continuous||frameClock)&&<NumberField label={t('场景时间')} value={time} min={0} max={86400} onChange={value=>{onPlay(false);onTime(value);}}/>}
-      <NumberField label={t(experience.continuous?'导出范围 · 秒':sequential?'最小播放跨度':'动画时长')} value={authoredTimeline.duration} min={.1} max={86400} onChange={duration => update({ duration })} />
-      {rootsCamera||ordinaryCamera?<NumberField label={t('离线预览帧率')} value={timeline.fps} min={1} max={120} onChange={fps=>{if(Number.isInteger(fps))update({fps});}}/>:<label>{t(frameClock?"视频默认帧率":"帧率")}<select aria-label={t("动画帧率")} value={timeline.fps} onChange={e => update({ fps: Number(e.target.value) })}>{[24, 25, 30, 50, 60, 120].map(f => <option key={f}>{f}</option>)}</select></label>}<div className="spacer" />
+      {!experience.continuous&&!frameClock&&!samilaRealtime&&<select aria-label={t("播放模式")} value={timeline.playbackMode ?? (timeline.loop ? 'loop' : 'once')} onChange={e => update({ playbackMode: e.target.value as 'once' | 'loop' | 'ping-pong', loop: e.target.value !== 'once' })}><option value="once">{t("单次播放")}</option><option value="loop">{t("循环播放")}</option><option value="ping-pong">{t("往返播放")}</option></select>}
+      {(experience.continuous||frameClock||samilaRealtime)&&<NumberField label={t('场景时间')} value={time} min={0} max={86400} onChange={value=>{onPlay(false);onTime(value);}}/>}
+      <NumberField label={t(experience.continuous||samilaRealtime?'导出范围 · 秒':sequential?'最小播放跨度':'动画时长')} value={authoredTimeline.duration} min={.1} max={86400} onChange={duration => update({ duration })} />
+      {rootsCamera||ordinaryCamera?<NumberField label={t('离线预览帧率')} value={timeline.fps} min={1} max={120} onChange={fps=>{if(Number.isInteger(fps))update({fps});}}/>:<label>{t(frameClock||samilaRealtime?"视频默认帧率":"帧率")}<select aria-label={t("动画帧率")} value={timeline.fps} onChange={e => update({ fps: Number(e.target.value) })}>{[24, 25, 30, 50, 60, 120].map(f => <option key={f}>{f}</option>)}</select></label>}<div className="spacer" />
       <select aria-label={t("新片段类型")} value={newType} onChange={e => setNewType(e.target.value as AnimationClipType)}>{types.map(item => <option key={item.type} value={item.type}>{t(item.label)}</option>)}</select>
       <button className="text-button" draggable={!sequential} onDragStart={e => { e.dataTransfer.setData('application/x-mathart-clip', newType); e.dataTransfer.effectAllowed = 'copy'; }} onDragEnd={() => setDropTime(null)} onClick={() => add()}><Plus size={14} />{t("添加动画")}</button>
       <button title={t("折叠时间线")} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button></div>
     {sequential&&!samilaSource&&!rootsCamera&&!ordinaryCamera&&<p className="muted">{t('顺序队列按列表顺序执行；前置等待是本地扩展。完成等待变化后，后续片段会重新排定。')} {!frameClock&&<button onClick={()=>{const current=latest.current;try{current.onChange({...current.scene,timeline:resolveTimeline(current.scene)});}catch(error){setCreationError(String(error));}}}>{t('转为绝对时间线')}</button>}</p>}
-    {samilaSource&&<p className="muted">{t('Samila 片段按列表顺序执行，未知原片段作为等待。参数在队列结束后停止更新，环绕相机仍按帧推进。预览和导出共用文档帧率。')}</p>}
+    {samilaSource&&<p className="muted">{t(samilaRealtime?'Samila 预览按实际经过时间连续运行，暂停期间不推进。片段按顺序执行；队列结束后参数停止更新，相机和绘制继续。时间跳转会重新建立画面；视频导出按所选帧率重新计算。':'Samila 片段按列表顺序执行，未知原片段作为等待。参数在队列结束后停止更新，环绕相机仍按帧推进。预览和导出共用文档帧率。')}</p>}
     {(rootsCamera||ordinaryCamera)&&<p className="muted">{t(rootsGradient?'场景片段按列表顺序执行；每个片段先启动相机及全部渐变动作，再按源顺序更新。预览使用固定帧率；循环和往返是本地策略。队列结束后环绕与已启动的渐变仍可继续。':'相机片段按列表顺序执行，片段起点不参与计算。预览使用固定帧率；循环和往返是本地预览策略，回到较早时间会重新采样。队列结束后环绕速率仍可继续，可延长最小播放跨度。')}</p>}
     {usesSourceAttractor(scene)&&<p className="muted">{t('可添加相机与渐变动作；原版普通吸引子没有参数动画。渐变在显示拖尾时生效。')}</p>}
     {frameClock&&<p className="muted">{t('逐帧预览在队列结束后继续推进；循环与往返设置不生效。逐帧视频录制会在队列完成时停止。')}</p>}

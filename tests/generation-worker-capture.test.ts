@@ -3,7 +3,7 @@ import type {GenerationRequest,GenerationResponse} from '../src/engine/generatio
 import type {GenerationInput,SceneDocument,SceneOutput} from '../src/types';
 import {sourcePausedImageBytes} from '../src/engine/sourcePausedImage';
 import {prepareSourcePausedUpscale} from '../src/engine/sourcePausedUpscale';
-const owners=vi.hoisted(()=>({generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},samila:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()}}));
+const owners=vi.hoisted(()=>({generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},samila:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()}}));
 vi.mock('../src/engine/temporal',()=>({generateScene:owners.generate,TemporalGenerationSession:class{
  sourcePerlin=owners.perlin;rootsNative=owners.roots;sourceSamila=owners.samila;reset=owners.reset;
 }}));
@@ -110,5 +110,25 @@ describe('Samila paused capture shares the owner and image postprocessing',()=>{
   start();owners.samila.capturePaused.mockReturnValue({capture:raster(3,5),preview:raster(32,24)});
   const response=send({operation:'samila-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
   expect(response).toHaveProperty('error');expect(response).not.toHaveProperty('retainedSourceId');expect(owners.samila.matchesCompletedPrimary).not.toHaveBeenCalled();
+ });
+});
+
+
+describe('Samila independent playback worker routing',()=>{
+ it('changes only the owner clock and retains the exact source id/context for a subsequent capture',()=>{
+  const samilaScene={kind:'samila',id:'live'} as SceneDocument;
+  const live:GenerationInput={time:2,quality:'preview',width:32,height:24,samilaLive:{sessionId:'one',pixelDensity:2,clock:{paused:false}}};
+  send({operation:'generate',id:1,sessionId:7,scene:samilaScene,context:live});
+  const control=send({operation:'samila-playback',id:2,sessionId:7,sourceId:1,paused:true});
+  expect(control).toEqual({operation:'samila-playback',sessionId:7,id:2,sourceId:1,paused:true});expect(owners.samila.setPaused).toHaveBeenCalledWith(true);expect(owners.generate).toHaveBeenCalledOnce();
+  send({operation:'samila-paused-capture',id:3,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
+  expect(owners.samila.capturePaused.mock.calls[0][1].samilaLive.clock.paused).toBe(true);
+  const resume=send({operation:'samila-playback',id:4,sessionId:7,sourceId:3,paused:false});expect(resume).not.toHaveProperty('error');expect(owners.samila.setPaused).toHaveBeenLastCalledWith(false);expect(owners.generate).toHaveBeenCalledOnce();
+ });
+ it('rejects stale and non-realtime source capabilities before touching the clock',()=>{
+  generate();expect(send({operation:'samila-playback',id:2,sessionId:7,sourceId:1,paused:true})).toHaveProperty('error');
+  const scene={kind:'samila',id:'one'} as SceneDocument;
+  send({operation:'generate',id:3,sessionId:7,scene,context:{...context,samilaLive:{sessionId:'one',pixelDensity:1,clock:{paused:false}}}});
+  expect(send({operation:'samila-playback',id:4,sessionId:7,sourceId:1,paused:true})).toHaveProperty('error');expect(owners.samila.setPaused).not.toHaveBeenCalled();
  });
 });

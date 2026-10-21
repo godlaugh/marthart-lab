@@ -243,33 +243,35 @@ export function clearOrdinarySourceCameraTimelineCache():void {replays.clear();l
 /** Explicit provider lifetime; no global cache may retain a particle owner. */
 export class OrdinarySourceCameraTimelineSession {
  private readonly cache=new Map<string,Replay>();
+ private mode?:'fixed'|'live';
  private readonly initial:SourceCameraScalars;
  private readonly tracks:readonly AnimationTrack[];
  private readonly options:OrdinarySourceCameraTimelineOptions;
  constructor(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],private readonly fps:number,options:OrdinarySourceCameraTimelineOptions){
   this.initial=structuredClone(initial);this.tracks=structuredClone(tracks);this.options={...options};
  }
- evaluate(time:number):OrdinarySourceCameraFrame{try{return evaluateTimeline(this.initial,this.tracks,this.fps,time,this.options,this.cache);}catch(error){this.reset();throw error;}}
+ evaluate(time:number):OrdinarySourceCameraFrame{if(this.mode==='live')throw new OrdinarySourceCameraTimelineError('input','实时队列不能按固定帧重新求值');this.mode='fixed';try{return evaluateTimeline(this.initial,this.tracks,this.fps,time,this.options,this.cache);}catch(error){this.reset();throw error;}}
  /** Explicit hot angle write; queued destinations and captured child starts
   * remain unchanged, as on CameraController. Only an owned replay is writable. */
- writeTheta(theta:number):void {const value=float(theta,'源相机热 theta');if(!this.cache.size)throw new OrdinarySourceCameraTimelineError('input','源相机热写入需要已初始化队列');for(const replay of this.cache.values())replay.camera.theta=value;}
- reset():void{this.cache.clear();}
+ writeAngles(angles:Partial<Pick<SourceCameraScalars,'phi'|'theta'|'gamma'>>):void {
+  const values:{phi?:number;theta?:number;gamma?:number}={};for(const axis of axes)if(angles[axis]!==undefined)values[axis]=float(angles[axis]!,`源相机热 ${axis}`);
+  if(!this.cache.size)throw new OrdinarySourceCameraTimelineError('input','源相机热写入需要已初始化队列');for(const replay of this.cache.values())Object.assign(replay.camera,values);
+ }
+ private live():Replay {check(this.options);if(this.mode==='fixed')throw new OrdinarySourceCameraTimelineError('input','固定帧回放不能作为实时队列续接');this.mode='live';let state=this.cache.get('owned');if(!state){state=createReplay(this.initial,this.tracks,this.fps,this.options);this.cache.set('owned',state);}return state;}
+ snapshot():OrdinarySourceCameraFrame {const state=this.live();return snapshotReplay(state,state.facts.sceneTime);}
+ /** Explicit local seek reconstruction; not a native Scene seek operation. */
+ reconstruct(time:number):OrdinarySourceCameraFrame {this.reset();this.evaluate(time);this.mode='live';return this.snapshot();}
+ step(dt:number,options:{paused?:boolean}={}):OrdinarySourceCameraFrame {if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new OrdinarySourceCameraTimelineError('input','源队列暂停标记无效');try{const state=this.live();advanceReplay(state,dt,options.paused===true,this.options,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
+
+ reset():void{this.cache.clear();this.mode=undefined;}
 }
 export function evaluateOrdinarySourceCameraTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions={}):OrdinarySourceCameraFrame {
  return evaluateTimeline(initial,tracks,fps,time,options);
 }
-function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions,ownedCache?:Map<string,Replay>):OrdinarySourceCameraFrame {
- check(options);
- if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
- const target=targetFrame(time,fps),reserve=budget();
- const key=ownedCache?'owned':options.createParticles?undefined:inputKey(initial,tracks,fps,options.particleActions,options.surfaceMode);
- const replayCache=ownedCache??replays;
- let state=key===undefined?undefined:replayCache.get(key);
- if(state&&state.frameIndex>target){if(key!==undefined)replayCache.delete(key);state=undefined;}
- if(!state){
-  const plan=prepare(initial,tracks,fps,options.particleActions,options.surfaceMode);
+function createReplay(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,options:OrdinarySourceCameraTimelineOptions):Replay {
+  check(options);const plan=prepare(initial,tracks,fps,options.particleActions,options.surfaceMode);
   if(plan.clips.some(c=>c.trackingActions?.some(a=>a.kind==='bind'))&&!options.createParticles)throw new OrdinarySourceCameraTimelineError('unsupported','track 需要原版粒子生产者；不会回退到本地轨道相机');
-  const particles=options.createParticles?.();
+  check(options);const particles=options.createParticles?.();
   if(options.createParticles&&(!particles||typeof particles.bind!=='function'||typeof particles.update!=='function'))throw new OrdinarySourceCameraTimelineError('input','源跟踪生产者缺少构建或逐帧更新入口');
   if(plan.clips.some(c=>c.trailAction?.kind==='record')&&typeof particles?.setRecordingTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源拖尾片段需要支持录制开关的粒子生产者');
   if(plan.clips.some(c=>c.trailAction?.kind==='show')&&typeof particles?.setShowTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源 Perlin 拖尾片段需要支持显示与记录开关的生产者');
@@ -284,19 +286,19 @@ function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationT
   // Only queue/zoom belong to the reused clock. Feeding it rates would evolve
   // a hidden angle history without MoveCamera resets and can falsely overflow.
   const clock=new RootsSceneClock(plan.initial,plan.clips.map(({rates:_rates,...clip})=>clip)),camera=copy(plan.initial);
-  state={plan,clock,facts:clock.snapshot(),camera,start:copy(camera),targets:{},frameIndex:-1,activeDt:0,rates:[0,0,0],startRates:[0,0,0],clipTracking,particles,surfaceMode:options.surfaceMode,overlayAlpha:0,transitionSwitched:false};
- }
- const replay=state,{plan,clock}=replay;
+  return{plan,clock,facts:clock.snapshot(),camera,start:copy(camera),targets:{},frameIndex:-1,activeDt:0,rates:[0,0,0],startRates:[0,0,0],clipTracking,particles,surfaceMode:options.surfaceMode,overlayAlpha:0,transitionSwitched:false};
+}
+function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySourceCameraTimelineOptions,final:boolean):void {
+ const {plan,clock}=replay,frameIndex=replay.frameIndex+1;
  const point=(binding:Tracking):[number,number,number]=>{
   const value=binding.kind==='origin'?[0,0,0]:binding.readPosition();
   if(!Array.isArray(value)||value.length!==3)throw new OrdinarySourceCameraTimelineError('input','源跟踪 provider 必须返回三个世界坐标');return value.map((v,i)=>float(v,`tracked[${i}]`)) as [number,number,number];
  };
- try{
-  for(let frameIndex=replay.frameIndex+1;frameIndex<=target;frameIndex++){
-   check(options);reserve(replay.facts.queueIndex,plan.clips.length);
+   check(options);
    const before=replay.facts,index=before.queueIndex,clip=plan.clips[index],tracking=replay.clipTracking[index],camera=replay.camera;
-   const facts=replay.facts=clock.step(plan.dt,{isCancelled:options.isCancelled});
+   const facts=replay.facts=clock.step(dt,{paused,isCancelled:options.isCancelled,allowSignedDt:true});
    replay.activeDt=before.queueComplete?0:facts.activeDt;
+   if(!paused){
    let particleEased:number|undefined;
    if(clip?.surfaceTransition){
     if(facts.startedClip!==null){replay.transitionSwitched=false;replay.overlayAlpha=0;replay.transitionSnapshot=clip.finishOnStart?undefined:{camera:copy(camera),rates:[...replay.rates]};}
@@ -356,16 +358,39 @@ function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationT
    // Scene.update PC132/183/225: animation, then Mobject, then camera. The
    // queue's final frame still updates Mobject; later frames skip it entirely.
    if(!before.queueComplete){check(options);replay.particles?.update({frameIndex,time:facts.sceneTime,deltaTime:facts.activeDt});check(options);}
-   // CameraController copies tracking center before ambient component updates.
-   if(replay.tracking)camera.center=point(replay.tracking);
-   for(const [i,axis]of axes.entries())camera[axis]=finite(F(camera[axis]+F(replay.rates[i]*plan.dt)));
+   // CameraController returns before tracking and ambient updates for dt <= 0.
+   if(facts.rawDt>0){
+    if(replay.tracking)camera.center=point(replay.tracking);
+    for(const [i,axis]of axes.entries())camera[axis]=finite(F(camera[axis]+F(replay.rates[i]*facts.rawDt)));
+   }
    finite(camera.focalDistance);finite(camera.zoom);camera.center.forEach(finite);
-   check(options);replay.particles?.displayFrame?.(frameIndex,frameIndex===target);
+   }
+   check(options);replay.particles?.displayFrame?.(frameIndex,final);
    replay.frameIndex=frameIndex;
+}
+function snapshotReplay(replay:Replay,time:number):OrdinarySourceCameraFrame {const {plan}=replay;
+ return{time,camera:copy(replay.camera),frameIndex:replay.frameIndex,sceneTime:replay.facts.sceneTime,queueIndex:replay.facts.queueIndex,queueComplete:replay.facts.queueComplete,activeDt:replay.activeDt,rawDt:replay.facts.rawDt,rates:[...replay.rates],diagnostics:plan.diagnostics.map(item=>({...item})),...(replay.surfaceMode?{surfaceTransition:{mode:replay.surfaceMode,overlayAlpha:replay.overlayAlpha}}:{})};
+}
+function evaluateTimeline(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,time:number,options:OrdinarySourceCameraTimelineOptions,ownedCache?:Map<string,Replay>):OrdinarySourceCameraFrame {
+ check(options);
+ if(typeof fps!=='number'||!Number.isFinite(fps)||fps<1||fps>120)throw new OrdinarySourceCameraTimelineError('input','源相机帧率必须在 1–120');
+ const target=targetFrame(time,fps),reserve=budget();
+ const key=ownedCache?'owned':options.createParticles?undefined:inputKey(initial,tracks,fps,options.particleActions,options.surfaceMode);
+ const replayCache=ownedCache??replays;
+ let state=key===undefined?undefined:replayCache.get(key);
+ if(state&&state.frameIndex>target){if(key!==undefined)replayCache.delete(key);state=undefined;}
+ if(!state){
+  state=createReplay(initial,tracks,fps,options);
+ }
+ const replay=state,{plan}=replay;
+ try{
+  for(let frameIndex=replay.frameIndex+1;frameIndex<=target;frameIndex++){
+   reserve(replay.facts.queueIndex,plan.clips.length);advanceReplay(replay,plan.dt,false,options,frameIndex===target);
+
   }
   check(options);
   if(key!==undefined){replayCache.delete(key);replayCache.set(key,replay);while(replayCache.size>(ownedCache?1:4))replayCache.delete(replayCache.keys().next().value!);}
-  return{time:target/fps,camera:copy(replay.camera),frameIndex:target,sceneTime:replay.facts.sceneTime,queueIndex:replay.facts.queueIndex,queueComplete:replay.facts.queueComplete,activeDt:replay.activeDt,rawDt:replay.facts.rawDt,rates:[...replay.rates],diagnostics:plan.diagnostics.map(item=>({...item})),...(replay.surfaceMode?{surfaceTransition:{mode:replay.surfaceMode,overlayAlpha:replay.overlayAlpha}}:{})};
+  return snapshotReplay(replay,target/fps);
  }catch(error){if(key!==undefined)replayCache.delete(key);throw error;}
 }
 /** Integer update count and display layout facts. Never feed rounded display durations back into

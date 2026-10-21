@@ -91,14 +91,17 @@ def compile_queue(raw,easings):
         queue.append(entry)
     return initial_camera,queue
 
-def transcript(raw,fps,easings,post_frames=2):
+def transcript(raw,fps,easings,post_frames=2,steps=None):
     camera,queue=compile_queue(raw,easings);rates=[0.,0.,0.];values=copy.deepcopy(raw.get('parameters',{}));drift={};drift_phases={};drift_active=False
     raw_dt=F(1/F(fps));time=F(0);index=0;current=None;frames=[];revision=0;after=0
     def write(name,value,origin,writes):
         nonlocal revision
         old=values.get(name);values[name]=value;revision+=1
         writes.append(dict(name=name,value=value,origin=origin,sameValue=old==value))
-    for frame_index in range(10001):
+    for frame_index in range(10001 if steps is None else len(steps)):
+        if steps is not None:
+            raw_dt=F(steps[frame_index]['rawDt'])
+            camera.update({k:F(v) for k,v in steps[frame_index].get('restoreCamera',{}).items()})
         before=index>=len(queue) and current is None;remaining=F(0);writes=[];before_values=dict(values)
         if current is not None:remaining=F(remaining+max(F(0),F(queue[index]['duration']-current['runtime'])))
         for item in queue[index+(1 if current else 0):]:remaining=F(remaining+max(F(0),item['duration']))
@@ -140,12 +143,14 @@ def transcript(raw,fps,easings,post_frames=2):
                         drift_phases[name]=wrap(drift_phases.get(name,0.)+delta)
                         value=c['mid']+c['amp']*math.sin(drift_phases[name])
                     write(name,value,'drift',writes)
-        for key,rate in zip(['phi','theta','gamma'],rates):camera[key]=F(camera[key]+F(rate*raw_dt))
+        if steps is None or raw_dt>0:
+            for key,rate in zip(['phi','theta','gamma'],rates):camera[key]=F(camera[key]+F(rate*raw_dt))
         complete=index>=len(queue) and current is None
         frames.append(dict(frameIndex=frame_index,time=frame_index/fps,sceneTime=time,rawDt=raw_dt,activeDt=active,managerFinishedAtFrameStart=before,queueIndex=index,queueComplete=complete,startedClip=started,finishedClip=finished,camera=dict(camera),cameraBits={k:bits(v) for k,v in camera.items()},rates=list(rates),parameters=dict(values),parameterWrites=len(writes),parameterWriteRevision=revision,writeDirty=bool(writes),sameValueWrites=sum(w['sameValue'] for w in writes),valueChangedThisFrame=values!=before_values,writes=writes,driftActive=drift_active,driftPhases=dict(drift_phases)))
         if before:after+=1
-        if complete and after>=post_frames:break
-    else:raise ValueError('oracle queue frame budget exceeded')
+        if steps is None and complete and after>=post_frames:break
+    else:
+        if steps is None:raise ValueError('oracle queue frame budget exceeded')
     return dict(fps=fps,frames=frames,queueDurations=[q['duration'] for q in queue],constructedPhases=[copy.deepcopy(q['parameters']) for q in compile_queue(raw,easings)[1]])
 
 def cases(evidence):

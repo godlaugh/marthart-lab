@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import type {AnimationTrack,AnimationAction} from '../src/types';
 import type {SourceCameraScalars} from '../src/engine/sourceCamera';
-import {evaluateOrdinarySourceCameraTimeline as evaluate,resolveOrdinarySourceCameraTimeline as layout,OrdinarySourceCameraTimelineError,clearOrdinarySourceCameraTimelineCache} from '../src/engine/ordinarySourceCameraTimeline';
+import {evaluateOrdinarySourceCameraTimeline as evaluate,resolveOrdinarySourceCameraTimeline as layout,OrdinarySourceCameraTimelineError,OrdinarySourceCameraTimelineSession,clearOrdinarySourceCameraTimelineCache} from '../src/engine/ordinarySourceCameraTimeline';
 import {RootsSceneClock} from '../src/engine/rootsSceneClock';
 import goldens from './fixtures/source-camera/ordinary-timeline.json';
 const initial:SourceCameraScalars={phi:0,theta:.25,gamma:0,center:[1,2,3],zoom:1,focalDistance:20};
@@ -68,4 +68,27 @@ describe('ordinary source scalar camera queue',()=>{
   expect(errorCode(()=>evaluate({...initial,phi:NaN},[],4,0))).toBe('input');expect(errorCode(()=>evaluate(initial,[],120,86400))).toBe('capacity');
   const tracks=[clip([action('ambient',{thetaSpeed:.1})])],before=JSON.stringify(tracks);let checks=0;expect(()=>evaluate(initial,tracks,30,2,{isCancelled:()=>++checks===8})).toThrow('取消');expect(JSON.stringify(tracks)).toBe(before);
  });
+ it('owns one real-dt queue, initializes without update, and keeps paused/signed updates distinct from fixed replay',()=>{
+  const updates:number[]=[],tracks=[clip([action('ambient',{thetaSpeed:2})])],owner=new OrdinarySourceCameraTimelineSession(initial,tracks,60,{createParticles:()=>({bind(){return{kind:'ignored',reason:'unused'};},update(frame){updates.push(frame.deltaTime);}})});
+  expect(owner.snapshot()).toMatchObject({frameIndex:-1,sceneTime:0,camera:initial});expect(updates).toEqual([]);
+  expect(owner.step(.25)).toMatchObject({sceneTime:.25,activeDt:.25,rawDt:.25,camera:{theta:.375}});
+  expect(owner.step(5,{paused:true})).toMatchObject({sceneTime:.25,activeDt:0,rawDt:0,camera:{theta:.375}});expect(updates).toEqual([.25]);
+  expect(owner.step(-.125)).toMatchObject({sceneTime:.125,activeDt:-.125,rawDt:-.125,camera:{theta:.375}});expect(updates).toEqual([.25,-.125]);
+  expect(()=>owner.evaluate(1)).toThrow('实时队列');owner.reset();owner.evaluate(0);expect(()=>owner.step(.1)).toThrow('固定帧');
+ });
+
+ it('validates live initialization and cancellation before creating a provider',()=>{
+  let created=0,cancelled=true;const options={isCancelled:()=>cancelled,createParticles:()=>{created++;return{bind(){return{kind:'ignored' as const,reason:'unused'};},update(){}};}};
+  const owner=new OrdinarySourceCameraTimelineSession(initial,[],60,options);expect(()=>owner.snapshot()).toThrow('取消');expect(created).toBe(0);
+  cancelled=false;const malformed=new OrdinarySourceCameraTimelineSession(initial,[],NaN,options);expect(()=>malformed.snapshot()).toThrow('帧率');expect(created).toBe(0);
+  owner.snapshot();expect(created).toBe(1);cancelled=true;expect(()=>owner.snapshot()).toThrow('取消');expect(created).toBe(1);
+ });
+
+ it('skips bound tracking reads on zero and negative live camera intervals',()=>{
+  let x=4,reads=0;const owner=new OrdinarySourceCameraTimelineSession(initial,[clip([action('track',{index:0})])],60,{createParticles:()=>({bind:()=>({kind:'bound',readPosition:()=>{reads++;return[x,0,0];}}),update(){}})});
+  expect(owner.step(1).camera.center).toEqual([4,0,0]);const completedReads=reads;x=9;
+  expect(owner.step(0).camera.center).toEqual([4,0,0]);expect(owner.step(-.25).camera.center).toEqual([4,0,0]);expect(reads).toBe(completedReads);
+  expect(owner.step(.25).camera.center).toEqual([9,0,0]);expect(reads).toBe(completedReads+1);
+ });
+
 });

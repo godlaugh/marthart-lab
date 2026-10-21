@@ -105,13 +105,15 @@ Samila 新导入采用 `source-ndc-v1`：旋转后按 XY 缩放、物理画布�
 
 Samila 新导入还启用 `mathart-1.7.8` 数学版本：根 `samila` 数学对象整体优先、固定缺省公式、源公式解析，以及 26 种组合和 6 种投影。已有作品保持原数学行为。GPU 函数对照与 CPU 边界差异分开记录，随机流和原版整图仍待完成，见 [Samila 数学验证](docs/samila-source-math-validation.zh-CN.md)。
 
-新导入的 Samila 时间线使用独立源队列：未知片段占用等待时间，参数启动按初始值构造相位，完成后进入持续漂移，停止片段结束时统一停止。编辑器可修改参数上下界与步长；预览、采样和导出共用文档帧率。同值参数写入也会清屏，超过源阈值的变化使采样量增至六倍。旧作品保持原行为，独立帧参照与实际导出验证见 [Samila 时间线记录](docs/samila-source-timeline-validation.zh-CN.md)；原版实时线程和整图尚未验收。
+新导入的 Samila 时间线使用独立源队列：未知片段占用等待时间，参数启动按初始值构造相位，完成后进入持续漂移，停止片段结束时统一停止。编辑器可修改参数上下界与步长；启用源采样的实时预览按墙钟推进，冷重放和视频导出采用文档帧率。同值参数写入也会清屏，超过源阈值的变化使采样量增至六倍。旧作品保持原行为，独立帧参照与实际导出验证见 [Samila 时间线记录](docs/samila-source-timeline-validation.zh-CN.md)；原版实时线程和整图尚未验收。
 
 新导入 Samila 的 `samila-splat-1.7.8` 绘制版本采用源二维噪声表、1024 项色板、点／四边形散点核和固定 60 Hz 衰减公式。点尺寸读取 `spot_size`，按已呈现主画布的物理高度换算；PNG／视频导出沿用该参考高度。空色板使用源默认余弦分支，界面提供等距 RGB 色标和余弦系数；旧本地作品不自动迁移。散点累积对照与公开操作结果见 [Samila 绘制验证](docs/samila-source-splat-validation.zh-CN.md)。本地随机流和窗口热更新仍未完成原版整图验证。最终呈现的后续修正见下文。
 
 新导入 Samila 的 `samila-present-1.7.8` 呈现版本采用源浮点旋转取样、调色和目标混合。正常预览复制已合成 RGB；无公式 PNG 保留目标 RGBA，视频显式保留 RGB 并设置不透明传输。旧作品不会自动改变。GPU 原 shader 对照、实际界面和导出范围见 [Samila 最终呈现验证](docs/samila-source-presentation-validation.zh-CN.md)；CPU、大角度、原版 PNG 增强和原生整窗仍须区分。
 
-新导入 Samila 的 `samila-pcg-1.7.8` 采样版本在 GPU 上按源 PCG 生成坐标；六倍补采使用同一种子和连续样本编号。运行时取得新随机值，配置 seed／func_seed 不参与此采样；当前会话保留临时记录用于固定帧回放。重新打开、新导出或 Worker 重建会产生新的随机会话，作品 JSON 不保存这些临时种子。旧作品继续原采样行为。采样版本与原生每次 display 继续采样等剩余范围见 [Samila 随机采样验证](docs/samila-source-sampling-validation.zh-CN.md)。
+新导入 Samila 的 `samila-pcg-1.7.8` 采样版本在 GPU 上按源 PCG 生成坐标；六倍补采使用同一种子和连续样本编号。运行时取得新随机值，配置 seed／func_seed 不参与此采样；冷重放会话保留临时记录用于固定帧回放，实时预览每次绘制另取新随机字。重新打开、新导出或 Worker 重建会产生新的随机会话，作品 JSON 不保存这些临时种子。旧作品继续原采样行为。采样版本的早期验证及严格浮点差异见 [Samila 随机采样验证](docs/samila-source-sampling-validation.zh-CN.md)。
+
+源 Samila 的实时预览已接入独立热会话：参数、尺寸和外观编辑按各自规则保留或清空当前墨迹；暂停 PNG 复用场景并依次绘制导出画面和主预览。普通暂停／恢复通过独立后台消息保存、还原相机角度并重设计时，暂停等待不计入恢复后的推进。队列结束后参数停止更新，相机与绘制继续；改名和保存不额外采样。时间跳转仍是本地重建，视频仍独立重算。实测及边界见 [热显示与截图验证](docs/samila-hot-display-validation.zh-CN.md) 和 [实时播放验证](docs/samila-realtime-clock-validation.zh-CN.md)，原生调度、随机流与整窗一致性仍未证明。
 
 该采样版本的 GPU 在同一次绘制中完成采样、公式、映射、投影及旋转，并在 fragment 阶段取色；不再保存中间粒子坐标。跨上下文重复编译仍存在严格坐标差异，原 shader 自身也已复现；累积图像检查与坐标逐位检查分别记录，不宣称原生整图一致。直接绘制验证与保留限制见 [Samila GPU 直接绘制验证](docs/samila-direct-gpu-validation.zh-CN.md)。后续将分块统计留在 GPU 汇总，并复用固定纹理的完整性验证；已测大批次四边形约 49.7 → 15.4 ms，54 帧像素和统计不变，范围与成本见 [统计读回优化验证](docs/samila-direct-statistics-validation.zh-CN.md)。
 

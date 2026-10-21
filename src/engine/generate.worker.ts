@@ -38,6 +38,13 @@ self.onmessage = (
     // A failed release keeps the old owner and must still answer this request.
     if(recording&&(owner!==sessionId||!isPerlinRecordingOperation(operation)))throw new Error('Perlin 录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
+    if(event.data.operation==='samila-playback'){
+      const source=completed;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='samila'||!source.context.samilaLive?.clock||typeof event.data.paused!=='boolean')throw new Error('Samila 播放控制对应的实时主预览已过期');
+      temporalSession.sourceSamila.setPaused(event.data.paused);
+      completed={...source,context:{...source.context,samilaLive:{...source.context.samilaLive,clock:{...source.context.samilaLive.clock,paused:event.data.paused}}}};
+      send({operation:'samila-playback',id,sourceId:source.id,paused:event.data.paused});return;
+    }
     if(event.data.operation==='perlin-recording-begin'){
       if(recording)throw new Error('Perlin 录制已开始');
       const source=recordingSource=completed;

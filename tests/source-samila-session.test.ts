@@ -26,4 +26,22 @@ describe('Samila live display owner (GPU adapter boundary, not pixel parity)',()
  it('applies the complete runtime setter group and retains constructor-only trail decay',()=>{const gl=producer(),s=scene();s.settings.normalizedGamma=50;s.settings.colorPhase=-1;s.settings.showTrails=true;s.settings.trailLifetime=4;const owner=new SourceSamilaSession({samilaSeedProvider:()=>1});try{owner.generate(s,c);const edited={...s,settings:{...s.settings,background:'#123456',accumulationDecay:2}};expect(owner.generate(edited,c).samilaLive).toMatchObject({cleared:true,accumulationPasses:1});const tone=gl.present.mock.calls.at(-1)![0];expect(tone.model==='samila-normalized-v2'&&tone.tone.gamma).toBe(10);expect(gl.step.mock.calls.at(-1)![0].config.colorPhase).toBe(0);expect(gl.step.mock.calls.at(-1)![0].config.decay).toBe(1);}finally{owner.reset();}});
  it('retains a hot theta write during subsequent fixed-clock updates',()=>{producer();const s=scene(),owner=new SourceSamilaSession({samilaSeedProvider:()=>1});try{owner.generate(s,c);const angle={...s,settings:{...s.settings,samilaCameraTheta:1}};owner.generate(angle,c);expect(owner.generate(angle,{...c,time:1}).samilaView?.currentTheta).toBe(1);expect(owner.diagnostics().anchorTheta).toBe(0);}finally{owner.reset();}});
 
+ it('uses actual wall-clock intervals once per draw, preserves pause state and restores paused theta edits',()=>{producer();const s=scene(),owner=new SourceSamilaSession({samilaSeedProvider:()=>1}),at=(timestampMs:number,paused=false):GenerateContext=>({...c,samilaLive:{...c.samilaLive!,clock:{paused,timestampMs}}});try{
+  expect(owner.generate(s,at(1000)).samilaLive?.runtime).toMatchObject({sceneTime:0,rawDt:0,updates:1});
+  expect(owner.generate(s,at(1250)).samilaLive?.runtime).toMatchObject({sceneTime:.25,rawDt:.25,updates:2});
+  expect(()=>owner.generate(s,at(2000,true))).toThrow('独立');expect(owner.matchesCompletedPrimary(s,at(1250))).toBe(true);
+  owner.setPaused(true);const paused=at(1250,true);expect(owner.matchesCompletedPrimary(s,paused)).toBe(true);expect(owner.capturePaused(s,paused).preview.samilaLive?.runtime?.updates).toBe(2);
+  const edited={...s,settings:{...s.settings,samilaCameraTheta:2}};expect(owner.generate(edited,at(5000,true)).samilaView?.currentTheta).toBe(2);
+  owner.setPaused(false,10000);const resumed=owner.generate(edited,at(10250));expect(resumed.samilaView?.currentTheta).toBe(0);expect(resumed.samilaLive?.runtime).toMatchObject({sceneTime:.5,rawDt:.25,updates:4});
+ }finally{owner.reset();}});
+ it('does not run the initial queue while paused and has no implicit fixed frame at real time zero',()=>{producer();const s=scene();s.timeline.tracks=[{id:'a',type:'animate',target:'',from:0,to:0,start:0,duration:1,easing:'linear',enabled:true,pingPong:false,actions:[{id:'ambient',method:'ambient',args:{thetaSpeed:2}}]}];const owner=new SourceSamilaSession({samilaSeedProvider:()=>1}),at=(timestampMs:number,paused:boolean):GenerateContext=>({...c,samilaLive:{...c.samilaLive!,clock:{paused,timestampMs}}});try{
+  const first=owner.generate(s,at(1000,true));expect(first.samilaLive?.runtime).toMatchObject({sceneTime:0,rawDt:0,theta:0});owner.setPaused(false,2000);const next=owner.generate(s,at(2500,false));expect(next.samilaLive?.runtime).toMatchObject({sceneTime:.5,rawDt:.5,theta:.5});
+ }finally{owner.reset();}});
+
+ it('keeps real wall-clock rollback and elapsed times beyond the cold replay window displayable',()=>{producer();const s=scene(),owner=new SourceSamilaSession({samilaSeedProvider:()=>1}),at=(timestampMs:number,time=0):GenerateContext=>({...c,time,samilaLive:{...c.samilaLive!,clock:{paused:false,timestampMs}}});try{
+  owner.generate(s,at(1000));const rollback=owner.generate(s,at(500));expect(rollback.temporal?.time).toBe(-.5);expect(rollback.samilaLive?.runtime?.sceneTime).toBe(-.5);
+  const future=owner.generate(s,at(90001000,-.5));expect(future.temporal?.time).toBe(90000);expect(future.samilaLive?.runtime?.sceneTime).toBe(90000);
+  expect(owner.generate(s,at(90001250,90000)).temporal?.time).toBe(90000.25);
+ }finally{owner.reset();}});
+
 });

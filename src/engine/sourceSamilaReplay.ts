@@ -63,16 +63,18 @@ export function resolveSourceSamilaTimeline(scene:SceneDocument):SceneDocument['
  return{...scene.timeline,schedule:SAMILA_SCENE_SEQUENCE,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(track=>{const clip=byId.get(track.id);return clip?{...track,start:clip.start,duration:clip.duration}:track;})};
 }
 
-/** An independently owned fixed source queue for a hot display session. Drawing
- * does not advance it; repeated times retain writes, drift and constructor phases. */
+/** An owned source queue shared by fixed replay and explicit real-dt sessions.
+ * Display is separate; parameter constructors and drift retain their lifetime. */
 export class SourceSamilaTimelineSession {
  private owner:Owner;
- constructor(scene:SceneDocument){this.owner=createOwner(scene);}
- evaluate(time:number):SourceSamilaFrame {
-  this.owner.work=0;const frame=this.owner.session.evaluate(time),snapshot=this.owner.runtime!.snapshot();
-  return{...frame,parameters:snapshot.parameters,parameterWrites:this.owner.frameWrites,parameterWriteRevision:snapshot.writeRevision};
- }
- writeParameter(name:string,value:number):void {if(!this.owner.runtime)this.evaluate(0);this.owner.runtime!.write(name,value);}
- writeTheta(theta:number):void {if(!this.owner.runtime)this.evaluate(0);this.owner.session.writeTheta(theta);}
- reset():void{this.owner.session.reset();}
+ constructor(scene:SceneDocument,private readonly live=false){this.owner=createOwner(scene);if(live)this.owner.session.snapshot();}
+ private facts(frame:OrdinarySourceCameraFrame):SourceSamilaFrame {const snapshot=this.owner.runtime!.snapshot();return{...frame,parameters:snapshot.parameters,parameterWrites:this.owner.frameWrites,parameterWriteRevision:snapshot.writeRevision};}
+ evaluate(time:number):SourceSamilaFrame {this.owner.work=0;return this.facts(this.owner.session.evaluate(time));}
+ snapshot():SourceSamilaFrame {return this.facts(this.owner.session.snapshot());}
+ step(dt:number,paused:boolean):SourceSamilaFrame {this.owner.work=0;return this.facts(this.owner.session.step(dt,{paused}));}
+ reconstruct(time:number):SourceSamilaFrame {this.owner.work=0;return this.facts(this.owner.session.reconstruct(time));}
+ writeParameter(name:string,value:number):void {if(!this.owner.runtime){if(this.live)this.snapshot();else this.evaluate(0);}this.owner.runtime!.write(name,value);}
+ writeTheta(theta:number):void {this.writeAngles({theta});}
+ writeAngles(angles:Partial<Pick<SourceCameraScalars,'phi'|'theta'|'gamma'>>):void {if(!this.owner.runtime){if(this.live)this.snapshot();else this.evaluate(0);}this.owner.session.writeAngles(angles);}
+ reset():void{this.owner.session.reset();this.owner.runtime=undefined;this.owner.work=0;this.owner.frameWrites=0;this.owner.writesBeforeFrame=0;}
 }

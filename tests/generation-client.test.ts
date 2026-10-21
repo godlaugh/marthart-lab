@@ -175,3 +175,30 @@ describe('Samila live capture capability',()=>{
   }
  });
 });
+
+describe('Samila independent playback capability',()=>{
+ const live:SceneOutput={...output,samilaLive:{sessionId:'live',target:'primary',displayIndex:3,accumulationPasses:4,anchorTheta:0,parameterChanged:false,cleared:false,clock:'realtime-source-queue'}};
+ async function ready(){
+  const g=setup(),p=g.generate(createScene(definition('samila')),{...ctx,samilaLive:{sessionId:'live',pixelDensity:1,clock:{paused:false}}}),w=FakeWorker.instances[0],r=w.messages[0];
+  w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:live});await p;return{g,w,r};
+ }
+ it('controls the exact completed source without renewing it or generating pixels',async()=>{
+  const {g,w,r}=await ready();await expect(g.setSamilaPaused({...live},true)).rejects.toThrow('已完成');
+  for(const paused of [true,false,true]){
+   const p=g.setSamilaPaused(live,paused),c=w.messages.at(-1)!;expect(c).toMatchObject({operation:'samila-playback',sourceId:r.id,paused});
+   await expect(g.generate(createScene(definition('samila')),ctx)).rejects.toThrow('尚未完成');
+   await expect(g.captureSamilaPaused(live,{width:1,height:1})).rejects.toThrow('尚未完成');
+   w.emit({operation:'samila-playback',sessionId:c.sessionId,id:c.id,sourceId:r.id,paused});await p;
+  }
+  const capture=g.captureSamilaPaused(live,{width:1,height:1}),c=w.messages.at(-1)!;expect(c).toMatchObject({operation:'samila-paused-capture',sourceId:r.id});
+  w.emit({operation:'samila-paused-capture',sessionId:c.sessionId,id:c.id,result:{capture:live,preview:{...live}}});await capture;g.dispose();
+ });
+ it.each(['source','paused','operation','error','send'] as const)('retires uncertain playback ownership after %s failure',async failure=>{
+  const {g,w,r}=await ready();if(failure==='send')w.postMessage=()=>{throw Error('send failed');};
+  const p=g.setSamilaPaused(live,true).catch(e=>e),c=w.messages.at(-1)!;
+  if(failure==='error')w.emit({operation:'samila-playback',sessionId:c.sessionId,id:c.id,error:'failed',retainedSourceId:r.id});
+  else if(failure==='operation')w.emit({operation:'generate',sessionId:c.sessionId,id:c.id,output:live});
+  else if(failure!=='send')w.emit({operation:'samila-playback',sessionId:c.sessionId,id:c.id,sourceId:failure==='source'?999:r.id,paused:failure!=='paused'});
+  expect(await p).toBeInstanceOf(Error);expect(w.terminated).toBe(true);await expect(g.setSamilaPaused(live,false)).rejects.toThrow('已完成');g.dispose();
+ });
+});

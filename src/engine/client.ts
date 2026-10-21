@@ -12,6 +12,7 @@ function recordingRaster(value:unknown):value is PerlinRecordingRaster {
 }
 type Completed={id:number;scene:SceneDocument;output:SceneOutput};
 type Pending =
+  | {operation:'samila-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'perlin-recording-begin';source:Completed;handle:PerlinRecordingHandle;resolve:(value:PerlinRecordingStart)=>void;reject:(error:Error)=>void}
   | {operation:'perlin-recording-frame';handle:PerlinRecordingHandle;displayFrame:number;resolve:(value:PerlinRecordingRaster)=>void;reject:(error:Error)=>void}
   | {operation:'perlin-recording-finish';handle:PerlinRecordingHandle;resolve:(value:PerlinRecordingStop)=>void;reject:(error:Error)=>void}
@@ -30,6 +31,7 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:PerlinRecordingHandle;usable:boolean};
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='samila-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new PerlinRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
@@ -48,6 +50,15 @@ export class Generator {
       if (data.sessionId !== this.sessionId) return;
       const p = this.pending.get(data.id);
       if (!p) return;
+      if(p.operation==='samila-playback'){
+        // A control acknowledgement changes the clock, not the completed image
+        // capability. Any uncertain acknowledgement retires this worker so a
+        // later draw cannot silently use an unknown paused/running state.
+        if(data.operation!=='samila-playback'||'error' in data||data.sourceId!==p.source.id||data.paused!==p.paused||data.id!==this.currentInputId){
+          this.invalidate(new Error('error' in data?data.error:'Samila 后台播放响应身份不匹配'));return;
+        }
+        this.pending.delete(data.id);this.completed=p.source;p.resolve();return;
+      }
       if(isPerlinRecordingOperation(p.operation)&&'handle' in p){
         const matching=data.operation===p.operation&&('error' in data||('recordingId' in data&&data.recordingId===p.handle.recordingId&&(p.operation!=='perlin-recording-frame'||('displayFrame' in data&&data.displayFrame===p.displayFrame))));
         if(!matching){this.invalidate(new PerlinRecordingOperationError('Perlin 后台录制响应身份不匹配',false,false));return;}
@@ -124,6 +135,7 @@ export class Generator {
     onStatus?: (status: GenerationStatus) => void,
   ): Promise<SceneOutput> {
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能生成其它场景'));
+    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
     this.ensure();
     const id = ++this.counter;
     this.currentInputId=id;this.completed=undefined;
@@ -143,6 +155,17 @@ export class Generator {
   }
   captureSamilaPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{
     return this.capturePaused('samila-paused-capture',output,size,scale);
+  }
+  setSamilaPaused(output:SceneOutput,paused:boolean):Promise<void>{
+    const source=this.completed;
+    if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||source.scene.kind!=='samila'||output.type!=='raster'||output.samilaLive?.target!=='primary'||output.samilaLive.clock!=='realtime-source-queue')
+      return Promise.reject(new Error('Samila 播放控制需要当前已完成的实时主预览'));
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{
+      this.pending.set(id,{operation:'samila-playback',source,paused,resolve,reject});
+      try{this.worker!.postMessage({operation:'samila-playback',sessionId:this.sessionId,id,sourceId:source.id,paused} satisfies GenerationRequest);}
+      catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}
+    });
   }
   private capturePaused(operation:PausedCaptureOperation,output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能截图'));
@@ -198,6 +221,7 @@ export class Generator {
   }
   searchStable(scene: SceneDocument, options: StableSearchOptions = {}, onProgress?: (progress: StableSearchProgress) => void): Promise<StableSearchResult> {
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
+    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
     this.ensure();
     const id = ++this.counter;
     return new Promise((resolve, reject) => {
@@ -208,6 +232,7 @@ export class Generator {
   }
   planSpirographRecording(scene:SceneDocument,startFrame:number,fps:number):Promise<SpirographRecordingPlan>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
+    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
     this.ensure();const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'spirograph-recording-plan',resolve,reject});
@@ -217,6 +242,7 @@ export class Generator {
   }
   planPerlinFreshRecording(scene:SceneDocument,simulationFps:number,encoderFps:number):Promise<PerlinFreshRecordingPlan>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
+    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
     this.ensure();const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'perlin-recording-plan',resolve,reject});
@@ -226,6 +252,7 @@ export class Generator {
   }
   planRootsFreshRecording(scene:SceneDocument,simulationFps:number,encoderFps:number):Promise<RootsFreshRecordingPlan>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
+    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
     this.ensure();const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'roots-recording-plan',resolve,reject});
@@ -235,6 +262,7 @@ export class Generator {
   }
   exploreComplex(scene: SceneDocument, options: ComplexExploreOptions, onProgress?: (progress: ComplexExploreProgress) => void): Promise<ComplexExploreResult> {
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能执行其它后台任务'));
+    if(this.playbackPending())return Promise.reject(new Error('Samila 播放状态切换尚未完成'));
     this.ensure();
     const id = ++this.counter;
     return new Promise((resolve, reject) => {

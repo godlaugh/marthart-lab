@@ -203,6 +203,7 @@ export default function App() {
     [busy, setBusy] = useState(false),
     [previewCancelled,setPreviewCancelled] = useState(false),
     [generationRevision,setGenerationRevision] = useState(0),
+    [samilaTickRevision,setSamilaTickRevision] = useState(0),
     [renderTime,setRenderTime]=useState(0),
     [error, setError] = useState(""),
     [playhead, setPlayhead] = useState(0),
@@ -334,8 +335,15 @@ export default function App() {
     setToast(t(message));
   }
   const rootsSessionId=useRef(crypto.randomUUID());
-  const samilaSessionId=useRef(crypto.randomUUID()),samilaDirtyRevision=useRef(0),samilaDisplayRequested=useRef(false);
-  function replaceSamilaSession(){samilaSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;}
+  const samilaSessionId=useRef(crypto.randomUUID()),samilaDirtyRevision=useRef(0),samilaDisplayRequested=useRef(false),samilaLastFrameAt=useRef<number|undefined>(undefined),samilaPlaybackTransition=useRef<object|undefined>(undefined);
+  function replaceSamilaSession(){samilaSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;samilaPlaybackTransition.current=undefined;samilaLastFrameAt.current=undefined;}
+  function interruptSamilaPlayback(){
+    if(!usesSourceSamilaSampling(sceneRef.current))return;
+    playingRef.current=false;setPlaying(false);replaceSamilaSession();
+    // A failed/cancelled live clock is no longer a retained ink session. Retry
+    // uses the visible playhead as an explicit local reconstruction start.
+    generationQueue.current?.cancel();setPreviewCancelled(true);
+  }
   function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceSamilaSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
   function edit(next: SceneDocument, samilaDirty=false, samilaDisplay=true) {
@@ -474,6 +482,22 @@ export default function App() {
   function play(value:boolean) {
     if(value&&experience.error){setToast(t(experience.error));return;}
     autoPlayPending.current=false;
+    if(usesSourceSamilaSampling(sceneRef.current)){
+      if(samilaPlaybackTransition.current)return;
+      const queue=generationQueue.current;if(!queue)return;
+      const ticket={},sessionId=samilaSessionId.current;samilaPlaybackTransition.current=ticket;
+      // Stop scheduling immediately; a running display completes before the
+      // queue acknowledges pause. Resume starts scheduling only after its ack.
+      playingRef.current=false;setPlaying(false);
+      void queue.setSamilaPaused(!value).then(()=>{
+        if(samilaPlaybackTransition.current!==ticket||samilaSessionId.current!==sessionId)return;
+        samilaLastFrameAt.current=undefined;playingRef.current=value;setPlaying(value);
+        if(value)setPickingJulia(false);
+      }).catch(error=>{
+        if(samilaPlaybackTransition.current===ticket&&error.name!=='AbortError')setError(error instanceof Error?error.message:String(error));
+      }).finally(()=>{if(samilaPlaybackTransition.current===ticket)samilaPlaybackTransition.current=undefined;});
+      return;
+    }
     if(sourceBouncing){
       retireBouncingGesture();
       setBouncingNavigation(setSourceBouncingPaused(bouncingNavigationRef.current,!value));
@@ -601,6 +625,13 @@ export default function App() {
       // Start/resume/recording anchors use performance.now(). RAF's frame
       // timestamp can precede those anchors, so use RAF only for scheduling.
       const now=performance.now();
+      if(usesSourceSamilaSampling(sceneRef.current)){
+        const last=samilaLastFrameAt.current;
+        if(!generationPending.current&&!samilaPlaybackTransition.current&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
+          samilaLastFrameAt.current=now;generationPending.current=true;setSamilaTickRevision(value=>value+1);
+        }
+        id=requestAnimationFrame(tick);return;
+      }
       if(usesSourceBouncing(sceneRef.current)){
         const last=bouncingLastFrameAt.current;
         if(generationPending.current||!bouncingPresented.current||last!==undefined&&now-last<1000/renderPreferences.frameRate){id=requestAnimationFrame(tick);return;}
@@ -628,7 +659,14 @@ export default function App() {
   }, [playing, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
-      output:(output,time,source)=>{setOutput(output);setOutputScene(source);setRenderTime(time);setError('');},
+      output:(output,time,source)=>{
+        setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
+        // The worker's scene clock owns elapsed time. Updating the displayed
+        // playhead must not itself request another random display.
+        if(output.type==='raster'&&output.samilaLive?.clock==='realtime-source-queue'){
+          timeRef.current=time;playbackClock.current=time;setTime(time);
+        }
+      },
       recordingStopped:(result,originalScene)=>{
         // The queue finishes the owned recording even if its dialog unmounted.
         // Do not replace a document the user selected or edited meanwhile.
@@ -639,7 +677,7 @@ export default function App() {
         timeRef.current=result.context.time;playbackClock.current=result.context.time;
         setTime(result.context.time);setPreviewCancelled(false);
       },
-      error:error=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();setError(error.message);setPlaying(false);},
+      error:error=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();interruptSamilaPlayback();playingRef.current=false;setError(error.message);setPlaying(false);},
       busy:value=>{generationPending.current=value;setGenerationActive(value);setBusy(value&&!playingRef.current);},
     });
     generationQueue.current=queue;
@@ -655,11 +693,11 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceSplat?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:samilaSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!samilaDisplayRequested.current?'metadata':undefined);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:samilaSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!samilaDisplayRequested.current?'metadata':undefined);
     samilaDisplayRequested.current=false;
-  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:usesSourceSamilaSampling(scene)||playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
+  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:usesSourceSamilaSampling(scene)?samilaTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
-    if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;playbackStartedAt.current=performance.now();setPlaying(true);}
+    if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;play(true);}
   },[output,outputScene,presentedSource,scene,generationActive,error,recording,previewCancelled]);
   const entries =
     category === "saved" || category === "favorites"
@@ -722,12 +760,12 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":"实时录制")} onClick={()=>{autoPlayPending.current=false;setPlaying(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
             autoPlayPending.current=false;
-            if(sourceBouncing)play(false);else {playingRef.current=false;setPlaying(false);}
+            if(sourceBouncing||usesSourceSamilaSampling(sceneRef.current))play(false);else {playingRef.current=false;setPlaying(false);}
             setExporting(true);
           }}
         >
@@ -956,7 +994,7 @@ export default function App() {
                 setPresentedSource(frame?.source??null);setPresentedOutput(frame?output:null);
                 if(usesSourceBouncing(sceneRef.current))bouncingPresented.current=!!frame&&frame.source===sceneRef.current&&outputScene===sceneRef.current&&output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingFrame.current.simulationUpdates&&output?.sourceBouncingFrame?.checkpoint.sceneTime===bouncingFrame.current.sceneTime&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view);
               }}
-              onRenderError={message=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();setPlaying(false);setError(message);}}
+              onRenderError={message=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();interruptSamilaPlayback();setPlaying(false);setError(message);}}
               scene={scene}
               playing={playing}
               renderPending={generationActive}
@@ -997,7 +1035,7 @@ export default function App() {
             {busy && (
               <div className="rendering-badge">
                 <span className="spinner" />{t("计算几何…")}
-                <button onClick={()=>{interruptSourceBouncingInteraction();generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
+                <button onClick={()=>{interruptSourceBouncingInteraction();interruptSamilaPlayback();generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
               </div>
             )}
             {previewCancelled&&<div className="rendering-badge" role="status"><span>{t('计算已取消；当前画布保留取消前的预览。')}</span><button onClick={()=>setGenerationRevision(value=>value+1)}>{t('重新计算')}</button></div>}
@@ -1440,7 +1478,7 @@ export default function App() {
       {recording&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
-        onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}
+        onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(usesSourceSamilaSampling(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}
         onClose={()=>setRecording(false)}/>}
       {showSettings && (
         <div

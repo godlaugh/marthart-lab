@@ -228,10 +228,11 @@ export class RootsSceneClock {
 
   reset():void {this.state=fresh(this.initial,this.initialOffset,this.clips.length===0);}
 
-  step(rawDt:number,options:{paused?:boolean;isCancelled?:()=>boolean}={}):RootsSceneFrame {
+  step(rawDt:number,options:{paused?:boolean;isCancelled?:()=>boolean;allowSignedDt?:boolean}={}):RootsSceneFrame {
     cancelled(options.isCancelled);
     const dt=finiteFloat(rawDt,'帧间隔');
-    if(dt<0)throw new RootsSceneClockError('input','Roots 相机帧间隔不能为负');
+    if(options.allowSignedDt!==undefined&&typeof options.allowSignedDt!=='boolean')throw new RootsSceneClockError('input','源时钟有符号间隔选项无效');
+    if(dt<0&&!options.allowSignedDt)throw new RootsSceneClockError('input','Roots 相机帧间隔不能为负');
     if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new RootsSceneClockError('input','Roots 相机暂停状态必须为布尔值');
     if(this.state.frame>=Number.MAX_SAFE_INTEGER)throw new RootsSceneClockError('capacity','Roots 相机帧序号超过安全整数容量');
     const next=copy(this.state);

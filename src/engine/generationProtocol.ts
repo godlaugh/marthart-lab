@@ -51,6 +51,7 @@ export const pausedCaptureContracts={
 type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Operation;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5} }[PausedCaptureOperation];
 export type GenerationRequest = { sessionId: number } & (
   | { operation: 'generate'; id: number; scene: SceneDocument; context: GenerationInput; wantsStatus?:true }
+  | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
   | PausedCaptureRequest
   | {operation:'perlin-recording-begin';id:number;sourceId:number;options:PerlinRecordingOptions}
   | {operation:'perlin-recording-frame';id:number;recordingId:number;displayFrame:number}
@@ -61,6 +62,7 @@ export type GenerationRequest = { sessionId: number } & (
   | { operation: 'roots-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
 export type GenerationPayload =
+  | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'perlin-recording-begin';id:number;recordingId:number;result:Omit<PerlinRecordingStart,'handle'>}
   | {operation:'perlin-recording-frame';id:number;recordingId:number;displayFrame:number;output:PerlinRecordingRaster}
   | {operation:'perlin-recording-finish';id:number;recordingId:number;result:PerlinRecordingStop}
