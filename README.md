@@ -111,7 +111,9 @@ Samila 新导入还启用 `mathart-1.7.8` 数学版本：根 `samila` 数学对�
 
 新导入 Samila 的 `samila-present-1.7.8` 呈现版本采用源浮点旋转取样、调色和目标混合。正常预览复制已合成 RGB；无公式 PNG 保留目标 RGBA，视频显式保留 RGB 并设置不透明传输。旧作品不会自动改变。GPU 原 shader 对照、实际界面和导出范围见 [Samila 最终呈现验证](docs/samila-source-presentation-validation.zh-CN.md)；CPU、大角度、原版 PNG 增强和原生整窗仍须区分。
 
-新导入 Samila 的 `samila-pcg-1.7.8` 采样版本在 GPU 上按源 PCG 生成坐标；六倍补采使用同一种子和连续样本编号。运行时取得新随机值，配置 seed／func_seed 不参与此采样；当前会话保留临时记录用于固定帧回放。重新打开、新导出或 Worker 重建会产生新的随机会话，作品 JSON 不保存这些临时种子。旧作品继续原采样行为。当前 GPU 在默认及普通范围仍有坐标舍入差异，未达到逐位一致。验证及原生每次 display 继续采样等剩余范围见 [Samila 随机采样验证](docs/samila-source-sampling-validation.zh-CN.md)。
+新导入 Samila 的 `samila-pcg-1.7.8` 采样版本在 GPU 上按源 PCG 生成坐标；六倍补采使用同一种子和连续样本编号。运行时取得新随机值，配置 seed／func_seed 不参与此采样；当前会话保留临时记录用于固定帧回放。重新打开、新导出或 Worker 重建会产生新的随机会话，作品 JSON 不保存这些临时种子。旧作品继续原采样行为。采样版本与原生每次 display 继续采样等剩余范围见 [Samila 随机采样验证](docs/samila-source-sampling-validation.zh-CN.md)。
+
+该采样版本的 GPU 在同一次绘制中完成采样、公式、映射、投影及旋转，并在 fragment 阶段取色；不再保存中间粒子坐标。跨上下文重复编译仍存在严格坐标差异，原 shader 自身也已复现；累积图像检查与坐标逐位检查分别记录，不宣称原生整图一致。当前验证、成本对比与保留限制见 [Samila GPU 直接绘制验证](docs/samila-direct-gpu-validation.zh-CN.md)。
 
 映射和对称混沌的连续模式可启用归一化调色，以完成的批次数和保存的参考画布尺寸计算亮度。白点与归一化模式各自保留参数；切回单批次时使用白点参数。GPU 调色遇到精度敏感像素时会回退到 CPU，并在状态栏说明原因。5 百万粒子、原生 4K 已验证，但默认 gamma 的回退开销仍影响速度。
 

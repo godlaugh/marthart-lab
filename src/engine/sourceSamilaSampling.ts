@@ -39,12 +39,6 @@ export function sourceSamilaPcgHash(value:number):number {const state=(Math.imul
 export function sourceSamilaSample(frameSeed:number,sampleId:number,lo:number,hi:number):[number,number] {
  if(!Number.isSafeInteger(sampleId)||sampleId<0||sampleId>0x7fffffff)throw Error('源 Samila sample ID 无效');const seed=uint(frameSeed),x=sourceSamilaPcgHash((sampleId^seed)>>>0),y=sourceSamilaPcgHash(x),span=F(F(hi)-F(lo));return[x,y].map(hash=>F(F(lo)+F(F(F(hash)/F(0xffffffff))*span))) as [number,number];
 }
-export const SOURCE_SAMILA_SAMPLING_GLSL=`
-uniform uint sourceSamilaFrameSeed,sourceSamilaSampleOffset;uniform vec2 sourceSamilaRange;
-// Local consumer validity check, applied after formula/projection rather than
-// to unused random inputs. Builtins preserve isnan/isinf behavior but do not
-// guarantee shader floating-point lowering parity with the original program.
-bool sourceSamilaFiniteResult(vec3 value){return !any(isnan(value))&&!any(isinf(value));}
-uint sourceSamilaPcgHash(uint v){uint state=v*747796405u+2891336453u;uint word=((state>>((state>>28u)+4u))^state)*277803737u;return(word>>22u)^word;}
-vec3 sourceSamilaSample(uint sampleId){uint id=sampleId^sourceSamilaFrameSeed;uint hashX=sourceSamilaPcgHash(id);float posX=sourceSamilaRange.x+float(hashX)/float(0xFFFFFFFFu)*(sourceSamilaRange.y-sourceSamilaRange.x);float posY=sourceSamilaRange.x+float(sourceSamilaPcgHash(hashX))/float(0xFFFFFFFFu)*(sourceSamilaRange.y-sourceSamilaRange.x);return vec3(posX,posY,0.);}
+export const SOURCE_SAMILA_PCG_GLSL=`uint sourceSamilaPcgHash(uint v){uint state=v*747796405u+2891336453u;uint word=((state>>((state>>28u)+4u))^state)*277803737u;return(word>>22u)^word;}
+float sourceSamilaRandFloat(uint seed){return float(sourceSamilaPcgHash(seed))/float(0xFFFFFFFFu);}
 `;

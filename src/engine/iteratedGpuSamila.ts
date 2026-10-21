@@ -37,15 +37,22 @@ function projectionSource(projection:string):string {
  throw new Error('Samila GPU 投影尚未解析或不支持');
 }
 
+/** Shared source AST binding and scalar uniform ABI for staged and direct GPU consumers. */
+export function prepareSourceSamilaGpuMath(field:SamilaField){
+ if(field.mathModel!==SOURCE_SAMILA_MATH_MODEL)throw Error('源 Samila GPU 数学版本无效');
+  const selection=resolveSourceSamilaSelection(field.mapping,field.projection),expressions=prepareSourceSamilaExpressions(field.equations,Object.keys(field.parameters)),bound=expressions.bind(field.parameters);
+  if(!finite32(field.rotation))throw Error('源 Samila 旋转超出 Float32');
+  const uniforms:Record<string,number>={...bound.uniforms,mappingA:sourceSamilaUniform(field.parameters.a),mappingB:sourceSamilaUniform(field.parameters.b),mappingC:sourceSamilaUniform(field.parameters.c),mappingD:sourceSamilaUniform(field.parameters.d),sourceSamilaRotation:field.rotation};
+  return{selection,expressions,uniforms};
+}
+
 /** Safe GLSL adapter for the producer's resolved Samila field. Seed coordinates
  * are supplied by the caller; this helper does not sample Settings or RNG.
  * Caller supplies glslRealPrelude and bit-based finiteFloat/finiteVector. */
 export function compileSamilaGpuField(field:SamilaField):SamilaGpuField {
  if(field.mathModel!==undefined){
   if(field.mathModel!==SOURCE_SAMILA_MATH_MODEL)throw Error('源 Samila GPU 数学版本无效');
-  const selection=resolveSourceSamilaSelection(field.mapping,field.projection),expressions=prepareSourceSamilaExpressions(field.equations,Object.keys(field.parameters)),bound=expressions.bind(field.parameters);
-  if(!finite32(field.rotation))throw Error('源 Samila 旋转超出 Float32');
-  const uniforms:Record<string,number>={...bound.uniforms,mappingA:sourceSamilaUniform(field.parameters.a),mappingB:sourceSamilaUniform(field.parameters.b),mappingC:sourceSamilaUniform(field.parameters.c),mappingD:sourceSamilaUniform(field.parameters.d),sourceSamilaRotation:field.rotation};
+  const {selection,expressions,uniforms}=prepareSourceSamilaGpuMath(field);
   const math=sourceSamilaMathGlsl.replace('uniform int sourceSamilaMode,sourceSamilaProjection;',`const int sourceSamilaMode=${selection.modeIndex},sourceSamilaProjection=${selection.projectionIndex};`);
   const source=`${Object.keys(uniforms).map(name=>`uniform float ${name};`).join('\n')}
 ${math}

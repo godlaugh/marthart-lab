@@ -1,5 +1,7 @@
 # Samila 随机采样与六倍补采验证
 
+本文保留提交 `eae5fdc` 的历史验收结果，包括严格坐标检查失败。后续生产路径改为同一 GPU 绘制，原 shader 自身的重复编译差异及新验证结果见 [GPU 直接绘制验证](samila-direct-gpu-validation.zh-CN.md)。以下旧结果不表示当前代码已重新执行相同协议。
+
 这一批修正 2.0 Samila 的样本生成规则。原版参数变化后的六倍补采，是一个随机种子下连续的六倍样本；之前本地把它当成六个独立随机批次，图案会不同。新导入采用独立版本 `samila-pcg-1.7.8`，已有本地作品不自动升级。
 
 ## 行为与范围
@@ -63,11 +65,14 @@ PNG 下载字节与对应 Worker RGBA 完全相同；视频上传保持对应目
 
 开发接口 `parseLegacyScene(text, {samilaSampling:'legacy-v1'})` 保留旧采样导入；加载和保存未标记的本地作品不会自动添加新版本。新版本与源数学、NDC、splat 及 bounded-v2 历史共同验证，未知版本或不完整组合明确报错。
 
-从 `studio/` 目录复跑，先生成原包参照，再验证生产路径：
+当前验证入口已升级为同阶段坐标协议。从 `studio/` 目录复跑，使用固定原包和已准备的原包字节码证据，先生成噪声／色板及绘制参照：
 
 ```sh
+python3 scripts/source-samila-noise-oracle.py
+node scripts/source-samila-palette-oracle.mjs
 node scripts/build-samila-sampler-oracle.mjs .cache/samila-sampler-oracle
-node scripts/verify-source-samila-sampler.mjs .cache/source-samila-sampler .cache/samila-sampler-oracle/fixture.json
+node scripts/build-samila-direct-oracle.mjs .cache/samila-direct-oracle
+node scripts/verify-source-samila-sampler.mjs .cache/source-samila-sampler .cache/samila-sampler-oracle/fixture.json .cache/samila-direct-oracle/fixture.json
 node scripts/verify-samila-source-math-public.mjs .cache/samila-sampling-public --splat --timeline
 ```
 
