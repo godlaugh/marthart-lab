@@ -76,6 +76,7 @@ type IteratedPlaybackRequest={ [Operation in IteratedPlaybackOperation]:{operati
 type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Operation;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5} }[PausedCaptureOperation];
 export type GenerationRequest = { sessionId: number } & (
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
+  | {operation:'surface-parameter';id:number;sourceId:number;name:string;value:number}
   | {operation:'surface-current';id:number;sourceId:number}
   | {operation:'domain-navigation';id:number;sourceId:number;event:import('./sourceDomainLiveSession').SourceDomainNavigationEvent}
   | {operation:'domain-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
@@ -98,6 +99,7 @@ export type GenerationRequest = { sessionId: number } & (
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
 export type GenerationPayload =
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean}
+  | {operation:'surface-parameter';id:number;sourceId:number}
   | {operation:'surface-current';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-navigation';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-parameters';id:number;sourceId:number}

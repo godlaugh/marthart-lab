@@ -40,7 +40,7 @@ function context(c:GenerateContext):SourceSurfaceLiveContext {
 }
 /** Retains the exact numerical producer, bound targets and queue across worker
  * requests. Fixed/offscreen rendering has a separate owner. No raster target,
- * encoder, native UI edit/reload contract or automatic App opt-in lives here. */
+ * encoder, full native reload lifecycle or automatic App opt-in lives here. */
 export class SourceSurfaceLiveSession {
  private owned?:Owned;
  private completed?:{sceneId:string;context:GenerationInput};
@@ -75,6 +75,15 @@ export class SourceSurfaceLiveSession {
   validateSourceSceneClockRequest({paused,timestampMs});
   const own=this.owned;
   try{const restore=own.clock.setPaused(paused,own.queue.snapshot().camera,timestampMs);if(restore)own.queue.writeAngles(restore);this.completed.context.surfaceLive!.clock={...this.completed.context.surfaceLive!.clock,paused};}
+  catch(error){this.failed=true;this.completed=undefined;throw error;}
+ }
+ /** Original MathArt.updateParameter writes the current function only. Staged
+  * document configuration and the original action target retain their owners. */
+ updateParameter(scene:SceneDocument,c:GenerateContext,name:string,value:number):void {
+  if(!this.matchesCompletedPrimary(scene,c))throw Error('曲面参数修改需要匹配的已完成主预览');
+  this.owned!.clock.assertPaused(context(c).clock.paused);
+  if(typeof name!=='string'||typeof value!=='number'||!Number.isFinite(value))throw Error('曲面参数修改需要字符串名称和有限数值');
+  try{this.owned!.producer.updateParameter(name,value);}
   catch(error){this.failed=true;this.completed=undefined;throw error;}
  }
  private display(own:Owned,frame:OrdinarySourceCameraFrame,c:GenerateContext,kind:'update'|'snapshot'):SceneOutput {

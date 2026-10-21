@@ -42,6 +42,22 @@ describe('retained Surface generation boundary',()=>{
    expect(comparable(actual)).toEqual(comparable(fixed));expect(owner.diagnostics().constructions).toBe(1);
   });
  }
+ for(const backend of ['CPU','GPU'])for(const mode of ['POINTS','MESH'])it(`${backend} ${mode} edits the current function without rebuilding or advancing a paused session`,()=>{
+  const s=scene(backend,mode),owner=new SourceSurfaceLiveSession(),c=context(0,{clock:{paused:true,timestampMs:0}});
+  const before=geometry(owner.generate(s,c));
+  owner.updateParameter(s,c,'a',.75);
+  const changed=geometry(owner.current(s,c));
+  expect(changed.surfaceLive?.frame).toEqual(before.surfaceLive?.frame);expect(changed.surfaceLive?.constructions).toBe(1);
+  expect(value(changed)).toBe(backend==='CPU'&&mode==='POINTS'?.25:.75);
+  expect(s.parameters.a).toBe(.25);
+  owner.updateParameter(s,c,'undeclared',99);expect(value(owner.current(s,c))).toBe(value(changed));
+  for(const value of [NaN,Infinity,-Infinity])expect(()=>owner.updateParameter(s,c,'a',value)).toThrow('有限数值');
+  expect(()=>owner.updateParameter(s,{...c,surfaceLive:{...c.surfaceLive!,revision:99}},'a',.9)).toThrow('匹配');
+  expect(owner.matchesCompletedPrimary(s,c)).toBe(true);
+  owner.setPaused(false,1000);owner.generate(s,context(1000));
+  const resumed=geometry(owner.generate(s,context(1250)));
+  expect(resumed.surfaceLive?.constructions).toBe(1);expect(value(resumed)).not.toBe(value(changed));
+ });
  it('captures a full revision, ignores staged edits and replaces it only at an explicit new revision',()=>{
   const s=scene(),captured=structuredClone(s),draft=structuredClone(s);draft.equations.x='(';
   const owner=new SourceSurfaceLiveSession(),c=context(0,{configuration:captured,clock:{paused:true}});

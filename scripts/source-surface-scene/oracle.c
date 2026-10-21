@@ -45,13 +45,22 @@ int main(int argc,char**argv){
  puts("REA_SURFACE_SCENE_JSON");printf("{\"cases\":[");
  for(int k=0;k<length;k++){
   (*e)->PushLocalFrame(e,4096);jobject c=at(cases,k),project=getj(c,"project"),steps=geta(c,"steps");
+  jboolean editCase=(*e)->CallBooleanMethod(e,c,met(jc,"getBoolean","(Ljava/lang/String;Z)Z"),(*e)->NewStringUTF(e,"parameterEdits"),JNI_FALSE);
   applet=(*e)->NewObject(e,pc,met(pc,"<init>","()V"));jclass pg=cls("processing/core/PGraphics");jobject graphics=(*e)->NewObject(e,pg,met(pg,"<init>","()V"));obj(applet,pc,"g","Lprocessing/core/PGraphics;",graphics);
   jobject config=(*e)->NewObject(e,cc,met(cc,"<init>","(Lprocessing/core/PApplet;Lprocessing/data/JSONObject;)V"),applet,project);ck("original config parse");
   scene=(*e)->NewObject(e,sc,met(sc,"<init>","(Lprocessing/core/PApplet;Lmathart/surface/config/SurfaceConfig;Z)V"),applet,config,JNI_FALSE);(*e)->CallVoidMethod(e,scene,met(sc,"construct","()V"));ck("original scene construct");jobject failure=go(scene,base,"initializationError","Ljava/lang/Exception;");if(failure){(*e)->Throw(e,failure);ck("scene initialization error");}
   initialSurface=(*e)->CallObjectMethod(e,scene,met(sc,"getSurface","()Lmathart/surface/ParametricSurface;"));(*e)->CallVoidMethod(e,scene,met(base,"setRenderMode","(F)V"),10.0);ck("original render mode");
+  jclass controllerClass=NULL;jobject controller=NULL;if(editCase){controllerClass=cls("mathart/MathArt");controller=(*e)->AllocObject(e,controllerClass);obj(controller,controllerClass,"currentScene","Lmathart/scene/Scene;",scene);}
   if(k)putchar(',');printf("{\"input\":");rawjson(c);printf(",\"initial\":");snapshot();printf(",\"frames\":[");
   for(int i=0;i<size(steps);i++){
-   (*e)->PushLocalFrame(e,256);jobject step=at(steps,i);float dt=(*e)->CallFloatMethod(e,step,met(jc,"getFloat","(Ljava/lang/String;)F"),(*e)->NewStringUTF(e,"dt")),fps=(*e)->CallFloatMethod(e,step,met(jc,"getFloat","(Ljava/lang/String;)F"),(*e)->NewStringUTF(e,"actualFrameRate"));jboolean paused=(*e)->CallBooleanMethod(e,step,met(jc,"getBoolean","(Ljava/lang/String;)Z"),(*e)->NewStringUTF(e,"paused"));sf(scene,base,"renderStep",dt);sf(applet,pc,"frameRate",fps);(*e)->CallVoidMethod(e,scene,met(base,"update","(Z)V"),paused);ck("original Scene update");if(i)putchar(',');snapshot();(*e)->PopLocalFrame(e,0);
+   (*e)->PushLocalFrame(e,256);jobject step=at(steps,i);float dt=(*e)->CallFloatMethod(e,step,met(jc,"getFloat","(Ljava/lang/String;)F"),(*e)->NewStringUTF(e,"dt")),fps=(*e)->CallFloatMethod(e,step,met(jc,"getFloat","(Ljava/lang/String;)F"),(*e)->NewStringUTF(e,"actualFrameRate"));jboolean paused=(*e)->CallBooleanMethod(e,step,met(jc,"getBoolean","(Ljava/lang/String;)Z"),(*e)->NewStringUTF(e,"paused"));if(i)putchar(',');
+   if(editCase){
+    printf("{\"before\":");snapshot();
+    jboolean hasEdit=(*e)->CallBooleanMethod(e,step,met(jc,"hasKey","(Ljava/lang/String;)Z"),(*e)->NewStringUTF(e,"edit"));
+    if(hasEdit){jobject edit=getj(step,"edit");jstring name=(*e)->CallObjectMethod(e,edit,met(jc,"getString","(Ljava/lang/String;)Ljava/lang/String;"),(*e)->NewStringUTF(e,"name"));double value=(*e)->CallDoubleMethod(e,edit,met(jc,"getDouble","(Ljava/lang/String;)D"),(*e)->NewStringUTF(e,"value"));(*e)->CallVoidMethod(e,controller,met(controllerClass,"updateParameter","(Ljava/lang/String;D)V"),name,value);ck("original MathArt.updateParameter");}
+    printf(",\"afterEdit\":");snapshot();printf(",\"updated\":");
+   }
+   sf(scene,base,"renderStep",dt);sf(applet,pc,"frameRate",fps);(*e)->CallVoidMethod(e,scene,met(base,"update","(Z)V"),paused);ck("original Scene update");snapshot();if(editCase)putchar('}');(*e)->PopLocalFrame(e,0);
   }
   printf("]}");(*e)->PopLocalFrame(e,0);
  }

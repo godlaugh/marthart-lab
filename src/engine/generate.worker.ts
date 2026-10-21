@@ -44,10 +44,13 @@ self.onmessage = (
     // A failed release keeps the old owner and must still answer this request.
     if(recording&&(owner!==sessionId||!isSourceRecordingOperation(operation)))throw new Error('源场景录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
-    if(event.data.operation==='surface-playback'||event.data.operation==='surface-current'){
+    if(event.data.operation==='surface-parameter'||event.data.operation==='surface-playback'||event.data.operation==='surface-current'){
       const source=surfaceSource=completed,live=source?.context.surfaceLive;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='surface'||!live||!temporalSession.sourceSurface.matchesCompletedPrimary(source.scene,source.context))throw Error('曲面操作对应的实时主预览已过期');
-      if(event.data.operation==='surface-playback'){
+      if(event.data.operation==='surface-parameter'){
+        temporalSession.sourceSurface.updateParameter(source.scene,source.context,event.data.name,event.data.value);
+        send({operation:'surface-parameter',id,sourceId:source.id});
+      }else if(event.data.operation==='surface-playback'){
         temporalSession.sourceSurface.setPaused(event.data.paused,event.data.timestampMs);
         completed={...source,context:{...source.context,surfaceLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
         send({operation:'surface-playback',id,sourceId:source.id,paused:event.data.paused});

@@ -4,7 +4,7 @@ import {createServer} from 'vite';
 import {mkdir,readFile,writeFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const directory=process.argv[2]??`.cache/surface-live-${Date.now()}`;await mkdir(directory,{recursive:true});
-const report={at:new Date().toISOString(),status:'running',scope:'Unmodified Generator, Worker and ArtRenderer in headless Chrome; injected timestamps and observed-FPS inputs.',limits:['Local CPU/GPU rendering only; no original JVM/JOGL window or pixel oracle.','App automatic live opt-in, hot edits and recording remain pending.','Local Apply revision replacement does not prove the native toolbar reload contract.']};
+const report={at:new Date().toISOString(),status:'running',scope:'Unmodified Generator, Worker and ArtRenderer in headless Chrome; injected timestamps and observed-FPS inputs.',limits:['Local CPU/GPU rendering only; no original JVM/JOGL window or pixel oracle.','App automatic live opt-in and recording remain pending.','Local Apply revision replacement does not prove the native toolbar reload contract.']};
 async function files(dir){const result=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())result.push(...await files(p));else if(e.isFile())result.push(p);}return result;}
 async function hashes(){return Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-surface-live.mjs'].sort().map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));}
 report.sourceBefore=await hashes();let server,browser;const started=performance.now(),errors=[];
@@ -41,9 +41,17 @@ try{
     const configuration=structuredClone(s);configuration.parameters.a=.75;const draft=structuredClone(configuration);draft.equations.x='(';
     const applied=await g.generate(draft,input(0,{revision:1,configuration,clock:{paused:true}}));check(applied.surfaceLive.constructions===2&&applied.surfaceLive.frame.sceneTime===0,'revision not fresh');const appliedHash=await render(applied,configuration);
     configuration.parameters.a=999;const retained=await g.generate(draft,input(0,{revision:1,clock:{paused:true}}));check(await render(retained,s)===appliedHash,'staged edit leaked into geometry');
+    await g.updateSurfaceParameter(retained,'a',-.5);
+    const edited=await g.currentSurface(retained),editedHash=await render(edited,s);
+    check(JSON.stringify(edited.surfaceLive.frame)===JSON.stringify(retained.surfaceLive.frame)&&edited.surfaceLive.constructions===2,'parameter edit reset or advanced queue');
+    const deferredCpuPoints=backend==='CPU'&&mode!=='MESH';
+    check(deferredCpuPoints?editedHash===appliedHash:editedHash!==appliedHash,'parameter edit presentation timing');
+    await g.updateSurfaceParameter(edited,'undeclared',99);
+    let invalidEdit=false;try{await g.updateSurfaceParameter(edited,'a',NaN);}catch{invalidEdit=true;}check(invalidEdit,'nonfinite edit accepted');
+    const editCurrent=await g.currentSurface(edited);check(await render(editCurrent,s)===editedHash,'unknown parameter changed pixels');
     let failed=false;try{await g.generate(draft,input(0,{revision:1,clock:{paused:true},actualFrameRate:NaN}));}catch{failed=true;}check(failed,'invalid observation accepted');
     const recovered=await g.generate(s,input(20000,{sessionId:backend+mode+'-new'}));check(recovered.surfaceLive.frame.sceneTime===0&&recovered.surfaceLive.constructions===1,'worker did not recover');check(await render(recovered)===firstHash,'recovery pixels differ');
-    rows.push({backend,mode,passed:true,transitions,completedRequestMs:{coldWorker:coldMs,warmRetainedWorker:warmMs},frames:[first,moving,paused,resumed].map(o=>o.surfaceLive),pixels:{initial:firstHash,moving:movedHash,resumed:resumedHash,applied:appliedHash},pauseAndRepeatedCurrentStable:true,staleRejected:true,invalidObservationRejected:true,recovered:true});
+    rows.push({backend,mode,passed:true,transitions,completedRequestMs:{coldWorker:coldMs,warmRetainedWorker:warmMs},frames:[first,moving,paused,resumed].map(o=>o.surfaceLive),pixels:{initial:firstHash,moving:movedHash,resumed:resumedHash,applied:appliedHash},parameterEdit:{sameQueue:true,pixels:editedHash,deferredCpuPoints,unknownIgnored:true,invalidRejected:true},pauseAndRepeatedCurrentStable:true,staleRejected:true,invalidObservationRejected:true,recovered:true});
    }finally{g.dispose();rt.dispose();renderer.dispose();renderer.renderer.forceContextLoss();}
   }
   return rows;

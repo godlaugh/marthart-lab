@@ -139,6 +139,7 @@ function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:
  return preview.width===source.width&&preview.height===source.height&&validCurrentImage(capture,size,scale,base)&&matchesSize(capture.fractalRender?.logicalSize,base.logicalWidth,base.logicalHeight)&&matchesSize(capture.fractalRender?.requestedSize,base.width,base.height)&&matchesSize(capture.fractalRender?.rasterSize,base.width,base.height);
 }
 type Pending =
+  | {operation:'surface-parameter';source:Completed;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'surface-current';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-parameters';source:Completed;scene:SceneDocument;resolve:()=>void;reject:(error:Error)=>void}
@@ -164,7 +165,7 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease};
-  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-current'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback');}
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
@@ -183,6 +184,10 @@ export class Generator {
       if (data.sessionId !== this.sessionId) return;
       const p = this.pending.get(data.id);
       if (!p) return;
+      if(p.operation==='surface-parameter'){
+        if(data.operation!=='surface-parameter'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'曲面参数响应身份不匹配'));return;}
+        this.pending.delete(data.id);this.completed=p.source;p.resolve();return;
+      }
       if(p.operation==='surface-current'){
         if(data.operation!=='surface-current'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'曲面当前帧响应身份不匹配'));return;}
         const output=data.output,before=p.source.output;
@@ -373,6 +378,13 @@ export class Generator {
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代参数更新需要当前已完成的主预览'));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'iterated-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'iterated-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene,writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+  }
+  updateSurfaceParameter(output:SceneOutput,name:string,value:number):Promise<void>{
+    const source=this.completed;
+    if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||source.scene.kind!=='surface'||output.type!=='geometry'||!output.surfaceLive)return Promise.reject(new Error('曲面参数修改需要当前已完成的主预览'));
+    if(typeof name!=='string'||typeof value!=='number'||!Number.isFinite(value))return Promise.reject(new Error('曲面参数修改需要字符串名称和有限数值'));
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'surface-parameter',source,resolve,reject});try{this.worker!.postMessage({operation:'surface-parameter',sessionId:this.sessionId,id,sourceId:source.id,name,value} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
   }
   currentSurface(output:SceneOutput):Promise<SceneOutput>{
     const source=this.completed;

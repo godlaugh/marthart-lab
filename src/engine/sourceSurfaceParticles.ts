@@ -201,6 +201,8 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  /** resetToEmpty removes particles and history, but old actions and captured
   * target vectors remain valid. Retained targets no longer pin full buffers. */
  retire():void {this.guarded(()=>{this.retired=true;this.state=new Float32Array();this.positions=new Float32Array();this.ids.length=0;this.slots.clear();this.targets.clear();this.color=undefined;this.pointAlphas=undefined;this.history=undefined;});}
+ /** Direct source parameter edit: retain animator phase and existing positions. */
+ updateParameter(name:string,value:number):void{this.guarded(()=>{this.surfaceFunction.write(name,value);});}
  setRecordingTrails(enabled:boolean):void {this.guarded(()=>{
   if(typeof enabled!=='boolean')fail('input','原版拖尾录制开关必须是布尔值');
   if(!this.retired&&enabled&&!this.history&&this.coverage==='all'&&this.config.trails.show)this.history=new SourceParticleTrailHistory(this.config.count,this.config.trails.lifetime,this.config.trails.fade,this.color!.packed,()=>this.check(),()=>fail('capacity','原版曲面拖尾超过本地 100 万记录预算（含断点）'));

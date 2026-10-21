@@ -44,3 +44,20 @@ No dependency installation. A differing original JAR digest is rejected; the
 output directory must be new. Each owned JVM process has a 45-second timeout
 with process-group cleanup and direct-child reaping. Local run evidence:
 `.cache/surface-scene-native-final/`.
+
+## Direct parameter edits
+
+`edits-native.json` adds six original projects / 90 steps per execution using
+`--cases scripts/source-surface-scene/edit-cases.json`. Each frame retains
+before, afterEdit and updated snapshots. An allocated MathArt controller has
+only currentScene set; its original updateParameter method runs, without the
+MathArt constructor, UI or reload lifecycle. Scene/CPU constructors remain real.
+Two executions match. The original 133-step suite was re-executed unchanged and
+its complete actual payload still equals native.json.
+
+`source-surface-parameter-edit.test.ts` compares five supported projects / 75
+steps through production import and the owned queue. The sixth, empty CPU point
+timeline, currently imports into local geometry: it is retained as an explicitly
+unverified source-session case. CPU point coordinates are direct observations;
+mesh first vertices are derived from observed function values for x=a+u,u=0,
+not native framebuffer observations. See the Chinese parameter edit report.

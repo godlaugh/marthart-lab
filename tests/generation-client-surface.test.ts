@@ -40,6 +40,23 @@ describe('Surface transport capabilities',()=>{
   expect(p).toMatchObject({operation:'surface-playback',sourceId:r.id,paused:false,timestampMs:2000});
   w.emit({operation:'surface-playback',sessionId:p.sessionId,id:p.id,sourceId:r.id+1,paused:false});expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
  });
+ it('serializes parameter edits and preserves the completed frame capability after acknowledgement',async()=>{
+  const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
+  await expect(f.g.updateSurfaceParameter({...f.output},'a',.75)).rejects.toThrow();
+  await expect(f.g.updateSurfaceParameter(f.output,'a',NaN)).rejects.toThrow('有限数值');
+  expect(w.messages).toHaveLength(1);
+  const edit=f.g.updateSurfaceParameter(f.output,'a',.75),p=w.messages.at(-1)!;
+  expect(p).toMatchObject({operation:'surface-parameter',sourceId:r.id,name:'a',value:.75});
+  await expect(f.g.currentSurface(f.output)).rejects.toThrow();
+  w.emit({operation:'surface-parameter',sessionId:p.sessionId,id:p.id,sourceId:r.id});await edit;
+  const current=f.g.currentSurface(f.output),q=w.messages.at(-1)!;const output=structuredClone(f.output);output.surfaceLive!.renderKind='snapshot';
+  w.emit({operation:'surface-current',sessionId:q.sessionId,id:q.id,sourceId:r.id,output});expect(await current).toBe(output);f.g.dispose();
+ });
+ it('retires a worker on a mismatched parameter acknowledgement',async()=>{
+  const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
+  const edit=f.g.updateSurfaceParameter(f.output,'a',.75),caught=edit.catch(e=>e),p=w.messages.at(-1)!;
+  w.emit({operation:'surface-parameter',sessionId:p.sessionId,id:p.id,sourceId:r.id+1});expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
+ });
  it('rejects a current-frame response which advances the owned queue',async()=>{
   const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
   const request=f.g.currentSurface(f.output),caught=request.catch(e=>e),p=w.messages.at(-1)!,changed=structuredClone(f.output);

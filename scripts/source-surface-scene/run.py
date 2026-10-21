@@ -7,9 +7,11 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--app',type=Path,required=True,help='Original MathArt.app bundle')
 parser.add_argument('--jni-include',type=Path,required=True,help='Existing directory containing jni.h and jni_md.h')
 parser.add_argument('--output',type=Path,required=True,help='New local evidence directory; never overwrite prior evidence')
+parser.add_argument('--cases',type=Path,help='Optional explicit bounded scene cases')
 options=parser.parse_args()
 source=Path(__file__).resolve().parent
 root=source.parent.parent
+case_file=options.cases.resolve() if options.cases else source/'cases.json'
 cache=options.output.resolve();cache.mkdir(parents=True,exist_ok=False)
 app=options.app.resolve()/'Contents'
 jar=app/'app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar'
@@ -43,13 +45,13 @@ if sha(jar)!='a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018':
 compile_result=invoke(['clang','-std=c11','-Wall','-Wextra','-I',str(options.jni_include.resolve()),str(source/'oracle.c'),'-o',str(cache/'oracle')],30,'active-compile')[1]
 runs=[];actual=None
 for index in range(2):
-    stdout,process=invoke([str(cache/'oracle'),str(jvm),classpath,str(source/'cases.json')],45,f'active-run-{index+1}')
+    stdout,process=invoke([str(cache/'oracle'),str(jvm),classpath,str(case_file)],45,f'active-run-{index+1}')
     value=json.loads(stdout.split(b'REA_SURFACE_SCENE_JSON\n',1)[1])
     if actual is not None:assert value==actual, 'Original JVM traces differ'
     actual=value;runs.append(process)
 classes={}
 with zipfile.ZipFile(jar) as z:
-    for name in ['mathart/surface/ParametricSurface','mathart/surface/MeshSurface','mathart/surface/SurfaceParameterAnimator','mathart/surface/SurfaceParameterAnimator$ParamConfig','mathart/surface/math/JsonSurfaceFunction','mathart/animation/OscillationEdgeEasing','mathart/scene/Scene','mathart/scene/SceneManager','mathart/scene/GenericScene','mathart/scene/CameraController','mathart/surface/GenericSurfaceScene','mathart/surface/config/JsonSurfaceConfig']:
+    for name in ['mathart/MathArt','mathart/surface/ParametricSurface','mathart/surface/MeshSurface','mathart/surface/SurfaceParameterAnimator','mathart/surface/SurfaceParameterAnimator$ParamConfig','mathart/surface/math/JsonSurfaceFunction','mathart/animation/OscillationEdgeEasing','mathart/scene/Scene','mathart/scene/SceneManager','mathart/scene/GenericScene','mathart/scene/CameraController','mathart/surface/GenericSurfaceScene','mathart/surface/config/JsonSurfaceConfig']:
         classes[name]=hashlib.sha256(z.read(name+'.class')).hexdigest()
-report={'kind':'original-Surface-scene-update-traces','actual':actual,'execution':{'originalConfigParserAndSceneConstructors':True,'originalSceneUpdate':True,'originalCpuParticles':True,'GLOrWindow':False,'scope':'Real PApplet/PGraphics and CPU surface constructors; original JSON parse, scene queue, parameter actions, camera and mode replacement. Explicit renderStep and independent PApplet.frameRate. No Scene.render, shaders, native framebuffer, UI or recording. Base PGraphics shader warning is retained.'},'compile':compile_result,'provenance':{'artifactPath':str(jar),'artifactSha256':sha(jar),'coreSha256':sha(core),'jvmPath':str(jvm),'stdoutSha256':[sha(cache/f'active-run-{i}-stdout.txt') for i in [1,2]],'jvmSha256':sha(jvm),'classes':classes,'harnessSha256':sha(source/'oracle.c'),'runnerSha256':sha(Path(__file__)),'inputSha256':sha(source/'cases.json')},'processes':runs,'identicalRuns':True}
+report={'kind':'original-Surface-scene-update-traces','actual':actual,'execution':{'originalConfigParserAndSceneConstructors':True,'originalSceneUpdate':True,'originalCpuParticles':True,'parameterEditController':('Allocated MathArt with only currentScene initialized; invokes original updateParameter, not UI or reload' if any(c['input'].get('parameterEdits') for c in actual['cases']) else None),'GLOrWindow':False,'scope':'Real PApplet/PGraphics and CPU surface constructors; original JSON parse, scene queue, parameter actions, camera and mode replacement. Explicit renderStep and independent PApplet.frameRate. No Scene.render, shaders, native framebuffer, UI or recording. Base PGraphics shader warning is retained.'},'compile':compile_result,'provenance':{'artifactPath':str(jar),'artifactSha256':sha(jar),'coreSha256':sha(core),'jvmPath':str(jvm),'stdoutSha256':[sha(cache/f'active-run-{i}-stdout.txt') for i in [1,2]],'jvmSha256':sha(jvm),'classes':classes,'harnessSha256':sha(source/'oracle.c'),'runnerSha256':sha(Path(__file__)),'inputPath':str(case_file),'inputSha256':sha(case_file)},'processes':runs,'identicalRuns':True}
 (cache/'source.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({'cases':len(actual['cases']),'updates':sum(len(c['frames']) for c in actual['cases']),'processes':runs}))

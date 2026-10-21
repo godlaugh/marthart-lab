@@ -77,6 +77,9 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
   const replacement=this.construct(mode,this.current.function.recreate());
   this.current.runtime.retire();this.current=replacement;this.createdAt=this.lastDisplay+1;this.replacements++;
  });}
+ /** MathArt.updateParameter targets the current function, while queue actions
+  * remain bound to the initial object. Does not update particles or animators. */
+ updateParameter(name:string,value:number):void{this.guarded(()=>{this.current.function.write(name,value);});}
  setRecordingTrails(enabled:boolean){this.guarded(()=>this.initial.runtime.setRecordingTrails(enabled));}
  beginGradientActions(actions:readonly SourceGradientAction[]){this.guarded(()=>this.initial.runtime.beginGradientActions(actions));}
  interpolateGradientActions(eased:number,finished:boolean){this.guarded(()=>this.initial.runtime.interpolateGradientActions(eased,finished));}
