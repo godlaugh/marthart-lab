@@ -1,0 +1,31 @@
+import {describe,it,expect} from 'vitest';
+import {parseProjectFile} from '../src/engine/legacyImport';
+import {sourceLivePreviewKind} from '../src/engine/sourceLivePreview';
+import {sourceQueuePresentedScene} from '../src/engine/sourceQueuePresentation';
+import {ordinarySourceCameraInitial,ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
+import {SOURCE_CAMERA_MODEL} from '../src/engine/sourceCamera';
+import {timelineWarnings} from '../src/engine/timeline';
+import type {SceneOutput} from '../src/types';
+const scene=()=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Live preview',parameters:{lambda:.25},settings:{batch_size:4,burn_in_steps:3},timeline:[]})).scene;
+describe('source live preview compatibility and delivered presentation',()=>{
+ it('opts complete source documents in without migrating older parameter or gradient models',()=>{
+  const source=scene();expect(sourceLivePreviewKind(source)).toBe('symmetry');
+  for(const key of ['symmetryParameterModel','symmetryGradientModel','symmetryPresentationModel']){
+   const legacy=structuredClone(source);delete legacy.settings[key];expect(sourceLivePreviewKind(legacy)).toBeUndefined();expect(sourceLivePreviewKind(source)).toBe('symmetry');
+  }
+  expect(sourceLivePreviewKind({...source,settings:{...source.settings,iteratedBackend:'cpu'}})).toBeUndefined();
+  expect(sourceLivePreviewKind({...source,settings:{...source.settings,iteratedStartTime:.2}})).toBeUndefined();
+  expect(sourceLivePreviewKind({...source,settings:{...source.settings,recordTrails:false}})).toBeUndefined();
+ });
+ it('presents the delivered live camera even at signed time, without fixed reconstruction or authored changes',()=>{
+  const source=scene(),before=structuredClone(source);
+  const frame={model:SOURCE_CAMERA_MODEL,frameIndex:2,time:-.5,camera:{...ordinarySourceCameraInitial(source)!,phi:.3},viewport:ordinarySourceViewport(source,64,48,'primary',48)};
+  const output:SceneOutput={type:'raster',width:64,height:48,pixels:new Uint8ClampedArray(64*48*4),stats:{samples:0,generated:0,invalid:0},sourceCameraFrame:frame,symmetryLive:{sessionId:'live',clock:'realtime-source-queue',clockSource:'injected',sceneTime:-.5,rawDt:-.5,activeDt:-.5,queueIndex:0,queueComplete:true,paused:false,objectUpdates:1,replayRevision:0,display:{displayIndex:2,replayed:false,resized:false,cleared:false,passes:1,accumulationPasses:3,warmupApplied:true,replayActive:false,remainingBurnInSteps:0,remainingReplaySteps:0,phases:[],gpu:{steps:4,accepted:4,invalid:0,clipped:0,sampleInvalid:0,bounds:{minX:-1,maxX:1,minY:-1,maxY:1}}}}};
+  const presented=sourceQueuePresentedScene(source,output)!;expect(presented.evaluatedSourceCamera).toBe(frame);expect(presented.parameters).toBe(source.parameters);expect(presented.palette).toBe(source.palette);expect(source).toEqual(before);
+  expect(sourceQueuePresentedScene(source,{...output,symmetryLive:undefined})).toBeUndefined();
+ });
+ it('keeps fixed-replay guidance scoped to fixed generation, not live controls',()=>{
+  const source=scene(),fixed=timelineWarnings(source),live=timelineWarnings(source,'realtime');
+  expect(fixed.some(text=>text.includes('固定帧率'))).toBe(true);expect(live.some(text=>text.includes('固定帧率'))).toBe(false);
+ });
+});

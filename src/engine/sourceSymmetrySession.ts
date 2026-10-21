@@ -3,9 +3,8 @@ import {prepareIteratedFrame,prepareIteratedField} from '../scenes/iteratedDensi
 import {SourceSymmetryTimelineSession,bindSourceSymmetryPaletteFrame,type SourceSymmetryTimelineResult} from './sourceSymmetryTimeline';
 import {SourceSymmetryReplaySession,sourceSymmetryRenderFps,type SourceSymmetryDisplayFacts} from './sourceSymmetryReplaySession';
 import {SourceSceneHostClock,validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
-import {usesSourceSymmetryGradient} from './sourceSymmetryGradient';
-import {usesSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
-import {usesSourceSymmetryPresentation,prepareSourceSymmetryTone,deriveSourceSymmetryNormalization} from './sourceSymmetryPresentation';
+import {sourceLivePreviewKind} from './sourceLivePreview';
+import {prepareSourceSymmetryTone,deriveSourceSymmetryNormalization} from './sourceSymmetryPresentation';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from './ordinarySourceCamera';
 import {prepareCapturedDensityCamera,prepareCapturedDensityView,type CapturedDensityAnchor} from './sourceDensityCamera';
 import {prepareSourceSymmetrySplat,sourceSymmetrySplatPixelTests} from './sourceSymmetrySplat';
@@ -78,7 +77,7 @@ export class SourceSymmetrySession {
  }
  generate(scene:SceneDocument,c:GenerateContext):Raster {
   if(this.busy||this.failed)throw Error('Symmetry 实时会话需要可用且空闲的所有者');this.cleanup.prepare();const live=context(c);exactRasterDimensions(c);cancel(c);
-  if(!usesSourceSymmetryGradient(scene)||!usesSourceSymmetryParameters(scene)||!usesSourceSymmetryPresentation(scene)||scene.settings.iteratedBackend==='cpu')throw Error('Symmetry 实时生成需要完整源时间线、参数和 GPU 呈现');
+  if(sourceLivePreviewKind(scene)!=='symmetry')throw Error('Symmetry 实时生成需要完整源模型、零起点和开启绘制；本地延迟累积或停止记录使用固定回放');
   prepareSourceSymmetryTone(scene,c);const shape=sourceSymmetryApplyIdentity(scene),replace=!this.authored||this.sessionId!==live.sessionId||this.shape!==shape||this.startAt!==live.startAt;
   if(!replace){this.clock!.assertPaused(live.clock.paused);if(live.replayRevision<this.revision)throw Error('Symmetry 编辑事件序号已过期');if(sourceSymmetryReplayIdentity(scene)!==sourceSymmetryReplayIdentity(this.authored!)&&live.replayRevision===this.revision)throw Error('Symmetry 调色板/变换编辑缺少显式重播事件');}
   this.busy=true;this.requestSteps=0;this.requestPixels=0;

@@ -1,3 +1,4 @@
+import {sourceLivePreviewKind} from '../engine/sourceLivePreview';
 import {useEffect,useState} from 'react';
 import {useI18n} from '../i18n';
 import type {SceneDocument} from '../types';
@@ -25,7 +26,7 @@ export function OrdinarySourceCameraControls({scene,onChange,disabled=false}:{sc
   }catch(cause){setError(cause instanceof Error?cause.message:String(cause));}
  };
  return <details open className="inspector-section" data-testid="ordinary-source-camera"><summary>{t('原版相机')}</summary><div className="section-body">
-  <p className="muted">{t('通过初始参数和时间线调整视角；修改后重新计算动画。')}</p>
+  <p className="muted">{t(sourceLivePreviewKind(scene)==='symmetry'?'暂停时修改角度会调整画面；恢复播放还原暂停前角度。修改缩放、中心或焦距会从头重建。':'通过初始参数和时间线调整视角；修改后重新计算动画。')}</p>
   {fields.map((field,index)=><label className="field" key={field}><span>{t(labels[index])}</span><input aria-label={t(labels[index])} type="text" inputMode="decimal" disabled={disabled} value={draft[index]??''} onChange={event=>{setDraft(draft.map((value,i)=>i===index?event.target.value:value));setError('');}}/></label>)}
   <button disabled={disabled||JSON.stringify(draft)===JSON.stringify(texts(initial))} onClick={apply}>{t('应用初始相机')}</button>
   {error&&<p role="alert">{t(error)}</p>}

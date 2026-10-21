@@ -1,3 +1,5 @@
+import {sourceLivePreviewKind} from './engine/sourceLivePreview';
+import {sourceSymmetryApplyIdentity,sourceSymmetryReplayIdentity,SOURCE_SYMMETRY_REPLAY_SETTINGS} from './engine/sourceSymmetryIdentity';
 import {usesSourceSymmetryPresentation} from './engine/sourceSymmetryPresentation';
 import {editSourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import {sourceSamilaApplyIdentity} from './engine/sourceSamilaIdentity';
@@ -205,7 +207,7 @@ export default function App() {
     [busy, setBusy] = useState(false),
     [previewCancelled,setPreviewCancelled] = useState(false),
     [generationRevision,setGenerationRevision] = useState(0),
-    [samilaTickRevision,setSamilaTickRevision] = useState(0),
+    [liveTickRevision,setLiveTickRevision] = useState(0),
     [renderTime,setRenderTime]=useState(0),
     [error, setError] = useState(""),
     [playhead, setPlayhead] = useState(0),
@@ -289,9 +291,16 @@ export default function App() {
     bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
   }
-  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument)) {
+  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'symmetry-replay') {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
+    if(sourceLivePreviewKind(current)!=='symmetry'&&sourceLivePreviewKind(next)==='symmetry'){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}
+    if(sourceLivePreviewKind(current)==='symmetry'&&sourceLivePreviewKind(next)==='symmetry'){
+      if(sourceSymmetryApplyIdentity(current)!==sourceSymmetryApplyIdentity(next)){
+        replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);
+      }else if(intent==='symmetry-replay'||sourceSymmetryReplayIdentity(current)!==sourceSymmetryReplayIdentity(next))symmetryReplayRevision.current++;
+    }
+
     if(usesSourceBouncing(next)){
       bouncingPresented.current=false;
       if(!usesSourceBouncing(current)||sourceBouncingInitializationKey(current.bouncingSource!.configuration)!==sourceBouncingInitializationKey(next.bouncingSource!.configuration)){
@@ -308,7 +317,7 @@ export default function App() {
       // not advance time while the new host measurement is still pending.
       autoPlayPending.current=autoPlayPending.current||playingRef.current;
       playingRef.current=false;setPlaying(false);
-      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceSamilaSession();
+      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession();
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
       if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
@@ -337,27 +346,29 @@ export default function App() {
     setToast(t(message));
   }
   const rootsSessionId=useRef(crypto.randomUUID());
-  const samilaSessionId=useRef(crypto.randomUUID()),samilaDirtyRevision=useRef(0),samilaDisplayRequested=useRef(false),samilaLastFrameAt=useRef<number|undefined>(undefined),samilaPlaybackTransition=useRef<object|undefined>(undefined);
-  function replaceSamilaSession(){samilaSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;samilaPlaybackTransition.current=undefined;samilaLastFrameAt.current=undefined;}
-  function interruptSamilaPlayback(){
-    if(!usesSourceSamilaSampling(sceneRef.current))return;
-    playingRef.current=false;setPlaying(false);replaceSamilaSession();
-    // A failed/cancelled live clock is no longer a retained ink session. Retry
-    // uses the visible playhead as an explicit local reconstruction start.
+  const liveSessionId=useRef(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
+  const symmetryReplayRevision=useRef(0),symmetryStartAt=useRef<number|undefined>(0);
+  const symmetryReplayPending=sourceLivePreviewKind(scene)==='symmetry'&&!error&&!previewCancelled&&outputScene===scene&&output?.type==='raster'&&output.symmetryLive?.sessionId===liveSessionId.current&&output.symmetryLive.display.replayActive===true;
+  const replayPendingRef=useRef(false);replayPendingRef.current=symmetryReplayPending;
+  function replaceLiveSession(startAt=0){liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;symmetryReplayRevision.current=0;symmetryStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
+  function interruptLivePlayback(){
+    if(!sourceLivePreviewKind(sceneRef.current))return;
+    playingRef.current=false;setPlaying(false);replaceLiveSession(Math.max(0,timeRef.current));
+    // Retry is an explicit reconstruction, never continuation of failed ink.
     generationQueue.current?.cancel();setPreviewCancelled(true);
   }
-  function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceSamilaSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
+  function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
-  function edit(next: SceneDocument, samilaDirty=false, samilaDisplay=true) {
+  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'symmetry-replay') {
     try{next=editSourceSymmetryConfiguration(sceneRef.current,next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
-    if(samilaDisplay&&usesSourceSamilaSampling(next))samilaDisplayRequested.current=true;
+    if(display&&sourceLivePreviewKind(next))liveDisplayRequested.current=true;
     if(samilaDirty)dirtySamila();
     history.current.push(sceneRef.current);
     if (history.current.length > 40) history.current.shift();
     future.current=[];
-    setScene(next);
+    setScene(next,intent);
   }
   function retryDomainGpu(){
     if(sceneRef.current.kind!=='domain'||playingRef.current||recording)return;
@@ -373,7 +384,7 @@ export default function App() {
       const settings=scene.kind==='samila'&&key==='samilaHistoryModel'
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
-      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key));
+      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,sourceLivePreviewKind(scene)==='symmetry'&&SOURCE_SYMMETRY_REPLAY_SETTINGS.some(value=>value===key)?'symmetry-replay':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {
@@ -382,7 +393,7 @@ export default function App() {
   }
   function load(next: SceneDocument, source: 'library' | 'document') {
     showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
-    rootsSessionId.current=crypto.randomUUID();replaceSamilaSession();
+    rootsSessionId.current=crypto.randomUUID();replaceLiveSession();
     // A file/new document is a new renderer instance even when its saved id
     // matches the open work. Ordinary edits retain the current failure latch.
     if(source==='document'){generationQueue.current?.cancel();setPreviewCancelled(false);}
@@ -477,7 +488,7 @@ export default function App() {
     setGenerationRevision(value=>value+1);
   }
   function seek(value:number) {
-    if(usesSourceSamilaSampling(sceneRef.current)){replaceSamilaSession();setGenerationRevision(n=>n+1);}
+    if(sourceLivePreviewKind(sceneRef.current)){playingRef.current=false;setPlaying(false);replaceLiveSession(value);setGenerationRevision(n=>n+1);}
     autoPlayPending.current=false;
     playbackClock.current=value;
     setTime(value);
@@ -485,20 +496,21 @@ export default function App() {
   function play(value:boolean) {
     if(value&&experience.error){setToast(t(experience.error));return;}
     autoPlayPending.current=false;
-    if(usesSourceSamilaSampling(sceneRef.current)){
-      if(samilaPlaybackTransition.current)return;
+    const liveKind=sourceLivePreviewKind(sceneRef.current);
+    if(liveKind){
+      if(livePlaybackTransition.current)return;
       const queue=generationQueue.current;if(!queue)return;
-      const ticket={},sessionId=samilaSessionId.current;samilaPlaybackTransition.current=ticket;
+      const ticket={},sessionId=liveSessionId.current;livePlaybackTransition.current=ticket;
       // Stop scheduling immediately; a running display completes before the
       // queue acknowledges pause. Resume starts scheduling only after its ack.
       playingRef.current=false;setPlaying(false);
-      void queue.setSamilaPaused(!value).then(()=>{
-        if(samilaPlaybackTransition.current!==ticket||samilaSessionId.current!==sessionId)return;
-        samilaLastFrameAt.current=undefined;playingRef.current=value;setPlaying(value);
+      void queue[liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
+        if(livePlaybackTransition.current!==ticket||liveSessionId.current!==sessionId)return;
+        liveLastFrameAt.current=undefined;playingRef.current=value;setPlaying(value);
         if(value)setPickingJulia(false);
       }).catch(error=>{
-        if(samilaPlaybackTransition.current===ticket&&error.name!=='AbortError')setError(error instanceof Error?error.message:String(error));
-      }).finally(()=>{if(samilaPlaybackTransition.current===ticket)samilaPlaybackTransition.current=undefined;});
+        if(livePlaybackTransition.current===ticket&&error.name!=='AbortError')setError(error instanceof Error?error.message:String(error));
+      }).finally(()=>{if(livePlaybackTransition.current===ticket)livePlaybackTransition.current=undefined;});
       return;
     }
     if(sourceBouncing){
@@ -624,14 +636,14 @@ export default function App() {
       prev = playbackStartedAt.current??performance.now();
     playbackStartedAt.current=undefined;
     function tick() {
-      if(!playingRef.current)return;
+      if(!playingRef.current&&!replayPendingRef.current)return;
       // Start/resume/recording anchors use performance.now(). RAF's frame
       // timestamp can precede those anchors, so use RAF only for scheduling.
       const now=performance.now();
-      if(usesSourceSamilaSampling(sceneRef.current)){
-        const last=samilaLastFrameAt.current;
-        if(!generationPending.current&&!samilaPlaybackTransition.current&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
-          samilaLastFrameAt.current=now;generationPending.current=true;setSamilaTickRevision(value=>value+1);
+      if(sourceLivePreviewKind(sceneRef.current)){
+        const last=liveLastFrameAt.current;
+        if(!generationPending.current&&!livePlaybackTransition.current&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
+          liveLastFrameAt.current=now;generationPending.current=true;setLiveTickRevision(value=>value+1);
         }
         id=requestAnimationFrame(tick);return;
       }
@@ -657,16 +669,19 @@ export default function App() {
       prev = now;
       id = requestAnimationFrame(tick);
     }
-    if (playing) {id = requestAnimationFrame(tick);}
+    if (playing||symmetryReplayPending) {id = requestAnimationFrame(tick);}
     return () => cancelAnimationFrame(id);
-  }, [playing, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
+  }, [playing,symmetryReplayPending, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
       output:(output,time,source)=>{
+        // Retire replay scheduling before the queue clears its busy flag. A RAF
+        // can run before React commits the delivered output.
+        replayPendingRef.current=source===sceneRef.current&&output.type==='raster'&&output.symmetryLive?.sessionId===liveSessionId.current&&output.symmetryLive.display.replayActive===true;
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
-        if(output.type==='raster'&&output.samilaLive?.clock==='realtime-source-queue'){
+        if(output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.symmetryLive)){
           timeRef.current=time;playbackClock.current=time;setTime(time);
         }
       },
@@ -680,7 +695,7 @@ export default function App() {
         timeRef.current=result.context.time;playbackClock.current=result.context.time;
         setTime(result.context.time);setPreviewCancelled(false);
       },
-      error:error=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();interruptSamilaPlayback();playingRef.current=false;setError(error.message);setPlaying(false);},
+      error:error=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();interruptLivePlayback();playingRef.current=false;setError(error.message);setPlaying(false);},
       busy:value=>{generationPending.current=value;setGenerationActive(value);setBusy(value&&!playingRef.current);},
     });
     generationQueue.current=queue;
@@ -696,9 +711,9 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceSplat||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:samilaSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!samilaDisplayRequested.current?'metadata':undefined);
-    samilaDisplayRequested.current=false;
-  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:usesSourceSamilaSampling(scene)?samilaTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:symmetryReplayRevision.current,startAt:symmetryStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined);
+    liveDisplayRequested.current=false;
+  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:sourceLivePreviewKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;play(true);}
   },[output,outputScene,presentedSource,scene,generationActive,error,recording,previewCancelled]);
@@ -768,7 +783,7 @@ export default function App() {
           className="primary-button"
           onClick={() => {
             autoPlayPending.current=false;
-            if(sourceBouncing||usesSourceSamilaSampling(sceneRef.current))play(false);else {playingRef.current=false;setPlaying(false);}
+            if(sourceBouncing||sourceLivePreviewKind(sceneRef.current))play(false);else {playingRef.current=false;setPlaying(false);}
             setExporting(true);
           }}
         >
@@ -997,7 +1012,7 @@ export default function App() {
                 setPresentedSource(frame?.source??null);setPresentedOutput(frame?output:null);
                 if(usesSourceBouncing(sceneRef.current))bouncingPresented.current=!!frame&&frame.source===sceneRef.current&&outputScene===sceneRef.current&&output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingFrame.current.simulationUpdates&&output?.sourceBouncingFrame?.checkpoint.sceneTime===bouncingFrame.current.sceneTime&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view);
               }}
-              onRenderError={message=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();interruptSamilaPlayback();setPlaying(false);setError(message);}}
+              onRenderError={message=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();interruptLivePlayback();setPlaying(false);setError(message);}}
               scene={scene}
               playing={playing}
               renderPending={generationActive}
@@ -1038,7 +1053,7 @@ export default function App() {
             {busy && (
               <div className="rendering-badge">
                 <span className="spinner" />{t("计算几何…")}
-                <button onClick={()=>{interruptSourceBouncingInteraction();interruptSamilaPlayback();generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
+                <button onClick={()=>{interruptSourceBouncingInteraction();interruptLivePlayback();generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
               </div>
             )}
             {previewCancelled&&<div className="rendering-badge" role="status"><span>{t('计算已取消；当前画布保留取消前的预览。')}</span><button onClick={()=>setGenerationRevision(value=>value+1)}>{t('重新计算')}</button></div>}
@@ -1289,7 +1304,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette})}/>}
+                      {usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'symmetry-replay':undefined)}/>}
                       {!usesSourceSamilaSplat(scene)&&!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
@@ -1445,7 +1460,7 @@ export default function App() {
           samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
           currentSamilaCapture={usesSourceSamilaSampling(scene)?{
             size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
-            ready:completedFrameReady&&output?.type==='raster'&&output.samilaLive?.sessionId===samilaSessionId.current,
+            ready:completedFrameReady&&output?.type==='raster'&&output.samilaLive?.sessionId===liveSessionId.current,
             capture:async(size,scale)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Samila 画面尚未完成或已过期，请等待预览完成后重试');
               return generationQueue.current.captureSamilaPaused(output,size,scale);
@@ -1482,7 +1497,7 @@ export default function App() {
       {recording&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
-        onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(usesSourceSamilaSampling(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}
+        onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(sourceLivePreviewKind(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}
         onClose={()=>setRecording(false)}/>}
       {showSettings && (
         <div
