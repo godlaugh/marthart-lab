@@ -1,8 +1,14 @@
+import {activeFractalFormulaIdentity,type FractalFormulaIdentityScene} from './sourceFractalIdentity';
+import {FRACTAL_SOURCE_NUMERIC_PROFILE,parseFractalNumericProfile} from './fractalSourcePrecision';
 import type {SceneDocument} from '../types';
 import {FRACTAL_SOURCE_COLOR_PROFILE,createDefaultFractalSourceColorConfiguration,parseFractalSourceColorProfile} from './fractalSourceColor';
 
 export function usesFractalSourceColor(scene:Pick<SceneDocument,'kind'|'settings'>):boolean {
  return scene.kind==='fractal'&&parseFractalSourceColorProfile(scene.settings.fractalColorProfile)===FRACTAL_SOURCE_COLOR_PROFILE;
+}
+export function supportsFractalSourceColor(scene:FractalFormulaIdentityScene):boolean {
+ const formula=activeFractalFormulaIdentity(scene);
+ return scene.kind==='fractal'&&(formula==='newton'||formula==='nova')&&(scene.fractalSource!==undefined||parseFractalNumericProfile(scene.settings.fractalNumericProfile)===FRACTAL_SOURCE_NUMERIC_PROFILE);
 }
 export function authoredFractalSourceColor(scene:Pick<SceneDocument,'fractalSourceColor'>) {
  return scene.fractalSourceColor??createDefaultFractalSourceColorConfiguration();

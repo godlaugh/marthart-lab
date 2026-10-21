@@ -1,3 +1,4 @@
+import {sourceFractalFormulaIdentity} from './sourceFractalIdentity';
 import {prepareDomainSourceScalar,prepareDomainSourceObjectScalar,DOMAIN_SOURCE_SCALAR_LIMITS} from './domainSourceScalar';
 import {isJavaBlank,javaTrim} from './sourceJavaText';
 
@@ -123,7 +124,7 @@ export class SourceFractalFormulaRuntime {
 /** Initial applyConfig replacement on a fresh mobject. Source null ParamSet and
  * supplied-empty ParamSet remain distinct through packing and late overrides. */
 export function createSourceFractalFormulaFromConfig(config:SourceFractalFormulaConfiguration):SourceFractalFormulaRuntime {
- const fractalType=type(config.fractalType),raw=config.formulaId,formulaId=raw==null||isJavaBlank(raw)?fractalType:raw;
+ const fractalType=type(config.fractalType),raw=config.formulaId,formulaId=sourceFractalFormulaIdentity({...config,fractalType});
  const runtime=new SourceFractalFormulaRuntime({formulaId,fractalType,initialNative:{power:Math.max(2,int(config.power)),bailout:0,julia:[0,0],formulaParams:config.formulaParams},...(raw!=null&&config.parameters?{parameters:config.parameters}:{})});
  if(raw!=null)runtime.remap(config.parameters===undefined);
  if(raw==null||config.parameters===undefined){runtime.setBailout(config.bailout);runtime.setJuliaConstant(...config.julia);}

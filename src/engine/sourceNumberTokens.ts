@@ -1,3 +1,4 @@
+import {sourceFractalNumberField,SOURCE_FRACTAL_STATIC_NUMBER_FIELDS} from './sourceFractalNumberFields';
 import {SOURCE_MAP_PRESENTATION_NUMBER_FIELDS} from './sourceMapPresentationFields';
 import {SOURCE_MAP_SPLAT_NUMBER_FIELDS} from './sourceMapSplat';
 import {SOURCE_SYMMETRY_PROJECT_VISUAL_NUMBER_FIELDS} from './sourceSymmetryProjectVisual';
@@ -152,7 +153,7 @@ function samilaNumberField(path:readonly unknown[]):boolean {
  * parameter and timeline scalars. These family-specific registrations do not
  * assert lossless numeric lexemes for the whole source document. */
 export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kind']='roots'):SourceNumberToken[]{
- const samila=sceneKind==='samila',roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=samila?samilaStaticMaximum:bouncing?bouncingStaticMaximum:sceneKind==='perlin'?perlinStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=sceneKind==='perlin'?Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+perlinStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length+SOURCE_PERLIN_PARAMETER_NAMES.length*3))):ordinary?ordinaryMaximum:projectFields.size+(samila?samilaStaticMaximum+maxTimelineClips+4096*maxCameraArgs:bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
+ const fractal=sceneKind==='fractal',samila=sceneKind==='samila',roots=sceneKind==='roots',ordinary=ordinaryFamilies.has(sceneKind),bouncing=sceneKind==='bouncing',staticMaximum=fractal?SOURCE_FRACTAL_STATIC_NUMBER_FIELDS:samila?samilaStaticMaximum:bouncing?bouncingStaticMaximum:sceneKind==='perlin'?perlinStaticMaximum:ordinary?ordinaryStaticMaximum:maxConsumedFields,maximum=fractal?SOURCE_JSON_LIMITS.nodes:sceneKind==='perlin'?Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+perlinStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length+SOURCE_PERLIN_PARAMETER_NAMES.length*3))):ordinary?ordinaryMaximum:projectFields.size+(samila?samilaStaticMaximum+maxTimelineClips+4096*maxCameraArgs:bouncing?bouncingStaticMaximum:roots?maxConsumedFields+maxTimelineFields:0);
  if(!Array.isArray(raw)||raw.length>maximum)throw new Error(`源数字词法记录必须是最多 ${maximum} 项的数组`);
  let samilaMathParent:string|undefined;const samilaPayloads=new Map<string,string>();
  const seen=new Set<string>(),gradientPayloads=new Map<string,string>();let totalCharacters=0,parameterNameCharacters=0,parameterCount=0;let bouncingPolygonSource:string|undefined;const bouncingVertexForms=new Map<string,string>();
@@ -163,7 +164,7 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
  return raw.map(value=>{
   if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('源数字词法记录无效');
   const {path,token}=value as {path?:unknown;token?:unknown};
-  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):(samila?samilaNumberField(path):bouncing?bouncingField(path):ordinary&&ordinaryField(path,sceneKind))?JSON.stringify(path):undefined):undefined;
+  const kind=Array.isArray(path)?projectFields.get(JSON.stringify(path))??(roots?(path.length===2?consumedFields.get(JSON.stringify(path)):timelineField(path)?JSON.stringify(path):undefined):(fractal?sourceFractalNumberField(path):samila?samilaNumberField(path):bouncing?bouncingField(path):ordinary&&ordinaryField(path,sceneKind))?JSON.stringify(path):undefined):undefined;
   if(!kind||!Array.isArray(path))throw new Error('源数字词法记录的字段路径无效：'+JSON.stringify(path));
   if(samila&&['settings','samila'].includes(String(path[0]))&&(SOURCE_SAMILA_MATH_FIELDS as readonly unknown[]).includes(path[1])){if(samilaMathParent!==undefined&&samilaMathParent!==path[0])throw new Error('Samila 源数字词法只能保留一个已选数学配置对象');samilaMathParent=String(path[0]);}
   if(samila&&path[0]==='parameters'&&++parameterCount>SOURCE_SAMILA_PARAMETER_LIMIT)throw new Error('Samila 源参数词法超过参数容量');

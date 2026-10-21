@@ -5,9 +5,11 @@ import {decodeFractalSourceTerminal} from '../src/engine/fractalNativeNewtonRast
 import {FractalSourceGpuError,fractalSourceDevice} from '../src/engine/fractalSourceGpuFailure';
 import {FRACTAL_NATIVE_NEWTON_GLSL} from '../src/engine/fractalNativeNewtonGlsl';
 import {FractalGpu,unpackGpuOrbit} from '../src/engine/fractalGpu';
-import {parseFractalSourcePlan,FRACTAL_SOURCE_NUMERIC_PROFILE,type FractalSourcePlan} from '../src/engine/fractalSourcePrecision';
+import {parseFractalSourceNativePlan,parseFractalSourcePlan,FRACTAL_SOURCE_NUMERIC_PROFILE,type FractalSourcePlan} from '../src/engine/fractalSourcePrecision';
 import {fractalConfig} from '../src/scenes/complex';
 import {createScene} from '../src/engine/document';
+import mapping from './fixtures/source-fractal-mapping/source.json';
+import type {SourceFractalFormulaNativeState} from '../src/engine/sourceFractalFormulaRuntime';
 import {definition} from '../src/scenes';
 import {parseFractalColors} from '../src/engine/fractalColor';
 import {uploadFractalTrace} from '../src/engine/fractalColorGpu';
@@ -23,7 +25,7 @@ interface Failure {coordinatePayload?:boolean;throwAt?:string;deleteAt?:string;c
 /** Protocol/resource contract double only. Real GLSL arithmetic is validated
  * separately against the retained original shaders in a real browser. */
 function device(failure:Failure={}){
- const constants=new Map<string,number>(),live=new Set<Handle>(),calls:string[]=[],uniforms=new Map<string,number>(),uploads:number[]=[],textureFormats:number[]=[],textureBindings:(WebGLTexture|null)[]=[],textureUploads:{format:number;width:number;height:number;texture:WebGLTexture|null}[]=[];
+ const constants=new Map<string,number>(),live=new Set<Handle>(),calls:string[]=[],uniforms=new Map<string,number>(),arrayUniforms=new Map<string,number[]>(),uploads:number[]=[],textureFormats:number[]=[],textureBindings:(WebGLTexture|null)[]=[],textureUploads:{format:number;width:number;height:number;texture:WebGLTexture|null}[]=[];
  let boundTexture:WebGLTexture|null=null;let attachment=0;const scissors:number[][]=[];let nextConstant=1,nextHandle=1,tf=false,drawCount=0,error=0,currentProgram:Handle|null=null;const shaderPrograms=new Map<Handle,Handle>(),markedShaders=new Set<Handle>();
  const constant=(n:string)=>{if(!constants.has(n))constants.set(n,nextConstant++);return constants.get(n)!;};
  const op=(name:string,body:(...a:any[])=>any=()=>undefined)=>(...a:any[])=>{calls.push(name);if(failure.throwAt===name||failure.deleteAt===name)throw new Error('driver '+name);return body(...a);};
@@ -34,6 +36,7 @@ function device(failure:Failure={}){
   getShaderParameter:op('getShaderParameter',()=>failure.compile!==false),getProgramParameter:op('getProgramParameter',()=>failure.link!==false),getShaderInfoLog:op('getShaderInfoLog',()=> 'compile'),getProgramInfoLog:op('getProgramInfoLog',()=> 'link'),
   useProgram:op('useProgram',p=>{currentProgram=p;}),attachShader:op('attachShader',(p,s)=>shaderPrograms.set(s,p)),
   getUniformLocation:op('getUniformLocation',(_p,name)=>({name})),uniform1i:op('uniform1i',(loc,value)=>uniforms.set(loc.name,value)),
+  uniform4fv:op('uniform4fv',(loc,value)=>arrayUniforms.set(loc.name,Array.from(value))),uniform1fv:op('uniform1fv',(loc,value)=>arrayUniforms.set(loc.name,Array.from(value))),
   checkFramebufferStatus:op('checkFramebufferStatus',()=>constant(failure.framebuffer===false?'FRAMEBUFFER_UNSUPPORTED':'FRAMEBUFFER_COMPLETE')),
   beginTransformFeedback:op('beginTransformFeedback',()=>{tf=true;}),endTransformFeedback:op('endTransformFeedback',()=>{tf=false;}),
   drawArrays:op('drawArrays',(_mode,_first,n)=>{if(tf)drawCount=n;}),texImage2D:op('texImage2D',(_t,_l,format,w,h)=>{uploads.push(w*h);textureFormats.push(format);textureUploads.push({format,width:w,height:h,texture:boundTexture});}),bindTexture:op('bindTexture',(_t,texture)=>{textureBindings.push(texture);boundTexture=texture;}),
@@ -70,7 +73,7 @@ function device(failure:Failure={}){
  }
  const gl=new Proxy({}, {get(_t,k){const name=String(k);return name.toUpperCase()===name?constant(name):methods[name]??=op(name);}}) as WebGL2RenderingContext;
  const contexts=vi.fn(()=>gl);vi.stubGlobal('OffscreenCanvas',class{getContext(){return contexts();}});
- return{gl,live,calls,uniforms,uploads,contexts,failure,scissors,textureFormats,textureBindings,textureUploads};
+ return{gl,live,calls,uniforms,arrayUniforms,uploads,contexts,failure,scissors,textureFormats,textureBindings,textureUploads};
 }
 const sample=(gpu:FractalSourceNewtonGpu,p=plan(),cancel?:()=>boolean)=>gpu.sample(pixels,3,2,view,config(),p,undefined,cancel);
 afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();});
@@ -84,6 +87,15 @@ describe('native shader provenance',()=>{
  });
 });
 describe('source GPU ingress and ownership',()=>{
+ it('uploads the actual mapped native integer and complete 4/32 slots',()=>{
+  const native=mapping.cases.find(row=>row.input.id==='newton-native-round-and-floor')!.steps[0].native as unknown as SourceFractalFormulaNativeState;
+  const p=parseFractalSourceNativePlan({formula:'newton',native,iterations:8},view,{logicalWidth:3,logicalHeight:2,provenance:'requested-output-local'},{precision:'medium'});
+  const d=device(),gpu=new FractalSourceNewtonGpu();sample(gpu,p);
+  expect(d.uniforms.get('u_power')).toBe(7);expect(p.shaderIntegerPower).toBe(3);
+  expect(d.arrayUniforms.get('u_formulaParams')).toEqual(native.formulaParams);expect(d.arrayUniforms.get('u_dynamicParams[0]')).toEqual(native.dynamicParams);
+  gpu.dispose();expect(d.live.size).toBe(0);
+ });
+
  it('does not reinterpret an explicit source request as old independent CPU/step fallback',()=>{
   const d=device(),gpu=new FractalGpu(),c=config();expect(caught(()=>gpu.sample(pixels,3,2,view,c))).toMatchObject({kind:'input'});expect(d.contexts).not.toHaveBeenCalled();
   const old={...c};delete old.numericProfile;old.convergenceMode='step';expect(gpu.sample(pixels,3,2,view,old).warning).toContain('CPU');

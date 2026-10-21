@@ -1,3 +1,4 @@
+import {activeFractalFormulaIdentity,type FractalFormulaIdentityScene} from './sourceFractalIdentity';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 import {usesSourceAttractor,SOURCE_ATTRACTOR_ACTION_METHODS} from './sourceAttractorDocument';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -5,11 +6,11 @@ import {sourceCameraMode,usesCapturedDensityCamera,CAPTURED_DENSITY_CAMERA_ACTIO
 import {samilaCameraEnabled,initializeSamilaCameraFrame,refreshSamilaCameraSetting} from './samilaCamera';
 import type {CameraState,EvaluatedCamera,SceneDocument,Settings,SceneOutput} from '../types';
 import {numberSetting} from './expression';
-export const isRaymarchScene=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='fractal'&&scene.settings.formula==='mandelbulb_3d'&&scene.settings.bulbPresentation!=='points';
+export const isRaymarchScene=(scene:FractalFormulaIdentityScene)=>scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbulb_3d'&&scene.settings.bulbPresentation!=='points';
 export const hasContinuousDensity=(scene:Pick<SceneDocument,'kind'|'settings'>)=>['map','symmetry','samila'].includes(scene.kind)&&scene.settings.iteratedMode==='continuous';
 export const hasProgressiveRoots=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='roots'&&scene.settings.rootsMode==='progressive';
-export const hasMathematicalPlane=(scene:Pick<SceneDocument,'kind'|'settings'>)=>scene.kind==='domain'||scene.kind==='fractal'&&scene.settings.formula!=='mandelbulb_3d'||scene.kind==='bouncing'&&scene.settings.bouncingPresentation==='raster'||hasContinuousDensity(scene)||hasProgressiveRoots(scene);
-type CameraCapabilities=Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'sourceCamera'|'attractorSource'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>>;
+export const hasMathematicalPlane=(scene:FractalFormulaIdentityScene)=>scene.kind==='domain'||scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)!=='mandelbulb_3d'||scene.kind==='bouncing'&&scene.settings.bouncingPresentation==='raster'||hasContinuousDensity(scene)||hasProgressiveRoots(scene);
+type CameraCapabilities=FractalFormulaIdentityScene&Partial<Pick<SceneDocument,'sourceCamera'|'attractorSource'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>>;
 /** Explicit authored marker; never infer source semantics from a scene family. */
 export const usesOrdinarySourceCamera=(scene:CameraCapabilities)=>scene.sourceCamera!==undefined;
 const ordinaryMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','ambient','stopAmbient','stopTracking']);

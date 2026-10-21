@@ -1,6 +1,7 @@
 import type {FractalConfig} from '../scenes/complex';
 import type {FractalViewport} from './complexViewport';
 import type {DD,DDComplex} from './doubleDouble';
+import type {SourceFractalFormulaNativeState} from './sourceFractalFormulaRuntime';
 
 export const FRACTAL_SOURCE_NUMERIC_PROFILE='mathart-1.7.8-newton-nova-v1' as const;
 export const FRACTAL_SOURCE_REFERENCE_LIMIT=2048;
@@ -23,6 +24,7 @@ export interface FractalLogicalSize {
  readonly provenance:'requested-output-local'|'canvas-logical-local'|'source-logical';
 }
 export type FractalSourcePrecisionInput=Pick<FractalConfig,'formula'|'variant'|'power'|'start'|'julia'|'iterations'|'tolerance'|'relaxation'>;
+export interface FractalSourceNativePrecisionInput {readonly formula:'newton'|'nova';readonly native:SourceFractalFormulaNativeState;readonly iterations:number;}
 export interface FractalPrecisionError {kind:'input'|'capacity';field:string;reason:string}
 export class FractalPrecisionInputError extends Error {
  constructor(readonly failure:FractalPrecisionError){super(failure.reason);this.name='FractalPrecisionInputError';}
@@ -33,6 +35,9 @@ export interface FractalSourcePlan {
  readonly formula:'newton'|'nova';readonly authoredVariant:string;readonly isJulia:boolean;
  readonly iterations:number;readonly maximumShaderIterations:2048;
  readonly shaderPower:readonly[number,number];readonly shaderIntegerPower:number;
+ /** Original uniform payload. Native input keeps all mapped slots; authored input
+  * retains its former synthetic payload. Shader effective power is separate. */
+ readonly uniformPower:number;readonly formulaParams:readonly[number,number,number,number];readonly dynamicParams:readonly number[];
  readonly shaderRelaxation:number;readonly sourceJuliaConstant:readonly[number,number];
  readonly shaderJuliaConstant:readonly[number,number,number,number];
  readonly bailout:number;
@@ -84,6 +89,18 @@ const preparedPlans=new WeakSet<object>();
  * the Mobject passes juliaCx/Cy to the reference service; Newton forces Mandel.
  * The dimension provenance is explicit: output pixels do not prove native DPI. */
 export function prepareFractalSourcePlan(config:FractalSourcePrecisionInput,view:FractalViewport,size:FractalLogicalSize,options:FractalSourcePlanOptions):Result<FractalSourcePlan,FractalPrecisionError> {
+ return preparePlan(config,view,size,options);
+}
+/** Consume the formula owner's native output without reconstructing ParamSet or
+ * flattening the distinct reference and shader parameters into authoring fields. */
+export function prepareFractalSourceNativePlan(input:FractalSourceNativePrecisionInput,view:FractalViewport,size:FractalLogicalSize,options:FractalSourcePlanOptions):Result<FractalSourcePlan,FractalPrecisionError> {
+ const n=input?.native;
+ if(!n||!['mandelbrot','julia'].includes(n.fractalType)||!Number.isInteger(n.power)||n.power<-2147483648||n.power>2147483647||!pair(n.julia)||!Number.isFinite(n.bailout))return failed('native','Source native formula state is invalid');
+ for(const [key,length]of [['formulaParams',4],['dynamicParams',32]] as const)if(!Array.isArray(n[key])||n[key].length!==length||!n[key].every(v=>typeof v==='number'&&Number.isFinite(v)&&Object.is(v,F(v))))return failed(key,'Source native slots must retain their complete finite Float32 payload');
+ if(!Object.is(n.bailout,F(n.bailout)))return failed('bailout','Source native bailout must retain Float32 precision');
+ return preparePlan({formula:input.formula,variant:n.fractalType,power:[n.dynamicParams[0],n.dynamicParams[1]],start:[...n.julia],julia:[...n.julia],iterations:input.iterations,tolerance:n.bailout,relaxation:n.dynamicParams[2]},view,size,options,n);
+}
+function preparePlan(config:FractalSourcePrecisionInput,view:FractalViewport,size:FractalLogicalSize,options:FractalSourcePlanOptions,native?:SourceFractalFormulaNativeState):Result<FractalSourcePlan,FractalPrecisionError> {
  if(!config||!view||!size)return failed('plan','Source fractal precision inputs are required');
  const precision=options?.precision;
  if(precision!=='low'&&precision!=='medium'&&precision!=='high')return failed('precision','Source precision requires low, medium or high');
@@ -101,7 +118,7 @@ export function prepareFractalSourcePlan(config:FractalSourcePrecisionInput,view
  if(![...shaderPower,shaderRelaxation,bailout,...zoom,rotation].every(Number.isFinite))return failed('float32','Source scalar upload exceeds finite float32 representation','capacity');
  const shaderIntegerPower=Math.floor(F(shaderPower[0]+F(.5)));
  if(shaderIntegerPower<-2147483648||shaderIntegerPower>2147483647)return failed('power','Source shader int(power) conversion is outside its defined range','capacity');
- const power=roundLongToInt(config.power[0]),formula=config.formula,isJulia=formula==='nova'&&config.variant==='julia';
+ const power=native?.power??roundLongToInt(config.power[0]),formula=config.formula,isJulia=formula==='nova'&&config.variant==='julia';
  // Java host Math.round(float) gate and GLSL floor(float+.5) are separate facts.
  const roundedPower=Math.max(0,floatRoundInt(shaderPower[0]));
  const integerPower=Math.abs(shaderPower[1])<F(1e-6)&&Math.abs(F(shaderPower[0]-F(floatRoundInt(shaderPower[0]))))<F(1e-6);
@@ -125,7 +142,10 @@ export function prepareFractalSourcePlan(config:FractalSourcePrecisionInput,view
  const constant=isJulia?complex(...sourceJuliaConstant):center;
  let nearZeroShift=0;
  if(formula==='newton'&&Math.abs(sum(initialZ[0]))+Math.abs(sum(initialZ[1]))<1e-24){nearZeroShift=Math.max(2/Math.max(1,Math.min(...logicalSize))*.5,1e-18);initialZ=[add(initialZ[0],of(nearZeroShift)),initialZ[1]];}
- const relaxation=shaderRelaxation>0?shaderRelaxation:1;
+ const referenceRelaxation=native?.formulaParams[1]??shaderRelaxation;
+ const relaxation=referenceRelaxation>0?referenceRelaxation:1;
+ const uniformPower=native?.power??shaderIntegerPower,formulaParams=native?[...native.formulaParams] as [number,number,number,number]:[shaderPower[0],shaderRelaxation,0,0] as const;
+ const dynamicParams=native?[...native.dynamicParams]:Array.from({length:32},(_,n)=>n===0?shaderPower[0]:n===1?shaderPower[1]:n===2?shaderRelaxation:0);
  let toleranceSquared=F(bailout*bailout);
  if(formula==='nova'){
   const z=Math.max(F(zoom[0]+zoom[1]),F(1e-12)),minRes=Math.max(Math.min(...logicalSize),1);
@@ -134,14 +154,15 @@ export function prepareFractalSourcePlan(config:FractalSourcePrecisionInput,view
   const threshold=Math.max(Math.min(user,auto),minimum);toleranceSquared=F(threshold*threshold);
  }
  const reference={power,relaxation,initialZ:cloneComplex(initialZ),constant:cloneComplex(constant),length:referenceLength,nearZeroShift,workUnits};
- const key=identity([FRACTAL_SOURCE_NUMERIC_PROFILE,formula,config.variant,isJulia,config.iterations,config.power,config.start,config.julia,config.relaxation,config.tolerance,[view.centerX,view.centerXLow,view.centerY,view.centerYLow,view.zoom,view.rotation],logicalSize,size.provenance,precision,reference]);
- const plan:FractalSourcePlan={profile:FRACTAL_SOURCE_NUMERIC_PROFILE,formula,authoredVariant:config.variant,isJulia,iterations:config.iterations,maximumShaderIterations:2048,shaderPower,shaderIntegerPower,shaderRelaxation,sourceJuliaConstant,shaderJuliaConstant,bailout,toleranceSquaredReference:toleranceSquared,logicalSize,logicalSizeProvenance:size.provenance,center:cloneComplex(center),shaderCenter,zoom,rotation,ordinary:{enabled:true},perturbation,reference,stopRules:{comparison:'strict-high-word-step-squared',ordinaryFinalZ:'next',perturbFinalZ:'current',perturbLastStep:'not-compared',glitch:'continue-ordinary-ds'},key};
+ const key=identity([FRACTAL_SOURCE_NUMERIC_PROFILE,formula,config.variant,isJulia,config.iterations,config.power,config.start,config.julia,config.relaxation,config.tolerance,[view.centerX,view.centerXLow,view.centerY,view.centerYLow,view.zoom,view.rotation],logicalSize,size.provenance,precision,reference,...(native?['native',uniformPower,formulaParams,dynamicParams]:[])]);
+ const plan:FractalSourcePlan={profile:FRACTAL_SOURCE_NUMERIC_PROFILE,formula,authoredVariant:config.variant,isJulia,iterations:config.iterations,maximumShaderIterations:2048,shaderPower,shaderIntegerPower,uniformPower,formulaParams,dynamicParams,shaderRelaxation,sourceJuliaConstant,shaderJuliaConstant,bailout,toleranceSquaredReference:toleranceSquared,logicalSize,logicalSizeProvenance:size.provenance,center:cloneComplex(center),shaderCenter,zoom,rotation,ordinary:{enabled:true},perturbation,reference,stopRules:{comparison:'strict-high-word-step-squared',ordinaryFinalZ:'next',perturbFinalZ:'current',perturbLastStep:'not-compared',glitch:'continue-ordinary-ds'},key};
  // Plans are immutable owned facts; later consumers cannot mutate a cache key's
  // computation by changing a nested tuple after admission.
  freezePlan(plan);preparedPlans.add(plan);return {ok:true,value:plan};
 }
 function freezePlan(value:unknown):void {if(value&&typeof value==='object'){for(const item of Object.values(value))freezePlan(item);Object.freeze(value);}}
 export function parseFractalSourcePlan(config:FractalSourcePrecisionInput,view:FractalViewport,size:FractalLogicalSize,options:FractalSourcePlanOptions):FractalSourcePlan {const r=prepareFractalSourcePlan(config,view,size,options);if(!r.ok)throw new FractalPrecisionInputError(r.error);return r.value;}
+export function parseFractalSourceNativePlan(input:FractalSourceNativePrecisionInput,view:FractalViewport,size:FractalLogicalSize,options:FractalSourcePlanOptions):FractalSourcePlan {const r=prepareFractalSourceNativePlan(input,view,size,options);if(!r.ok)throw new FractalPrecisionInputError(r.error);return r.value;}
 export function validateFractalSourcePlan(plan:FractalSourcePlan):void {if(!plan||!preparedPlans.has(plan))throw new FractalPrecisionInputError({kind:'input',field:'plan',reason:'Source precision plan must be prepared by its owner'});}
 
 export type FractalSourceReferenceFailure=FractalPerturbationReason|'REF_DERIV_SINGULAR'|'NOVA_REF_DERIV_SINGULAR'|'REF_STEP_INVALID'|'NOVA_REF_STEP_INVALID';

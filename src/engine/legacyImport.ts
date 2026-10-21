@@ -1,4 +1,7 @@
-import {parseSourceFractalFloatField} from './sourceFractalActionConfig';
+import {importSourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
+import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument';
+import {prepareSourceFractalScene} from './sourceFractalTimeline';
+import {importSourceFractalActions,parseSourceFractalFloatField} from './sourceFractalActionConfig';
 import {normalizeSourceFractalCenter,parseSourceFractalZoomTarget} from './sourceFractalZoom';
 import {importSourceMapPresentationSettings} from './sourceMapPresentationSettings';
 import {importSourceConfigBackground} from './sourceConfigBackground';
@@ -590,7 +593,45 @@ function domain(r:Reader,s:SceneDocument){
  r.warnings.push('Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。');
 }
 const bulbParameterAliases:Record<string,string>={phase_shift:'bulbPhaseShift',phase_speed:'bulbPhaseSpeed',camera_pitch:'bulbCameraPitch',surface_epsilon:'bulbSurfaceEpsilon',shadow_strength:'bulbShadowStrength'};
+/** Fresh native formula authoring is independent from dormant local settings. */
+function sourceFractal(r:Reader,s:SceneDocument):void {
+ const parsed=importSourceFractalFormulaConfiguration(r.peek('fractal'));if(!parsed.ok)fail(`fractal.${parsed.error.path.join('.')}: ${parsed.error.reason}`);
+ for(const path of parsed.value.consumedPaths)r.use(['fractal',...path]);for(const path of parsed.value.numericPaths)r.retainNumberToken(['fractal',...path]);r.warnings.push(...parsed.value.diagnostics);
+ s.fractalSource={model:'mathart-1.7.8-scene-v1',formula:parsed.value.configuration};
+ s.settings.formula=parsed.value.configuration.formulaId!;s.settings.fractalNumericProfile=FRACTAL_SOURCE_NUMERIC_PROFILE;
+ const center=r.peek('fractal.center');let x=0,y=0;if(center!==undefined){if(!Array.isArray(center))fail('fractal.center 需要数组');if(center.length>=2){x=sourceZoomScalar(r,'fractal.center.0',0);y=sourceZoomScalar(r,'fractal.center.1',0);}else r.use('fractal.center');}
+ const rotation=prepareDomainSourceObjectScalar(r.use('fractal.rotation'),{fallback:0,precision:'float32'});if(!rotation.ok)fail('fractal.rotation 超过解析预算');
+ const rawIterations=r.use('fractal.iterations'),integer=prepareRootsSourceJsonInt(rawIterations,200,r.numberToken('fractal.iterations'));if(!integer.ok)fail('fractal.iterations 的原始整数身份无法读取');
+ let iterations=integer.value.value;if(integer.value.route==='fallback'&&rawIterations!==undefined&&rawIterations!==null){const expression=prepareDomainSourceObjectScalar(rawIterations,{fallback:0,precision:'float64'});if(!expression.ok)fail('fractal.iterations 超过解析预算');const n=expression.facts.value;iterations=Number.isNaN(n)?0:Math.max(-2147483648,Math.min(2147483647,Math.trunc(n)));}
+ Object.assign(s.settings,{centerX:x,centerY:y,centerXLow:0,centerYLow:0,zoom:Math.max(1e-6,sourceZoomScalar(r,'fractal.zoom',1)),rotation:rotation.facts.value,iterations:Math.max(1,iterations),variant:parsed.value.configuration.fractalType});
+ r.retainNumberToken('fractal.iterations');r.retainNumberToken('fractal.rotation');
+ const render=r.str('fractal.render_method'),methods:Record<string,string>={ONEPASS:'one-pass',MULTIPASS:'multi-pass',GUESSING:'guessing'};if(render){const method=methods[render.toUpperCase()];if(method)s.settings.renderMethod=method;else r.warnings.push('未识别的 render_method 保留来源，使用既有渲染方法。');}
+ const precision=r.use('fractal.perturbation_precision');s.settings.perturbationPrecision=precision==null?'medium':typeof precision==='string'&&['LOW','MEDIUM','HIGH'].includes(precision.toUpperCase())?precision.toLowerCase():String(precision);
+ const color=prepareFractalSourceColorImport(r.root);s.settings.fractalColorProfile=FRACTAL_SOURCE_COLOR_PROFILE;s.fractalSourceColor=color.configuration;for(const path of color.consumedPaths)r.use(path);r.warnings.push(...color.diagnostics);
+ s.timeline={...s.timeline,schedule:FRACTAL_SCENE_SEQUENCE,tracks:[]};
+ r.warnings.push('分形采用原版公式参数集合、普通动画和逐帧队列；固定帧回放会在时间 0 执行首个更新。初始中心只读取 center，高低位中心仅支持时间线目标。Nova 阈值使用请求画布尺寸；原版使用逻辑 PGraphics 尺寸，DPI 语义和原版像素一致性未验证。原版整窗口与录像时钟仍待验证。');
+}
+function sourceFractalTimeline(r:Reader,s:SceneDocument):void {
+ const clips=r.peek('timeline');if(clips===undefined)return;if(!Array.isArray(clips)||clips.length>1000)fail('timeline 需要最多 1000 段数组');if(!clips.length)r.use('timeline');
+ let span=0;
+ for(let i=0;i<clips.length;i++){
+  const path='timeline.'+i;if(!isObject(clips[i]))fail(`${path} 需要对象`);const enabled=r.use(path+'.enabled');if(enabled!==undefined&&typeof enabled!=='boolean'&&!(typeof enabled==='string'&&/^(true|false)$/i.test(enabled)))fail(`${path}.enabled 需要布尔值`);if(enabled===false||typeof enabled==='string'&&enabled.toLowerCase()==='false')continue;
+  const originalType=r.str(path+'.type',true)!,type=originalType.toLowerCase(),zoom=type==='fractal_zoom',duration=zoom?Math.max(Math.fround(1e-4),sourceZoomFloat(r,path+'.duration',4)):sourceZoomFloat(r,path+'.duration',1);
+  if(!Number.isFinite(duration)||Math.abs(duration)>86400)fail(`${path}.duration 超出本地有限时长域`);
+  const rawEasing=r.use(path+'.easing'),easing=lookupSourceEasing(rawEasing)??'sine-in-out';
+  const track:AnimationTrack={id:crypto.randomUUID(),type:zoom?'fractal_zoom':type==='animate'?'animate':'wait',target:'timeline.wait',label:r.str(path+'.label')??originalType,from:0,to:0,start:0,duration,easing,pingPong:false,enabled:true};
+  if(zoom){track.target='settings.zoom';track.sourceFractalZoom=sourceFractalZoomClipTarget(r,s,path);}
+  else if(type==='animate'){
+   const prefix=['timeline',String(i),'actions'],parsed=importSourceFractalActions(r.peek(prefix),{globalEdgeEasing:r.peek(['settings','param_edge_easing']),memberOrder:p=>r.sourceKeys([...prefix,...p])});if(!parsed.ok)fail(`${path}.actions.${parsed.error.path.join('.')}: ${parsed.error.reason}`);
+   const facts=parsed.value;for(const p of facts.consumedPaths)r.use([...prefix,...p]);for(const p of facts.numericPaths)r.retainNumberToken([...prefix,...p]);for(const p of facts.globalConsumedPaths)r.use(['settings','param_edge_easing',...p]);for(const p of facts.globalNumericPaths)r.retainNumberToken(['settings','param_edge_easing',...p]);r.warnings.push(...facts.diagnostics);
+   track.target='fractal.actions';track.fractalSource={model:'mathart-1.7.8-actions-v1',targets:facts.targets,parameters:facts.parameters,...(facts.gradient?{gradient:facts.gradient}:{})};
+  }else if(type!=='wait')r.warnings.push(`${path}: 原版将 ${originalType} 作为等待，保留时长与未消费字段。`);
+  s.timeline.tracks.push(track);span+=Math.max(0,duration);if(span>86400)fail('分形时间线超过 24 小时');
+ }
+ if(span>0)s.timeline.duration=span;prepareSourceFractalScene(s);
+}
 function fractal(r:Reader,s:SceneDocument){
+ const raw=r.peek('fractal'),selected=isObject(raw)?raw.formula_id??raw.formulaId:undefined;if(selected==='newton'||selected==='nova'){sourceFractal(r,s);return;}
  const f=r.str('fractal.formula_id')??r.str('fractal.type')?.toLowerCase();if(!f)fail('缺少 fractal.formula_id');s.settings.formula=f;
  const supported=definitions.find(d=>d.kind==='fractal')!.controls.find(c=>c.key==='formula')!.options!.map(v=>v.value);if(!supported.includes(f))r.warnings.push(`分形公式 ${f} 尚未实现；保留标识，生成器会明确报错，不替换为其他公式。`);
  const variant=r.str('fractal.type');if(variant)s.settings.variant=variant.toLowerCase();Object.assign(s.settings,legacyZoomTarget(r,'fractal',{centerX:Number(s.settings.centerX),centerY:Number(s.settings.centerY),zoom:Number(s.settings.zoom)}));
@@ -1215,7 +1256,20 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
  if(usesSourceSurfaceHost(s))prepareSourceSurfaceScene(s);
  if(usesSourceAttractor(s))prepareSourceAttractorScene(s);
 }
+function sourceFractalZoomClipTarget(r:Reader,s:SceneDocument,path:string){
+    const initial={centerX:Number(s.settings.centerX),centerY:Number(s.settings.centerY),centerXLow:Number(s.settings.centerXLow??0),centerYLow:Number(s.settings.centerYLow??0),zoom:Number(s.settings.zoom)};
+    let target=sourceZoomTarget(r,path,initial);const keys=r.peek(path+'.keys');
+    if(keys!==undefined){if(!Array.isArray(keys)||keys.length>256)fail(`${path}.keys 应为最多256个目标候选的数组`);let selected=-1;const times=new Map<number,number>(),time=(j:number)=>{if(!times.has(j))times.set(j,sourceZoomFloat(r,`${path}.keys.${j}.time`,0));return times.get(j)!;};
+     for(let j=0;j<keys.length;j++){if(!isObject(keys[j]))fail(`${path}.keys.${j} 不是对象`);if(selected<0||time(j)>=time(selected))selected=j;}
+     if(selected>=0)target=sourceZoomTarget(r,`${path}.keys.${selected}`,target);
+     r.warnings.push(`${path}.keys：按 v1.7.8 最大 Float32 time（并列取后者）选择目标，其他候选保留在 source。`);
+    }
+    const maximum=sourceZoomScalar(r,path+'.max_zoom',1e300),parsed=parseSourceFractalZoomTarget({model:'mathart-1.7.8-target',...target,zoom:Math.max(1e-9,target.zoom),maxZoom:Math.max(1,Number.isFinite(maximum)?maximum:1e300)});
+    if(!parsed.ok)fail(`${path}：${parsed.error.reason}`);
+    return parsed.value;
+}
 function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarScope,structure?:OrdinaryTimelineClip[]){
+ if(usesSourceFractal(s)){sourceFractalTimeline(r,s);return;}
  if(s.sourceCamera&&ordinaryScope){ordinaryCameraTimeline(r,s,ordinaryScope,structure);return;}
  if(s.kind==='domain'){domainTimeline(r,s);return;}
  if(s.kind==='spirograph'&&parseSpirographVersion(s.settings.spirographVersion)!=='local-v1'){spirographTimeline(r,s);return;}
@@ -1253,16 +1307,7 @@ function timeline(r:Reader,s:SceneDocument,ordinaryScope?:OrdinarySourceScalarSc
   }else if(type==='fractal_zoom'){
    if(s.kind!=='fractal'){mapped=false;r.warnings.push(`${path}：分形缩放仅适用于分形场景。`);}
    else{
-    const initial={centerX:Number(s.settings.centerX),centerY:Number(s.settings.centerY),centerXLow:Number(s.settings.centerXLow??0),centerYLow:Number(s.settings.centerYLow??0),zoom:Number(s.settings.zoom)};
-    let target=sourceZoomTarget(r,path,initial);const keys=r.peek(path+'.keys');
-    if(keys!==undefined){if(!Array.isArray(keys)||keys.length>256)fail(`${path}.keys 应为最多256个目标候选的数组`);let selected=-1;const times=new Map<number,number>(),time=(j:number)=>{if(!times.has(j))times.set(j,sourceZoomFloat(r,`${path}.keys.${j}.time`,0));return times.get(j)!;};
-     for(let j=0;j<keys.length;j++){if(!isObject(keys[j]))fail(`${path}.keys.${j} 不是对象`);if(selected<0||time(j)>=time(selected))selected=j;}
-     if(selected>=0)target=sourceZoomTarget(r,`${path}.keys.${selected}`,target);
-     r.warnings.push(`${path}.keys：按 v1.7.8 最大 Float32 time（并列取后者）选择目标，其他候选保留在 source。`);
-    }
-    const maximum=sourceZoomScalar(r,path+'.max_zoom',1e300),parsed=parseSourceFractalZoomTarget({model:'mathart-1.7.8-target',...target,zoom:Math.max(1e-9,target.zoom),maxZoom:Math.max(1,Number.isFinite(maximum)?maximum:1e300)});
-    if(!parsed.ok)fail(`${path}：${parsed.error.reason}`);
-    track.target='settings.zoom';track.sourceFractalZoom=parsed.value;
+    track.target='settings.zoom';track.sourceFractalZoom=sourceFractalZoomClipTarget(r,s,path);
     r.warnings.push(`${path}：采用原版目标缩放与高低位中心轨迹；片段时间仍按本地时间轴计算，原版逐帧队列时序待验。`);
    }
   }else if(type==='spirograph_finish_wait'){

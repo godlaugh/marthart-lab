@@ -255,7 +255,7 @@ function simulationFrames(scene: SceneDocument, context: GenerateContext, times:
 }
 
 function generateDensityWindow(scene: SceneDocument, context: GenerateContext, session: TemporalGenerationSession): SceneOutput {
-  const current = sceneAtTime(scene, context.time), fps = integer(current, 'densitySampleRate', 10, 1, 120);
+  const current = sceneAtTime(scene, context.time,{isCancelled:context.isCancelled}), fps = integer(current, 'densitySampleRate', 10, 1, 120);
   const lifetime = numberSetting(current.settings, 'densityLifetime', 1, .001, 60), times = historyTimes(context.time, lifetime, fps);
   const frames: PointOutput[] = [], continuous = scene.kind === 'attractor' && current.settings.simulationMode === 'continuous';
   const replaySession = continuous ? new TemporalGenerationSession() : undefined;
@@ -305,7 +305,7 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
     try{return generateRootsNativePresentation(scene,context,session.rootsNative);}
     catch(error){session.reset([error]);throw error;}
   }
-  const current = sceneAtTime(scene, context.time), settings = current.settings;
+  const current = sceneAtTime(scene, context.time,{isCancelled:context.isCancelled}), settings = current.settings;
   if(scene.kind==='domain')return generateDomain(current,context,session.domain);
   const tracking=prepareParticleCamera(scene,context.time);
   if (scene.kind === 'perlin' && settings.style === 'continuous') {

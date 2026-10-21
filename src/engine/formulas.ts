@@ -1,6 +1,7 @@
 import {parse} from 'mathjs';
 import type {SceneDocument,FormulaStyle,FormulaLabel,FormulaConfig} from '../types';
 import {fractalEquationLatex} from '../scenes/complex';
+import {sourceFractalRenderInput} from './sourceFractalRender';
 import {symmetryEquationLatex} from '../scenes/symmetryFormula';
 import {hasSymmetryCustom} from './symmetryCustom';
 export type {FormulaStyle,FormulaLabel,FormulaConfig} from '../types';
@@ -20,7 +21,7 @@ export function validateFormulas(value:unknown):FormulaConfig {
   return{referenceWidth:value.referenceWidth as number,referenceHeight:value.referenceHeight as number,main:{...style(value.main),...(value.main.latex!==undefined?{latex:value.main.latex as string}:{})},additional:value.additional.map(v=>{if(!object(v)||typeof v.id!=='string'||!v.id||ids.has(v.id)||typeof v.latex!=='string'||v.latex.length>8192)throw new Error('附加公式标识或内容无效');ids.add(v.id);return{...style(v),id:v.id,latex:v.latex};})};
 }
 export function mainEquation(scene:SceneDocument):string {
-  if(scene.kind==='fractal')return fractalEquationLatex(scene.settings);
+  if(scene.kind==='fractal')return fractalEquationLatex(scene.settings,scene.fractalSource?sourceFractalRenderInput(scene.evaluatedFractalScene):undefined);
   if(scene.kind==='symmetry')return hasSymmetryCustom(scene)?'z_{k+1}=\\operatorname{calculate\\_next}(z_k)':symmetryEquationLatex(scene.settings);
   const symbol=(s:string)=>s.replace(/[^a-zA-Z0-9_]/g,'');
   const lines=Object.entries(scene.equations).filter(([,value])=>value.trim()).map(([key,value])=>{

@@ -1,4 +1,6 @@
 import type {SourceFractalZoomTarget} from './engine/sourceFractalZoom';
+import type {SourceFractalDocumentPayload,SourceFractalActionsPayload} from './engine/sourceFractalDocument';
+import type {SourceFractalEvaluation} from './engine/sourceFractalTimeline';
 import type {SourceIteratedDraft} from './engine/sourceIteratedDraft';
 import type {SourceMapConfiguration} from './engine/sourceMapConfig';
 import type {SourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
@@ -190,6 +192,7 @@ export interface AnimationTrack {
   alignMode?: "absolute" | "next-turn";
   /** Native target captures the effective viewport at clip start. */
   sourceFractalZoom?:SourceFractalZoomTarget;
+  fractalSource?:SourceFractalActionsPayload;
   keyframes?: { time: number; centerX: number; centerY: number; centerXLow?: number; centerYLow?: number; zoom: number; easing?: string }[];
   interpolation?: "linear" | "exponential";
   gradient?: GradientAnimation;
@@ -217,6 +220,9 @@ export interface SpirographFrameRequest {
   recording?:{startFrame:number;fps:number};
 }
 export interface SceneDocument {
+  fractalSource?:SourceFractalDocumentPayload;
+  /** Rebuilt by the source queue; never persisted as authored formula state. */
+  evaluatedFractalScene?:SourceFractalEvaluation;
   /** Local editor draft; effective rendering fields remain independently valid. */
   iteratedDraft?:SourceIteratedDraft;
   /** Explicit project canvas dimensions; omission retains existing sizing. */
@@ -276,7 +282,7 @@ export interface SceneDocument {
     /** Sequential profiles derive absolute positions through resolveTimeline.
      * Spirograph reads track.start as a pre-clip delay; Roots ignores it and
      * uses explicit waits. duration is the caller's minimum playback span. */
-    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1' | 'ordinary-camera-sequence-v1' | 'samila-scene-sequence-v1';
+    schedule?: 'spirograph-sequence-v1' | 'roots-camera-sequence-v1' | 'roots-scene-sequence-v1' | 'ordinary-camera-sequence-v1' | 'samila-scene-sequence-v1' | 'fractal-scene-sequence-v1';
   };
   favorite: boolean;
   formulas?: FormulaConfig;

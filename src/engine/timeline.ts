@@ -1,3 +1,5 @@
+import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument';
+import {bindSourceFractalFrame,replaySourceFractal,resolveSourceFractalTimeline,validateSourceFractalTrack} from './sourceFractalTimeline';
 import {SOURCE_EASING_NAMES} from './sourceEasing';
 import {parseSourceFractalZoomTarget,evaluateSourceFractalZoom} from './sourceFractalZoom';
 import {usesSourceMapParameters,validateSourceMapParameters} from './sourceMapParameterIdentity';
@@ -103,6 +105,7 @@ export const ACTIONS = [
 const cameraMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','track','stopTracking','ambient','stopAmbient']);
 export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument,clock:'fixed'|'realtime'='fixed'):string[]{
+ if(usesSourceFractal(scene))return ['分形按固定帧率执行原版队列，暂停保留当前画面，跳转重建参数和渐变；原版实时线程和录像首尾帧仍待验证。'];
  if(usesSourceSamilaTimeline(scene)){const frame=replaySourceSamilaTimeline(scene,0);return[...frame.diagnostics.map(d=>d.message),...(clock==='fixed'?['源 Samila 队列按固定帧率回放；仅 theta 参与密度显示，其他相机分量保留运行状态。']:[])];}
  if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,'复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。'];
@@ -149,6 +152,7 @@ export function validateFractalKeyframes(track:AnimationTrack):NonNullable<Anima
   return frames;
 }
 export function clipDuration(track: AnimationTrack, scene: SceneDocument): number {
+  if(usesSourceFractal(scene)){validateSourceFractalTrack(track);return Math.max(0,track.duration);}
   if(usesSpirographFrameClock(scene))return interactiveSpirographFrames.timeline(scene).tracks.find(item=>item.id===track.id)?.duration??track.duration;
   if (track.type === 'spirograph_finish_wait') {
     if(track.spirographWait!==undefined){
@@ -173,6 +177,7 @@ export function clipDuration(track: AnimationTrack, scene: SceneDocument): numbe
 }
 export function validateTimelineSchedule(scene:SceneDocument):void {
   const schedule=scene.timeline.schedule;
+  if(usesSourceFractal(scene)){if(schedule!==FRACTAL_SCENE_SEQUENCE)throw Error('源分形必须使用逐帧队列');for(const track of scene.timeline.tracks)validateSourceFractalTrack(track);return;}
   if(scene.sourceCamera&&schedule!=='ordinary-camera-sequence-v1')throw new Error('原版几何相机必须使用对应的顺序时间线');
   if(schedule!==undefined&&!(usesSourceSamilaTimeline(scene)||(schedule==='ordinary-camera-sequence-v1'&&!!scene.sourceCamera)||(schedule==='spirograph-sequence-v1'&&scene.kind==='spirograph')||((schedule==='roots-camera-sequence-v1'||schedule==='roots-scene-sequence-v1')&&scene.kind==='roots')))throw new Error('时间线顺序规则无效');
   if(usesCapturedDensityCamera(scene)){
@@ -194,6 +199,7 @@ const resolvedSequences=new Map<string,{starts:number[];duration:number}>();
  * Omitted schedule preserves every existing absolute-track contract. */
 export function resolveTimeline(scene:SceneDocument):SceneDocument['timeline'] {
   validateTimelineSchedule(scene);
+  if(usesSourceFractal(scene))return resolveSourceFractalTimeline(scene);
   if(usesSourceSamilaTimeline(scene))return resolveSourceSamilaTimeline(scene);
   if(scene.sourceCamera){const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(scene)!,scene.timeline.tracks,scene.timeline.fps,{particleActions:sourceParticleActionFamily(scene),surfaceMode:usesSourceSurfaceHost(scene)?scene.surfaceSource?.mode:undefined});const byId=new Map(layout.clips.map(c=>[c.trackId,c]));return{...scene.timeline,duration:Math.max(scene.timeline.duration,layout.span),tracks:scene.timeline.tracks.map(t=>{const c=byId.get(t.id);return c?{...t,start:c.start,duration:c.duration}:t;})};}
   if(usesRootsCameraTimeline(scene))return resolveRootsCameraTimeline(scene);
@@ -246,6 +252,8 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   if(scene.rootsPresentation)copied.rootsPresentation=structuredClone(scene.rootsPresentation);
   delete copied.evaluatedDomainGradient;
   delete copied.evaluatedFractalGradient;
+  delete copied.evaluatedFractalScene;
+  if(scene.fractalSource)copied.fractalSource=structuredClone(scene.fractalSource);
   delete copied.evaluatedSpirographRotationRadians;
   delete copied.evaluatedSpirographFrame;
   delete copied.evaluatedRootsCamera;
@@ -434,6 +442,8 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
 export type SourceParticleActionFamily='surface'|'attractor'|'perlin'|'symmetry'|'symmetry-parameters'|'map-parameters';
 export function sourceParticleActionFamily(scene:SceneDocument):SourceParticleActionFamily|undefined{return usesSourceMapParameters(scene)?'map-parameters':usesSourceSymmetryParameters(scene)?'symmetry-parameters':usesSourcePerlin(scene)?'perlin':usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':usesSourceSymmetryGradient(scene)?'symmetry':undefined;}
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceFamily?:SourceParticleActionFamily):void{
+ if(schedule===FRACTAL_SCENE_SEQUENCE){if(sceneKind!=='fractal')throw Error('源分形队列仅用于分形作品');validateSourceFractalTrack(track);return;}
+ if(track.fractalSource!==undefined)throw Error('源分形动作缺少对应队列');
  const sourceSurface=sourceFamily==='surface',sourcePerlin=sourceFamily==='perlin';
  if(track.sourceFractalZoom!==undefined){
   if(track.type!=='fractal_zoom'||sceneKind!=='fractal'||track.keyframes!==undefined||track.interpolation!==undefined||track.pingPong||(track.repeat??1)!==1)throw Error('原版分形目标缩放不能混用关键帧、往返或重复');
@@ -469,8 +479,9 @@ function validateTrack(track: AnimationTrack, scene: SceneDocument) {
 type TimelineEvaluator = (position: number, base: SceneDocument) => SceneDocument;
 const compiledTimelines = new Map<string, TimelineEvaluator>();
 /** Pure evaluation: starts are ordered chronologically, ties follow document order. */
-export function sceneAtTime(scene: SceneDocument, position: number): SceneDocument {
+export function sceneAtTime(scene: SceneDocument, position: number, options?:{isCancelled?:()=>boolean}): SceneDocument {
   finite(position, '时间位置');
+  if(usesSourceFractal(scene)){const out=copyState(scene);for(const target of bindSourceFractalFrame(out,replaySourceFractal(scene,position,options?.isCancelled)))recordWrittenTarget(out,target);return out;}
   if(usesSourceBouncing(scene)){
     const prepared=prepareSourceBouncingScene(scene);if(!prepared.ok)throw new Error(prepared.error.reason);
     return copyState(scene); // Display snapshot only; explicit checkpoints own physics.
@@ -837,6 +848,13 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
 }
 
 export function createAnimationTrack(scene: SceneDocument, type: AnimationClipType = 'numeric', start = 0): AnimationTrack {
+  if(usesSourceFractal(scene)){
+    if(!['wait','animate','fractal_zoom'].includes(type))throw Error('源分形只支持等待、动画和目标缩放');
+    const track:AnimationTrack={id:crypto.randomUUID(),type,target:type==='wait'?'timeline.wait':type==='animate'?'fractal.actions':'settings.zoom',from:0,to:0,start:0,duration:1,easing:'sine-in-out',pingPong:false,enabled:true};
+    if(type==='animate')track.fractalSource={model:'mathart-1.7.8-actions-v1',targets:{rotationRate:.2},parameters:[]};
+    if(type==='fractal_zoom')track.sourceFractalZoom={model:'mathart-1.7.8-target',centerX:Number(scene.settings.centerX??0),centerY:Number(scene.settings.centerY??0),centerXLow:Number(scene.settings.centerXLow??0),centerYLow:Number(scene.settings.centerYLow??0),zoom:Number(scene.settings.zoom??1)*10,maxZoom:1e300};
+    return track;
+  }
   if(usesRootsCameraTimeline(scene)){
     if(!['wait','animate'].includes(type))throw new Error('复根源相机时间线仅支持等待与动作组');
     return {id:crypto.randomUUID(),type,target:type==='wait'?'timeline.wait':'camera.actions',from:0,to:0,start:0,duration:1,easing:'sine-in-out',pingPong:false,enabled:true,repeat:1,...(type==='animate'?{actions:[{id:crypto.randomUUID(),method:'ambient',args:{phiSpeed:0,thetaSpeed:.2,gammaSpeed:0}}]}:{})};

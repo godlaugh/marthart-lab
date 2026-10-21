@@ -1,3 +1,5 @@
+import {activeFractalFormulaIdentity} from './sourceFractalIdentity';
+import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalSourcePrecision';
 import {usesCapturedDensityCamera} from './sourceCameraMode';
 import {prepareDomainViewport,panDomainViewport,zoomDomainViewport,parseDomainViewportVersion,type PreparedDomainViewport} from './domainViewport';
 import {samilaCameraEnabled} from './samilaCamera';
@@ -28,12 +30,12 @@ export function planeNavigation(scene:SceneDocument,width:number,height:number,r
     const view=bouncingRasterView(scene,Math.max(1,Math.round(width)),Math.max(1,Math.round(height)));
     return{kind:'bouncing',centerX:dd(view.centerX),centerY:dd(view.centerY),width,height,spanX:view.spanX,spanY:view.spanY,rotation:0,zoom:1};
   }
-  if(scene.kind!=='domain'&&!(scene.kind==='fractal'&&scene.settings.formula!=='mandelbulb_3d'))throw new Error('此场景没有二维数学视口');
+  if(scene.kind!=='domain'&&!(scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)!=='mandelbulb_3d'))throw new Error('此场景没有二维数学视口');
   if(scene.kind==='domain'){
     const view=domainView??prepareDomainViewport(scene.settings),spanY=view.version==='local-v1'?4/view.scale:2*view.halfSpan;
     return{kind:'domain',centerX:dd(view.centerX),centerY:dd(view.centerY),width,height,spanX:spanY*width/height,spanY,rotation:view.angle,zoom:view.effectiveScale,domainViewport:view};
   }
-  const facts=fractalView??prepareFractalViewportNavigation(scene.settings,width,height),view=facts.viewport,spanY=facts.rules.verticalRange/view.zoom;
+  const facts=fractalView??prepareFractalViewportNavigation(scene.fractalSource?{...scene.settings,formula:activeFractalFormulaIdentity(scene)!,fractalNumericProfile:FRACTAL_SOURCE_NUMERIC_PROFILE}:scene.settings,width,height),view=facts.viewport,spanY=facts.rules.verticalRange/view.zoom;
   // Keep the old multiplication/division sequence for omitted/local profiles.
   const spanX=facts.rules.sourceNewtonNova?spanY*facts.aspect:spanY*width/height;
   return{kind:scene.kind,centerX:dd(view.centerX,view.centerXLow),centerY:dd(view.centerY,view.centerYLow),width,height,spanX,spanY,rotation:facts.rotation,zoom:view.zoom,fractalViewport:facts};
@@ -60,5 +62,5 @@ export function fitPlane(scene:SceneDocument,domainView?:PreparedDomainViewport)
   if(hasContinuousDensity(scene)||hasProgressiveRoots(scene))return{densityView:'auto'};
   if(scene.kind==='bouncing')return{bouncingView:'fit'};
   if(scene.kind==='domain')return{centerX:0,centerY:0,scale:(domainView?.version??parseDomainViewportVersion(scene.settings.domainViewportVersion))==='local-v1'?1:2.5};
-  return{centerX:scene.settings.formula==='mandelbrot'?-.5:0,centerY:0,centerXLow:0,centerYLow:0,zoom:1};
+  return{centerX:activeFractalFormulaIdentity(scene)==='mandelbrot'?-.5:0,centerY:0,centerXLow:0,centerYLow:0,zoom:1};
 }

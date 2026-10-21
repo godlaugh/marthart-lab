@@ -9,6 +9,8 @@ import {parseFractalColors,shadeFractalOrbit,fractalColorControls} from '../src/
 import {paletteColor} from '../src/engine/palette';
 import {FractalGpu} from '../src/engine/fractalGpu';
 import {visible2DFractalControls} from '../src/components/FractalControls';
+import {sceneAtTime} from '../src/engine/timeline';
+import {sourceFractalRenderInput} from '../src/engine/sourceFractalRender';
 import {parseLegacyScene} from '../src/engine/legacyImport';
 
 const definition=definitions.find(d=>d.kind==='fractal')!;
@@ -80,14 +82,17 @@ describe('Newton/Nova step-convergence contract',()=>{
   expect(visible2DFractalControls(definition.controls,{...s.settings,formula:'mandelbrot'}).map(c=>c.key)).not.toContain('convergenceMode');
   expect(()=>fractalConfig({...s.settings,convergenceMode:'unknown'})).toThrow();
  });
- it('imports source bailout as convergence tolerance including zero, large values and the observed default',()=>{
+ it('imports the source scalar threshold through binder clamp and native mapper floor',()=>{
   for(const formula of ['newton','nova'])for(const tolerance of [undefined,0,.02,2,-1]){
    const source={config_version:'1.0.0',type:'FRACTAL',name:'Convergence import',fractal:{formula_id:formula,parameters:tolerance===undefined?{}:{bailout:tolerance,convergent_bailout:-2,exponent1:9}}};
    const imported=parseLegacyScene(JSON.stringify(source));expect(imported.source).toEqual(source);
-   expect(imported.scene.settings).toMatchObject({convergenceMode:'step',tolerance:tolerance===undefined?.001:tolerance,bailout:4});
-   expect(imported.scene.settings.power).toBe(3);
-   if(formula==='nova')expect(imported.scene.settings).toMatchObject({startReal:1,startImag:0,juliaReal:0,juliaImag:0});
-   expect(imported.warnings.join(' ')).toContain('逻辑 PGraphics');expect(fractalConfig(imported.scene.settings).convergenceMode).toBe('step');
+   const expected=Math.fround(Math.max(0,tolerance??.001)),payload=imported.scene.fractalSource!.formula,frame=sceneAtTime(imported.scene,0).evaluatedFractalScene!;
+   expect(payload.parameters!.floats).toEqual({bailout:expected,relaxation:1});expect(payload.parameters!.complex.exponent).toEqual([3,0]);
+   expect(frame.formula.native).toMatchObject({power:3,bailout:Math.max(Math.fround(1e-12),expected),formulaParams:[3,1,0,0]});
+   expect(frame.formula.native.dynamicParams.slice(0,4)).toEqual([3,0,1,expected]);
+   if(formula==='nova'){expect(payload.parameters!.complex).toEqual({exponent:[3,0],start_value:[1,0],julia_seed:[0,0]});expect(frame.formula.native.julia).toEqual([1,0]);}
+   expect(payload.parameters!.floats).not.toHaveProperty('convergent_bailout');expect(payload.parameters!.floats).not.toHaveProperty('exponent1');
+   expect(imported.warnings.join(' ')).toContain('逻辑 PGraphics');expect(fractalConfig(imported.scene.settings,sourceFractalRenderInput(frame)).convergenceMode).toBe('step');
   }
  });
 });

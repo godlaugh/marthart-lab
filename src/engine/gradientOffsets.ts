@@ -1,3 +1,4 @@
+import {activeFractalFormulaIdentity,type FractalFormulaIdentityScene} from './sourceFractalIdentity';
 import {usesSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 import {usesSourceAttractor} from './sourceAttractorDocument';
@@ -7,17 +8,21 @@ import type {GradientAnimation,SceneDocument} from '../types';
 import {validatePalette} from './palette';
 import {parseDomainColorVersion} from './domainSourceColor';
 import {usesRootsSourceDensity} from './rootsDensityColor';
-import {authoredFractalSourceColor,usesFractalSourceColor} from './fractalSourceColorAuthoring';
+import {authoredFractalSourceColor,usesFractalSourceColor,supportsFractalSourceColor} from './fractalSourceColorAuthoring';
 
 export interface GradientOffsets {palette:number;inside:number;outside:number;}
 const finite=(n:unknown):number=>{if(typeof n!=='number'||!Number.isFinite(n))throw new Error('渐变偏移与时间必须为有限数值');return n;};
 const wrap=(n:number)=>n-Math.floor(n);
-export function supportsGradientOffsets(scene:Pick<SceneDocument,'kind'|'settings'>):boolean{return scene.kind==='domain'||scene.kind==='fractal'&&scene.settings.formula!=='mandelbulb_3d'&&(scene.settings.fractalColorVersion===2||usesFractalSourceColor(scene));}
+export function supportsGradientOffsets(scene:FractalFormulaIdentityScene):boolean {
+ if(scene.kind==='domain')return true;
+ if(scene.fractalSource!==undefined)return usesFractalSourceColor(scene)&&supportsFractalSourceColor(scene);
+ return scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)!=='mandelbulb_3d'&&(scene.settings.fractalColorVersion===2||usesFractalSourceColor(scene));
+}
 /** The selected color producer owns which palette an animation can affect.
  * Omitted legacy gradient models still mean the local palette; only newly
  * authored source-color actions receive the source offset default. */
-export function gradientAnimationCapabilities(scene:Pick<SceneDocument,'kind'|'settings'>&Partial<Pick<SceneDocument,'attractorSource'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>>){
- const sourceSurface=usesSourceSurfaceGeometry(scene),sourceAttractor=usesSourceAttractor(scene),sourcePerlin=usesSourcePerlin(scene),sourceSymmetry=usesSourceSymmetryGradient(scene),sourceParticles=sourceSurface||sourceAttractor||sourcePerlin||sourceSymmetry,sourceRoots=scene.kind==='roots'&&usesRootsSourceDensity(scene.settings),sourceFractal=usesFractalSourceColor(scene),localPalette=!sourceParticles&&!sourceRoots&&!sourceFractal&&(scene.kind!=='domain'||parseDomainColorVersion(scene.settings.domainColorVersion)==='local-v1');
+export function gradientAnimationCapabilities(scene:FractalFormulaIdentityScene&Partial<Pick<SceneDocument,'attractorSource'|'perlinGpuSource'|'perlinCpuSource'|'perlinSource'>>){
+ const sourceSurface=usesSourceSurfaceGeometry(scene),sourceAttractor=usesSourceAttractor(scene),sourcePerlin=usesSourcePerlin(scene),sourceSymmetry=usesSourceSymmetryGradient(scene),sourceParticles=sourceSurface||sourceAttractor||sourcePerlin||sourceSymmetry,sourceRoots=scene.kind==='roots'&&usesRootsSourceDensity(scene.settings),sourceFractal=usesFractalSourceColor(scene),localPalette=scene.fractalSource===undefined&&!sourceParticles&&!sourceRoots&&!sourceFractal&&(scene.kind!=='domain'||parseDomainColorVersion(scene.settings.domainColorVersion)==='local-v1');
  const defaultAnimation:GradientAnimation=sourceParticles?{...SOURCE_PARTICLE_GRADIENT_DEFAULT}:localPalette||sourceRoots?{mode:'offset_cycle',speed:.1,interpolation:'rgb'}:{model:'offsets',mode:'hue_rotate',speed:60,interpolation:'oklab',affectInside:true,affectOutside:true};
  return{localPalette,offsets:sourceParticles||supportsGradientOffsets(scene),defaultAnimation,paletteOffsetTarget:sourceSymmetry?'palette.offset':sourceRoots?'settings.rootSourcePaletteOffset':sourceFractal?'fractalColor.paletteOffset':localPalette?'palette.offset':'settings.paletteOffset',
   retainedPaletteWarning:localPalette?undefined:sourceSymmetry?'源 Symmetry 渐变使用原版偏移队列；本地色板数值动画保留但不执行。':sourcePerlin?'源 Perlin 使用独立色板与渐变队列；请使用渐变动作编辑，旧本地色板不参与绘制。':sourceAttractor?'原版吸引子使用独立色板与渐变时间线；CPU 开启拖尾时执行渐变，本地色板动画不参与执行。':sourceSurface?'原版曲面使用独立色板与渐变时间线；本地色板动画不参与执行。':sourceRoots?'复根源密度不消费本地色板动画；相关片段保留时间安排，可用数值动画修改原版复根色板偏移。':sourceFractal?'原版分形着色使用独立色板；本地色板动画保留，请使用内部与外部偏移动画。':'当前源着色不消费本地色板动画或 palette.offset / palette.cycles；相关动画已保留，但不会执行。请改用域偏移与循环采样。'};

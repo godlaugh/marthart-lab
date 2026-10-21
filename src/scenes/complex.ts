@@ -21,7 +21,8 @@ import { doubleDoubleOrbit, precisePixel, referenceOrbit, supportsDoubleDouble, 
 import {parseFractalViewport,complexPixel} from '../engine/complexViewport';
 import { fractalGpu, unpackGpuOrbit } from '../engine/fractalGpu';
 import {FractalSourceGpuError,fractalSourceCancel} from '../engine/fractalSourceGpuFailure';
-import {parseFractalSourcePlan} from '../engine/fractalSourcePrecision';
+import {FRACTAL_SOURCE_NUMERIC_PROFILE,parseFractalSourcePlan,parseFractalSourceNativePlan,type FractalSourceNativePrecisionInput} from '../engine/fractalSourcePrecision';
+import {sourceFractalRenderInput} from '../engine/sourceFractalRender';
 import {parseRootParameters,rootParameterBounds,normalizeRootParameter,withRootParameters} from '../engine/rootParameters';
 import {parseFractalColors,shadeFractalOrbit,createFractalTrapState,observeFractalTraps,usesFractalTrap,type FractalTrapState} from '../engine/fractalColor';
 import {rasterDimensions} from '../engine/rasterDimensions';
@@ -122,9 +123,10 @@ export function fractalOrbit(point:Complex,c:FractalConfig,onStep?:(z:Complex)=>
  }
  return complete({z,count:c.iterations,...(residualConvergence?{colorIteration:c.iterations-1}:{}),inside:true,invalid:false,trap,derivative,converged:false});
 }
-export function fractalConfig(s:Settings):FractalConfig {
- const formula=select(s,'formula','mandelbrot',formulaIds),variant=select(s,'variant','mandelbrot',['mandelbrot','julia']);
- const numericProfile=parseFractalNumericProfile(s.fractalNumericProfile),sourceNumerics=fractalViewportRules(numericProfile,formula).sourceNewtonNova,sourceColor=parseFractalSourceColorProfile(s.fractalColorProfile);
+export function fractalConfig(s:Settings,source?:FractalSourceNativePrecisionInput):FractalConfig {
+ const native=source?.native;
+ const formula=source?.formula??select(s,'formula','mandelbrot',formulaIds),variant=native?.fractalType??select(s,'variant','mandelbrot',['mandelbrot','julia']);
+ const numericProfile=source?FRACTAL_SOURCE_NUMERIC_PROFILE:parseFractalNumericProfile(s.fractalNumericProfile),sourceNumerics=fractalViewportRules(numericProfile,formula).sourceNewtonNova,sourceColor=parseFractalSourceColorProfile(s.fractalColorProfile);
  if(sourceColor&&!sourceNumerics)throw new FractalSourceGpuError('原版分形着色需要启用 MathArt Newton/Nova 数值规则并选择 Newton 或 Nova。','input');
  // Source numerics owns its stopping rule. The independent authored mode is
  // retained so switching back restores the existing document's behavior.
@@ -132,22 +134,24 @@ export function fractalConfig(s:Settings):FractalConfig {
  // The source catalog accepts floating input, while its shader rounds both
  // Phoenix exponents. Missing mode preserves existing independent documents.
  const roundedPhoenix=formula==='phoenix'&&select(s,'phoenixExponentMode','complex',['complex','rounded'])==='rounded';
- const rawPower=sourceNumerics?val(s,'power',2):val(s,'power',2,.1,32),rawImag=sourceNumerics?val(s,'powerImag',0):val(s,'powerImag',0,-16,16),rawHistory=val(s,'phoenixPower2',1,0,32);
+ const rawPower=native?native.dynamicParams[0]:sourceNumerics?val(s,'power',2):val(s,'power',2,.1,32),rawImag=native?native.dynamicParams[1]:sourceNumerics?val(s,'powerImag',0):val(s,'powerImag',0,-16,16),rawHistory=native?0:val(s,'phoenixPower2',1,0,32);
  const shaderRound=(value:number)=>Math.floor(Math.fround(Math.fround(value)+.5));
  const power:Complex=roundedPhoenix?[Math.max(2,shaderRound(rawPower)),0]:[rawPower,rawImag];
- return {formula,variant,...(numericProfile==='local-v1'?{}:{numericProfile}),distance:sourceColor?undefined:prepareFractalDistance(s,{formula,variant,power}),
- iterations:integer(s,'iterations',180,1,4096),power,
- start:[val(s,'startReal',0),val(s,'startImag',0)],julia:[val(s,'juliaReal',-.745),val(s,'juliaImag',.186)],
- bailout:residualMagnet?Math.max(1e-6,val(s,'bailout',4,0)):val(s,'bailout',formula==='mandelbulb_3d'?2:4,formula==='mandelbulb_3d'?.5:1.000001,1e12),tolerance:sourceNumerics?val(s,'tolerance',1e-6):val(s,'tolerance',1e-6,sourceConvergence?0:1e-14,sourceConvergence?Infinity:.1),convergenceMode,
- relaxation:sourceNumerics?val(s,'relaxation',1):val(s,'relaxation',1,sourceConvergence&&formula==='binocular'?0:.01,sourceConvergence&&formula==='binocular'?Infinity:3),feedback:val(s,'feedback',-.5,-2,2),feedbackImag:val(s,'feedbackImag',0,-2,2),phoenixPower2:Math.max(1,shaderRound(rawHistory)),singularityGuard:val(s,'singularityGuard',1e-10,1e-24,.1),quad:[val(s,'quadReal',1),val(s,'quadImag',0)],constantTerm:[val(s,'constReal',1),val(s,'constImag',0)],initialCoefficient:[val(s,'z0Real',-1),val(s,'z0Imag',0)],denomOffset:val(s,'denomOffset',1),
+ return {formula,variant,...(numericProfile==='local-v1'?{}:{numericProfile}),distance:sourceColor||native?undefined:prepareFractalDistance(s,{formula,variant,power}),
+ iterations:source?.iterations??integer(s,'iterations',180,1,4096),power,
+ start:native?[...native.julia]:[val(s,'startReal',0),val(s,'startImag',0)],julia:native?[...native.julia]:[val(s,'juliaReal',-.745),val(s,'juliaImag',.186)],
+ bailout:native?native.bailout:residualMagnet?Math.max(1e-6,val(s,'bailout',4,0)):val(s,'bailout',formula==='mandelbulb_3d'?2:4,formula==='mandelbulb_3d'?.5:1.000001,1e12),tolerance:native?native.bailout:sourceNumerics?val(s,'tolerance',1e-6):val(s,'tolerance',1e-6,sourceConvergence?0:1e-14,sourceConvergence?Infinity:.1),convergenceMode,
+ relaxation:native?native.dynamicParams[2]:sourceNumerics?val(s,'relaxation',1):val(s,'relaxation',1,sourceConvergence&&formula==='binocular'?0:.01,sourceConvergence&&formula==='binocular'?Infinity:3),feedback:native?0:val(s,'feedback',-.5,-2,2),feedbackImag:native?0:val(s,'feedbackImag',0,-2,2),phoenixPower2:Math.max(1,shaderRound(rawHistory)),singularityGuard:native?1e-10:val(s,'singularityGuard',1e-10,1e-24,.1),quad:native?[0,0]:[val(s,'quadReal',1),val(s,'quadImag',0)],constantTerm:native?[0,0]:[val(s,'constReal',1),val(s,'constImag',0)],initialCoefficient:native?[0,0]:[val(s,'z0Real',-1),val(s,'z0Imag',0)],denomOffset:native?1:val(s,'denomOffset',1),
  // The legacy nearest-distance diagnostic is unused by source color. Keep its
  // neutral transport inputs independent of dormant local authoring fields.
  trapShape:sourceColor?'point':select(s,'trapShape','ring',['point','ring','cross']),trapRadius:sourceColor?0:val(s,'trapRadius',.5,0,100),
  trapCenter:sourceColor?[0,0]:[val(s,'trapReal',0),val(s,'trapImag',0)],trapRotation:sourceColor?0:val(s,'trapRotation',0),trapAspect:sourceColor?1:val(s,'trapAspect',1,.01,100)};
 }
 /** Display derives from the same validated configuration as the orbit evaluator. */
-export function fractalEquationLatex(settings:Settings):string {
- const c=fractalConfig(settings),n=(v:number)=>String(v).replace(/e([+-]?\d+)/i,'\\times 10^{$1}');
+export function fractalEquationLatex(settings:Settings,source?:FractalSourceNativePrecisionInput):string {
+ // Source labels describe the same evaluated shader inputs as the image. Local
+ // color and dormant authoring values do not participate in that expression.
+ const c=fractalConfig(source?{}:settings,source),n=(v:number)=>String(v).replace(/e([+-]?\d+)/i,'\\times 10^{$1}');
  const z=(v:Complex)=>v[1]===0?n(v[0]):`\\left(${n(v[0])}${v[1]<0?'-':'+'}${n(Math.abs(v[1]))}i\\right)`;
  const p=z(c.power),julia=c.formula==='julia'||c.variant==='julia',constant=julia?z(c.julia):'w';
  let rhs='',seed=c.formula==='newton'||c.formula==='binocular'||julia?'w':z(c.start),extra='';
@@ -208,7 +212,7 @@ function prepareLocalFractalColoring(scene:SceneDocument,c:FractalConfig){
  return {traceColors,shade:colorOrbit};
 }
 function generateFractal(scene:SceneDocument,ctx:GenerateContext):SceneOutput{
- const start=performance.now(),s=scene.settings,c=fractalConfig(s);
+ const start=performance.now(),s=scene.settings,source=scene.fractalSource?sourceFractalRenderInput(scene.evaluatedFractalScene):undefined,c=fractalConfig(s,source);
  if(c.formula==='mandelbulb_3d')return generateMandelbulb(scene,ctx,c);
  const sourceColorProfile=parseFractalSourceColorProfile(s.fractalColorProfile);
  const coloring=sourceColorProfile?undefined:prepareLocalFractalColoring(scene,c),traceColors=coloring?.traceColors;
@@ -220,13 +224,14 @@ function generateFractal(scene:SceneDocument,ctx:GenerateContext):SceneOutput{
  const requestedBackend=select(s,'fractalBackend','auto',['auto','cpu','webgl2']),method=select(s,'renderMethod','multi-pass',['guessing','multi-pass','one-pass']);
  const precision=sourceNumerics?undefined:select(s,'perturbationPrecision','high',Object.keys(perturbationThresholds)) as keyof typeof perturbationThresholds|undefined;
  if(sourceNumerics&&ctx.fractalViewport!==undefined&&(!ctx.fractalViewport||!['primary','offscreen'].includes(ctx.fractalViewport.target)))throw new FractalSourceGpuError('Unknown source fractal viewport target','input');
- const sourcePlan=sourceNumerics?parseFractalSourcePlan(c,view,{
+ const preparePlan=(size:Parameters<typeof parseFractalSourcePlan>[2])=>source?parseFractalSourceNativePlan(source,view,size,{precision:s.perturbationPrecision??'high'}):parseFractalSourcePlan(c,view,size,{precision:s.perturbationPrecision??'high'});
+ const sourcePlan=sourceNumerics?preparePlan({
   logicalWidth:ctx.fractalViewport===undefined?ctx.width:ctx.fractalViewport.logicalWidth,logicalHeight:ctx.fractalViewport===undefined?ctx.height:ctx.fractalViewport.logicalHeight,
   provenance:ctx.fractalViewport?.target==='primary'?'canvas-logical-local':'requested-output-local',
- },{precision:s.perturbationPrecision??'high'}):undefined;
+ }):undefined;
  if(sourcePlan&&requestedBackend==='cpu')throw new FractalSourceGpuError('MathArt Newton/Nova 数值规则需要 WebGL2；如需 CPU，请选择本地数值规则。','input');
  const colorPlan=sourceColorProfile&&sourcePlan?prepareFractalSourceColor({configuration:authoredFractalSourceColor(scene),formulaPower:sourcePlan.reference.power,bailout:sourcePlan.bailout,runtime:scene.evaluatedFractalGradient}):undefined;
- const sourceNavigation=sourcePlan?prepareFractalViewportNavigation(s,sourcePlan.logicalSize[0],sourcePlan.logicalSize[1]):undefined;
+ const sourceNavigation=sourcePlan?prepareFractalViewportNavigation({...s,formula:sourcePlan.formula,fractalNumericProfile:sourcePlan.profile},sourcePlan.logicalSize[0],sourcePlan.logicalSize[1]):undefined;
  const sourceBefore=sourcePlan?fractalGpu.sourceDiagnostics():undefined;
  const preparedSource=sourcePlan?fractalGpu.prepareSourceReference(sourcePlan,{isCancelled:ctx.isCancelled}):undefined;
  const precise=view.zoom>100||view.centerXLow!==0||view.centerYLow!==0,useDD=!sourcePlan&&precise&&supportsDoubleDouble(c),reference=!sourcePlan&&precise&&supportsPerturbation(c)?referenceOrbit(c,view):undefined;

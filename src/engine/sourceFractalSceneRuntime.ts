@@ -1,3 +1,4 @@
+import {SOURCE_FRACTAL_RETAINED_LIMITS} from './sourceFractalLimits';
 import {SourceFractalSceneClock,type SourceFractalObjectState,type SourceFractalSceneClip} from './sourceFractalSceneClock';
 import {SourceFractalParameterRuntime,type SourceFractalParameterAction} from './sourceFractalParameterRuntime';
 import {SourceGradientRuntime,type SourceGradientAction,type SourceGradientFrame} from './sourceGradientRuntime';
@@ -34,8 +35,7 @@ export class SourceFractalSceneRuntime {
  constructor(configuration:SourceFractalSceneRuntimeConfiguration,options:SourceFractalSceneRuntimeOptions){
   if(!Number.isFinite(configuration.fps)||configuration.fps<1||configuration.fps>120||typeof options.reserve!=='function')throw Error('分形场景需要有效帧率与工作预算');
   if(!Array.isArray(configuration.clips)||configuration.clips.length>2000)throw Error('分形场景队列超过容量');
-  let actions=0;for(const clip of configuration.clips)if(clip.kind==='animate'){if(clip.parameters!==undefined&&!Array.isArray(clip.parameters))throw Error('分形参数动作需要数组');actions+=(clip.parameters?.length??0)+(clip.gradient?1:0);}
-  if(actions>4096)throw Error('分形场景参数与渐变动作超过容量');
+  let actions=0,nameCharacters=0;for(const clip of configuration.clips)if(clip.kind==='animate'){if(clip.parameters!==undefined&&!Array.isArray(clip.parameters))throw Error('分形参数动作需要数组');actions+=(clip.parameters?.length??0)+(clip.gradient?1:0);if(actions>SOURCE_FRACTAL_RETAINED_LIMITS.actions)throw Error('分形场景参数与渐变动作超过容量');for(const action of clip.parameters??[]){if(action.scope?.kind==='named')nameCharacters+=action.scope.name.length;if(nameCharacters>SOURCE_FRACTAL_RETAINED_LIMITS.nameCharacters)throw Error('分形参数名称超过字符预算');}}
   const fps=configuration.fps;this.clips=structuredClone(configuration.clips);
   this.formula=createSourceFractalFormulaFromConfig(configuration.formula);
   const native=this.formula.nativeState();

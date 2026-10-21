@@ -1,3 +1,4 @@
+import {SOURCE_FRACTAL_RETAINED_LIMITS} from './sourceFractalLimits';
 import type {OscillationEdgeEasing} from '../types';
 import type {SourceFractalAnimationTargets} from './sourceFractalSceneClock';
 import type {SourceFractalParameterAction} from './sourceFractalParameterRuntime';
@@ -10,7 +11,7 @@ import {SOURCE_PARTICLE_GRADIENT_MODES,SOURCE_PARTICLE_GRADIENT_INTERPOLATIONS} 
 
 /** Local retained-work bounds, not native format limits. Unknown fields are not
  * traversed; each admitted scalar has the shared bounded expression parser. */
-export const SOURCE_FRACTAL_ACTION_LIMITS=Object.freeze({actions:4096,parameters:4096,nameCharacters:8*1024*1024,fieldCharacters:DOMAIN_SOURCE_SCALAR_LIMITS.characters});
+export const SOURCE_FRACTAL_ACTION_LIMITS=Object.freeze({...SOURCE_FRACTAL_RETAINED_LIMITS,fieldCharacters:DOMAIN_SOURCE_SCALAR_LIMITS.characters});
 export interface SourceFractalActionImportOptions {
  globalEdgeEasing?:unknown;
  /** Already resolved original JSONObject HashMap order, relative to actions.

@@ -2,9 +2,8 @@ import {useState} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
 import {FRACTAL_SOURCE_COLOR_PROFILE,FRACTAL_SOURCE_COLOR_ALGORITHMS,FRACTAL_SOURCE_COLOR_TRANSFERS,fractalSourceColorParameterDescriptors,fractalSourceColorRgbHex,withFractalSourceColorRgb,parseFractalSourceColorConfiguration,createDefaultFractalSourceColorConfiguration,type FractalSourceColorConfiguration,type FractalSourceColorParameterDescriptor} from '../engine/fractalSourceColor';
-import {authoredFractalSourceColor,selectFractalColorProfile,usesFractalSourceColor} from '../engine/fractalSourceColorAuthoring';
-import {FRACTAL_SOURCE_NUMERIC_PROFILE,parseFractalNumericProfile} from '../engine/fractalPrecision';
-import {fractalViewportRules} from '../engine/complexViewport';
+import {authoredFractalSourceColor,selectFractalColorProfile,usesFractalSourceColor,supportsFractalSourceColor} from '../engine/fractalSourceColorAuthoring';
+import {FRACTAL_SOURCE_NUMERIC_PROFILE} from '../engine/fractalPrecision';
 
 type Props={scene:SceneDocument;onChange:(scene:SceneDocument)=>void};
 const algorithms:Record<string,string>={none:'零索引',basic:'基础',smooth_mandelbrot:'平滑迭代',decomposition:'角度分解',binary_decomposition:'二元分解',distance_estimator:'距离估计',direct_domain:'直接复域',direct_orbit_trap:'直接轨道陷阱',direct_normalized_z:'归一化复数',orbit_trap_index:'轨道陷阱索引'};
@@ -26,11 +25,11 @@ export function FractalColorProfileControl({scene,onChange}:Props){
 
 export function FractalSourceColorControls({scene,onChange}:Props){
  const {t}=useI18n(),[error,setError]=useState(''),color=authoredFractalSourceColor(scene);
- const sourceNumerics=fractalViewportRules(parseFractalNumericProfile(scene.settings.fractalNumericProfile),scene.settings.formula).sourceNewtonNova;
+ const sourceNumerics=supportsFractalSourceColor(scene);
  const emit=(change:(copy:FractalSourceColorConfiguration)=>void)=>{try{const copy=structuredClone(color);change(copy);onChange({...scene,fractalSourceColor:parseFractalSourceColorConfiguration(copy)});setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
  const enable=(formula:'newton'|'nova')=>onChange({...scene,settings:{...scene.settings,formula,fractalNumericProfile:FRACTAL_SOURCE_NUMERIC_PROFILE,...(scene.settings.fractalBackend==='cpu'?{fractalBackend:'auto'}:{})}});
  return <details open className="inspector-section" data-testid="fractal-source-color-controls"><summary>{t('原版内部与外部着色')}</summary><div className="section-body">
-  {!sourceNumerics&&<div role="alert"><p>{t('原版着色需要 Newton 或 Nova 的原版数值规则。请选择对应公式后继续。')}</p><button onClick={()=>enable('newton')}>{t('使用 Newton 原版数值')}</button><button onClick={()=>enable('nova')}>{t('使用 Nova 原版数值')}</button></div>}
+  {!sourceNumerics&&<div role="alert"><p>{t('原版着色需要 Newton 或 Nova 的原版数值规则。请选择对应公式后继续。')}</p>{!scene.fractalSource&&<><button onClick={()=>enable('newton')}>{t('使用 Newton 原版数值')}</button><button onClick={()=>enable('nova')}>{t('使用 Nova 原版数值')}</button></>}</div>}
   {sourceNumerics&&scene.settings.fractalBackend==='cpu'&&<div role="alert"><p>{t('原版着色需要 WebGL2；当前 CPU 选择无法生成此画面。')}</p><button onClick={()=>onChange({...scene,settings:{...scene.settings,fractalBackend:'auto'}})}>{t('使用自动 GPU 后端')}</button></div>}
   {(['outside','inside'] as const).map(side=>{const style=color[side],region=t(side==='inside'?'内部':'外部');let descriptors:readonly FractalSourceColorParameterDescriptor[]=[];let invalid='';try{descriptors=fractalSourceColorParameterDescriptors(style.algorithm);}catch(e){invalid=e instanceof Error?e.message:String(e);}
    const field=(name:string)=>t('{region} · {label}',{region,label:t(name)});

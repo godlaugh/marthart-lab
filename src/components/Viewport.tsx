@@ -11,7 +11,7 @@ import {PresentedFrameOwner,applyPresentedCamera,type PresentedFrame} from '../e
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import { sceneAtTime,timelineControlsTarget } from "../engine/timeline";
 import {withSpirographReplayFrame} from '../engine/spirographFramePlan';
-import {outputCamera} from '../engine/sceneCamera';
+import {outputCamera,isRaymarchScene} from '../engine/sceneCamera';
 import { ArtRenderer } from "../engine/renderer";
 import type { SceneDocument, SceneOutput, CameraState, Settings } from "../types";
 import type {RecordingFrame} from '../engine/realtimeRecorder';
@@ -59,7 +59,7 @@ export const Viewport = forwardRef<
   const [navigationNotice,setNavigationNotice]=useState('');
   useEffect(()=>setNavigationNotice(''),[scene]);
   const sourceBouncing=usesSourceBouncing(scene);
-  const bulb=scene.kind==='fractal'&&scene.settings.formula==='mandelbulb_3d'&&scene.settings.bulbPresentation!=='points';
+  const bulb=isRaymarchScene(scene);
   const plane=hasMathematicalPlane(scene),managed=bulb||plane||sourceBouncing||!!sourceIteratedLiveKind(scene);
   const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
   const canvas = useRef<HTMLCanvasElement>(null),
@@ -285,7 +285,7 @@ export const Viewport = forwardRef<
   useEffect(() => {
     if (output&&renderer.current) {
       const changed = lastId.current !== source.id;
-      const resolved=usesSourceBouncing(source)||hasMathematicalPlane(source)||source.kind==='fractal'&&source.settings.formula==='mandelbulb_3d'&&source.settings.bulbPresentation!=='points';
+      const resolved=usesSourceBouncing(source)||hasMathematicalPlane(source)||isRaymarchScene(source);
       let frameScene:SceneDocument,view:ReturnType<typeof outputCamera>;
       const authoredCamera=!output.sourceBouncingFrame&&!output.sourceCameraFrame&&applyPresentedCamera(presented.current.read(),source,!!output.cameraFrame,resolved);
       try{frameScene=output.spirographFrame?withSpirographReplayFrame(source,output.spirographFrame):sourceQueuePresentedScene(source,output)??sceneAtTime(source,(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);view=outputCamera(frameScene,output);renderer.current?.setOutput(output, frameScene, changed,{roll:resolved?0:view.roll,focalLength:resolved?35:view.focalLength,...(authoredCamera?{camera:view.camera}:{})});setRenderError('');}catch(error){failed(error);return;}

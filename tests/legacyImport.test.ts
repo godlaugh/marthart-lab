@@ -2,6 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {parseLegacyScene} from '../src/engine/legacyImport';
 import {parseScene,serializeScene,createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
+import {sceneAtTime} from '../src/engine/timeline';
 const base=(type:string,extra:Record<string,unknown>={})=>({config_version:'1.0.0',type,name:'Imported test',parameters:{},settings:{},...extra});
 const parse=(value:unknown)=>parseLegacyScene(JSON.stringify(value),{iteratedCamera:'legacy-v1',iteratedMath:'legacy-v1',samilaProjection:'legacy-v1'});
 const fixtures=[
@@ -43,7 +44,12 @@ describe('legacy scene import production contract',()=>{
  it('does not drop unsupported rotor properties or additional layers silently',()=>{const value=base('SPIROGRAPH',{settings:{layers:[{statorRadius:3,penDistance:1,rotors:[{radius:1,mode:'INSIDE',futureControl:17}]},{statorRadius:2,penDistance:1,rotors:[{radius:.5,mode:'INSIDE'}]}]}}),result=parse(value);expect(result.warnings.join('\n')).toContain('futureControl');expect(JSON.parse(String(result.scene.settings.layers))).toHaveLength(2);});
  it('preserves all spirograph layers including visibility',()=>{const result=parse(base('SPIROGRAPH',{settings:{layers:[{visible:false,statorRadius:9,penDistance:1,rotors:[{radius:1,mode:'INSIDE'}]},{visible:true,statorRadius:3,penDistance:1,rotors:[{radius:1,mode:'INSIDE'}]}]}}));expect(JSON.parse(String(result.scene.settings.layers)).map((l:any)=>[l.statorRadius,l.visible])).toEqual([[9,false],[3,true]]);});
  it('maps standard complex root coefficients without evaluating them during import',()=>{const result=parse(base('COMPLEX_ROOTS',{polynomial:{variable:'x',coefficients:{3:'2*t1',1:'i*t2',0:'-1'}}}));expect(result.scene.rootsMath?.polynomial.variable).toBe('x');expect(result.scene.rootsMath?.polynomial.coefficients).toEqual(expect.arrayContaining([{exponent:'3',expression:'2*t1'},{exponent:'1',expression:'i*t2'}]));expect(parse(base('COMPLEX_ROOTS',{polynomial:{coefficients:{49:'1',0:'1'}}})).scene.rootsMath?.polynomial.coefficients).toContainEqual({exponent:'49',expression:'1'});});
- it('maps Newton convergence threshold separately from the escape radius',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'newton',parameters:{exponent:[3,0],relaxation:.5,bailout:.001}}}));expect(result.scene.settings.tolerance).toBe(.001);expect(result.scene.settings.bailout).toBeGreaterThan(1);expect(result.scene.settings.power).toBe(3);});
+ it('keeps Newton canonical parameters distinct from legacy native initialization',()=>{
+  const source=base('FRACTAL',{fractal:{formula_id:'newton',parameters:{exponent:[3,0],relaxation:.5,bailout:.001}}}),result=parse(source),formula=result.scene.fractalSource!.formula;
+  expect(formula).toMatchObject({power:2,bailout:4,parameters:{floats:{relaxation:.5,bailout:Math.fround(.001)},complex:{exponent:[3,0]}}});
+  const evaluated=sceneAtTime(result.scene,0).evaluatedFractalScene!.formula;
+  expect(evaluated.native).toMatchObject({power:3,bailout:Math.fround(.001),formulaParams:[3,.5,0,0]});expect(evaluated.native.dynamicParams.slice(0,4)).toEqual([3,0,.5,Math.fround(.001)]);expect(result.source).toEqual(source);
+ });
  it('maps Binocular and Spiral parameters without changing their formulas',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'binocular',parameters:{power:4,quad_coeff:[1,2],const_term:[3,4],z0_coeff:[-1,.2],denom_offset:2,bailout:.001,singularity_guard_eps:1e-10}}}));expect(result.scene.settings.formula).toBe('binocular');expect(result.scene.settings.quadImag).toBe(2);expect(result.scene.settings.constReal).toBe(3);expect(result.scene.settings.z0Imag).toBe(.2);expect(result.scene.settings.denomOffset).toBe(2);expect(result.scene.settings.singularityGuard).toBe(1e-10);});
  it('preserves an unsupported formula ID so generation fails explicitly',()=>{const result=parse(base('FRACTAL',{fractal:{formula_id:'future_fractal'}}));expect(result.scene.settings.formula).toBe('future_fractal');expect(result.warnings.join()).toContain('未实现');expect(()=>definition('fractal').generate(result.scene,{time:0,quality:'preview',width:8,height:8})).toThrow();});
  it('keeps legacy local tracking documents while importing source Mesh tracking independently',()=>{

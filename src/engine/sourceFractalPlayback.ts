@@ -10,6 +10,8 @@ export interface SourceFractalPlaybackOptions {
  readonly createScene:()=>SourceFractalSceneClock;
  readonly fps:number;
  readonly isCancelled?:()=>boolean;
+ /** Optional shared request budget also used by parameter/gradient children. */
+ readonly reserve?:(units:number)=>void;
 }
 export interface SourceFractalPlaybackFrame extends SourceFractalSceneFrame {
  /** -1 is an unadvanced fresh scene. Fixed time 0 renders update 1. */
@@ -41,7 +43,7 @@ export class SourceFractalPlaybackSession {
  private facts(frame:SourceFractalSceneFrame):SourceFractalPlaybackFrame{return{...frame,displayFrame:this.index};}
  private advance(dt:number,paused=false):SourceFractalPlaybackFrame {
   const scene=this.owned(),pending=scene.clipCount-scene.snapshot().queueIndex;
-  this.work+=1+Math.max(0,pending);if(this.work>WORK_LIMIT)throw new SourceFractalPlaybackError('capacity','分形单次回放超过 200 万工作预算');
+  const units=1+Math.max(0,pending);this.work+=units;if(this.work>WORK_LIMIT)throw new SourceFractalPlaybackError('capacity','分形单次回放超过 200 万工作预算');this.options.reserve?.(units);
   const frame=scene.step(dt,paused,this.options.isCancelled);this.index++;return this.facts(frame);
  }
  private run<T>(action:()=>T):T {this.work=0;try{return action();}catch(error){this.failed=true;throw error;}}
