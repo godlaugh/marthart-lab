@@ -59,4 +59,4 @@ CPU/RSS 按 250 毫秒采样；CPU 是观察到的累计下界，RSS 可能重�
 
 原版 JVM 证据只执行场景、队列和相机更新，并用计数子类替代 Mobject.update；它不验证原版参数动画与 JOGL 粒子轨迹的联合执行。GPU 对照使用本地 WebGL 和独立计算，也不等于原版窗口像素对照。
 
-下一步是将实时时间线所有者、编辑重播与相机确认接入 TemporalGenerationSession/Worker/编辑器，并补齐尺寸变化时的资源生命周期。完成后再进行原版整窗口对照。当前 Goal 保持进行中。
+下一步是将实时时间线所有者、编辑重播与相机确认接入 TemporalGenerationSession/Worker/编辑器，尺寸变化的资源生命周期已在[后续验收](source-symmetry-resize-validation.zh-CN.md)补齐。实时接入完成后再进行原版整窗口对照。当前 Goal 保持进行中。

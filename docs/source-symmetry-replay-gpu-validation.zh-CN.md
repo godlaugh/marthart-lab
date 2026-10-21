@@ -1,5 +1,7 @@
 # Symmetry GPU 重播执行层验收
 
+> 后续进展（2026-10-21）：尺寸变化现已支持保留粒子、重建累积并取消重播，见[尺寸变化验收](source-symmetry-resize-validation.zh-CN.md)。本文原有显式重建限制属于历史状态。
+
 > **后续证据更正（2026-10-21）**：原版 GenericSymmetryChaosScene 在通用更新后还会额外更新 Mobject；未暂停时，队列进行中调用两次，空/结束队列调用一次。本文按通用 Scene 推导的完整时序结论不能作为原版一致性证明。生产调度现已修正，见[最新修复验收](source-symmetry-dispatch-validation.zh-CN.md)及[原版调用链证据](source-symmetry-dispatch-correction.zh-CN.md)；本文保留为历史记录。
 
 2026-10-21。新增 `SourceSymmetryReplaySession`，将原版编辑触发的分帧重播规则接入真实 WebGL 粒子与累积缓冲。**执行层已验证；编辑器事件、Worker 会话、实时宿主时钟与截图流程尚未接入。** 本轮不能据此宣称界面行为或原版整图一致。
