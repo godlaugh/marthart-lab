@@ -11,7 +11,8 @@ import {planFractalRecordingClock,fractalRecordingFrameFacts,assertFractalRecord
 import {bindSourceFractalFrame,prepareSourceFractalScene} from './sourceFractalTimeline';
 import {supportsSourceFractalLive} from './sourceFractalDocument';
 import {validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
-import {validateRasterRequest} from './rasterDimensions';
+import {MAX_RASTER_PIXELS,validateRasterRequest} from './rasterDimensions';
+import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 
 export interface SourceFractalLiveContext {
  sessionId:string;revision:number;intent:'hot'|'apply';clock:SourceSceneClockRequest;
@@ -107,14 +108,16 @@ export class SourceFractalLiveSession {
  private bind(output:SceneOutput,facts:SourceFractalLiveFacts):Raster {
   if(output.type!=='raster'||!output.fractalRender||!this.retainedFormulas)throw Error('分形实时预览未返回源栅格事实');output.fractalLive=copy(facts);output.formulaPresentation=copy(this.retainedFormulas);return output;
  }
- /** Local current-state PNG: two complete renders bind the same numerical
-  * snapshot, never an update or authored-document replay. This does not claim
-  * original screenshot target/GL or enhancement behavior. */
+ /** Two complete renders bind the same numerical snapshot, never an update
+  * or authored-document replay. The owned parent density determines logical
+  * shader dimensions and rounded physical pixels; preview sampling does not.
+  * This does not establish original GL targets or progressive-pass behavior. */
  capturePaused(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):PausedCaptureResult {
   if(this.recording||!this.completed||!this.host||!this.retained||this.failed||this.busy||scene.id!==this.completed.sceneId||c.fractalLive?.sessionId!==this.sessionId||c.fractalLive.revision!==this.revision)throw Error('分形当前帧截图需要已完成的实时主预览');
   const snapshot=this.host.snapshot();if(!snapshot.paused)throw Error('请先暂停分形再保存当前帧');
   const retained=this.completed,renderScene=display(this.retained,snapshot),primary:GenerateContext={...retained.context,isCancelled:c.isCancelled,onProgress:undefined};
-  const capture:GenerateContext={...primary,time:snapshot.state.scene.sceneTime,quality:'export',width:c.width,height:c.height,fractalViewport:{logicalWidth:c.width,logicalHeight:c.height,target:'offscreen'},fractalLive:undefined};
+  const size=prepareSourcePausedCaptureSize(c,primary.fractalPixelDensity??NaN,MAX_RASTER_PIXELS);
+  const capture:GenerateContext={...primary,time:snapshot.state.scene.sceneTime,quality:'export',width:size.width,height:size.height,fractalViewport:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,target:'offscreen'},fractalLive:undefined};
   validateRasterRequest(capture);const extra=options.additionalBytes??0;
   if(!Number.isSafeInteger(extra)||extra<0||extra+capture.width*capture.height*8+primary.width*primary.height*4>768*1024*1024)throw Error('分形当前帧截图超过 768 MiB 工作预算');
   prepareFractalRender(renderScene,capture);prepareFractalRender(renderScene,primary);

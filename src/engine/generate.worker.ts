@@ -11,7 +11,7 @@ import {planRootsFreshRecording} from './rootsRecording';
 import type {GenerationInput,SceneDocument} from '../types';
 import {enhanceSourcePausedImage,sourcePausedImageBytes} from './sourcePausedImage';
 import {prepareSourcePausedUpscale,upscaleSourcePausedImage} from './sourcePausedUpscale';
-import {validateRasterRequest} from './rasterDimensions';
+import {MAX_RASTER_PIXELS,validateRasterRequest} from './rasterDimensions';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
@@ -134,7 +134,8 @@ self.onmessage = (
       if(fractal&&(source.scene.kind!=='fractal'||!temporalSession.sourceFractal.matchesCompletedPrimary(source.scene,source.context)))throw Error('分形当前帧截图对应的实时主预览已过期');
       // Source scenes inherit parent density. Native render-buffer rounding can make
       // actual physical base dimensions differ from the user's requested size.
-      const base=perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height};
+      const fractalBase=fractal?prepareSourcePausedCaptureSize({width,height},source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS):undefined;
+      const base=fractalBase??(perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height});
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
       if(upscale||fractal)validateRasterRequest({time:0,quality:'export',width:upscale?.width??base.width,height:upscale?.height??base.height});
       // Fractal's formula composition and whole-image enhancement/upscale run
@@ -154,7 +155,7 @@ self.onmessage = (
       if(result.capture.type!=='raster'||result.preview.type!=='raster')throw new Error('暂停截图没有生成图像');
       const captureWidth=result.capture.width,captureHeight=result.capture.height;
       if(captureWidth!==base.width||captureHeight!==base.height)throw new Error('暂停截图实际尺寸与已核验的后处理预算不一致');
-      if(fractal)result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',baseSize:[captureWidth,captureHeight],scale};
+      if(fractalBase)result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[width,height],logicalSize:[fractalBase.logicalWidth,fractalBase.logicalHeight],pixelDensity:fractalBase.density,baseSize:[captureWidth,captureHeight],scale};
       else{
         const enhanced=enhanceSourcePausedImage(result.capture.pixels,captureWidth,captureHeight);
         result.capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,captureWidth,captureHeight,scale);

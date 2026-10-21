@@ -22,7 +22,7 @@ import type { SceneDocument,SceneOutput,GenerationStatus,RasterOutput } from "..
 import type {RootsPausedCaptureSize,SourceRecordingOptions} from '../engine/generationProtocol';
 import type {SourceRecordingConsumer} from '../engine/generationQueue';
 import {prepareSourcePausedUpscale} from '../engine/sourcePausedUpscale';
-import {validateRasterRequest} from '../engine/rasterDimensions';
+import {MAX_RASTER_PIXELS,validateRasterRequest} from '../engine/rasterDimensions';
 import {encodeRgbaPng} from '../engine/rgbaPng';
 import {encodeFormulaRaster} from '../engine/formulaCanvas';
 import { Generator } from "../engine/client";
@@ -137,7 +137,8 @@ export function ExportDialog({
   const sourceQueueVideo=perlinFrames||fractalVideo||liveRecording;
   const pausedSourceImage=kind==='image'&&(sourceFractalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
-  if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  if(sourceFractalLive&&pausedSourceImage){try{outputBase=prepareSourcePausedCaptureSize({width,height},fractalPixelDensity??NaN,MAX_RASTER_PIXELS);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  else if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let recordingSize:{width:number;height:number;logicalWidth?:number;logicalHeight?:number}={width:outputBase.width,height:outputBase.height};
   if(fixedRetained||fractalVideo){try{recordingSize=sourceRecordingSize({width,height},((fractalVideo||retainedFractal)?fractalPixelDensity:iteratedPixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let upscaleError=pausedSizeError;

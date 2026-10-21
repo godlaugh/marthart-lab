@@ -8,7 +8,7 @@ import {sourceLivePreviewKind} from '../src/engine/sourceLivePreview';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../src/types';
 
 const scene=()=>parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'live boundary',type:'FRACTAL',fractal:{formula_id:'newton',parameters:{exponent:[3,.25],bailout:.001,relaxation:1}},timeline:[{type:'animate',duration:1,easing:'LINEAR',actions:[{method:'center',args:[1,-.5]},{method:'paramStart',args:{parameters:{exponent_re:{step:.1,min:2,max:4}}}},{method:'gradientStart',args:{mode:'CROSS_FADE',speed:137.25}}]},{type:'wait',duration:.1}]})).scene;
-const context=(overrides:Partial<SourceFractalLiveContext>={},time=50):GenerateContext=>({time:0,quality:'preview',width:16,height:12,fractalViewport:{logicalWidth:16,logicalHeight:12,target:'primary'},fractalLive:{sessionId:'live',revision:0,intent:'apply',clock:{paused:false,timestampMs:time},actualFrameRate:60,...overrides}});
+const context=(overrides:Partial<SourceFractalLiveContext>={},time=50):GenerateContext=>({time:0,quality:'preview',width:16,height:12,fractalPixelDensity:1,fractalViewport:{logicalWidth:16,logicalHeight:12,target:'primary'},fractalLive:{sessionId:'live',revision:0,intent:'apply',clock:{paused:false,timestampMs:time},actualFrameRate:60,...overrides}});
 // The injected renderer observes the exact production-bound document. It does
 // not establish GPU behavior; the real-browser suite owns pixel verification.
 function setup(){
@@ -97,5 +97,27 @@ describe('retained Fractal live generation',()=>{
   f.owner.setPaused(true);expect(()=>f.owner.capturePaused(s,{...c,width:NaN})).toThrow();expect(f.owner.matchesCompletedPrimary(s,c)).toBe(true);
   f.render.mockImplementationOnce(()=>{throw Error('capture lost');});expect(()=>f.owner.capturePaused(s,{...c,width:4,height:4})).toThrow('capture lost');expect(f.owner.matchesCompletedPrimary(s,c)).toBe(false);
   expect(()=>f.owner.generate(s,c)).toThrow('sessionId');expect(f.owner.generate(s,context({sessionId:'recovered'})).fractalLive!.updateOrdinal).toBe(0);
+ });
+ it.each([
+  {density:1,width:161,height:121,logicalWidth:161,logicalHeight:121},
+  {density:2,width:162,height:122,logicalWidth:81,logicalHeight:61},
+  {density:3,width:162,height:120,logicalWidth:54,logicalHeight:40},
+  {density:4,width:160,height:120,logicalWidth:40,logicalHeight:30},
+ ])('uses retained parent density $density for both logical uniforms and physical capture',expected=>{
+  const s=scene(),f=setup(),c={...context({clock:{paused:true}}),fractalPixelDensity:expected.density,fractalViewport:{logicalWidth:32,logicalHeight:24,target:'primary' as const}};
+  f.owner.generate(s,c);const before=f.owner.diagnostics();f.render.mockClear();
+  // Neither the sampled preview ratio nor an unrelated density in this
+  // capture request may replace the completed primary's actual parent density.
+  const result=f.owner.capturePaused(s,{...c,width:161,height:121,fractalPixelDensity:99,sourcePointPixelDensity:97});
+  expect(result.capture).toMatchObject({width:expected.width,height:expected.height});
+  expect(f.render.mock.calls[0][1]).toMatchObject({width:expected.width,height:expected.height,fractalPixelDensity:expected.density,fractalViewport:{logicalWidth:expected.logicalWidth,logicalHeight:expected.logicalHeight,target:'offscreen'}});
+  expect(result.preview).toMatchObject({width:16,height:12});expect(f.render.mock.calls[1][1].fractalViewport).toEqual(c.fractalViewport);
+  expect(f.owner.diagnostics()).toEqual(before);expect(f.owner.matchesCompletedPrimary(s,c)).toBe(true);
+ });
+ it.each([undefined,0,1.5,NaN])('keeps a completed live preview when its capture density is unknown/invalid: %s',density=>{
+  const s=scene(),f=setup(),c={...context({clock:{paused:true}}),fractalPixelDensity:density};
+  f.owner.generate(s,c);const before=f.owner.diagnostics();f.render.mockClear();
+  expect(()=>f.owner.capturePaused(s,{...c,width:161,height:121,fractalPixelDensity:1})).toThrow('像素密度');
+  expect(f.render).not.toHaveBeenCalled();expect(f.owner.diagnostics()).toEqual(before);expect(f.owner.matchesCompletedPrimary(s,c)).toBe(true);
  });
 });

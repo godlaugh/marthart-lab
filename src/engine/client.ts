@@ -2,6 +2,8 @@ import type {FractalFreshRecordingPlan} from './sourceFractalRecording';
 import {assertFractalRecordingFrame} from './sourceFractalRecording';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {sourceRecordingSize} from './sourceRecordingSize';
+import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
+import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalSourcePrecision';
 import {snapshotGenerationInput} from './generationInput';
 import type {SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
@@ -51,7 +53,8 @@ function validFractalRecordingStop(stop:SourceRecordingStop,lease:FractalRecordi
  // The renderer owns that decision and reports requested and actual sizes.
  return render?.profile===FRACTAL_SOURCE_NUMERIC_PROFILE&&render.execution?.backend==='webgl2'&&render.requestedSize?.[0]===lease.primary.width&&render.requestedSize?.[1]===lease.primary.height&&render.rasterSize?.[0]===output.width&&render.rasterSize?.[1]===output.height&&(lease.primary.quality!=='export'||output.width===lease.primary.width&&output.height===lease.primary.height)&&output.fractalRecording===undefined&&output.fractalLive!.sceneTime===stop.context.time&&output.fractalLive!.rawDt===0&&output.fractalLive!.activeDt===0&&output.fractalLive!.objectUpdates===0;
 }
-function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:PausedCaptureSize,scale:1|3|5):boolean {
+type FractalCaptureSize=ReturnType<typeof prepareSourcePausedCaptureSize>;
+function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:PausedCaptureSize,scale:1|3|5,base:FractalCaptureSize):boolean {
  if(source.type!=='raster'||!source.fractalLive||!result?.capture||!result.preview)return false;
  const before=source.fractalLive,expected={...before,paused:true};
  for(const [output,target] of [[result.capture,'offscreen'],[result.preview,'primary']] as const){
@@ -60,7 +63,8 @@ function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:
   if(live.updateOrdinal!==before.updateOrdinal||live.sceneTime!==before.sceneTime||live.queueIndex!==before.queueIndex||live.queueComplete!==before.queueComplete||live.rawDt!==0||live.activeDt!==0||live.objectUpdates!==0||JSON.stringify(live.presentation.evaluatedFractalScene)!==JSON.stringify(before.presentation.evaluatedFractalScene)||JSON.stringify(live.presentation.evaluatedFractalGradient)!==JSON.stringify(before.presentation.evaluatedFractalGradient))return false;
  }
  const {capture,preview}=result,facts=capture.fractalCurrentImage;
- return preview.width===source.width&&preview.height===source.height&&capture.width===size.width&&capture.height===size.height&&facts?.model==='local-current-numerical-snapshot'&&facts.stage==='base-before-formulas'&&Array.isArray(facts.baseSize)&&facts.baseSize.length===2&&facts.baseSize[0]===size.width&&facts.baseSize[1]===size.height&&facts.scale===scale&&!('resampling' in facts);
+ const matchesSize=(value:unknown,width:number,height:number)=>Array.isArray(value)&&value.length===2&&value[0]===width&&value[1]===height;
+ return preview.width===source.width&&preview.height===source.height&&capture.width===base.width&&capture.height===base.height&&facts?.model==='local-current-numerical-snapshot'&&facts.stage==='base-before-formulas'&&matchesSize(facts.requestedSize,size.width,size.height)&&matchesSize(facts.logicalSize,base.logicalWidth,base.logicalHeight)&&facts.pixelDensity===base.density&&matchesSize(facts.baseSize,base.width,base.height)&&matchesSize(capture.fractalRender?.logicalSize,base.logicalWidth,base.logicalHeight)&&matchesSize(capture.fractalRender?.requestedSize,base.width,base.height)&&matchesSize(capture.fractalRender?.rasterSize,base.width,base.height)&&facts.scale===scale&&!('resampling' in facts);
 }
 type Pending =
   | {operation:'iterated-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
@@ -70,7 +74,7 @@ type Pending =
   | {operation:'source-recording-frame';handle:SourceRecordingHandle;family:string;displayFrame:number;resolve:(value:SourceRecordingRaster)=>void;reject:(error:Error)=>void}
   | {operation:'source-recording-finish';handle:SourceRecordingHandle;family:string;resolve:(value:SourceRecordingStop)=>void;reject:(error:Error)=>void}
   | { operation: 'generate'; scene:SceneDocument; context:GenerationInput; fractal?:FractalRequest; source?:Completed; resolve: (output: SceneOutput) => void; reject: (error: Error) => void; onProgress?: (output: SceneOutput) => void; onStatus?: (status: GenerationStatus) => void }
-  | { operation:PausedCaptureOperation; source:Completed; size:PausedCaptureSize;scale:1|3|5; resolve:(output:PausedCaptureResult)=>void; reject:(error:Error)=>void }
+  | { operation:PausedCaptureOperation; source:Completed; size:PausedCaptureSize;scale:1|3|5;fractalSize?:FractalCaptureSize; resolve:(output:PausedCaptureResult)=>void; reject:(error:Error)=>void }
   | { operation:'fractal-recording-plan'; resolve:(output:FractalFreshRecordingPlan)=>void; reject:(error:Error)=>void }
   | { operation:'perlin-recording-plan'; resolve:(output:PerlinFreshRecordingPlan)=>void; reject:(error:Error)=>void }
   | { operation:'roots-recording-plan'; resolve:(output:RootsFreshRecordingPlan)=>void; reject:(error:Error)=>void }
@@ -194,7 +198,7 @@ export class Generator {
         p.resolve(data.output);
       }
       else if (isPausedCaptureOperation(p.operation)&&'size' in p&&data.operation===p.operation&&'result' in data) {
-        if(p.operation==='fractal-paused-capture'&&!validFractalCapture(data.result,p.source.output,p.size,p.scale)){const error=new pausedCaptureContracts[p.operation].Error('分形当前帧截图响应身份、状态或尺寸不匹配',false);p.reject(error);this.invalidate(error);return;}
+        if(p.operation==='fractal-paused-capture'&&(!p.fractalSize||!validFractalCapture(data.result,p.source.output,p.size,p.scale,p.fractalSize))){const error=new pausedCaptureContracts[p.operation].Error('分形当前帧截图响应身份、状态或尺寸不匹配',false);p.reject(error);this.invalidate(error);return;}
         if(data.id===this.currentInputId)this.completed={...p.source,id:data.id,output:data.result.preview};
         p.resolve(data.result);
       }
@@ -279,9 +283,14 @@ export class Generator {
     const eligible=output.type==='raster'&&(operation==='fractal-paused-capture'?!!output.fractalLive&&output.fractalLive.target==='primary'&&!!output.fractalRender&&source?.scene.kind==='fractal':roots?!!output.rootsPresentation:operation==='symmetry-paused-capture'||operation==='map-paused-capture'?!!output[operation==='map-paused-capture'?'mapLive':'symmetryLive']&&output.sourceCameraFrame?.viewport.target==='primary'&&source?.scene.kind===(operation==='map-paused-capture'?'map':'symmetry'):operation==='samila-paused-capture'?output.samilaLive?.target==='primary'&&source?.scene.kind==='samila':!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
     if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
       return Promise.reject(new Error(`当前${contract.label}画面尚未完成或已过期，请等待预览完成后重试`));
+    // Resolve density from the completed primary once, before releasing its
+    // capability. The response consumes this admitted fact, never caller DPR.
+    let fractalSize:FractalCaptureSize|undefined;
+    if(operation==='fractal-paused-capture')try{fractalSize=prepareSourcePausedCaptureSize(size,source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS);}
+    catch(error){return Promise.reject(new contract.Error(error instanceof Error?error.message:String(error),true));}
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve,reject)=>{
-      this.pending.set(id,{operation,source,size:{...size},scale,resolve,reject});
+      this.pending.set(id,{operation,source,size:{...size},scale,fractalSize,resolve,reject});
       const request:GenerationRequest={operation,sessionId:this.sessionId,id,sourceId:source.id,size:{...size},scale};
       try{this.worker!.postMessage(request);}catch(error){
         this.pending.delete(id);

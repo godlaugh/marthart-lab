@@ -174,9 +174,9 @@ describe.each(['map','symmetry'] as const)('%s live Worker transport',family=>{
 
 describe('Fractal retained live Worker capture and rejection',()=>{
  const liveScene={kind:'fractal',id:'fractal-live'} as SceneDocument;
- // Unrelated density facts deliberately remain present: Fractal uses the
- // requested physical dimensions, independently of point-scene density.
- const live:GenerationInput={...context,sourcePointPixelDensity:2,fractalViewport:{logicalWidth:32,logicalHeight:24,target:'primary'},fractalLive:{sessionId:'fractal-one',revision:0,intent:'apply',actualFrameRate:60,clock:{paused:false,timestampMs:1000}}};
+ // The completed Fractal density is independent of other families and of
+ // preview raster/logical ratios, which may reflect coarse preview sampling.
+ const live:GenerationInput={...context,sourcePointPixelDensity:2,fractalPixelDensity:1,fractalViewport:{logicalWidth:32,logicalHeight:24,target:'primary'},fractalLive:{sessionId:'fractal-one',revision:0,intent:'apply',actualFrameRate:60,clock:{paused:false,timestampMs:1000}}};
  const start=()=>send({operation:'generate',id:1,sessionId:7,scene:liveScene,context:live});
  it('pauses independently, captures unenhanced pixels through its owner, transfers both frames and renews capability',()=>{
   start();const paused=send({operation:'fractal-playback',id:2,sessionId:7,sourceId:1,paused:true,timestampMs:1200});
@@ -187,7 +187,7 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
   expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5,fractalLive:{...live.fractalLive,clock:{...live.fractalLive!.clock,paused:true}}},{additionalBytes:0});
   expect(response.result.capture).toMatchObject({width:3,height:5});
-  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',baseSize:[3,5],scale:1});
+  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[3,5],logicalSize:[3,5],pixelDensity:1,baseSize:[3,5],scale:1});
   expect(response.result.capture.pixels).toBe(originalPixels);expect(response.result.capture.pixels).toEqual(expectedPixels);
   expect(response.result.capture.sourcePausedImage).toBeUndefined();expect(response.result.capture.rootsPausedImage).toBeUndefined();
   const transfers=worker.postMessage.mock.calls.at(-1)![1].transfer;
@@ -204,7 +204,7 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
   expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5},{additionalBytes:0});
   expect(response.result.capture).toMatchObject({width:3,height:5});
-  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',baseSize:[3,5],scale});
+  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[3,5],logicalSize:[3,5],pixelDensity:1,baseSize:[3,5],scale});
   expect(response.result.capture.pixels).toBe(originalPixels);expect(response.result.capture.pixels.buffer).toBe(originalBuffer);expect(response.result.capture.pixels).toEqual(expectedPixels);
   expect(response.result.capture.sourcePausedImage).toBeUndefined();expect(response.result.capture.rootsPausedImage).toBeUndefined();
   const transfers=worker.postMessage.mock.calls.at(-1)![1].transfer;
@@ -220,6 +220,32 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   const paused=send({operation:'fractal-playback',id:3,sessionId:7,sourceId:1,paused:true});
   expect(paused).toEqual({operation:'fractal-playback',id:3,sessionId:7,sourceId:1,paused:true});expect(owners.fractal.setPaused).toHaveBeenCalledWith(true,undefined);
   expect(owners.generate).toHaveBeenCalledOnce();
+ });
+ it.each([1,3,5] as const)('keeps density-rounded base pixels and distinct requested/logical facts for scale %s',scale=>{
+  const highDpi={...live,fractalPixelDensity:2};send({operation:'generate',id:1,sessionId:7,scene:liveScene,context:highDpi});
+  const capture=raster(162,122),preview=raster(32,24),pixels=capture.pixels;owners.fractal.capturePaused.mockReturnValue({capture,preview});
+  const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:161,height:121},scale});
+  if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
+  expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...highDpi,quality:'export',width:161,height:121},{additionalBytes:0});
+  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[161,121],logicalSize:[81,61],pixelDensity:2,baseSize:[162,122],scale});
+  expect(response.result.capture.pixels).toBe(pixels);expect(response.result.capture).toMatchObject({width:162,height:122});
+ });
+ it.each([undefined,0,1.5,NaN])('rejects density %s before owner capture and preserves primary capability',fractalPixelDensity=>{
+  const input={...live,fractalPixelDensity};send({operation:'generate',id:1,sessionId:7,scene:liveScene,context:input});
+  const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:161,height:121},scale:1});
+  expect(response).toHaveProperty('error');expect(response).toHaveProperty('retainedSourceId',1);expect(owners.fractal.capturePaused).not.toHaveBeenCalled();
+  expect(send({operation:'fractal-playback',id:3,sessionId:7,sourceId:1,paused:true})).toMatchObject({sourceId:1,paused:true});expect(owners.fractal.setPaused).toHaveBeenCalledOnce();
+ });
+ it('preflights the scale against rounded base dimensions before owner mutation',()=>{
+  send({operation:'generate',id:1,sessionId:7,scene:liveScene,context:{...live,fractalPixelDensity:2}});
+  // Requested 5461*3 fits 16384, but density-rounded 5462*3 does not.
+  const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:5461,height:1},scale:3});
+  expect(response).toHaveProperty('error');expect(response).toHaveProperty('retainedSourceId',1);expect(owners.fractal.capturePaused).not.toHaveBeenCalled();
+ });
+ it('preserves the Fractal 128 MiB raster admission instead of inheriting the point 64 MiB limit',()=>{
+  start();owners.fractal.capturePaused.mockImplementation(()=>{throw Error('owner reached after size admission');});
+  const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:8192,height:2049},scale:1});
+  expect(response).toHaveProperty('error','owner reached after size admission');expect(owners.fractal.capturePaused).toHaveBeenCalledOnce();expect(response).toHaveProperty('retainedSourceId',1);
  });
  it.each([true,false])('retains a rejected capture only when the owner still confirms its primary: %s',retained=>{
   start();owners.fractal.capturePaused.mockImplementation(()=>{owners.fractal.matchesCompletedPrimary.mockReturnValue(retained);throw Error('capacity before mutation');});

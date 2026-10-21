@@ -411,7 +411,7 @@ export interface RasterOutput {
   formulaPresentation?:FormulaPresentation;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveFacts;
   /** Base-size current pixels; formula composition and whole-image PNG processing are still pending. */
-  fractalCurrentImage?:{model:'local-current-numerical-snapshot';stage:'base-before-formulas';baseSize:readonly[number,number];scale:1|3|5};
+  fractalCurrentImage?:{model:'local-current-numerical-snapshot';stage:'base-before-formulas';requestedSize:readonly[number,number];logicalSize:readonly[number,number];pixelDensity:number;baseSize:readonly[number,number];scale:1|3|5};
   /** Actual completed source recording draw, never a planning prediction. */
   fractalRecording?:SourceFractalRecordingFrame;
   /** Numeric and navigation facts owned by this delivered source Fractal image. */
