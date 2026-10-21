@@ -48,7 +48,7 @@ export async function compositeFormulas(source:HTMLCanvasElement,presentation:Fo
 export async function encodeFormulaRaster(output:RasterOutput,type:'image/png'|'image/jpeg'='image/png',options?:FormulaCompositeOptions):Promise<Blob>{
   check(options);const {pixels,width,height,formulaPresentation:presentation}=output;
   if(!presentation)throw new Error('源图像缺少实际帧的公式标注');
-  const current=output.fractalCurrentImage;
+  const current=output.sourceCurrentImage;
   if(current&&(current.model!=='local-current-numerical-snapshot'||current.stage!=='base-before-formulas'||current.baseSize?.[0]!==width||current.baseSize?.[1]!==height||'resampling' in current||type!=='image/png'))throw new Error('当前帧 PNG 缺少未合成的基础图像');
   if(!current&&!presentation.labels.length&&type==='image/png')return encodeRgbaPng(pixels,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.());
   const bytes=width*height*4;

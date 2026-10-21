@@ -32,8 +32,8 @@ export type RootsPausedCaptureSize=PausedCaptureSize;
 export type RootsPausedCaptureResult=PausedCaptureResult;
 export type PerlinPausedCaptureSize=PausedCaptureSize;
 export type PerlinPausedCaptureResult=PausedCaptureResult;
-export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture'|'samila-paused-capture'|'symmetry-paused-capture'|'map-paused-capture'|'fractal-paused-capture';
-export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture'||operation==='samila-paused-capture'||operation==='symmetry-paused-capture'||operation==='map-paused-capture'||operation==='fractal-paused-capture';}
+export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture'|'samila-paused-capture'|'symmetry-paused-capture'|'map-paused-capture'|'fractal-paused-capture'|'domain-paused-capture';
+export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture'||operation==='samila-paused-capture'||operation==='symmetry-paused-capture'||operation==='map-paused-capture'||operation==='fractal-paused-capture'||operation==='domain-paused-capture';}
 /** Only the owning worker can confirm that a rejected capture retained its
  * completed preview. Message text or an input/capacity error tag is not proof. */
 export class PausedCaptureError extends Error {
@@ -57,6 +57,9 @@ export class MapPausedCaptureError extends PausedCaptureError {
 export class FractalPausedCaptureError extends PausedCaptureError {
  constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='FractalPausedCaptureError';}
 }
+export class DomainPausedCaptureError extends PausedCaptureError {
+ constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='DomainPausedCaptureError';}
+}
 /** The operation owns its label and error type across client and queue. */
 export const pausedCaptureContracts={
  'roots-paused-capture':{label:'复根',Error:RootsPausedCaptureError},
@@ -64,6 +67,7 @@ export const pausedCaptureContracts={
  'samila-paused-capture':{label:'Samila',Error:SamilaPausedCaptureError},
  'symmetry-paused-capture':{label:'Symmetry',Error:SymmetryPausedCaptureError},
  'map-paused-capture':{label:'Map',Error:MapPausedCaptureError},
+ 'domain-paused-capture':{label:'域着色',Error:DomainPausedCaptureError},
  'fractal-paused-capture':{label:'分形',Error:FractalPausedCaptureError},
 } satisfies Record<PausedCaptureOperation,{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
 

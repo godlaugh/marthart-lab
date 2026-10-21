@@ -32,6 +32,7 @@ interface GeneratorPort {
   captureMapPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSymmetryPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSamilaPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
+  captureDomainPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureFractalPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   beginSourceRecording?(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>;
   nextSourceRecordingFrame?(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceRecordingRaster>;
@@ -264,10 +265,11 @@ export class GenerationQueue {
   }
   captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureMapPaused',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureSymmetryPaused',output,size,scale);}
+  captureDomainPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureDomainPaused',output,size,scale);}
   captureFractalPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureFractalPaused',output,size,scale);}
-  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused'|'captureFractalPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
+  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused'|'captureFractalPaused'|'captureDomainPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
     if(this.recordingOwner&&!this.recordingOwner.active)await this.retrySourceRecordingCleanup();
-    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureFractalPaused'?'fractal-paused-capture':method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':method==='captureMapPaused'?'map-paused-capture':'samila-paused-capture'];
+    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureDomainPaused'?'domain-paused-capture':method==='captureFractalPaused'?'fractal-paused-capture':method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':method==='captureMapPaused'?'map-paused-capture':'samila-paused-capture'];
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!capture)
       throw new Error(`请等待当前${contract.label}预览完成后再保存暂停画面`);
     const cached=this.completedLive;this.completedLive=undefined;

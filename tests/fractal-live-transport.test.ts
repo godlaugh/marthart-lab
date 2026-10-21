@@ -32,7 +32,7 @@ function rendered(s:SceneDocument,c=context()):SceneOutput {
 function captured(s:SceneDocument,c=context(),scale:1|3|5=1,size={width:3,height:5}):PausedCaptureResult {
  const owner=new SourceFractalLiveSession(transportRaster);owner.generate(s,c);
  const result=owner.capturePaused(s,{...c,...size}),base=prepareSourcePausedCaptureSize(size,c.fractalPixelDensity??NaN,MAX_RASTER_PIXELS);
- result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[size.width,size.height],logicalSize:[base.logicalWidth,base.logicalHeight],pixelDensity:base.density,baseSize:[base.width,base.height],scale};return result;
+ result.capture.sourceCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[size.width,size.height],logicalSize:[base.logicalWidth,base.logicalHeight],pixelDensity:base.density,baseSize:[base.width,base.height],scale};return result;
 }
 const flush=async()=>{for(let i=0;i<6;i++)await Promise.resolve();};
 afterEach(()=>vi.unstubAllGlobals());
@@ -88,7 +88,7 @@ describe('Fractal live worker client contract',()=>{
   const pending=generator.captureFractalPaused(output,{width:3,height:5},scale),captureRequest=worker.messages.at(-1)!,result=captured(s,c,scale);
   expect(captureRequest).toMatchObject({operation:'fractal-paused-capture',size:{width:3,height:5},scale});
   worker.emit({operation:'fractal-paused-capture',id:captureRequest.id,sessionId:captureRequest.sessionId,result});
-  const capturedResult=await pending;expect(capturedResult).toBe(result);expect(capturedResult.capture).toMatchObject({width:3,height:5,fractalCurrentImage:{stage:'base-before-formulas',scale}});expect(capturedResult.capture.pixels.byteLength).toBe(60);
+  const capturedResult=await pending;expect(capturedResult).toBe(result);expect(capturedResult.capture).toMatchObject({width:3,height:5,sourceCurrentImage:{stage:'base-before-formulas',scale}});expect(capturedResult.capture.pixels.byteLength).toBe(60);
   const pause=generator.setFractalPaused(result.preview,false),control=worker.messages.at(-1)!;
   worker.emit({operation:'fractal-playback',id:control.id,sessionId:control.sessionId,sourceId:captureRequest.id,paused:false});await pause;expect(worker.terminated).toBe(false);generator.dispose();
  });
@@ -97,7 +97,7 @@ describe('Fractal live worker client contract',()=>{
   worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});await first;
   const size={width:161,height:121},pending=generator.captureFractalPaused(output,size,3),captureRequest=worker.messages.at(-1)!,result=captured(s,c,3,size);
   expect(captureRequest).toMatchObject({size:{width:161,height:121},scale:3});
-  expect(result.capture).toMatchObject({width:162,height:122,fractalCurrentImage:{requestedSize:[161,121],logicalSize:[81,61],pixelDensity:2,baseSize:[162,122]},fractalRender:{requestedSize:[162,122],logicalSize:[81,61],rasterSize:[162,122]}});
+  expect(result.capture).toMatchObject({width:162,height:122,sourceCurrentImage:{requestedSize:[161,121],logicalSize:[81,61],pixelDensity:2,baseSize:[162,122]},fractalRender:{requestedSize:[162,122],logicalSize:[81,61],rasterSize:[162,122]}});
   worker.emit({operation:'fractal-paused-capture',id:captureRequest.id,sessionId:captureRequest.sessionId,result});expect(await pending).toBe(result);expect(worker.terminated).toBe(false);generator.dispose();
  });
  for(const density of [undefined,0,1.5,NaN])it(`rejects unavailable/invalid density ${density} before dispatch and preserves the live capability`,async()=>{
@@ -124,17 +124,17 @@ describe('Fractal live worker client contract',()=>{
   else if(mismatch==='state'){const frame=result.preview.fractalLive!.presentation.evaluatedFractalScene!;result.preview.fractalLive!.presentation.evaluatedFractalScene={...frame,formula:{...frame.formula,native:{...frame.formula.native,bailout:100}}};}
   else if(mismatch==='size'){result.capture.width=5;result.capture.height=3;}
   else if(mismatch==='labels')delete result.capture.formulaPresentation;
-  else if(mismatch==='missing-stage')Reflect.deleteProperty(result.capture.fractalCurrentImage!,'stage');
-  else if(mismatch==='old-resampling')Object.assign(result.capture.fractalCurrentImage!,{resampling:'none'});
+  else if(mismatch==='missing-stage')Reflect.deleteProperty(result.capture.sourceCurrentImage!,'stage');
+  else if(mismatch==='old-resampling')Object.assign(result.capture.sourceCurrentImage!,{resampling:'none'});
   else if(mismatch==='already-scaled'){result.capture.width=9;result.capture.height=15;result.capture.pixels=new Uint8ClampedArray(9*15*4);}
-  else if(mismatch==='base-size')Object.assign(result.capture.fractalCurrentImage!,{baseSize:[3,5,99]});
-  else if(mismatch==='requested-size')Object.assign(result.capture.fractalCurrentImage!,{requestedSize:[3,5,99]});
-  else if(mismatch==='logical-size')Object.assign(result.capture.fractalCurrentImage!,{logicalSize:[6,10]});
-  else if(mismatch==='density')Object.assign(result.capture.fractalCurrentImage!,{pixelDensity:2});
+  else if(mismatch==='base-size')Object.assign(result.capture.sourceCurrentImage!,{baseSize:[3,5,99]});
+  else if(mismatch==='requested-size')Object.assign(result.capture.sourceCurrentImage!,{requestedSize:[3,5,99]});
+  else if(mismatch==='logical-size')Object.assign(result.capture.sourceCurrentImage!,{logicalSize:[6,10]});
+  else if(mismatch==='density')Object.assign(result.capture.sourceCurrentImage!,{pixelDensity:2});
   else if(mismatch==='render-logical-size')Reflect.deleteProperty(result.capture.fractalRender!,'logicalSize');
   else if(mismatch==='render-requested-size')Object.assign(result.capture.fractalRender!,{requestedSize:[6,10]});
   else if(mismatch==='render-raster-size')Object.assign(result.capture.fractalRender!,{rasterSize:[6,10]});
-  else delete result.capture.fractalCurrentImage;
+  else delete result.capture.sourceCurrentImage;
   w.emit({operation:'fractal-paused-capture',sessionId:captureRequest.sessionId,id:captureRequest.id,result});expect(await capture).toMatchObject({previewRetained:false,message:expect.stringContaining('不匹配')});expect(w.terminated).toBe(true);
  });
 });

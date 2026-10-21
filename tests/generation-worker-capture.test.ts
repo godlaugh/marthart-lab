@@ -187,7 +187,7 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
   expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5,fractalLive:{...live.fractalLive,clock:{...live.fractalLive!.clock,paused:true}}},{additionalBytes:0});
   expect(response.result.capture).toMatchObject({width:3,height:5});
-  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[3,5],logicalSize:[3,5],pixelDensity:1,baseSize:[3,5],scale:1});
+  expect(response.result.capture.sourceCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[3,5],logicalSize:[3,5],pixelDensity:1,baseSize:[3,5],scale:1});
   expect(response.result.capture.pixels).toBe(originalPixels);expect(response.result.capture.pixels).toEqual(expectedPixels);
   expect(response.result.capture.sourcePausedImage).toBeUndefined();expect(response.result.capture.rootsPausedImage).toBeUndefined();
   const transfers=worker.postMessage.mock.calls.at(-1)![1].transfer;
@@ -204,7 +204,7 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
   expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...live,quality:'export',width:3,height:5},{additionalBytes:0});
   expect(response.result.capture).toMatchObject({width:3,height:5});
-  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[3,5],logicalSize:[3,5],pixelDensity:1,baseSize:[3,5],scale});
+  expect(response.result.capture.sourceCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[3,5],logicalSize:[3,5],pixelDensity:1,baseSize:[3,5],scale});
   expect(response.result.capture.pixels).toBe(originalPixels);expect(response.result.capture.pixels.buffer).toBe(originalBuffer);expect(response.result.capture.pixels).toEqual(expectedPixels);
   expect(response.result.capture.sourcePausedImage).toBeUndefined();expect(response.result.capture.rootsPausedImage).toBeUndefined();
   const transfers=worker.postMessage.mock.calls.at(-1)![1].transfer;
@@ -227,7 +227,7 @@ describe('Fractal retained live Worker capture and rejection',()=>{
   const response=send({operation:'fractal-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:161,height:121},scale});
   if(response.operation!=='fractal-paused-capture'||!('result' in response))throw Error('capture response');
   expect(owners.fractal.capturePaused).toHaveBeenCalledWith(liveScene,{...highDpi,quality:'export',width:161,height:121},{additionalBytes:0});
-  expect(response.result.capture.fractalCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[161,121],logicalSize:[81,61],pixelDensity:2,baseSize:[162,122],scale});
+  expect(response.result.capture.sourceCurrentImage).toEqual({model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[161,121],logicalSize:[81,61],pixelDensity:2,baseSize:[162,122],scale});
   expect(response.result.capture.pixels).toBe(pixels);expect(response.result.capture).toMatchObject({width:162,height:122});
  });
  it.each([undefined,0,1.5,NaN])('rejects density %s before owner capture and preserves primary capability',fractalPixelDensity=>{

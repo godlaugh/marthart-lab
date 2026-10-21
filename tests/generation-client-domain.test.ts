@@ -1,3 +1,4 @@
+import {SourceDomainLiveSession} from '../src/engine/sourceDomainLiveSession';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {Generator} from '../src/engine/client';
 import {generateScene} from '../src/engine/temporal';
@@ -14,7 +15,7 @@ class Transport {
  terminate(){this.terminated=true;}
  emit(message:GenerationResponse){this.onmessage?.({data:message});}
 }
-const input=():GenerationInput=>({time:900,width:8,height:6,quality:'export',domainLive:{sessionId:'domain',revision:0,clock:{paused:true,timestampMs:1000},actualFrameRate:29.97}});
+const input=():GenerationInput=>({time:900,width:8,height:6,quality:'export',domainLive:{sessionId:'domain',revision:0,clock:{paused:true,timestampMs:1000},actualFrameRate:29.97,viewport:{logicalWidth:8,logicalHeight:6,pixelDensity:1}}});
 function fixture(){
  const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'DOMAIN_COLORING',name:'transport',domainColoring:{formula:'z^3 - 1'},timeline:[{type:'wait',duration:1}]})).scene;scene.settings.domainBackend='cpu';
  const context=input(),output=generateScene(scene,context);if(output.type!=='raster'||!output.domainLive)throw Error('missing real numerical/render producer');
@@ -63,5 +64,19 @@ describe('Domain live transport identity and failure boundary',()=>{
    else{const changed=structuredClone(f.output);changed.domainLive!.renderKind='snapshot';changed.domainLive!.updateOrdinal++;w.emit({operation:'domain-navigation',sessionId:p.sessionId,id:p.id,sourceId:r.id,output:changed});}
    expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);await expect(f.g.navigateDomainPaused(f.output,{kind:'wheel',count:1})).rejects.toThrow();f.g.dispose();
   }
+ });
+});
+
+describe('Domain capture transport validation',()=>{
+ for(const corrupt of ['none','time','target','size','formula','paired-state'] as const)it(`validates ${corrupt} capture response against the completed capability`,async()=>{
+  const f=fixture(),initial=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await initial;
+  const owner=new SourceDomainLiveSession();owner.generate(f.scene,f.context);const result=owner.capturePaused(f.scene,{...f.context,width:4,height:2});result.capture.sourceCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[4,2],logicalSize:[4,2],pixelDensity:1,baseSize:[4,2],scale:3};
+  if(corrupt==='time')result.capture.domainLive!.sceneTime++;
+  if(corrupt==='target')result.capture.domainLive!.target='primary';
+  if(corrupt==='size')result.capture.sourceCurrentImage.scale=5;
+  if(corrupt==='formula')result.capture.formulaPresentation!.referenceWidth++;
+  if(corrupt==='paired-state')result.capture.domainLive!.presentation.parameters.a=123;
+  const pending=f.g.captureDomainPaused(f.output,{width:4,height:2},3),caught=pending.catch(e=>e),p=w.messages.at(-1)!;w.emit({operation:'domain-paused-capture',sessionId:p.sessionId,id:p.id,result});
+  const response=await caught;if(corrupt==='none'){expect(response).toBe(result);expect(w.terminated).toBe(false);}else{expect(response).toBeInstanceOf(Error);expect(w.terminated).toBe(true);}f.g.dispose();
  });
 });

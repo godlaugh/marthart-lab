@@ -142,11 +142,11 @@ self.onmessage = (
       send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview:lease.preview}},outputBuffers(lease.preview));
       completed={id,scene,context:resumed};recording=undefined;return;
     }
-    if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture'||event.data.operation==='fractal-paused-capture'){
+    if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture'||event.data.operation==='fractal-paused-capture'||event.data.operation==='domain-paused-capture'){
       const source=captureSource=completed;
       if(!source||source.id!==event.data.sourceId)throw new Error('暂停截图对应的预览已过期');
       captureSourceMatched=true;
-      const fractal=event.data.operation==='fractal-paused-capture',perlin=event.data.operation==='perlin-paused-capture',samila=event.data.operation==='samila-paused-capture',iterated=event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture',family=event.data.operation==='map-paused-capture'?'map':'symmetry',liveKey=family==='map'?'mapLive':'symmetryLive';
+      const domain=event.data.operation==='domain-paused-capture',fractal=event.data.operation==='fractal-paused-capture',perlin=event.data.operation==='perlin-paused-capture',samila=event.data.operation==='samila-paused-capture',iterated=event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture',family=event.data.operation==='map-paused-capture'?'map':'symmetry',liveKey=family==='map'?'mapLive':'symmetryLive';
       const {width,height}=event.data.size,scale=event.data.scale;
       if(scale!==1&&scale!==3&&scale!==5)throw new Error('暂停 PNG 放大倍率须为 1、3 或 5');
       if(perlin&&(!source.scene.perlinSource||source.scene.kind!=='perlin'||!source.context.sourcePerlinViewport||source.context.sourceViewport?.target!=='primary'))
@@ -154,19 +154,20 @@ self.onmessage = (
       if(samila&&(!source.context.samilaLive||source.scene.kind!=='samila'))throw new Error('Samila 暂停截图需要已完成的实时主预览');
       if(iterated&&(!source.context[liveKey]||source.scene.kind!==family||source.context.sourceViewport?.target!=='primary'))throw new Error('迭代场景暂停截图需要已完成的实时主预览');
       if(fractal&&(source.scene.kind!=='fractal'||!temporalSession.sourceFractal.matchesCompletedPrimary(source.scene,source.context)))throw Error('分形当前帧截图对应的实时主预览已过期');
+      if(domain&&(source.scene.kind!=='domain'||!temporalSession.sourceDomain.matchesCompletedPrimary(source.scene,source.context)))throw Error('域着色当前帧截图对应的实时主预览已过期');
       // Source scenes inherit parent density. Native render-buffer rounding can make
       // actual physical base dimensions differ from the user's requested size.
-      const fractalBase=fractal?prepareSourcePausedCaptureSize({width,height},source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS):undefined;
-      const base=fractalBase??(perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height});
+      const currentBase=fractal||domain?prepareSourcePausedCaptureSize({width,height},domain?source.context.domainLive?.viewport?.pixelDensity??NaN:source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS):undefined;
+      const base=currentBase??(perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height});
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
-      if(upscale||fractal)validateRasterRequest({time:0,quality:'export',width:upscale?.width??base.width,height:upscale?.height??base.height});
-      // Fractal's formula composition and whole-image enhancement/upscale run
+      if(upscale||currentBase)validateRasterRequest({time:0,quality:'export',width:upscale?.width??base.width,height:upscale?.height??base.height});
+      // Current numerical-raster formula composition and whole-image enhancement/upscale run
       // after this base capture is delivered, under a separate resource owner.
-      const additionalBytes=fractal?0:sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);
+      const additionalBytes=currentBase?0:sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);
       // The request carries only a completed-frame capability. The worker owns
       // scene history and its original primary context; no fresh replay occurs.
       completed=undefined;
-      const result=fractal?temporalSession.sourceFractal.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes}):iterated
+      const result=domain?temporalSession.sourceDomain.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes}):fractal?temporalSession.sourceFractal.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes}):iterated
         ?temporalSession[family==='map'?'sourceMap':'sourceSymmetry'].capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes})
         :samila
         ?temporalSession.sourceSamila.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes})
@@ -177,7 +178,7 @@ self.onmessage = (
       if(result.capture.type!=='raster'||result.preview.type!=='raster')throw new Error('暂停截图没有生成图像');
       const captureWidth=result.capture.width,captureHeight=result.capture.height;
       if(captureWidth!==base.width||captureHeight!==base.height)throw new Error('暂停截图实际尺寸与已核验的后处理预算不一致');
-      if(fractalBase)result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[width,height],logicalSize:[fractalBase.logicalWidth,fractalBase.logicalHeight],pixelDensity:fractalBase.density,baseSize:[captureWidth,captureHeight],scale};
+      if(currentBase)result.capture.sourceCurrentImage={model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[width,height],logicalSize:[currentBase.logicalWidth,currentBase.logicalHeight],pixelDensity:currentBase.density,baseSize:[captureWidth,captureHeight],scale};
       else{
         const enhanced=enhanceSourcePausedImage(result.capture.pixels,captureWidth,captureHeight);
         result.capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,captureWidth,captureHeight,scale);
@@ -244,7 +245,7 @@ self.onmessage = (
     }else     if(isPausedCaptureOperation(operation)){
       // Check the session owner, not an error category: a late capacity or
       // readback failure may already have changed/retired shared density ink.
-      const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='fractal-paused-capture'?temporalSession.sourceFractal.matchesCompletedPrimary(captureSource.scene,captureSource.context):operation==='symmetry-paused-capture'||operation==='map-paused-capture'
+      const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='domain-paused-capture'?temporalSession.sourceDomain.matchesCompletedPrimary(captureSource.scene,captureSource.context):operation==='fractal-paused-capture'?temporalSession.sourceFractal.matchesCompletedPrimary(captureSource.scene,captureSource.context):operation==='symmetry-paused-capture'||operation==='map-paused-capture'
         ?temporalSession[operation==='map-paused-capture'?'sourceMap':'sourceSymmetry'].matchesCompletedPrimary(captureSource.scene,captureSource.context)
         :operation==='samila-paused-capture'
         ?temporalSession.sourceSamila.matchesCompletedPrimary(captureSource.scene,captureSource.context)

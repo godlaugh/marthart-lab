@@ -1,3 +1,4 @@
+import type {PausedCaptureResult} from './generationProtocol';
 import type {FormulaPresentation,GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {SourceDomainHostSession,type SourceDomainHostSnapshot} from './sourceDomainHostSession';
 import {bindSourceDomainFrame,prepareSourceDomainScene,usesSourceDomain} from './sourceDomainTimeline';
@@ -27,7 +28,7 @@ export type SourceDomainNavigationEvent={kind:'pan';dx:number;dy:number}|{kind:'
 export type SourceDomainLivePresentation=Pick<SceneDocument,
  'equations'|'parameters'|'settings'|'palette'|'camera'|'sourceCamera'|'timeline'|'formulas'|'projectResolution'|'domainSourcePalette'|'evaluatedDomainScene'|'evaluatedDomainGradient'>;
 export interface SourceDomainLiveFacts {
- sessionId:string;revision:number;target:'primary';renderKind:'update'|'snapshot';
+ sessionId:string;revision:number;target:'primary'|'offscreen';renderKind:'update'|'snapshot';
  clockSource:'worker-wall-clock'|'injected';sceneTime:number;rawDt:number;activeDt:number;
  queueIndex:number;queueComplete:boolean;paused:boolean;updateOrdinal:number;
  actualFrameRate:number;presentation:SourceDomainLivePresentation;
@@ -141,9 +142,9 @@ export class SourceDomainLiveSession {
   const formulas=formulaPresentation(retained);
   return{retained,host,formulas,renderer:new DomainRenderSession()};
  }
- private facts(snapshot:SourceDomainHostSnapshot,scene:SceneDocument,kind:SourceDomainLiveFacts['renderKind']):SourceDomainLiveFacts {
+ private facts(snapshot:SourceDomainHostSnapshot,scene:SceneDocument,kind:SourceDomainLiveFacts['renderKind'],target:SourceDomainLiveFacts['target']='primary'):SourceDomainLiveFacts {
   const s=snapshot.state;
-  return{sessionId:this.sessionId,revision:this.revision,target:'primary',renderKind:kind,clockSource:snapshot.hostClock.clockSource,
+  return{sessionId:this.sessionId,revision:this.revision,target,renderKind:kind,clockSource:snapshot.hostClock.clockSource,
    sceneTime:s.clock.sceneTime,rawDt:kind==='update'?s.clock.rawDt:0,activeDt:kind==='update'?s.clock.activeDt:0,
    queueIndex:s.clock.queueIndex,queueComplete:s.clock.queueComplete,paused:snapshot.paused,updateOrdinal:snapshot.updateOrdinal,
    actualFrameRate:s.parameterFps,presentation:presentation(scene)};
@@ -152,9 +153,33 @@ export class SourceDomainLiveSession {
   if(output.type!=='raster'||!output.domainRender||!this.formulas||!Number.isInteger(output.width)||!Number.isInteger(output.height)||output.width<1||output.height<1||output.width>c.width||output.height>c.height||c.quality==='export'&&(output.width!==c.width||output.height!==c.height)||output.width*output.height>MAX_RASTER_PIXELS||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.length!==output.width*output.height*4)throw Error('域着色实时预览未返回有效源栅格事实');
   return Object.assign(output,{domainLive:copy(facts),formulaPresentation:copy(this.formulas)});
  }
- private renderSnapshot(snapshot:SourceDomainHostSnapshot,c:GenerateContext,kind:SourceDomainLiveFacts['renderKind']):LiveRaster {
-  const renderScene=display(this.retained!,snapshot),facts=this.facts(snapshot,renderScene,kind),bind=(output:SceneOutput)=>this.bind(output,facts,c);
+ private renderSnapshot(snapshot:SourceDomainHostSnapshot,c:GenerateContext,kind:SourceDomainLiveFacts['renderKind'],target:SourceDomainLiveFacts['target']='primary'):LiveRaster {
+  const renderScene=display(this.retained!,snapshot),facts=this.facts(snapshot,renderScene,kind,target),bind=(output:SceneOutput)=>this.bind(output,facts,c);
   return bind(this.render(renderScene,{...c,time:snapshot.state.clock.sceneTime,onProgress:c.onProgress?value=>c.onProgress!(bind(value)):undefined},this.renderer!));
+ }
+ /** Capture and primary redraw share the current numerical snapshot and
+  * renderer failure owner. Neither operation advances or reconstructs time. */
+ capturePaused(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):PausedCaptureResult {
+  const retained=this.completed;
+  if(!retained)throw Error('域着色当前帧截图需要已完成主预览');
+  this.requireCompleted(scene,{...c,width:retained.width,height:retained.height,domainTarget:retained.context.domainTarget});
+  const snapshot=this.host!.snapshot();if(!snapshot.paused)throw Error('请先暂停域着色再保存当前帧');
+  const primary:GenerateContext={...retained.context,isCancelled:c.isCancelled,onProgress:undefined};
+  const size=prepareSourcePausedCaptureSize(c,primary.domainLive!.viewport?.pixelDensity??NaN,MAX_RASTER_PIXELS);
+  const capture:GenerateContext={...primary,time:snapshot.state.clock.sceneTime,quality:'export',width:size.width,height:size.height,domainLive:undefined,domainTarget:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,pixelDensity:size.density}};
+  const extra=options.additionalBytes??0;
+  // Include retained preview + capture and bounded image/attachment expansion;
+  // each renderer separately admits its actual CPU/GPU scratch representation.
+  if(!Number.isSafeInteger(extra)||extra<0||extra+capture.width*capture.height*16+primary.width*primary.height*16>768*1024*1024)throw Error('域着色当前帧截图超过 768 MiB 工作预算');
+  if(c.isCancelled?.())throw new DOMException('域着色当前帧截图已取消','AbortError');
+  this.busy=true;this.cancel=c.isCancelled;this.completed=undefined;
+  try{
+   const captured=this.renderSnapshot(snapshot,capture,'snapshot','offscreen');
+   if(this.cancel?.())throw new DOMException('域着色当前帧截图已取消','AbortError');
+   const preview=this.renderSnapshot(snapshot,primary,'snapshot');
+   if(this.cancel?.())throw new DOMException('域着色当前帧截图已取消','AbortError');
+   this.completed=retained;return{capture:captured,preview};
+  }catch(error){this.invalidate();throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  generate(scene:SceneDocument,c:GenerateContext):LiveRaster {
   const live=context(c);
