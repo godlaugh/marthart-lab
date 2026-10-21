@@ -42,3 +42,8 @@ describe('Domain raster GL ownership',()=>{
  for(const error of['compile','link','allocation','framebuffer','draw','read','loss'])it(`cleans partial ${error} resources before its context owner is disposed`,()=>{const f=fixture(error),g=new DomainGpu();expect(()=>g.render(parseDomainModel(scene(),0),3,2,new Uint8ClampedArray(24),()=>0)).toThrow();expect([...f.live.values()].every(v=>v==='Program')).toBe(true);g.dispose();expect(f.live.size).toBe(0);expect(f.lost).toBe(1);});
  it('cleans cancellation after a draw without turning it into CPU fallback',()=>{const f=fixture(''),g=new DomainGpu();let calls=0;expect(()=>g.render(parseDomainModel(scene(),0),3,2,new Uint8ClampedArray(24),()=>0,()=>++calls===4)).toThrow('取消');expect([...f.live.values()]).toEqual(['Program']);g.dispose();expect(f.live.size).toBe(0);});
 });
+
+describe('Domain CPU texture presentation ownership',()=>{
+ for(const error of ['compile','link','allocation','framebuffer','draw','read','loss'])it(`releases partial ${error} presentation resources`,()=>{const f=fixture(error),g=new DomainGpu();expect(()=>g.presentRgb(new Uint8ClampedArray(16),2,2,new Uint8ClampedArray(64),4,4)).toThrow();expect([...f.live.values()].every(v=>v==='Program')).toBe(true);g.dispose();expect(f.live.size).toBe(0);expect(f.lost).toBe(1);});
+ it('cancels after presentation draw and releases all transient resources',()=>{const f=fixture(''),g=new DomainGpu();let calls=0;expect(()=>g.presentRgb(new Uint8ClampedArray(16),2,2,new Uint8ClampedArray(64),4,4,()=>++calls===2)).toThrow('取消');expect([...f.live.values()]).toEqual(['Program']);g.dispose();expect(f.live.size).toBe(0);});
+});

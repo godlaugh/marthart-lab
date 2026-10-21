@@ -28,6 +28,7 @@ export interface DomainRenderFacts {
  readonly view:PreparedDomainViewport;
  readonly constant:[number,number];
  readonly sourceConstantUpload?:boolean;
+ readonly target?:import('./domainRasterTarget').DomainRasterTarget & {presentation:'webgl-linear'|'software-linear'|'direct';sampling:'logical-rgb-linear'|'physical-fragments'|'physical-cpu-reference'};
  /** Numerical clock that produced these pixels. Fixed replay selects a display
   * ordinal. With domainLive, displayFrame is the retained update ordinal and
   * simulationFps is only the document's local replay rate; rawDt and

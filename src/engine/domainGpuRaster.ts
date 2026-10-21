@@ -49,13 +49,13 @@ export function domainRasterFragment(orbit:DomainGpuSource,color:DomainGpuColorP
  return `#version 300 es
 precision highp float;precision highp int;
 uniform ivec2 fullSize,tileOrigin;uniform int tileHeight,sampleSide;
-${source?'in vec2 viewUv;uniform vec2 viewCenter;uniform float viewAngle,viewInverse;uniform int coordinateSample;':'uniform vec2 viewCenter,viewRotation;uniform float viewZoom;'}${nativeExecution?`${source?'':'uniform int coordinateSample;'}uniform int captureKind;`:''}uniform vec3 backgroundValue;
+${source?'in vec2 viewUv;uniform vec2 sourceResolution;uniform vec2 viewCenter;uniform float viewAngle,viewInverse;uniform int coordinateSample;':'uniform vec2 viewCenter,viewRotation;uniform float viewZoom;'}${nativeExecution?`${source?'':'uniform int coordinateSample;'}uniform int captureKind;`:''}uniform vec3 backgroundValue;
 layout(location=0)out vec4 outputColor;layout(location=1)out uvec4 outputFacts;
 ${orbit.fragmentLibrary}
 ${color.source}
 vec2 domainPixel(vec2 samplePosition,out bool risk){
 ${source?` vec2 uv=viewUv;if(sampleSide>1)uv+=samplePosition/vec2(fullSize);
- vec2 plane=uv*2.-1.;plane.x*=float(fullSize.x)/max(float(fullSize.y),1.);
+ vec2 plane=uv*2.-1.;plane.x*=sourceResolution.x/max(sourceResolution.y,1.);
  float co=cos(viewAngle),si=sin(viewAngle);
  vec2 a=vec2(plane.x*co,plane.x*si),b=vec2(-plane.y*si,plane.y*co);
  vec2 rotatedPlane=vec2(plane.x*co-plane.y*si,plane.x*si+plane.y*co);
@@ -93,9 +93,10 @@ void main(){
  outputColor=vec4(rgb,1.);outputFacts=uvec4(validCount,needsRepair?1u:0u,0u,0u);
 }`;}
 
-export function prepareDomainRaster(model:DomainModel,width:number,height:number){
+export function prepareDomainRaster(model:DomainModel,width:number,height:number,target?:import('./domainRasterTarget').DomainRasterTarget){
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>16384||height>16384||width*height>MAX_RASTER_PIXELS)throw new Error('域着色 GPU 图像尺寸超出预算');
  if(model.view.version==='mathart-1.7.8-cpu')throw new Error('原产物 CPU 视口不能由 float32 GPU 光栅替代');
+ if(target&&(target.width!==width||target.height!==height||![target.logicalWidth,target.logicalHeight,target.density].every(n=>Number.isSafeInteger(n)&&n>0)||target.logicalWidth*target.density!==width||target.logicalHeight*target.density!==height))throw Error('域着色 GPU 逻辑目标与物理尺寸不匹配');
  const nativeExecution=model.execution.arithmetic==='native-gpu',preparedColor=prepareDomainGpuColor(model,height);
  if('reason'in preparedColor&&!nativeExecution)throw new Error(preparedColor.reason);
  const color='plan'in preparedColor?preparedColor.plan:DOMAIN_CPU_COLOR_CAPTURE_PLAN,colorFallbackReason='reason'in preparedColor?preparedColor.reason:undefined;
@@ -117,7 +118,7 @@ export function prepareDomainRaster(model:DomainModel,width:number,height:number
  if(!Number.isSafeInteger(stagingBytes)||stagingBytes>MAX_DOMAIN_RASTER_SCRATCH_BYTES)throw new Error('域着色 GPU 临时表示超过 8 MiB 预算');
  if(!Number.isSafeInteger(attachmentBytes)||attachmentBytes>MAX_DOMAIN_SOURCE_ATTACHMENT_BYTES)throw new Error('域着色 GPU 全图附件超过共享图像预算的两倍');
  const outputBytes=width*height*4,estimatedScratchBytes=attachmentBytes+stagingBytes;
- return{color,colorFallbackReason,nativeExecution,capture,tileWidth,tileHeight,estimatedNodeStepsPerDraw,estimatedScratchBytes,attachmentBytes,stagingBytes,outputBytes,estimatedTotalBytes:estimatedScratchBytes+outputBytes,vertexSource:source?domainSourceRasterVertex:domainRasterVertex,vertexCount:source?6:3};
+ return{logicalWidth:target?.logicalWidth??width,logicalHeight:target?.logicalHeight??height,color,colorFallbackReason,nativeExecution,capture,tileWidth,tileHeight,estimatedNodeStepsPerDraw,estimatedScratchBytes,attachmentBytes,stagingBytes,outputBytes,estimatedTotalBytes:estimatedScratchBytes+outputBytes,vertexSource:source?domainSourceRasterVertex:domainRasterVertex,vertexCount:source?6:3};
 }
 
 /** Synchronous, exclusively leased context. All pass resources belong to this
@@ -126,7 +127,7 @@ export function prepareDomainRaster(model:DomainModel,width:number,height:number
  * RGBA is supplied by the caller and is never duplicated for CPU repairs. */
 export function renderDomainRaster(gl:WebGL2RenderingContext,ownCleanup:(cleanup:()=>void)=>()=>void,getProgram:(fragment:string)=>DomainRasterProgram,orbit:DomainGpuSource,model:DomainModel,width:number,height:number,pixels:Uint8ClampedArray,repairPixel:DomainRepairPixel,isCancelled?:()=>boolean,prepared?:ReturnType<typeof prepareDomainRaster>):DomainRasterFacts{
  const cancelled=()=>{if(isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');};cancelled();
- const {color,colorFallbackReason,nativeExecution,capture,tileWidth,tileHeight,estimatedNodeStepsPerDraw,estimatedScratchBytes,attachmentBytes,stagingBytes,outputBytes,estimatedTotalBytes,vertexCount}=prepared??prepareDomainRaster(model,width,height);
+ const {logicalWidth,logicalHeight,color,colorFallbackReason,nativeExecution,capture,tileWidth,tileHeight,estimatedNodeStepsPerDraw,estimatedScratchBytes,attachmentBytes,stagingBytes,outputBytes,estimatedTotalBytes,vertexCount}=prepared??prepareDomainRaster(model,width,height);
  if(pixels.length!==width*height*4)throw new Error('域着色 GPU 输出缓冲尺寸无效');
  if(orbit.parameters.length+32+color.uniforms.length>gpuCall('capability','域着色 GPU uniform 容量查询失败',()=>gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS)))throw new DomainGpuError('capability','域着色参数超过 GPU fragment uniform 容量');
  const maxTexture=gpuCall('capability','域着色 GPU 纹理容量查询失败',()=>gl.getParameter(gl.MAX_TEXTURE_SIZE)),units=gpuCall('capability','域着色 GPU 纹理单元查询失败',()=>gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)),sourceView=model.view.version==='mathart-1.7.8-gpu';
@@ -146,7 +147,7 @@ export function renderDomainRaster(gl:WebGL2RenderingContext,ownCleanup:(cleanup
   const background=model.background.map(v=>Math.round(v*255)/255);
   gpuCall('render','域着色 GPU uniform 上传失败',()=>{
   orbit.parameters.forEach((name,i)=>gl.uniform1f(loc('parameter'+i),model.parameters[name]));gl.uniform2f(loc('constantValue'),...model.constant);gl.uniform1i(loc('iterate'),model.iteration?1:0);gl.uniform1i(loc('iterationSteps'),model.steps);gl.uniform1i(loc('seedMode'),model.seed==='PIXEL_Z'?0:model.seed==='ZERO'?1:2);gl.uniform1f(loc('bailout'),model.bailout);
-  gl.uniform2i(loc('fullSize'),width,height);gl.uniform1i(loc('sampleSide'),model.supersampling);gl.uniform2f(loc('viewCenter'),model.view.centerX,model.view.centerY);if(model.view.version==='mathart-1.7.8-gpu'){gl.uniform1f(loc('viewAngle'),model.view.angle);gl.uniform1f(loc('viewInverse'),model.view.inverseScale);}else{gl.uniform2f(loc('viewRotation'),Math.cos(model.view.rotation),Math.sin(model.view.rotation));gl.uniform1f(loc('viewZoom'),model.view.scale);}if(capture)gl.uniform1i(loc('coordinateSample'),-1);if(nativeExecution)gl.uniform1i(loc('captureKind'),0);gl.uniform3fv(loc('backgroundValue'),background);
+  gl.uniform2i(loc('fullSize'),width,height);gl.uniform2f(loc('sourceResolution'),logicalWidth,logicalHeight);gl.uniform1i(loc('sampleSide'),model.supersampling);gl.uniform2f(loc('viewCenter'),model.view.centerX,model.view.centerY);if(model.view.version==='mathart-1.7.8-gpu'){gl.uniform1f(loc('viewAngle'),model.view.angle);gl.uniform1f(loc('viewInverse'),model.view.inverseScale);}else{gl.uniform2f(loc('viewRotation'),Math.cos(model.view.rotation),Math.sin(model.view.rotation));gl.uniform1f(loc('viewZoom'),model.view.scale);}if(capture)gl.uniform1i(loc('coordinateSample'),-1);if(nativeExecution)gl.uniform1i(loc('captureKind'),0);gl.uniform3fv(loc('backgroundValue'),background);
   for(const u of color.uniforms){const location=loc(u.name);if(u.type==='1i')gl.uniform1i(location,u.value as number);else if(u.type==='1f')gl.uniform1f(location,u.value as number);else if(u.type==='2f')gl.uniform2fv(location,u.value as number[]);else if(u.type==='3f')gl.uniform3fv(location,u.value as number[]);else gl.uniform4fv(location,u.value as number[]);}
   });
   const texture=(w:number,h:number,internal:number,format:number,type:number,data:ArrayBufferView|null)=>{const t=gpuCall('allocation','域着色 GPU 纹理分配失败',()=>gl.createTexture());if(!t)throw new DomainGpuError('allocation','域着色 GPU 纹理分配失败');textures.push(t);gpuCall('allocation','域着色 GPU 纹理准备失败',()=>{gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,internal,w,h,0,format,type,data);});return t;};

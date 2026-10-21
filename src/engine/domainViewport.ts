@@ -31,7 +31,7 @@ const f=Math.fround;
  * GPU CPU reference approximates that center UV by a rounded division, then
  * adds the F32 displacement. Actual varying interpolation and shader trig/FMA
  * can differ; successful GPU math repair consumes captured GPU coordinates. */
-export function domainPixel(column:number,row:number,width:number,height:number,view:PreparedDomainViewport,offsetX=.5,offsetY=.5):[number,number]{
+export function domainPixel(column:number,row:number,width:number,height:number,view:PreparedDomainViewport,offsetX=.5,offsetY=.5,logical?:{logicalWidth:number;logicalHeight:number}):[number,number]{
  if(view.version==='local-v1'){
   // Preserve the former complexPixel call and operation order, including the
   // canceling -.5/+.5 in supersampling. Do not simplify this legacy recipe.
@@ -40,7 +40,7 @@ export function domainPixel(column:number,row:number,width:number,height:number,
   const co=Math.cos(view.rotation),si=Math.sin(view.rotation);
   return[view.centerX+0+(re*co-im*si),view.centerY+0+(re*si+im*co)];
  }
- const x=f(f(column)+f(offsetX)),y=f(f(row)+f(offsetY)),w=f(width),h=f(height),aspect=f(w/h);
+ const x=f(f(column)+f(offsetX)),y=f(f(row)+f(offsetY)),w=f(width),h=f(height),aspect=logical&&view.version==='mathart-1.7.8-gpu'?f(f(logical.logicalWidth)/f(logical.logicalHeight)):f(w/h);
  if(view.version==='mathart-1.7.8-cpu'){
   const px=f(f(f(f(2*x)/w)-1)*aspect),py=f(f(f(2*y)/h)-1),co=view.referenceCosine,si=view.referenceSine;
   return[view.centerX+(px*co-py*si)*view.inverseScale,view.centerY+(px*si+py*co)*view.inverseScale];

@@ -1,3 +1,4 @@
+import {prepareDomainRasterTarget,admitDomainTarget,presentDomainRgbLinear,type DomainRasterTarget} from './domainRasterTarget';
 import type {DomainRepairPixel} from './domainGpuRaster';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {domainPixel,domainViewportWarnings} from './domainViewport';
@@ -11,11 +12,14 @@ import {parseDomainRenderPolicy,type DomainRenderFacts} from './domainRenderPoli
 const aborted=(error:unknown)=>error instanceof DOMException&&error.name==='AbortError';
 const message=(error:unknown)=>error instanceof Error?error.message:String(error);
 const pixelWork=(model:DomainModel)=>(model.iteration?model.steps:1)*model.supersampling**2*5*(model.execution.arithmetic==='local'?1:model.expressionCost);
+const sourceCpuLattice=(m:DomainModel)=>m.execution.arithmetic==='native-cpu'&&m.colorVersion==='mathart-1.7.8-cpu'&&m.view.version==='mathart-1.7.8-cpu';
 type DomainOutput=Extract<SceneOutput,{type:'raster'}>;
+type RenderedDomain=DomainOutput & {domainPresentation?:'webgl-linear'|'software-linear'|'direct'};
 
 export function generateDomain(scene:SceneDocument,context:GenerateContext,session?:DomainRenderSession):DomainOutput{
  if(context.isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');
  validateRasterRequest(context);
+ const target=prepareDomainRasterTarget(context);
  const started=performance.now(),policy=parseDomainRenderPolicy(scene.settings.domainRenderPolicy),requested=requestedDomainRenderRules(scene.settings),owner=session??new DomainRenderSession();
  owner.select(scene.id);
  const recoverWholeChain=policy==='source-cpu-on-gpu-failure-v1'&&requested.backend!=='cpu';
@@ -46,8 +50,8 @@ export function generateDomain(scene:SceneDocument,context:GenerateContext,sessi
    if(recoverWholeChain&&error instanceof DomainGpuError){model=fail(error.failure);return model;}
    return undefined;
   };
-  const output=renderDomainModel(model,context,started,recover);
-  output.domainRender={policy,requested,effective:{formula:model.execution.version,color:model.colorVersion,viewport:model.view.version,backend:output.backend??'cpu'},route,trigger,sticky,view:model.view,constant:[...model.constant],sourceConstantUpload:model.sourceConstantUpload};
+  const {domainPresentation,...output}=renderDomainModel(model,context,started,recover,target);
+  output.domainRender={policy,requested,effective:{formula:model.execution.version,color:model.colorVersion,viewport:model.view.version,backend:output.backend??'cpu'},route,trigger,sticky,view:model.view,constant:[...model.constant],sourceConstantUpload:model.sourceConstantUpload,...(target?{target:{...target,presentation:domainPresentation??'direct',sampling:output.backend==='webgl2'?'physical-fragments':sourceCpuLattice(model)?'logical-rgb-linear':'physical-cpu-reference'}}:{})};
   const frame=scene.evaluatedDomainScene;
   if(frame)output.domainRender={...output.domainRender,sourceClock:{displayFrame:frame.displayFrame,simulationFps:frame.simulationFps,parameterFps:frame.parameterFps,sceneTime:frame.clock.sceneTime,rawDt:frame.clock.rawDt,activeDt:frame.clock.activeDt,queueIndex:frame.clock.queueIndex,queueComplete:frame.clock.queueComplete,rotationRate:frame.rotationRate,paletteOffset:frame.paletteOffset}};
   if(route==='source-cpu-failure')output.warnings=[`域着色整链 CPU 回退${sticky?'（保留本作品此前的 GPU 失败状态）':''}：${trigger!.reason}；当前图像使用 CPU 公式、CPU 坐标和 CPU 着色。`,...(output.warnings??[])];
@@ -60,7 +64,7 @@ export function generateDomain(scene:SceneDocument,context:GenerateContext,sessi
  }
 }
 
-function renderDomainModel(model:DomainModel,context:GenerateContext,started:number,recover:(error:unknown)=>DomainModel|undefined,reusePixels?:Uint8ClampedArray):DomainOutput{
+function renderDomainModel(model:DomainModel,context:GenerateContext,started:number,recover:(error:unknown)=>DomainModel|undefined,target?:DomainRasterTarget,reusePixels?:Uint8ClampedArray):RenderedDomain{
  const cancel=()=>{if(context.isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');};cancel();
  const evaluate=domainEvaluator(model,context.isCancelled),nativeGpu=model.execution.arithmetic==='native-gpu',warnings:string[]=[...model.gradientWarnings,...model.executionWarnings,...domainViewportWarnings(model.view)];
  if(model.execution.arithmetic==='native-cpu')warnings.push('MathArt 1.7.8 CPU 公式规则来自静态产物；Java Math 与 JavaScript Math 的逐位一致性尚未验证。');
@@ -71,35 +75,44 @@ function renderDomainModel(model:DomainModel,context:GenerateContext,started:num
  // Admission may change preview dimensions; recalculate once with the actual
  // backend. Export dimensions are exact in either path.
  const workPerPixel=pixelWork(model);
- let [width,height]=rasterDimensions(context,workPerPixel,gpu?'webgl2':'cpu',[]);
+ let [width,height]=target?[target.width,target.height]:rasterDimensions(context,workPerPixel,gpu?'webgl2':'cpu',[]);
  if(gpu){fallbackReason=domainGpuPrecisionReason(model,width,height);if(fallbackReason)gpu=false;}
- [width,height]=rasterDimensions(context,workPerPixel,gpu?'webgl2':'cpu',warnings);
+ const logicalCpu=!!target&&!gpu&&sourceCpuLattice(model);
+ if(target)admitDomainTarget(context,target,workPerPixel,gpu?'webgl2':'cpu',logicalCpu);
+ else [width,height]=rasterDimensions(context,workPerPixel,gpu?'webgl2':'cpu',warnings);
+ const sampleWidth=logicalCpu?target!.logicalWidth:width,sampleHeight=logicalCpu?target!.logicalHeight:height;
  const s=model.supersampling,samplesPerPixel=s*s,pixels=reusePixels?.length===width*height*4?reusePixels:new Uint8ClampedArray(width*height*4),bg=model.background.map(v=>Math.round(v*255));
+ const samplePixels=logicalCpu&&target!.density>1?new Uint8ClampedArray(sampleWidth*sampleHeight*4):pixels;
  const cpuPixel:DomainRepairPixel=(index,coordinates)=>{
   const sum=[0,0,0];let valid=0;
   // Preserve the old CPU sampling and averaging order exactly. If one GPU
   // subsample is risky, repair the whole pixel, never mix partial averages.
   for(let sample=0;sample<samplesPerPixel;sample++){
-   const at=(coordinates?.offset??0)+sample*2,point:[number,number]=coordinates?[coordinates.values[at],coordinates.values[at+1]]:domainPixel(index%width,Math.floor(index/width),width,height,model.view,(sample%s+.5)/s,(Math.floor(sample/s)+.5)/s);
+   const at=(coordinates?.offset??0)+sample*2,point:[number,number]=coordinates?[coordinates.values[at],coordinates.values[at+1]]:domainPixel(index%sampleWidth,Math.floor(index/sampleWidth),sampleWidth,sampleHeight,model.view,(sample%s+.5)/s,(Math.floor(sample/s)+.5)/s,target);
    const valueAt=coordinates?.kind==='native-gpu-result'?coordinates.valueOffset+sample*2:0;
-   const value:[number,number]=coordinates?.kind==='native-gpu-result'?[coordinates.finalValues[valueAt],coordinates.finalValues[valueAt+1]]:evaluate(point),color=shadeDomainValue(value,point,model,height);
+   const value:[number,number]=coordinates?.kind==='native-gpu-result'?[coordinates.finalValues[valueAt],coordinates.finalValues[valueAt+1]]:evaluate(point),color=shadeDomainValue(value,point,model,sampleHeight);
    if(!color)continue;for(let k=0;k<3;k++)sum[k]+=color[k];valid++;
   }
-  for(let k=0;k<3;k++)pixels[index*4+k]=valid?Math.round(Math.max(0,Math.min(1,sum[k]/valid))*255):bg[k];pixels[index*4+3]=255;return valid;
+  for(let k=0;k<3;k++)samplePixels[index*4+k]=valid?Math.round(Math.max(0,Math.min(1,sum[k]/valid))*255):bg[k];samplePixels[index*4+3]=255;return valid;
  };
- const samples=width*height*samplesPerPixel;let generated=0,invalid=0,invalidSamples=0,repaired=0;
+ let domainPresentation:RenderedDomain['domainPresentation']='direct';
+ const samples=sampleWidth*sampleHeight*samplesPerPixel;let generated=0,invalid=0,invalidSamples=0,repaired=0;
  try{
   if(gpu){
-   try{const result=domainGpu.render(model,width,height,pixels,cpuPixel,context.isCancelled);({generated,invalid,invalidSamples,repaired}=result);if(result.colorFallbackReason)warnings.push('GPU 公式终值由 CPU 着色：'+result.colorFallbackReason);}
+   try{const result=domainGpu.render(model,width,height,pixels,cpuPixel,context.isCancelled,target);({generated,invalid,invalidSamples,repaired}=result);if(result.colorFallbackReason)warnings.push('GPU 公式终值由 CPU 着色：'+result.colorFallbackReason);}
    catch(error){
     const recovered=recover(error);fallbackReason=message(error);gpu=false;
     // Full-resolution exports reuse their single RGBA allocation on failure.
     // Only a preview whose CPU budget changes dimensions needs a smaller result.
-    const cpuModel=recovered??{...model,backend:'cpu' as const},cpuSize=rasterDimensions(context,pixelWork(cpuModel),'cpu',[]);
-    if(recovered||cpuSize[0]!==width||cpuSize[1]!==height){const result=renderDomainModel(cpuModel,context,started,recover,pixels);if(!recovered)result.warnings=[`域着色 GPU 回退 CPU：${fallbackReason}`,...(result.warnings??[])];return result;}
+    const cpuModel=recovered??{...model,backend:'cpu' as const},cpuSize=target?[target.width,target.height]:rasterDimensions(context,pixelWork(cpuModel),'cpu',[]);
+    if(target||recovered||cpuSize[0]!==width||cpuSize[1]!==height){const result=renderDomainModel(cpuModel,context,started,recover,target,pixels);if(!recovered)result.warnings=[`域着色 GPU 回退 CPU：${fallbackReason}`,...(result.warnings??[])];return result;}
    }
   }
-  if(!gpu)for(let index=0;index<width*height;index++){if((index&127)===0)cancel();const valid=cpuPixel(index);invalidSamples+=samplesPerPixel-valid;if(valid)generated++;else invalid++;}
+  if(!gpu)for(let index=0;index<sampleWidth*sampleHeight;index++){if((index&127)===0)cancel();const valid=cpuPixel(index);invalidSamples+=samplesPerPixel-valid;if(valid)generated++;else invalid++;}
+  if(samplePixels!==pixels){
+   try{domainGpu.presentRgb(samplePixels,sampleWidth,sampleHeight,pixels,width,height,context.isCancelled);domainPresentation='webgl-linear';}
+   catch(error){if(!(error instanceof DomainGpuError))throw error;domainGpu.dispose();presentDomainRgbLinear(samplePixels,sampleWidth,sampleHeight,pixels,width,height,cancel);domainPresentation='software-linear';warnings.push('域着色纹理呈现不可用，使用软件 LINEAR 回退，可能存在色阶量化差异：'+error.message);}
+  }
   cancel();
  }catch(error){if(error instanceof DOMException&&error.name==='AbortError')domainGpu.dispose();throw error;}
  // Source-coordinate provenance survives full CPU expression/color repair.
@@ -115,5 +128,5 @@ function renderDomainModel(model:DomainModel,context:GenerateContext,started:num
   if(repaired){warnings.push(`${repaired} 个子像素经过 CPU 主值或数值精度修复。`);if(model.view.version==='mathart-1.7.8-gpu')warnings.push('CPU 数学修复消费同一 GPU program 捕获的坐标，不重新计算另一套视口坐标。');}
  }
  if(invalidSamples)warnings.push(`${invalidSamples} 个子像素在极点、溢出或无定义区域，使用背景/其余有效子像素。`);
- return{type:'raster',dimension:2,cameraResolved:true,backend:actualGpu?'webgl2':'cpu',width,height,pixels,stats:{samples,generated,invalid,elapsedMs:performance.now()-started},warnings};
+ return{domainPresentation,type:'raster',dimension:2,cameraResolved:true,backend:actualGpu?'webgl2':'cpu',width,height,pixels,stats:{samples,generated,invalid,elapsedMs:performance.now()-started},warnings};
 }

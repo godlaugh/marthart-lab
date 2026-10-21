@@ -494,6 +494,7 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
 };
 export type GenerationStatus = {kind:'roots';attemptedSamples:number;targetSamples:number;totalSamples:number};
 export interface GenerateContext {
+  domainTarget?:import('./engine/domainRasterTarget').DomainTargetRequest;
   time: number;
   sourceBouncingFrame?:SourceBouncingCheckpoint;
   /** Runtime view, separate from saved author angles and physics checkpoint. */
@@ -535,7 +536,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

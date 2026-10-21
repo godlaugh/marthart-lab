@@ -85,8 +85,8 @@ export class SourceDomainLiveSession {
  }
  diagnostics(){return{sessionId:this.sessionId,revision:this.revision,failed:this.failed,host:this.host&&!this.failed?this.host.snapshot():undefined,renderFailure:this.renderer?.failure(),retainedBytes:this.retained?JSON.stringify(this.retained).length*2:0};}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {
-  const done=this.completed,v=c.domainLive,p=v?.viewport,saved=done?.context.domainLive?.viewport;
-  return !this.busy&&!this.failed&&!!done&&!!v&&scene.kind==='domain'&&scene.id===done.sceneId&&v.sessionId===done.sessionId&&v.revision===done.revision&&v.startAt===this.startAt&&c.width===done.width&&c.height===done.height&&p?.logicalWidth===saved?.logicalWidth&&p?.logicalHeight===saved?.logicalHeight&&p?.pixelDensity===saved?.pixelDensity;
+  const done=this.completed,v=c.domainLive,p=v?.viewport,saved=done?.context.domainLive?.viewport,a=c.domainTarget,b=done?.context.domainTarget;
+  return !this.busy&&!this.failed&&!!done&&!!v&&scene.kind==='domain'&&scene.id===done.sceneId&&v.sessionId===done.sessionId&&v.revision===done.revision&&v.startAt===this.startAt&&c.width===done.width&&c.height===done.height&&p?.logicalWidth===saved?.logicalWidth&&p?.logicalHeight===saved?.logicalHeight&&p?.pixelDensity===saved?.pixelDensity&&(a===b||!!a&&!!b&&a.logicalWidth===b.logicalWidth&&a.logicalHeight===b.logicalHeight&&a.pixelDensity===b.pixelDensity);
  }
  setPaused(paused:boolean,timestampMs?:number):void {
   if(this.busy||this.failed||!this.host||!this.completed)throw Error('域着色播放控制需要已完成且可用的实时主预览');

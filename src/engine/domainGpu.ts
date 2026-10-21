@@ -1,3 +1,4 @@
+import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {DomainGpuError,domainGpuOperation as gpuCall} from './domainGpuFailure';
 import type {DomainModel} from './domainModel';
 import {domainExpressions} from './domainExpressions';
@@ -62,10 +63,35 @@ export class DomainGpu {
    const values=new Float32Array(count*2),repair=new Uint8Array(count);for(let i=0;i<count;i++){values[i*2]=packed[i*4];values[i*2+1]=packed[i*4+1];repair[i]=!nativeExecution&&(packed[i*4+2]!==0||!Number.isFinite(values[i*2])||!Number.isFinite(values[i*2+1]))?1:0;}return{values,repair};
   }finally{release();}
  }
- render(model:DomainModel,width:number,height:number,pixels:Uint8ClampedArray,repairPixel:DomainRepairPixel,isCancelled?:()=>boolean){
+ render(model:DomainModel,width:number,height:number,pixels:Uint8ClampedArray,repairPixel:DomainRepairPixel,isCancelled?:()=>boolean,target?:import('./domainRasterTarget').DomainRasterTarget){
   this.lastRaster=undefined;
   if(isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');
-  const prepared=prepareDomainRaster(model,width,height);if(pixels.length!==width*height*4)throw new Error('域着色 GPU 输出缓冲尺寸无效');const orbit=domainGpuSource(model);const result=renderDomainRaster(this.context(),this.ownCleanup,fragment=>this.program(prepared.vertexSource,fragment),orbit,model,width,height,pixels,repairPixel,isCancelled,prepared);this.lastRaster=result;return result;
+  const prepared=prepareDomainRaster(model,width,height,target);if(pixels.length!==width*height*4)throw new Error('域着色 GPU 输出缓冲尺寸无效');const orbit=domainGpuSource(model);const result=renderDomainRaster(this.context(),this.ownCleanup,fragment=>this.program(prepared.vertexSource,fragment),orbit,model,width,height,pixels,repairPixel,isCancelled,prepared);this.lastRaster=result;return result;
+ }
+ /** CPU-evaluated RGB PImage still reaches a GL target in the source. Keep
+  * the formula backend independent from this texture presentation backend. */
+ presentRgb(source:Uint8ClampedArray,sw:number,sh:number,pixels:Uint8ClampedArray,width:number,height:number,isCancelled?:()=>boolean):void {
+  const cancel=()=>{if(isCancelled?.())throw new DOMException('域着色呈现已取消','AbortError');};cancel();
+  if(sw*sh+width*height>MAX_RASTER_PIXELS)throw Error('域着色 RGB 呈现超过图像预算');
+  if(![sw,sh,width,height].every(n=>Number.isSafeInteger(n)&&n>0&&n<=16384)||source.length!==sw*sh*4||pixels.length!==width*height*4)throw Error('域着色 RGB 呈现尺寸无效');
+  const gl=this.context();let texture:WebGLTexture|null=null,attachment:WebGLTexture|null=null,fbo:WebGLFramebuffer|null=null,vao:WebGLVertexArrayObject|null=null;
+  const release=this.ownCleanup(()=>{gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindVertexArray(null);gl.bindTexture(gl.TEXTURE_2D,null);gl.useProgram(null);if(texture){gl.deleteTexture(texture);texture=null;}if(attachment){gl.deleteTexture(attachment);attachment=null;}if(fbo){gl.deleteFramebuffer(fbo);fbo=null;}if(vao){gl.deleteVertexArray(vao);vao=null;}});
+  try{
+   const limit=gpuCall('capability','域着色呈现容量查询失败',()=>gl.getParameter(gl.MAX_TEXTURE_SIZE)),viewport=gpuCall('capability','域着色呈现视口查询失败',()=>gl.getParameter(gl.MAX_VIEWPORT_DIMS)) as Int32Array;if(width>viewport[0]||height>viewport[1]||Math.max(width,height,sw,sh)>limit)throw new DomainGpuError('capability','域着色呈现超过纹理尺寸');
+   const p=this.program(`#version 300 es
+void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}`,`#version 300 es
+precision highp float;uniform sampler2D image;uniform vec2 targetSize;out vec4 color;
+void main(){color=texture(image,vec2(gl_FragCoord.x/targetSize.x,1.-gl_FragCoord.y/targetSize.y));}`);
+   gpuCall('allocation','域着色呈现缓冲分配失败',()=>{texture=gl.createTexture();attachment=gl.createTexture();fbo=gl.createFramebuffer();vao=gl.createVertexArray();});if(!texture||!attachment||!fbo||!vao)throw new DomainGpuError('allocation','域着色呈现缓冲分配失败');
+   gpuCall('render','域着色纹理呈现失败',()=>{
+    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,sw,sh,0,gl.RGBA,gl.UNSIGNED_BYTE,source);
+    gl.bindTexture(gl.TEXTURE_2D,attachment);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,attachment,0);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new DomainGpuError('render','域着色呈现 framebuffer 不完整');
+    gl.useProgram(p.program);gl.bindVertexArray(vao);gl.bindTexture(gl.TEXTURE_2D,texture);gl.uniform1i(gl.getUniformLocation(p.program,'image'),0);gl.uniform2f(gl.getUniformLocation(p.program,'targetSize'),width,height);gl.disable(gl.RASTERIZER_DISCARD);gl.disable(gl.BLEND);gl.disable(gl.DITHER);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.colorMask(true,true,true,true);gl.viewport(0,0,width,height);gl.drawArrays(gl.TRIANGLES,0,3);
+   });cancel();
+   // Reuse the final output with one row of scratch, not a second full image.
+   gpuCall('readback','域着色呈现读回失败',()=>{gl.pixelStorei(gl.PACK_ALIGNMENT,1);gl.readBuffer(gl.COLOR_ATTACHMENT0);gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);if(gl.isContextLost())throw new DomainGpuError('context','域着色呈现上下文丢失');if(gl.getError()!==gl.NO_ERROR)throw new DomainGpuError('readback','域着色呈现读回失败');});
+   const row=new Uint8ClampedArray(width*4);for(let y=0;y<Math.floor(height/2);y++){cancel();const top=y*width*4,bottom=(height-1-y)*width*4;row.set(pixels.subarray(top,top+row.length));pixels.copyWithin(top,bottom,bottom+row.length);pixels.set(row,bottom);}cancel();
+  }finally{release();}
  }
  dispose(){
   this.finishPendingCleanup();const gl=this.gl;this.lastRaster=undefined;if(!gl)return;
