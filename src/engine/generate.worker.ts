@@ -34,6 +34,7 @@ self.onmessage = (
   const start = performance.now();
   let captureSource:typeof completed;
   let recordingSource:typeof completed;
+  let generationSource:typeof completed;
   const leaseAtEntry=recording;
   let captureRendered=false;
   let captureSourceMatched=false;
@@ -67,6 +68,13 @@ self.onmessage = (
       temporalSession.sourceSamila.setPaused(event.data.paused);
       completed={...source,context:{...source.context,samilaLive:{...source.context.samilaLive,clock:{...source.context.samilaLive.clock,paused:event.data.paused}}}};
       send({operation:'samila-playback',id,sourceId:source.id,paused:event.data.paused});return;
+    }
+    if(event.data.operation==='fractal-playback'){
+      const source=completed,live=source?.context.fractalLive;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='fractal'||!live||typeof event.data.paused!=='boolean'||!temporalSession.sourceFractal.matchesCompletedPrimary(source.scene,source.context))throw Error('分形播放控制对应的实时主预览已过期');
+      temporalSession.sourceFractal.setPaused(event.data.paused,event.data.timestampMs);
+      completed={...source,context:{...source.context,fractalLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
+      send({operation:'fractal-playback',id,sourceId:source.id,paused:event.data.paused});return;
     }
     if(event.data.operation==='source-recording-begin'){
       if(recording)throw new Error('源场景录制已开始');
@@ -103,27 +111,28 @@ self.onmessage = (
       send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:{...context,time:lease.preview.mapLive?.sceneTime??lease.preview.symmetryLive?.sceneTime??context.time},preview:lease.preview}},outputBuffers(lease.preview));
       completed={id,scene,context};recording=undefined;return;
     }
-    if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture'){
+    if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture'||event.data.operation==='fractal-paused-capture'){
       const source=captureSource=completed;
       if(!source||source.id!==event.data.sourceId)throw new Error('暂停截图对应的预览已过期');
       captureSourceMatched=true;
-      const perlin=event.data.operation==='perlin-paused-capture',samila=event.data.operation==='samila-paused-capture',iterated=event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture',family=event.data.operation==='map-paused-capture'?'map':'symmetry',liveKey=family==='map'?'mapLive':'symmetryLive';
+      const fractal=event.data.operation==='fractal-paused-capture',perlin=event.data.operation==='perlin-paused-capture',samila=event.data.operation==='samila-paused-capture',iterated=event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture',family=event.data.operation==='map-paused-capture'?'map':'symmetry',liveKey=family==='map'?'mapLive':'symmetryLive';
       const {width,height}=event.data.size,scale=event.data.scale;
       if(scale!==1&&scale!==3&&scale!==5)throw new Error('暂停 PNG 放大倍率须为 1、3 或 5');
       if(perlin&&(!source.scene.perlinSource||source.scene.kind!=='perlin'||!source.context.sourcePerlinViewport||source.context.sourceViewport?.target!=='primary'))
         throw new Error('Perlin 暂停截图需要完整配置和已完成主画布的实际尺寸与密度');
       if(samila&&(!source.context.samilaLive||source.scene.kind!=='samila'))throw new Error('Samila 暂停截图需要已完成的实时主预览');
       if(iterated&&(!source.context[liveKey]||source.scene.kind!==family||source.context.sourceViewport?.target!=='primary'))throw new Error('迭代场景暂停截图需要已完成的实时主预览');
+      if(fractal&&(source.scene.kind!=='fractal'||!temporalSession.sourceFractal.matchesCompletedPrimary(source.scene,source.context)))throw Error('分形当前帧截图对应的实时主预览已过期');
       // Source scenes inherit parent density. Native render-buffer rounding can make
       // actual physical base dimensions differ from the user's requested size.
       const base=perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height};
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
       if(upscale)validateRasterRequest({time:0,quality:'export',width:upscale.width,height:upscale.height});
-      const additionalBytes=sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);
+      const additionalBytes=(fractal?0:sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4)+(upscale?upscale.peakBytes-upscale.inputBytes:0);
       // The request carries only a completed-frame capability. The worker owns
       // scene history and its original primary context; no fresh replay occurs.
       completed=undefined;
-      const result=iterated
+      const result=fractal?temporalSession.sourceFractal.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes}):iterated
         ?temporalSession[family==='map'?'sourceMap':'sourceSymmetry'].capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes})
         :samila
         ?temporalSession.sourceSamila.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes})
@@ -134,11 +143,12 @@ self.onmessage = (
       if(result.capture.type!=='raster'||result.preview.type!=='raster')throw new Error('暂停截图没有生成图像');
       const captureWidth=result.capture.width,captureHeight=result.capture.height;
       if(captureWidth!==base.width||captureHeight!==base.height)throw new Error('暂停截图实际尺寸与已核验的后处理预算不一致');
-      const enhanced=enhanceSourcePausedImage(result.capture.pixels,captureWidth,captureHeight);
+      const enhanced=fractal?result.capture.pixels:enhanceSourcePausedImage(result.capture.pixels,captureWidth,captureHeight);
       result.capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,captureWidth,captureHeight,scale);
       result.capture.width=upscale?.width??captureWidth;result.capture.height=upscale?.height??captureHeight;
       const imageFacts={enhancement:'mathart-1.7.8-scale1' as const,baseSize:[captureWidth,captureHeight] as const,scale,resampling:upscale?'openjdk21-software-bicubic' as const:'none' as const,originalRuntimeCompared:false as const};
-      if(perlin||samila||iterated)result.capture.sourcePausedImage=imageFacts;else result.capture.rootsPausedImage=imageFacts;
+      if(fractal)result.capture.fractalCurrentImage={model:'local-current-numerical-snapshot',baseSize:[captureWidth,captureHeight],scale,resampling:imageFacts.resampling};
+      else if(perlin||samila||iterated)result.capture.sourcePausedImage=imageFacts;else result.capture.rootsPausedImage=imageFacts;
       completed={...source,id};
       send({operation:event.data.operation,id,result:{capture:result.capture,preview:result.preview}},[...new Set([...outputBuffers(result.capture),...outputBuffers(result.preview)])]);
       return;
@@ -175,6 +185,7 @@ self.onmessage = (
       return;
     }
     const { context } = event.data;
+    generationSource=context.fractalLive?completed:undefined;
     completed=undefined;
     const output = generateScene(scene, { ...context, onStatus: event.data.wantsStatus ? status => send({operation:'generate-status',id,status}) : undefined, onProgress: output => {
       output.dimension ??= definition(scene.kind).dimension;
@@ -197,7 +208,7 @@ self.onmessage = (
     }else     if(isPausedCaptureOperation(operation)){
       // Check the session owner, not an error category: a late capacity or
       // readback failure may already have changed/retired shared density ink.
-      const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='symmetry-paused-capture'||operation==='map-paused-capture'
+      const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='fractal-paused-capture'?temporalSession.sourceFractal.matchesCompletedPrimary(captureSource.scene,captureSource.context):operation==='symmetry-paused-capture'||operation==='map-paused-capture'
         ?temporalSession[operation==='map-paused-capture'?'sourceMap':'sourceSymmetry'].matchesCompletedPrimary(captureSource.scene,captureSource.context)
         :operation==='samila-paused-capture'
         ?temporalSession.sourceSamila.matchesCompletedPrimary(captureSource.scene,captureSource.context)
@@ -206,6 +217,10 @@ self.onmessage = (
         :temporalSession.rootsNative.matchesCompletedPrimary(captureSource.scene,captureSource.context));
       completed=retained?captureSource:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:captureSource!.id}:{})});
+    }else if(operation==='generate'&&generationSource?.context.fractalLive){
+      const retained=owner===sessionId&&temporalSession.sourceFractal.matchesCompletedPrimary(generationSource.scene,generationSource.context);
+      completed=retained?generationSource:undefined;
+      send({id,operation,error:message,...(retained?{retainedSourceId:generationSource.id}:{})});
     }else send({id,operation,error:message});
   }
 };

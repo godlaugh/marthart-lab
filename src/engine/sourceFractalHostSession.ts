@@ -102,6 +102,21 @@ export class SourceFractalHostSession {
   this.runtime.clock.step(dt,paused,this.options.isCancelled);this.updateOrdinal++;
   return this.snapshot();
  }
+ /** Local fixed reconstruction on a new incarnation, not an original seek.
+  * One shared budget covers all child phases; the wall clock remains fresh. */
+ reconstruct(time:number):SourceFractalHostSnapshot {
+  this.live();if(this.updateOrdinal!==-1)throw new SourceFractalHostError('state','本地分形重建必须使用新的宿主');
+  if(!Number.isFinite(time)||time<0||time>86400)throw new SourceFractalHostError('input','分形本地重建起点必须在 0–86400 秒');
+  return this.mutate(()=>{
+   this.runtime.setEffectiveFrameRate(this.applied.fps);
+   const last=Math.floor(time*this.applied.fps+1e-9);
+   for(let i=0;i<=last;i++)this.advance(Math.fround(1/this.applied.fps),false);
+   // A local seek may initialize paused. Resume must restore the reconstructed
+   // camera, not the fresh constructor's angles, and still has no elapsed time.
+   this.hostClock=new SourceSceneHostClock(this.hostClock.diagnostics().paused,camera(this.runtime.clock.snapshot().cameraAngles),this.options.now);
+   return this.snapshot();
+  });
+ }
  /** actualFrameRate is PApplet's measured rate, not 1/dt or the encoder rate.
   * Signed wall-clock deltas and the source animator's <=1 FPS fallback remain. */
  update(request:SourceSceneClockRequest,actualFrameRate:number):SourceFractalHostSnapshot {

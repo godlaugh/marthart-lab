@@ -211,9 +211,9 @@ function prepareLocalFractalColoring(scene:SceneDocument,c:FractalConfig){
  }
  return {traceColors,shade:colorOrbit};
 }
-function generateFractal(scene:SceneDocument,ctx:GenerateContext):SceneOutput{
- const start=performance.now(),s=scene.settings,source=scene.fractalSource?sourceFractalRenderInput(scene.evaluatedFractalScene):undefined,c=fractalConfig(s,source);
- if(c.formula==='mandelbulb_3d')return generateMandelbulb(scene,ctx,c);
+/** Pure render admission shared by retained live configuration and drawing. */
+export function prepareFractalRender(scene:SceneDocument,ctx:GenerateContext){
+ const s=scene.settings,source=scene.fractalSource?sourceFractalRenderInput(scene.evaluatedFractalScene):undefined,c=fractalConfig(s,source);
  const sourceColorProfile=parseFractalSourceColorProfile(s.fractalColorProfile);
  const coloring=sourceColorProfile?undefined:prepareLocalFractalColoring(scene,c),traceColors=coloring?.traceColors;
  const view=parseFractalViewport(s);
@@ -232,6 +232,12 @@ function generateFractal(scene:SceneDocument,ctx:GenerateContext):SceneOutput{
  if(sourcePlan&&requestedBackend==='cpu')throw new FractalSourceGpuError('MathArt Newton/Nova 数值规则需要 WebGL2；如需 CPU，请选择本地数值规则。','input');
  const colorPlan=sourceColorProfile&&sourcePlan?prepareFractalSourceColor({configuration:authoredFractalSourceColor(scene),formulaPower:sourcePlan.reference.power,bailout:sourcePlan.bailout,runtime:scene.evaluatedFractalGradient}):undefined;
  const sourceNavigation=sourcePlan?prepareFractalViewportNavigation({...s,formula:sourcePlan.formula,fractalNumericProfile:sourcePlan.profile},sourcePlan.logicalSize[0],sourcePlan.logicalSize[1]):undefined;
+ return{s,source,c,coloring,traceColors,view,orbitConfig,requestedBackend,method,precision,sourcePlan,colorPlan,sourceNavigation};
+}
+export function generateFractal(scene:SceneDocument,ctx:GenerateContext):SceneOutput{
+ const start=performance.now();
+ if(!scene.fractalSource&&scene.settings.formula==='mandelbulb_3d')return generateMandelbulb(scene,ctx,fractalConfig(scene.settings));
+ const {s,c,coloring,traceColors,view,orbitConfig,requestedBackend,method,precision,sourcePlan,colorPlan,sourceNavigation}=prepareFractalRender(scene,ctx);
  const sourceBefore=sourcePlan?fractalGpu.sourceDiagnostics():undefined;
  const preparedSource=sourcePlan?fractalGpu.prepareSourceReference(sourcePlan,{isCancelled:ctx.isCancelled}):undefined;
  const precise=view.zoom>100||view.centerXLow!==0||view.centerYLow!==0,useDD=!sourcePlan&&precise&&supportsDoubleDouble(c),reference=!sourcePlan&&precise&&supportsPerturbation(c)?referenceOrbit(c,view):undefined;

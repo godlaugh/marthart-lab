@@ -46,6 +46,7 @@ export function ExportDialog({
   previewPointPixelDensity,
   samilaPrimaryPixelHeight,
   sourceMapToneReference,sourceSymmetryToneReference,
+  currentFractalCapture,
   currentRootsCapture,
   currentSamilaCapture,
   currentIteratedCapture,
@@ -71,6 +72,7 @@ export function ExportDialog({
   iteratedPixelDensity?:number;
   currentIteratedCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentSamilaCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
+  currentFractalCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentPerlinCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentSourceRecording?:{ready:boolean;record:(options:SourceRecordingOptions,consumer:SourceRecordingConsumer,signal?:AbortSignal)=>Promise<void>};
@@ -80,10 +82,11 @@ export function ExportDialog({
 }) {
   const {t}=useI18n();
   const sourceFractal=usesSourceFractal(scene),sourceBouncing=usesSourceBouncing(scene),sourcePerlin=!!scene.perlinSource,sourceSamila=usesSourceSamilaSampling(scene),sourceIterated=sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map';
-  const currentPausedCapture=sourcePerlin?currentPerlinCapture:sourceSamila?currentSamilaCapture:sourceIterated?currentIteratedCapture:currentRootsCapture;
+  const sourceFractalLive=!!currentFractalCapture;
+  const currentPausedCapture=sourceFractalLive?currentFractalCapture:sourcePerlin?currentPerlinCapture:sourceSamila?currentSamilaCapture:sourceIterated?currentIteratedCapture:currentRootsCapture;
   const [bouncingStart,setBouncingStart]=useState<'current'|'seed'>('seed');
   const sourceFrames=usesSpirographFrameClock(scene);
-  const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated?'current':'replay');
+  const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>sourceFractalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated?'current':'replay');
   const [pausedImageScale,setPausedImageScale]=useState<1|3|5>(1);
   const [rootsVideoMode,setRootsVideoMode]=useState<'duration'|'source'>(()=>usesRootsGradientTimeline(scene)?'source':'duration');
   const [fractalVideoMode,setFractalVideoMode]=useState<'duration'|'source'>('source');
@@ -123,7 +126,7 @@ export function ExportDialog({
   const liveRecording=retainedPerlin||iteratedRecording;
   const fractalVideo=kind==='video'&&fractalFrames;
   const sourceQueueVideo=perlinFrames||fractalVideo||liveRecording;
-  const pausedSourceImage=kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
+  const pausedSourceImage=kind==='image'&&(sourceFractalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
   if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let recordingSize:{width:number;height:number;logicalWidth?:number;logicalHeight?:number}={width:outputBase.width,height:outputBase.height};
@@ -442,8 +445,9 @@ export function ExportDialog({
           >
             <Film size={15} />{t("动画视频")}</button>
         </div>
-        {kind==='image'&&(usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&<label className="field"><span>{t(sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')}</span><select aria-label={t(sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
-        {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t('先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:outputBase.width*pausedImageScale,height:outputBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
+        {kind==='image'&&(sourceFractalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&<label className="field"><span>{t(sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')}</span><select aria-label={t(sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
+        {kind==='image'&&sourceFractalLive&&<p className="muted">{t(sourceImageMode==='current'?'保存当前暂停的分形状态，不推进动画；尺寸只改变导出画面。':'从当前配置按固定时间重放，不复制实时预览的编辑历史。')}</p>}
+        {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t(sourceFractalLive?'按当前暂停状态生成图像，再按所选倍率放大。输出 {width} × {height} 像素。':'先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:outputBase.width*pausedImageScale,height:outputBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         <label className="field">
           <span>{t("文件格式")}</span>
           <select

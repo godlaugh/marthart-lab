@@ -8,7 +8,7 @@ import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
 import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCaptureResult,PerlinPausedCaptureSize,PausedCaptureSize,PausedCaptureResult,SourceRecordingOptions,SourceRecordingHandle,SourceRecordingStart,SourceRecordingStop,SourceRecordingRaster} from './generationProtocol';
-import {pausedCaptureContracts,SourceRecordingOperationError} from './generationProtocol';
+import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError} from './generationProtocol';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
@@ -19,6 +19,7 @@ interface GeneratorPort {
   setMapPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSymmetryPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSamilaPaused?(output:SceneOutput,paused:boolean):Promise<void>;
+  setFractalPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   cancel():void;
   dispose():void;
   captureRootsPaused?(output:SceneOutput,size:RootsPausedCaptureSize,scale?:1|3|5):Promise<RootsPausedCaptureResult>;
@@ -26,6 +27,7 @@ interface GeneratorPort {
   captureMapPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSymmetryPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSamilaPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
+  captureFractalPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   beginSourceRecording?(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>;
   nextSourceRecordingFrame?(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceRecordingRaster>;
   finishSourceRecording?(handle:SourceRecordingHandle):Promise<SourceRecordingStop>;
@@ -41,12 +43,13 @@ export interface SourceRecordingConsumer {
 function metadataContext(context:Context):Context {
   // After initialization, realtime time is display feedback, not a seek.
   // A metadata edit queued during that display may still hold its old value.
+  if(context.fractalLive){const {configuration:_,actualFrameRate:__,...live}=context.fractalLive;return {...context,time:0,fractalLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   return (context.samilaLive?.clock||context.symmetryLive||context.mapLive)?{...context,time:0}:context;
 }
-type LiveKey='samilaLive'|'symmetryLive'|'mapLive';
-const playbackMethods={samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused'} as const;
-const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
-const liveIdentity=(request:Request)=>liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
+type LiveKey='samilaLive'|'symmetryLive'|'mapLive'|'fractalLive';
+const playbackMethods={samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused'} as const;
+const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
+const liveIdentity=(request:Request)=>liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.
@@ -94,7 +97,9 @@ export class GenerationQueue {
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
     const carried=sameLive&&this.latest!==this.running&&this.latest!==this.completedLive?.request?this.latest?.parameterWrites:undefined;
     const writes=new Map([...(carried??[]),...(parameterWrites??[])]);
-    this.latest={scene,context:snapshotGenerationInput(context),intent,...(writes.size?{parameterWrites:[...writes].filter(([k,v])=>Object.is(scene.parameters[k],v))}:{})};
+    const input=snapshotGenerationInput(context),pendingFractal=sameLive&&this.latest!==this.completedLive?.request?this.latest?.context.fractalLive:undefined;
+    if(input.fractalLive&&pendingFractal?.configuration&&input.fractalLive.revision===pendingFractal.revision&&input.fractalLive.configuration===undefined)input.fractalLive.configuration=structuredClone(pendingFractal.configuration);
+    this.latest={scene,context:input,intent,...(writes.size?{parameterWrites:[...writes].filter(([k,v])=>Object.is(scene.parameters[k],v))}:{})};
     // A recording leases this exact worker, including while begin is pending.
     // Keep only the newest editor request without cancelling that lease.
     if(this.recordingOwner){this.callbacks.busy(true);this.retryRecordingInBackground();return;}
@@ -126,13 +131,18 @@ export class GenerationQueue {
     // identical. Retain its GPU work, but publish only the latest request.
     const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
-    const parameterEdit=cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
-    const generate=()=>this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time));
+    const parameterEdit=liveKey(request)!=='fractalLive'&&cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
+    const generate=()=>this.generator.generate(request.scene,request.context,output=>publish(output,this.outputTime(output,request)));
     const operation=parameterEdit?this.generator.updateIteratedParameters!(cached!.output,request.scene,parameterEdit).then(()=>{
       if(!current())throw new DOMException('迭代参数会话已更换','AbortError');
       return request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
-    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+      if(current()&&cached&&liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError&&error.previewRetained){
+        // Keep the rejected document as the author's draft, but return this
+        // request's applied context to the owner-confirmed completed version.
+        request.context=snapshotGenerationInput(cached.request.context);this.completedLive={request,output:cached.output};
+      }
       if(publishable()&&error.name!=='AbortError')this.callbacks.error(error);
     }).finally(()=>{
       if(!current())return;
@@ -142,7 +152,8 @@ export class GenerationQueue {
     });
   }
   private outputTime(output:SceneOutput,request:Request):number{
-    return output.type==='raster'?(output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:request.context.time)):request.context.time;
+    const fallback=output.temporal?.time??request.context.time;
+    return output.type==='raster'?(output.fractalLive?.sceneTime??output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:fallback)):fallback;
   }
  /** Ordered input events lease the completed live owner. A document edit or
   * transport transition ends the gesture before its deferred work runs. */
@@ -177,6 +188,7 @@ export class GenerationQueue {
   setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
   setMapPaused(paused:boolean):Promise<void>{return this.setLivePaused('mapLive',paused);}
   setSymmetryPaused(paused:boolean):Promise<void>{return this.setLivePaused('symmetryLive',paused);}
+  setFractalPaused(paused:boolean):Promise<void>{return this.setLivePaused('fractalLive',paused);}
   private setLivePaused(key:LiveKey,paused:boolean):Promise<void>{
     const live=this.latest?.context[key],method=playbackMethods[key];
     if(this.disposed||this.playbackOwner||this.captureOwner||this.recordingOwner||!this.latest||liveKey(this.latest)!==key||!live?.sessionId||!live.clock||!this.generator[method])
@@ -223,9 +235,10 @@ export class GenerationQueue {
   }
   captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureMapPaused',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureSymmetryPaused',output,size,scale);}
-  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
+  captureFractalPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureFractalPaused',output,size,scale);}
+  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused'|'captureFractalPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
     if(this.recordingOwner&&!this.recordingOwner.active)await this.retrySourceRecordingCleanup();
-    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':method==='captureMapPaused'?'map-paused-capture':'samila-paused-capture'];
+    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureFractalPaused'?'fractal-paused-capture':method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':method==='captureMapPaused'?'map-paused-capture':'samila-paused-capture'];
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!capture)
       throw new Error(`请等待当前${contract.label}预览完成后再保存暂停画面`);
     const cached=this.completedLive;this.completedLive=undefined;

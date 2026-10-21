@@ -19,6 +19,11 @@ function replacement():SourceFractalSceneRuntimeConfiguration {
 const runtime=(c:SourceFractalSceneRuntimeConfiguration)=>new SourceFractalSceneRuntime(c,{reserve(){}});
 
 describe('numerical Fractal same-instance host lifecycle',()=>{
+ it('resumes a paused local reconstruction from its reconstructed camera',()=>{
+  const c=configuration(),host=new SourceFractalHostSession(c,{paused:true});
+  const reconstructed=host.reconstruct(.1);expect(reconstructed.state.scene.cameraAngles[1]).toBeGreaterThan(0);
+  const resumed=host.setPaused(false,500);expect(resumed.state.scene.cameraAngles).toEqual(reconstructed.state.scene.cameraAngles);expect(resumed.updateOrdinal).toBe(reconstructed.updateOrdinal);
+ });
  it('uses the measured frame rate and original first-zero wall-clock update, including signed time',()=>{
   const c=configuration(),a=new SourceFractalHostSession(c),b=new SourceFractalHostSession(c);
   const first=a.update({paused:false,timestampMs:50},60);b.update({paused:false,timestampMs:50},120);

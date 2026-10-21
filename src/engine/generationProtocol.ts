@@ -20,6 +20,11 @@ export function isSourceRecordingOperation(operation:string):operation is Source
 export class SourceRecordingOperationError extends Error {
  constructor(message:string,readonly previewRetained:boolean,readonly recordingRetained:boolean,readonly handle?:SourceRecordingHandle){super(message);this.name='SourceRecordingOperationError';}
 }
+/** A rejected live configuration may retain the exact completed numerical
+ * instance. Only an owner-confirmed response grants this capability. */
+export class FractalLiveGenerationError extends Error {
+ constructor(message:string,readonly previewRetained:boolean){super(message);this.name='FractalLiveGenerationError';}
+}
 
 export interface PausedCaptureSize {width:number;height:number;}
 export interface PausedCaptureResult {capture:Extract<SceneOutput,{type:'raster'}>;preview:Extract<SceneOutput,{type:'raster'}>;}
@@ -27,8 +32,8 @@ export type RootsPausedCaptureSize=PausedCaptureSize;
 export type RootsPausedCaptureResult=PausedCaptureResult;
 export type PerlinPausedCaptureSize=PausedCaptureSize;
 export type PerlinPausedCaptureResult=PausedCaptureResult;
-export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture'|'samila-paused-capture'|'symmetry-paused-capture'|'map-paused-capture';
-export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture'||operation==='samila-paused-capture'||operation==='symmetry-paused-capture'||operation==='map-paused-capture';}
+export type PausedCaptureOperation='roots-paused-capture'|'perlin-paused-capture'|'samila-paused-capture'|'symmetry-paused-capture'|'map-paused-capture'|'fractal-paused-capture';
+export function isPausedCaptureOperation(operation:string):operation is PausedCaptureOperation{return operation==='roots-paused-capture'||operation==='perlin-paused-capture'||operation==='samila-paused-capture'||operation==='symmetry-paused-capture'||operation==='map-paused-capture'||operation==='fractal-paused-capture';}
 /** Only the owning worker can confirm that a rejected capture retained its
  * completed preview. Message text or an input/capacity error tag is not proof. */
 export class PausedCaptureError extends Error {
@@ -49,6 +54,9 @@ export class SymmetryPausedCaptureError extends PausedCaptureError {
 export class MapPausedCaptureError extends PausedCaptureError {
  constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='MapPausedCaptureError';}
 }
+export class FractalPausedCaptureError extends PausedCaptureError {
+ constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='FractalPausedCaptureError';}
+}
 /** The operation owns its label and error type across client and queue. */
 export const pausedCaptureContracts={
  'roots-paused-capture':{label:'复根',Error:RootsPausedCaptureError},
@@ -56,6 +64,7 @@ export const pausedCaptureContracts={
  'samila-paused-capture':{label:'Samila',Error:SamilaPausedCaptureError},
  'symmetry-paused-capture':{label:'Symmetry',Error:SymmetryPausedCaptureError},
  'map-paused-capture':{label:'Map',Error:MapPausedCaptureError},
+ 'fractal-paused-capture':{label:'分形',Error:FractalPausedCaptureError},
 } satisfies Record<PausedCaptureOperation,{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
 
 type IteratedPlaybackOperation='symmetry-playback'|'map-playback';
@@ -67,6 +76,7 @@ export type GenerationRequest = { sessionId: number } & (
   | {operation:'iterated-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
   | IteratedPlaybackRequest
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
+  | {operation:'fractal-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | PausedCaptureRequest
   | {operation:'source-recording-begin';id:number;sourceId:number;options:SourceRecordingOptions}
   | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number}
@@ -82,6 +92,7 @@ export type GenerationPayload =
   | {operation:'iterated-parameters';id:number;sourceId:number}
   | {operation:IteratedPlaybackOperation;id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
+  | {operation:'fractal-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'source-recording-begin';id:number;recordingId:number;result:Omit<SourceRecordingStart,'handle'>}
   | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number;output:SourceRecordingRaster}
   | {operation:'source-recording-finish';id:number;recordingId:number;result:SourceRecordingStop}

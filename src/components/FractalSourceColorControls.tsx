@@ -23,10 +23,10 @@ export function FractalColorProfileControl({scene,onChange}:Props){
  return <details open className="inspector-section"><summary>{t('分形着色规则')}</summary><div className="section-body"><label className="field"><span>{t('分形着色版本')}</span><select aria-label={t('分形着色版本')} value={source?FRACTAL_SOURCE_COLOR_PROFILE:''} onChange={e=>onChange(selectFractalColorProfile(scene,e.target.value||undefined))}><option value="">{t('本地着色（保留旧作品）')}</option><option value={FRACTAL_SOURCE_COLOR_PROFILE}>{t('MathArt 1.7.8 原版着色')}</option></select></label><p className="muted">{t('首次选择使用原版默认颜色；切换保留两组设置和色板。')}</p></div></details>;
 }
 
-export function FractalSourceColorControls({scene,onChange}:Props){
+export function FractalSourceColorControls({scene,onChange,onStage}:Props&{onStage?:(scene:SceneDocument)=>void}){
  const {t}=useI18n(),[error,setError]=useState(''),color=authoredFractalSourceColor(scene);
  const sourceNumerics=supportsFractalSourceColor(scene);
- const emit=(change:(copy:FractalSourceColorConfiguration)=>void)=>{try{const copy=structuredClone(color);change(copy);onChange({...scene,fractalSourceColor:parseFractalSourceColorConfiguration(copy)});setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
+ const emit=(change:(copy:FractalSourceColorConfiguration)=>void,stage=false)=>{try{const copy=structuredClone(color);change(copy);(stage&&onStage?onStage:onChange)({...scene,fractalSourceColor:parseFractalSourceColorConfiguration(copy)});setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
  const enable=(formula:'newton'|'nova')=>onChange({...scene,settings:{...scene.settings,formula,fractalNumericProfile:FRACTAL_SOURCE_NUMERIC_PROFILE,...(scene.settings.fractalBackend==='cpu'?{fractalBackend:'auto'}:{})}});
  return <details open className="inspector-section" data-testid="fractal-source-color-controls"><summary>{t('原版内部与外部着色')}</summary><div className="section-body">
   {!sourceNumerics&&<div role="alert"><p>{t('原版着色需要 Newton 或 Nova 的原版数值规则。请选择对应公式后继续。')}</p>{!scene.fractalSource&&<><button onClick={()=>enable('newton')}>{t('使用 Newton 原版数值')}</button><button onClick={()=>enable('nova')}>{t('使用 Nova 原版数值')}</button></>}</div>}
@@ -34,7 +34,7 @@ export function FractalSourceColorControls({scene,onChange}:Props){
   {(['outside','inside'] as const).map(side=>{const style=color[side],region=t(side==='inside'?'内部':'外部');let descriptors:readonly FractalSourceColorParameterDescriptor[]=[];let invalid='';try{descriptors=fractalSourceColorParameterDescriptors(style.algorithm);}catch(e){invalid=e instanceof Error?e.message:String(e);}
    const field=(name:string)=>t('{region} · {label}',{region,label:t(name)});
    return <fieldset key={side}><legend>{region}</legend>
-    <label className="field"><span>{t('着色算法')}</span><select aria-label={field('着色算法')} value={style.algorithm} onChange={e=>emit(c=>{c[side].algorithm=e.target.value;})}>{!FRACTAL_SOURCE_COLOR_ALGORITHMS.some(id=>id===style.algorithm)&&<option value={style.algorithm}>{style.algorithm}</option>}{FRACTAL_SOURCE_COLOR_ALGORITHMS.map(id=><option value={id} key={id}>{t(algorithms[id])}</option>)}</select></label>
+    <label className="field"><span>{t('着色算法')}</span><select aria-label={field('着色算法')} value={style.algorithm} onChange={e=>emit(c=>{c[side].algorithm=e.target.value;},true)}>{!FRACTAL_SOURCE_COLOR_ALGORITHMS.some(id=>id===style.algorithm)&&<option value={style.algorithm}>{style.algorithm}</option>}{FRACTAL_SOURCE_COLOR_ALGORITHMS.map(id=><option value={id} key={id}>{t(algorithms[id])}</option>)}</select></label>
     {invalid&&<p role="alert">{t(invalid)}</p>}
     {descriptors.map(d=>{const raw=style.parameters[d.key],value=raw??d.default,label=field(labels[d.key]??d.key),write=(v:number|string|[number,number])=>emit(c=>{c[side].parameters[d.key]=v;});
      return <div key={d.key} data-source-parameter={d.key}>

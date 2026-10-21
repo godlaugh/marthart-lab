@@ -5,11 +5,13 @@ import {usesSourceSamilaSampling} from './sourceSamilaSampling';
 import {usesSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {usesSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {usesSourceSymmetryPresentation} from './sourceSymmetryPresentation';
+import {supportsSourceFractalLive} from './sourceFractalDocument';
 /** Only complete live contracts opt in. Older fixed-preview documents retain
  * their saved models, including legacy parameter/timeline behavior. Local
  * delayed accumulation and disabled recording retain fixed reconstruction; the
  * native live mobject always has a zero origin and draws each normal display. */
-export function sourceLivePreviewKind(scene:SceneDocument):'samila'|'map'|'symmetry'|undefined {
+export function sourceLivePreviewKind(scene:SceneDocument):'samila'|'map'|'symmetry'|'fractal'|undefined {
+ if(supportsSourceFractalLive(scene))return 'fractal';
  if(usesSourceSamilaSampling(scene))return 'samila';
  return sourceIteratedLiveKind(scene);
 }

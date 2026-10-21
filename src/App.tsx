@@ -1,3 +1,4 @@
+import {sourceQueuePresentedScene} from './engine/sourceQueuePresentation';
 import {PARAMETER_RANGES_KEY} from './engine/parameterEditing';
 import {sourceIteratedEditorScene,sourceIteratedDraftFromEditor,sourceIteratedApplyCandidate,sourceIteratedSettingIsStaged,withSourceIteratedDraft,withoutSourceIteratedDraft,type SourceIteratedDraft} from './engine/sourceIteratedDraft';
 import {sourceIteratedParameterChanges} from './engine/sourceIteratedParameterEdit';
@@ -163,7 +164,7 @@ import {usesRootsCameraTimeline} from './engine/rootsCameraTimeline';
 import {rootMathControlVisible,usesRootsNativeMath} from './engine/rootsMathConfig';
 import {RecordDialog} from './components/RecordDialog';
 import {I18nProvider,translate,type Language} from './i18n';
-type IteratedEditIntent='iterated-replay'|'iterated-palette'|'iterated-dot-size'|'map-runtime'|'iterated-apply'|'iterated-parameters';
+type SceneEditIntent='fractal-hot'|'fractal-apply'|'fractal-stage'|'fractal-metadata'|'iterated-replay'|'iterated-palette'|'iterated-dot-size'|'map-runtime'|'iterated-apply'|'iterated-parameters';
 const icons: Record<SceneKind, typeof Activity> = {
   surface: Layers,
   attractor: Activity,
@@ -302,10 +303,22 @@ export default function App() {
     bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
   }
-  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:IteratedEditIntent) {
+  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:SceneEditIntent) {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
+    if(nextLive==='fractal'){
+      if(currentLive!=='fractal')replaceLiveSession(undefined);
+      const sceneChanged=JSON.stringify(current.timeline)!==JSON.stringify(next.timeline)||JSON.stringify(current.formulas)!==JSON.stringify(next.formulas)||current.settings.background!==next.settings.background;
+      if(intent!=='fractal-metadata'&&sceneChanged)setFractalFullApplyPending(true);
+      if(intent==='fractal-stage')setFractalStaged(true);
+      else if(intent!=='fractal-metadata'){
+        fractalEdit.current={revision:fractalEdit.current.revision+1,intent:intent==='fractal-hot'?'hot':'apply',configuration:structuredClone(next)};
+        setFractalStaged(false);if(intent!=='fractal-hot'&&playingRef.current)setFractalFullApplyPending(false);liveDisplayRequested.current=true;
+        // Explicit Apply is an event even when the document object is unchanged.
+        setGenerationRevision(value=>value+1);
+      }
+    }
     if(nextLive==='map'||nextLive==='symmetry'){
       if(!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(current,next,[...pendingParameterWrites.current]))&&(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||intent==='iterated-apply'||nextLive==='map'&&!Object.is(current.settings.pointSize,next.settings.pointSize))){
         replaceLiveSession(intent==='iterated-apply'?undefined:0);playbackClock.current=0;timeRef.current=0;setTime(0);
@@ -333,7 +346,7 @@ export default function App() {
       // not advance time while the new host measurement is still pending.
       autoPlayPending.current=autoPlayPending.current||playingRef.current;
       playingRef.current=false;setPlaying(false);
-      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(0);
+      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(nextLive==='fractal'?undefined:0);
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
       if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
@@ -345,6 +358,7 @@ export default function App() {
   // them. A new aspect must not consume its first samples at the old size.
   const viewportSize=viewportMeasurement&&sameProjectResolution(viewportMeasurement.resolution,scene.projectResolution)?viewportMeasurement.size:null;
   const libraryDrafts=useMemo(()=>Object.values({...drafts.current,[scene.id]:withSourceIteratedDraft(scene,iteratedDraft)}),[scene,saved,iteratedDraft]);
+  const displayScene=useMemo(()=>output?sourceQueuePresentedScene(outputScene??scene,output)??outputScene??scene:scene,[output,outputScene,scene]);
   const def = definition(scene.kind),
     Icon = icons[scene.kind];
   const experience=bouncingExperience(scene),sourceBouncing=usesSourceBouncing(scene);
@@ -363,11 +377,13 @@ export default function App() {
   }
   const rootsSessionId=useRef(crypto.randomUUID());
   const liveSessionId=useRef<string>(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
-  const iteratedReplayRevision=useRef(0),iteratedStartAt=useRef<number|undefined>(0),mapRuntimeRevision=useRef(0);
+  const fractalEdit=useRef<{revision:number;intent:'hot'|'apply';configuration?:SceneDocument}>({revision:0,intent:'apply'}),fractalActualFps=useRef<number|undefined>(undefined);
+  const [fractalStaged,setFractalStaged]=useState(false),[fractalFullApplyPending,setFractalFullApplyPending]=useState(false);
+  const iteratedReplayRevision=useRef(0),iteratedStartAt=useRef<number|undefined>(scene.fractalSource?undefined:0),mapRuntimeRevision=useRef(0);
   const iteratedLiveFacts=output?.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
   const iteratedReplayPending=!!iteratedLiveFacts&&!error&&!previewCancelled&&outputScene===scene&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true;
   const replayPendingRef=useRef(false);replayPendingRef.current=iteratedReplayPending;
-  function replaceLiveSession(startAt:number|undefined){liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
+  function replaceLiveSession(startAt:number|undefined){fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
     if(!sourceLivePreviewKind(sceneRef.current))return;
     playingRef.current=false;setPlaying(false);replaceLiveSession(Math.max(0,timeRef.current));
@@ -396,7 +412,10 @@ export default function App() {
       if(!accepted){if(hadPrevious)pendingParameterWrites.current.set(name,previous!);else pendingParameterWrites.current.delete(name);}
     }else edit(next,true);
   }
-  function edit(next:SceneDocument,samilaDirty=false,display=true,intent?:IteratedEditIntent,draftAfter?:{editor:SceneDocument;cameraTexts?:string[]}|null,normalized=false){
+  function editFractal(next:SceneDocument,intent:'hot'|'apply'|'stage'='hot'){
+    return edit(next,false,intent!=='stage',`fractal-${intent}`);
+  }
+  function edit(next:SceneDocument,samilaDirty=false,display=true,intent?:SceneEditIntent,draftAfter?:{editor:SceneDocument;cameraTexts?:string[]}|null,normalized=false){
     try{if(!normalized)next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit'),intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
@@ -406,10 +425,11 @@ export default function App() {
     if(draftAfter===null)setIteratedDraft(undefined);
     else if(draftAfter)setIteratedDraft(sourceIteratedDraftFromEditor(next,draftAfter.editor,draftAfter.cameraTexts));
     else cancelApplyCheck();
-    setScene(next,intent);return true;
+    setScene(next,intent??(sourceLivePreviewKind(next)==='fractal'&&!display?'fractal-metadata':undefined));return true;
   }
-  function editInspector(next:SceneDocument,samilaDirty=false,display=true,intent?:IteratedEditIntent){
+  function editInspector(next:SceneDocument,samilaDirty=false,display=true,intent?:SceneEditIntent){
     const current=sceneRef.current,family=sourceLivePreviewKind(current);
+    if(family==='fractal'){edit(next,false,display,intent??(display?'fractal-apply':'fractal-metadata'));return;}
     if(family!=='map'&&family!=='symmetry'){edit(next,samilaDirty,display,intent);return;}
     if(intent==='iterated-replay'||intent==='iterated-palette'||intent==='iterated-dot-size'||intent==='map-runtime'){
       const keys=intent==='iterated-replay'?SOURCE_ITERATED_REPLAY_SETTINGS:intent==='iterated-palette'?[]:intent==='iterated-dot-size'?['pointSize']:SOURCE_MAP_RUNTIME_SETTINGS;
@@ -424,6 +444,7 @@ export default function App() {
   }
   async function applyScene(next=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current)){
     const current=sceneRef.current,draft=iteratedDraftRef.current,family=sourceLivePreviewKind(current);
+    if(family==='fractal'){editFractal(next,'apply');return;}
     if(family!=='map'&&family!=='symmetry'){edit(next);return;}
     cancelApplyCheck();
     try{
@@ -468,7 +489,7 @@ export default function App() {
   }
   function load(next: SceneDocument, source: 'library' | 'document') {
     showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
-    rootsSessionId.current=crypto.randomUUID();replaceLiveSession(0);
+    rootsSessionId.current=crypto.randomUUID();replaceLiveSession(next.fractalSource?undefined:0);
     // A file/new document is a new renderer instance even when its saved id
     // matches the open work. Ordinary edits retain the current failure latch.
     if(source==='document'){generationQueue.current?.cancel();setPreviewCancelled(false);}
@@ -489,6 +510,7 @@ export default function App() {
     history.current=[];
     future.current=[];
     setScene(structuredClone(next));
+    setFractalStaged(false);setFractalFullApplyPending(false);
     setFinalPreview(next.kind==='spirograph');
     setFormulaDraft(next.equations);
     setError("");
@@ -499,7 +521,7 @@ export default function App() {
     const builtin=def.presets.some(p=>scene.id===`preset:${def.kind}:${p.id}`);
     const item = parseScene(serializeScene({ ...workingDocument(scene),id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
     if(builtin)drafts.current[scene.id]=workingDocument(scene);
-    setScene(retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)));camera.current=item.camera;
+    setScene(retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)),sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':undefined);camera.current=item.camera;
     setSaved((current) => {
       const others = current.filter((s) => s.id !== item.id);
       return [...others, item];
@@ -580,9 +602,9 @@ export default function App() {
       // Stop scheduling immediately; a running display completes before the
       // queue acknowledges pause. Resume starts scheduling only after its ack.
       playingRef.current=false;setPlaying(false);
-      void queue[liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
+      void queue[liveKind==='fractal'?'setFractalPaused':liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
         if(livePlaybackTransition.current!==ticket||liveSessionId.current!==sessionId)return;
-        liveLastFrameAt.current=undefined;playingRef.current=value;setPlaying(value);
+        liveLastFrameAt.current=undefined;fractalActualFps.current=undefined;playingRef.current=value;setPlaying(value);
         if(value)setPickingJulia(false);
       }).catch(error=>{
         if(livePlaybackTransition.current===ticket&&error.name!=='AbortError')setError(error instanceof Error?error.message:String(error));
@@ -719,6 +741,7 @@ export default function App() {
       if(sourceLivePreviewKind(sceneRef.current)){
         const last=liveLastFrameAt.current;
         if(!generationPending.current&&!livePlaybackTransition.current&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
+          if(sourceLivePreviewKind(sceneRef.current)==='fractal')fractalActualFps.current=last===undefined?undefined:1000/(now-last);
           liveLastFrameAt.current=now;generationPending.current=true;setLiveTickRevision(value=>value+1);
         }
         id=requestAnimationFrame(tick);return;
@@ -755,10 +778,15 @@ export default function App() {
         // can run before React commits the delivered output.
         const live=output.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
         replayPendingRef.current=source===sceneRef.current&&live?.sessionId===liveSessionId.current&&live.display.replayActive===true;
+        if(output.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalLive.revision===fractalEdit.current.revision){
+          // The acknowledged owner retains this configuration. Later frames
+          // carry only its revision; do not clone a complete queue every RAF.
+          const {configuration,...acknowledged}=fractalEdit.current;fractalEdit.current=acknowledged;
+        }
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
-        if(output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||live)){
+        if(output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.fractalLive||live)){
           timeRef.current=time;playbackClock.current=time;setTime(time);
         }
       },
@@ -793,7 +821,7 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:sourceLivePreviewKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
@@ -1103,7 +1131,7 @@ export default function App() {
               pixelRatio={usesSourceSamilaSampling(scene)?Math.round(previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio):previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio}
               onCamera={cameraChanged}
               onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
-              onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}))}
+              onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}),sourceLivePreviewKind(sceneRef.current)==='fractal'?'fractal-hot':undefined)}
               onSourceIteratedNavigate={(expected,sessionId,event)=>{
                 if(playingRef.current||exporting||recording||previewCancelled||error||sceneRef.current!==expected||liveSessionId.current!==sessionId)return false;
                 return generationQueue.current?.navigateIteratedPaused(expected,sessionId,event)??false;
@@ -1130,8 +1158,8 @@ export default function App() {
               pickingJulia={pickingJulia&&!busy&&!playing&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'}
               onPickJulia={values=>{setPickingJulia(false);edit({...scene,settings:{...scene.settings,...values}});notify('已从选中位置打开 Julia 视图；可撤销返回。');}}
             />
-            <FormulaOverlay scene={outputScene??scene}/>
-            {!scene.formulas?.main.visible&&!scene.formulas?.additional.some(label=>label.visible)&&<div className="viewport-caption">
+            <FormulaOverlay scene={displayScene}/>
+            {!displayScene.formulas?.main.visible&&!displayScene.formulas?.additional.some(label=>label.visible)&&<div className="viewport-caption">
               <span className="eyebrow">{def.englishName.toUpperCase()}</span>
               <h1>{scene.name}</h1>
               <p>{t(def.description)}</p>
@@ -1181,7 +1209,7 @@ export default function App() {
             playing={playing}
             onTime={seek}
             onPlay={play}
-            onChange={next=>['map','symmetry'].includes(sourceLivePreviewKind(sceneRef.current)??'')?void applyScene({...sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),timeline:next.timeline}):edit(next)}
+            onChange={next=>sourceLivePreviewKind(sceneRef.current)==='fractal'?editFractal(next,'stage'):['map','symmetry'].includes(sourceLivePreviewKind(sceneRef.current)??'')?void applyScene({...sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),timeline:next.timeline}):edit(next)}
           />}
         </main>
         {inspector && (()=>{const scene=editorScene,edit=editInspector;return (
@@ -1224,6 +1252,7 @@ export default function App() {
             <div className="inspector-scroll">
               {!isCreationKind(scene.kind)&&<p className="section-body muted" role="note">{t('此场景的完整创作支持计划于 2.0。已有项目数据可继续保存和备份。')}</p>}
               {(sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry')&&<div className="section-body"><button data-testid="iterated-apply" disabled={recording||applying} onClick={()=>void applyScene(scene)}>{t(applying?'正在验证 GLSL…':'应用场景')}</button>{iteratedDraft&&<><p role="status" data-testid="iterated-draft-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p><button onClick={discardIteratedDraft}>{t('放弃未应用修改')}</button></>}</div>}
+              {sourceLivePreviewKind(scene)==='fractal'&&<div className="section-body"><button data-testid="fractal-apply" disabled={recording||applying} onClick={()=>editFractal(scene,'apply')}>{t('应用场景')}</button>{fractalStaged&&<p role="status" data-testid="fractal-draft-status">{t('有待应用的修改；修改几何参数也会应用当前分形设置。')}</p>}{fractalFullApplyPending&&<p role="status" data-testid="fractal-full-apply-status">{t('时间线或场景外观有修改，需在播放时应用才能替换当前运行场景。')}</p>}<p className="muted">{t('暂停时应用保留当前动画进度；播放时应用会从头运行新的时间线。')}</p></div>}
               <ProjectResolutionControls resolution={scene.projectResolution} onChange={projectResolution=>{
                 const next={...scene};
                 if(projectResolution)next.projectResolution=projectResolution;else delete next.projectResolution;
@@ -1318,7 +1347,7 @@ export default function App() {
                   {scene.kind==='roots'&&<RootsMathControls key={`root-math:${scene.id}`} scene={scene} onChange={edit}/>}
                   {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={edit} onRestart={()=>{rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
                   <RootsDensityColorControls scene={scene} onChange={edit} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsColor:undefined}/>
-                  {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} section="formula"/>:!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&<SettingsFields
+                  {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} onSourceChange={editFractal} section="formula"/>:!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&<SettingsFields
                     controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls),scene.timeline,scene.palette,scene.equations,scene.mapSource)).filter(control=>{
                       if(!isMeshMaterialControlVisible(scene,control.key)||!rootMathControlVisible(scene,control.key)||!rootsPresentationControlVisible(scene,control.key))return false;
                       if(usesSourceSurfaceParticles(scene)&&control.key==='colorMetric')return false;
@@ -1386,7 +1415,7 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <FractalControls scene={scene} onChange={edit} section="color"/>
+                  <FractalControls scene={scene} onChange={edit} onSourceChange={editFractal} section="color"/>
                   {!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&<GeometryColorControls scene={scene} onChange={edit}/>}
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
@@ -1548,6 +1577,14 @@ export default function App() {
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}
           samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
           iteratedPixelDensity={iteratedLiveFacts?viewportMeasurement?.pixelRatio:undefined}
+          currentFractalCapture={sourceLivePreviewKind(scene)==='fractal'?{
+            size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
+            ready:completedFrameReady&&output?.type==='raster'&&output.fractalLive?.target==='primary'&&output.fractalLive.sessionId===liveSessionId.current,
+            capture:async(size,scale)=>{
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前分形画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current.captureFractalPaused(output,size,scale);
+            },
+          }:undefined}
           currentIteratedCapture={sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
             size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
             ready:completedFrameReady&&iteratedLiveFacts?.sessionId===liveSessionId.current,

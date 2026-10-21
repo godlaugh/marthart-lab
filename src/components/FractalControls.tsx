@@ -28,10 +28,10 @@ export function visible2DFractalControls(controls:ControlSpec[],s:Settings):Cont
   return c.key==='power'&&f==='binocular'?{...c,min:2}:c.key==='relaxation'?{...c,label:'松弛系数'}:c;
  });
 }
-export function FractalControls({scene,onChange,section='all'}:{scene:SceneDocument;onChange:(scene:SceneDocument)=>void;section?:'formula'|'color'|'all'}) {
+export function FractalControls({scene,onChange,onSourceChange,section='all'}:{scene:SceneDocument;onChange:(scene:SceneDocument)=>void;onSourceChange?:(scene:SceneDocument,intent?:'hot'|'apply'|'stage')=>void;section?:'formula'|'color'|'all'}) {
  const {t}=useI18n();
  if(scene.kind!=='fractal')return null;
- if(scene.fractalSource)return <SourceFractalControls scene={scene} onChange={onChange} section={section}/>;
+ if(scene.fractalSource)return <SourceFractalControls scene={scene} onChange={onSourceChange??onChange} section={section}/>;
  const def=definitions.find(d=>d.kind==='fractal')!,s=scene.settings,numericProfile=parseFractalNumericProfile(s.fractalNumericProfile),sourceNumerics=fractalViewportRules(numericProfile,s.formula).sourceNewtonNova;
  const changeNumericProfile=(value:string)=>{const profile=parseFractalNumericProfile(value),settings={...s};if(profile==='local-v1')delete settings.fractalNumericProfile;else settings.fractalNumericProfile=profile;onChange({...scene,settings});};
  const change=(key:string,value:number|string|boolean)=>{const settings={...s,[key]:value};if(key==='convergenceMode'&&value==='residual')settings.fractalColorVersion=2;if(key==='formula'&&value!==s.formula){if(numericProfile==='local-v1'&&(s.convergenceMode==='step'||s.convergenceMode==='residual'))settings.convergenceMode=['newton','nova'].includes(String(value))?'step':['magnet1','magnet2','binocular'].includes(String(value))?'residual':'legacy';if(settings.convergenceMode==='residual')settings.fractalColorVersion=2;if(value==='c_sin'){settings.startReal=Math.PI/2;settings.startImag=0;}if(value==='lambda'){settings.startReal=.5;settings.startImag=0;}}onChange({...scene,settings});};

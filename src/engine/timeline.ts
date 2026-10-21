@@ -105,7 +105,7 @@ export const ACTIONS = [
 const cameraMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','track','stopTracking','ambient','stopAmbient']);
 export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument,clock:'fixed'|'realtime'='fixed'):string[]{
- if(usesSourceFractal(scene))return ['分形按固定帧率执行原版队列，暂停保留当前画面，跳转重建参数和渐变；原版实时线程和录像首尾帧仍待验证。'];
+ if(usesSourceFractal(scene))return [clock==='realtime'?'暂停保留当前画面；跳转会从初始配置重建。修改时间线后，请在播放时点击“应用场景”。':'按固定帧率回放；跳转会从初始配置重建。'];
  if(usesSourceSamilaTimeline(scene)){const frame=replaySourceSamilaTimeline(scene,0);return[...frame.diagnostics.map(d=>d.message),...(clock==='fixed'?['源 Samila 队列按固定帧率回放；仅 theta 参与密度显示，其他相机分量保留运行状态。']:[])];}
  if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,'复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。'];

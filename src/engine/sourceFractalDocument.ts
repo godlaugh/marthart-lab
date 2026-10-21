@@ -1,4 +1,5 @@
 import {SOURCE_FRACTAL_RETAINED_LIMITS} from './sourceFractalLimits';
+import {sourceFractalFormulaIdentity} from './sourceFractalIdentity';
 import type {SceneDocument} from '../types';
 import {createSourceFractalFormulaFromConfig,type SourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
 import {SourceFractalSceneClock,type SourceFractalAnimationTargets} from './sourceFractalSceneClock';
@@ -17,6 +18,11 @@ const finite=(raw:unknown,path:string[])=>typeof raw==='number'&&Number.isFinite
 function numbers(raw:unknown,count:number,path:string[]):number[]{if(!Array.isArray(raw)||raw.length!==count)return fail(path,`需要 ${count} 个分量`);return raw.map((value,i)=>finite(value,[...path,String(i)]));}
 function attempt<T>(read:()=>T):SourceFractalDocumentResult<T>{try{return{ok:true,value:read()};}catch(error){return{ok:false,error:{kind:error instanceof Failure?error.kind:'input',path:error instanceof Failure?error.path:[],reason:error instanceof Error?error.message:String(error)}};}}
 export function usesSourceFractal(scene:Pick<SceneDocument,'kind'|'fractalSource'>):boolean{return scene.kind==='fractal'&&scene.fractalSource!==undefined;}
+/** Readiness is pure document identity, independent of live/GPU resources. */
+export function supportsSourceFractalLive(scene:SceneDocument):boolean {
+ if(!usesSourceFractal(scene)||scene.timeline.schedule!==FRACTAL_SCENE_SEQUENCE)return false;
+ const formula=sourceFractalFormulaIdentity(scene.fractalSource!.formula);return formula==='newton'||formula==='nova';
+}
 export function parseSourceFractalDocument(raw:unknown):SourceFractalDocumentResult<SourceFractalDocumentPayload>{return attempt(()=>{
  const input=exact(raw,['model','formula'],[]);if(input.model!=='mathart-1.7.8-scene-v1')return fail(['model'],'未知分形场景规则');
  const formula=exact(input.formula,['formulaId','fractalType','power','formulaParams','bailout','julia','parameters'],['formula']);

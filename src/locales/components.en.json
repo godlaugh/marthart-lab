@@ -879,5 +879,14 @@
   "缩放上限": "Maximum zoom",
   "分形视频模式": "Fractal video mode",
   "分形队列在预热帧内已结束，没有可编码帧；请延长队列": "The Fractal queue ended during warmup with no frames to encode; extend the queue.",
-  "从当前配置重新开始，先绘制一帧预热，再录到队列结束。使用三倍导出画布，MP4 使用原版质量设置。模拟帧率与编码帧率默认相同；分别调整播放速度是本地扩展。": "Start fresh from the current configuration, discard one warmup frame, then record until the queue ends. Render at triple size; MP4 uses the source quality settings. Simulation and encoder FPS default to the same value; independent speed adjustment is a local extension."
+  "从当前配置重新开始，先绘制一帧预热，再录到队列结束。使用三倍导出画布，MP4 使用原版质量设置。模拟帧率与编码帧率默认相同；分别调整播放速度是本地扩展。": "Start fresh from the current configuration, discard one warmup frame, then record until the queue ends. Render at triple size; MP4 uses the source quality settings. Simulation and encoder FPS default to the same value; independent speed adjustment is a local extension.",
+  "有待应用的修改；修改几何参数也会应用当前分形设置。": "Changes are waiting to be applied. Editing geometry also applies the current fractal settings.",
+  "时间线或场景外观有修改，需在播放时应用才能替换当前运行场景。": "Timeline or scene appearance changes require Apply while playing to replace the running scene.",
+  "暂停时应用保留当前动画进度；播放时应用会从头运行新的时间线。": "Apply while paused keeps the current animation progress. Apply while playing restarts with the new timeline.",
+  "分形图像来源": "Fractal image source",
+  "按当前暂停状态生成图像，再按所选倍率放大。输出 {width} × {height} 像素。": "Render the current paused state, then upscale by the selected factor. Output {width} × {height} pixels.",
+  "保存当前暂停的分形状态，不推进动画；尺寸只改变导出画面。": "Save the current paused fractal state without advancing animation; size only changes the exported image.",
+  "从当前配置按固定时间重放，不复制实时预览的编辑历史。": "Replay the current configuration at a fixed time without copying the live preview edit history.",
+  "暂停保留当前画面；跳转会从初始配置重建。修改时间线后，请在播放时点击“应用场景”。": "Pause keeps the current frame; seeking rebuilds from the initial configuration. After editing the timeline, click Apply scene during playback.",
+  "按固定帧率回放；跳转会从初始配置重建。": "Playback uses a fixed frame rate; seeking rebuilds from the initial configuration."
 }
