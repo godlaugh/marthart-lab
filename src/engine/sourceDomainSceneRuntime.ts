@@ -6,6 +6,7 @@ import {SourceDomainParameterRuntime,type SourceDomainParameterRuntimeAction} fr
 import {applyDomainParameterBinding,domainParameterBinding,normalizedDomainParameterValue,readDomainParameterBinding} from './domainParameterBinding';
 import {validateGradientConfig} from './gradientOffsets';
 import {TIMELINE_OPERATION_LIMIT} from './timelineCapacity';
+import {prepareDomainNativeConstantBase} from './domainNativeConstants';
 
 export type SourceDomainSceneClip=
  |{readonly kind:'wait';readonly duration:number}
@@ -92,14 +93,17 @@ export class SourceDomainSceneRuntime {
   * "scale" are literal config-map keys here, not viewport bindings. Current
   * animated formula values already belong to that map and must survive.
   * clear/stop retain already-started children and HashMap allocation history.
-  * This numerical owner does not compile shaders or own renderer constant
-  * caches; calling it alone does not establish a rendered UI hot edit. */
+  * applyConfig recaptures only the base a/b pair. Formula text overrides remain
+  * the renderer's responsibility; ordinary animated scalar writes never recapture.
+  * Calling this numerical owner alone does not establish a rendered UI edit. */
  updateParameter(name:string,value:number):void {
   this.ensure();if(typeof name!=='string')throw Error('域场景参数名称必须是字符串');finite(value,'参数值');
   try{
    this.options.reserve(1+name.length+Object.keys(this.values.parameters).length);
    const settings=structuredClone(this.configuredSettings);
    Object.defineProperty(this.values.parameters,name,{value,writable:true,configurable:true,enumerable:true});
+   const base=prepareDomainNativeConstantBase({parameters:this.values.parameters}).baseConstant;
+   settings.constantReal=base[0];settings.constantImag=base[1];
    this.values.settings=settings;this.parameters.clear();this.parameters.stop();
   }catch(error){this.failed=true;throw error;}
  }

@@ -93,8 +93,18 @@ export class SourceDomainHostSession {
  /** Generic Inspector value commit, distinct from full Apply and an animator
   * scalar write. No redraw or fresh frame is implied by the returned snapshot. */
  updateParameter(name:string,value:number):SourceDomainHostSnapshot {
-  this.live();if(typeof name!=='string'||typeof value!=='number'||!Number.isFinite(value))throw Error('域着色参数热写入需要字符串名称和有限值');
-  return this.mutate(()=>{this.runtime.updateParameter(name,value);return this.snapshot();});
+  return this.updateParameters([[name,value]]);
+ }
+ /** One delivered batch shares one work budget. Validate and capture all input
+  * before the first write; a failure after mutation starts poisons this host. */
+ updateParameters(writes:readonly (readonly [string,number])[]):SourceDomainHostSnapshot {
+  this.live();if(!Array.isArray(writes)||!writes.length||writes.length>WORK_LIMIT)throw Error('域着色参数热写入需要共享预算内的非空事件数组');
+  const prepared:[string,number][]=[];
+  for(const entry of writes){
+   if(!Array.isArray(entry)||entry.length!==2||typeof entry[0]!=='string'||typeof entry[1]!=='number'||!Number.isFinite(entry[1]))throw Error('域着色参数热写入需要字符串名称和有限值');
+   prepared.push([entry[0],entry[1]]);
+  }
+  return this.mutate(()=>{for(const [name,value] of prepared)this.runtime.updateParameter(name,value);return this.snapshot();});
  }
  /** Reset/recording helpers can force looping without the toolbar resume clock reset. */
  forceResume():SourceDomainHostSnapshot {this.live();return this.mutate(()=>{this.hostClock.forceResume();return this.snapshot();});}

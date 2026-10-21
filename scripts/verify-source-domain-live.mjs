@@ -21,7 +21,7 @@ try{
   const check=(v,m)=>{if(!v)throw Error(m);},equal=(a,b,m)=>check(JSON.stringify(a)===JSON.stringify(b),m);
   const digest=async pixels=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',pixels)),b=>b.toString(16).padStart(2,'0')).join('');
   const make=backend=>{const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'DOMAIN_COLORING',name:'Domain live public',domainColoring:{formula:'z^3 - 1'},timeline:[{type:'animate',duration:1,easing:'LINEAR',actions:[{method:'domainRotate',args:[1]}]}]})).scene;s.settings.domainBackend=backend;s.timeline.fps=4;s.formulas=defaultFormulas();s.formulas.main.visible=true;s.formulas.main.latex='captured';return s;};
-  const context=(sessionId,revision=0,paused=false,timestampMs=1000,extra={})=>({time:999,width:79,height:53,quality:'export',domainLive:{sessionId,revision,clock:{paused,timestampMs},actualFrameRate:23,...extra}});
+  const context=(sessionId,revision=0,paused=false,timestampMs=1000,extra={})=>({time:999,width:79,height:53,quality:'export',domainLive:{sessionId,revision,clock:{paused,timestampMs},actualFrameRate:23,viewport:{logicalWidth:79,logicalHeight:53,pixelDensity:1},...extra}});
   const rows=[];
   for(const backend of ['cpu','gpu']){
    const g=new Generator(),s=make(backend),id='direct-'+backend;
@@ -54,9 +54,37 @@ try{
     rows.push({backend:initial.domainRender.effective.backend,completedRequestMs:{coldWorker:coldMs,warmRetainedWorker:warmMs},first:initial.domainLive,rotations:[initial,moving,resumed,seek].map(o=>o.domainRender.view.rotation),pauseStable:true,pausedApplyReloaded:true,formulasCaptured:true,staleRejected:true,failedOwnerRetired:true,recovered:true,pixels:{initial:await digest(initial.pixels),moving:await digest(moving.pixels),paused:await digest(paused.pixels),apply:await digest(apply.pixels)}});
    }finally{g.dispose();}
   }
+  const editing=[];
+  for(const backend of ['cpu','gpu']){
+   const g=new Generator(),s=make(backend),id='editing-'+backend;
+   s.timeline.tracks=[];s.equations={f:'z',next:'w+c'};s.parameters={a:.2,b:.3};Object.assign(s.settings,{constantReal:.2,constantImag:.3,iterationEnabled:true,iterationSteps:1});
+   try{
+    const first=await g.generate(s,context(id,0,true)),before=first.domainLive;
+    const moved=await g.navigateDomainPaused(first,{kind:'pan',dx:8,dy:-3});
+    check(moved.domainLive.updateOrdinal===before.updateOrdinal&&moved.domainLive.sceneTime===before.sceneTime,'navigation advanced domain clock');
+    check(moved.domainLive.presentation.settings.centerX!==before.presentation.settings.centerX,'pan did not move retained view');
+    const wheel=await g.navigateDomainPaused(moved,{kind:'wheel',count:2});check(wheel.domainRender.view.scale!==moved.domainRender.view.scale,'wheel did not change retained scale');
+    const staged=structuredClone(s);staged.parameters.a=.7;staged.equations.f='(';staged.formulas.main.latex='draft only';
+    await g.updateDomainParameters(wheel,staged,[['a',.7]]);
+    // A native parameter commit does not draw. This explicit next gesture does.
+    const edited=await g.navigateDomainPaused(wheel,{kind:'pan',dx:0,dy:0});
+    equal(edited.domainRender.constant,[Math.fround(.7),Math.fround(.3)],'hot edit did not recapture a/b');
+    check(edited.domainLive.presentation.settings.centerX===s.settings.centerX&&edited.domainRender.view.scale===s.settings.scale,'hot apply did not restore configured geometry');
+    check(edited.domainLive.presentation.parameters.a===.7&&edited.domainLive.presentation.equations.f==='z','hot commit applied unrelated staged formula');
+    equal(edited.formulaPresentation,first.formulaPresentation,'hot commit rebuilt captured labels');
+    check(edited.domainLive.updateOrdinal===before.updateOrdinal,'hot edit advanced numerical state');
+    check(await digest(edited.pixels)!==await digest(first.pixels),'refreshed current constant did not affect rendered pixels');
+    let stale=false;try{await g.navigateDomainPaused(wheel,{kind:'wheel',count:1});}catch{stale=true;}check(stale,'navigation reused old displayed capability');
+    const full=await g.generate(s,context(id,1,true,2000,{configuration:s}));equal(full.domainRender.constant,[Math.fround(.2),Math.fround(.3)],'full Apply did not restore authored constant anchor');
+    const invalid={...s,parameters:{...s.parameters,b:NaN}};let batchRejected=false;
+    try{await g.updateDomainParameters(full,invalid,[['a',s.parameters.a],['b',NaN]]);}catch{batchRejected=true;}check(batchRejected,'malformed parameter batch accepted');
+    let retired=false;try{await g.navigateDomainPaused(full,{kind:'wheel',count:1});}catch{retired=true;}check(retired,'uncertain edit failure retained old capability');
+    editing.push({batchRejected,failedEditRetired:retired,backend:edited.domainRender.effective.backend,pausedNavigation:true,hotCommitNoAdvance:true,geometryReset:true,constantRefreshed:true,draftIgnored:true,formulasCaptured:true,fullApplyRestored:true,staleRejected:true,initialRgba:await digest(first.pixels),editedRgba:await digest(edited.pixels)});
+   }finally{g.dispose();}
+  }
   // Queue coalescing uses real Worker completions, not a substitute renderer.
-  const qscene=make('cpu'),g=new Generator(),published=[],queueErrors=[],waiters=[];
-  const q=new GenerationQueue(g,{output:(o,time,s)=>{published.push({o,time,s});for(const notify of waiters.splice(0))notify();},error:e=>{queueErrors.push(e.message);for(const notify of waiters.splice(0))notify();},busy:()=>{}});
+  let queueBusy=false;const qscene=make('cpu');qscene.parameters={a:.2,b:.3};const g=new Generator(),published=[],queueErrors=[],waiters=[];
+  const q=new GenerationQueue(g,{output:(o,time,s)=>{published.push({o,time,s});for(const notify of waiters.splice(0))notify();},error:e=>{queueErrors.push(e.message);for(const notify of waiters.splice(0))notify();},busy:value=>{queueBusy=value;for(const notify of waiters.splice(0))notify();}});
   async function until(predicate){const end=performance.now()+15000;while(!predicate()){if(queueErrors.length)throw Error(queueErrors.join('\n'));if(performance.now()>end)throw Error('queue timeout');await new Promise(resolve=>{let done=false;const finish=()=>{if(!done){done=true;resolve();}};waiters.push(finish);setTimeout(finish,50);});}}
   try{
    q.request(qscene,context('queue'));
@@ -72,10 +100,15 @@ try{
    check(published[1].o.domainLive.updateOrdinal===applied.o.domainLive.updateOrdinal,'pause generated another update');
    const renamed={...staged,name:'Renamed metadata'};q.request(renamed,context('queue',1,true,25000,{actualFrameRate:18}),0,'metadata');await until(()=>published.length===3);
    check(published[2].o===published[1].o,'metadata rendered another frame');
-   await q.setDomainPaused(false);q.request(renamed,context('queue',1,false,30000));await until(()=>published.length===4);
-   check(published[3].o.domainLive.updateOrdinal===applied.o.domainLive.updateOrdinal+1,'queue resume did not use retained owner');
+   const hot={...renamed,parameters:{...renamed.parameters,a:.8}};q.request(hot,context('queue',1,true,26000),0,'metadata',[['a',.8]]);await until(()=>published.length===4&&!queueBusy);
+   check(published[3].o===published[2].o,'parameter commit implicitly redrew paused scene');
+   check(q.navigateDomainPaused(hot,'queue',{kind:'pan',dx:1,dy:2}),'queue rejected owned Domain gesture');
+   check(q.navigateDomainPaused(hot,'queue',{kind:'wheel',count:1}),'queue did not retain ordered next gesture');await until(()=>published.length===6);
+   check(published[5].o.domainLive.presentation.parameters.a===.8&&published[5].o.domainLive.presentation.settings.constantReal===Math.fround(.8),'queue dropped explicit hot value or constant refresh');
+   await q.setDomainPaused(false);q.request(hot,context('queue',1,false,30000));await until(()=>published.length===7);
+   check(published[6].o.domainLive.updateOrdinal===applied.o.domainLive.updateOrdinal+1,'queue resume did not use retained owner');
   }finally{q.dispose();}
-  check(!queueErrors.length,'unexpected queue errors');return{direct:rows,queue:{coalescedApply:true,obsoleteSuppressed:true,pausedSnapshot:true,metadataReused:true,resumeRetained:true,errors:queueErrors}};
+  check(!queueErrors.length,'unexpected queue errors');return{direct:rows,editing,queue:{coalescedApply:true,obsoleteSuppressed:true,pausedSnapshot:true,metadataReused:true,parameterCommitWithoutDraw:true,orderedDomainGestures:true,resumeRetained:true,errors:queueErrors}};
  });
  if(errors.length)throw Error(errors.join('\n'));report.status='passed';
 }catch(error){report.status='failed';report.error=String(error);report.stack=error.stack;}

@@ -1,5 +1,5 @@
 import {describe,it,expect,vi} from 'vitest';
-import {GenerationQueue,MAX_PENDING_ITERATED_NAVIGATION} from '../src/engine/generationQueue';
+import {GenerationQueue,MAX_PENDING_SOURCE_NAVIGATION} from '../src/engine/generationQueue';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import type {SceneOutput,GenerationInput} from '../src/types';
@@ -14,11 +14,11 @@ async function setup(){
 }
 describe('iterated navigation scheduling races',()=>{
  it('bounds pending redraw work and preserves all accepted event order',async()=>{
-  const f=await setup();expect(f.nav(0)).toBe(true);for(let i=1;i<=MAX_PENDING_ITERATED_NAVIGATION;i++)expect(f.nav(i)).toBe(true);
+  const f=await setup();expect(f.nav(0)).toBe(true);for(let i=1;i<=MAX_PENDING_SOURCE_NAVIGATION;i++)expect(f.nav(i)).toBe(true);
   for(let i=0;i<10000;i++)expect(f.nav(999)).toBe(false);
   expect(f.port.navigateIteratedPaused).toHaveBeenCalledTimes(1);
-  for(let i=0;i<=MAX_PENDING_ITERATED_NAVIGATION;i++){f.pending[i].resolve({...output});await flush();}
-  expect(f.port.navigateIteratedPaused.mock.calls.map(c=>(c[1] as {count:number}).count)).toEqual(Array.from({length:MAX_PENDING_ITERATED_NAVIGATION+1},(_,i)=>i));
+  for(let i=0;i<=MAX_PENDING_SOURCE_NAVIGATION;i++){f.pending[i].resolve({...output});await flush();}
+  expect(f.port.navigateIteratedPaused.mock.calls.map(c=>(c[1] as {count:number}).count)).toEqual(Array.from({length:MAX_PENDING_SOURCE_NAVIGATION+1},(_,i)=>i));
   expect(f.callbacks.busy).toHaveBeenLastCalledWith(false);f.queue.dispose();
  });
  it('finishes an in-flight redraw before a queued resume and retires remaining input',async()=>{

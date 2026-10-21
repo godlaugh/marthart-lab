@@ -1,3 +1,5 @@
+import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
+import type {SourceDomainNavigationEvent} from './sourceDomainLiveSession';
 import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
 import type {SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
 import {sourceIteratedSceneIdentity} from './sourceIteratedLiveIdentity';
@@ -13,6 +15,8 @@ import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
 interface GeneratorPort {
+  navigateDomainPaused?(output:SceneOutput,event:SourceDomainNavigationEvent):Promise<SceneOutput>;
+  updateDomainParameters?(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>;
   navigateIteratedPaused?(output:SceneOutput,event:SourceIteratedNavigationEvent):Promise<SceneOutput>;
   updateIteratedParameters?(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>;
   generate(scene:SceneDocument,context:Context,onProgress?:(output:SceneOutput)=>void):Promise<SceneOutput>;
@@ -70,7 +74,7 @@ const retiredQueues=new Set<GenerationQueue>();
 /** Local input backpressure: retain at most eight pending GPU redraws. This
  * bounds work after a burst; it is not a native event-count restriction.
  * Never merge deltas, which would alter Float32 and ink-clear ordering. */
-export const MAX_PENDING_ITERATED_NAVIGATION=8;
+export const MAX_PENDING_SOURCE_NAVIGATION=8;
 export async function retryRetiredGenerationQueueCleanup():Promise<void>{
   const results=await Promise.allSettled([...retiredQueues].map(queue=>queue.retrySourceRecordingCleanup()));
   const errors=results.flatMap(result=>result.status==='rejected'?[result.reason]:[]);
@@ -88,7 +92,7 @@ export class GenerationQueue {
   private captureOwner?:{retire:boolean};
   private recordingOwner?:RecordingOwner;
   private playbackOwner?:PlaybackOwner;
-  private navigationOwner?:{request:Request;events:SourceIteratedNavigationEvent[]};
+  private navigationOwner?:{request:Request;events:((output:SceneOutput)=>Promise<SceneOutput>)[]};
   constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void}){
     if(retiredQueues.size)void retryRetiredGenerationQueueCleanup().catch(error=>{if(!this.disposed)this.callbacks.error(error);});
   }
@@ -145,10 +149,13 @@ export class GenerationQueue {
     // identical. Retain its GPU work, but publish only the latest request.
     const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
-    const parameterEdit=liveKey(request)!=='fractalLive'&&liveKey(request)!=='domainLive'&&cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
+    const domainWriteRequest=cached&&this.generator.updateDomainParameters&&liveKey(request)==='domainLive'&&liveKey(cached.request)==='domainLive'&&request.context.domainLive!.sessionId===cached.request.context.domainLive!.sessionId&&request.context.domainLive!.revision===cached.request.context.domainLive!.revision&&request.parameterWrites?.length;
+    const domainEdit=domainWriteRequest&&sourceDomainParameterWrites(cached!.request.scene,request.scene,request.parameterWrites);
+    const iteratedEdit=cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
+    const edit=domainEdit?()=>this.generator.updateDomainParameters!(cached!.output,request.scene,domainEdit):iteratedEdit?()=>this.generator.updateIteratedParameters!(cached!.output,request.scene,iteratedEdit):undefined;
     const generate=()=>this.generator.generate(request.scene,request.context,output=>publish(output,this.outputTime(output,request)));
-    const operation=parameterEdit?this.generator.updateIteratedParameters!(cached!.output,request.scene,parameterEdit).then(()=>{
-      if(!current())throw new DOMException('迭代参数会话已更换','AbortError');
+    const operation=domainWriteRequest&&!domainEdit?Promise.reject(new Error('域着色参数更新需要明确的有限数值事件')):edit?edit().then(()=>{
+      if(!current())throw new DOMException('实时参数会话已更换','AbortError');
       return request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
     void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
@@ -171,18 +178,25 @@ export class GenerationQueue {
   }
  /** Ordered input events lease the completed live owner. A document edit or
   * transport transition ends the gesture before its deferred work runs. */
+ navigateDomainPaused(scene:SceneDocument,sessionId:string,event:SourceDomainNavigationEvent):boolean {
+  if(!this.generator.navigateDomainPaused)return false;const eventCopy={...event};
+  return this.enqueueNavigation(scene,sessionId,'domain',output=>this.generator.navigateDomainPaused!(output,eventCopy));
+ }
  navigateIteratedPaused(scene:SceneDocument,sessionId:string,event:SourceIteratedNavigationEvent):boolean {
+  if(!this.generator.navigateIteratedPaused)return false;const eventCopy={...event};
+  return this.enqueueNavigation(scene,sessionId,'iterated',output=>this.generator.navigateIteratedPaused!(output,eventCopy));
+ }
+ private enqueueNavigation(scene:SceneDocument,sessionId:string,family:'domain'|'iterated',operation:(output:SceneOutput)=>Promise<SceneOutput>):boolean {
   const request=this.latest,key=request&&liveKey(request),live=request&&key&&request.context[key];
-  if(this.disposed||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||request.scene!==scene||(key!=='mapLive'&&key!=='symmetryLive')||!live||live.sessionId!==sessionId||!live.clock?.paused||!this.generator.navigateIteratedPaused)return false;
-  const eventCopy={...event};
-  if(this.navigationOwner?.request===request&&this.running===request){if(this.navigationOwner.events.length>=MAX_PENDING_ITERATED_NAVIGATION)return false;this.navigationOwner.events.push(eventCopy);return true;}
+  if(this.disposed||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||request.scene!==scene||(family==='domain'?key!=='domainLive':key!=='mapLive'&&key!=='symmetryLive')||!live||live.sessionId!==sessionId||!live.clock?.paused)return false;
+  if(this.navigationOwner?.request===request&&this.running===request){if(this.navigationOwner.events.length>=MAX_PENDING_SOURCE_NAVIGATION)return false;this.navigationOwner.events.push(operation);return true;}
   const cached=this.completedLive;if(this.running||!cached||cached.request!==request)return false;
-  const owner={request,events:[eventCopy]};this.navigationOwner=owner;this.running=request;this.completedLive=undefined;this.callbacks.busy(true);
+  const owner={request,events:[operation]};this.navigationOwner=owner;this.running=request;this.completedLive=undefined;this.callbacks.busy(true);
   const current=()=>!this.disposed&&this.running===request&&this.navigationOwner===owner;
   void (async()=>{
    let output=cached.output;
    while(current()&&owner.events.length&&this.latest===request&&!this.playbackOwner){
-    output=await this.generator.navigateIteratedPaused!(output,owner.events.shift()!);
+    output=await owner.events.shift()!(output);
     if(!current())return;
     this.completedLive={request,output};
     if(this.latest===request)this.callbacks.output(output,this.outputTime(output,request),request.scene);
@@ -192,7 +206,7 @@ export class GenerationQueue {
    if(this.latest===request&&error.name!=='AbortError')this.callbacks.error(error);
   }).finally(()=>{
    if(!current())return;this.running=null;this.navigationOwner=undefined;
-   if(this.playbackOwner){if(this.completedLive)this.startPlayback();else{this.rejectPlayback(new Error('当前迭代视口未完成，无法切换播放状态'));this.callbacks.busy(false);}}
+   if(this.playbackOwner){if(this.completedLive)this.startPlayback();else{this.rejectPlayback(new Error('当前视口未完成，无法切换播放状态'));this.callbacks.busy(false);}}
    else if(this.latest!==request)this.start();else this.callbacks.busy(false);
   });
   return true;

@@ -13,6 +13,7 @@ import {enhanceSourcePausedImage,sourcePausedImageBytes} from './sourcePausedIma
 import {prepareSourcePausedUpscale,upscaleSourcePausedImage} from './sourcePausedUpscale';
 import {MAX_RASTER_PIXELS,validateRasterRequest} from './rasterDimensions';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
+import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
@@ -42,6 +43,20 @@ self.onmessage = (
     // A failed release keeps the old owner and must still answer this request.
     if(recording&&(owner!==sessionId||!isSourceRecordingOperation(operation)))throw new Error('源场景录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
+    if(event.data.operation==='domain-navigation'){
+      const source=completed;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='domain')throw Error('域着色视口对应的主预览已过期');
+      const output=temporalSession.sourceDomain.navigatePaused(source.scene,source.context,event.data.event);
+      completed={...source,id};send({operation:'domain-navigation',id,sourceId:source.id,output},[output.pixels.buffer]);return;
+    }
+    if(event.data.operation==='domain-parameters'){
+      const source=completed;
+      if(!source||source.id!==event.data.sourceId||!temporalSession.sourceDomain.matchesCompletedPrimary(source.scene,source.context))throw Error('域着色参数对应的主预览已过期');
+      const writes=sourceDomainParameterWrites(source.scene,event.data.scene,event.data.writes);
+      if(!writes)throw Error('域着色参数更新需要明确的有限数值事件');
+      temporalSession.sourceDomain.updateParameters(source.scene,source.context,writes);
+      completed={...source,scene:event.data.scene};send({operation:'domain-parameters',id,sourceId:source.id});return;
+    }
     if(event.data.operation==='iterated-navigation'){
       const source=completed;
       if(!source||source.id!==event.data.sourceId||(source.scene.kind!=='map'&&source.scene.kind!=='symmetry'))throw Error('迭代视口对应的主预览已过期');

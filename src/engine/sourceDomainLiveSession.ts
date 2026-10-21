@@ -1,4 +1,4 @@
-import type {FormulaPresentation,GenerateContext,SceneDocument,SceneOutput} from '../types';
+import type {FormulaPresentation,GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {SourceDomainHostSession,type SourceDomainHostSnapshot} from './sourceDomainHostSession';
 import {bindSourceDomainFrame,prepareSourceDomainScene,usesSourceDomain} from './sourceDomainTimeline';
 import {validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
@@ -8,16 +8,22 @@ import {parseDomainCpuChainModel,parseDomainModel} from './domainModel';
 import {parseDomainRenderPolicy} from './domainRenderPolicy';
 import {formulaPresentation} from './formulas';
 import {MAX_RASTER_PIXELS,validateRasterRequest} from './rasterDimensions';
+import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
+import {snapshotGenerationInput} from './generationInput';
 
 export interface SourceDomainLiveContext {
  sessionId:string;revision:number;clock:SourceSceneClockRequest;
  /** Observed local draw FPS, or an explicitly chosen initial rate; not JVM timing. */
  actualFrameRate:number;
+ /** Logical primary canvas and its density, independent of downsampled pixels. */
+ viewport?:{logicalWidth:number;logicalHeight:number;pixelDensity:number};
  /** Whole document captured when this Apply revision was requested. */
  configuration?:SceneDocument;
  /** Explicit local fixed reconstruction, only when creating a session. */
  startAt?:number;
 }
+/** Browser logical deltas only. The completed primary owns pan dimensions. */
+export type SourceDomainNavigationEvent={kind:'pan';dx:number;dy:number}|{kind:'wheel';count:number};
 export type SourceDomainLivePresentation=Pick<SceneDocument,
  'equations'|'parameters'|'settings'|'palette'|'camera'|'sourceCamera'|'timeline'|'formulas'|'projectResolution'|'domainSourcePalette'|'evaluatedDomainScene'|'evaluatedDomainGradient'>;
 export interface SourceDomainLiveFacts {
@@ -37,6 +43,11 @@ function context(c:GenerateContext):SourceDomainLiveContext {
  validateSourceSceneClockRequest(v.clock);
  if(typeof v.actualFrameRate!=='number'||!Number.isFinite(v.actualFrameRate)||!Number.isFinite(Math.fround(v.actualFrameRate)))throw Error('域着色实时帧率需要明确的有限 Float32');
  if(v.startAt!==undefined&&(!Number.isFinite(v.startAt)||v.startAt<0||v.startAt>86400))throw Error('域着色本地重建起点必须在 0–86400 秒');
+ if(v.viewport!==undefined){
+  const p=v.viewport;
+  if(!p||typeof p!=='object'||Array.isArray(p)||![p.logicalWidth,p.logicalHeight,p.pixelDensity].every(n=>Number.isSafeInteger(n)&&n>0))throw Error('域着色主视口需要正整数逻辑尺寸与密度');
+  prepareSourcePausedCaptureSize({width:p.logicalWidth*p.pixelDensity,height:p.logicalHeight*p.pixelDensity},p.pixelDensity,MAX_RASTER_PIXELS);
+ }
  if(c.fractalLive!==undefined||c.fractalRecording!==undefined||c.mapLive!==undefined||c.symmetryLive!==undefined||c.samilaLive!==undefined||c.fractalViewport!==undefined||c.sourceBouncingFrame!==undefined||c.spirographFrame!==undefined||c.sourceViewport!==undefined||c.rootsViewport!==undefined)throw Error('域着色实时主预览不能混用其它场景或离屏时钟');
  if(c.quality!=='preview'&&c.quality!=='export')throw Error('域着色实时渲染质量无效');
  validateRasterRequest(c);return v;
@@ -65,7 +76,7 @@ export class SourceDomainLiveSession {
  private renderer?:DomainRenderSession;
  private sessionId='';private revision=0;private startAt?:number;
  private busy=false;private failed=false;private cancel?:()=>boolean;
- private completed?:{sceneId:string;sessionId:string;revision:number;width:number;height:number};
+ private completed?:{sceneId:string;sessionId:string;revision:number;width:number;height:number;context:GenerationInput};
  constructor(private readonly render:Render=generateDomain){}
  reset():void {
   if(this.busy)throw Error('域着色实时生成期间不能释放实例');
@@ -74,13 +85,50 @@ export class SourceDomainLiveSession {
  }
  diagnostics(){return{sessionId:this.sessionId,revision:this.revision,failed:this.failed,host:this.host&&!this.failed?this.host.snapshot():undefined,renderFailure:this.renderer?.failure(),retainedBytes:this.retained?JSON.stringify(this.retained).length*2:0};}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {
-  const done=this.completed,v=c.domainLive;
-  return !this.busy&&!this.failed&&!!done&&!!v&&scene.kind==='domain'&&scene.id===done.sceneId&&v.sessionId===done.sessionId&&v.revision===done.revision&&v.startAt===this.startAt&&c.width===done.width&&c.height===done.height;
+  const done=this.completed,v=c.domainLive,p=v?.viewport,saved=done?.context.domainLive?.viewport;
+  return !this.busy&&!this.failed&&!!done&&!!v&&scene.kind==='domain'&&scene.id===done.sceneId&&v.sessionId===done.sessionId&&v.revision===done.revision&&v.startAt===this.startAt&&c.width===done.width&&c.height===done.height&&p?.logicalWidth===saved?.logicalWidth&&p?.logicalHeight===saved?.logicalHeight&&p?.pixelDensity===saved?.pixelDensity;
  }
  setPaused(paused:boolean,timestampMs?:number):void {
   if(this.busy||this.failed||!this.host||!this.completed)throw Error('域着色播放控制需要已完成且可用的实时主预览');
   validateSourceSceneClockRequest({paused,timestampMs});
-  try{this.host.setPaused(paused,timestampMs);}catch(error){this.failed=true;this.completed=undefined;throw error;}
+  try{this.host.setPaused(paused,timestampMs);this.completed.context.domainLive!.clock={...this.completed.context.domainLive!.clock,paused};}catch(error){this.failed=true;this.completed=undefined;throw error;}
+ }
+ private requireCompleted(scene:SceneDocument,c:GenerateContext):void {
+  const live=context(c);
+  if(!this.matchesCompletedPrimary(scene,c)||!this.host)throw Error('域着色编辑需要匹配的已完成实时主预览');
+  if(this.host.snapshot().paused!==live.clock.paused)throw Error('域着色暂停状态必须通过独立 setPaused 操作修改');
+  if(c.isCancelled?.())throw new DOMException('域着色实时编辑已取消','AbortError');
+ }
+ private invalidate():void {this.failed=true;this.completed=undefined;}
+ /** Host preflight rejection leaves its numerical capability intact. A host
+  * partial failure poisons its own snapshot API; preserve that failure here. */
+ private checkFailedHost():void {try{this.host!.snapshot();}catch{this.invalidate();}}
+ /** Same-object hot batch; one budget/failure transaction, deliberately no
+  * render or numerical host update. Each ordered write still reapplies config. */
+ updateParameters(scene:SceneDocument,c:GenerateContext,writes:readonly (readonly [string,number])[]):void {
+  this.requireCompleted(scene,c);this.busy=true;this.cancel=c.isCancelled;let changed=false;
+  try{this.host!.updateParameters(writes);changed=true;if(this.cancel?.())throw new DOMException('域着色实时编辑已取消','AbortError');}
+  catch(error){if(changed)this.invalidate();else this.checkFailedHost();throw error;}
+  finally{this.busy=false;this.cancel=undefined;}
+ }
+ /** A paused gesture redraws the current state at the completed primary's
+  * raster profile. Neither the authored document nor full-load anchor changes. */
+ navigatePaused(scene:SceneDocument,c:GenerateContext,event:SourceDomainNavigationEvent):LiveRaster {
+  this.requireCompleted(scene,c);
+  const completed=this.completed!,viewport=completed.context.domainLive!.viewport;
+  if(!viewport)throw Error('域着色导航需要已完成主预览的逻辑视口');
+  if(!event||typeof event!=='object'||Array.isArray(event))throw Error('域着色视口手势无效');
+  const gesture=event.kind==='pan'?{kind:'pan' as const,dx:event.dx,dy:event.dy,width:viewport.logicalWidth,height:viewport.logicalHeight}:event.kind==='wheel'?{kind:'wheel' as const,count:event.count}:undefined;
+  if(!gesture)throw Error('域着色不支持此视口手势');
+  this.busy=true;this.cancel=c.isCancelled;let changed=false;
+  try{
+   const snapshot=this.host!.navigatePaused(gesture);changed=true;this.completed=undefined;
+   const renderContext={...completed.context,isCancelled:c.isCancelled,onProgress:c.onProgress,onStatus:c.onStatus};
+   const result=this.renderSnapshot(snapshot,renderContext,'snapshot');
+   if(this.cancel?.())throw new DOMException('域着色实时导航已取消','AbortError');
+   this.completed=completed;return result;
+  }catch(error){if(changed)this.invalidate();else this.checkFailedHost();throw error;}
+  finally{this.busy=false;this.cancel=undefined;}
  }
  private admit(scene:SceneDocument,live:SourceDomainLiveContext){
   if(!usesSourceDomain(scene))throw Error('域着色实时预览需要显式源队列');
@@ -103,6 +151,10 @@ export class SourceDomainLiveSession {
  private bind(output:SceneOutput,facts:SourceDomainLiveFacts,c:GenerateContext):LiveRaster {
   if(output.type!=='raster'||!output.domainRender||!this.formulas||!Number.isInteger(output.width)||!Number.isInteger(output.height)||output.width<1||output.height<1||output.width>c.width||output.height>c.height||c.quality==='export'&&(output.width!==c.width||output.height!==c.height)||output.width*output.height>MAX_RASTER_PIXELS||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.length!==output.width*output.height*4)throw Error('域着色实时预览未返回有效源栅格事实');
   return Object.assign(output,{domainLive:copy(facts),formulaPresentation:copy(this.formulas)});
+ }
+ private renderSnapshot(snapshot:SourceDomainHostSnapshot,c:GenerateContext,kind:SourceDomainLiveFacts['renderKind']):LiveRaster {
+  const renderScene=display(this.retained!,snapshot),facts=this.facts(snapshot,renderScene,kind),bind=(output:SceneOutput)=>this.bind(output,facts,c);
+  return bind(this.render(renderScene,{...c,time:snapshot.state.clock.sceneTime,onProgress:c.onProgress?value=>c.onProgress!(bind(value)):undefined},this.renderer!));
  }
  generate(scene:SceneDocument,c:GenerateContext):LiveRaster {
   const live=context(c);
@@ -131,12 +183,11 @@ export class SourceDomainLiveSession {
    const snapshotOnly=reconstructed||live.clock.paused&&this.completed!==undefined;
    this.completed=undefined;mutated=true;
    const snapshot=snapshotOnly?this.host!.snapshot():this.host!.update(live.clock,live.actualFrameRate);
-   const renderScene=display(this.retained!,snapshot),facts=this.facts(snapshot,renderScene,snapshotOnly?'snapshot':'update');
-   const bind=(output:SceneOutput)=>this.bind(output,facts,c);
-   const result=bind(this.render(renderScene,{...c,time:snapshot.state.clock.sceneTime,onProgress:c.onProgress?value=>c.onProgress!(bind(value)):undefined},this.renderer!));
+   const result=this.renderSnapshot(snapshot,c,snapshotOnly?'snapshot':'update');
    if(this.cancel?.())throw new DOMException('域着色实时预览已取消','AbortError');
-   this.completed={sceneId:scene.id,sessionId:this.sessionId,revision:this.revision,width:c.width,height:c.height};return result;
-  }catch(error){if(mutated){this.failed=true;this.completed=undefined;}throw error;}
+   const saved=snapshotGenerationInput({...c,domainLive:{...live,configuration:undefined}});
+   this.completed={sceneId:scene.id,sessionId:this.sessionId,revision:this.revision,width:c.width,height:c.height,context:saved};return result;
+  }catch(error){if(mutated)this.invalidate();throw error;}
   finally{this.busy=false;this.cancel=undefined;}
  }
 }
