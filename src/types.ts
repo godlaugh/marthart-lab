@@ -132,13 +132,16 @@ export type DomainParameterAction = {
   scope:{kind:'all'} | {kind:'named';name:string};
   configuration?:{min:number;max:number;step:number;edgeEasing?:OscillationEdgeEasing};
 };
-/** Source Surface identities are names, never dotted local animation targets. */
-export interface SourceSurfaceParameterConfiguration {min:number;max:number;step:number;edgeEasing:OscillationEdgeEasing;}
-export type SourceSurfaceParameterAction = {
-  model:'surface-registry-1.7.8';
+/** Source registry identities are names, never dotted local animation targets. */
+export interface SourceRegistryParameterConfiguration {min:number;max:number;step:number;edgeEasing:OscillationEdgeEasing;}
+export type SourceRegistryParameterModel='surface-registry-1.7.8'|'symmetry-registry-1.7.8';
+export type SourceRegistryParameterAction<Model extends SourceRegistryParameterModel> = {
+  model:Model;
   scope:{kind:'all'}|{kind:'named';name:string};
-  configuration?:SourceSurfaceParameterConfiguration;
+  configuration?:SourceRegistryParameterConfiguration;
 };
+export type SourceSurfaceParameterAction=SourceRegistryParameterAction<'surface-registry-1.7.8'>;
+export type SourceSymmetryParameterOperation=SourceRegistryParameterAction<'symmetry-registry-1.7.8'>;
 export interface SourceSurfaceParameterClip {
   model:'surface-registry-1.7.8';
   /** Standalone clips replace the registry, retaining disabled entries and

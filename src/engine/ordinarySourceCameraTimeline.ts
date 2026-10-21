@@ -1,6 +1,6 @@
 import {normalizeSourceSamilaParameterAction,type SourceSamilaParameterAction} from './sourceSamilaParameter';
 import {sourceSurfaceFadeRatio,sourceSurfaceTransitionFrame,type SourceSurfaceMode} from './sourceSurfaceTransition';
-import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceSurfaceParameterConfig';
+import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceRegistryParameterConfig';
 import {parseSourcePerlinParameterAction,SourcePerlinParameterFailure,type SourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
 import {parseSourceParticleGradientConfiguration} from './sourceParticleGradientConfig';

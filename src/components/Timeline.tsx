@@ -7,8 +7,8 @@ import {usesSourcePerlin} from '../engine/sourcePerlinIdentity';
 import {usesCapturedDensityCamera,capturedDensityCameraClipTypes} from '../engine/sourceCameraMode';
 import {PerlinParameterActionsEditor} from './PerlinParameterActionsEditor';
 import {usesSourceAttractor} from '../engine/sourceAttractorDocument';
-import {SOURCE_SURFACE_PARAMETER_MODEL,SOURCE_SURFACE_PARAMETER_DEFAULT,parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from '../engine/sourceSurfaceParameterConfig';
-import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip,SourceSurfaceParameterConfiguration} from '../types';
+import {SOURCE_SURFACE_PARAMETER_MODEL,SOURCE_SURFACE_PARAMETER_DEFAULT,parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from '../engine/sourceRegistryParameterConfig';
+import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip,SourceRegistryParameterConfiguration} from '../types';
 import {SOURCE_PARTICLE_GRADIENT_MODES,SOURCE_PARTICLE_GRADIENT_INTERPOLATIONS,SOURCE_PARTICLE_GRADIENT_DEFAULT,parseSourceParticleGradientConfiguration} from '../engine/sourceParticleGradientConfig';
 import {usesSourceSurfaceGeometry,usesSourceSurfaceHost,SOURCE_SURFACE_HOST_CLIP_TYPES,SOURCE_SURFACE_CLIP_TYPES,SOURCE_SURFACE_ACTION_METHODS} from '../engine/sourceSurfaceIdentity';
 import {usesFractalSourceColor,FRACTAL_SOURCE_COLOR_ANIMATION_TARGETS} from '../engine/fractalSourceColorAuthoring';
@@ -121,8 +121,8 @@ function DomainParameterEditor({values,method,onChange}:{values:DomainParameterA
   <button disabled={values.length<=1} title={t('删除参数振荡')} onClick={()=>onChange(values.filter((_,i)=>i!==index))}><X size={13}/></button>
  </div>)}<button disabled={values.length>=128} className="text-button" onClick={()=>onChange([...values,{model:'domain-registry-1.7.8',scope:{kind:'named',name:'a'},...(starting?{configuration:registryConfiguration()}:{})}])}><Plus size={13}/>{t('添加参数')}</button></div>;
 }
-const sourceParameterDefault=():SourceSurfaceParameterConfiguration=>({...SOURCE_SURFACE_PARAMETER_DEFAULT,edgeEasing:{...SOURCE_SURFACE_PARAMETER_DEFAULT.edgeEasing}});
-function SurfaceParameterFields({value,onChange}:{value:{min:number;max:number;step:number;edgeEasing?:SourceSurfaceParameterConfiguration['edgeEasing']};onChange:(patch:Partial<SourceSurfaceParameterConfiguration>)=>void}){
+const sourceParameterDefault=():SourceRegistryParameterConfiguration=>({...SOURCE_SURFACE_PARAMETER_DEFAULT,edgeEasing:{...SOURCE_SURFACE_PARAMETER_DEFAULT.edgeEasing}});
+function SurfaceParameterFields({value,onChange}:{value:{min:number;max:number;step:number;edgeEasing?:SourceRegistryParameterConfiguration['edgeEasing']};onChange:(patch:Partial<SourceRegistryParameterConfiguration>)=>void}){
  const {t}=useI18n();return <>
   <NumberField label={t('最小值')} value={value.min} onChange={min=>onChange({min})}/><NumberField label={t('最大值')} value={value.max} onChange={max=>onChange({max})}/><NumberField label={t('每帧步长')} value={value.step} onChange={step=>onChange({step})}/>
   {value.edgeEasing&&<><NumberField label={t('端点窗口 rad')} value={value.edgeEasing.window} onChange={window=>onChange({edgeEasing:{...value.edgeEasing!,window}})}/><NumberField label={t('最低速度比例')} value={value.edgeEasing.floor} onChange={floor=>onChange({edgeEasing:{...value.edgeEasing!,floor}})}/><label>{t('端点缓动')}<select aria-label={t('端点缓动')} value={value.edgeEasing.easing} onChange={event=>onChange({edgeEasing:{...value.edgeEasing!,easing:event.target.value}})}>{SOURCE_EASING_NAMES.map(easing=><option key={easing}>{easing}</option>)}</select></label></>}

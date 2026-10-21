@@ -8,7 +8,7 @@ import {parseSourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
 import {usesSourceAttractor} from './sourceAttractorDocument';
 import {replaySourceAttractorCamera} from './sourceAttractorReplay';
-import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceSurfaceParameterConfig';
+import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceRegistryParameterConfig';
 import {parseSourceParticleGradientConfiguration} from './sourceParticleGradientConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {replaySourceSurfaceCamera} from './sourceSurfaceReplay';

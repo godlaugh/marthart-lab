@@ -2,6 +2,8 @@
 
 2026-10-21。**已取得 45 组、312 帧原版 JVM 参数状态，并完成本地参数动画内核对照。尚未接入 MathArt Lab 的导入与共享时间线，不代表参数动画的画面效果已经验收。** 完整原版窗口一致性仍为 0/11。
 
+后续进展见[参数动作解析验证](source-symmetry-parameter-config-validation.zh-CN.md)：原始动作解析到内核的对照已扩展至 63 组、366 帧；公开项目与 GPU 接入仍待完成。以下保留本轮原始验证范围。
+
 ## 这次解决了什么
 
 此前 Symmetry 的 `paramStart / paramStop` 可能沿用本地通用振荡逻辑。这轮查明了它与原版的区别，并实现了可供共享时间线消费的独立参数运行时：
@@ -51,7 +53,7 @@
 - `tests/fixtures/symmetry/parameter-runtime.json`：全部输入、原版构造配置和输出；固定 108 个 classpath JAR、JVM、8 个相关类及探针源文件的 SHA-256。
 - `scripts/oracles/source-symmetry-parameters.c`：实际原版执行探针，`-Wall -Wextra -Werror` 编译。
 - `scripts/verify-source-symmetry-parameters.py`：校验身份后复跑，完整比较输出；运行超时 20 秒。
-- `tests/source-symmetry-parameter-runtime.test.ts`：以内核的标准配置为输入；配置来自原版 builder，不是本地导入器，故不声称导入已对齐。
+- `tests/source-symmetry-parameter-runtime.test.ts`：本轮以内核的标准配置为输入；后续已将逐帧案例迁移到 `tests/source-symmetry-parameter-config.test.ts`，从原始动作解析开始，原文件保留所有权与预算检查。
 
 在 Studio 目录使用已有工具链复验：
 

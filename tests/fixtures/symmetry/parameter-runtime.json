@@ -14712,6 +14712,2913 @@
           "replayPending": false
         }
       ]
+    },
+    {
+      "id": "defaults",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "empty-expression-scope",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "lambda": {
+                    "step": "alpha/4",
+                    "min": "-PI",
+                    "max": "PI"
+                  },
+                  "alpha": {
+                    "step": "0x1p-3"
+                  }
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            },
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -3.1415927410125732,
+                "max": 3.1415927410125732,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            },
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.125
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "alpha"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.24999999999999997,
+            "delta_power": 3,
+            "alpha": -1,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0,
+            "alpha": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.07966169793959994,
+            "alpha": 4.71238898038469
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            },
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5474553246774675,
+            "delta_power": 3,
+            "alpha": -0.9956086863272262,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5,
+            "alpha": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.17515466398331547,
+            "alpha": 4.8061389817816735
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            },
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 1.12473581704958,
+            "delta_power": 3,
+            "alpha": -0.9028106748971915,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1,
+            "alpha": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.3661405960707465,
+            "alpha": 5.156924110193103
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "mixed-members",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "lambda": {},
+                  "Aa": {
+                    "enable": "TrUe"
+                  },
+                  "BB": {
+                    "enable": false,
+                    "edgeEasing": null
+                  },
+                  "number": 4,
+                  "array": [],
+                  "a.b": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            },
+            {
+              "runtime": 0,
+              "finished": false
+            },
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "Aa"
+              },
+              "easing": "LINEAR"
+            },
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            },
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "a.b"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "Aa": -1,
+            "lambda": 0.25,
+            "delta_power": 3,
+            "a.b": -1,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "Aa": 0,
+            "lambda": 0,
+            "a.b": 0
+          },
+          "degree": 5,
+          "phases": {
+            "Aa": 4.71238898038469,
+            "lambda": 0.25268025514207865,
+            "a.b": 4.71238898038469
+          },
+          "shaderDirty": true,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            },
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            },
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "Aa": -0.9971888179447265,
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "a.b": -0.9971888179447265,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "Aa": 0.5,
+            "lambda": 0.5,
+            "a.b": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "Aa": 4.787388982619864,
+            "lambda": 0.5526802640827755,
+            "a.b": 4.787388982619864
+          },
+          "shaderDirty": true,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            },
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            },
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "Aa": -0.9460259989516222,
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "a.b": -0.9460259989516222,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "Aa": 1,
+            "lambda": 1,
+            "a.b": 1
+          },
+          "degree": 5,
+          "phases": {
+            "Aa": 5.042439416197474,
+            "lambda": 1.152680281964169,
+            "a.b": 5.042439416197474
+          },
+          "shaderDirty": true,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "first-array-object",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": [
+                {
+                  "parameters": {
+                    "lambda": {}
+                  }
+                },
+                {
+                  "parameters": {
+                    "alpha": {}
+                  }
+                }
+              ],
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "later-object-ignored",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": [
+                0,
+                {
+                  "parameters": {
+                    "lambda": {}
+                  }
+                }
+              ],
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "kind": "start",
+              "scope": {
+                "kind": "all"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "action-edge",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "edgeEasing": {
+                  "window": "0x1p-2",
+                  "floor": -2,
+                  "easing": "LINEAR"
+                },
+                "parameters": {
+                  "lambda": {
+                    "edgeEasing": {
+                      "floor": 2,
+                      "easing": "unknown"
+                    }
+                  }
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.25,
+                  "floor": 1,
+                  "easing": "LINEAR"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "ignored-settings-edge",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8,
+          "param_edge_easing": {
+            "window": 0.9,
+            "floor": 1,
+            "easing": "LINEAR"
+          }
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-0",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": " surface ",
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-1",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": "",
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-2",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": " \t",
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-3",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": null,
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-4",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": 123,
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": false,
+          "children": [],
+          "built": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-5",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": true,
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": false,
+          "children": [],
+          "built": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-6",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": {},
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": false,
+          "children": [],
+          "built": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-7",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": "ANY",
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": false,
+          "children": [],
+          "built": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-8",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": " SURFACE ",
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": false,
+          "children": [],
+          "built": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-9",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": " ",
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": false,
+          "children": [],
+          "built": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": false,
+          "children": [],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {},
+          "degree": 5,
+          "phases": {},
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
+    },
+    {
+      "id": "domain-boundary-10",
+      "document": {
+        "config_version": "1.0.0",
+        "type": "SYMMETRY_CHAOS",
+        "settings": {
+          "batch_size": 8
+        },
+        "parameters": {
+          "lambda": 0.25,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5,
+          "delta": 0.5,
+          "delta_power": 3
+        }
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "targetDomain": "\u0000SURFACE\n",
+                "parameters": {
+                  "lambda": {}
+                }
+              },
+              "duration": 0.2,
+              "easing": "LINEAR"
+            }
+          ]
+        },
+        {
+          "dt": 0.1
+        },
+        {
+          "dt": 0.1
+        }
+      ],
+      "initial": {
+        "running": false,
+        "children": [],
+        "values": {
+          "lambda": 0.25,
+          "delta_power": 3,
+          "alpha": 2,
+          "delta": 0.5,
+          "beta": 0.2,
+          "gamma": 0.1,
+          "omega": 0,
+          "symmetry_degree": 5
+        },
+        "scales": {},
+        "degree": 5,
+        "phases": {},
+        "shaderDirty": false,
+        "replayPending": false
+      },
+      "frames": [
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0,
+              "finished": false
+            }
+          ],
+          "built": [
+            {
+              "duration": 0.20000000298023224,
+              "configuration": {
+                "min": -1,
+                "max": 1,
+                "edgeEasing": {
+                  "window": 0.5,
+                  "floor": 0.25,
+                  "easing": "SINE_OUT"
+                },
+                "step": 0.10000000149011612
+              },
+              "kind": "start",
+              "scope": {
+                "kind": "named",
+                "name": "lambda"
+              },
+              "easing": "LINEAR"
+            }
+          ],
+          "values": {
+            "lambda": 0.25,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.25268025514207865
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.10000000149011612,
+              "finished": false
+            }
+          ],
+          "values": {
+            "lambda": 0.5249703396077977,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 0.5
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 0.5526802640827755
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        },
+        {
+          "running": true,
+          "children": [
+            {
+              "runtime": 0.20000000298023224,
+              "finished": true
+            }
+          ],
+          "values": {
+            "lambda": 0.9138555218643363,
+            "delta_power": 3,
+            "alpha": 2,
+            "delta": 0.5,
+            "beta": 0.2,
+            "gamma": 0.1,
+            "omega": 0,
+            "symmetry_degree": 5
+          },
+          "scales": {
+            "lambda": 1
+          },
+          "degree": 5,
+          "phases": {
+            "lambda": 1.152680281964169
+          },
+          "shaderDirty": false,
+          "replayPending": false
+        }
+      ]
     }
   ]
 }

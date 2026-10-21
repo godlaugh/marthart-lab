@@ -21,7 +21,7 @@ import {importSourceAttractorConfig} from './sourceAttractorConfig';
 import {importSourceAttractorVisualConfig} from './sourceAttractorVisualConfig';
 import {importSourceParticleGradient} from './sourceParticleGradientImport';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
-import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceSurfaceParameterEdge,SOURCE_SURFACE_PARAMETER_EDGE_DEFAULT,type SourceSurfaceParameterResult} from './sourceSurfaceParameterConfig';
+import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT,type SourceRegistryParameterResult} from './sourceRegistryParameterConfig';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
 import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type SourceSurfaceGradientImportFacts} from './sourceSurfaceGradientConfig';
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
@@ -979,7 +979,7 @@ interface OrdinaryTimelineAction {path:string[];method:string;raw:unknown;surfac
 interface OrdinaryTimelineClip {path:string[];originalType:string;type:string;actions:OrdinaryTimelineAction[];surfaceParameterClip?:SourceSurfaceParameterClip;}
 /** Parse structural dispatch once. Geometry selection and queue compilation use
  * the same enabled clips/actions; disabled source clips are never inspected. */
-function surfaceParameterImport<T>(r:Reader,prefix:readonly string[],result:SourceSurfaceParameterResult<{configuration:T;consumedPaths:string[][];numericPaths:string[][];diagnostics:string[]}>):T {
+function surfaceParameterImport<T>(r:Reader,prefix:readonly string[],result:SourceRegistryParameterResult<{configuration:T;consumedPaths:string[][];numericPaths:string[][];diagnostics:string[]}>):T {
  if(!result.ok)return fail(`${pathLabel([...prefix,...result.error.path])} 曲面源参数 ${result.error.kind}: ${result.error.reason}`);
  for(const path of result.value.consumedPaths)r.use([...prefix,...path]);
  for(const path of result.value.numericPaths)r.retainNumberToken([...prefix,...path]);
@@ -987,8 +987,8 @@ function surfaceParameterImport<T>(r:Reader,prefix:readonly string[],result:Sour
  return result.value.configuration;
 }
 function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:OrdinarySourceScalarScope,capturedDensity=false):OrdinaryTimelineClip[] {
- let edgeDefaults:OscillationEdgeEasing={...SOURCE_SURFACE_PARAMETER_EDGE_DEFAULT};
- if(surface&&r.has(['settings','param_edge_easing']))edgeDefaults=surfaceParameterImport(r,['settings','param_edge_easing'],importSourceSurfaceParameterEdge(r.peek(['settings','param_edge_easing'])));
+ let edgeDefaults:OscillationEdgeEasing={...SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT};
+ if(surface&&r.has(['settings','param_edge_easing']))edgeDefaults=surfaceParameterImport(r,['settings','param_edge_easing'],importSourceRegistryParameterEdge(r.peek(['settings','param_edge_easing'])));
  const clips=r.peek(['timeline']);if(clips===undefined)return[];
  if(!Array.isArray(clips)||clips.length>1000)fail('timeline 应为最多 1000 段的数组');
  if(!clips.length)r.use(['timeline']);

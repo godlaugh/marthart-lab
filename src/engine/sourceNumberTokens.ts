@@ -2,7 +2,7 @@ import {SOURCE_SYMMETRY_PROJECT_VISUAL_NUMBER_FIELDS} from './sourceSymmetryProj
 import {SOURCE_SAMILA_APPEARANCE_FIELDS,SOURCE_SAMILA_MATH_FIELDS,SOURCE_SAMILA_PARAMETER_LIMIT} from './sourceSamilaFields';
 import {SAMILA_VIEWPORT_SOURCE_FIELDS} from './samilaViewportImport';
 import {SOURCE_PERLIN_NUMBER_FIELDS,SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
-import {SOURCE_SURFACE_PARAMETER_FIELDS,SOURCE_SURFACE_PARAMETER_EDGE_FIELDS} from './sourceSurfaceParameterConfig';
+import {SOURCE_REGISTRY_PARAMETER_FIELDS,SOURCE_REGISTRY_PARAMETER_EDGE_FIELDS} from './sourceRegistryParameterConfig';
 import {SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS} from './sourceSurfaceGradientConfig';
 import type {SceneDocument} from '../types';
 import {ROOTS_BATCH_SIZE_SOURCE_PATHS,ROOTS_PRESENTATION_INTEGER_PATHS,ROOTS_PRESENTATION_SCALAR_PATHS} from './rootsSourceFields';
@@ -95,13 +95,13 @@ const attractorWarmupFields=new Set(['warmup_steps','warmup_stagger_min','warmup
 const attractorBoundsFields=new Set(['min_x','max_x','min_y','max_y','min_z','max_z']);
 const attractorStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+attractorSettingFields.size+attractorWarmupFields.size+attractorBoundsFields.size;
 const surfaceStaticFields=new Set<string>([...SOURCE_SURFACE_NUMBER_FIELDS,...SOURCE_SURFACE_MESH_NUMBER_FIELDS]);
-const ordinaryStaticMaximum=Math.max(attractorStaticMaximum,3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_MESH_NUMBER_FIELDS.length+SOURCE_SURFACE_PARAMETER_EDGE_FIELDS.length);
+const ordinaryStaticMaximum=Math.max(attractorStaticMaximum,3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+SOURCE_SURFACE_NUMBER_FIELDS.length+SOURCE_SURFACE_MESH_NUMBER_FIELDS.length+SOURCE_REGISTRY_PARAMETER_EDGE_FIELDS.length);
 // Every retained token requires at least one source JSON value node. Clip and
 // action bounds also constrain slots; taking the smaller bound does not grant
 // extra source capacity merely because paths repeat in persisted provenance.
 const ordinaryMaximum=Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length)));
-const surfaceParameterField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_SURFACE_PARAMETER_FIELDS as readonly string[]).includes(raw);
-const surfaceEdgeField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_SURFACE_PARAMETER_EDGE_FIELDS as readonly string[]).includes(raw);
+const surfaceParameterField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_REGISTRY_PARAMETER_FIELDS as readonly string[]).includes(raw);
+const surfaceEdgeField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_REGISTRY_PARAMETER_EDGE_FIELDS as readonly string[]).includes(raw);
 const surfaceParameterName=(raw:unknown)=>typeof raw==='string'&&raw.length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
 function surfaceParameterPath(path:readonly unknown[]):boolean {
  if(path.length===3&&path[0]==='settings'&&path[1]==='param_edge_easing'&&surfaceEdgeField(path[2]))return true;

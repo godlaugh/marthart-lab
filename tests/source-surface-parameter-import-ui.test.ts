@@ -3,7 +3,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {serializeScene,parseScene} from '../src/engine/document';
-import {SOURCE_SURFACE_PARAMETER_MODEL as model,SOURCE_SURFACE_PARAMETER_DEFAULT} from '../src/engine/sourceSurfaceParameterConfig';
+import {SOURCE_SURFACE_PARAMETER_MODEL as model,SOURCE_SURFACE_PARAMETER_DEFAULT} from '../src/engine/sourceRegistryParameterConfig';
 import {SurfaceParameterActionsEditor,SurfaceParameterClipEditor} from '../src/components/Timeline';
 import {I18nProvider} from '../src/i18n';
 import {parseSourceNumberTokens} from '../src/engine/sourceNumberTokens';

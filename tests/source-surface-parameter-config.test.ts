@@ -1,8 +1,8 @@
 import {describe,it,expect} from 'vitest';
-import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceSurfaceParameterEdge,parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip,SOURCE_SURFACE_PARAMETER_DEFAULT,SOURCE_SURFACE_PARAMETER_MODEL as model,type SourceSurfaceParameterResult} from '../src/engine/sourceSurfaceParameterConfig';
+import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip,SOURCE_SURFACE_PARAMETER_DEFAULT,SOURCE_SURFACE_PARAMETER_MODEL as model,type SourceRegistryParameterResult} from '../src/engine/sourceRegistryParameterConfig';
 import {prepareOrdinarySourceScalarScope} from '../src/engine/ordinarySourceCameraImport';
 import {prepareRootsSourceMemberOrder} from '../src/engine/rootsSourceOrder';
-const take=<T>(result:SourceSurfaceParameterResult<T>):T=>{if(!result.ok)throw Error(JSON.stringify(result.error));return result.value;};
+const take=<T>(result:SourceRegistryParameterResult<T>):T=>{if(!result.ok)throw Error(JSON.stringify(result.error));return result.value;};
 const prepared=prepareOrdinarySourceScalarScope('surface',{parameters:{a:2},memberOrder:['a']});if(!prepared.ok)throw Error('scope');const scope=prepared.value;
 function options(raw:unknown){return {scope,memberOrder:(path:readonly string[])=>{let value:unknown=raw;for(const part of path)value=(value as Record<string,unknown>)[part];const order=prepareRootsSourceMemberOrder(Object.keys(value as object));if(!order.ok)throw Error('order');return order.value.keys;}};}
 const action=(args:unknown,method:'paramStart'|'paramStop'='paramStart')=>take(importSourceSurfaceParameterAction(method,args,options(args)));
@@ -28,8 +28,8 @@ describe('source Surface parameter import boundary and persisted contracts',()=>
  it('inherits named edge defaults with exact source names and retains raw out-of-range doubles',()=>{
   const raw={edgeEasing:{window:'0x1p-2',floor:-2,easing:'LINEAR'},parameters:{a:{edgeEasing:{floor:2,easing:'unknown'}}}};
   const facts=action(raw);expect(facts.configuration[0].configuration!.edgeEasing).toEqual({window:.25,floor:2,easing:'linear'});
-  expect(take(importSourceSurfaceParameterEdge({window:'bad',floor:'0.125',easing:'sine_out'})).configuration).toEqual({window:.5,floor:.125,easing:'sine-out'});
-  expect(importSourceSurfaceParameterEdge({window:'NaN'})).toMatchObject({ok:false,error:{kind:'nonfinite'}});
+  expect(take(importSourceRegistryParameterEdge({window:'bad',floor:'0.125',easing:'sine_out'})).configuration).toEqual({window:.5,floor:.125,easing:'sine-out'});
+  expect(importSourceRegistryParameterEdge({window:'NaN'})).toMatchObject({ok:false,error:{kind:'nonfinite'}});
  });
  it('does not read named stop numeric/edge fields but still reads its action-level edge',()=>{
   const raw={parameters:{a:{min:null,step:{bad:true},edgeEasing:null}}};expect(action(raw,'paramStop').configuration).toEqual([{model,scope:{kind:'named',name:'a'}}]);
