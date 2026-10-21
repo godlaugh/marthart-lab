@@ -8,10 +8,18 @@ import {hasSymmetryCustom} from './symmetryCustom';
  * is GPU-only; it does not claim native RNG, texture layout or pixel parity.
  */
 export const SOURCE_SYMMETRY_MATH='mathart-1.7.8-gpu-v1' as const;
-export function usesSourceSymmetryMath(scene:Pick<SceneDocument,'kind'|'settings'|'equations'>):boolean {
+/** Mobject color uniforms, shared by built-in and custom calculate_next kernels.
+ * Constructor/splatParticles hardcode these; BaseConfig colorSpeed is unused. */
+export const SOURCE_SYMMETRY_GPU_DORMANT_COLOR=['iteratedColor','colorSpeed','colorPhase','stepMetricMin','stepMetricMax','stepMetricNormalize'] as const;
+export const SOURCE_SYMMETRY_GPU_COLOR=Object.freeze({metricMin:0,metricMax:2,metricMode:'robust' as const,color:'step',colorSpeed:1,colorPhase:0});
+export function usesSourceSymmetryGpu(scene:Pick<SceneDocument,'kind'|'settings'>):boolean {
  const model=scene.settings.symmetryMathModel;
  if(model===undefined||model==='legacy-v1')return false;
  if(model!==SOURCE_SYMMETRY_MATH||scene.kind!=='symmetry')throw new Error('未知源 Symmetry 数学模型');
+ return true;
+}
+export function usesSourceSymmetryMath(scene:Pick<SceneDocument,'kind'|'settings'|'equations'>):boolean {
+ if(!usesSourceSymmetryGpu(scene))return false;
  // Explicit custom source owns its own kernel; retain the built-in selection
  // so clearing that source restores the same authored built-in contract.
  return !hasSymmetryCustom(scene);

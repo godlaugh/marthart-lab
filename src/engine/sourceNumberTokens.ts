@@ -1,3 +1,4 @@
+import {SOURCE_SYMMETRY_PROJECT_VISUAL_NUMBER_FIELDS} from './sourceSymmetryProjectVisual';
 import {SOURCE_SAMILA_APPEARANCE_FIELDS,SOURCE_SAMILA_MATH_FIELDS,SOURCE_SAMILA_PARAMETER_LIMIT} from './sourceSamilaFields';
 import {SAMILA_VIEWPORT_SOURCE_FIELDS} from './samilaViewportImport';
 import {SOURCE_PERLIN_NUMBER_FIELDS,SOURCE_PERLIN_PARAMETER_NAMES} from './sourcePerlinFields';
@@ -118,7 +119,7 @@ function perlinParameterPath(path:readonly unknown[]):boolean {
  const tail=path.slice(path[5]==='0'?6:5);
  return tail.length===3&&tail[0]==='parameters'&&typeof tail[1]==='string'&&(SOURCE_PERLIN_PARAMETER_NAMES as readonly string[]).includes(tail[1])&&['step','min','max'].includes(String(tail[2]));
 }
-const symmetrySettingFields=new Set(['batch_size','iterations_per_frame','burn_in_steps','x0_min','x0_max','y0_min','y0_max']);
+const symmetrySettingFields=new Set([...SOURCE_SYMMETRY_PROJECT_VISUAL_NUMBER_FIELDS,'batch_size','iterations_per_frame','burn_in_steps','x0_min','x0_max','y0_min','y0_max']);
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
  if(family==='symmetry'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&symmetrySettingFields.has(path[1]))return true;
  if(family==='perlin'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&perlinFields.has(path[1])||perlinParameterPath(path)))return true;

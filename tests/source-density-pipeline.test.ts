@@ -23,9 +23,10 @@ describe('Map/Symmetry captured camera through import, timeline and public gener
   const restored=parseScene(serializeScene(scene));expect(restored.sourceCamera).toEqual(scene.sourceCamera);expect(restored.evaluatedSourceCamera).toBeUndefined();
   expect(restored.settings.iteratedCameraModel).toBe('captured-density-v1');
  });
- it('uses the source Symmetry scale defaults only for new captured imports',()=>{
+ it('distinguishes project reset scales from direct runtime-config scales',()=>{
   const raw=source('symmetry');delete (raw.settings as Partial<typeof raw.settings>).scale_x;delete (raw.settings as Partial<typeof raw.settings>).scale_y;delete (raw.settings as Partial<typeof raw.settings>).scale_z;
-  expect(parseProjectFile(JSON.stringify(raw)).scene.settings).toMatchObject({scaleX:100,scaleY:100,scaleZ:0});
+  expect(parseProjectFile(JSON.stringify(raw)).scene.settings).toMatchObject({scaleX:35,scaleY:35,scaleZ:35});
+  expect(parseLegacyScene(JSON.stringify(raw)).scene.settings).toMatchObject({scaleX:100,scaleY:100,scaleZ:0});
   expect(parseLegacyScene(JSON.stringify(raw),{iteratedCamera:'legacy-v1'}).scene.settings.scaleX).not.toBe(100);
  });
  it('uses empty source expression scope and ignores unsupported camera arguments without interpreting them',()=>{

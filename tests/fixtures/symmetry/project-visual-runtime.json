@@ -1,0 +1,1859 @@
+{
+  "identity": {
+    "scope": "Original headless ProjectState.fromJson/toJson and config/Mobject constructors via unchanged existing JNI harness. No GUI, graphics initialization, application entry point, network, or persistent application state. Each successful case also checks a parameter-only edit stage; no test reimplementation provides expected exported settings.",
+    "sourceHarnessPath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/source-symmetry-project-import/oracle.c",
+    "harnessSha256": "b481bcf6260b35aa024c0d94e5fcc0d148edfa9178bbf7944fff82002f038de6",
+    "binarySha256": "b0350ea615fffe29447ac5d7766803a7a2887c6203e4b010661610da0bc640c5",
+    "jvm": {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home/lib/server/libjvm.dylib",
+      "sha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee"
+    },
+    "sources": [
+      {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+        "sha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+      },
+      {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/core-4.5.0-acdf3bce2932985b9d091c284407a54.jar",
+        "sha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a"
+      },
+      {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/core-common-2.2.0-2212d240dfe1e8a7598ee117ccc316d.jar",
+        "sha256": "e3b45846e588c02815c128bcf54a0aff96bbf298942475a8de5ac36147e17cdd"
+      },
+      {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/kotlin-stdlib-2.3.20-17212d4ae1611e51ce4c3c4ba28717fa.jar",
+        "sha256": "178a89ecf130fb03c2cda9c3736dbe1362645e4701ac1ad678706a7e7a539237"
+      },
+      {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/kotlin-stdlib-jdk7-1.9.24-36ceb164e825dcfd5d1c5c25482bec8.jar",
+        "sha256": "43eb03a357225662dcc4583d999ca29909dda68c7a285fad260f30f03e8fd4d3"
+      },
+      {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/kotlin-stdlib-jdk8-1.9.24-592f5e22e994e5dd4f3868f13bcf74d8.jar",
+        "sha256": "0f14d4e90b6c3f7d399971ff756522cd97224454595143fec0e4b80a2cc023da"
+      },
+      {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/runtime-desktop-1.7.3-7ab98d9506ccb634316b9b9eeecf5b8.jar",
+        "sha256": "3f9a38ebd97fb004850eaad453f0b33ce5790d20f5363b15e7f8b5ae2356eb8d"
+      }
+    ]
+  },
+  "elapsedSeconds": 1.012556792004034,
+  "cases": [
+    {
+      "id": "settings-absent",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 262144,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "settings-empty",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "common-numbers",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": 0.6272727251052856,
+          "contrast": 1.128889799118042,
+          "gamma": 1.3978304862976074,
+          "dynamic_range": 0.1,
+          "saturation": 1,
+          "scale_x": 185,
+          "scale_y": 185,
+          "scale_z": 0,
+          "accumulation_decay": 0.995
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 0,
+        "scale_y": 185,
+        "batch_size": 8,
+        "scale_x": 185,
+        "accumulation_decay": 0.9950000047683716,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.10000000149011612,
+        "show_trails": true,
+        "saturation": 1,
+        "iterations_per_frame": 1,
+        "brightness": 0.6272727251052856,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1.128889799118042,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 1.3978304862976074,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "common-decimal-text",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": ".6272727251052856",
+          "contrast": "1.128889799118042",
+          "gamma": "1.3978304862976074",
+          "dynamic_range": ".1",
+          "saturation": "1",
+          "scale_x": "185",
+          "scale_y": "185",
+          "scale_z": "0",
+          "accumulation_decay": ".995"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 0,
+        "scale_y": 185,
+        "batch_size": 8,
+        "scale_x": 185,
+        "accumulation_decay": 0.9950000047683716,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.10000000149011612,
+        "show_trails": true,
+        "saturation": 1,
+        "iterations_per_frame": 1,
+        "brightness": 0.6272727251052856,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1.128889799118042,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 1.3978304862976074,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "float32-rounding",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": 0.300000019,
+          "contrast": 1.000000059,
+          "gamma": 2.20000007,
+          "dynamic_range": 0.200000009,
+          "saturation": 0.80000002,
+          "scale_x": 35.000001,
+          "scale_y": 35.000002,
+          "scale_z": 1e-42,
+          "accumulation_decay": 0.99999999
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 1.0005271035279194e-42,
+        "scale_y": 35.000003814697266,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "hex-double-text",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": "0x1.4p-2",
+          "contrast": "0x1.8p0",
+          "gamma": "0x1.4p1",
+          "dynamic_range": "0x1.8p-2",
+          "saturation": "0x1p-1",
+          "scale_x": "0x1.18p5",
+          "scale_y": "-0x1p1",
+          "scale_z": "0x0p0",
+          "accumulation_decay": "0x1.f8p-1"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 0,
+        "scale_y": -2,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 0.984375,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.375,
+        "show_trails": true,
+        "saturation": 0.5,
+        "iterations_per_frame": 1,
+        "brightness": 0.3125,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1.5,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.5,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "trimmed-suffixed-text",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": " \t+0.5D\n",
+          "contrast": " \t+0.5D\n",
+          "gamma": " \t+0.5D\n",
+          "dynamic_range": " \t+0.5D\n",
+          "saturation": " \t+0.5D\n",
+          "scale_x": " \t+0.5D\n",
+          "scale_y": " \t+0.5D\n",
+          "scale_z": " \t+0.5D\n",
+          "accumulation_decay": " \t+0.5D\n"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 0.5,
+        "scale_y": 0.5,
+        "batch_size": 8,
+        "scale_x": 0.5,
+        "accumulation_decay": 0.5,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.5,
+        "show_trails": true,
+        "saturation": 0.5,
+        "iterations_per_frame": 1,
+        "brightness": 0.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 0.5,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 0.5,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "fallback-expression",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": "1+2",
+          "contrast": "1+2",
+          "gamma": "1+2",
+          "dynamic_range": "1+2",
+          "saturation": "1+2",
+          "scale_x": "1+2",
+          "scale_y": "1+2",
+          "scale_z": "1+2",
+          "accumulation_decay": "1+2"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "fallback-invalid-text",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": "bad",
+          "contrast": "bad",
+          "gamma": "bad",
+          "dynamic_range": "bad",
+          "saturation": "bad",
+          "scale_x": "bad",
+          "scale_y": "bad",
+          "scale_z": "bad",
+          "accumulation_decay": "bad"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "fallback-boolean-true",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": true,
+          "contrast": true,
+          "gamma": true,
+          "dynamic_range": true,
+          "saturation": true,
+          "scale_x": true,
+          "scale_y": true,
+          "scale_z": true,
+          "accumulation_decay": true
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "fallback-boolean-false",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": false,
+          "contrast": false,
+          "gamma": false,
+          "dynamic_range": false,
+          "saturation": false,
+          "scale_x": false,
+          "scale_y": false,
+          "scale_z": false,
+          "accumulation_decay": false
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "fallback-null",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": null,
+          "contrast": null,
+          "gamma": null,
+          "dynamic_range": null,
+          "saturation": null,
+          "scale_x": null,
+          "scale_y": null,
+          "scale_z": null,
+          "accumulation_decay": null
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "fallback-object",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": {
+            "x": 1
+          },
+          "contrast": {
+            "x": 1
+          },
+          "gamma": {
+            "x": 1
+          },
+          "dynamic_range": {
+            "x": 1
+          },
+          "saturation": {
+            "x": 1
+          },
+          "scale_x": {
+            "x": 1
+          },
+          "scale_y": {
+            "x": 1
+          },
+          "scale_z": {
+            "x": 1
+          },
+          "accumulation_decay": {
+            "x": 1
+          }
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "fallback-array",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": [
+            1
+          ],
+          "contrast": [
+            1
+          ],
+          "gamma": [
+            1
+          ],
+          "dynamic_range": [
+            1
+          ],
+          "saturation": [
+            1
+          ],
+          "scale_x": [
+            1
+          ],
+          "scale_y": [
+            1
+          ],
+          "scale_z": [
+            1
+          ],
+          "accumulation_decay": [
+            1
+          ]
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "finite-below-lower",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": -99,
+          "contrast": -99,
+          "gamma": -99,
+          "dynamic_range": -99,
+          "saturation": -99,
+          "accumulation_decay": -2,
+          "scale_x": -4,
+          "scale_y": 0,
+          "scale_z": -0.0
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 0,
+        "scale_y": 0,
+        "batch_size": 8,
+        "scale_x": -4,
+        "accumulation_decay": -2,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.10000000149011612,
+        "show_trails": true,
+        "saturation": 0,
+        "iterations_per_frame": 1,
+        "brightness": -0.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 0.10000000149011612,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 0.10000000149011612,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "finite-above-upper",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": 99,
+          "contrast": 99,
+          "gamma": 99,
+          "dynamic_range": 99,
+          "saturation": 99,
+          "accumulation_decay": 2,
+          "scale_x": 10000,
+          "scale_y": 1e+20,
+          "scale_z": 1e-40
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 9.99994610111476e-41,
+        "scale_y": 1.0000000200408773e+20,
+        "batch_size": 8,
+        "scale_x": 10000,
+        "accumulation_decay": 2,
+        "burn_in_steps": 100,
+        "dynamic_range": 1,
+        "show_trails": true,
+        "saturation": 1,
+        "iterations_per_frame": 1,
+        "brightness": 1.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 2,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 10,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "exact-clamp-lower",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": -0.5,
+          "contrast": 0.1,
+          "gamma": 0.1,
+          "dynamic_range": 0.1,
+          "saturation": 0
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.10000000149011612,
+        "show_trails": true,
+        "saturation": 0,
+        "iterations_per_frame": 1,
+        "brightness": -0.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 0.10000000149011612,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 0.10000000149011612,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "exact-clamp-upper",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": 1.5,
+          "contrast": 2,
+          "gamma": 10,
+          "dynamic_range": 1,
+          "saturation": 1
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 1,
+        "show_trails": true,
+        "saturation": 1,
+        "iterations_per_frame": 1,
+        "brightness": 1.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 2,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 10,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "text-positive-infinity-tone",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": "Infinity",
+          "contrast": "Infinity",
+          "gamma": "Infinity",
+          "dynamic_range": "Infinity",
+          "saturation": "Infinity"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 1,
+        "show_trails": true,
+        "saturation": 1,
+        "iterations_per_frame": 1,
+        "brightness": 1.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 2,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 10,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "text-negative-infinity-tone",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": "-Infinity",
+          "contrast": "-Infinity",
+          "gamma": "-Infinity",
+          "dynamic_range": "-Infinity",
+          "saturation": "-Infinity"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.10000000149011612,
+        "show_trails": true,
+        "saturation": 0,
+        "iterations_per_frame": 1,
+        "brightness": -0.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 0.10000000149011612,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 0.10000000149011612,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "text-overflow-tone",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": "1e309",
+          "contrast": "1e309",
+          "gamma": "1e309",
+          "dynamic_range": "1e309",
+          "saturation": "1e309"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 1,
+        "show_trails": true,
+        "saturation": 1,
+        "iterations_per_frame": 1,
+        "brightness": 1.5,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 2,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 10,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "signed-zero",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "brightness": -0.0,
+          "contrast": -0.0,
+          "gamma": -0.0,
+          "dynamic_range": -0.0,
+          "saturation": -0.0,
+          "scale_x": -0.0,
+          "scale_y": -0.0,
+          "scale_z": -0.0,
+          "accumulation_decay": -0.0
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 0,
+        "scale_y": 0,
+        "batch_size": 8,
+        "scale_x": 0,
+        "accumulation_decay": 0,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.10000000149011612,
+        "show_trails": true,
+        "saturation": 0,
+        "iterations_per_frame": 1,
+        "brightness": 0,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 0.10000000149011612,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 0.10000000149011612,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "ignored-symmetry-color-fields",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "step_metric_min": {
+            "bad": true
+          },
+          "step_metric_max": "NaN",
+          "step_metric_normalize_mode": [
+            "bad"
+          ],
+          "color_speed": "1+2",
+          "color_phase": null
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-common",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": -35.125,
+          "offset_y": 70.5,
+          "offset_z": 0.001,
+          "dot_size": 1.9
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": -35.125,
+        "dot_size": 1.899999976158142,
+        "offset_y": 70.5,
+        "gamma": 2.200000047683716,
+        "offset_z": 0.0010000000474974513
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-text",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": "-0x1p5",
+          "offset_y": " 35.125D ",
+          "offset_z": "1e-42",
+          "dot_size": "0x1.8p0"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": -32,
+        "dot_size": 1.5,
+        "offset_y": 35.125,
+        "gamma": 2.200000047683716,
+        "offset_z": 1.0005271035279194e-42
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-zero-negative",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": -0.0,
+          "offset_y": 0,
+          "offset_z": -100000,
+          "dot_size": -2
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": -2,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": -100000
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-zero-size",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "dot_size": 0
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 0,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-large-size",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "dot_size": 100000
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 100000,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-fallback-expression",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": "1+2",
+          "offset_y": "1+2",
+          "offset_z": "1+2",
+          "dot_size": "1+2"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-fallback-invalid-text",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": "bad",
+          "offset_y": "bad",
+          "offset_z": "bad",
+          "dot_size": "bad"
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-fallback-boolean",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": true,
+          "offset_y": true,
+          "offset_z": true,
+          "dot_size": true
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-fallback-null",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": null,
+          "offset_y": null,
+          "offset_z": null,
+          "dot_size": null
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-fallback-object",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": {},
+          "offset_y": {},
+          "offset_z": {},
+          "dot_size": {}
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    },
+    {
+      "id": "offset-dot-fallback-array",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "lambda": 2,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 8,
+          "offset_x": [],
+          "offset_y": [],
+          "offset_z": [],
+          "dot_size": []
+        }
+      },
+      "exportedSettings": {
+        "scale_z": 35,
+        "scale_y": 35,
+        "batch_size": 8,
+        "scale_x": 35,
+        "accumulation_decay": 1,
+        "burn_in_steps": 100,
+        "dynamic_range": 0.20000000298023224,
+        "show_trails": true,
+        "saturation": 0.800000011920929,
+        "iterations_per_frame": 1,
+        "brightness": 0.30000001192092896,
+        "background_color": "#000000",
+        "trail_lifetime": 4,
+        "render_mode": "GPU",
+        "contrast": 1,
+        "line_weight": 0.6800000071525574,
+        "offset_x": 0,
+        "dot_size": 1.5,
+        "offset_y": 0,
+        "gamma": 2.200000047683716,
+        "offset_z": 0
+      },
+      "parameterEditPreservesSettings": true
+    }
+  ],
+  "separateFailures": [
+    {
+      "id": "separate-gamma-nan",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "gamma": "NaN"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16355937503976747,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2188)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-accumulation_decay-nan",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "accumulation_decay": "NaN"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16615404101321474,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2185)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-scale_x-nan",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "scale_x": "NaN"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16289370803860947,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2191)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-accumulation_decay-infinity",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "accumulation_decay": "Infinity"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16276516701327637,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2185)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-scale_x-infinity",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "scale_x": "Infinity"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16213391697965562,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2191)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-offset_x-nan",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "offset_x": "NaN"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16223008395172656,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2194)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-dot_size-nan",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "dot_size": "NaN"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16110450000269338,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2285)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-offset_z-infinity",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "offset_z": "Infinity"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16431124997325242,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2196)\n",
+      "cases": null
+    },
+    {
+      "id": "separate-dot_size-infinity",
+      "input": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 8,
+          "dot_size": "Infinity"
+        }
+      },
+      "status": "failed",
+      "exitCode": 2,
+      "elapsedSeconds": 0.16493437497410923,
+      "stderr": "JVM library loaded\nJVM created\nfailed: ProjectState.toJson\nException in thread \"main\" java.lang.RuntimeException: JSON does not allow non-finite numbers.\n\tat processing.data.JSONObject.testValidity(JSONObject.java:1590)\n\tat processing.data.JSONObject.put(JSONObject.java:1379)\n\tat processing.data.JSONObject.setFloat(JSONObject.java:1264)\n\tat mathart.ui.state.ProjectState.toJson(ProjectState.kt:2285)\n",
+      "cases": null
+    }
+  ]
+}
