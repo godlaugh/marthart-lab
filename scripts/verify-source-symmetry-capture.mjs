@@ -9,14 +9,14 @@ const report={status:'running',originalWindowExecuted:false,sourceBefore:await s
 try{
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage();await page.route('**/probe',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'probe');
  report.result=await page.evaluate(async()=>{
-  const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{SourceSymmetrySession}=await import('/src/engine/sourceSymmetrySession.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{Generator}=await import('/src/engine/client.ts');
+  const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{SourceIteratedSession}=await import('/src/engine/sourceIteratedSession.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{Generator}=await import('/src/engine/client.ts');
   const {enhanceSourcePausedImage}=await import('/src/engine/sourcePausedImage.ts');
   const assert=(v,m)=>{if(!v)throw Error(m);},equal=(a,b)=>a.length===b.length&&a.every((v,i)=>Object.is(v,b[i])),rejects=fn=>{let error;try{fn();}catch(e){error=e;}assert(error,'Expected rejection');return String(error);};
   const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Capture',parameters:{gain:.001},settings:{batch_size:32,burn_in_steps:4,scale_x:1,scale_y:1,scale_z:1},palette:['#ffffff','#ed6538'],equation:{glsl:'uniform float gain;void calculate_next(in vec3 p,out vec3 n,out float m){n=p+vec3(gain,0.,0.);m=gain;}'},timeline:[{type:'wait',duration:.1}]})).scene;
   const c={time:0,quality:'preview',width:96,height:64,sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,48,32,'primary',32),sourceSymmetryToneReference:{width:96,height:64},symmetryLive:{sessionId:'capture',renderFps:60,replayRevision:0,startAt:0,clock:{paused:true,timestampMs:1000}}};
   const rows=[];
   for(const replay of [false,true])for(const resize of [false,true]){
-   const owner=new SourceSymmetrySession();
+   const owner=new SourceIteratedSession('symmetry');
    try{
     let current={...c,symmetryLive:structuredClone(c.symmetryLive)},initial=owner.generate(scene,current);
     if(replay){current={...current,symmetryLive:{...current.symmetryLive,replayRevision:1}};initial=owner.generate(scene,current);assert(initial.symmetryLive.display.replayActive,'Replay setup');}
@@ -41,10 +41,10 @@ try{
     rows.push({replay,resize,before:initial.symmetryLive,capture:capture.symmetryLive,preview:preview.symmetryLive,tooLarge});
    }finally{owner.reset();assert(owner.diagnostics().retainedBytes===0,'Leaked resources');}
   }
-  const isolated=new SourceSymmetrySession();
+  const isolated=new SourceIteratedSession('symmetry');
   try{const input={...c,sourceSymmetryToneReference:{...c.sourceSymmetryToneReference}};isolated.generate(scene,input);input.sourceSymmetryToneReference.width=13;const captured=isolated.capturePaused(scene,c);assert(captured.preview.sourceSymmetryPresentation.reference.width===96,'Caller mutation changed retained primary reference');}finally{isolated.reset();}
   // Actual Worker capability, pause transition, postprocessing and retry.
-  const g=new Generator(),expectedOwner=new SourceSymmetrySession();
+  const g=new Generator(),expectedOwner=new SourceIteratedSession('symmetry');
   try{
    const running={...c,symmetryLive:{...c.symmetryLive,clock:{paused:false,timestampMs:1000}}};
    let output=await g.generate(scene,running);expectedOwner.generate(scene,running);

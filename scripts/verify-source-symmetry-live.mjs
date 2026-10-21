@@ -9,13 +9,13 @@ const report={status:'running',nativeWindowExecuted:false,sourceBefore:await sna
 try{
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage(),url=server.resolvedUrls.local[0];await page.route(url,r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(url);
  report.result=await page.evaluate(async()=>{
-  const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{SourceSymmetrySession}=await import('/src/engine/sourceSymmetrySession.ts'),{prepareIteratedFrame,IteratedDensitySession}=await import('/src/scenes/iteratedDensity.ts');
+  const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{SourceIteratedSession}=await import('/src/engine/sourceIteratedSession.ts'),{prepareIteratedFrame,IteratedDensitySession}=await import('/src/scenes/iteratedDensity.ts');
   const {iteratedInitialChunk}=await import('/src/engine/iteratedSeed.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{Generator}=await import('/src/engine/client.ts'),{TemporalGenerationSession,generateScene}=await import('/src/engine/temporal.ts'),{GenerationQueue}=await import('/src/engine/generationQueue.ts');
   const assert=(v,m)=>{if(!v)throw Error(m);},F=Math.fround,equal=(a,b)=>a.length===b.length&&a.every((v,i)=>Object.is(v,b[i]));
   const make=()=>{const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Live owner',parameters:{gain:.00001},settings:{batch_size:4,burn_in_steps:3,scale_x:1,scale_y:1,scale_z:1},palette:['#ffffff','#ffffff'],equation:{glsl:'uniform float gain;void calculate_next(in vec3 p,out vec3 n,out float m){n=p+vec3(gain,0.,0.);m=gain;}'},timeline:[{type:'animate',duration:0,easing:'LINEAR',actions:[{method:'paramStart',args:{parameters:{gain:{min:0,max:.001,step:1e-7,edgeEasing:{floor:1}}}}}]},{type:'wait',duration:.15}]})).scene;scene.timeline.fps=10;scene.timeline.duration=1;return scene;};
   let scene=make();
   const context=(paused,timestampMs,revision=0,width=48,height=32)=>({time:0,quality:'preview',width,height,sourceViewport:ordinarySourceViewport(scene,width,height,'primary',height),sourceSymmetryToneReference:{width:48,height:32},symmetryLive:{sessionId:'live-owner',renderFps:60,replayRevision:revision,clock:{paused,timestampMs}}});
-  const owner=new SourceSymmetrySession(),rows=[];let expected=iteratedInitialChunk(prepareIteratedFrame(scene,0,0).config,0,4),warm=false;
+  const owner=new SourceIteratedSession('symmetry'),rows=[];let expected=iteratedInitialChunk(prepareIteratedFrame(scene,0,0).config,0,4),warm=false;
   const advance=(gain,n)=>{for(let k=0;k<n;k++)for(let i=0;i<expected.length;i+=4){expected[i]=F(expected[i]+F(gain));expected[i+3]=F(gain);}};
   try{
    for(const timestampMs of [1000,1100,1250,1400]){
@@ -45,7 +45,7 @@ try{
   }finally{owner.reset();assert(owner.diagnostics().retainedBytes===0,'Live owner cleanup');}
   // Rejected controls/edits leave the accepted owner intact. Cancellation
   // during reconstruction releases the partial GPU lifetime before retry.
-  const guard=new SourceSymmetrySession();scene=make();
+  const guard=new SourceIteratedSession('symmetry');scene=make();
   try{
    guard.generate(scene,context(false,1000));const before=guard.diagnostics();
    const rejects=fn=>{let rejected=false;try{fn();}catch{rejected=true;}assert(rejected,'Invalid live operation accepted');};

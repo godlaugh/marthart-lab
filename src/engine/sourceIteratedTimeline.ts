@@ -101,6 +101,14 @@ export class SourceIteratedTimelineSession {
  /** A local seek reconstructs a fresh fixed trajectory before entering live
   * mode; it is not an operation advertised by the original native scene. */
  reconstruct(time:number){return this.run(()=>this.session.reconstruct(time));}
+ /** Native updateRuntimeSettings compares against current animated values,
+  * writes both fields, and requests replay only beyond the Float32 threshold. */
+ writeMapColors(colors:SourceMapRuntimeColors){
+  if(!this.mapColors)throw Error('仅 Map 队列支持热着色设置');
+  const next=sourceMapRuntimeColors({...colors}),before=this.mapColors;
+  const replay=Math.abs(Math.fround(before.colorSpeed-next.colorSpeed))>Math.fround(1e-6)||Math.abs(Math.fround(before.colorPhase-next.colorPhase))>Math.fround(1e-6);
+  this.mapColors=next;return replay;
+ }
  writeAngles(angles:Parameters<OrdinarySourceCameraTimelineSession['writeAngles']>[0]){this.session.writeAngles(angles);}
  reset(){this.session.reset();this.palette=undefined;this.parameters=undefined;this.mapColors=undefined;this.index=-1;this.updatedFrame=-1;this.calls=[];this.work=0;this.acknowledgeParameters=true;}
 }

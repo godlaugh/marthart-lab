@@ -1,7 +1,7 @@
 import {usesSourceMapPresentation} from './engine/sourceMapPresentation';
 import {editSourceMapScene} from './engine/sourceMapScene';
 import {sourceLivePreviewKind} from './engine/sourceLivePreview';
-import {sourceSymmetryApplyIdentity,sourceSymmetryReplayIdentity,SOURCE_SYMMETRY_REPLAY_SETTINGS} from './engine/sourceSymmetryIdentity';
+import {sourceIteratedApplyIdentity,sourceIteratedReplayIdentity,SOURCE_ITERATED_REPLAY_SETTINGS} from './engine/sourceIteratedLiveIdentity';
 import {usesSourceSymmetryPresentation} from './engine/sourceSymmetryPresentation';
 import {editSourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import {sourceSamilaApplyIdentity} from './engine/sourceSamilaIdentity';
@@ -298,9 +298,9 @@ export default function App() {
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     if(sourceLivePreviewKind(current)!=='symmetry'&&sourceLivePreviewKind(next)==='symmetry'){replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);}
     if(sourceLivePreviewKind(current)==='symmetry'&&sourceLivePreviewKind(next)==='symmetry'){
-      if(sourceSymmetryApplyIdentity(current)!==sourceSymmetryApplyIdentity(next)){
+      if(sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)){
         replaceLiveSession();playbackClock.current=0;timeRef.current=0;setTime(0);
-      }else if(intent==='symmetry-replay'||sourceSymmetryReplayIdentity(current)!==sourceSymmetryReplayIdentity(next))symmetryReplayRevision.current++;
+      }else if(intent==='symmetry-replay'||sourceIteratedReplayIdentity(current)!==sourceIteratedReplayIdentity(next))symmetryReplayRevision.current++;
     }
 
     if(usesSourceBouncing(next)){
@@ -386,7 +386,7 @@ export default function App() {
       const settings=scene.kind==='samila'&&key==='samilaHistoryModel'
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
-      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,sourceLivePreviewKind(scene)==='symmetry'&&SOURCE_SYMMETRY_REPLAY_SETTINGS.some(value=>value===key)?'symmetry-replay':undefined);
+      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,sourceLivePreviewKind(scene)==='symmetry'&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'symmetry-replay':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {

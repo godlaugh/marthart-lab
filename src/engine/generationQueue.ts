@@ -1,4 +1,4 @@
-import {sourceSymmetrySceneIdentity} from './sourceSymmetryIdentity';
+import {sourceIteratedSceneIdentity} from './sourceIteratedLiveIdentity';
 import {sourceSamilaSceneIdentity} from './sourceSamilaIdentity';
 import {snapshotGenerationInput} from './generationInput';
 import {retainsIteratedCompiler} from './iteratedIdentity';
@@ -37,7 +37,7 @@ function metadataContext(context:Context):Context {
 }
 type LiveKey='samilaLive'|'symmetryLive';
 const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
-const liveIdentity=(request:Request)=>liveKey(request)==='symmetryLive'?sourceSymmetrySceneIdentity(request.scene):sourceSamilaSceneIdentity(request.scene);
+const liveIdentity=(request:Request)=>liveKey(request)==='symmetryLive'?sourceIteratedSceneIdentity(request.scene):sourceSamilaSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:PerlinRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.

@@ -414,7 +414,8 @@ export interface RasterOutput {
   /** Delivered raw-ink lookup facts at this image's request time; never authored. */
   samilaView?:PreparedSamilaView;
   /** Live display ownership, separate from cold fixed-frame replay. */
-  symmetryLive?:import('./engine/sourceSymmetrySession').SourceSymmetryLiveFacts;
+  mapLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveFacts;
+  symmetryLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveFacts;
   samilaLive?:{sessionId:string;target:'primary'|'offscreen';displayIndex:number;accumulationPasses:number;anchorTheta:number;parameterChanged:boolean;cleared:boolean;clock:'fixed-source-queue'|'realtime-source-queue';runtime?:import('./engine/sourceSamilaSession').SourceSamilaRuntimeFacts};
   symmetryFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
   mapFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
@@ -483,7 +484,8 @@ export interface GenerateContext {
   sourceSymmetryToneReference?:import('./engine/sourceIteratedPresentation').SourceIteratedToneReference;
   /** Explicit runtime instance; omitted requests use cold fixed-frame replay. */
   samilaLive?:import('./engine/sourceSamilaSession').SourceSamilaLiveContext;
-  symmetryLive?:import('./engine/sourceSymmetrySession').SourceSymmetryLiveContext;
+  mapLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveContext;
+  symmetryLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveContext;
   /** Actual primary canvas facts retained for Perlin simulation and export. */
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   /** Actual local logical canvas size, separate from preview sampling pixels.
@@ -502,7 +504,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'symmetryLive'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

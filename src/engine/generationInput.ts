@@ -6,7 +6,7 @@ const fields:{[K in keyof GenerationInput]-?:true}={
  time:true,quality:true,width:true,height:true,
  sourceBouncingFrame:true,sourceBouncingView:true,spirographFrame:true,
  rootsViewport:true,sourceViewport:true,sourcePointPixelDensity:true,
- samilaPrimaryPixelHeight:true,sourceMapToneReference:true,sourceSymmetryToneReference:true,samilaLive:true,symmetryLive:true,sourcePerlinViewport:true,fractalViewport:true,rootsSessionId:true,
+ samilaPrimaryPixelHeight:true,sourceMapToneReference:true,sourceSymmetryToneReference:true,samilaLive:true,mapLive:true,symmetryLive:true,sourcePerlinViewport:true,fractalViewport:true,rootsSessionId:true,
 };
 export function snapshotGenerationInput(context:GenerationInput):GenerationInput {
  const result:Partial<GenerationInput>={};
