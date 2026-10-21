@@ -1248,5 +1248,12 @@
   "gamma 调整复共轭项的强度，并非固定角度的旋转。要旋转画面，请使用相机角度。": "gamma changes the strength of the complex-conjugate term, not a fixed rotation angle. Use the camera angles to rotate the image.",
   "Map 图像来源": "Map image source",
   "当前迭代场景画面尚未完成或已过期，请等待预览完成后重试": "The current iterated scene is unfinished or out of date. Wait for the preview and try again.",
-  "Map 按实际经过时间运行。暂停后的变换和颜色设置会按源规则重播；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。": "Map runs in real time. Transform and color edits while paused replay according to the source rules. Particles and active parameter animations keep updating after the queue ends. Seeking rebuilds each frame; video export recalculates at the selected frame rate."
+  "Map 按实际经过时间运行。暂停后的变换和颜色设置会按源规则重播；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。": "Map runs in real time. Transform and color edits while paused replay according to the source rules. Particles and active parameter animations keep updating after the queue ends. Seeking rebuilds each frame; video export recalculates at the selected frame rate.",
+  "域着色录制": "Domain recording",
+  "域着色图像来源": "Domain image source",
+  "域着色视频模式": "Domain video mode",
+  "应用场景会重新开始动画；暂停时应用仍保持暂停。": "Applying the scene restarts its animation and preserves the paused state.",
+  "保存当前暂停的域着色状态，不推进动画；尺寸只改变导出画面。": "Save the current paused domain state without advancing animation; size changes only the exported image.",
+  "从上次完整应用的域着色场景开始，预热后录到队列结束，保存后继续播放。要将修改作为录制起点，请先点击“应用场景”。": "Record from the last fully applied domain scene, discard warmup, and continue playback after saving. Click Apply scene first to use edits as the recording start.",
+  "域着色按实际经过时间播放；暂停后可拖拽、缩放和修改参数。应用场景或时间跳转会重新开始。队列结束后，已启动的动画仍可继续。": "Domain coloring plays using elapsed time. While paused, drag, zoom or edit parameters. Apply or seeking rebuilds the scene. Active animations may continue after the queue ends."
 }

@@ -164,7 +164,7 @@ import {usesRootsCameraTimeline} from './engine/rootsCameraTimeline';
 import {rootMathControlVisible,usesRootsNativeMath} from './engine/rootsMathConfig';
 import {RecordDialog} from './components/RecordDialog';
 import {I18nProvider,translate,type Language} from './i18n';
-type SceneEditIntent='fractal-hot'|'fractal-apply'|'fractal-stage'|'fractal-metadata'|'iterated-replay'|'iterated-palette'|'iterated-dot-size'|'map-runtime'|'iterated-apply'|'iterated-parameters';
+type SceneEditIntent='domain-apply'|'domain-parameters'|'domain-metadata'|'fractal-hot'|'fractal-apply'|'fractal-stage'|'fractal-metadata'|'iterated-replay'|'iterated-palette'|'iterated-dot-size'|'map-runtime'|'iterated-apply'|'iterated-parameters';
 const icons: Record<SceneKind, typeof Activity> = {
   surface: Layers,
   attractor: Activity,
@@ -307,6 +307,14 @@ export default function App() {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
+    if(nextLive==='domain'){
+      if(currentLive!=='domain'||current.id!==next.id)replaceLiveSession(undefined);
+      if(intent!=='domain-parameters'&&intent!=='domain-metadata'){
+        pendingParameterWrites.current.clear();
+        domainEdit.current={revision:domainEdit.current.revision+1,configuration:structuredClone(next)};
+        liveDisplayRequested.current=true;setGenerationRevision(value=>value+1);
+      }
+    }
     if(nextLive==='fractal'){
       if(currentLive!=='fractal')replaceLiveSession(undefined);
       const sceneChanged=JSON.stringify(current.timeline)!==JSON.stringify(next.timeline)||JSON.stringify(current.formulas)!==JSON.stringify(next.formulas)||current.settings.background!==next.settings.background;
@@ -346,7 +354,7 @@ export default function App() {
       // not advance time while the new host measurement is still pending.
       autoPlayPending.current=autoPlayPending.current||playingRef.current;
       playingRef.current=false;setPlaying(false);
-      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(nextLive==='fractal'?undefined:0);
+      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(nextLive==='fractal'||nextLive==='domain'?undefined:0);
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
       if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
@@ -380,12 +388,13 @@ export default function App() {
   const rootsSessionId=useRef(crypto.randomUUID());
   const liveSessionId=useRef<string>(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
   const fractalEdit=useRef<{revision:number;intent:'hot'|'apply';configuration?:SceneDocument}>({revision:0,intent:'apply'}),fractalActualFps=useRef<number|undefined>(undefined);
+  const domainEdit=useRef<{revision:number;configuration?:SceneDocument}>({revision:0}),domainActualFps=useRef<number|undefined>(undefined);
   const [fractalStaged,setFractalStaged]=useState(false),[fractalFullApplyPending,setFractalFullApplyPending]=useState(false);
   const iteratedReplayRevision=useRef(0),iteratedStartAt=useRef<number|undefined>(scene.fractalSource?undefined:0),mapRuntimeRevision=useRef(0);
   const iteratedLiveFacts=output?.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
   const iteratedReplayPending=!!iteratedLiveFacts&&!error&&!previewCancelled&&outputScene===scene&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true;
   const replayPendingRef=useRef(false);replayPendingRef.current=iteratedReplayPending;
-  function replaceLiveSession(startAt:number|undefined){fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
+  function replaceLiveSession(startAt:number|undefined){domainEdit.current={revision:0};domainActualFps.current=undefined;fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
     if(!sourceLivePreviewKind(sceneRef.current))return;
     playingRef.current=false;setPlaying(false);replaceLiveSession(Math.max(0,timeRef.current));
@@ -405,6 +414,13 @@ export default function App() {
   }
   function editParameter(next:SceneDocument,name:string){
     const current=sceneRef.current,family=sourceLivePreviewKind(current);
+    if(family==='domain'){
+      const previous=pendingParameterWrites.current.get(name),hadPrevious=pendingParameterWrites.current.has(name);
+      pendingParameterWrites.current.set(name,next.parameters[name]);
+      const accepted=edit({...current,parameters:{...current.parameters,[name]:next.parameters[name]}},false,true,'domain-parameters');
+      if(!accepted){if(hadPrevious)pendingParameterWrites.current.set(name,previous!);else pendingParameterWrites.current.delete(name);}
+      return;
+    }
     if(family==='map'||family==='symmetry'){
       // Modified delta_power belongs to the staged template's structural panel.
       if(family==='symmetry'&&next.settings.template==='modified'&&name==='delta_power'){void applyScene(next);return;}
@@ -427,7 +443,7 @@ export default function App() {
     if(draftAfter===null)setIteratedDraft(undefined);
     else if(draftAfter)setIteratedDraft(sourceIteratedDraftFromEditor(next,draftAfter.editor,draftAfter.cameraTexts));
     else cancelApplyCheck();
-    setScene(next,intent??(sourceLivePreviewKind(next)==='fractal'&&!display?'fractal-metadata':undefined));return true;
+    setScene(next,intent??(!display?(sourceLivePreviewKind(next)==='domain'?'domain-metadata':sourceLivePreviewKind(next)==='fractal'?'fractal-metadata':undefined):undefined));return true;
   }
   function editInspector(next:SceneDocument,samilaDirty=false,display=true,intent?:SceneEditIntent){
     const current=sceneRef.current,family=sourceLivePreviewKind(current);
@@ -604,9 +620,9 @@ export default function App() {
       // Stop scheduling immediately; a running display completes before the
       // queue acknowledges pause. Resume starts scheduling only after its ack.
       playingRef.current=false;setPlaying(false);
-      void queue[liveKind==='fractal'?'setFractalPaused':liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
+      void queue[liveKind==='domain'?'setDomainPaused':liveKind==='fractal'?'setFractalPaused':liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
         if(livePlaybackTransition.current!==ticket||liveSessionId.current!==sessionId)return;
-        liveLastFrameAt.current=undefined;fractalActualFps.current=undefined;playingRef.current=value;setPlaying(value);
+        liveLastFrameAt.current=undefined;fractalActualFps.current=undefined;domainActualFps.current=undefined;playingRef.current=value;setPlaying(value);
         if(value)setPickingJulia(false);
       }).catch(error=>{
         if(livePlaybackTransition.current===ticket&&error.name!=='AbortError')setError(error instanceof Error?error.message:String(error));
@@ -744,6 +760,7 @@ export default function App() {
         const last=liveLastFrameAt.current;
         if(!generationPending.current&&!livePlaybackTransition.current&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
           if(sourceLivePreviewKind(sceneRef.current)==='fractal')fractalActualFps.current=last===undefined?undefined:1000/(now-last);
+          if(sourceLivePreviewKind(sceneRef.current)==='domain')domainActualFps.current=last===undefined?undefined:1000/(now-last);
           liveLastFrameAt.current=now;generationPending.current=true;setLiveTickRevision(value=>value+1);
         }
         id=requestAnimationFrame(tick);return;
@@ -780,6 +797,7 @@ export default function App() {
         // can run before React commits the delivered output.
         const live=output.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
         replayPendingRef.current=source===sceneRef.current&&live?.sessionId===liveSessionId.current&&live.display.replayActive===true;
+        if(output.type==='raster'&&output.domainLive?.sessionId===liveSessionId.current&&output.domainLive.revision===domainEdit.current.revision){const {configuration,...acknowledged}=domainEdit.current;domainEdit.current=acknowledged;}
         if(output.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalLive.revision===fractalEdit.current.revision){
           // The acknowledged owner retains this configuration. Later frames
           // carry only its revision; do not clone a complete queue every RAF.
@@ -788,7 +806,7 @@ export default function App() {
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
-        if(output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.fractalLive||live)){
+        if(output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.fractalLive||output.domainLive||live)){
           timeRef.current=time;playbackClock.current=time;setTime(time);
         }
       },
@@ -797,6 +815,12 @@ export default function App() {
         // Do not replace a document the user selected or edited meanwhile.
         if(sceneRef.current!==originalScene)return;
         autoPlayPending.current=false;
+        if(result.context.domainLive){
+          const live=result.context.domainLive;liveSessionId.current=live.sessionId;domainEdit.current={revision:live.revision};iteratedStartAt.current=live.startAt;
+          domainActualFps.current=undefined;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;
+          playingRef.current=!live.clock.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
+          setTime(result.context.time);setPreviewCancelled(false);return;
+        }
         if(result.context.fractalLive){
           const live=result.context.fractalLive;
           liveSessionId.current=live.sessionId;fractalEdit.current={revision:live.revision,intent:live.intent};iteratedStartAt.current=live.startAt;
@@ -830,8 +854,8 @@ export default function App() {
     if(generationScene.current?.id!==scene.id)setOutput(null);
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
-    const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:sourceLivePreviewKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
@@ -899,7 +923,7 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":sourceLivePreviewKind(scene)==='fractal'?'分形录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
@@ -1139,10 +1163,14 @@ export default function App() {
               renderPending={generationActive}
               planeFrameReady={completedFrameReady}
               time={renderTime}
-              pixelRatio={usesSourceSamilaSampling(scene)?Math.round(previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio):previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio}
+              pixelRatio={usesSourceSamilaSampling(scene)||sourceLivePreviewKind(scene)==='domain'?Math.round(previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio):previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio}
               onCamera={cameraChanged}
               onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
               onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}),sourceLivePreviewKind(sceneRef.current)==='fractal'?'fractal-hot':undefined)}
+              onSourceDomainNavigate={(expected,sessionId,event)=>{
+                if(playingRef.current||exporting||recording||previewCancelled||error||sceneRef.current!==expected||liveSessionId.current!==sessionId)return false;
+                return generationQueue.current?.navigateDomainPaused(expected,sessionId,event)??false;
+              }}
               onSourceIteratedNavigate={(expected,sessionId,event)=>{
                 if(playingRef.current||exporting||recording||previewCancelled||error||sceneRef.current!==expected||liveSessionId.current!==sessionId)return false;
                 return generationQueue.current?.navigateIteratedPaused(expected,sessionId,event)??false;
@@ -1263,6 +1291,7 @@ export default function App() {
             <div className="inspector-scroll">
               {!isCreationKind(scene.kind)&&<p className="section-body muted" role="note">{t('此场景的完整创作支持计划于 2.0。已有项目数据可继续保存和备份。')}</p>}
               {(sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry')&&<div className="section-body"><button data-testid="iterated-apply" disabled={recording||applying} onClick={()=>void applyScene(scene)}>{t(applying?'正在验证 GLSL…':'应用场景')}</button>{iteratedDraft&&<><p role="status" data-testid="iterated-draft-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p><button onClick={discardIteratedDraft}>{t('放弃未应用修改')}</button></>}</div>}
+              {sourceLivePreviewKind(scene)==='domain'&&<div className="section-body"><button data-testid="domain-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='fractal'&&<div className="section-body"><button data-testid="fractal-apply" disabled={recording||applying} onClick={()=>editFractal(scene,'apply')}>{t('应用场景')}</button>{fractalStaged&&<p role="status" data-testid="fractal-draft-status">{t('有待应用的修改；修改几何参数也会应用当前分形设置。')}</p>}{fractalFullApplyPending&&<p role="status" data-testid="fractal-full-apply-status">{t('时间线或场景外观有修改，需在播放时应用才能替换当前运行场景。')}</p>}<p className="muted">{t('暂停时应用保留当前动画进度；播放时应用会从头运行新的时间线。')}</p></div>}
               <ProjectResolutionControls resolution={scene.projectResolution} onChange={projectResolution=>{
                 const next={...scene};
@@ -1319,7 +1348,7 @@ export default function App() {
                           >
                             {key}
                           </label>
-                          {sourceLivePreviewKind(scene)==='map'?<SourceParameterInput name={key} value={value} step={.01} onCommit={value=>editParameter({...scene,parameters:{...scene.parameters,[key]:value}},key)}/>:<input
+                          {sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='domain'?<SourceParameterInput name={key} value={value} step={.01} onCommit={value=>editParameter({...scene,parameters:{...scene.parameters,[key]:value}},key)}/>:<input
                             id={`param-${key}`}
                             aria-label={t("参数 {value0}",{value0:key})}
                             type="number"
@@ -1573,9 +1602,9 @@ export default function App() {
           {toast}
         </div>
       )}
-      {(exporting||recording&&sourceLivePreviewKind(scene)==='fractal') && (
+      {(exporting||recording&&(sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain')) && (
         <ExportDialog
-          mode={recording?'fractal-recording':'export'}
+          mode={recording?(sourceLivePreviewKind(scene)==='domain'?'domain-recording':'fractal-recording'):'export'}
           scene={{ ...scene, camera: camera.current }}
           time={time}
           currentSourceBouncingFrame={output?.sourceBouncingFrame?{ready:completedFrameReady,frame:output.sourceBouncingFrame}:undefined}
@@ -1589,6 +1618,15 @@ export default function App() {
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}
           samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
           iteratedPixelDensity={iteratedLiveFacts?viewportMeasurement?.pixelRatio:undefined}
+          domainPixelDensity={sourceLivePreviewKind(scene)==='domain'?viewportMeasurement?.pixelRatio:undefined}
+          currentDomainCapture={sourceLivePreviewKind(scene)==='domain'?{
+            size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
+            ready:completedFrameReady&&output?.type==='raster'&&output.domainLive?.target==='primary'&&output.domainLive.sessionId===liveSessionId.current,
+            capture:async(size,scale)=>{
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前域着色画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current.captureDomainPaused(output,size,scale);
+            },
+          }:undefined}
           currentFractalCapture={sourceLivePreviewKind(scene)==='fractal'?{
             size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
             ready:completedFrameReady&&output?.type==='raster'&&output.fractalLive?.target==='primary'&&output.fractalLive.sessionId===liveSessionId.current,
@@ -1621,12 +1659,14 @@ export default function App() {
               return generationQueue.current.capturePerlinPaused(output,size,scale);
             },
           }:undefined}
-          currentSourceRecording={sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
-            ready:sourceLivePreviewKind(scene)==='fractal'?completedFrameAvailable:completedFrameReady,
+          currentSourceRecording={sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
+            ready:sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'?completedFrameAvailable:completedFrameReady,
             record:async(options,consumer,signal)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前录制画面尚未完成或已过期，请等待预览完成后重试');
-              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene||scene.perlinSource)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=frame.fractalLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
-              return generationQueue.current.recordSource(output,options,{shouldStop:consumer.shouldStop,complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);
+              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene||scene.perlinSource)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
+              const domain=sourceLivePreviewKind(scene)==='domain',initialFps=domainActualFps.current??renderPreferences.frameRate;let lastFrameStart=performance.now();
+              const actualFrameRate=domain?()=>{const now=performance.now(),delta=now-lastFrameStart;lastFrameStart=now;return delta>0?1000/delta:initialFps;}:consumer.actualFrameRate;
+              return generationQueue.current.recordSource(output,domain?{...options,actualFrameRate:initialFps}:options,{actualFrameRate,shouldStop:consumer.shouldStop,complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);
             },
           }:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{
@@ -1642,7 +1682,7 @@ export default function App() {
         />
       )}
       {inputDialog&&<TextPrompt request={inputDialog} onClose={()=>setInputDialog(null)}/>}
-      {recording&&sourceLivePreviewKind(scene)!=='fractal'&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
+      {recording&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
         onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(sourceLivePreviewKind(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}

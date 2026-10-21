@@ -265,7 +265,7 @@ export function Timeline({ scene, time, playing, finalPreview=false, onTime, onP
       <button className="text-button" draggable={!sequential} onDragStart={e => { e.dataTransfer.setData('application/x-mathart-clip', newType); e.dataTransfer.effectAllowed = 'copy'; }} onDragEnd={() => setDropTime(null)} onClick={() => add()}><Plus size={14} />{t("添加动画")}</button>
       <button title={t("折叠时间线")} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button></div>
     {sequential&&!domainSource&&!samilaSource&&!rootsCamera&&!ordinaryCamera&&!fractalSource&&<p className="muted">{t('顺序队列按列表顺序执行；前置等待是本地扩展。完成等待变化后，后续片段会重新排定。')} {!frameClock&&<button onClick={()=>{const current=latest.current;try{current.onChange({...current.scene,timeline:resolveTimeline(current.scene)});}catch(error){setCreationError(String(error));}}}>{t('转为绝对时间线')}</button>}</p>}
-    {domainSource&&<p className="muted">{t('域着色片段按列表顺序执行；预览与导出使用固定帧率，时间跳转会重建对应画面。队列结束后，已启动的旋转、参数与渐变仍可继续。')}</p>}
+    {domainSource&&!sourceRealtime&&<p className="muted">{t('域着色片段按列表顺序执行；预览与导出使用固定帧率，时间跳转会重建对应画面。队列结束后，已启动的旋转、参数与渐变仍可继续。')}</p>}
     {sourceLivePreviewKind(scene)==='map'&&<p className="muted">{t('Map 按实际经过时间运行。暂停后的变换和颜色设置会按源规则重播；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。')}</p>}
     {sourceLivePreviewKind(scene)==='symmetry'&&<p className="muted">{t('Symmetry 按实际经过时间运行。暂停后的调色板和变换编辑会重播画面；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。')}</p>}
     {samilaSource&&<p className="muted">{t(sourceRealtime?'Samila 预览按实际经过时间连续运行，暂停期间不推进。片段按顺序执行；队列结束后参数停止更新，相机和绘制继续。时间跳转会重新建立画面；视频导出按所选帧率重新计算。':'Samila 片段按列表顺序执行，未知原片段作为等待。参数在队列结束后停止更新，环绕相机仍按帧推进。预览和导出共用文档帧率。')}</p>}

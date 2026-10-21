@@ -1,11 +1,18 @@
-import type {SceneDocument} from '../types';
+import type {SceneDocument,SceneOutput} from '../types';
 import {prepareSourceDomainScene} from './sourceDomainTimeline';
 import {sourceDomainQueueDuration} from './sourceDomainQueueDuration';
 import {RootsSceneClock} from './rootsSceneClock';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 
 export class SourceDomainRecordingError extends Error {
- constructor(readonly code:'input'|'capacity'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceDomainRecordingError';}
+ constructor(readonly code:'input'|'state'|'capacity'|'cancelled',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceDomainRecordingError';}
+}
+
+/** Consumers use delivered producer facts, never a fresh replay of the author
+ * document. This checks recording position; actual FPS remains independent. */
+export function assertDomainRecordingFrame(output:SceneOutput,clock:SourceQueueRecordingClock,ordinal:number):void {
+ const live=output?.type==='raster'?output.domainLive:undefined,position=live?.recording;
+ if(!clock||!Number.isFinite(clock.simulationFps)||clock.simulationFps<1||clock.simulationFps>120||!Number.isSafeInteger(ordinal)||ordinal<0||ordinal>clock.lastDisplayFrame||!live||live.target!=='offscreen'||live.clockSource!=='fixed-step'||live.renderKind!=='update'||live.paused||live.updateOrdinal!==ordinal||position?.ordinal!==ordinal||position.simulationFps!==clock.simulationFps||position.warmup!==(ordinal===0)||position.complete!==(ordinal===clock.lastDisplayFrame)||live.queueComplete!==position.complete)throw new SourceDomainRecordingError('state','域着色录制交付帧与队列序号不一致');
 }
 
 /** Queue completion depends on fixed dt and group durations, not the observed

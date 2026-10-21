@@ -1,3 +1,5 @@
+import {usesSourceDomain} from '../engine/sourceDomainTimeline';
+import type {SourceDomainNavigationEvent} from '../engine/sourceDomainLiveSession';
 import {sourceIteratedLiveKind} from '../engine/sourceLivePreview';
 import type {SourceIteratedNavigationEvent} from '../engine/sourceIteratedNavigation';
 import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
@@ -45,6 +47,7 @@ export const Viewport = forwardRef<
     onCamera?: (c: CameraState) => void;
     onSize?:(width:number,height:number,resolution?:ProjectResolution,pixelRatio?:number)=>void;
     onViewSettings?: (values:Settings)=>void;
+    onSourceDomainNavigate?:(expected:SceneDocument,sessionId:string,event:SourceDomainNavigationEvent)=>boolean;
     onSourceIteratedNavigate?:(expected:SceneDocument,sessionId:string,event:SourceIteratedNavigationEvent)=>boolean;
     sourceBouncingInteractionEpoch?:number;
     onSourceBouncingNavigate?:(expected:SceneDocument,view:SourceBouncingView,checkpoint:SourceBouncingCheckpoint,event:SourceBouncingNavigationEvent,begin:boolean,epoch:number)=>SourceBouncingView|undefined;
@@ -53,7 +56,7 @@ export const Viewport = forwardRef<
     pickingJulia?:boolean;
     onPickJulia?:(values:Settings)=>void;
   }
->(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia }, ref) {
+>(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,onSourceDomainNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia }, ref) {
   const {t}=useI18n();
   const [renderError,setRenderError]=useState('');
   const [navigationNotice,setNavigationNotice]=useState('');
@@ -61,7 +64,7 @@ export const Viewport = forwardRef<
   const sourceBouncing=usesSourceBouncing(scene);
   const bulb=isRaymarchScene(scene);
   const plane=hasMathematicalPlane(scene),managed=bulb||plane||sourceBouncing||!!sourceIteratedLiveKind(scene);
-  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
+  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceDomainNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceDomainNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
   const canvas = useRef<HTMLCanvasElement>(null),
     renderer = useRef<ArtRenderer | null>(null),
     lastId = useRef("");
@@ -112,7 +115,7 @@ export const Viewport = forwardRef<
         if(configured){Object.assign(element.style,{width:fit.width+'px',height:fit.height+'px',left:fit.left+'px',top:fit.top+'px',right:'auto',bottom:'auto'});}
         else {for(const property of ['width','height','left','top','right','bottom'])element.style.removeProperty(property);}
         const width=Math.round(fit.width),height=Math.round(fit.height);
-        const sourceCamera=!!interaction.current.scene.sourceCamera||usesSourceBouncing(interaction.current.scene)||usesSourceSamilaSplat(interaction.current.scene);
+        const sourceCamera=!!interaction.current.scene.sourceCamera||usesSourceBouncing(interaction.current.scene)||usesSourceSamilaSplat(interaction.current.scene)||usesSourceDomain(interaction.current.scene);
         r.setSize(sourceCamera?width:fit.width,sourceCamera?height:fit.height,ratio.current);presented.current.appearance();
         if(width>0&&height>0)sizeCallback.current?.(width,height,configured,r.renderer.getPixelRatio());
       }catch(error){failed(error);}
@@ -138,6 +141,17 @@ export const Viewport = forwardRef<
     type SamilaDrag={id:number;x:number;y:number;mode:'samila';scale:number;width:number;height:number;view:SamilaCapture;expected:SceneDocument;began:boolean;lastX:number;lastY:number};
     type RootsDrag={id:number;x:number;y:number;mode:'roots';expected:SceneDocument;view:RootsPresentationConfiguration;began:boolean;width:number;height:number};
     type BouncingCapture={epoch:number;view:SourceBouncingView;expected:SceneDocument;checkpoint:SourceBouncingCheckpoint};
+    type DomainCapture={expected:SceneDocument;sessionId:string;scaleX:number;scaleY:number};
+    type DomainDrag=DomainCapture&{id:number;x:number;y:number;mode:'domain'};
+    const captureDomain=():DomainCapture|undefined=>{
+      const current=interaction.current,frame=presented.current.read(),delivered=deliveredOutput.current;
+      if(current.renderPending||current.planeFrameReady===false||frame?.source!==current.scene||delivered?.source!==current.scene||delivered.output.type!=='raster')return;
+      const facts=delivered.output.domainLive,target=facts?.viewport;
+      if(!facts?.paused||facts.target!=='primary'||!target||!current.onSourceDomainNavigate)return;
+      const rect=rasterPresentationRect(element.clientWidth,element.clientHeight,delivered.output.width,delivered.output.height);
+      return{expected:current.scene,sessionId:facts.sessionId,scaleX:target.logicalWidth/rect.width,scaleY:target.logicalHeight/rect.height};
+    };
+    let domainWheel:(DomainCapture&{last:number;remainder:number})|undefined;
     type IteratedCapture={expected:SceneDocument;sessionId:string};
     type IteratedDrag=IteratedCapture&{id:number;x:number;y:number;mode:'iterated'};
     const captureIterated=():IteratedCapture|undefined=>{
@@ -148,7 +162,7 @@ export const Viewport = forwardRef<
     };
     let iteratedWheel:(IteratedCapture&{last:number})|undefined;
     type BouncingDrag=BouncingCapture&{id:number;x:number;y:number;mode:'bouncing';began:boolean};
-    let drag:NavigationDrag|SamilaDrag|RootsDrag|BouncingDrag|IteratedDrag|undefined,revision=0;
+    let drag:NavigationDrag|SamilaDrag|RootsDrag|BouncingDrag|IteratedDrag|DomainDrag|undefined,revision=0;
     let bouncingWheel:(BouncingCapture&{last:number})|undefined;
     const captureBouncing=():BouncingCapture|undefined=>{
       const current=interaction.current,frame=presented.current.read(),delivered=deliveredOutput.current;
@@ -182,8 +196,11 @@ export const Viewport = forwardRef<
     };
     const down=(event:PointerEvent)=>{
       if(!active()||event.button!==0&&!usesSourceBouncing(interaction.current.scene)&&!sourceIteratedLiveKind(interaction.current.scene))return;
-      try{const current=interaction.current;wheelGesture=undefined;bouncingWheel=undefined;iteratedWheel=undefined;
-        if(sourceIteratedLiveKind(current.scene)){
+      try{const current=interaction.current;wheelGesture=undefined;bouncingWheel=undefined;iteratedWheel=undefined;domainWheel=undefined;
+        if(usesSourceDomain(current.scene)){
+          const captured=captureDomain();if(!captured)return;
+          drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'domain'};
+        }else if(sourceIteratedLiveKind(current.scene)){
           const captured=captureIterated();if(!captured)return;
           drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'iterated'};
         }else if(usesSourceBouncing(current.scene)){
@@ -209,7 +226,11 @@ export const Viewport = forwardRef<
     const move=(event:PointerEvent)=>{
       if(!active()){drag=undefined;return;}if(!drag||event.pointerId!==drag.id)return;
       try{
-        if(drag.mode==='iterated'){
+        if(drag.mode==='domain'){
+          const dx=(event.clientX-drag.x)*drag.scaleX,dy=(event.clientY-drag.y)*drag.scaleY;if(!dx&&!dy)return;
+          if(!interaction.current.onSourceDomainNavigate?.(drag.expected,drag.sessionId,{kind:'pan',dx,dy})){drag=undefined;return;}
+          drag.x=event.clientX;drag.y=event.clientY;
+        }else if(drag.mode==='iterated'){
           const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!dx&&!dy)return;
           if(!interaction.current.onSourceIteratedNavigate?.(drag.expected,drag.sessionId,{kind:'drag',dx,dy})){drag=undefined;return;}
           drag.x=event.clientX;drag.y=event.clientY;
@@ -236,10 +257,17 @@ export const Viewport = forwardRef<
     };
     const end=()=>{drag=undefined;};
     const wheel=(event:WheelEvent)=>{
-      if(!active()){bouncingWheel=undefined;iteratedWheel=undefined;return;}if(drag?.mode==='samila'||drag?.mode==='bouncing'||drag?.mode==='iterated')return;event.preventDefault();
+      if(!active()){bouncingWheel=undefined;iteratedWheel=undefined;domainWheel=undefined;return;}if(drag?.mode==='samila'||drag?.mode==='bouncing'||drag?.mode==='iterated'||drag?.mode==='domain')return;event.preventDefault();
       try{
         const current=interaction.current,pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?element.clientHeight:1);
-        if(sourceIteratedLiveKind(current.scene)){
+        if(usesSourceDomain(current.scene)){
+          if(!pixels)return;const now=performance.now(),previous=domainWheel&&now-domainWheel.last<250?domainWheel:undefined,captured=previous??captureDomain();if(!captured)return;
+          // Browser mapping only: retain fractional DOM counts until a whole
+          // Processing-style integer count is available. No native event-rate claim.
+          const total=(previous?.remainder??0)+pixels/16,count=Math.trunc(total);
+          const accepted=count===0||current.onSourceDomainNavigate?.(captured.expected,captured.sessionId,{kind:'wheel',count});
+          domainWheel=accepted?{...captured,last:now,remainder:total-count}:undefined;
+        }else if(sourceIteratedLiveKind(current.scene)){
           if(!pixels)return;const now=performance.now(),captured=iteratedWheel&&now-iteratedWheel.last<250?iteratedWheel:captureIterated();if(!captured)return;
           // DOM line=one count; pixel=1/16 count. Keep every event's rounding.
           const accepted=current.onSourceIteratedNavigate?.(captured.expected,captured.sessionId,{kind:'wheel',count:pixels/16});

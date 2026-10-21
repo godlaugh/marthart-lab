@@ -23,6 +23,15 @@ describe('source live preview compatibility and delivered presentation',()=>{
   for(const key of ['mapParameterModel','mapPresentationModel']){const old=structuredClone(source);delete old.settings[key];expect(sourceLivePreviewKind(old)).toBeUndefined();}
   expect(sourceLivePreviewKind({...source,settings:{...source.settings,recordTrails:false}})).toBeUndefined();
  });
+ it('opts explicit Domain queues in while preserving legacy fixed preview and clock guidance',()=>{
+  const source=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'DOMAIN_COLORING',name:'Domain live',domainColoring:{formula:'z'},timeline:[]})).scene;
+  expect(sourceLivePreviewKind(source)).toBe('domain');
+  const legacy=structuredClone(source);delete legacy.timeline.schedule;
+  expect(sourceLivePreviewKind(legacy)).toBeUndefined();
+  expect(timelineWarnings(source,'fixed').some(text=>text.includes('固定回放'))).toBe(true);
+  expect(timelineWarnings(source,'realtime').some(text=>text.includes('实际经过时间'))).toBe(true);
+  expect(timelineWarnings(source,'realtime').some(text=>text.includes('固定回放'))).toBe(false);
+ });
  it('presents the delivered live camera even at signed time, without fixed reconstruction or authored changes',()=>{
   const source=scene(),before=structuredClone(source);
   const frame={model:SOURCE_CAMERA_MODEL,frameIndex:2,time:-.5,camera:{...ordinarySourceCameraInitial(source)!,phi:.3},viewport:ordinarySourceViewport(source,64,48,'primary',48)};

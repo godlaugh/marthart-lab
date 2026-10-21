@@ -1,3 +1,4 @@
+import {usesSourceDomain} from './sourceDomainTimeline';
 import {usesSourceMapParameters} from './sourceMapParameterIdentity';
 import {usesSourceMapPresentation} from './sourceMapPresentation';
 import type {SceneDocument} from '../types';
@@ -10,7 +11,8 @@ import {supportsSourceFractalLive} from './sourceFractalDocument';
  * their saved models, including legacy parameter/timeline behavior. Local
  * delayed accumulation and disabled recording retain fixed reconstruction; the
  * native live mobject always has a zero origin and draws each normal display. */
-export function sourceLivePreviewKind(scene:SceneDocument):'samila'|'map'|'symmetry'|'fractal'|undefined {
+export function sourceLivePreviewKind(scene:SceneDocument):'samila'|'map'|'symmetry'|'fractal'|'domain'|undefined {
+ if(usesSourceDomain(scene))return 'domain';
  if(supportsSourceFractalLive(scene))return 'fractal';
  if(usesSourceSamilaSampling(scene))return 'samila';
  return sourceIteratedLiveKind(scene);

@@ -37,6 +37,8 @@ export interface SourceDomainLiveFacts {
  queueIndex:number;queueComplete:boolean;paused:boolean;updateOrdinal:number;
  actualFrameRate:number;presentation:SourceDomainLivePresentation;
  recording?:SourceDomainHostSnapshot['recording'];
+ /** Owned primary logical geometry, independent of adaptive preview sampling. */
+ viewport?:SourceDomainLiveContext['viewport'];
 }
 type Raster=Extract<SceneOutput,{type:'raster'}>;
 type LiveRaster=Raster&{domainLive:SourceDomainLiveFacts;formulaPresentation:FormulaPresentation};
@@ -163,6 +165,7 @@ export class SourceDomainLiveSession {
  }
  private renderSnapshot(snapshot:SourceDomainHostSnapshot,c:GenerateContext,kind:SourceDomainLiveFacts['renderKind'],target:SourceDomainLiveFacts['target']='primary'):LiveRaster {
   const renderScene=display(this.retained!,snapshot),facts=this.facts(snapshot,renderScene,kind,target),bind=(output:SceneOutput)=>this.bind(output,facts,c);
+  if(target==='primary'&&c.domainLive?.viewport)facts.viewport=copy(c.domainLive.viewport);
   return bind(this.render(renderScene,{...c,time:snapshot.state.clock.sceneTime,onProgress:c.onProgress?value=>c.onProgress!(bind(value)):undefined},this.renderer!));
  }
  /** Capture and primary redraw share the current numerical snapshot and

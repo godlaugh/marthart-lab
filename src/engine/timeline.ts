@@ -106,7 +106,7 @@ export const ACTIONS = [
 const cameraMethods=new Set(['rotateTheta','rotatePhi','rotateGamma','rotateTo','zoom','focal','track','stopTracking','ambient','stopAmbient']);
 export function isCameraAction(method:string){return cameraMethods.has(method);}
 export function timelineWarnings(scene:SceneDocument,clock:'fixed'|'realtime'='fixed'):string[]{
- if(usesSourceDomain(scene))return ['域着色使用逐帧顺序队列；参数、渐变和旋转共同更新。固定回放以时间线帧率代替宿主观测帧率，跳转会重建初始状态。'];
+ if(usesSourceDomain(scene))return [clock==='realtime'?'域着色按实际经过时间播放；暂停后可拖拽、缩放和修改参数。应用场景或时间跳转会重新开始。队列结束后，已启动的动画仍可继续。':'域着色使用逐帧顺序队列；参数、渐变和旋转共同更新。固定回放以时间线帧率代替宿主观测帧率，跳转会重建初始状态。'];
  if(usesSourceFractal(scene))return [clock==='realtime'?'暂停保留当前画面；跳转会从初始配置重建。修改时间线后，请在播放时点击“应用场景”。':'按固定帧率回放；跳转会从初始配置重建。'];
  if(usesSourceSamilaTimeline(scene)){const frame=replaySourceSamilaTimeline(scene,0);return[...frame.diagnostics.map(d=>d.message),...(clock==='fixed'?['源 Samila 队列按固定帧率回放；仅 theta 参与密度显示，其他相机分量保留运行状态。']:[])];}
  if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
