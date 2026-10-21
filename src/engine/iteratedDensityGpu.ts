@@ -162,7 +162,7 @@ export class IteratedDensityGpu {
  private texture(texture:WebGLTexture,unit:number){const gl=this.gl!;gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,texture);}
  private stateTexture(){const r=this.resources!;return r.stateTextures[r.storage==='texture'?r.side:0];}
  private counterTexture(){const r=this.resources!;return r.counterTextures[r.storage==='texture'?r.side:0];}
- private target(texture:WebGLTexture,w:number,h:number){const gl=this.gl!,r=(this.resources??this.direct)!;gl.bindFramebuffer(gl.FRAMEBUFFER,r.framebuffer);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT1,gl.TEXTURE_2D,null,0);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);checked(gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE,'GPU framebuffer 不完整');gl.viewport(0,0,w,h);}
+ private target(texture:WebGLTexture,w:number,h:number){const gl=this.gl!,r=(this.resources??this.direct)!;gl.bindFramebuffer(gl.FRAMEBUFFER,r.framebuffer);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT1,gl.TEXTURE_2D,null,0);gl.drawBuffers([gl.COLOR_ATTACHMENT0]);const direct=this.direct;if(!direct||!direct.ownsTarget(texture)||!direct.validatedTargets.has(texture)){checked(gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE,'GPU framebuffer 不完整');if(direct?.ownsTarget(texture))direct.validatedTargets.add(texture);}gl.viewport(0,0,w,h);}
  private allocate(count:number,width:number,height:number,boundedHistory:boolean,customStorage:boolean){
   const gl=this.context(),limit=Math.min(2048,gl.getParameter(gl.MAX_TEXTURE_SIZE)),bytes=iteratedGpuBytes(count,width,height,limit,boundedHistory,customStorage);checked(bytes<=MAX_BYTES,'GPU 持续密度已知缓冲超过 768 MiB');checked(PALETTE_INTERVALS+1<=gl.getParameter(gl.MAX_TEXTURE_SIZE),'GPU 色板纹理尺寸不足');checked(width<=gl.getParameter(gl.MAX_TEXTURE_SIZE)&&height<=gl.getParameter(gl.MAX_TEXTURE_SIZE),'画布超过 GPU 纹理尺寸');
   const tw=Math.min(count,limit),th=Math.ceil(count/tw);checked(th<=gl.getParameter(gl.MAX_TEXTURE_SIZE),'粒子状态超过 GPU 纹理尺寸');this.releaseResources();
@@ -244,12 +244,25 @@ export class IteratedDensityGpu {
   const key=JSON.stringify(job.palette);if(r.paletteKey!==key){const values=sourceSamilaPaletteLut(job.palette);if(!r.sourcePalette){r.sourcePalette=gl.createTexture()??undefined;checked(Boolean(r.sourcePalette),'源 Samila palette texture 分配失败');}this.texture(r.sourcePalette!,2);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,1024,1,0,gl.RGB,gl.FLOAT,values);for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);r.paletteKey=key;}
   checked(gl.getError()===gl.NO_ERROR,'源 Samila LUT 准备失败');
  }
- private directStatistics(r:SourceSamilaGpuResources,count:number,cancel?:()=>boolean):Uint32Array {
+ /** Integer-only reduction shared by per-draw statistics and the final chunk
+  * summary. The first level masks unwritten padding, including previous frames. */
+ private reduceDirectStatistics(r:SourceSamilaGpuResources,input:WebGLTexture,width:number,height:number,count:number,cancel?:()=>boolean):void {
   const gl=this.gl!,firstSource=HEADER+SUM+`uniform usampler2D values;uniform ivec2 sourceSize;uniform int count;out uvec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uvec4 total=uvec4(0);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;total=sum(total,texelFetch(values,p,0));}result=total;}`;
-  this.texture(r.statsTexture,0);gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,r.statsBuffer);try{gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,r.plan.tw,r.plan.th,gl.RGBA_INTEGER,gl.UNSIGNED_INT,0);}finally{gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,null);}
-  let w=r.plan.tw,h=r.plan.th,side=0,level=0;gl.disable(gl.BLEND);gl.bindVertexArray(null);
-  do{checkCancelled(cancel);const p=this.program(level===0?'source-direct-stats-first':'source-direct-stats-next',QUAD,level===0?firstSource:STATS_REDUCE);gl.useProgram(p.value);this.texture(level===0?r.statsTexture:r.reductions[1-side],0);this.i(p,'values',0);this.i(p,'count',count);this.iv(p,'sourceSize',w,h);w=Math.ceil(w/2);h=Math.ceil(h/2);this.target(r.reductions[side],w,h);gl.drawArrays(gl.TRIANGLES,0,3);side=1-side;level++;}while(w>1||h>1);
-  const value=new Uint32Array(4);gl.readPixels(0,0,1,1,gl.RGBA_INTEGER,gl.UNSIGNED_INT,value);return value;
+  let w=width,h=height,side=0,level=0;gl.disable(gl.BLEND);gl.bindVertexArray(null);
+  do{checkCancelled(cancel);const p=this.program(level===0?'source-direct-stats-first':'source-direct-stats-next',QUAD,level===0?firstSource:STATS_REDUCE);gl.useProgram(p.value);this.texture(level===0?input:r.reductions[1-side],0);this.i(p,'values',0);this.i(p,'count',count);this.iv(p,'sourceSize',w,h);w=Math.ceil(w/2);h=Math.ceil(h/2);this.target(r.reductions[side],w,h);gl.drawArrays(gl.TRIANGLES,0,3);side=1-side;level++;}while(w>1||h>1);
+ }
+ private directStatistics(r:SourceSamilaGpuResources,count:number,chunkIndex:number,cancel?:()=>boolean):void {
+  const gl=this.gl!;this.texture(r.statsTexture,0);gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,r.statsBuffer);try{gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,r.plan.tw,r.plan.th,gl.RGBA_INTEGER,gl.UNSIGNED_INT,0);}finally{gl.bindBuffer(gl.PIXEL_UNPACK_BUFFER,null);}
+  this.reduceDirectStatistics(r,r.statsTexture,r.plan.tw,r.plan.th,count,cancel);
+  // Preserve the 1×1 integer result on the GPU. Copy source and destination
+  // are distinct RGBA32UI textures; no integer blend or read/write feedback.
+  checkCancelled(cancel);this.texture(r.summaryTexture,0);gl.copyTexSubImage2D(gl.TEXTURE_2D,0,chunkIndex%r.plan.summaryWidth,Math.floor(chunkIndex/r.plan.summaryWidth),0,0,1,1);
+ }
+ private finishDirectStatistics(r:SourceSamilaGpuResources,chunks:number,cancel?:()=>boolean):Uint32Array {
+  checkCancelled(cancel);const value=new Uint32Array(4);if(chunks===0)return value;
+  if(chunks===1)this.target(r.summaryTexture,r.plan.summaryWidth,r.plan.summaryHeight);
+  else this.reduceDirectStatistics(r,r.summaryTexture,r.plan.summaryWidth,r.plan.summaryHeight,chunks,cancel);
+  checkCancelled(cancel);this.gl!.readPixels(0,0,1,1,this.gl!.RGBA_INTEGER,this.gl!.UNSIGNED_INT,value);checkCancelled(cancel);return value;
  }
  private runDirect(job:IteratedFrameJob,options:IteratedGpuOptions):IteratedGpuFacts {
   const gl=this.context(),cfg=job.config,batch=job.samilaSampling!,history=job.history!,field=job.field;
@@ -264,7 +277,7 @@ export class IteratedDensityGpu {
   const copy=this.program('samila-history-copy',QUAD,HISTORY_COPY);gl.useProgram(copy.value);gl.disable(gl.BLEND);this.texture(r.ink,0);this.i(copy,'previousInk',0);this.f(copy,'decay',cfg.decay);this.f(copy,'densityCeiling',history.densityCeiling);this.target(r.inkScratch,r.width,r.height);gl.drawArrays(gl.TRIANGLES,0,3);[r.ink,r.inkScratch]=[r.inkScratch,r.ink];
   const path=job.samilaSplat!.path,vps=path==='quad'?6:1,totalVertices=batch.sampleCount*vps,observe=this.observeSourceDraw;
   const p=this.program('source-direct:'+Boolean(observe)+source.key,source.vertex,source.fragment,observe?['sourceStats','vTexCoord']:['sourceStats']);
-  let invalid=0,accepted=0,clipped=0;
+  const chunkCount=Math.ceil(totalVertices/r.plan.maxVertices);checked(chunkCount<=r.plan.maxChunks,'源 Samila 统计汇总块数超过预检容量');let chunks=0;
   for(let first=0;first<totalVertices;first+=r.plan.maxVertices){
    checkCancelled(options.isCancelled);const n=Math.min(r.plan.maxVertices,totalVertices-first);gl.useProgram(p.value);for(const [name,value]of Object.entries(source.uniforms))this.f(p,name,value);
    this.i(p,'sourceSamilaMode',source.selection.modeIndex);this.i(p,'sourceSamilaProjection',source.selection.projectionIndex);this.i(p,'u_frameSeed',batch.frameSeed|0);this.i(p,'u_particleCount',batch.sampleCount);this.f(p,'u_rangeStart',field.lo);this.f(p,'u_rangeStop',field.hi);
@@ -273,8 +286,9 @@ export class IteratedDensityGpu {
    try{gl.beginTransformFeedback(vps===6?gl.TRIANGLES:gl.POINTS);try{gl.drawArrays(vps===6?gl.TRIANGLES:gl.POINTS,first,n);}finally{gl.endTransformFeedback();}}
    finally{gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER,0,null);gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER,1,null);gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,null);gl.disable(gl.BLEND);gl.bindVertexArray(null);}
    if(observe){const values=r.observationData!.subarray(0,n*2);gl.bindBuffer(gl.COPY_READ_BUFFER,r.observationBuffer!);try{gl.getBufferSubData(gl.COPY_READ_BUFFER,0,values);}finally{gl.bindBuffer(gl.COPY_READ_BUFFER,null);}const result:unknown=observe({firstSampleId:first/vps,sampleCount:n/vps,totalSampleCount:batch.sampleCount,path,verticesPerSample:vps,vertexStride:2,values});if(result&&typeof(result as {then?:unknown}).then==='function'){void Promise.resolve(result).catch(()=>{});throw Error('源 Samila 绘制观察必须同步消费借用数据');}}
-   const stats=this.directStatistics(r,n,options.isCancelled);invalid+=stats[0]+stats[1]*4294967296;accepted+=stats[2];clipped+=stats[3];
+   this.directStatistics(r,n,chunks,options.isCancelled);chunks++;
   }
+  const stats=this.finishDirectStatistics(r,chunks,options.isCancelled),invalid=stats[0]+stats[1]*4294967296,accepted=stats[2],clipped=stats[3];
   checked(gl.getError()===gl.NO_ERROR&&!gl.isContextLost(),'源 Samila direct 绘制失败');checkCancelled(options.isCancelled);this.bounds={minX:-1,maxX:1,minY:-1,maxY:1};this.structuralKey=job.structuralKey;this.frame=job.frame;
   return{bounds:{...this.bounds},steps:batch.sampleCount,invalid,accepted,clipped,sampleInvalid:invalid};
  }
