@@ -407,6 +407,7 @@ export interface RasterOutput {
   samilaView?:PreparedSamilaView;
   /** Live display ownership, separate from cold fixed-frame replay. */
   samilaLive?:{sessionId:string;target:'primary'|'offscreen';displayIndex:number;accumulationPasses:number;anchorTheta:number;parameterChanged:boolean;cleared:boolean;clock:'fixed-source-queue'|'realtime-source-queue';runtime?:import('./engine/sourceSamilaSession').SourceSamilaRuntimeFacts};
+  symmetryPalette?:import('./engine/sourceSymmetryPalette').SourceSymmetryPaletteFacts;
   symmetrySplat?:import('./engine/sourceSymmetrySplat').SourceSymmetrySplatFacts;
   samilaSplat?:{model:'samila-splat-1.7.8';referenceKind:'primary'|'local-output';primaryPixelHeight:number;nominalRadius:number;radius:number;path:'points'|'quad';encoding:'rgb-mass';noiseModel:'source-simplex-lut-256'};
   /** Local runtime seed evidence; not a captured original JVM random stream. */

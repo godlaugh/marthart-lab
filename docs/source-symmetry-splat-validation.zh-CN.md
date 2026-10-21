@@ -44,3 +44,5 @@ App 验证中，Symmetry 预览输出点径为 3、比例为 1；192×128 导出
 App 流程约 11.49 秒，外层约 12.22 秒、CPU 24.87 秒、峰值 RSS 约 2.16 GiB；上一轮同类流程为 11.58 秒、12.25 秒、25.31 秒、约 2.17 GiB。两次不是受控冷/热配对，不宣称提速。250 ms 采样可能漏掉短进程与峰值，共享页可能重复计数；token、GPU 内存、驱动开销和操作系统冷缓存成本未测。
 
 复核脚本：`scripts/verify-source-symmetry-splat.mjs <新输出目录> [原版 JAR 路径]`。原版 JAR 需由使用者提供，不进入仓库。输出包含着色器副本、SHA-256 和逐组结果。本地证据在 `.cache/source-symmetry-splat/`，其中 `oracle-final/report.json`、`public/report.json` 和构建/测试日志保存本轮结果。
+
+后续进展：1024 格色板已接入，验证脚本已扩展为 170 组，包含颜色、连续切换和缓存复用；详见[色板验证](source-symmetry-palette-validation.zh-CN.md)。原版整窗验收仍未完成。

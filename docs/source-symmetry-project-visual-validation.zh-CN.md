@@ -44,4 +44,6 @@ Symmetry 项目不读取步长上下限、归一化方式、颜色速度和相�
 
 上一轮同类 App 流程为 11.49 秒、外层 12.20 秒、CPU 27.35 秒、RSS 约 2.56 GiB。两次不是受控冷/热配对，不宣称提速。采样间隔 250 ms，可能漏掉短进程及峰值，共享页可能重复计数；token、GPU 内存与操作系统冷缓存成本未测量。
 
-可提交的原版输入、输出与 JAR/JVM/harness SHA-256 在 `tests/fixtures/symmetry/project-visual-runtime.json`。复核脚本为 `scripts/verify-source-symmetry-color.mjs`、`scripts/verify-captured-density-public.mjs`。本地运行栈、截图、日志和测量保留在 `.cache/source-symmetry-project-visual/`；原版二进制与缓存不进入 Git。
+可提交的原版输入、输出与 JAR/JVM/harness SHA-256 在 `tests/fixtures/symmetry/project-visual-runtime.json`。当时的灰度接线检查现已由 `scripts/verify-source-symmetry-splat.mjs` 的原包着色器＋原版 JVM 色表对照取代；公开流程脚本为 `scripts/verify-captured-density-public.mjs`。本地运行栈、截图、日志和测量保留在 `.cache/source-symmetry-project-visual/`；原版二进制与缓存不进入 Git。
+
+后续进展：静态色板、采样方式与 ROBUST 运算顺序已在[色板验证](source-symmetry-palette-validation.zh-CN.md)修复。上文灰度值是旧 4097 格采样的历史结果，不能用作原版 1024 格 LINEAR/REPEAT 的期望值。

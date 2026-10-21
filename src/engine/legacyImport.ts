@@ -1,3 +1,4 @@
+import {importSourceSymmetryProjectPalette} from './sourceSymmetryPalette';
 import {importSourceSymmetryProjectVisual} from './sourceSymmetryProjectVisual';
 import {importSourceSymmetryProjectParameters,importSourceSymmetryParameters,createSourceSymmetryConfiguration,usesSourceSymmetryConfiguration,usesSourceSymmetryProject,sourceSymmetryDegree,sourceSymmetryTemplate,sourceSymmetryFloat} from './sourceSymmetryConfig';
 import {SOURCE_SYMMETRY_MATH,usesSourceSymmetryMath} from './sourceSymmetryMath';
@@ -259,7 +260,7 @@ function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&!usesSourceSamilaSplat(s)&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(!usesSourceSymmetryProject(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
+ if(!usesSourceSymmetryProject(s)&&!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
  if(!usesSourceSymmetryProject(s)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSamilaSourceProjection(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
@@ -1462,6 +1463,8 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   if(r.has(['settings','dot_size']))r.acknowledge(['settings','dot_size'],'Samila 活动绘制使用 spot_size；通用 dot_size 保留但不参与散点半径');
  }
  if(usesSourceSymmetryProject(scene)){
+  const palette=importSourceSymmetryProjectPalette(r.use(['palette']));if(!palette.ok)fail(palette.error.reason);scene.palette=palette.value.palette;r.warnings.push(...palette.value.warnings);
+  if(r.has(['color']))r.acknowledge(['color'],'原版 Symmetry 项目不输出通用 color 配置；运行时配色可在本地检查器编辑');
   const parsed=importSourceSymmetryProjectVisual(r.peek(['settings']),path=>r.numberToken(path));
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   Object.assign(scene.settings,parsed.value.settings);
