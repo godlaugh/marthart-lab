@@ -34,9 +34,19 @@ interface GeneratorPort {
   hasSourceRecording?(handle:SourceRecordingHandle):boolean;
 }
 interface Request {scene:SceneDocument;context:Context;intent?:'metadata';parameterWrites?:readonly (readonly [string,number])[];}
+export interface SourceRecordingCompletion {
+  readonly reason:'queue-complete'|'manual-stop';
+  /** Continuous frames acknowledged by the consumer, excluding warmup. */
+  readonly encodedFrames:number;
+  /** Last consumed source ordinal; zero means only warmup was produced. */
+  readonly lastDisplayFrame:number;
+}
 export interface SourceRecordingConsumer {
+  /** Stop/save is sampled at frame boundaries. It never cancels a pending
+   * generation or consumer upload; cancellation remains the separate signal. */
+  shouldStop?:()=>boolean;
   /** Finish the encoder before releasing fixed-step runtime ownership. */
-  complete?:(start:SourceRecordingStart)=>void|Promise<void>;
+  complete?:(start:SourceRecordingStart,completion:SourceRecordingCompletion)=>void|Promise<void>;
   start?:(start:SourceRecordingStart)=>void|Promise<void>;
   frame:(frame:SourceRecordingRaster,encodedIndex:number,start:SourceRecordingStart)=>void|Promise<void>;
 }
@@ -283,11 +293,17 @@ export class GenerationQueue {
       const start=await this.generator.beginSourceRecording(output,options);owner.handle=start.handle;
       const lastDisplayFrame=start.clock.lastDisplayFrame,handle=start.handle;
       check();await consumer.start?.(start);check();
-      for(let displayFrame=1;displayFrame<=lastDisplayFrame;displayFrame++){
+      let requestedStop=consumer.shouldStop?.()===true,encodedFrames=0,consumedDisplayFrame=0;
+      for(let displayFrame=1;displayFrame<=lastDisplayFrame&&!requestedStop;displayFrame++){
         const frame=await this.generator.nextSourceRecordingFrame(handle,displayFrame);
-        check();await consumer.frame(frame,displayFrame-1,start);check();
+        check();await consumer.frame(frame,displayFrame-1,start);
+        encodedFrames++;consumedDisplayFrame=displayFrame;check();
+        if(displayFrame<lastDisplayFrame)requestedStop=consumer.shouldStop?.()===true;
       }
-      await consumer.complete?.(start);check();
+      // A terminal display already consumed is natural completion even when
+      // Stop arrives during that last upload. Never fabricate a hold frame.
+      const completion:SourceRecordingCompletion={reason:requestedStop&&consumedDisplayFrame<lastDisplayFrame?'manual-stop':'queue-complete',encodedFrames,lastDisplayFrame:consumedDisplayFrame};
+      await consumer.complete?.(start,completion);check();
     }catch(error){
       if(error instanceof SourceRecordingOperationError&&error.recordingRetained&&error.handle)owner.handle=error.handle;
       if(error instanceof SourceRecordingOperationError&&!error.previewRetained)owner.invalidPreview=error;

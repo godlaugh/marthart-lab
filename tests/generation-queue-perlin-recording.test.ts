@@ -145,9 +145,60 @@ describe('recording encoder completion ownership',()=>{
  it.each(['success','cancel','failure'] as const)('retains runtime until encoder completion settles: %s',async outcome=>{
   const f=await fixture(),encoder=deferred<void>(),controller=new AbortController(),complete=vi.fn(()=>encoder.promise);
   const task=f.queue.recordSource(raster,options,{frame:vi.fn(),complete},controller.signal),caught=task.catch(e=>e);await flush();
-  expect(complete).toHaveBeenCalledExactlyOnceWith(f.start);expect(f.port.finishSourceRecording).not.toHaveBeenCalled();expect(f.port.hasSourceRecording(f.handle)).toBe(true);
+  expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'queue-complete',encodedFrames:2,lastDisplayFrame:2});expect(f.port.finishSourceRecording).not.toHaveBeenCalled();expect(f.port.hasSourceRecording(f.handle)).toBe(true);
   if(outcome==='cancel')controller.abort();const failure=new Error('encoder finish failed');if(outcome==='failure')encoder.reject(failure);else encoder.resolve();
   const result=await caught;if(outcome==='cancel')expect(result.name).toBe('AbortError');else if(outcome==='failure')expect(result).toBe(failure);else expect(result).toBeUndefined();
   expect(f.port.finishSourceRecording).toHaveBeenCalledExactlyOnceWith(f.handle);expect(f.port.cancel).not.toHaveBeenCalled();f.queue.dispose();
+ });
+});
+
+describe('manual recording stop preserves an acknowledged frame prefix',()=>{
+ it('stops after start with zero encoded frames and waits for empty-output handling before finishing',async()=>{
+  const f=await fixture(),startGate=deferred<void>(),completeGate=deferred<void>();let stop=false;
+  const frame=vi.fn(),complete=vi.fn(()=>completeGate.promise),shouldStop=vi.fn(()=>stop);
+  const task=f.queue.recordSource(raster,options,{start:()=>startGate.promise,shouldStop,frame,complete});await flush();
+  stop=true;expect(shouldStop).not.toHaveBeenCalled();startGate.resolve();await flush();
+  expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'manual-stop',encodedFrames:0,lastDisplayFrame:0});
+  expect(frame).not.toHaveBeenCalled();expect(f.port.nextSourceRecordingFrame).not.toHaveBeenCalled();expect(f.port.finishSourceRecording).not.toHaveBeenCalled();
+  completeGate.resolve();await task;expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();expect(f.port.cancel).not.toHaveBeenCalled();f.queue.dispose();
+ });
+ it('includes an already requested worker frame and its entire upload before stopping',async()=>{
+  const f=await fixture(),render=deferred<SourceRecordingRaster>(),upload=deferred<void>(),save=deferred<void>();let stop=false;
+  f.port.nextSourceRecordingFrame.mockImplementationOnce(()=>render.promise);
+  const consume=vi.fn(()=>upload.promise),complete=vi.fn(()=>save.promise);
+  const task=f.queue.recordSource(raster,options,{shouldStop:()=>stop,frame:consume,complete});await flush();
+  expect(f.port.nextSourceRecordingFrame).toHaveBeenCalledExactlyOnceWith(f.handle,1);stop=true;
+  render.resolve(raster);await flush();expect(consume).toHaveBeenCalledExactlyOnceWith(raster,0,f.start);expect(complete).not.toHaveBeenCalled();expect(f.port.finishSourceRecording).not.toHaveBeenCalled();
+  upload.resolve();await flush();expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'manual-stop',encodedFrames:1,lastDisplayFrame:1});
+  expect(f.port.nextSourceRecordingFrame).toHaveBeenCalledTimes(1);expect(f.port.finishSourceRecording).not.toHaveBeenCalled();
+  await expect(f.queue.retrySourceRecordingCleanup()).rejects.toThrow('仍在处理');expect(f.port.hasSourceRecording(f.handle)).toBe(true);
+  save.resolve();await task;expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();f.queue.dispose();
+ });
+ it('samples Stop again after a successful upload without cancelling or requesting another frame',async()=>{
+  const f=await fixture(),upload=deferred<void>();let stop=false;
+  const complete=vi.fn(),task=f.queue.recordSource(raster,options,{shouldStop:()=>stop,frame:()=>upload.promise,complete});await flush();
+  stop=true;expect(complete).not.toHaveBeenCalled();upload.resolve();await task;
+  expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'manual-stop',encodedFrames:1,lastDisplayFrame:1});expect(f.port.nextSourceRecordingFrame).toHaveBeenCalledTimes(1);expect(f.port.cancel).not.toHaveBeenCalled();f.queue.dispose();
+ });
+ it('keeps natural completion when Stop arrives during the final planned upload',async()=>{
+  const f=await fixture(),last=deferred<void>();let stop=false;
+  const complete=vi.fn(),task=f.queue.recordSource(raster,options,{shouldStop:()=>stop,frame:(_frame,index)=>index===1?last.promise:undefined,complete});await flush();
+  expect(f.port.nextSourceRecordingFrame).toHaveBeenCalledTimes(2);stop=true;last.resolve();await task;
+  expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'queue-complete',encodedFrames:2,lastDisplayFrame:2});expect(f.port.nextSourceRecordingFrame).toHaveBeenCalledTimes(2);f.queue.dispose();
+ });
+ it('reports a naturally empty queue without inventing a frame even if Stop is already set',async()=>{
+  const f=await fixture();f.start.clock={...f.start.clock,updates:1,encodedFrames:0,lastDisplayFrame:0,firstEncodedUpdate:null};const complete=vi.fn();
+  await f.queue.recordSource(raster,options,{shouldStop:()=>true,frame:vi.fn(),complete});
+  expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'queue-complete',encodedFrames:0,lastDisplayFrame:0});expect(f.port.nextSourceRecordingFrame).not.toHaveBeenCalled();f.queue.dispose();
+ });
+ it('does not report a failed upload as a saved partial recording',async()=>{
+  const f=await fixture(),upload=deferred<void>(),failure=new Error('upload failed');let stop=false;
+  const complete=vi.fn(),task=f.queue.recordSource(raster,options,{shouldStop:()=>stop,frame:()=>upload.promise,complete}),caught=task.catch(e=>e);await flush();stop=true;upload.reject(failure);
+  expect(await caught).toBe(failure);expect(complete).not.toHaveBeenCalled();expect(f.port.nextSourceRecordingFrame).toHaveBeenCalledTimes(1);expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();f.queue.dispose();
+ });
+ it('keeps cancellation distinct from a save-stop while the current upload settles',async()=>{
+  const f=await fixture(),upload=deferred<void>(),abort=new AbortController();let stop=false;
+  const complete=vi.fn(),task=f.queue.recordSource(raster,options,{shouldStop:()=>stop,frame:()=>upload.promise,complete},abort.signal),caught=task.catch(e=>e);await flush();stop=true;abort.abort();
+  expect(f.port.finishSourceRecording).not.toHaveBeenCalled();upload.resolve();expect((await caught).name).toBe('AbortError');expect(complete).not.toHaveBeenCalled();expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();f.queue.dispose();
  });
 });

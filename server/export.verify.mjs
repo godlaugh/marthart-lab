@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
 import {mkdtemp,readFile,readdir,rm,writeFile,chmod,stat} from 'node:fs/promises';
+import fsPromises from 'node:fs/promises';
+import {syncBuiltinESMExports} from 'node:module';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
@@ -21,6 +23,13 @@ async function stop(app){await app.close();services.delete(app);assert.equal(app
 async function request(s,route,options={},status=200){const r=await fetch(s.url+route,options),data=await r.json();assert.equal(r.status,status,JSON.stringify(data));return data;}
 const create=(s,params={})=>request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:64,height:48,fps:6,frames:3,format:'mp4',...params})},201);
 const frame=(s,id,index,bytes=red,status=200)=>request(s,`/api/exports/${id}/frames${index===undefined?'':`?index=${index}`}`,{method:'POST',headers:{'content-type':'image/png'},body:bytes},status);
+const finish=(s,id,finalFrames,status=200)=>request(s,`/api/exports/${id}/finish`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({finalFrames})},status);
+function pendingRequest(s,route,headers={}){
+ let resolve,reject;const response=new Promise((yes,no)=>{resolve=yes;reject=no;});
+ const req=http.request(s.url+route,{method:'POST',headers},res=>{
+  const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.once('end',()=>{try{resolve({status:res.statusCode,body:JSON.parse(Buffer.concat(chunks).toString())});}catch(error){reject(error);}});res.once('error',reject);
+ });req.once('error',reject);return{req,response};
+}
 async function until(fn,timeout=3000){const start=Date.now();while(!await fn()){if(Date.now()-start>timeout)assert.fail('condition timed out');await new Promise(r=>setTimeout(r,20));}}
 before(async()=>{[red,blue,jpeg,wrongSize]=await Promise.all([fixture('red'),fixture('blue'),fixture('red','mjpeg'),fixture('red','png','32x32')]);});
 after(async()=>{for(const s of services)await s.close();for(const dir of directories)await rm(dir,{recursive:true,force:true});console.log('Real FFmpeg/ffprobe evidence: '+JSON.stringify(evidence));});
@@ -49,6 +58,38 @@ for(const format of ['mp4','webm','gif'])test(`real ${format} encoding preserves
  const stride=64*48*3;assert.equal(decoded.stdout.length,3*stride);assert.notDeepEqual(decoded.stdout.subarray(0,stride),decoded.stdout.subarray(stride,2*stride));
  const bytes=await readFile(file);const download=await fetch(s.url+result.url);assert.deepEqual(Buffer.from(await download.arrayBuffer()),bytes);
  await stop(s.app);const restarted=await service({root:s.root});assert.equal((await fetch(restarted.url+result.url)).status,200);await stop(restarted.app);
+});
+
+test('manual partial finish seals the real accepted prefix while preserving its planned maximum',async()=>{
+ const s=await service(),{id}=await create(s,{frames:5});await frame(s,id,0,red);await frame(s,id,1,blue);
+ const result=await finish(s,id,2),state=await request(s,`/api/exports/${id}`);assert.equal(result.frames,2);
+ assert.deepEqual(state,{id,status:'complete',frames:2,expected:5,locked:false,finalFrames:2,url:result.url,bytes:result.bytes});
+ const file=path.join(s.root,`${id}.mp4`),{stdout}=await exec('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=codec_name,width,height,nb_read_frames','-of','json',file]);
+ const video=JSON.parse(stdout).streams[0];assert.equal(Number(video.nb_read_frames),2);assert.equal(video.width,64);assert.equal(video.height,48);evidence.push({partial:true,plannedFrames:5,finalFrames:2,...video});
+ assert.deepEqual(await finish(s,id,2),result);await finish(s,id,3,409);await request(s,`/api/exports/${id}/finish`,{method:'POST'},409);
+ await frame(s,id,2,red,409);assert.deepEqual(await request(s,`/api/exports/${id}?onlyUnfinished=true`,{method:'DELETE'}),{cancelled:false,complete:true});
+ assert.equal((await stat(file)).size,result.bytes);await stop(s.app);
+});
+
+test('invalid partial finish parameters and prefix mismatches never seal or consume input',async()=>{
+ const s=await service(),{id}=await create(s);
+ for(const finalFrames of [0,-1,1.5,4,'1',null])await finish(s,id,finalFrames,400);
+ for(const body of ['{','null','[]','{"other":1}'])await request(s,`/api/exports/${id}/finish`,{method:'POST',headers:{'content-type':'application/json'},body},400);
+ await request(s,`/api/exports/${id}/finish`,{method:'POST',headers:{'content-type':'text/plain'},body:'{"finalFrames":1}'},415);
+ await finish(s,id,1,409);await frame(s,id,0);await finish(s,id,2,409);await frame(s,id,1,blue);await finish(s,id,1,409);
+ const state=await request(s,`/api/exports/${id}`);assert.equal(state.status,'encoding');assert.equal(state.expected,3);assert.equal(state.frames,2);assert.equal(state.locked,false);assert.equal(state.finalFrames,undefined);
+ assert.equal((await finish(s,id,2)).frames,2);await stop(s.app);
+});
+
+test('finish refuses an active upload and rechecks accepted frames after its own JSON body arrives',async()=>{
+ const s=await service(),{id}=await create(s),upload=pendingRequest(s,`/api/exports/${id}/frames?index=0`,{'content-type':'image/png','content-length':red.length});
+ upload.req.write(red.subarray(0,20));await until(async()=>!!(await request(s,`/api/exports/${id}`)).locked);
+ await finish(s,id,1,409);assert.equal((await request(s,`/api/exports/${id}`)).finalFrames,undefined);
+ upload.req.end(red.subarray(20));assert.deepEqual(await upload.response,{status:200,body:{frames:1}});
+ const sealing=pendingRequest(s,`/api/exports/${id}/finish`,{'content-type':'application/json'});sealing.req.write('{"finalFrames":1');
+ await frame(s,id,1,blue);sealing.req.end('}');assert.equal((await sealing.response).status,409);
+ const state=await request(s,`/api/exports/${id}`);assert.equal(state.frames,2);assert.equal(state.expected,3);assert.equal(state.finalFrames,undefined);assert.equal(state.locked,false);
+ await finish(s,id,2);await stop(s.app);
 });
 
 test('conditional dialog cleanup preserves a completed video while explicit default DELETE still removes it',async()=>{
@@ -136,15 +177,99 @@ async function hangingEncoder(){
  return {fixture,ready,async wait(){await until(async()=>{try{await stat(ready);return true;}catch{return false;}});}};
 }
 
+async function gatedEncoder(frames=2){
+ // Deterministic protocol fixture, not media evidence. Real partial MP4 frame
+ // counts are tested above with installed FFmpeg/ffprobe.
+ const directory=await mkdtemp(path.join(tmpdir(),'mathart-gated-encoder-'));directories.push(directory);
+ const fixture=path.join(directory,'encoder.mjs'),ended=path.join(directory,'ended'),release=path.join(directory,'release');
+ await writeFile(fixture,`#!/usr/bin/env node\nimport {writeFileSync,writeSync,existsSync} from 'node:fs';process.stdin.resume();process.stdin.once('end',()=>{writeFileSync(${JSON.stringify(ended)},'ended');const timer=setInterval(()=>{if(!existsSync(${JSON.stringify(release)}))return;clearInterval(timer);writeFileSync(process.argv.at(-1),Buffer.alloc(32,7));writeSync(3,'frame=${frames}\\n');},10);});\n`);await chmod(fixture,0o755);
+ return{fixture,async sealed(){await until(async()=>{try{await stat(ended);return true;}catch{return false;}});},async release(){await writeFile(release,'release');}};
+}
+
+test('same-seal finishes share finalization and conflicting seals or uploads cannot change it',async()=>{
+ const encoder=await gatedEncoder(),s=await service({ffmpegPath:encoder.fixture}),{id}=await create(s,{frames:5});await frame(s,id,0);await frame(s,id,1);
+ const first=finish(s,id,2);await encoder.sealed();const second=finish(s,id,2);
+ const state=await request(s,`/api/exports/${id}`);assert.equal(state.status,'finishing');assert.equal(state.finalFrames,2);assert.equal(state.expected,5);assert.equal(state.locked,false);
+ await finish(s,id,3,409);await frame(s,id,2,red,409);assert.equal(s.app.ownedProcessCount,1);
+ await encoder.release();const [a,b]=await Promise.all([first,second]);assert.deepEqual(a,b);assert.equal(a.frames,2);assert.equal(s.app.ownedProcessCount,0);
+ assert.deepEqual(await finish(s,id,2),a);await stop(s.app);
+});
+
+test('sealed finish survives response disconnect and exposes a queryable, retryable result',async()=>{
+ const encoder=await gatedEncoder(),s=await service({ffmpegPath:encoder.fixture}),{id}=await create(s,{frames:5});await frame(s,id,0);await frame(s,id,1);
+ const first=pendingRequest(s,`/api/exports/${id}/finish`,{'content-type':'application/json'}),lost=first.response.catch(error=>error);first.req.end('{"finalFrames":2}');await encoder.sealed();first.req.destroy();await lost;
+ const pending=await request(s,`/api/exports/${id}`);assert.equal(pending.status,'finishing');assert.equal(pending.finalFrames,2);assert.equal(s.app.ownedProcessCount,1);
+ const retry=finish(s,id,2);await encoder.release();const result=await retry,state=await request(s,`/api/exports/${id}`);
+ assert.equal(state.status,'complete');assert.equal(state.url,result.url);assert.equal(state.frames,2);assert.equal(state.expected,5);assert.deepEqual(await finish(s,id,2),result);await stop(s.app);
+});
+
+test('explicit cancellation before JSON seal or after seal prevents later publication',async()=>{
+ const s=await service(),{id}=await create(s);await frame(s,id,0);
+ const unfinished=pendingRequest(s,`/api/exports/${id}/finish`,{'content-type':'application/json'});unfinished.req.write('{"finalFrames":1');
+ await request(s,`/api/exports/${id}?onlyUnfinished=true`,{method:'DELETE'});unfinished.req.end('}');assert.equal((await unfinished.response).status,409);
+ assert.deepEqual(await readdir(s.root),[]);await request(s,`/api/exports/${id}`,{},404);await stop(s.app);
+ const encoder=await gatedEncoder(),sealed=await service({ffmpegPath:encoder.fixture}),active=await create(sealed,{frames:5});await frame(sealed,active.id,0);await frame(sealed,active.id,1);
+ const pending=fetch(sealed.url+`/api/exports/${active.id}/finish`,{method:'POST',headers:{'content-type':'application/json'},body:'{"finalFrames":2}'});await encoder.sealed();
+ assert.deepEqual(await request(sealed,`/api/exports/${active.id}?onlyUnfinished=true`,{method:'DELETE'}),{cancelled:true});
+ const failure=await pending;assert.ok([499,500].includes(failure.status));await failure.arrayBuffer();assert.deepEqual(await readdir(sealed.root),[]);assert.equal(sealed.app.ownedProcessCount,0);await stop(sealed.app);
+});
+
+test('cancel racing final commit either removes the unfinished output or preserves the completed file',async()=>{
+ const encoder=await gatedEncoder(),s=await service({ffmpegPath:encoder.fixture}),{id}=await create(s,{frames:5});await frame(s,id,0);await frame(s,id,1);
+ const pending=fetch(s.url+`/api/exports/${id}/finish`,{method:'POST',headers:{'content-type':'application/json'},body:'{"finalFrames":2}'});await encoder.sealed();
+ await encoder.release();const cancellation=await request(s,`/api/exports/${id}?onlyUnfinished=true`,{method:'DELETE'}),response=await pending,result=await response.json();
+ if(cancellation.cancelled){assert.ok([499,500].includes(response.status),JSON.stringify(result));assert.deepEqual(await readdir(s.root),[]);await request(s,`/api/exports/${id}`,{},404);}
+ else{assert.deepEqual(cancellation,{cancelled:false,complete:true});assert.equal(response.status,200);assert.equal((await stat(path.join(s.root,`${id}.mp4`))).size,result.bytes);}
+ assert.equal(s.app.ownedProcessCount,0);await stop(s.app);
+});
+
+test('partial finalization checks encoded frames against its seal and cleans a mismatching encoder',async()=>{
+ const encoder=await gatedEncoder(5),s=await service({ffmpegPath:encoder.fixture}),{id}=await create(s,{frames:5});await frame(s,id,0);await frame(s,id,1);
+ const pending=finish(s,id,2,500);await encoder.sealed();await encoder.release();assert.match((await pending).error,/5\/2/);
+ const state=await request(s,`/api/exports/${id}`);assert.equal(state.status,'failed');assert.equal(state.expected,5);assert.equal(state.finalFrames,2);assert.deepEqual(await readdir(s.root),[]);await finish(s,id,2,409);await stop(s.app);
+});
+
+test('finish timeout during rename cleans the final destination and releases its disk accounting',async t=>{
+ const encoder=await gatedEncoder(1),s=await service({ffmpegPath:encoder.fixture,limits:{finishTimeoutMs:1000,maxActive:1,maxOutputBytes:64,maxDiskBytes:64}}),{id}=await create(s,{frames:1});await frame(s,id,0);await encoder.release();
+ const originalRename=fsPromises.rename,target=path.join(s.root,`${id}.mp4`);let entered=false,release;
+ const gate=new Promise(resolve=>{release=resolve;});
+ // Top-level tests in this file run serially. Patch only this session's rename
+ // and always restore the builtin binding before another test can execute.
+ const patched=t.mock.method(fsPromises,'rename',async(from,to)=>{if(to===target){entered=true;await gate;}return originalRename(from,to);});syncBuiltinESMExports();
+ let finishing;
+ try{
+  finishing=finish(s,id,1,500);await until(()=>entered);
+  await until(async()=>(await request(s,`/api/exports/${id}`)).status==='failed');
+  release();assert.match((await finishing).error,/超时/);assert.deepEqual(await readdir(s.root),[]);assert.equal(s.app.ownedProcessCount,0);
+  await request(s,`/api/exports/${id}/file`,{},409);
+  // A leaked files/storedBytes entry would make this exact-capacity reservation
+  // fail even if the first partial path had already been removed.
+  const next=await create(s,{frames:1});await request(s,`/api/exports/${next.id}`,{method:'DELETE'});assert.deepEqual(await readdir(s.root),[]);
+ }finally{release();patched.mock.restore();syncBuiltinESMExports();await finishing?.catch(()=>{});await stop(s.app);}
+});
+
+test('a late finish timeout cannot revoke a completed result, while explicit DELETE still can',async t=>{
+ const originalSetTimeout=globalThis.setTimeout;let lateTimeout;
+ const patched=t.mock.method(globalThis,'setTimeout',(callback,delay,...args)=>{if(delay===3001)lateTimeout=()=>callback(...args);return originalSetTimeout(callback,delay,...args);});
+ let s;
+ try{
+  s=await service({limits:{finishTimeoutMs:3001}});const {id}=await create(s,{frames:1});await frame(s,id,0);
+  const result=await finish(s,id,1),file=path.join(s.root,`${id}.mp4`),bytes=await readFile(file);assert.equal(typeof lateTimeout,'function');lateTimeout();
+  const state=await request(s,`/api/exports/${id}`);assert.equal(state.status,'complete');assert.equal(state.url,result.url);assert.deepEqual(await readFile(file),bytes);assert.deepEqual(await finish(s,id,1),result);
+  assert.deepEqual(await request(s,`/api/exports/${id}?onlyUnfinished=true`,{method:'DELETE'}),{cancelled:false,complete:true});
+  await request(s,`/api/exports/${id}`,{method:'DELETE'});assert.deepEqual(await readdir(s.root),[]);await request(s,`/api/exports/${id}`,{},404);
+ }finally{patched.mock.restore();if(s)await stop(s.app);}
+});
+
 test('finish deadline fails explicitly and kills an encoder that never exits',async()=>{
  const hanging=await hangingEncoder(),s=await service({ffmpegPath:hanging.fixture,limits:{finishTimeoutMs:60,killGraceMs:30}}),{id}=await create(s,{frames:1});await hanging.wait();await frame(s,id,0);
  const failure=await request(s,`/api/exports/${id}/finish`,{method:'POST'},500);assert.match(failure.error,/超时/);assert.equal(s.app.ownedProcessCount,0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
 });
 
-test('disconnect while waiting for finish cancels the owned encoder',async()=>{
- const hanging=await hangingEncoder(),s=await service({ffmpegPath:hanging.fixture,limits:{killGraceMs:30}}),{id}=await create(s,{frames:1});await hanging.wait();await frame(s,id,0);
- await new Promise(resolve=>{const req=http.request(s.url+`/api/exports/${id}/finish`,{method:'POST'});req.on('error',()=>resolve());req.end();setTimeout(()=>req.destroy(),40);});
- await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);assert.equal((await request(s,`/api/exports/${id}`)).status,'cancelled');await stop(s.app);
+test('disconnected sealed finish still observes its service-owned deadline and releases the encoder',async()=>{
+ const hanging=await hangingEncoder(),s=await service({ffmpegPath:hanging.fixture,limits:{finishTimeoutMs:150,killGraceMs:30}}),{id}=await create(s,{frames:1});await hanging.wait();await frame(s,id,0);
+ const first=pendingRequest(s,`/api/exports/${id}/finish`),lost=first.response.catch(error=>error);first.req.end();await until(async()=>(await request(s,`/api/exports/${id}`)).status==='finishing');first.req.destroy();await lost;
+ await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);const state=await request(s,`/api/exports/${id}`);assert.equal(state.status,'failed');assert.match(state.error,/超时/);await stop(s.app);
 });
 
 test('slow frame upload times out, returns an error and releases the encoder',async()=>{

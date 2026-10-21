@@ -119,15 +119,50 @@ export async function createExportServer(options={}){
  function clearIdle(s){clearTimeout(s.idle);}
  function touch(s){clearIdle(s);if(s.status==='encoding'){s.idle=setTimeout(()=>void abort(s,'failed','上传等待超时').catch(()=>{}),limits.idleTimeoutMs);s.idle.unref();}}
  async function abort(s,status='cancelled',reason='导出已取消'){
+  // Completion is an acknowledged result. A late failure/timeout cannot
+  // revoke it; only explicit cancellation retains file-removal authority.
+  if(s.status==='complete'&&status!=='cancelled')return;
   if(s.abortPromise)return s.abortPromise;
   s.status=status;s.error=reason;clearIdle(s);
-  s.abortPromise=(async()=>{await stop(s.process);if(s.commitPromise)await s.commitPromise.catch(()=>{});await remove(s.partial);if(status==='cancelled')await remove(s.file);release(s);s.cleaned=true;})().catch(error=>{s.abortPromise=undefined;throw error;});
+  // An in-flight rename may publish bytes after failure was marked. Wait for
+  // that owned commit before removing both possible destinations and their
+  // accounting; no failed session may leave an inaccessible completed file.
+  s.abortPromise=(async()=>{await stop(s.process);if(s.commitPromise)await s.commitPromise.catch(()=>{});await remove(s.partial);await remove(s.file);release(s);s.cleaned=true;})().catch(error=>{s.abortPromise=undefined;throw error;});
   return s.abortPromise;
  }
  function disconnect(req,res,s){
   const cancelled=()=>{if(!res.writableEnded)void abort(s,'cancelled','客户端已断开').catch(()=>{});};
   req.once('aborted',cancelled);res.once('close',cancelled);
   return ()=>{req.off('aborted',cancelled);res.off('close',cancelled);};
+ }
+ function finish(s,finalFrames){
+  // expected remains the admitted planned maximum. Once sealed, the exact
+  // accepted PNG prefix owns the encoder and every retry of its finalization.
+  if(s.finalFrames!==undefined&&s.finalFrames!==finalFrames)throw new HttpError(409,'导出已封定其它完成帧数');
+  if(s.status==='complete')return Promise.resolve(s.result);
+  if(s.status==='finishing'&&s.finishPromise)return s.finishPromise;
+  if(s.status!=='encoding'||s.locked||s.frames!==finalFrames)throw new HttpError(409,s.error||'完成帧数与已接收帧不匹配，或仍有帧正在上传');
+  s.finalFrames=finalFrames;s.status='finishing';clearIdle(s);
+  s.finishPromise=(async()=>{
+   // Finalization belongs to the service after sealing, rather than to any
+   // one HTTP response. Disconnects may retry this same result; explicit
+   // DELETE, shutdown and the bounded timeout retain cancellation authority.
+   const timer=setTimeout(()=>void abort(s,'failed','编码完成超时').catch(()=>{}),limits.finishTimeoutMs);timer.unref();
+   try{
+    s.process.child.stdin.end();const {code}=await s.process.exited;
+    if(code!==0||s.status!=='finishing')throw new HttpError(500,s.error||'FFmpeg 编码失败');
+    if(s.encodedFrames!==s.finalFrames)throw new HttpError(500,`编码帧数不匹配 (${s.encodedFrames}/${s.finalFrames})`);
+    const info=await lstat(s.partial);if(!info.isFile()||info.size===0||info.size>limits.maxOutputBytes)throw new HttpError(507,'编码文件为空或超过容量上限');
+    if(s.status!=='finishing')throw new HttpError(s.status==='cancelled'?499:500,s.error||'导出未能完成');
+    s.commitPromise=(async()=>{
+     await rename(s.partial,s.file);files.set(path.basename(s.file),info.size);storedBytes+=info.size;release(s);
+     if(s.status==='finishing'){s.result={id:s.id,url:`/api/exports/${s.id}/file`,bytes:info.size,frames:s.finalFrames};s.status='complete';}
+    })();await s.commitPromise;
+    if(s.status!=='complete')throw new HttpError(s.status==='cancelled'?499:500,s.error||'导出未能完成');
+    return s.result;
+   }catch(error){await abort(s,s.status==='cancelled'?'cancelled':'failed',error.message);throw error;}finally{clearTimeout(timer);}
+  })();
+  return s.finishPromise;
  }
  async function withUpload(req,max,fn){
   if(uploads>=limits.maxUploads){req.resume();throw new HttpError(429,'同时上传数量超过资源上限');}
@@ -202,7 +237,7 @@ export async function createExportServer(options={}){
    return download(req,res,`${id}.${extension}`,formats[extension].mime);
   }
   if(!s)throw new HttpError(404,'导出任务不存在');
-  if(req.method==='GET'&&!action)return json(res,200,{id,status:s.status,frames:s.frames,expected:s.expected,error:s.status==='failed'?s.error:undefined});
+  if(req.method==='GET'&&!action)return json(res,200,{id,status:s.status,frames:s.frames,expected:s.expected,locked:s.locked,finalFrames:s.finalFrames,...(s.status==='complete'?{url:s.result.url,bytes:s.result.bytes}:{}),error:s.status==='failed'?s.error:undefined});
   if(req.method==='DELETE'&&!action){
    // A dialog can be cancelled/unmounted while the successful finish response
    // is still in flight. Conditional cleanup must not remove its completed file.
@@ -225,20 +260,17 @@ export async function createExportServer(options={}){
    });}catch(error){if(!(error instanceof HttpError)||error.status===408||error.status===499)await abort(s,'failed',error.message);throw error;}finally{unwatch();s.locked=false;touch(s);}
   }
   if(req.method==='POST'&&action==='finish'){
-   if(s.status==='complete')return json(res,200,{id,url:`/api/exports/${id}/file`,bytes:files.get(path.basename(s.file)),frames:s.frames});
-   if(s.status!=='encoding'||s.locked||s.frames!==s.expected)throw new HttpError(409,s.error||'导出帧尚未全部收到或正在完成');
-   s.status='finishing';clearIdle(s);const unwatch=disconnect(req,res,s);
-   const timer=setTimeout(()=>void abort(s,'failed','编码完成超时').catch(()=>{}),limits.finishTimeoutMs);timer.unref();
-   try{
-    s.process.child.stdin.end();const {code}=await s.process.exited;
-    if(code!==0||s.status!=='finishing')throw new HttpError(500,s.error||'FFmpeg 编码失败');
-    if(s.encodedFrames!==s.expected)throw new HttpError(500,`编码帧数不匹配 (${s.encodedFrames}/${s.expected})`);
-    const info=await lstat(s.partial);if(!info.isFile()||info.size===0||info.size>limits.maxOutputBytes)throw new HttpError(507,'编码文件为空或超过容量上限');
-    if(s.status!=='finishing'||res.destroyed)throw new HttpError(499,'客户端已断开');
-    s.commitPromise=(async()=>{await rename(s.partial,s.file);files.set(path.basename(s.file),info.size);storedBytes+=info.size;release(s);if(s.status==='finishing')s.status='complete';})();await s.commitPromise;
-    if(s.status!=='complete')throw new HttpError(499,'导出已取消');
-    return json(res,200,{id,url:`/api/exports/${id}/file`,bytes:info.size,frames:s.frames});
-   }catch(error){await abort(s,s.status==='cancelled'?'cancelled':'failed',error.message);throw error;}finally{clearTimeout(timer);unwatch();}
+   const body=await readBody(req,8192,limits.bodyTimeoutMs);let input={};
+   if(body.length){
+    if(mediaType(req)!=='application/json')throw new HttpError(415,'完成参数需要 JSON 请求');
+    try{input=JSON.parse(body.toString());}catch{throw new HttpError(400,'JSON 请求无效');}
+    if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>key!=='finalFrames'))throw new HttpError(400,'完成参数无效');
+   }
+   const finalFrames=input.finalFrames===undefined?s.expected:input.finalFrames;
+   if(!Number.isSafeInteger(finalFrames)||finalFrames<1||finalFrames>s.expected)throw new HttpError(400,'完成帧数必须在计划帧数范围内');
+   // Upload, cancellation and another finish may have changed the session
+   // while this body was arriving. Recheck and seal at the owning boundary.
+   return json(res,200,await finish(s,finalFrames));
   }
   throw new HttpError(405,'不支持此操作');
  }

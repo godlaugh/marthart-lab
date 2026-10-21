@@ -36,6 +36,7 @@ import {usesRootsNativePresentation} from '../engine/rootsPresentationAuthoring'
 import {usesRootsCameraTimeline,usesRootsGradientTimeline} from '../engine/rootsCameraTimeline';
 import {withRootsFreshRecording} from '../engine/rootsRecording';
 import {exportSessionCleanup,ExportSessionCleanupError,type ExportSessionTicket} from '../engine/exportSessionCleanup';
+import {RecordingVideoDelivery} from '../engine/recordingVideoDelivery';
 export function ExportDialog({
   scene,
   time,
@@ -117,6 +118,9 @@ export function ExportDialog({
     [result, setResult] = useState<{url:string;format:string;name:string}|null>(null);
   const [domainFrames,setDomainFrames]=useState<{first:number;last:number;facts:NonNullable<RasterOutput['domainRender']>;key:string}[]>([]);
   const [domainRoutesTruncated,setDomainRoutesTruncated]=useState(false);
+  const [saveStage,setSaveStage]=useState<'recording'|'stopping'|'saving'>('recording');
+  const [recoveringSave,setRecoveringSave]=useState(false);
+  const saveStop=useRef(false),retrySave=useRef<(()=>void)|null>(null);
   const domainRouteKeys=useRef(new Set<string>());
   const cancelRef = useRef(false),
     sessionRef = useRef<ExportSessionTicket | null>(null),
@@ -178,18 +182,31 @@ export function ExportDialog({
     setResult(null);
     setDomainFrames([]);
     setDomainRoutesTruncated(false);domainRouteKeys.current.clear();
+    saveStop.current=false;setSaveStage('recording');setRecoveringSave(false);
     cancelRef.current = false;
     let g:Generator|null=null;
     const abort=new AbortController();recordingAbort.current=abort;
     let r:ArtRenderer|null=null;
     const checkCancelled=()=>{if(cancelRef.current)throw new DOMException(t('导出已取消'),'AbortError');};
+    const recoverDelivery=(error:Error)=>new Promise<void>((resolve,reject)=>{
+      if(abort.signal.aborted){reject(new DOMException(t('导出已取消'),'AbortError'));return;}
+      setError(t('尚未确认录制保存结果，重试会继续同一个任务。')+'\n'+error.message);setRecoveringSave(true);
+      const settle=(cancelled:boolean)=>{
+        abort.signal.removeEventListener('abort',cancelledRecovery);retrySave.current=null;setRecoveringSave(false);setError('');
+        if(cancelled)reject(new DOMException(t('导出已取消'),'AbortError'));else resolve();
+      };
+      const cancelledRecovery=()=>settle(true);
+      retrySave.current=()=>settle(false);abort.signal.addEventListener('abort',cancelledRecovery,{once:true});
+    });
+    function publishVideoResult(result:{url:string}){
+      checkCancelled();setResult({url:result.url,format,name:scene.name});
+      const a=document.createElement('a');a.href=result.url;a.download=`${scene.name}.${format}`;a.click();
+    }
     async function finishVideo(){
       const ticket=sessionRef.current!;
       const result=await request(`/api/exports/${ticket.id}/finish`,{method:'POST'});
       ticket.finished();sessionRef.current=null;
-      checkCancelled();
-      setResult({url:result.url,format,name:scene.name});
-      const a=document.createElement('a');a.href=result.url;a.download=`${scene.name}.${format}`;a.click();
+      publishVideoResult(result);
     }
     try {
       await exportSessionCleanup.flush();
@@ -211,19 +228,33 @@ export function ExportDialog({
       }
       if(liveRecording){
         if(!currentSourceRecording?.ready)throw new Error(t('请等待当前预览完成并暂停后再录制'));
+        let delivery:RecordingVideoDelivery|undefined,noFrames=false;
         await currentSourceRecording.record({width,height,simulationFps:fixedRetained?fps:recordingFps},{
-          complete:fixedRetained?async()=>{checkCancelled();await finishVideo();checkCancelled();}:undefined,
+          shouldStop:retainedFractal?()=>saveStop.current:undefined,
+          complete:fixedRetained?async(_start,completion)=>{
+            checkCancelled();
+            if(retainedFractal){
+              setSaveStage('saving');setSourceVideoFrames(completion.encodedFrames);
+              if(completion.encodedFrames===0){
+                await sessionRef.current?.cleanup();sessionRef.current=null;noFrames=true;setError(t('没有可保存帧'));return;
+              }
+              const result=await delivery!.finish(completion.encodedFrames);sessionRef.current=null;
+              publishVideoResult(result);setProgress(1);
+            }else await finishVideo();
+            checkCancelled();
+          }:undefined,
           start:async start=>{
             checkCancelled();
             (retainedFractal?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(start.warmup,start.clock,0);
             if(start.warmup.width!==recordingSize.width||start.warmup.height!==recordingSize.height)throw new Error(t('录制实际尺寸与预检不一致，请等待预览完成后重试'));
             const frames=start.clock.encodedFrames;
             setSourceVideoFrames(frames);
-            if(frames===0)throw new Error(t(fixedRetained?'队列在预热帧内已结束，没有可编码帧；请延长队列':'Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列'));
+            if(frames===0){if(retainedFractal)return;throw new Error(t(fixedRetained?'队列在预热帧内已结束，没有可编码帧；请延长队列':'Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列'));}
             const session=await request('/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:videoWidth,height:videoHeight,fps,frames,format,...(fixedRetained?{inputWidth:recordingSize.width,inputHeight:recordingSize.height,...(format==='mp4'?{profile:'mathart',quality:recordingQuality}:{})}:{})})});
             // Register before observing cancellation, including dialog unmount
             // while the server was accepting the create request.
             sessionRef.current=exportSessionCleanup.registerCreated(session.id);
+            if(retainedFractal)delivery=new RecordingVideoDelivery(sessionRef.current,frames,abort.signal,recoverDelivery);
             checkCancelled();
           },
           frame:async(output,index,start)=>{
@@ -231,13 +262,14 @@ export function ExportDialog({
             (retainedFractal?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,start.clock,index+1);
             const blob=await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
             checkCancelled();
-            await request(`/api/exports/${sessionRef.current!.id}/frames?index=${index}`,{method:'POST',headers:{'content-type':'image/png'},body:blob});
+            if(delivery)await delivery.upload(blob,index);
+            else await request(`/api/exports/${sessionRef.current!.id}/frames?index=${index}`,{method:'POST',headers:{'content-type':'image/png'},body:blob});
             checkCancelled();setProgress((index+1)/start.clock.encodedFrames);
           },
         },abort.signal);
         // Source iterated recording keeps its fixed-step owner until encoding ends.
         checkCancelled();if(!fixedRetained)await finishVideo();checkCancelled();
-        onDone(t('视频已编码并导出'));setWorking(false);return;
+        if(!noFrames)onDone(t('视频已编码并导出'));setWorking(false);return;
       }
       g=new Generator();generator.current=g;
       const exportScene=kind==='video'?(fractalFrames?withFractalFreshRecording(scene,recordingFps):rootsFrames?withRootsFreshRecording(scene,recordingFps):perlinFrames?withPerlinFreshRecording(scene,recordingFps):scene):scene;
@@ -392,6 +424,7 @@ export function ExportDialog({
         finally {
           generator.current = null;
           if(recordingAbort.current===abort)recordingAbort.current=null;
+          retrySave.current=null;setRecoveringSave(false);
           setGenerationStatus(null);
         }
       }
@@ -566,8 +599,10 @@ export function ExportDialog({
         )}
         {result&&<a className="export-result" href={result.url} download={`${result.name}.${result.format}`} target="_blank" rel="noreferrer">{t("文件已生成 · 下载")}{result.format.toUpperCase()}</a>}
         <div className="modal-actions">
+          {working&&retainedFractal&&<button disabled={saveStage!=='recording'||recoveringSave} onClick={()=>{saveStop.current=true;setSaveStage('stopping');}}>{t('停止并保存')}</button>}
+          {working&&recoveringSave&&<button onClick={()=>retrySave.current?.()}>{t('重试保存')}</button>}
           {working ? (
-            <button onClick={cancel}>{t("取消导出")}</button>
+            <button disabled={retainedFractal&&saveStage!=='recording'&&!recoveringSave} onClick={cancel}>{t(recoveringSave?'丢弃导出':"取消导出")}</button>
           ) : (
             <button onClick={onClose}>{t("关闭")}</button>
           )}
