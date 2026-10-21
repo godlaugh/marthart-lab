@@ -34,6 +34,9 @@ export type OrdinaryCameraTargetBinding=
  | {readonly kind:'ignored';readonly reason:string};
 export interface OrdinaryCameraParticleFrame {
  readonly frameIndex:number;readonly time:number;readonly deltaTime:number;
+ /** Independent PApplet.frameRate observation; only consuming producers read it.
+  * Omission keeps the producer's fixed-reconstruction FPS. */
+ readonly actualFrameRate?:number;
 }
 export interface OrdinarySourceCameraParticles {
  /** Called once for EVERY track action, in build order, before playback. Even
@@ -286,7 +289,7 @@ export class OrdinarySourceCameraTimelineSession {
  display():OrdinarySourceCameraFrame {try{const state=this.live();if(state.frameIndex<0)throw new OrdinarySourceCameraTimelineError('input','显示需要已初始化的场景');state.particles?.displayFrame?.(state.frameIndex,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
  /** Explicit local seek reconstruction; not a native Scene seek operation. */
  reconstruct(time:number):OrdinarySourceCameraFrame {this.reset();this.evaluate(time);this.mode='live';return this.snapshot();}
- step(dt:number,options:{paused?:boolean}={}):OrdinarySourceCameraFrame {if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new OrdinarySourceCameraTimelineError('input','源队列暂停标记无效');try{const state=this.live();advanceReplay(state,dt,options.paused===true,this.options,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
+ step(dt:number,options:{paused?:boolean;actualFrameRate?:number}={}):OrdinarySourceCameraFrame {if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new OrdinarySourceCameraTimelineError('input','源队列暂停标记无效');try{const state=this.live();advanceReplay(state,dt,options.paused===true,this.options,true,options.actualFrameRate);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
 
  reset():void{this.cache.clear();this.mode=undefined;}
 }
@@ -314,7 +317,7 @@ function createReplay(initial:SourceCameraScalars,tracks:readonly AnimationTrack
   const clock=new RootsSceneClock(plan.initial,plan.clips.map(({rates:_rates,...clip})=>clip)),camera=copy(plan.initial);
   return{plan,clock,facts:clock.snapshot(),camera,start:copy(camera),targets:{},frameIndex:-1,activeDt:0,rates:[0,0,0],startRates:[0,0,0],clipTracking,particles,surfaceMode:options.surfaceMode,overlayAlpha:0,transitionSwitched:false};
 }
-function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySourceCameraTimelineOptions,final:boolean):void {
+function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySourceCameraTimelineOptions,final:boolean,actualFrameRate?:number):void {
  const {plan,clock}=replay,frameIndex=replay.frameIndex+1;
  const point=(binding:Tracking):[number,number,number]=>{
   const value=binding.kind==='origin'?[0,0,0]:binding.readPosition();
@@ -385,7 +388,7 @@ function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySo
    camera.zoom=facts.camera.zoom;
    // Scene.update PC132/183/225: animation, then Mobject, then camera. The
    // queue's final frame still updates Mobject; later frames skip it entirely.
-   if(!before.queueComplete){check(options);replay.particles?.update({frameIndex,time:facts.sceneTime,deltaTime:facts.activeDt});check(options);}
+   if(!before.queueComplete){check(options);replay.particles?.update({frameIndex,time:facts.sceneTime,deltaTime:facts.activeDt,...(actualFrameRate===undefined?{}:{actualFrameRate})});check(options);}
    // CameraController returns before tracking and ambient updates for dt <= 0.
    if(facts.rawDt>0){
     if(replay.tracking)camera.center=point(replay.tracking);

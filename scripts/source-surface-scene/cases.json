@@ -1,0 +1,1496 @@
+{
+  "cases": [
+    {
+      "name": "points-start-stop",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "points-start-stop",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "ambient",
+                "args": [
+                  0.1,
+                  0.2,
+                  0.3
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          },
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": {
+                  "parameters": {
+                    "a": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 11,
+          "paused": true
+        },
+        {
+          "dt": -0.05,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 29.97,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 120,
+          "paused": false
+        },
+        {
+          "dt": 0.3,
+          "actualFrameRate": 15,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 24,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 60,
+          "paused": false
+        },
+        {
+          "dt": 0.5,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "mesh-start-stop",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "mesh-start-stop",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "MESH",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          },
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": {
+                  "parameters": {
+                    "a": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 11,
+          "paused": true
+        },
+        {
+          "dt": -0.05,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 29.97,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 120,
+          "paused": false
+        },
+        {
+          "dt": 0.3,
+          "actualFrameRate": 15,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 24,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 60,
+          "paused": false
+        },
+        {
+          "dt": 0.5,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "points-mesh-points",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "points-mesh-points",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "surface_mode_transition",
+            "duration": 0.2,
+            "to": "MESH",
+            "easing": "LINEAR"
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          },
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": {
+                  "parameters": {
+                    "a": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "surface_mode_transition",
+            "duration": 0.2,
+            "to": "POINTS",
+            "easing": "LINEAR"
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 11,
+          "paused": true
+        },
+        {
+          "dt": -0.05,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 29.97,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 120,
+          "paused": false
+        },
+        {
+          "dt": 0.3,
+          "actualFrameRate": 15,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 24,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 60,
+          "paused": false
+        },
+        {
+          "dt": 0.5,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "zero-duration-start",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "zero-duration-start",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.4
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 11,
+          "paused": true
+        },
+        {
+          "dt": -0.05,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 29.97,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 120,
+          "paused": false
+        },
+        {
+          "dt": 0.3,
+          "actualFrameRate": 15,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 24,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 60,
+          "paused": false
+        },
+        {
+          "dt": 0.5,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "empty-queue",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "empty-queue",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "MESH",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": []
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 11,
+          "paused": true
+        },
+        {
+          "dt": -0.05,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 29.97,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 120,
+          "paused": false
+        },
+        {
+          "dt": 0.3,
+          "actualFrameRate": 15,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 24,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 60,
+          "paused": false
+        },
+        {
+          "dt": 0.5,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "parameter-clip",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "parameter-clip",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "param",
+            "duration": 0.3,
+            "parameters": {
+              "a": {
+                "step": -0.1,
+                "min": -1,
+                "max": 1
+              }
+            }
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 11,
+          "paused": true
+        },
+        {
+          "dt": -0.05,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 29.97,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 120,
+          "paused": false
+        },
+        {
+          "dt": 0.3,
+          "actualFrameRate": 15,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 24,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 60,
+          "paused": false
+        },
+        {
+          "dt": 0.5,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "signed-scene-time",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "signed-scene-time",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "ambient",
+                "args": [
+                  0.1,
+                  0.2,
+                  0.3
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          },
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": {
+                  "parameters": {
+                    "a": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": -0.2,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.15,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "initial-pause",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "initial-pause",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "ambient",
+                "args": [
+                  0.1,
+                  0.2,
+                  0.3
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          },
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": {
+                  "parameters": {
+                    "a": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "transition-with-pauses",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "transition-with-pauses",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "surface_mode_transition",
+            "duration": 0.2,
+            "to": "MESH",
+            "easing": "LINEAR"
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          },
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": {
+                  "parameters": {
+                    "a": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "surface_mode_transition",
+            "duration": 0.2,
+            "to": "POINTS",
+            "easing": "LINEAR"
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.05,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "mesh-initial-pause",
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "mesh-initial-pause",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "MESH",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "ambient",
+                "args": [
+                  0.1,
+                  0.2,
+                  0.3
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          },
+          {
+            "type": "animate",
+            "duration": 0.2,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStop",
+                "args": {
+                  "parameters": {
+                    "a": {}
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.1
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": true
+        },
+        {
+          "dt": 0.1,
+          "actualFrameRate": 37,
+          "paused": false
+        }
+      ]
+    }
+  ]
+}

@@ -21,9 +21,9 @@ No scene queue, drawing, shaders, window, encoder or full GUI lifecycle runs.
 These restrictions are intentional and do not establish framebuffer parity.
 
 `source-surface-observed-clock.test.ts` compares real production CPU geometry and
-GPU uniform producers against the nonempty native traces. Negative raw dt maps
-to a zero active object dt; this test does not claim a live scene-clock adapter
-has been installed. Original double parameter/phase recurrence is compared with
+GPU uniform producers against the nonempty native traces. Signed raw dt is passed through; the production object returns before
+advancing on dt <= 0. The separate source-surface-scene fixture now covers the
+original scene queue and its local retained adapter. Original double parameter/phase recurrence is compared with
 13-decimal tolerance for Java Math versus JS libm. Geometry/uniform Float32
 values compare exactly. Empty native meshes are retained as observations only;
 the local mesh configuration requires positive grid dimensions.

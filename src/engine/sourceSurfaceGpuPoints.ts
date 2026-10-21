@@ -1,10 +1,9 @@
-import type {SourceSurfaceUpdateFrame} from './sourceSurfaceFrame';
 import type {SourceSurfaceFunction} from './sourceSurfaceFunction';
 import {type SourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
 import {createSourceSurfacePointRuntime,sourceSurfaceParticleStart,type SourceSurfacePointRuntimeOptions} from './sourceSurfaceParticles';
 import {prepareSourceSurfaceColors} from './sourceSurfaceColor';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
-import type {OrdinaryCameraTargetRequest} from './ordinarySourceCameraTimeline';
+import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetRequest} from './ordinarySourceCameraTimeline';
 import type {SourceGradientAction} from './sourceGradientRuntime';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
 
@@ -50,7 +49,7 @@ export class SourceSurfaceGpuPoints {
   }else this.diagnostics=[];
  }
  bind(request:OrdinaryCameraTargetRequest){return this.tracking.bind(request);}
- update(frame:SourceSurfaceUpdateFrame){this.tracking.update(frame);}
+ update(frame:OrdinaryCameraParticleFrame){this.tracking.update(frame);}
  setRecordingTrails(enabled:boolean){this.tracking.setRecordingTrails(enabled);}
  beginGradientActions(actions:readonly SourceGradientAction[]){this.tracking.beginGradientActions(actions);}
  interpolateGradientActions(eased:number,finished:boolean){this.tracking.interpolateGradientActions(eased,finished);}

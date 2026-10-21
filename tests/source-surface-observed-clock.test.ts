@@ -17,9 +17,8 @@ describe('original JVM Surface observations through production geometry/uniform 
   const h=host(trace.kind,backend,trace.initial);
   h.beginParameterActions([{kind:'start',scope:{kind:'named',name:'a'},configuration:{step:trace.step,min:trace.min,max:trace.max}}]);h.interpolateParameterActions(1,true);
   for(const [frameIndex,f] of trace.frames.entries()){
-   // Native surface update ignores dt<=0. The shared scene owner supplies
-   // nonnegative activeDt to these local geometry runtimes, separately from rawDt.
-   const frame={frameIndex,time:f.time,deltaTime:Math.max(0,f.dt),actualFrameRate:f.actualFrameRate};
+   // Native surface update ignores dt<=0 without changing signed scene facts.
+   const frame={frameIndex,time:f.time,deltaTime:f.dt,actualFrameRate:f.actualFrameRate};
    h.update(frame);h.displayFrame(frameIndex,true);
    expect(value(h),`frame ${frameIndex}, observed FPS ${f.actualFrameRate}`).toBe(F(f.value.value));
   }

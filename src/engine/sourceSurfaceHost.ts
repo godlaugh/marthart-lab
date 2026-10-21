@@ -1,7 +1,6 @@
-import type {SourceSurfaceUpdateFrame} from './sourceSurfaceFrame';
 import {SourceSurfaceGpuPoints} from './sourceSurfaceGpuPoints';
 import {sourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
-import type {OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
+import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
 import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {prepareSourceSurfaceFunction,type SourceSurfaceFunction} from './sourceSurfaceFunction';
 import {createSourceSurfacePointRuntime,type SourceSurfaceParticles} from './sourceSurfaceParticles';
@@ -81,7 +80,7 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
  interpolateParameterActions(eased:number,finished:boolean){this.guarded(()=>this.initial.runtime.interpolateParameterActions(eased,finished));}
  beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]){this.guarded(()=>this.initial.runtime.beginParameterClip(parameters));}
  finishParameterClip(){this.guarded(()=>this.initial.runtime.finishParameterClip());}
- update(frame:SourceSurfaceUpdateFrame){this.guarded(()=>{
+ update(frame:OrdinaryCameraParticleFrame){this.guarded(()=>{
   if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastDisplay+1||frame.frameIndex<=this.lastUpdate)fail('input','曲面宿主帧更新顺序无效');
   this.current.runtime.update({...frame,frameIndex:frame.frameIndex-this.createdAt});this.lastUpdate=frame.frameIndex;
  });}
