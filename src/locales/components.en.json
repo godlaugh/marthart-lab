@@ -860,5 +860,7 @@
   "录制实际尺寸与预检不一致，请等待预览完成后重试": "Recording dimensions differ from the preflight; wait for the preview and retry.",
   "视频质量": "Video quality",
   "制作级": "Production",
-  "从上次应用的配置开始，首帧预热后按队列结束停止；编码完成后动画继续播放。帧率同时用于模拟和视频编码。": "Start from the last applied configuration, discard one warmup frame, then stop when the queue completes. The animation resumes after encoding finishes. One frame rate controls both simulation and video encoding."
+  "从上次应用的配置开始，首帧预热后按队列结束停止；编码完成后动画继续播放。帧率同时用于模拟和视频编码。": "Start from the last applied configuration, discard one warmup frame, then stop when the queue completes. The animation resumes after encoding finishes. One frame rate controls both simulation and video encoding.",
+  "暂停时拖动平移、滚轮缩放；恢复播放保留平移和缩放。": "While paused, drag to pan and scroll to zoom. Pan and zoom are retained on resume.",
+  "暂停时拖动旋转、滚轮缩放；恢复播放还原旋转角度、保留缩放。": "While paused, drag to rotate and scroll to zoom. Resume restores rotation and retains zoom."
 }

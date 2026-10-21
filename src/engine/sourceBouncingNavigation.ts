@@ -1,4 +1,5 @@
 import {SOURCE_CAMERA_MODEL,type SourceCameraInput} from './sourceCamera';
+import {sourceViewportRotation,sourceViewportZoom} from './sourceViewportArithmetic';
 import type {SourceBouncingError,SourceBouncingResult} from './sourceBouncingConfig';
 
 export const SOURCE_BOUNCING_VIEW_MODEL='source-bouncing-view-1.7.8' as const;
@@ -101,16 +102,16 @@ export function navigateSourceBouncing(current:SourceBouncingNavigationState,eve
  let view:SourceBouncingView;
  if(event.kind==='drag'){
   const e=exact(event,['kind','dx','dy'],['event']),dx=eventFloat(e.dx,['event','dx']),dy=eventFloat(e.dy,['event','dy']);
-  const theta=F(previous.view.theta-F(dx*F(.01))),phi=F(previous.view.phi+F(dy*F(.01)));
+  const {theta,phi}=sourceViewportRotation(previous.view.phi,previous.view.theta,dx,dy);
   if(!Number.isFinite(theta)||!Number.isFinite(phi))fail(['event'],'拖动后源相机角度溢出','nonfinite');
   view=Object.freeze({...previous.view,theta,phi});
  }else if(event.kind==='wheel'){
   const e=exact(event,['kind','count'],['event']),count=eventFloat(e.count,['event','count']);
   // Native widens zoom and 1.05f, uses double pow/product, narrows once,
   // then constrains. Intermediate infinity is clamped rather than rejected.
-  const scaled=F(previous.view.zoom*Math.pow(F(1.05),-count));
+  const scaled=sourceViewportZoom(previous.view.zoom,count);
   if(Number.isNaN(scaled))fail(['event','count'],'缩放结果不是数值','nonfinite');
-  view=Object.freeze({...previous.view,zoom:Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,scaled))});
+  view=Object.freeze({...previous.view,zoom:scaled});
  }else return fail(['event','kind'],'未知源弹跳视角交互');
  return state(view,true,previous.savedAngles);
 });}

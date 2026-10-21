@@ -270,6 +270,16 @@ export class OrdinarySourceCameraTimelineSession {
   const values:{phi?:number;theta?:number;gamma?:number}={};for(const axis of axes)if(angles[axis]!==undefined)values[axis]=float(angles[axis]!,`源相机热 ${axis}`);
   if(!this.cache.size)throw new OrdinarySourceCameraTimelineError('input','源相机热写入需要已初始化队列');for(const replay of this.cache.values())Object.assign(replay.camera,values);
  }
+ /** Runtime viewport control retains queue phase, tracking and child starts.
+  * Zoom is owned by the queue clock; writing only the presentation copy would
+  * silently revert it on the next unpaused update. */
+ writeViewport(camera:SourceCameraScalars):void {
+  const parsed=resolveSourceCamera({model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:camera});
+  if(!parsed.ok)throw parsed.error;if(parsed.value.kind!=='known')throw new OrdinarySourceCameraTimelineError('input','源相机视口未知');
+  if(!this.cache.size)throw new OrdinarySourceCameraTimelineError('input','源相机热写入需要已初始化队列');
+  const next=parsed.value.state.value;
+  for(const replay of this.cache.values()){replay.clock.writeZoom(next.zoom);Object.assign(replay.camera,copy(next));}
+ }
  private live():Replay {check(this.options);if(this.mode==='fixed')throw new OrdinarySourceCameraTimelineError('input','固定帧回放不能作为实时队列续接');this.mode='live';let state=this.cache.get('owned');if(!state){state=createReplay(this.initial,this.tracks,this.fps,this.options);this.cache.set('owned',state);}return state;}
  snapshot():OrdinarySourceCameraFrame {const state=this.live();return snapshotReplay(state,state.facts.sceneTime);}
  /** Render the current owned state without Scene.update or clock advancement. */

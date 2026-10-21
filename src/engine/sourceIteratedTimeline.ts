@@ -117,6 +117,7 @@ export class SourceIteratedTimelineSession {
  }
  writeParameters(changes:readonly (readonly [string,number])[]){if(!this.parameterWriter)throw Error('迭代参数运行时尚未初始化');this.parameterWriter(changes);}
  writeAngles(angles:Parameters<OrdinarySourceCameraTimelineSession['writeAngles']>[0]){this.session.writeAngles(angles);}
+ writeViewport(camera:Parameters<OrdinarySourceCameraTimelineSession['writeViewport']>[0]){this.session.writeViewport(camera);}
  reset(){this.session.reset();this.parameterWriter=undefined;this.palette=undefined;this.parameters=undefined;this.mapColors=undefined;this.index=-1;this.updatedFrame=-1;this.calls=[];this.work=0;this.acknowledgeParameters=true;}
 }
 /** Three bounded forward lanes cover display lookahead, frame zero and density

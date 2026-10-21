@@ -1,0 +1,608 @@
+{
+  "evidenceKind": "original-jvm-methods-on-synthetic-objects",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "coreJarSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+  "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+  "harnessSha256": "b647c149f778b037d6e92a6e9ad054c99c27dc05e44528e439a0b72617f8bd1e",
+  "executableSha256": "fcb739e661025682749b4c5900fc0f2f5a52a38cefb245bf40d3eb715c935f5c",
+  "floatBitsOrder": [
+    "phi",
+    "theta",
+    "gamma",
+    "zoom",
+    "center.x",
+    "center.y",
+    "center.z"
+  ],
+  "methods": [
+    "MathArt.mousePressed",
+    "MathArt.mouseDragged",
+    "MathArt.mouseWheel",
+    "MathArt.togglePause",
+    "GenericMapAttractorScene.handlePausedViewportDrag",
+    "PApplet.redraw/noLoop/loop"
+  ],
+  "scope": "JNI AllocObject and explicit synthetic fields, direct original methods; no constructors, application main, native window, draw or rendering thread. No formula reimplementation used for outputs. lastTime changed using original millis but nondeterministic wall-clock field omitted.",
+  "defaultInputs": {
+    "pointerStart": [
+      10,
+      20
+    ],
+    "pointerEnd": [
+      47,
+      -13
+    ],
+    "viewport": [
+      640,
+      480
+    ],
+    "dimensionForSymmetry": "not consulted",
+    "zeroFields": "JNI AllocObject defaults; no event modifiers installed"
+  },
+  "cases": [
+    {
+      "id": "map2-resume",
+      "dimension": 2,
+      "input": {
+        "start": [
+          10,
+          20
+        ],
+        "end": [
+          47,
+          -13
+        ],
+        "width": 640,
+        "height": 480,
+        "wheelCount": -3,
+        "button": 39
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "navigated": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1069588727,
+          3194876648,
+          3214329068,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "resumed": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1069588727,
+          3194876648,
+          3214329068,
+          1081081856
+        ],
+        "paused": false,
+        "redraw": true,
+        "looping": true
+      },
+      "operations": [
+        "set paused=false and looping=true",
+        "original togglePause enters pause and saves angles",
+        "original mousePressed + mouseDragged",
+        "original mouseWheel",
+        "original togglePause resumes"
+      ]
+    },
+    {
+      "id": "map3-resume",
+      "dimension": 3,
+      "input": {
+        "start": [
+          10,
+          20
+        ],
+        "end": [
+          47,
+          -13
+        ],
+        "width": 640,
+        "height": 480,
+        "wheelCount": -3,
+        "button": 39
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "navigated": {
+        "floatBits": [
+          3181631240,
+          3213843497,
+          1040187392,
+          1069588727,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "resumed": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1069588727,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": false,
+        "redraw": true,
+        "looping": true
+      },
+      "operations": [
+        "set paused=false and looping=true",
+        "original togglePause enters pause and saves angles",
+        "original mousePressed + mouseDragged",
+        "original mouseWheel",
+        "original togglePause resumes"
+      ]
+    },
+    {
+      "id": "symmetry-resume",
+      "dimension": 2,
+      "input": {
+        "start": [
+          10,
+          20
+        ],
+        "end": [
+          47,
+          -13
+        ],
+        "width": 640,
+        "height": 480,
+        "wheelCount": -3,
+        "button": 39
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "navigated": {
+        "floatBits": [
+          3181631240,
+          3213843497,
+          1040187392,
+          1069588727,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "resumed": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1069588727,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": false,
+        "redraw": true,
+        "looping": true
+      },
+      "operations": [
+        "set paused=false and looping=true",
+        "original togglePause enters pause and saves angles",
+        "original mousePressed + mouseDragged",
+        "original mouseWheel",
+        "original togglePause resumes"
+      ]
+    },
+    {
+      "id": "wheel-0",
+      "input": {
+        "count": 0
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "operations": [
+        "original mouseWheel only"
+      ]
+    },
+    {
+      "id": "wheel-1",
+      "input": {
+        "count": 1
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067350504,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "operations": [
+        "original mouseWheel only"
+      ]
+    },
+    {
+      "id": "wheel-2",
+      "input": {
+        "count": -1
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1068415057,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "operations": [
+        "original mouseWheel only"
+      ]
+    },
+    {
+      "id": "wheel-3",
+      "input": {
+        "count": 2
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1009089144,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1008981770,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "operations": [
+        "original mouseWheel only"
+      ]
+    },
+    {
+      "id": "wheel-4",
+      "input": {
+        "count": 2147483647
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1008981770,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "operations": [
+        "original mouseWheel only"
+      ]
+    },
+    {
+      "id": "wheel-5",
+      "input": {
+        "count": -2147483648
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1148846080,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "operations": [
+        "original mouseWheel only"
+      ]
+    },
+    {
+      "id": "running-guard",
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": false,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": false,
+        "redraw": false,
+        "looping": false
+      },
+      "input": {
+        "dimension": "symmetry",
+        "paused": false,
+        "pointerStart": [
+          10,
+          20
+        ],
+        "pointerEnd": [
+          47,
+          -13
+        ],
+        "button": 37,
+        "wheelCount": -3,
+        "viewport": [
+          640,
+          480
+        ]
+      }
+    },
+    {
+      "id": "pick-guard",
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "input": {
+        "dimension": "symmetry",
+        "paused": true,
+        "fractalViewportPickMode": true,
+        "pointerEnd": [
+          47,
+          -13
+        ],
+        "wheelCount": -3,
+        "skipMousePressed": true
+      }
+    },
+    {
+      "id": "map2-degenerate",
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          0,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "result": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          0,
+          3378631787,
+          1229548119,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "input": {
+        "dimension": 2,
+        "paused": true,
+        "pointerStart": [
+          10,
+          20
+        ],
+        "pointerEnd": [
+          47,
+          -13
+        ],
+        "button": 37,
+        "viewport": [
+          0,
+          0
+        ],
+        "zoom": 0,
+        "wheelCount": null
+      }
+    }
+  ]
+}

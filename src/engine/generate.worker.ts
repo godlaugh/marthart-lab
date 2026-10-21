@@ -40,6 +40,12 @@ self.onmessage = (
     // A failed release keeps the old owner and must still answer this request.
     if(recording&&(owner!==sessionId||!isSourceRecordingOperation(operation)))throw new Error('源场景录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
+    if(event.data.operation==='iterated-navigation'){
+      const source=completed;
+      if(!source||source.id!==event.data.sourceId||(source.scene.kind!=='map'&&source.scene.kind!=='symmetry'))throw Error('迭代视口对应的主预览已过期');
+      const output=temporalSession[source.scene.kind==='map'?'sourceMap':'sourceSymmetry'].navigatePaused(source.scene,source.context,event.data.event);
+      completed={...source,id};send({operation:'iterated-navigation',id,sourceId:source.id,output},[output.pixels.buffer]);return;
+    }
     if(event.data.operation==='iterated-parameters'){
       const source=completed;
       if(!source||source.id!==event.data.sourceId||(source.scene.kind!=='map'&&source.scene.kind!=='symmetry'))throw Error('迭代参数对应的主预览已过期');

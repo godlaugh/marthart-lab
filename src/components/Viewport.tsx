@@ -1,3 +1,5 @@
+import {sourceIteratedLiveKind} from '../engine/sourceLivePreview';
+import type {SourceIteratedNavigationEvent} from '../engine/sourceIteratedNavigation';
 import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
 import {sourceQueuePresentedScene} from '../engine/sourceQueuePresentation';
 import {sourceBouncingViewFromCamera,type SourceBouncingView,type SourceBouncingNavigationEvent} from '../engine/sourceBouncingNavigation';
@@ -43,6 +45,7 @@ export const Viewport = forwardRef<
     onCamera?: (c: CameraState) => void;
     onSize?:(width:number,height:number,resolution?:ProjectResolution,pixelRatio?:number)=>void;
     onViewSettings?: (values:Settings)=>void;
+    onSourceIteratedNavigate?:(expected:SceneDocument,sessionId:string,event:SourceIteratedNavigationEvent)=>boolean;
     sourceBouncingInteractionEpoch?:number;
     onSourceBouncingNavigate?:(expected:SceneDocument,view:SourceBouncingView,checkpoint:SourceBouncingCheckpoint,event:SourceBouncingNavigationEvent,begin:boolean,epoch:number)=>SourceBouncingView|undefined;
     onSamilaViewport?:SamilaViewportCommit;
@@ -50,15 +53,15 @@ export const Viewport = forwardRef<
     pickingJulia?:boolean;
     onPickJulia?:(values:Settings)=>void;
   }
->(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia }, ref) {
+>(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia }, ref) {
   const {t}=useI18n();
   const [renderError,setRenderError]=useState('');
   const [navigationNotice,setNavigationNotice]=useState('');
   useEffect(()=>setNavigationNotice(''),[scene]);
   const sourceBouncing=usesSourceBouncing(scene);
   const bulb=scene.kind==='fractal'&&scene.settings.formula==='mandelbulb_3d'&&scene.settings.bulbPresentation!=='points';
-  const plane=hasMathematicalPlane(scene),managed=bulb||plane||sourceBouncing;
-  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
+  const plane=hasMathematicalPlane(scene),managed=bulb||plane||sourceBouncing||!!sourceIteratedLiveKind(scene);
+  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
   const canvas = useRef<HTMLCanvasElement>(null),
     renderer = useRef<ArtRenderer | null>(null),
     lastId = useRef("");
@@ -135,8 +138,17 @@ export const Viewport = forwardRef<
     type SamilaDrag={id:number;x:number;y:number;mode:'samila';scale:number;width:number;height:number;view:SamilaCapture;expected:SceneDocument;began:boolean;lastX:number;lastY:number};
     type RootsDrag={id:number;x:number;y:number;mode:'roots';expected:SceneDocument;view:RootsPresentationConfiguration;began:boolean;width:number;height:number};
     type BouncingCapture={epoch:number;view:SourceBouncingView;expected:SceneDocument;checkpoint:SourceBouncingCheckpoint};
+    type IteratedCapture={expected:SceneDocument;sessionId:string};
+    type IteratedDrag=IteratedCapture&{id:number;x:number;y:number;mode:'iterated'};
+    const captureIterated=():IteratedCapture|undefined=>{
+      const current=interaction.current,frame=presented.current.read(),delivered=deliveredOutput.current;
+      if(current.renderPending||current.planeFrameReady===false||frame?.source!==current.scene||delivered?.source!==current.scene||delivered.output.type!=='raster')return;
+      const facts=delivered.output.mapLive??delivered.output.symmetryLive;
+      if(!facts?.paused||!current.onSourceIteratedNavigate)return;return{expected:current.scene,sessionId:facts.sessionId};
+    };
+    let iteratedWheel:(IteratedCapture&{last:number})|undefined;
     type BouncingDrag=BouncingCapture&{id:number;x:number;y:number;mode:'bouncing';began:boolean};
-    let drag:NavigationDrag|SamilaDrag|RootsDrag|BouncingDrag|undefined,revision=0;
+    let drag:NavigationDrag|SamilaDrag|RootsDrag|BouncingDrag|IteratedDrag|undefined,revision=0;
     let bouncingWheel:(BouncingCapture&{last:number})|undefined;
     const captureBouncing=():BouncingCapture|undefined=>{
       const current=interaction.current,frame=presented.current.read(),delivered=deliveredOutput.current;
@@ -145,7 +157,7 @@ export const Viewport = forwardRef<
       if(!view.ok)return;return{epoch:current.sourceBouncingInteractionEpoch??0,view:view.value,expected:current.scene,checkpoint:facts.checkpoint};
     };
     let wheelGesture:{expected:SceneDocument;view:SamilaCapture;last:number}|undefined;
-    const active=()=>interaction.current.managed&&!interaction.current.playing&&!interaction.current.scene.sourceCamera;
+    const active=()=>interaction.current.managed&&!interaction.current.playing&&(!interaction.current.scene.sourceCamera||!!sourceIteratedLiveKind(interaction.current.scene));
     const samila=()=>samilaCameraEnabled(interaction.current.scene);
     const hasDeliveredSamila=()=>deliveredOutput.current?.output.type==='raster'&&deliveredOutput.current.output.samilaView;
     const capture=()=>{
@@ -169,9 +181,12 @@ export const Viewport = forwardRef<
       return{view:planeNavigation(interaction.current.scene,width,height,output?.density?.bounds),rect:rasterPresentationRect(element.clientWidth,element.clientHeight,width,height)};
     };
     const down=(event:PointerEvent)=>{
-      if(!active()||event.button!==0&&!usesSourceBouncing(interaction.current.scene))return;
-      try{const current=interaction.current;wheelGesture=undefined;bouncingWheel=undefined;
-        if(usesSourceBouncing(current.scene)){
+      if(!active()||event.button!==0&&!usesSourceBouncing(interaction.current.scene)&&!sourceIteratedLiveKind(interaction.current.scene))return;
+      try{const current=interaction.current;wheelGesture=undefined;bouncingWheel=undefined;iteratedWheel=undefined;
+        if(sourceIteratedLiveKind(current.scene)){
+          const captured=captureIterated();if(!captured)return;
+          drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'iterated'};
+        }else if(usesSourceBouncing(current.scene)){
           const captured=captureBouncing();if(!captured||!current.onSourceBouncingNavigate)return;
           drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'bouncing',began:false};
         }else if(usesRootsNativePresentation(current.scene)){
@@ -194,7 +209,11 @@ export const Viewport = forwardRef<
     const move=(event:PointerEvent)=>{
       if(!active()){drag=undefined;return;}if(!drag||event.pointerId!==drag.id)return;
       try{
-        if(drag.mode==='bouncing'){
+        if(drag.mode==='iterated'){
+          const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!dx&&!dy)return;
+          if(!interaction.current.onSourceIteratedNavigate?.(drag.expected,drag.sessionId,{kind:'drag',dx,dy})){drag=undefined;return;}
+          drag.x=event.clientX;drag.y=event.clientY;
+        }else if(drag.mode==='bouncing'){
           const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!dx&&!dy)return;
           const accepted=interaction.current.onSourceBouncingNavigate?.(drag.expected,drag.view,drag.checkpoint,{kind:'drag',dx,dy},!drag.began,drag.epoch);
           if(!accepted){drag=undefined;return;}drag.view=accepted;drag.x=event.clientX;drag.y=event.clientY;drag.began=true;
@@ -217,10 +236,15 @@ export const Viewport = forwardRef<
     };
     const end=()=>{drag=undefined;};
     const wheel=(event:WheelEvent)=>{
-      if(!active()){bouncingWheel=undefined;return;}if(drag?.mode==='samila'||drag?.mode==='bouncing')return;event.preventDefault();
+      if(!active()){bouncingWheel=undefined;iteratedWheel=undefined;return;}if(drag?.mode==='samila'||drag?.mode==='bouncing'||drag?.mode==='iterated')return;event.preventDefault();
       try{
         const current=interaction.current,pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?element.clientHeight:1);
-        if(usesSourceBouncing(current.scene)){
+        if(sourceIteratedLiveKind(current.scene)){
+          if(!pixels)return;const now=performance.now(),captured=iteratedWheel&&now-iteratedWheel.last<250?iteratedWheel:captureIterated();if(!captured)return;
+          // DOM line=one count; pixel=1/16 count. Keep every event's rounding.
+          const accepted=current.onSourceIteratedNavigate?.(captured.expected,captured.sessionId,{kind:'wheel',count:pixels/16});
+          iteratedWheel=accepted?{...captured,last:now}:undefined;
+        }else if(usesSourceBouncing(current.scene)){
           if(!pixels)return;const now=performance.now(),continuing=!!bouncingWheel&&now-bouncingWheel.last<250;
           const captured=continuing?bouncingWheel:captureBouncing();if(!captured)return;
           // Local DOM mapping: a line is one count; pixel events use 16 px.
@@ -250,7 +274,7 @@ export const Viewport = forwardRef<
         }
       }catch(error){setRenderError(error instanceof Error?error.message:String(error));}
     };
-    const contextMenu=(event:MouseEvent)=>{if(usesSourceBouncing(interaction.current.scene))event.preventDefault();};
+    const contextMenu=(event:MouseEvent)=>{if(usesSourceBouncing(interaction.current.scene)||sourceIteratedLiveKind(interaction.current.scene))event.preventDefault();};
     element.addEventListener('contextmenu',contextMenu);
     element.addEventListener('pointerdown',down);element.addEventListener('pointermove',move);element.addEventListener('pointerup',end);element.addEventListener('pointercancel',end);element.addEventListener('lostpointercapture',end);element.addEventListener('wheel',wheel,{passive:false});
     return()=>{element.removeEventListener('contextmenu',contextMenu);element.removeEventListener('pointerdown',down);element.removeEventListener('pointermove',move);element.removeEventListener('pointerup',end);element.removeEventListener('pointercancel',end);element.removeEventListener('lostpointercapture',end);element.removeEventListener('wheel',wheel);};
@@ -284,6 +308,6 @@ export const Viewport = forwardRef<
       style={pickingJulia?{cursor:'crosshair'}:undefined}
       aria-label={t("数学艺术画布")}
       data-testid="art-canvas"
-    />{sourceBouncing&&<div className="viewport-note" role="status">{t("暂停时可拖动旋转、滚轮缩放；恢复播放会还原旋转角度，保留缩放。")}</div>}{scene.sourceCamera&&<div className="viewport-note" role="status">{t("当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
+    />{sourceBouncing&&<div className="viewport-note" role="status">{t("暂停时可拖动旋转、滚轮缩放；恢复播放会还原旋转角度，保留缩放。")}</div>}{scene.sourceCamera&&<div className="viewport-note" role="status">{t(sourceIteratedLiveKind(scene)?scene.kind==='map'&&scene.mapSource?.construction.dimension===2?"暂停时拖动平移、滚轮缩放；恢复播放保留平移和缩放。":"暂停时拖动旋转、滚轮缩放；恢复播放还原旋转角度、保留缩放。":"当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
   );
 });

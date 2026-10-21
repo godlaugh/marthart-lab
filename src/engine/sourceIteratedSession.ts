@@ -1,4 +1,5 @@
 import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
+import {navigateSourceIteratedCamera,type SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {snapshotGenerationInput} from './generationInput';
 import {planSourceIteratedRecording,assertSourceIteratedRecordingFrame,sourceIteratedRecordingSize} from './sourceIteratedRecording';
@@ -81,6 +82,19 @@ export class SourceIteratedSession {
   const changes=sourceIteratedParameterChanges(before,next,writes);if(!changes)throw Error('该编辑不是已有迭代参数热更新');
   this.timeline.writeParameters(changes);this.authored=structuredClone(next);this.shape=sourceIteratedApplyIdentity(next);this.frame=this.timeline.snapshot();
   this.completed!.identity=this.captureIdentity(next,c);
+ }
+ /** Native input changes the live camera, then redraws the paused scene.
+  * It never applies the author document or reconstructs the particle owner. */
+ navigatePaused(scene:SceneDocument,c:GenerateContext,event:SourceIteratedNavigationEvent):Raster {
+  if(!this.matchesCompletedPrimary(scene,c)||!this.timeline||!this.clock||!this.particleConstruction)throw Error('迭代视口交互需要匹配的已完成主预览');
+  this.clock.assertPaused(true);cancel(c);
+  const viewport=this.completed!.context.sourceViewport!;
+  const mode=this.family==='map'&&this.particleConstruction.mapSource!.construction.dimension<3?'map-2d':'rotate';
+  const next=navigateSourceIteratedCamera(this.timeline.snapshot().frame.camera,mode,event,viewport.logicalWidth,viewport.logicalHeight);
+  if(!next.ok)throw next.error;
+  this.cleanup.prepare();this.busy=true;
+  try{this.timeline.writeViewport(next.value);return this.present(c,this.advance(c,0,true));}
+  catch(error){this.reset([error]);throw error;}finally{this.busy=false;}
  }
  private advance(c:GenerateContext,dt:number,paused:boolean,reconstructing=false){
   cancel(c);const replaying=this.replay!.willReplayDisplay(c.width,c.height);

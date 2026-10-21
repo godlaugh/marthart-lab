@@ -226,6 +226,9 @@ export class RootsSceneClock {
           updates:state.gradient.phases.length,phases:Object.freeze(state.gradient.phases.map(phase=>Object.freeze({...phase})))})}:{})});
   }
 
+  /** CameraController.zoom is also writable between queue updates. Keep the
+   * active Zoom animation's captured start and destination intact. */
+  writeZoom(zoom:number):void {this.state.camera.zoom=finiteFloat(zoom,'热 zoom');}
   reset():void {this.state=fresh(this.initial,this.initialOffset,this.clips.length===0);}
 
   step(rawDt:number,options:{paused?:boolean;isCancelled?:()=>boolean;allowSignedDt?:boolean}={}):RootsSceneFrame {

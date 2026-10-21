@@ -1043,6 +1043,10 @@ export default function App() {
               onCamera={cameraChanged}
               onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
               onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}))}
+              onSourceIteratedNavigate={(expected,sessionId,event)=>{
+                if(playingRef.current||exporting||recording||previewCancelled||error||sceneRef.current!==expected||liveSessionId.current!==sessionId)return false;
+                return generationQueue.current?.navigateIteratedPaused(expected,sessionId,event)??false;
+              }}
               sourceBouncingInteractionEpoch={bouncingGestureEpoch}
               onSourceBouncingNavigate={(expected,view,checkpoint,event,begin,epoch)=>{
                 if(epoch!==bouncingGestureEpochRef.current||playingRef.current||exporting||recording||sceneRef.current!==expected||!usesSourceBouncing(expected)||!bouncingNavigationRef.current.paused||!sourceBouncingViewsEqual(view,bouncingNavigationRef.current.view)||checkpoint.simulationUpdates!==bouncingFrame.current.simulationUpdates||checkpoint.sceneTime!==bouncingFrame.current.sceneTime||begin&&(!bouncingPresented.current||generationPending.current))return;

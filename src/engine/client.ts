@@ -1,4 +1,5 @@
 import {snapshotGenerationInput} from './generationInput';
+import type {SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
 import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
@@ -12,6 +13,7 @@ function recordingRaster(value:unknown,family:string):value is SourceRecordingRa
 }
 type Completed={id:number;scene:SceneDocument;output:SceneOutput};
 type Pending =
+  | {operation:'iterated-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'iterated-parameters';source:Completed;scene:SceneDocument;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'samila-playback'|'symmetry-playback'|'map-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'source-recording-begin';source:Completed;handle:SourceRecordingHandle;resolve:(value:SourceRecordingStart)=>void;reject:(error:Error)=>void}
@@ -32,7 +34,7 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean};
-  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback');}
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
@@ -51,6 +53,12 @@ export class Generator {
       if (data.sessionId !== this.sessionId) return;
       const p = this.pending.get(data.id);
       if (!p) return;
+      if(p.operation==='iterated-navigation'){
+        if(data.operation!=='iterated-navigation'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'迭代视口响应身份不匹配'));return;}
+        const output=data.output,before=p.source.output,key=p.source.scene.kind==='map'?'mapLive':'symmetryLive';
+        if(!recordingRaster(output,p.source.scene.kind)||before.type!=='raster'||!output[key]?.paused||output[key]?.sessionId!==before[key]?.sessionId||output[key]?.sceneTime!==before[key]?.sceneTime||output.sourceCameraFrame?.viewport.target!=='primary'||output.width!==before.width||output.height!==before.height){this.invalidate(new Error('迭代视口响应帧无效'));return;}
+        this.pending.delete(data.id);this.completed={...p.source,id:data.id,output};p.resolve(output);return;
+      }
       if(p.operation==='iterated-parameters'){
         if(data.operation!=='iterated-parameters'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'迭代参数响应身份不匹配'));return;}
         this.pending.delete(data.id);this.completed={...p.source,scene:p.scene};p.resolve();return;
@@ -164,6 +172,12 @@ export class Generator {
   }
   captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('map-paused-capture',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('symmetry-paused-capture',output,size,scale);}
+  navigateIteratedPaused(output:SceneOutput,event:SourceIteratedNavigationEvent):Promise<SceneOutput>{
+    const source=this.completed;
+    if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代视口交互需要当前已完成的主预览'));
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'iterated-navigation',source,resolve,reject});try{this.worker!.postMessage({operation:'iterated-navigation',sessionId:this.sessionId,id,sourceId:source.id,event} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+  }
   updateIteratedParameters(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>{
     const source=this.completed;
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代参数更新需要当前已完成的主预览'));

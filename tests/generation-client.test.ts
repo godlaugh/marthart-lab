@@ -229,6 +229,26 @@ describe.each(['map','symmetry'] as const)('%s live client capability',family=>{
   else if(failure!=='send')w.emit({operation:'iterated-parameters',id:c.id,sessionId:c.sessionId,sourceId:999});
   expect(await pending).toBeInstanceOf(Error);expect(w.terminated).toBe(true);await expect(g[set](live,false)).rejects.toThrow('已完成');g.dispose();
  });
+ it.each(['source','operation','error','send','session','time','pixels','size','paused'] as const)('retires invalid navigation response: %s',async failure=>{
+  const original={...live,[key]:{sessionId:'live',clock:'realtime-source-queue',sceneTime:2,paused:true}} as SceneOutput;
+  const {g,w,r}=await ready(original);if(failure==='send')w.postMessage=()=>{throw Error('send');};
+  const p=g.navigateIteratedPaused(original,{kind:'wheel',count:1}).catch(e=>e),c=w.messages.at(-1)!;
+  if(failure==='error')w.emit({operation:'iterated-navigation',id:c.id,sessionId:c.sessionId,error:'rejected'});
+  else if(failure==='operation')w.emit({operation:'generate',id:c.id,sessionId:c.sessionId,output:original});
+  else if(failure!=='send'){
+   const result={...original,[key]:{sessionId:failure==='session'?'wrong':'live',clock:'realtime-source-queue',sceneTime:failure==='time'?3:2,paused:failure!=='paused'},...(failure==='pixels'?{pixels:new Uint8ClampedArray(0)}:{}),...(failure==='size'?{width:2,pixels:new Uint8ClampedArray(8)}:{})} as SceneOutput;
+   w.emit({operation:'iterated-navigation',id:c.id,sessionId:c.sessionId,sourceId:failure==='source'?999:r.id,output:result});
+  }
+  expect(await p).toBeInstanceOf(Error);expect(w.terminated).toBe(true);g.dispose();
+ });
+ it('rebinds navigation output and rejects interleaved generation or old frame reuse',async()=>{
+  const original={...live,[key]:{sessionId:'live',clock:'realtime-source-queue',sceneTime:2,paused:true}} as SceneOutput;
+  const {g,w,r}=await ready(original),p=g.navigateIteratedPaused(original,{kind:'drag',dx:1,dy:2}),c=w.messages.at(-1)!;
+  await expect(g.generate(createScene(definition(family)),ctx)).rejects.toThrow('尚未完成');
+  const result={...original};w.emit({operation:'iterated-navigation',id:c.id,sessionId:c.sessionId,sourceId:r.id,output:result});expect(await p).toBe(result);
+  await expect(g.navigateIteratedPaused(original,{kind:'wheel',count:1})).rejects.toThrow('已完成');
+  const next=g[set](result,false),control=w.messages.at(-1)!;expect(control).toHaveProperty('sourceId',c.id);w.emit({operation:playback,id:control.id,sessionId:control.sessionId,sourceId:c.id,paused:false});await next;g.dispose();
+ });
  it('retains exact image through repeated parameter controls and refuses interleaved draws',async()=>{
   const {g,w,r}=await ready(),next=createScene(definition(family));
   await expect(g.updateIteratedParameters({...live},next,[['gain',.2]])).rejects.toThrow('已完成');

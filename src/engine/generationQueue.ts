@@ -1,4 +1,5 @@
 import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
+import type {SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
 import {sourceIteratedSceneIdentity} from './sourceIteratedLiveIdentity';
 import {sourceSamilaSceneIdentity} from './sourceSamilaIdentity';
 import {snapshotGenerationInput} from './generationInput';
@@ -12,6 +13,7 @@ import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
 interface GeneratorPort {
+  navigateIteratedPaused?(output:SceneOutput,event:SourceIteratedNavigationEvent):Promise<SceneOutput>;
   updateIteratedParameters?(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>;
   generate(scene:SceneDocument,context:Context,onProgress?:(output:SceneOutput)=>void):Promise<SceneOutput>;
   setMapPaused?(output:SceneOutput,paused:boolean):Promise<void>;
@@ -50,6 +52,10 @@ interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:So
 // Component teardown must not discard the only reference to a failed release.
 // These owners are retried explicitly, or once when another queue is created.
 const retiredQueues=new Set<GenerationQueue>();
+/** Local input backpressure: retain at most eight pending GPU redraws. This
+ * bounds work after a burst; it is not a native event-count restriction.
+ * Never merge deltas, which would alter Float32 and ink-clear ordering. */
+export const MAX_PENDING_ITERATED_NAVIGATION=8;
 export async function retryRetiredGenerationQueueCleanup():Promise<void>{
   const results=await Promise.allSettled([...retiredQueues].map(queue=>queue.retrySourceRecordingCleanup()));
   const errors=results.flatMap(result=>result.status==='rejected'?[result.reason]:[]);
@@ -67,6 +73,7 @@ export class GenerationQueue {
   private captureOwner?:{retire:boolean};
   private recordingOwner?:RecordingOwner;
   private playbackOwner?:PlaybackOwner;
+  private navigationOwner?:{request:Request;events:SourceIteratedNavigationEvent[]};
   constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void}){
     if(retiredQueues.size)void retryRetiredGenerationQueueCleanup().catch(error=>{if(!this.disposed)this.callbacks.error(error);});
   }
@@ -92,7 +99,7 @@ export class GenerationQueue {
     // Keep only the newest editor request without cancelling that lease.
     if(this.recordingOwner){this.callbacks.busy(true);this.retryRecordingInBackground();return;}
     if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing&&!sameSourcePerlin&&!sameIterated&&!sameLive)||nativeIdentityChanged||liveIdentityChanged){
-      this.rejectPlayback();this.running=null;this.completedLive=undefined;clearTimeout(this.timer);this.timer=undefined;
+      this.rejectPlayback();this.navigationOwner=undefined;this.running=null;this.completedLive=undefined;clearTimeout(this.timer);this.timer=undefined;
       // A capture owns two sequential displays. Retire only after its owner
       // finishes restoring the primary destination, even on document replace.
       if(this.captureOwner)this.captureOwner.retire=true;else this.generator.cancel();
@@ -137,6 +144,34 @@ export class GenerationQueue {
   private outputTime(output:SceneOutput,request:Request):number{
     return output.type==='raster'?(output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:request.context.time)):request.context.time;
   }
+ /** Ordered input events lease the completed live owner. A document edit or
+  * transport transition ends the gesture before its deferred work runs. */
+ navigateIteratedPaused(scene:SceneDocument,sessionId:string,event:SourceIteratedNavigationEvent):boolean {
+  const request=this.latest,key=request&&liveKey(request),live=request&&key&&request.context[key];
+  if(this.disposed||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||request.scene!==scene||(key!=='mapLive'&&key!=='symmetryLive')||!live||live.sessionId!==sessionId||!live.clock?.paused||!this.generator.navigateIteratedPaused)return false;
+  const eventCopy={...event};
+  if(this.navigationOwner?.request===request&&this.running===request){if(this.navigationOwner.events.length>=MAX_PENDING_ITERATED_NAVIGATION)return false;this.navigationOwner.events.push(eventCopy);return true;}
+  const cached=this.completedLive;if(this.running||!cached||cached.request!==request)return false;
+  const owner={request,events:[eventCopy]};this.navigationOwner=owner;this.running=request;this.completedLive=undefined;this.callbacks.busy(true);
+  const current=()=>!this.disposed&&this.running===request&&this.navigationOwner===owner;
+  void (async()=>{
+   let output=cached.output;
+   while(current()&&owner.events.length&&this.latest===request&&!this.playbackOwner){
+    output=await this.generator.navigateIteratedPaused!(output,owner.events.shift()!);
+    if(!current())return;
+    this.completedLive={request,output};
+    if(this.latest===request)this.callbacks.output(output,this.outputTime(output,request),request.scene);
+   }
+  })().catch((error:Error)=>{
+   if(!current())return;this.completedLive=undefined;this.generator.cancel();
+   if(this.latest===request&&error.name!=='AbortError')this.callbacks.error(error);
+  }).finally(()=>{
+   if(!current())return;this.running=null;this.navigationOwner=undefined;
+   if(this.playbackOwner){if(this.completedLive)this.startPlayback();else{this.rejectPlayback(new Error('当前迭代视口未完成，无法切换播放状态'));this.callbacks.busy(false);}}
+   else if(this.latest!==request)this.start();else this.callbacks.busy(false);
+  });
+  return true;
+ }
   /** A transport transition waits for the running display and then owns the
    * completed source. It never renders an extra display or uses an old UI frame. */
   setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
@@ -303,13 +338,13 @@ export class GenerationQueue {
    * Invalidate request ownership before cancellation rejects its promise. */
   cancel(){
     if(this.disposed)return;
-    this.rejectPlayback();this.completedLive=undefined;
+    this.rejectPlayback();this.completedLive=undefined;this.navigationOwner=undefined;
     if(this.recordingOwner){clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.recordingOwner.stop=true;this.retryRecordingInBackground();return;}
     clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
     this.generator.cancel();this.callbacks.busy(false);
   }
-  dispose(){this.rejectPlayback();this.completedLive=undefined;this.disposed=true;clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
+  dispose(){this.rejectPlayback();this.completedLive=undefined;this.navigationOwner=undefined;this.disposed=true;clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
     if(this.recordingOwner){this.recordingOwner.stop=true;this.retryRecordingInBackground();return;}
     this.generator.dispose();
