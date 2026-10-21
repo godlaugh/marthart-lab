@@ -1,0 +1,2680 @@
+{
+  "cases": [
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": 2,
+                  "max": 8,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 30
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 1
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 3
+          }
+        ],
+        "formula": "mandelbrot",
+        "id": "scalar-step-and-reference-fps",
+        "observed": [
+          {
+            "kind": "float",
+            "name": "power"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "power": 3
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": -0.7130609886910653
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.037543773651123
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": -0.7047276549231147
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.056520938873291
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": -0.6880609873872137
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.0948784351348877
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": -0.6880609873872137
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.0948784351348877
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": -0.6547276523154115
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.173170328140259
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": 8,
+                  "max": 2,
+                  "step": -0.4
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 99
+          }
+        ],
+        "formula": "mandelbrot",
+        "id": "reversed-range-negative-step-outside",
+        "observed": [
+          {
+            "kind": "float",
+            "name": "power"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "power": 99
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": 1.5707963267948966
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 99
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": 1.5707963267948966
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 99
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": 1.6374629969385008
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 7.993335723876953
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": 1.721384270891091
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 7.9660491943359375
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": -1,
+                  "max": 1,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "imaginary": 9,
+            "kind": "write",
+            "name": "exponent",
+            "value": 0.3
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "imaginary": 0.75,
+            "kind": "write",
+            "name": "exponent",
+            "value": 0.2
+          }
+        ],
+        "formula": "newton",
+        "id": "full-complex-fixed-imaginary",
+        "observed": [
+          {
+            "kind": "complex",
+            "name": "exponent"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "exponent": [
+            0.2,
+            0.75
+          ]
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 0
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0.2013579207903308
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0.2013579207903308
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0.3013579260057372
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.29681721006133766,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0.3013579260057372
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.3,
+              9
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0.4013579312211436
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.3906687203653787,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0.50135793643655
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.4806167975466181,
+              0.75
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": -1,
+                  "max": 1,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent"
+                }
+              },
+              {
+                "configuration": {
+                  "min": -1,
+                  "max": 1,
+                  "step": 0.2
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent_im"
+                }
+              },
+              {
+                "configuration": {
+                  "min": -2,
+                  "max": 2,
+                  "step": 0.3
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent_re"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "imaginary": 0.75,
+            "kind": "write",
+            "name": "exponent",
+            "value": 0.2
+          }
+        ],
+        "formula": "newton",
+        "id": "full-and-components-hashmap-order",
+        "observed": [
+          {
+            "kind": "complex",
+            "name": "exponent"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "exponent": [
+            0.2,
+            0.75
+          ]
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "exponent_im",
+            "exponent_re",
+            "exponent"
+          ],
+          "scales": {
+            "exponent_im": 0,
+            "exponent_re": 0,
+            "exponent": 0
+          },
+          "scalarPhases": {
+            "exponent_im": 0.848062078981481,
+            "exponent_re": 0.1001674211615598
+          },
+          "complexPhases": {
+            "exponent": 0.2013579207903308
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent_im",
+            "exponent_re",
+            "exponent"
+          ],
+          "scales": {
+            "exponent_im": 0.5,
+            "exponent_re": 0.5,
+            "exponent": 0.5
+          },
+          "scalarPhases": {
+            "exponent_im": 0.848062078981481,
+            "exponent_re": 0.1001674211615598
+          },
+          "complexPhases": {
+            "exponent": 0.2013579207903308
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent_im",
+            "exponent_re",
+            "exponent"
+          ],
+          "scales": {
+            "exponent_im": 0.5,
+            "exponent_re": 0.5,
+            "exponent": 0.5
+          },
+          "scalarPhases": {
+            "exponent_im": 0.9480620841968874,
+            "exponent_re": 0.1751674250731146
+          },
+          "complexPhases": {
+            "exponent": 0.251357923398034
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.24871943959729118,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent_im",
+            "exponent_re",
+            "exponent"
+          ],
+          "scales": {
+            "exponent_im": 0.5,
+            "exponent_re": 0.5,
+            "exponent": 0.5
+          },
+          "scalarPhases": {
+            "exponent_im": 1.0480620894122938,
+            "exponent_re": 0.2501674289846694
+          },
+          "complexPhases": {
+            "exponent": 0.3013579260057372
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.29681721006133766,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent_im",
+            "exponent_re",
+            "exponent"
+          ],
+          "scales": {
+            "exponent_im": 1,
+            "exponent_re": 1,
+            "exponent": 1
+          },
+          "scalarPhases": {
+            "exponent_im": 1.0480620894122938,
+            "exponent_re": 0.2501674289846694
+          },
+          "complexPhases": {
+            "exponent": 0.3013579260057372
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.29681721006133766,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent_im",
+            "exponent_re",
+            "exponent"
+          ],
+          "scales": {
+            "exponent_im": 1,
+            "exponent_re": 1,
+            "exponent": 1
+          },
+          "scalarPhases": {
+            "exponent_im": 1.2480620998431067,
+            "exponent_re": 0.40016743680777905
+          },
+          "complexPhases": {
+            "exponent": 0.4013579312211436
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.3906687203653787,
+              0.75
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": 2,
+                  "max": 4,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              },
+              {
+                "configuration": {
+                  "min": 3,
+                  "max": 7,
+                  "step": 0.3
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power_im"
+                }
+              },
+              {
+                "configuration": {
+                  "min": 2,
+                  "max": 5,
+                  "step": -0.2
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power_re"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 3
+          }
+        ],
+        "formula": "mandelbrot",
+        "id": "scalar-suffix-aliases",
+        "observed": [
+          {
+            "kind": "float",
+            "name": "power"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "power": 3
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "power_re",
+            "power_im",
+            "power"
+          ],
+          "scales": {
+            "power_re": 0,
+            "power_im": 0,
+            "power": 0
+          },
+          "scalarPhases": {
+            "power_re": 3.481429563043915,
+            "power_im": -1.5707963267948966,
+            "power": 0
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power_re",
+            "power_im",
+            "power"
+          ],
+          "scales": {
+            "power_re": 1,
+            "power_im": 1,
+            "power": 1
+          },
+          "scalarPhases": {
+            "power_re": 3.481429563043915,
+            "power_im": -1.5707963267948966,
+            "power": 0
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power_re",
+            "power_im",
+            "power"
+          ],
+          "scales": {
+            "power_re": 1,
+            "power_im": 1,
+            "power": 1
+          },
+          "scalarPhases": {
+            "power_re": 3.6147629033311235,
+            "power_im": -1.4957963228833417,
+            "power": 0.10000000521540642
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.0998334884643555
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power_re",
+            "power_im",
+            "power"
+          ],
+          "scales": {
+            "power_re": 1,
+            "power_im": 1,
+            "power": 1
+          },
+          "scalarPhases": {
+            "power_re": 3.748096243618332,
+            "power_im": -1.3990249658432385,
+            "power": 0.20000001043081284
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.19866943359375
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": -1,
+                  "max": 1,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "zoom"
+                }
+              },
+              {
+                "configuration": {
+                  "min": -1,
+                  "max": 1,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "garbage"
+                }
+              },
+              {
+                "configuration": {
+                  "min": 2,
+                  "max": 8,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 3
+          }
+        ],
+        "formula": "mandelbrot",
+        "id": "unknown-targets-retain-no-phase",
+        "observed": [
+          {
+            "kind": "float",
+            "name": "power"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "power": 3
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "garbage",
+            "zoom",
+            "power"
+          ],
+          "scales": {
+            "garbage": 0,
+            "zoom": 0,
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "garbage",
+            "zoom",
+            "power"
+          ],
+          "scales": {
+            "garbage": 1,
+            "zoom": 1,
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "garbage",
+            "zoom",
+            "power"
+          ],
+          "scales": {
+            "garbage": 1,
+            "zoom": 1,
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": -0.6963943211551642
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.0756328105926514
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "garbage",
+            "zoom",
+            "power"
+          ],
+          "scales": {
+            "garbage": 1,
+            "zoom": 1,
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": -0.6630609860833621
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.1534035205841064
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": 0.4,
+                  "max": 0.40000001,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "imaginary": 9,
+            "kind": "write",
+            "name": "exponent",
+            "value": 8
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "imaginary": 0.75,
+            "kind": "write",
+            "name": "exponent",
+            "value": 0.2
+          }
+        ],
+        "formula": "newton",
+        "id": "narrow-full-complex-retains-imaginary",
+        "observed": [
+          {
+            "kind": "complex",
+            "name": "exponent"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "exponent": [
+            0.2,
+            0.75
+          ]
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 0
+          },
+          "scalarPhases": {
+            "exponent": 0
+          },
+          "complexPhases": {
+            "exponent": 0
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {
+            "exponent": 0
+          },
+          "complexPhases": {
+            "exponent": 0
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {
+            "exponent": 0
+          },
+          "complexPhases": {
+            "exponent": 0
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.4,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {
+            "exponent": 0
+          },
+          "complexPhases": {
+            "exponent": 0
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              8,
+              9
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {
+            "exponent": 0
+          },
+          "complexPhases": {
+            "exponent": 0
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.4,
+              0.75
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": -1,
+                  "max": 1,
+                  "step": 100
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.2,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": -0.2,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "dt": 0.2,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "imaginary": 0.5,
+            "kind": "write",
+            "name": "exponent",
+            "value": 0
+          }
+        ],
+        "formula": "newton",
+        "id": "multiple-wrap-and-negative-dt",
+        "observed": [
+          {
+            "kind": "complex",
+            "name": "exponent"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "exponent": [
+            0,
+            0.5
+          ]
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 0
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0
+          },
+          "fixedImaginary": {
+            "exponent": 0.5
+          },
+          "values": {
+            "exponent": [
+              0,
+              0.5
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 0
+          },
+          "fixedImaginary": {
+            "exponent": 0.5
+          },
+          "values": {
+            "exponent": [
+              0,
+              0.5
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 6.194809517275033
+          },
+          "fixedImaginary": {
+            "exponent": 0.5
+          },
+          "values": {
+            "exponent": [
+              -0.08826079487329577,
+              0.5
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": -1193.8052083641185
+          },
+          "fixedImaginary": {
+            "exponent": 0.5
+          },
+          "values": {
+            "exponent": [
+              2.95976179498401e-12,
+              0.5
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 6.194809517274962
+          },
+          "fixedImaginary": {
+            "exponent": 0.5
+          },
+          "values": {
+            "exponent": [
+              -0.08826079487336655,
+              0.5
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": 2,
+                  "max": 8,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "kind": "stop",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": 2,
+                  "max": 10,
+                  "step": -0.3
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "kind": "stop",
+                "scope": {
+                  "kind": "all"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 6
+          },
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "kind": "start",
+                "scope": {
+                  "kind": "all"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 3
+          }
+        ],
+        "formula": "mandelbrot",
+        "id": "stop-start-capture-and-replacement",
+        "observed": [
+          {
+            "kind": "float",
+            "name": "power"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "power": 3
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": -0.7130609886910653
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.037543773651123
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": -0.7130609886910653
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.037543773651123
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.25
+          },
+          "scalarPhases": {
+            "power": -0.7130609886910653
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.037543773651123
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.25
+          },
+          "scalarPhases": {
+            "power": -0.7047276549231147
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.056520938873291
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7047276549231147
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.056520938873291
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7047276549231147
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.056520938873291
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": 3.9685429406117545
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.056520938873291
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": 3.9685429406117545
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.056520938873291
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": 4.006042942567532
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 2.957045555114746
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.5
+          },
+          "scalarPhases": {
+            "power": 4.006042942567532
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 2.957045555114746
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.25
+          },
+          "scalarPhases": {
+            "power": 4.006042942567532
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 2.957045555114746
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0.25
+          },
+          "scalarPhases": {
+            "power": 4.024792943545421
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 2.9089040756225586
+          }
+        },
+        {
+          "running": false,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": 4.024792943545421
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 2.9089040756225586
+          }
+        },
+        {
+          "running": false,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": 4.024792943545421
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 2.9089040756225586
+          }
+        },
+        {
+          "running": false,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": 4.024792943545421
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 6
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": 3.141592653589793
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 6
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": 3.141592653589793
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 6
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": 3.216592657501348
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 5.700281143188477
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": -1,
+                  "max": 1,
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent"
+                }
+              },
+              {
+                "kind": "stop",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent"
+                }
+              },
+              {
+                "configuration": {
+                  "min": -2,
+                  "max": 2,
+                  "step": -0.2
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "exponent"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "imaginary": 0.75,
+            "kind": "write",
+            "name": "exponent",
+            "value": 0.2
+          }
+        ],
+        "formula": "newton",
+        "id": "same-group-replacement-and-stop",
+        "observed": [
+          {
+            "kind": "complex",
+            "name": "exponent"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "exponent": [
+            0.2,
+            0.75
+          ]
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 0
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 3.0414252324282334
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 0.5
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 3.0414252324282334
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.2,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 0.5
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 3.0914252350359366
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.10029275578744826,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 3.0914252350359366
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              0.10029275578744826,
+              0.75
+            ]
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "exponent"
+          ],
+          "scales": {
+            "exponent": 1
+          },
+          "scalarPhases": {},
+          "complexPhases": {
+            "exponent": 3.191425240251343
+          },
+          "fixedImaginary": {
+            "exponent": 0.75
+          },
+          "values": {
+            "exponent": [
+              -0.09962392891139975,
+              0.75
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "kind": "stop",
+                "scope": {
+                  "kind": "all"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "kind": "start",
+                "scope": {
+                  "kind": "all"
+                }
+              }
+            ]
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 1
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 3
+          }
+        ],
+        "formula": "mandelbrot",
+        "id": "inactive-stop-before-start",
+        "observed": [
+          {
+            "kind": "float",
+            "name": "power"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "power": 3
+        }
+      },
+      "steps": [
+        {
+          "running": false,
+          "order": [],
+          "scales": {},
+          "scalarPhases": {},
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": false,
+          "order": [],
+          "scales": {},
+          "scalarPhases": {},
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": false,
+          "order": [],
+          "scales": {},
+          "scalarPhases": {},
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [],
+          "scales": {},
+          "scalarPhases": {},
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [],
+          "scales": {},
+          "scalarPhases": {},
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [],
+          "scales": {},
+          "scalarPhases": {},
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "operations": [
+          {
+            "kind": "begin",
+            "actions": [
+              {
+                "configuration": {
+                  "min": 2,
+                  "max": 8,
+                  "edgeEasing": {
+                    "window": 0.5,
+                    "floor": 0.25,
+                    "easing": "sine-out"
+                  },
+                  "step": 0.1
+                },
+                "kind": "start",
+                "scope": {
+                  "kind": "named",
+                  "name": "power"
+                }
+              }
+            ]
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": -0.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "interpolate",
+            "finished": false,
+            "eased": 1.5
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          },
+          {
+            "kind": "interpolate",
+            "finished": true,
+            "eased": 0.2
+          },
+          {
+            "dt": 0.016666666666666666,
+            "kind": "update",
+            "fps": 60
+          }
+        ],
+        "initial": [
+          {
+            "kind": "write",
+            "name": "power",
+            "value": 3
+          }
+        ],
+        "formula": "mandelbrot",
+        "id": "custom-edge-and-zero-gain",
+        "observed": [
+          {
+            "kind": "float",
+            "name": "power"
+          }
+        ]
+      },
+      "initial": {
+        "running": false,
+        "order": [],
+        "scales": {},
+        "scalarPhases": {},
+        "complexPhases": {},
+        "fixedImaginary": {},
+        "values": {
+          "power": 3
+        }
+      },
+      "steps": [
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 0
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1.5
+          },
+          "scalarPhases": {
+            "power": -0.7297276562269663
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1.5
+          },
+          "scalarPhases": {
+            "power": -0.6797276536192631
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.1142563819885254
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": -0.6797276536192631
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.1142563819885254
+          }
+        },
+        {
+          "running": true,
+          "order": [
+            "power"
+          ],
+          "scales": {
+            "power": 1
+          },
+          "scalarPhases": {
+            "power": -0.646394318547461
+          },
+          "complexPhases": {},
+          "fixedImaginary": {},
+          "values": {
+            "power": 3.193063735961914
+          }
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "classSha256": {
+      "FractalParameterAnimator.json": "6660d478916fb486adef2832bd8077faff88039558f8245da451f08ee3880e35",
+      "StartFractalParamAnimation.json": "51bdc474a81e4a078633f231d1fde0a32e748be87707794ba9f1a6c386d28e96",
+      "StopFractalParamAnimation.json": "ecd2224360ebd0564d576f0ccf29459d1813a1e80f64c68652e15276530d15b5",
+      "FractalParameterAnimator$ParamConfig.json": "35d8cadabf0073512b3a8db2a9af4fad023c654602652f31fdb35605e81be8b5",
+      "StandardFormulaCatalog.json": "36d643048c6cd09851eb2e4cacac106956b5c04588aa017e332c7a02ebbdbf1a",
+      "ComplexFractalMobject.class.json": "d616f53f5364be32f3e280a7bb00e40785abbb3374e724fc9862badac3ef596f"
+    },
+    "oracleSourceSha256": "a02c0b9eed7aa7811a499dd92921574af49e2b7f276e7188403c2bd32be97ee4",
+    "rawOutputSha256": "dd59ed35f1c59ea4dd7a8ea20faa611c72788f12201a89a032f63a86168c5e53",
+    "inputsSha256": "068fd6d5491c446734ca74247ff7df6db0c1129958715ab37fe61a81652236bb",
+    "scope": "Original bundled JVM numerical methods via JNI AllocObject mobject with real formula metadata/ParamSet, pure setters/remapping, original Start/Stop callbacks and parameter update. No mobject constructor, PApplet, scene/GUI/render/GPU initialization. Child elapsed clocks and importer dispatch are separate audits.",
+    "observations": {
+      "cases": 12,
+      "steps": 80,
+      "elapsedSeconds": 1.01375216699671,
+      "cpuSeconds": 0.75837,
+      "peakProcessRssBytes": 102891520,
+      "tokenUsage": "not measured"
+    }
+  }
+}

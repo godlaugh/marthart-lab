@@ -2,9 +2,10 @@ import type {DomainSourceInterpolation} from './domainSourcePalette';
 import type {SourceSurfaceGradientMode} from './sourceSurfaceGradient';
 
 /** Shared native arithmetic. Scalar targets use one starting offset; Symmetry
- * retains three independent starting offsets. Target application and
+ * retains three independent starting offsets. Fractal side selection is applied
+ * before target narrowing, including hue routing into a selected side. Target application and
  * scene update scheduling remain with those owners. */
-export interface SourceGradientConfiguration {readonly mode:SourceSurfaceGradientMode;readonly interpolation:DomainSourceInterpolation;readonly speed:number;}
+export interface SourceGradientConfiguration {readonly mode:SourceSurfaceGradientMode;readonly interpolation:DomainSourceInterpolation;readonly speed:number;readonly affectInside?:boolean;readonly affectOutside?:boolean;}
 export interface SourceGradientFrame {readonly palette:number;readonly inside:number;readonly outside:number;}
 export interface SourceGradientSnapshot {
  readonly running:boolean;readonly progress:number;readonly speedScale:number;readonly targetSpeed:number;readonly base:number;
@@ -19,14 +20,18 @@ const wave=(p:number,f:number,phase:number)=>Math.sin((p*f+phase)*6.283185307179
 export function sourceGradientFrame(base:number|SourceGradientFrame,config:SourceGradientConfiguration,progress:number):SourceGradientFrame {
  const initial=typeof base==='number'?{palette:base,inside:base,outside:base}:base;
  let {palette,inside,outside}=initial;
+ const affectInside=config.affectInside??true,affectOutside=config.affectOutside??true,both=affectInside&&affectOutside;
  const shaped=shape(config.mode==='offset_cycle'?sourceGradientWrap(progress):progress,config.interpolation);
- if(config.mode==='hue_rotate')palette=initial.palette+shaped;
+ if(config.mode==='hue_rotate'){
+  if(both)palette=initial.palette+shaped;
+  else{if(affectInside)inside=initial.inside+shaped;if(affectOutside)outside=initial.outside+shaped;}
+ }
  else if(config.mode==='offset_cycle'){
-  const d=wave(progress,.5,0)*.05;inside=(initial.inside+shaped)+d;outside=(initial.outside+shaped)-d*.5;
+  const d=wave(progress,.5,0)*.05;if(affectInside)inside=(initial.inside+shaped)+d;if(affectOutside)outside=(initial.outside+shaped)-d*.5;
  }else if(config.mode==='cross_fade'){
-  const d=(.5+.5*wave(progress,1,.25))*.08;inside=(initial.inside+shaped)-d;outside=(initial.outside+shaped)+d;palette=initial.palette+shaped;
+  const d=(.5+.5*wave(progress,1,.25))*.08;if(affectInside)inside=(initial.inside+shaped)-d;if(affectOutside)outside=(initial.outside+shaped)+d;if(both)palette=initial.palette+shaped;
  }else{
-  const d=wave(progress,.75,.35)*.06;inside=(initial.inside+shaped)-d;outside=(initial.outside+shaped)+d;palette=initial.palette+shaped;
+  const d=wave(progress,.75,.35)*.06;if(affectInside)inside=(initial.inside+shaped)-d;if(affectOutside)outside=(initial.outside+shaped)+d;if(both)palette=initial.palette+shaped;
  }
  return{palette,inside,outside};
 }
