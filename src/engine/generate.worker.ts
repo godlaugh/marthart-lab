@@ -17,11 +17,11 @@ import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-function recordingProducer(scene:SceneDocument){return scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+function recordingProducer(scene:SceneDocument){return scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
 type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
 type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
 type RecordingRaster=RuntimeStart['warmup'];
-let recording:{id:number;producer:RecordingProducer;runtime:RuntimeStart;finish?:ReturnType<RecordingProducer['finishRecording']>;preview?:RecordingRaster;pendingFrame?:{index:number;output:RecordingRaster}}|undefined;
+let recording:{id:number;producer:RecordingProducer;runtime:RuntimeStart;finish?:ReturnType<RecordingProducer['finishRecording']>;preview?:RecordingRaster;pendingFrame?:{index:number;actualFrameRate?:number;output:RecordingRaster}}|undefined;
 function retainsRecording(){
  if(!recording)return false;
  return recording.finish?recording.producer.matchesCompletedPrimary(recording.finish.scene,recording.finish.context):recording.producer.ownsRecording(recording.runtime.handle);
@@ -116,9 +116,10 @@ self.onmessage = (
         if(!Number.isSafeInteger(displayFrame)||displayFrame<1)throw new Error('源场景录制帧序号无效');
         const pending=lease.pendingFrame;
         if(pending&&pending.index!==displayFrame)throw new Error('源场景上一录制帧尚未交付，请重试该帧或结束录制');
-        const output=pending?.output??lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame);
+        if(pending&&lease.producer===temporalSession.sourceDomain&&!Object.is(pending.actualFrameRate,event.data.actualFrameRate))throw new Error('域着色未交付帧重试不能改变实际帧率');
+        const output=pending?.output??(lease.producer===temporalSession.sourceDomain?lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame,event.data.actualFrameRate):lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame));
         if(output.pixels.byteLength!==output.width*output.height*4)throw new Error('源场景录制帧传输状态未知，请结束录制');
-        lease.pendingFrame={index:displayFrame,output};
+        lease.pendingFrame={index:displayFrame,actualFrameRate:event.data.actualFrameRate,output};
         send({operation:event.data.operation,id,recordingId:lease.id,displayFrame,output},outputBuffers(output));lease.pendingFrame=undefined;return;
       }
       // finishRecording mutates runtime ownership exactly once. If publication
@@ -138,7 +139,7 @@ self.onmessage = (
         if(output.type!=='raster')throw new Error('源场景录制结束没有生成主预览');
         lease.preview=output;
       }
-      const resumed={...context,time:lease.preview.fractalLive?.sceneTime??lease.preview.mapLive?.sceneTime??lease.preview.symmetryLive?.sceneTime??context.time};
+      const resumed={...context,time:lease.preview.domainLive?.sceneTime??lease.preview.fractalLive?.sceneTime??lease.preview.mapLive?.sceneTime??lease.preview.symmetryLive?.sceneTime??context.time};
       send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview:lease.preview}},outputBuffers(lease.preview));
       completed={id,scene,context:resumed};recording=undefined;return;
     }

@@ -35,7 +35,7 @@ interface GeneratorPort {
   captureDomainPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureFractalPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   beginSourceRecording?(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>;
-  nextSourceRecordingFrame?(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceRecordingRaster>;
+  nextSourceRecordingFrame?(handle:SourceRecordingHandle,displayFrame:number,actualFrameRate?:number):Promise<SourceRecordingRaster>;
   finishSourceRecording?(handle:SourceRecordingHandle):Promise<SourceRecordingStop>;
   hasSourceRecording?(handle:SourceRecordingHandle):boolean;
 }
@@ -48,6 +48,9 @@ export interface SourceRecordingCompletion {
   readonly lastDisplayFrame:number;
 }
 export interface SourceRecordingConsumer {
+  /** Domain requires a fresh independent observation before each encoded-frame
+   * update. Warmup uses options.actualFrameRate; never substitute simulation FPS. */
+  actualFrameRate?:()=>number;
   /** Stop/save is sampled at frame boundaries. It never cancels a pending
    * generation or consumer upload; cancellation remains the separate signal. */
   shouldStop?:()=>boolean;
@@ -305,6 +308,7 @@ export class GenerationQueue {
     const request=this.latest;
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!this.generator.beginSourceRecording||!this.generator.nextSourceRecordingFrame||!this.generator.finishSourceRecording||!this.generator.hasSourceRecording)
       throw new Error('请等待当前源场景预览或录制完成');
+    if(request.scene.kind==='domain'&&typeof consumer.actualFrameRate!=='function')throw new Error('域着色录制需要逐帧实际帧率观测');
     if(signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');
     const owner:RecordingOwner={request,stop:false,active:true};this.recordingOwner=owner;this.callbacks.busy(true);
     const abort=()=>{owner.stop=true;},check=()=>{if(owner.stop||signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');};
@@ -316,7 +320,7 @@ export class GenerationQueue {
       check();await consumer.start?.(start);check();
       let requestedStop=consumer.shouldStop?.()===true,encodedFrames=0,consumedDisplayFrame=0;
       for(let displayFrame=1;displayFrame<=lastDisplayFrame&&!requestedStop;displayFrame++){
-        const frame=await this.generator.nextSourceRecordingFrame(handle,displayFrame);
+        const frame=await(request.scene.kind==='domain'?this.generator.nextSourceRecordingFrame(handle,displayFrame,consumer.actualFrameRate!()):this.generator.nextSourceRecordingFrame(handle,displayFrame));
         check();await consumer.frame(frame,displayFrame-1,start);
         encodedFrames++;consumedDisplayFrame=displayFrame;check();
         if(displayFrame<lastDisplayFrame)requestedStop=consumer.shouldStop?.()===true;
@@ -367,14 +371,17 @@ export class GenerationQueue {
         if(!stop&&owner.invalidPreview&&!this.disposed&&this.latest===owner.request)this.callbacks.error(owner.invalidPreview);
         const fractal=stop?.context.fractalLive,queued=latest?.context.fractalLive;
         const sameFractal=!!fractal&&!!queued&&latest?.scene.kind==='fractal'&&latest.scene.id===owner.request.scene.id&&queued.sessionId===fractal.sessionId;
-        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene||sameFractal)){
+        const domain=stop?.context.domainLive,queuedDomain=latest?.context.domainLive;
+        const sameDomain=!!domain&&!!queuedDomain&&latest?.scene.kind==='domain'&&latest.scene.id===owner.request.scene.id&&queuedDomain.sessionId===domain.sessionId;
+        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene||sameFractal||sameDomain)){
           // Keep deferred viewport changes, but never reuse the pre-recording
           // live session or seek time after the runtime has been rebuilt.
           // Fractal author identity remains in the UI. Runtime/presentation
           // comes from the retained owner, including after an unsubmitted edit.
-          if(fractal)stop={...stop,scene:latest?.scene??owner.request.scene};
+          if(fractal||domain)stop={...stop,scene:latest?.scene??owner.request.scene};
           const nextFractal=fractal&&queued&&queued.revision>fractal.revision?{...fractal,revision:queued.revision,intent:queued.intent,configuration:queued.configuration}:fractal;
-          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal}:stop.context);
+          const nextDomain=domain&&queuedDomain?{...domain,viewport:queuedDomain.viewport,actualFrameRate:queuedDomain.actualFrameRate,...(queuedDomain.revision>domain.revision?{revision:queuedDomain.revision,configuration:queuedDomain.configuration}:{})}:domain;
+          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain}:stop.context);
           this.latest=expected={scene:stop.scene,context};
           if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);

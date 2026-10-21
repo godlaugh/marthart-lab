@@ -1,3 +1,4 @@
+import {validateSourceDomainFrameRate} from './sourceDomainClockInput';
 import {SourceDomainSceneRuntime,type SourceDomainSceneConfiguration} from './sourceDomainSceneRuntime';
 import {SourceSceneHostClock,validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 
@@ -23,7 +24,7 @@ export interface SourceDomainHostSnapshot {
 }
 const F=Math.fround,WORK_LIMIT=2_000_000;
 const unusedCamera={phi:0,theta:0,gamma:0};
-export function validateSourceDomainFrameRate(value:number):void {if(typeof value!=='number'||!Number.isFinite(value)||!Number.isFinite(F(value)))throw Error('域着色宿主帧率必须为有限 Float32');}
+
 
 /** Numerical host boundary. It owns wall time, full reload and the recording
  * anchor, but no GPU target, UI event, displayed-frame lease or encoder.

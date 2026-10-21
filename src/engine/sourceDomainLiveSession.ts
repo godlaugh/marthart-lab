@@ -1,6 +1,7 @@
+import {validateSourceDomainFrameRate} from './sourceDomainClockInput';
 import type {PausedCaptureResult,SourceRecordingOptions} from './generationProtocol';
 import type {FormulaPresentation,GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
-import {SourceDomainHostSession,validateSourceDomainFrameRate,type SourceDomainHostRecordingHandle,type SourceDomainHostSnapshot} from './sourceDomainHostSession';
+import {SourceDomainHostSession,type SourceDomainHostRecordingHandle,type SourceDomainHostSnapshot} from './sourceDomainHostSession';
 import {bindSourceDomainFrame,prepareSourceDomainScene,usesSourceDomain} from './sourceDomainTimeline';
 import {validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 import {DomainRenderSession} from './domainRenderSession';
@@ -191,7 +192,7 @@ export class SourceDomainLiveSession {
  /** Toolbar recording reloads the full Apply anchor. Stage the fresh numerical
   * host/renderer until the warmup succeeds, preserving the completed primary
   * if local admission, cancellation or that first render fails. */
- beginRecording(scene:SceneDocument,c:GenerateContext,options:SourceRecordingOptions&{actualFrameRate:number}){
+ beginRecording(scene:SceneDocument,c:GenerateContext,options:SourceRecordingOptions){
   this.requireCompleted(scene,c);
   validateSourceDomainFrameRate(options.actualFrameRate);
   const primary=snapshotGenerationInput(this.completed!.context),live=primary.domainLive!;
@@ -223,7 +224,7 @@ export class SourceDomainLiveSession {
  /** FPS belongs to this update, independently of simulation FPS. A failed
   * raster retry reuses the pending numerical snapshot and requires the same
   * observation; it never advances the host twice or replaces that observation. */
- nextRecordingFrame(handle:object,displayFrame:number,actualFrameRate:number):LiveRaster {
+ nextRecordingFrame(handle:object,displayFrame:number,actualFrameRate?:number):LiveRaster {
   const record=this.recording;
   if(this.busy||!record||!this.ownsRecording(handle)||record.finished||displayFrame!==record.next||displayFrame>record.clock.lastDisplayFrame)throw Error('域着色录制身份或连续帧序号无效');
   validateSourceDomainFrameRate(actualFrameRate);

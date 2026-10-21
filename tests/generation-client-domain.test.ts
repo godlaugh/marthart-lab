@@ -31,6 +31,7 @@ describe('Domain live transport identity and failure boundary',()=>{
  });
  const mutations:Record<string,(o:Extract<SceneOutput,{type:'raster'}>)=>void>={
   revision:o=>{o.domainLive!.revision++;},
+  recordingFacts:o=>{o.domainLive!.recording={simulationFps:60,ordinal:0,warmup:true,complete:false};},
   session:o=>{o.domainLive!.sessionId='another';},
   pause:o=>{o.domainLive!.paused=false;},
   fps:o=>{o.domainLive!.actualFrameRate=12;},

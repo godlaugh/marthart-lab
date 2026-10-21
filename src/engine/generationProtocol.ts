@@ -8,7 +8,7 @@ import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
 
 export type SourceRecordingRaster=Extract<SceneOutput,{type:'raster'}>;
-export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;}
+export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;/** Domain requires the independently observed FPS for warmup. */actualFrameRate?:number;}
 export interface SourceRecordingHandle {readonly sessionId:number;readonly recordingId:number;}
 export interface SourceRecordingStart {handle:SourceRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceQueueRecordingClock;warmup:SourceRecordingRaster;}
 export interface SourceRecordingStop {scene:SceneDocument;context:GenerationInput;preview:SourceRecordingRaster;}
@@ -86,7 +86,7 @@ export type GenerationRequest = { sessionId: number } & (
   | {operation:'fractal-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | PausedCaptureRequest
   | {operation:'source-recording-begin';id:number;sourceId:number;options:SourceRecordingOptions}
-  | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number}
+  | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number;actualFrameRate?:number}
   | {operation:'source-recording-finish';id:number;recordingId:number}
   | { operation: 'search-stable'; id: number; scene: SceneDocument; options: StableSearchOptions }
   | { operation: 'spirograph-recording-plan'; id:number; scene:SceneDocument; startFrame:number; fps:number }
