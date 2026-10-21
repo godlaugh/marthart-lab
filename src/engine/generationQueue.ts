@@ -328,10 +328,16 @@ export class GenerationQueue {
       const latest=this.latest,deferred=latest!==owner.request;let expected=latest;
       try{
         if(!stop&&owner.invalidPreview&&!this.disposed&&this.latest===owner.request)this.callbacks.error(owner.invalidPreview);
-        if(stop&&!this.disposed&&latest?.scene===owner.request.scene){
+        const fractal=stop?.context.fractalLive,queued=latest?.context.fractalLive;
+        const sameFractal=!!fractal&&!!queued&&latest?.scene.kind==='fractal'&&latest.scene.id===owner.request.scene.id&&queued.sessionId===fractal.sessionId;
+        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene||sameFractal)){
           // Keep deferred viewport changes, but never reuse the pre-recording
           // live session or seek time after the runtime has been rebuilt.
-          const context=snapshotGenerationInput(deferred?{...latest.context,time:stop.context.time,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive}:stop.context);
+          // Fractal author identity remains in the UI. Runtime/presentation
+          // comes from the retained owner, including after an unsubmitted edit.
+          if(fractal)stop={...stop,scene:latest?.scene??owner.request.scene};
+          const nextFractal=fractal&&queued&&queued.revision>fractal.revision?{...fractal,revision:queued.revision,intent:queued.intent,configuration:queued.configuration}:fractal;
+          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal}:stop.context);
           this.latest=expected={scene:stop.scene,context};
           if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);

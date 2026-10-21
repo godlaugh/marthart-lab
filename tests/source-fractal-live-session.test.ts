@@ -72,8 +72,12 @@ describe('retained Fractal live generation',()=>{
   const s=scene(),f=setup(),c=context();f.owner.generate(s,c);const before=f.owner.diagnostics();
   expect(()=>f.owner.generate(s,{...context(),isCancelled:()=>true})).toThrow('取消');expect(f.owner.diagnostics()).toEqual(before);
   expect(()=>f.owner.setPaused(true)).not.toThrow();
-  for(const invalid of [{...context(),quality:'export' as const},{...context(),fractalRecording:{displayFrame:0,simulationFps:60}}])expect(()=>f.owner.generate(s,invalid)).toThrow();
+  for(const invalid of [{...context(),fractalViewport:{logicalWidth:16,logicalHeight:12,target:'offscreen' as const}},{...context(),fractalRecording:{displayFrame:0,simulationFps:60}}])expect(()=>f.owner.generate(s,invalid)).toThrow();
   f.owner.reset();expect(f.owner.diagnostics().host).toBeUndefined();expect(f.owner.generate(s,context()).fractalLive!.updateOrdinal).toBe(0);
+ });
+ it('accepts full-quality primary previews without treating sampling quality as target identity',()=>{
+  const s=scene(),f=setup(),c={...context({clock:{paused:true}}),quality:'export' as const};
+  const out=f.owner.generate(s,c);expect(out.fractalLive).toMatchObject({target:'primary',renderKind:'update',updateOrdinal:0});expect(f.render.mock.calls[0][1].quality).toBe('export');expect(f.owner.matchesCompletedPrimary(s,c)).toBe(true);
  });
  it('captures current hot numerical state twice without an update, using owned primary and offscreen sizes',()=>{
   const s=scene(),f=setup(),initial=context();f.owner.generate(s,initial);f.owner.generate(s,context({},100));f.owner.setPaused(true);

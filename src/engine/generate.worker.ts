@@ -16,7 +16,7 @@ import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-function recordingProducer(scene:SceneDocument){return scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+function recordingProducer(scene:SceneDocument){return scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
 type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
 type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
 type RecordingRaster=RuntimeStart['warmup'];
@@ -102,14 +102,23 @@ self.onmessage = (
       // finishRecording mutates runtime ownership exactly once. If publication
       // fails, retain its result and completed preview for an explicit retry.
       lease.finish??=lease.producer.finishRecording(lease.runtime.handle);
+      if('preview' in lease.finish&&lease.finish.preview.pixels.byteLength!==lease.finish.preview.width*lease.finish.preview.height*4){
+        // The owner retains a bounded, same-handle snapshot handoff until the
+        // next live operation. Rebind pixels detached by uncertain publication
+        // without resetting host time or advancing the scene a second time.
+        lease.finish=lease.producer.finishRecording(lease.runtime.handle);
+      }
       const {scene,context}=lease.finish;
       if(!lease.preview||lease.preview.pixels.byteLength!==lease.preview.width*lease.preview.height*4){
-        const output=generateScene(scene,context,temporalSession);
+        // Fractal stop already restores primary from the final numerical
+        // snapshot. A generic generate here would advance its live queue.
+        const output='preview' in lease.finish?lease.finish.preview:generateScene(scene,context,temporalSession);
         if(output.type!=='raster')throw new Error('源场景录制结束没有生成主预览');
         lease.preview=output;
       }
-      send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:{...context,time:lease.preview.mapLive?.sceneTime??lease.preview.symmetryLive?.sceneTime??context.time},preview:lease.preview}},outputBuffers(lease.preview));
-      completed={id,scene,context};recording=undefined;return;
+      const resumed={...context,time:lease.preview.fractalLive?.sceneTime??lease.preview.mapLive?.sceneTime??lease.preview.symmetryLive?.sceneTime??context.time};
+      send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview:lease.preview}},outputBuffers(lease.preview));
+      completed={id,scene,context:resumed};recording=undefined;return;
     }
     if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture'||event.data.operation==='fractal-paused-capture'){
       const source=captureSource=completed;

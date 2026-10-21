@@ -888,5 +888,8 @@
   "保存当前暂停的分形状态，不推进动画；尺寸只改变导出画面。": "Save the current paused fractal state without advancing animation; size only changes the exported image.",
   "从当前配置按固定时间重放，不复制实时预览的编辑历史。": "Replay the current configuration at a fixed time without copying the live preview edit history.",
   "暂停保留当前画面；跳转会从初始配置重建。修改时间线后，请在播放时点击“应用场景”。": "Pause keeps the current frame; seeking rebuilds from the initial configuration. After editing the timeline, click Apply scene during playback.",
-  "按固定帧率回放；跳转会从初始配置重建。": "Playback uses a fixed frame rate; seeking rebuilds from the initial configuration."
+  "按固定帧率回放；跳转会从初始配置重建。": "Playback uses a fixed frame rate; seeking rebuilds from the initial configuration.",
+  "分形录制": "Fractal recording",
+  "从上次完整应用的场景录制": "Record the last fully applied scene",
+  "从上次完整应用的场景开始，预热后录到队列结束，编码完成后继续播放。帧率同时用于模拟和编码。要将修改作为录制起点，请先播放并点击“应用场景”。": "Start from the last fully applied scene, warm up, then record until the queue ends. Playback continues after encoding. The frame rate controls both simulation and encoding. To record your edits, play the scene and click Apply scene first."
 }

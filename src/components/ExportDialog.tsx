@@ -39,6 +39,7 @@ import {exportSessionCleanup,ExportSessionCleanupError,type ExportSessionTicket}
 export function ExportDialog({
   scene,
   time,
+  mode='export',
   currentSpirographFrame,
   previewLogicalHeight,
   sourcePerlinViewport,
@@ -58,6 +59,7 @@ export function ExportDialog({
   onClose,
   onDone,
 }: {
+  mode?:'export'|'fractal-recording';
   scene: SceneDocument;
   time: number;
   currentSpirographFrame?:number;
@@ -89,7 +91,7 @@ export function ExportDialog({
   const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>sourceFractalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated?'current':'replay');
   const [pausedImageScale,setPausedImageScale]=useState<1|3|5>(1);
   const [rootsVideoMode,setRootsVideoMode]=useState<'duration'|'source'>(()=>usesRootsGradientTimeline(scene)?'source':'duration');
-  const [fractalVideoMode,setFractalVideoMode]=useState<'duration'|'source'>('source');
+  const [fractalVideoMode,setFractalVideoMode]=useState<'duration'|'source'|'retained'>(mode==='fractal-recording'?'retained':'source');
   const fractalFrames=sourceFractal&&fractalVideoMode==='source';
   const [perlinVideoMode,setPerlinVideoMode]=useState<'duration'|'source'|'retained'>('duration');
   const [recordingQuality,setRecordingQuality]=useState<'low'|'medium'|'high'|'production'>('high');
@@ -99,12 +101,12 @@ export function ExportDialog({
   const [recordingStart,setRecordingStart]=useState<'fresh'|'current'>('fresh');
   const [recordingFps,setRecordingFps]=useState(()=>sourceFrames?spirographSimulationFps(scene):scene.timeline.fps);
   const [sourceVideoFrames,setSourceVideoFrames]=useState<number|null>(null);
-  const [kind, setKind] = useState<"image" | "video">("image"),
-    [format, setFormat] = useState("png"),
-    [resolution, setResolution] = useState(scene.projectResolution||currentPausedCapture?'custom':"1920x1080"),
-    [customWidth,setCustomWidth]=useState(scene.projectResolution?.width??currentPausedCapture?.size.width??1920),
-    [customHeight,setCustomHeight]=useState(scene.projectResolution?.height??currentPausedCapture?.size.height??1080),
-    [fps, setFps] = useState(()=>sourceFrames?spirographSimulationFps(scene):scene.timeline.fps),
+  const [kind, setKind] = useState<"image" | "video">(mode==='fractal-recording'?'video':"image"),
+    [format, setFormat] = useState(mode==='fractal-recording'?'mp4':"png"),
+    [resolution, setResolution] = useState(mode==='fractal-recording'||scene.projectResolution||currentPausedCapture?'custom':"1920x1080"),
+    [customWidth,setCustomWidth]=useState(mode==='fractal-recording'?500:scene.projectResolution?.width??currentPausedCapture?.size.width??1920),
+    [customHeight,setCustomHeight]=useState(mode==='fractal-recording'?600:scene.projectResolution?.height??currentPausedCapture?.size.height??1080),
+    [fps, setFps] = useState(()=>mode==='fractal-recording'?60:sourceFrames?spirographSimulationFps(scene):scene.timeline.fps),
     [duration, setDuration] = useState(()=>sourceFrames||sourceBouncing?scene.timeline.duration:resolveTimeline(scene).duration),
     [working, setWorking] = useState(false),
     [progress, setProgress] = useState(0),
@@ -123,18 +125,20 @@ export function ExportDialog({
   const [width,height]=resolution==='custom'?[customWidth,customHeight]:resolution.split('x').map(Number);
   const retainedPerlin=kind==='video'&&sourcePerlin&&perlinVideoMode==='retained';
   const iteratedRecording=kind==='video'&&sourceIterated&&iteratedVideoMode==='source';
-  const liveRecording=retainedPerlin||iteratedRecording;
+  const retainedFractal=kind==='video'&&sourceFractal&&fractalVideoMode==='retained';
+  const fixedRetained=iteratedRecording||retainedFractal;
+  const liveRecording=retainedPerlin||fixedRetained;
   const fractalVideo=kind==='video'&&fractalFrames;
   const sourceQueueVideo=perlinFrames||fractalVideo||liveRecording;
   const pausedSourceImage=kind==='image'&&(sourceFractalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
   if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let recordingSize:{width:number;height:number;logicalWidth?:number;logicalHeight?:number}={width:outputBase.width,height:outputBase.height};
-  if(iteratedRecording||fractalVideo){try{recordingSize=sourceRecordingSize({width,height},(fractalVideo?fractalPixelDensity:iteratedPixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  if(fixedRetained||fractalVideo){try{recordingSize=sourceRecordingSize({width,height},((fractalVideo||retainedFractal)?fractalPixelDensity:iteratedPixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let upscaleError=pausedSizeError;
   if(pausedSourceImage&&pausedImageScale!==1){try{const size=prepareSourcePausedUpscale(outputBase.width,outputBase.height,pausedImageScale);validateRasterRequest({time:0,quality:'export',width:size.width,height:size.height});}catch(error){upscaleError=error instanceof Error?error.message:String(error);}}
   let dimensionError='';
-  const videoWidth=retainedPerlin?outputBase.width:iteratedRecording||fractalVideo?width-width%2:width,videoHeight=retainedPerlin?outputBase.height:iteratedRecording||fractalVideo?height-height%2:height;
+  const videoWidth=retainedPerlin?outputBase.width:fixedRetained||fractalVideo?width-width%2:width,videoHeight=retainedPerlin?outputBase.height:fixedRetained||fractalVideo?height-height%2:height;
   if(kind==='video')dimensionError=![videoWidth,videoHeight].every(Number.isSafeInteger)||videoWidth<16||videoHeight<16||videoWidth>7680||videoHeight>4320?t("宽度需为 16–7680、高度需为 16–4320 的整数。"):(videoWidth%2!==0||videoHeight%2!==0)?t("视频的宽度和高度都必须是偶数。"):'';
   else try{
     // Still images use the raster owner's representation budget. A valid
@@ -207,16 +211,16 @@ export function ExportDialog({
       }
       if(liveRecording){
         if(!currentSourceRecording?.ready)throw new Error(t('请等待当前预览完成并暂停后再录制'));
-        await currentSourceRecording.record({width,height,simulationFps:iteratedRecording?fps:recordingFps},{
-          complete:iteratedRecording?async()=>{checkCancelled();await finishVideo();checkCancelled();}:undefined,
+        await currentSourceRecording.record({width,height,simulationFps:fixedRetained?fps:recordingFps},{
+          complete:fixedRetained?async()=>{checkCancelled();await finishVideo();checkCancelled();}:undefined,
           start:async start=>{
             checkCancelled();
-            (iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(start.warmup,start.clock,0);
+            (retainedFractal?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(start.warmup,start.clock,0);
             if(start.warmup.width!==recordingSize.width||start.warmup.height!==recordingSize.height)throw new Error(t('录制实际尺寸与预检不一致，请等待预览完成后重试'));
             const frames=start.clock.encodedFrames;
             setSourceVideoFrames(frames);
-            if(frames===0)throw new Error(t(iteratedRecording?'队列在预热帧内已结束，没有可编码帧；请延长队列':'Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列'));
-            const session=await request('/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:videoWidth,height:videoHeight,fps,frames,format,...(iteratedRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height,...(format==='mp4'?{profile:'mathart',quality:recordingQuality}:{})}:{})})});
+            if(frames===0)throw new Error(t(fixedRetained?'队列在预热帧内已结束，没有可编码帧；请延长队列':'Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列'));
+            const session=await request('/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:videoWidth,height:videoHeight,fps,frames,format,...(fixedRetained?{inputWidth:recordingSize.width,inputHeight:recordingSize.height,...(format==='mp4'?{profile:'mathart',quality:recordingQuality}:{})}:{})})});
             // Register before observing cancellation, including dialog unmount
             // while the server was accepting the create request.
             sessionRef.current=exportSessionCleanup.registerCreated(session.id);
@@ -224,7 +228,7 @@ export function ExportDialog({
           },
           frame:async(output,index,start)=>{
             checkCancelled();
-            (iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,start.clock,index+1);
+            (retainedFractal?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,start.clock,index+1);
             const blob=await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
             checkCancelled();
             await request(`/api/exports/${sessionRef.current!.id}/frames?index=${index}`,{method:'POST',headers:{'content-type':'image/png'},body:blob});
@@ -232,7 +236,7 @@ export function ExportDialog({
           },
         },abort.signal);
         // Source iterated recording keeps its fixed-step owner until encoding ends.
-        checkCancelled();if(!iteratedRecording)await finishVideo();checkCancelled();
+        checkCancelled();if(!fixedRetained)await finishVideo();checkCancelled();
         onDone(t('视频已编码并导出'));setWorking(false);return;
       }
       g=new Generator();generator.current=g;
@@ -404,10 +408,10 @@ export function ExportDialog({
         className="modal export-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={t("导出作品")}
+        aria-label={t(mode==='fractal-recording'?'分形录制':"导出作品")}
       >
         <div className="modal-heading">
-          <h2>{t("导出作品")}</h2>
+          <h2>{t(mode==='fractal-recording'?'分形录制':"导出作品")}</h2>
           <button aria-label={t("关闭导出")} disabled={working} onClick={onClose}>
             <X size={18} />
           </button>
@@ -425,7 +429,7 @@ export function ExportDialog({
         {sourcePerlin&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。':retainedPerlin?'使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。停止后停留在实际末帧，方便检查。':'从当前配置的初始状态重放，不保留预览中的后端切换历史。')}</p>}
         {liveRecording&&<><p className="muted">{t('实际视频尺寸：{width} × {height} 像素。',{width:videoWidth,height:videoHeight})}</p>{!working&&!currentSourceRecording?.ready&&<p role="status" className="muted">{t('请等待当前预览完成并暂停后再录制')}</p>}{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         {usesRootsNativePresentation(scene)&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像；尺寸变化会清空密度墨迹，点云截图使用独立的累积画布。':'空间复根导出会从初始采样重放到所选时间，使用当前相机和导出尺寸；预览中的历史墨迹与点云拖影不会复制。')}</p>}
-        <div className="export-kind">
+        {mode!=='fractal-recording'&&<div className="export-kind">
           <button
             className={kind === "image" ? "active" : ""}
             disabled={working}
@@ -444,7 +448,7 @@ export function ExportDialog({
             }}
           >
             <Film size={15} />{t("动画视频")}</button>
-        </div>
+        </div>}
         {kind==='image'&&(sourceFractalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&<label className="field"><span>{t(sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')}</span><select aria-label={t(sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
         {kind==='image'&&sourceFractalLive&&<p className="muted">{t(sourceImageMode==='current'?'保存当前暂停的分形状态，不推进动画；尺寸只改变导出画面。':'从当前配置按固定时间重放，不复制实时预览的编辑历史。')}</p>}
         {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t(sourceFractalLive?'按当前暂停状态生成图像，再按所选倍率放大。输出 {width} × {height} 像素。':'先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:outputBase.width*pausedImageScale,height:outputBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
@@ -507,10 +511,10 @@ export function ExportDialog({
               />
             </label>
             {usesRootsCameraTimeline(scene)&&<label className="field"><span>{t('复根视频模式')}</span><select aria-label={t('复根视频模式')} disabled={working} value={rootsVideoMode} onChange={event=>setRootsVideoMode(event.target.value as 'duration'|'source')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源完成条件录制')}</option></select></label>}
-            {sourceFractal&&<label className="field"><span>{t('分形视频模式')}</span><select aria-label={t('分形视频模式')} disabled={working} value={fractalVideoMode} onChange={event=>setFractalVideoMode(event.target.value as 'duration'|'source')}><option value="source">{t('按源完成条件录制')}</option><option value="duration">{t('按时长导出')}</option></select></label>}
+            {sourceFractal&&mode!=='fractal-recording'&&<label className="field"><span>{t('分形视频模式')}</span><select aria-label={t('分形视频模式')} disabled={working} value={fractalVideoMode} onChange={event=>setFractalVideoMode(event.target.value as 'duration'|'source'|'retained')}><option value="source">{t('按源完成条件录制')}</option><option value="duration">{t('按时长导出')}</option>{currentSourceRecording&&<option value="retained">{t('从上次完整应用的场景录制')}</option>}</select></label>}
             {sourcePerlin&&<label className="field"><span>{t('Perlin 视频模式')}</span><select aria-label={t('Perlin 视频模式')} disabled={working} value={perlinVideoMode} onChange={event=>setPerlinVideoMode(event.target.value as 'duration'|'source'|'retained')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源队列结束重放')}</option><option value="retained">{t('保留画布录制')}</option></select></label>}
             {sourceIterated&&<label className="field"><span>{t('迭代场景视频模式')}</span><select aria-label={t('迭代场景视频模式')} disabled={working} value={iteratedVideoMode} onChange={event=>setIteratedVideoMode(event.target.value as 'duration'|'source')}><option value="source">{t('按源完成条件录制')}</option><option value="duration">{t('按时长导出')}</option></select></label>}
-            {(iteratedRecording||fractalVideo)&&format==='mp4'&&<label className="field"><span>{t('视频质量')}</span><select aria-label={t('视频质量')} disabled={working} value={recordingQuality} onChange={event=>setRecordingQuality(event.target.value as typeof recordingQuality)}><option value="low">{t('低')}</option><option value="medium">{t('中')}</option><option value="high">{t('高')}</option><option value="production">{t('制作级')}</option></select></label>}
+            {(fixedRetained||fractalVideo)&&format==='mp4'&&<label className="field"><span>{t('视频质量')}</span><select aria-label={t('视频质量')} disabled={working} value={recordingQuality} onChange={event=>setRecordingQuality(event.target.value as typeof recordingQuality)}><option value="low">{t('低')}</option><option value="medium">{t('中')}</option><option value="high">{t('高')}</option><option value="production">{t('制作级')}</option></select></label>}
             {sourceBouncing?<>
               <label className="field"><span>{t('弹跳录制起点')}</span><select aria-label={t('弹跳录制起点')} disabled={working} value={bouncingStart} onChange={event=>setBouncingStart(event.target.value as 'current'|'seed')}><option value="seed">{t('重建初始状态')}</option><option value="current">{t('当前状态（本地扩展）')}</option></select></label>
               <p className="muted" data-testid="source-bouncing-export-duration">{t('源录制时长（秒）')}：{scene.bouncingSource!.recordDuration}。{t('修改场景的源录制时长可改变停止条件。')}</p>
@@ -518,8 +522,8 @@ export function ExportDialog({
               {sourceVideoFrames!==null&&<p className="muted">{t('本次录制 {frames} 帧',{frames:sourceVideoFrames})}</p>}
             </>:sourceFrames||rootsFrames||sourceQueueVideo?<>
               {sourceFrames&&<label className="field"><span>{t('录制起点')}</span><select aria-label={t('录制起点')} disabled={working} value={recordingStart} onChange={event=>setRecordingStart(event.target.value as 'fresh'|'current')}><option value="fresh">{t('从初始状态')}</option><option value="current" disabled={currentSpirographFrame===undefined}>{t('从当前已呈现帧')}</option></select></label>}
-              {!iteratedRecording&&<label className="field"><span>{t('录制模拟帧率')}</span><input aria-label={t('录制模拟帧率')} disabled={working} type="number" min={1} max={120} step={1} value={recordingFps} onChange={event=>setRecordingFps(Number(event.target.value))}/></label>}
-              <p className="muted">{t(fractalVideo?'从当前配置重新开始，先绘制一帧预热，再录到队列结束。使用三倍导出画布，MP4 使用原版质量设置。模拟帧率与编码帧率默认相同；分别调整播放速度是本地扩展。':iteratedRecording?'从上次应用的配置开始，首帧预热后按队列结束停止；编码完成后动画继续播放。帧率同时用于模拟和视频编码。':retainedPerlin?'恢复上次应用的模拟配置和后端，首帧预热后按源队列结束停止。导出尺寸变化会重建导出画布。模拟帧率决定运动步长，编码帧率决定播放速度。':perlinFrames?'使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。':rootsFrames?'从初始状态重放；首帧用于预热。存在源队列时按队列结束停止；空队列等待本地样本提交完成。模拟帧率决定运动步长，编码帧率决定视频播放速度。':'按源队列结束时停止录制；首个已推进帧用于预热，不写入视频。模拟帧率决定运动步长，编码帧率决定视频播放速度。')}</p>
+              {!fixedRetained&&<label className="field"><span>{t('录制模拟帧率')}</span><input aria-label={t('录制模拟帧率')} disabled={working} type="number" min={1} max={120} step={1} value={recordingFps} onChange={event=>setRecordingFps(Number(event.target.value))}/></label>}
+              <p className="muted">{t(retainedFractal?'从上次完整应用的场景开始，预热后录到队列结束，编码完成后继续播放。帧率同时用于模拟和编码。要将修改作为录制起点，请先播放并点击“应用场景”。':fractalVideo?'从当前配置重新开始，先绘制一帧预热，再录到队列结束。使用三倍导出画布，MP4 使用原版质量设置。模拟帧率与编码帧率默认相同；分别调整播放速度是本地扩展。':iteratedRecording?'从上次应用的配置开始，首帧预热后按队列结束停止；编码完成后动画继续播放。帧率同时用于模拟和视频编码。':retainedPerlin?'恢复上次应用的模拟配置和后端，首帧预热后按源队列结束停止。导出尺寸变化会重建导出画布。模拟帧率决定运动步长，编码帧率决定播放速度。':perlinFrames?'使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。':rootsFrames?'从初始状态重放；首帧用于预热。存在源队列时按队列结束停止；空队列等待本地样本提交完成。模拟帧率决定运动步长，编码帧率决定视频播放速度。':'按源队列结束时停止录制；首个已推进帧用于预热，不写入视频。模拟帧率决定运动步长，编码帧率决定视频播放速度。')}</p>
               {sourceVideoFrames!==null&&<p className="muted">{t('本次录制 {frames} 帧',{frames:sourceVideoFrames})}</p>}
             </>:<label className="field">
               <span>{t("时长（秒）")}</span>
@@ -573,14 +577,14 @@ export function ExportDialog({
               working || liveRecording&&!currentSourceRecording?.ready || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedSourceImage&&!currentPausedCapture?.ready ||
               (kind === "video" &&
                 (ffmpeg !== true || !Number.isSafeInteger(fps)||fps<1||fps>120||
-                  (sourceFrames||rootsFrames||sourceQueueVideo&&!iteratedRecording)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&!sourceQueueVideo&&(!Number.isFinite(duration) ||
+                  (sourceFrames||rootsFrames||sourceQueueVideo&&!fixedRetained)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&!sourceQueueVideo&&(!Number.isFinite(duration) ||
                   duration <= 0 ||
                   duration > 3600)))
             }
             onClick={run}
           >
             <Download size={15} />
-            {working ? t("导出中…") : t("开始导出")}
+            {working ? t("导出中…") : t(mode==='fractal-recording'?'开始录制':"开始导出")}
           </button>
         </div>
       </section>

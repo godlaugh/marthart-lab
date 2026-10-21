@@ -503,6 +503,8 @@ export interface GenerateContext {
   /** Explicit runtime instance; omitted requests use cold fixed-frame replay. */
   samilaLive?:import('./engine/sourceSamilaSession').SourceSamilaLiveContext;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveContext;
+  /** Observed parent pixel density, independent of preview raster downscaling. */
+  fractalPixelDensity?:number;
   mapLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveContext;
   symmetryLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveContext;
   /** Actual primary canvas facts retained for Perlin simulation and export. */
@@ -524,7 +526,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;
