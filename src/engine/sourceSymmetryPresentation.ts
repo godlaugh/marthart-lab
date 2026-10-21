@@ -16,6 +16,13 @@ export function validateSourceSymmetryPresentation(scene:Pick<SceneDocument,'kin
  if(model!==SOURCE_SYMMETRY_PRESENTATION_MODEL||!usesSourceSymmetryGpu(scene)||scene.settings.iteratedMode!=='continuous'||scene.settings.densityToneModel!=='normalized-v2')throw Error('源 Symmetry 呈现需要源 GPU 数学、持续累积和归一调色');
 }
 const size=(v:number)=>{if(!Number.isInteger(v)||v<1||v>16384)throw Error('源 Symmetry 呈现参考尺寸必须是 1–16384 的物理像素整数');return v;};
+/** Both Map and Symmetry upload 1.0f - runtimeBrightness, after their
+ * runtime property has already rounded to Float32. Keep authored brightness
+ * unchanged and convert once at the shader-uniform boundary. */
+export function sourceIteratedBrightnessUniform(brightness:number):number {
+ const runtime=Math.fround(brightness);if(!Number.isFinite(runtime))throw Error('源迭代亮度超出 Float32 范围');
+ return Math.fround(1-runtime);
+}
 /** Original Java computes areas in double, rounds the ratio to float, then
  * promotes that rounded ratio for the scale calculation and rounds again. */
 export function deriveSourceSymmetryNormalization(facts:DensityNormalizationFacts,reference:SourceSymmetryToneReference):DensityNormalization {

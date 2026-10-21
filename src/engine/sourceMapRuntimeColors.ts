@@ -1,4 +1,4 @@
-import {parseDomainSourceFloat,prepareDomainSourceScalar} from './domainSourceScalar';
+import {importSourceMapFloat} from './sourceMapScalar';
 import type {Settings} from '../types';
 export interface SourceMapRuntimeColors {readonly colorSpeed:number;readonly colorPhase:number;}
 const ranges={colorSpeed:[Math.fround(.1),2,Math.fround(.22)],colorPhase:[0,360,180]} as const;
@@ -17,10 +17,7 @@ export function sourceMapRuntimeColors(settings:Settings):SourceMapRuntimeColors
 /** ProjectState reads Java float literals; direct JsonMap config additionally
  * accepts ConfigUtils expressions. Keep these entry points distinct. */
 export function importSourceMapColor(name:keyof SourceMapRuntimeColors,raw:unknown,entry:'project'|'runtime-config'):{ok:true;value:number}|{ok:false;reason:string}{
- let value:number=ranges[name][2];
- if(entry==='runtime-config'){const parsed=prepareDomainSourceScalar(raw,{fallback:value,precision:'float32'});if(!parsed.ok)return{ok:false,reason:'源 Map 着色标量超过解析容量'};value=parsed.facts.value;}
- else if(typeof raw==='number')value=Math.fround(raw);
- else if(typeof raw==='string'){const parsed=parseDomainSourceFloat(raw);if(parsed.ok)value=parsed.value;else if(parsed.error.kind==='capacity')return{ok:false,reason:'源 Map 着色字面量超过解析容量'};}
+ const parsed=importSourceMapFloat(raw,ranges[name][2],entry);if(!parsed.ok)return parsed;const value=parsed.value;
  if(Number.isNaN(value))return{ok:false,reason:'源 Map 着色标量为 NaN，不能保存'};
  const [min,max]=ranges[name];return{ok:true,value:Math.max(min,Math.min(max,value))};
 }

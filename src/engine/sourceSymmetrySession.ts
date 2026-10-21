@@ -7,7 +7,7 @@ import {sourceLivePreviewKind} from './sourceLivePreview';
 import {prepareSourceSymmetryTone,deriveSourceSymmetryNormalization} from './sourceSymmetryPresentation';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from './ordinarySourceCamera';
 import {prepareCapturedDensityCamera,prepareCapturedDensityView,type CapturedDensityAnchor} from './sourceDensityCamera';
-import {prepareSourceSymmetrySplat,sourceSymmetrySplatPixelTests} from './sourceSymmetrySplat';
+import {prepareSourceDensitySplat,sourceDensitySplatPixelTests} from './sourceDensitySplat';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import type {PausedCaptureResult} from './generationProtocol';
 import {exactRasterDimensions} from './rasterDimensions';
@@ -71,11 +71,11 @@ export class SourceSymmetrySession {
   let cameraChanged=false;
   if(!replaying){const captured=prepareCapturedDensityCamera('symmetry',plan,this.anchor);this.anchor=captured.anchor;cameraChanged=captured.clearInk;}
   job.sourceCamera={anchor:this.anchor!,clearInk:cameraChanged};
-  job.symmetrySplat=prepareSourceSymmetrySplat(job.config.pointSize,plan.displayScale);
+  job.densitySplat=prepareSourceDensitySplat('symmetry',job.config.pointSize,plan.displayScale);
   const updates=frame.update.calls.map(call=>prepareIteratedField({...scene,parameters:{...call.parameters!}},job.config,call.time,this.authored!));
   if(reconstructing){
    this.requestSteps+=job.config.count*((!this.replay!.diagnostics().warmupApplied&&updates.length?job.config.burn:0)+updates.length*job.config.iterations);
-   this.requestPixels+=sourceSymmetrySplatPixelTests(job.symmetrySplat,job.config.count);
+   this.requestPixels+=sourceDensitySplatPixelTests(job.densitySplat,job.config.count);
    if(this.requestSteps>2_000_000_000||this.requestPixels>2_000_000_000)throw Error('Symmetry 本地重建超过 20 亿工作预算');
   }
   const display=this.replay!.display(job,{width:c.width,height:c.height,projection:'xy',padding:0,bounds:{minX:-1,maxX:1,minY:-1,maxY:1},isCancelled:c.isCancelled},{updates,paused,parameterChanged:frame.parameters!.changed,cameraChanged});
@@ -113,7 +113,7 @@ export class SourceSymmetrySession {
    const normalization=deriveSourceSymmetryNormalization({kind:'symmetry',width:c.width,height:c.height,recordedPasses:display.accumulationPasses,batchSize:job.config.count},prepared.sourceSymmetryPresentation!.reference);
    const tone={...prepared,normalization},shown=this.replay!.present(tone,c.isCancelled,prepareCapturedDensityView(this.anchor!,sourceFrame.camera,c.width,c.height)),frame=this.frame!.frame;
    const facts:SourceSymmetryLiveFacts={sessionId:this.sessionId,clock:'realtime-source-queue',clockSource:this.clock!.diagnostics().clockSource,sceneTime:frame.sceneTime,rawDt:frame.rawDt,activeDt:frame.activeDt,queueIndex:frame.queueIndex,queueComplete:frame.queueComplete,paused:this.clock!.diagnostics().paused,objectUpdates:this.frame!.update.calls.length,replayRevision:this.revision,display};
-   return{type:'raster',dimension:2,cameraResolved:true,backend:'webgl2',width:c.width,height:c.height,pixels:shown.pixels,sourceCameraFrame:sourceFrame,symmetryLive:facts,symmetrySplat:job.symmetrySplat,symmetryPalette:job.symmetryPalette,sourceSymmetryPresentation:{...prepared.sourceSymmetryPresentation!,scale:normalization.scale},density:{projection:'xy',bounds:display.gpu.bounds,inputPoints:this.deposited,examined:this.deposited,accepted:this.accepted,clipped:this.clipped,invalid:this.sampleInvalid,occupiedPixels:shown.occupiedPixels,maxCount:shown.maxCount,toneBackend:shown.toneBackend,cancelled:false},temporal:{time:frame.sceneTime,windowStart:0,frames:this.displays,samplingFps:context(c).renderFps,recordedPoints:this.deposited,cacheHits:0},stats:{samples:this.steps,generated:this.accepted,invalid:this.invalid},warnings:['Symmetry 实时会话按源调度更新和重播；本地 WebGL 验证不等于原版整窗口像素对照。',...shown.warnings]};
+   return{type:'raster',dimension:2,cameraResolved:true,backend:'webgl2',width:c.width,height:c.height,pixels:shown.pixels,sourceCameraFrame:sourceFrame,symmetryLive:facts,symmetrySplat:job.densitySplat,symmetryPalette:job.symmetryPalette,sourceSymmetryPresentation:{...prepared.sourceSymmetryPresentation!,scale:normalization.scale},density:{projection:'xy',bounds:display.gpu.bounds,inputPoints:this.deposited,examined:this.deposited,accepted:this.accepted,clipped:this.clipped,invalid:this.sampleInvalid,occupiedPixels:shown.occupiedPixels,maxCount:shown.maxCount,toneBackend:shown.toneBackend,cancelled:false},temporal:{time:frame.sceneTime,windowStart:0,frames:this.displays,samplingFps:context(c).renderFps,recordedPoints:this.deposited,cacheHits:0},stats:{samples:this.steps,generated:this.accepted,invalid:this.invalid},warnings:['Symmetry 实时会话按源调度更新和重播；本地 WebGL 验证不等于原版整窗口像素对照。',...shown.warnings]};
  }
  private captureIdentity(scene:SceneDocument,c:GenerateContext){return identity([sourceSymmetrySceneIdentity(scene),c.time,c.symmetryLive,c.sourceViewport,c.sourcePointPixelDensity,c.sourceSymmetryToneReference]);}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext){return !this.busy&&!this.failed&&!!this.completed&&this.completed.identity===this.captureIdentity(scene,c);}

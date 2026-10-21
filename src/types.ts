@@ -419,7 +419,8 @@ export interface RasterOutput {
   symmetryFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
   mapFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
   symmetryPalette?:import('./engine/sourceSymmetryPalette').SourceSymmetryPaletteFacts;
-  symmetrySplat?:import('./engine/sourceSymmetrySplat').SourceSymmetrySplatFacts;
+  symmetrySplat?:import('./engine/sourceDensitySplat').SourceDensitySplatFacts;
+  mapSplat?:import('./engine/sourceDensitySplat').SourceDensitySplatFacts;
   samilaSplat?:{model:'samila-splat-1.7.8';referenceKind:'primary'|'local-output';primaryPixelHeight:number;nominalRadius:number;radius:number;path:'points'|'quad';encoding:'rgb-mass';noiseModel:'source-simplex-lut-256'};
   /** Local runtime seed evidence; not a captured original JVM random stream. */
   samilaSampling?:import('./engine/sourceSamilaSampling').SourceSamilaSamplingFacts;

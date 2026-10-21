@@ -1,3 +1,6 @@
+import {javaTrim} from './sourceJavaText';
+import {SOURCE_MAP_SPLAT_MODEL} from './sourceMapSplat';
+import {importSourceMapFloat} from './sourceMapScalar';
 import {importSourceMapColor} from './sourceMapRuntimeColors';
 import {usesSourceMapParameters} from './sourceMapParameterIdentity';
 import {importSourceMapConfiguration} from './sourceMapConfig';
@@ -267,7 +270,7 @@ function commonLocalPalette(r:Reader,s:SceneDocument){
 function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&!usesSourceSamilaSplat(s)&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
- if(!usesSourceSymmetryProject(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
+ if(!s.mapSource&&!usesSourceSymmetryProject(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!usesSourceSymmetryProject(s)&&!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
  if(!usesSourceSymmetryProject(s)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSamilaSourceProjection(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
@@ -368,8 +371,14 @@ function iteratedLegacy(r:Reader,s:SceneDocument){
   if(usesSourceSymmetryConfiguration(s)){const steps=Math.max(1,r.sourceInt(['settings','iterations_per_frame'],1));if(steps>16)fail('源 Symmetry iterations_per_frame 超过本地每帧 16 次容量');s.settings.iterationsPerFrame=steps;r.retainNumberToken(['settings','iterations_per_frame']);}
  }else{count(r,s,'settings.batch_size','batchSize',8000000);count(r,s,'settings.iterations_per_frame','iterationsPerFrame',16);}
  if(!s.mapSource&&!usesSourceSamilaMath(s)&&!usesSourceSymmetryConfiguration(s))seed(r,s,'settings.seed');
- if(!usesSourceSamilaSplat(s)&&!usesSourceSymmetryProject(s))for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const){if(s.mapSource&&(key==='colorSpeed'||key==='colorPhase'))continue;numberTo(r,s,'settings.'+old,key,{min,max});}
+ if(!usesSourceSamilaSplat(s)&&!usesSourceSymmetryProject(s))for(const [old,key,min,max]of [['accumulation_decay','accumulationDecay',0,1],['step_metric_min','stepMetricMin',0,1e12],['step_metric_max','stepMetricMax',.001,1e12],['color_speed','colorSpeed',.001,100],['color_phase','colorPhase',-1e9,1e9]] as const){if(s.mapSource&&['colorSpeed','colorPhase','stepMetricMin','stepMetricMax'].includes(key))continue;numberTo(r,s,'settings.'+old,key,{min,max});}
  if(s.mapSource)for(const [source,key]of [['color_speed','colorSpeed'],['color_phase','colorPhase']] as const){const path=['settings',source],parsed=importSourceMapColor(key,r.use(path),s.mapSource.entry);if(!parsed.ok)fail(parsed.reason);s.settings[key]=parsed.value;r.retainNumberToken(path);}
+ if(s.mapSource){
+  s.settings.mapSplatModel=SOURCE_MAP_SPLAT_MODEL;s.settings.iteratedColor='step';
+  for(const [source,key,fallback]of [['dot_size','pointSize',s.mapSource.entry==='project'?1.5:1],['step_metric_min','stepMetricMin',0],['step_metric_max','stepMetricMax',2]] as const){const path=['settings',source],parsed=importSourceMapFloat(r.use(path),fallback,s.mapSource.entry);if(!parsed.ok)fail(parsed.reason);if(!Number.isFinite(parsed.value))fail(`${source} 需要有限 Float32`);s.settings[key]=parsed.value;r.retainNumberToken(path);}
+  if(Number(s.settings.stepMetricMax)<=Number(s.settings.stepMetricMin))s.settings.stepMetricMax=Math.fround(Number(s.settings.stepMetricMin)+Math.fround(.001));
+  const mode=r.use(['settings','step_metric_normalize_mode']);s.settings.stepMetricNormalize=typeof mode==='string'&&javaTrim(mode).toUpperCase()==='ROBUST'?'robust':'clamp';
+ }
  if(s.kind==='map'||s.kind==='symmetry'){
   if(!usesSourceSymmetryProject(s))for(const [old,key,fallback,sourceMin,sourceMax,legacyMin,legacyMax]of [['gamma','Gamma',2.2,.1,10,.1,8],['contrast','Contrast',1,.1,2,0,8],['brightness','Brightness',s.kind==='map'?.3:.5,-.5,1.5,-1,1],['saturation','Saturation',.8,0,1,0,4],['dynamic_range','DynamicRange',s.kind==='map'?.2:.5,.1,1,.001,1e9]]as const){
    const value=r.num('settings.'+old,s.parameters),effective=Math.min(sourceMax,Math.max(sourceMin,value??fallback));s.settings['normalized'+key]=effective;
@@ -385,8 +394,8 @@ function iteratedLegacy(r:Reader,s:SceneDocument){
   const tone=importSamilaTone(source);Object.assign(s.settings,tone.normalized,tone.legacy);r.warnings.push(...tone.warnings);
   if(object&&Object.keys(object).length===0)r.use('settings');
  }
- if(!usesSourceSamilaSplat(s)&&!usesSourceSymmetryProject(s))stringTo(r,s,'settings.step_metric_normalize_mode','stepMetricNormalize',{CLAMP:'clamp',ROBUST:'robust'});
- if(Number(s.settings.stepMetricMax)-Number(s.settings.stepMetricMin)<.001)fail('步长度量上限须至少大于下限 0.001');
+ if(!s.mapSource&&!usesSourceSamilaSplat(s)&&!usesSourceSymmetryProject(s))stringTo(r,s,'settings.step_metric_normalize_mode','stepMetricNormalize',{CLAMP:'clamp',ROBUST:'robust'});
+ if(!s.mapSource&&Number(s.settings.stepMetricMax)-Number(s.settings.stepMetricMin)<.001)fail('步长度量上限须至少大于下限 0.001');
  if(s.kind==='samila'&&!usesSourceSamilaSplat(s)){numberTo(r,s,'settings.alpha','alpha',{min:0,max:1});booleanTo(r,s,'settings.show_trails','showTrails');numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:3600});}
  else if(s.kind!=='samila'){if(r.has('settings.show_trails'))r.acknowledge('settings.show_trails','Map/Symmetry 密度由 accumulation_decay 控制；此通用拖尾标记未作为线段历史');if(r.has('settings.trail_lifetime'))r.acknowledge('settings.trail_lifetime','Map/Symmetry 的包内密度管线采用逐帧 accumulation_decay，不将通用寿命字段误作另一层衰减');}
  const custom=hasSymmetryCustom(s);

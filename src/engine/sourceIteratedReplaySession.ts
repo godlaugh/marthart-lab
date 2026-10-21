@@ -1,7 +1,7 @@
 import type {IteratedFrameJob,IteratedField} from '../scenes/iteratedDensity';
 import {IteratedDensityGpu,type IteratedGpuOptions,type IteratedGpuFacts} from './iteratedDensityGpu';
 import {prepareSourceIterationFramePlan,prepareSourceIterationReplayFrame,type SourceIterationFramePlan} from './sourceIterationFramePlan';
-import {sourceSymmetrySplatPixelTests} from './sourceSymmetrySplat';
+import {sourceDensitySplatPixelTests} from './sourceDensitySplat';
 import {GenerationCleanupState} from './generationCleanup';
 export interface SourceIteratedDisplayEvent {updates:readonly IteratedField[];paused:boolean;parameterChanged:boolean;cameraChanged:boolean;}
 export interface SourceIteratedDisplayFacts {
@@ -49,7 +49,7 @@ export class SourceIteratedReplaySession {
  display(job:IteratedFrameJob,options:Omit<IteratedGpuOptions,'resetParticles'|'clearInk'>,event:SourceIteratedDisplayEvent):SourceIteratedDisplayFacts {
   this.cleanup.prepare();if(this.failed||this.busy)throw Error('迭代场景 显示需要重置失败会话');
   const cfg=job.config;
-  if(job.kind!==this.family||(this.family==='symmetry'?(!job.symmetrySplat||!job.symmetryPalette):job.field.kind!=='map'||job.field.mathModel!=='mathart-1.7.8-gpu-v1')||!cfg.sourceInitialSeed||!cfg.record)throw Error('迭代场景 重播需要完整源 GPU 配置与粒子绘制');
+  if(job.kind!==this.family||(this.family==='symmetry'?(!job.densitySplat||!job.symmetryPalette):job.field.kind!=='map'||job.field.mathModel!=='mathart-1.7.8-gpu-v1')||!cfg.sourceInitialSeed||!cfg.record)throw Error('迭代场景 重播需要完整源 GPU 配置与粒子绘制');
   if(!event||['paused','parameterChanged','cameraChanged'].some(key=>typeof event[key as keyof SourceIteratedDisplayEvent]!=='boolean'))throw Error('迭代场景 显示事件无效');
   if(!Array.isArray(event.updates)||event.updates.length>2)throw Error('迭代场景 有序更新事件无效');
   const resized=this.initialized&&(options.width!==this.width||options.height!==this.height);
@@ -62,7 +62,7 @@ export class SourceIteratedReplaySession {
   const burn=replay?Math.min(starting?cfg.burn:this.remainingBurn,burnBudget):0;
   const draws=replay?Math.min(remaining,sourceIteratedReplayBudget(remaining,frames-(starting?0:this.replayIndex),starting?0:this.replayIndex),8):1;
   const work=cfg.count*(ordinary.warmupSteps+ordinary.iterationSteps+burn+(replay?draws*cfg.iterations:0));
-  const pixelWork=(job.symmetrySplat?sourceSymmetrySplatPixelTests(job.symmetrySplat,cfg.count):cfg.count*(Math.ceil(cfg.pointSize)+2)**2)*draws;
+  const pixelWork=(job.densitySplat?sourceDensitySplatPixelTests(job.densitySplat,cfg.count):cfg.count*(Math.ceil(cfg.pointSize)+2)**2)*draws;
   if(!Number.isSafeInteger(work)||work>2_000_000_000||!Number.isSafeInteger(pixelWork)||pixelWork>2_000_000_000)throw Error('迭代场景 单次显示超过 20 亿工作预算');
   const retainedPasses=resized||starting||!this.initialized||!replay&&(event.cameraChanged||event.parameterChanged&&!event.paused)?0:this.passes;
   if(retainedPasses+draws>0x7fffffff||!Number.isSafeInteger(this.displayIndex+1)||!Number.isSafeInteger(this.gpuFrame+10))throw Error('迭代场景 显示计数超出容量');

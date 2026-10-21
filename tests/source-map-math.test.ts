@@ -16,9 +16,9 @@ describe('source Map math document and execution boundaries',()=>{
   const scene=imported(),saved=parseScene(serializeScene(scene));
   expect(saved.settings.mapMathModel).toBe(SOURCE_MAP_MATH);expect(saved.provenance?.original).toEqual(raw());
   expect(prepareIteratedFrame(saved,0,0).field).toMatchObject({kind:'map',mathModel:SOURCE_MAP_MATH,dimension:3});
-  // An old saved document predates both source contracts. A current parameter
+  // An old saved document predates the source contracts. A current parameter
   // contract cannot remain enabled after deleting its required math owner.
-  delete scene.settings.mapParameterModel;delete scene.settings.mapMathModel;expect(parseScene(serializeScene(scene)).settings.mapMathModel).toBeUndefined();
+  delete scene.settings.mapSplatModel;delete scene.settings.mapParameterModel;delete scene.settings.mapMathModel;expect(parseScene(serializeScene(scene)).settings.mapMathModel).toBeUndefined();
   expect(parseLegacyScene(JSON.stringify(raw('CPU'))).scene.settings.mapMathModel).toBeUndefined();
   expect(parseLegacyScene(JSON.stringify(raw()),{iteratedMath:'legacy-v1'}).scene.settings.mapMathModel).toBeUndefined();
  });

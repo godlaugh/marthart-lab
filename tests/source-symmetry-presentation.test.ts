@@ -4,7 +4,7 @@ import {parseProjectFile,parseLegacyScene} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
 import {snapshotGenerationInput} from '../src/engine/generationInput';
 import {toneDensityRgbaPrepared} from '../src/engine/density';
-import {prepareSourceSymmetryTone,deriveSourceSymmetryNormalization} from '../src/engine/sourceSymmetryPresentation';
+import {prepareSourceSymmetryTone,deriveSourceSymmetryNormalization,sourceIteratedBrightnessUniform} from '../src/engine/sourceSymmetryPresentation';
 import {visibleIteratedControls,generateIteratedDensity} from '../src/scenes/iteratedDensity';
 import {normalizedDensityControls} from '../src/engine/densityNormalization';
 
@@ -27,6 +27,13 @@ describe('Symmetry source normalization and presentation boundaries',()=>{
   expect(tone.tone).toMatchObject({brightness:Math.fround(.3),gamma:Math.fround(2.2),dynamicRange:Math.fround(.2)});
   expect(()=>toneDensityRgbaPrepared(1,1,new Float32Array(4),tone)).toThrow('需要 GPU');
   expect(parseLegacyScene(JSON.stringify(input)).scene.settings.symmetryPresentationModel).toBeUndefined();
+ });
+ it('converts authored brightness only at the original Float32 uniform boundary',()=>{
+  // Original presentAccumulation: fconst_1, getfield runtimeBrightness, fsub.
+  for(const [authored,uniform]of [[.3,.699999988079071],[.123456789,.8765432238578796],[-.5,1.5],[1.5,-.5],[1,0],[0,1]])expect(sourceIteratedBrightnessUniform(authored)).toBe(uniform);
+  const scene=parseProjectFile(JSON.stringify(input)).scene,before=structuredClone(scene),tone=prepareSourceSymmetryTone(scene,{width:17,height:9});
+  expect(sourceIteratedBrightnessUniform(tone.tone.brightness)).toBe(.699999988079071);expect(tone.tone.brightness).toBe(Math.fround(.3));expect(scene).toEqual(before);
+  for(const invalid of [NaN,Infinity,1e100])expect(()=>sourceIteratedBrightnessUniform(invalid)).toThrow('Float32');
  });
  it('labels an omitted reference as local output and does not replace malformed caller facts',()=>{
   const scene=parseProjectFile(JSON.stringify(input)).scene;

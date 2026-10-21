@@ -1,4 +1,4 @@
-import {SOURCE_SYMMETRY_PRESENT_GLSL} from './sourceSymmetryPresentation';
+import {SOURCE_SYMMETRY_PRESENT_GLSL,sourceIteratedBrightnessUniform} from './sourceSymmetryPresentation';
 import {isCapturedDensityView,validateDensityView,type PreparedDensityView} from './densityPresentation';
 import {SOURCE_SAMILA_PRESENT_GLSL,sourceSamilaDisplayTransform} from './sourceSamilaPresentation';
 import {densityAcceptsSignedMass} from './density';
@@ -185,7 +185,7 @@ export class DensityGpuTone {
   const pixels=new Uint8ClampedArray(width*height*4),scratch=new Uint8Array(DENSITY_TONE_TILE**2*4),facts=new Uint32Array(4);let occupiedPixels=0,maxBits=0;
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.DITHER);gl.pixelStorei(gl.PACK_ALIGNMENT,1);gl.pixelStorei(gl.PACK_ROW_LENGTH,0);gl.pixelStorei(gl.PACK_SKIP_PIXELS,0);gl.pixelStorei(gl.PACK_SKIP_ROWS,0);
   gl.useProgram(tone.program);this.i(tone,'ink',0);this.i(tone,'usePaletteLUT',job.model==='samila-normalized-v2'&&job.branch==='palette-average'?1:0);this.rgb(tone,'backgroundRgb',job.background);
-  for(const[name,value]of Object.entries({displayRotation:transform.delta,viewportAspect:transform.aspect,brightness:job.tone.brightness,contrast:job.tone.contrast,gamma:job.tone.gamma,dynamicRange:job.tone.dynamicRange,saturation:job.tone.saturation,scale:job.normalization.scale}))this.f(tone,name,value);
+  for(const[name,value]of Object.entries({displayRotation:transform.delta,viewportAspect:transform.aspect,brightness:symmetry?sourceIteratedBrightnessUniform(job.tone.brightness):job.tone.brightness,contrast:job.tone.contrast,gamma:job.tone.gamma,dynamicRange:job.tone.dynamicRange,saturation:job.tone.saturation,scale:job.normalization.scale}))this.f(tone,name,value);
   this.bind(ink,0);const oldMin=gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER),oldMag=gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER);
   try {
    if(symmetry)for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,gl.LINEAR);

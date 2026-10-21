@@ -69,7 +69,9 @@ npm run desktop:test
 
 当前仍处于 2.0 场景补全阶段。曲面 CPU 点／网格的导入、统一配置编辑、保存重开、切换时间线和黑色淡入淡出已接通，并完成实际 PNG 与 MP4 导出验证；GPU 点与网格也已完成本地导入、回放及 PNG／MP4 验证。吸引子源 CPU／GPU 的导入、编辑、保存重开、回放、PNG／MP4 导出也已接通，其它剩余差异仍待完成。原版整图一致性验收仍为 0/11，现有 1.0 应用包未替换。具体行为和验证边界见[曲面中文验证记录](docs/source-surface-validation.zh-CN.md)。
 
-**Map 参数队列与重播（2026-10-21，M3）**：新源项目的参数开始／停止动作、每帧有序更新和独立颜色目标已接入编辑器、保存及固定时钟 GPU 生成。原 JVM 72 组参数／405 个快照、129 组重播 helper、实际 GPU 重播及界面保存／PNG 检查通过。Map 实时界面生命周期、源散点／调色及原版整窗对照仍待完成；详情见[中文验收记录](docs/source-map-timeline-replay-validation.zh-CN.md)。此前的[构造与初态验证](docs/source-map-initialization-validation.zh-CN.md)继续有效。
+**Map 散点与亮度更正（2026-10-21，M3）**：源 Map 的散点覆盖与固定余弦颜色已通过 116 组原 shader 对照；共享 Symmetry 散点 170 组回归通过。修复 Symmetry 亮度上传及旧对照输入后，独立 30 组结果零差。349 个文件／6,506 项测试和 Web 构建通过。Map 最终呈现、实时会话及原版完整窗口对照仍待完成，详见[中文验收记录](docs/source-map-splat-validation.zh-CN.md)。
+
+**Map 参数队列与重播（2026-10-21，M3）**：新源项目的参数开始／停止动作、每帧有序更新和独立颜色目标已接入编辑器、保存及固定时钟 GPU 生成。原 JVM 72 组参数／405 个快照、129 组重播 helper、实际 GPU 重播及界面保存／PNG 检查通过。Map 实时界面生命周期、源最终调色及原版整窗对照仍待完成；详情见[中文验收记录](docs/source-map-timeline-replay-validation.zh-CN.md)。此前的[构造与初态验证](docs/source-map-initialization-validation.zh-CN.md)继续有效。
 
 **Map／Symmetry 数值编辑（2026-10-19，M3）**：同作品的连续模式现保留 Worker 与 GPU 编译程序，仍按完整作者配置从种子重放。数值修改不重编译；公式修改仍按源码键编译。真实界面编辑、保存重开、PNG 和完整前后画面对照通过，见[中文验证记录](docs/iterated-edit-validation.zh-CN.md)。Perlin 剩余渐变要求也已按固定原包纠正，见[参考行为核对](docs/perlin-gradient-reference.zh-CN.md)；源颜色状态已通过 392 条独立数值记录对照，专属参数状态另通过 72 条记录及与渐变共用队列的组合测试。源 Processing 噪声纹理和独立 GPU 绘制端已实现：18 项同浏览器原包着色器对照、9 项资源故障检查通过。源 GPU 的公开导入、编辑、保存重开、播放、PNG／MP4 现已通过实际界面验证；CPU 粒子和曲线仍待接通。上一批全套 279 个测试文件／5,256 项测试及 Web 构建通过；这些局部验证不代表原版 JVM 整图一致。
 
