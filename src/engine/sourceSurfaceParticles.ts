@@ -1,3 +1,4 @@
+import {sourceSurfaceParameterFrameRate,type SourceSurfaceUpdateFrame} from './sourceSurfaceFrame';
 import {SourceParticleTrailHistory,type SourceParticleTrails} from './sourceParticleTrails';
 import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction,type SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
 import {SourceGradientRuntime,type SourceGradientAction} from './sourceGradientRuntime';
@@ -8,7 +9,7 @@ import type {SceneDocument} from '../types';
 import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {parseDomainSourceFloat} from './domainSourceScalar';
 import {prepareSourceSurfaceFunction,type SourceSurfaceFunction} from './sourceSurfaceFunction';
-import type {OrdinarySourceCameraParticles,OrdinaryCameraTargetRequest,OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding} from './ordinarySourceCameraTimeline';
+import type {OrdinarySourceCameraParticles,OrdinaryCameraTargetRequest,OrdinaryCameraTargetBinding} from './ordinarySourceCameraTimeline';
 import {evaluateOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {usesSourceSurfaceParticles,SOURCE_SURFACE_CLIP_TYPES,SOURCE_SURFACE_ACTION_METHODS} from './sourceSurfaceIdentity';
@@ -208,10 +209,10 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  interpolateParameterActions(eased:number,finished:boolean):void {this.guarded(()=>this.parameters.interpolate(eased,finished));}
  beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]):void {this.guarded(()=>this.parameters.replace(parameters));}
  finishParameterClip():void {this.guarded(()=>this.parameters.stop());}
- update(frame:OrdinaryCameraParticleFrame):void {this.guarded(()=>{
+ update(frame:SourceSurfaceUpdateFrame):void {this.guarded(()=>{
   this.check();if(this.retired)fail('input','已移出的曲面不再执行粒子更新');if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastFrame+1||!Number.isFinite(frame.time)||frame.time<0||!Number.isFinite(frame.deltaTime)||frame.deltaTime<0)fail('input','原版曲面粒子帧顺序或时间无效');
   this.lastFrame=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
-  this.animationTime=F(frame.time);this.parameters.update(dt,this.config.frameRate);this.gradient.update(dt);
+  this.animationTime=F(frame.time);this.parameters.update(dt,sourceSurfaceParameterFrameRate(frame,this.config.frameRate));this.gradient.update(dt);
   this.reserve(this.config.gpu?1:this.ids.length);
   const u=this.config.u,v=this.config.v,time=F(frame.time);
   for(let slot=0;slot<this.ids.length;slot++){

@@ -1,0 +1,1915 @@
+{
+  "kind": "original-Surface-variable-fps-update-traces",
+  "actual": [
+    {
+      "kind": "points",
+      "case": 0,
+      "initial": 0.25,
+      "step": 0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 0.25268025514207865,
+        "bits": "3fd02be9ce0b87cd"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 0.5832144773131427,
+            "bits": "3fe2a9b16853a348"
+          },
+          "phase": {
+            "value": 0.6226802606555083,
+            "bits": "3fe3ecff276c2a4d"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 0.8924199165462914,
+            "bits": "3fec8eb4367bb11e"
+          },
+          "phase": {
+            "value": 1.1026802678080658,
+            "bits": "3ff1a4941082e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.8924199165462914,
+            "bits": "3fec8eb4367bb11e"
+          },
+          "phase": {
+            "value": 1.1026802678080658,
+            "bits": "3ff1a4941082e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.8924199165462914,
+            "bits": "3fec8eb4367bb11e"
+          },
+          "phase": {
+            "value": 1.1026802678080658,
+            "bits": "3ff1a4941082e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 0.9913159099636037,
+            "bits": "3fefb8dc24a98a84"
+          },
+          "phase": {
+            "value": 1.7026802767487625,
+            "bits": "3ffb3e2dac82e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 0.937326621125331,
+            "bits": "3fedfe9465ece94e"
+          },
+          "phase": {
+            "value": 1.9267154308078849,
+            "bits": "3ffed3d38f404b6f"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": -0.9816420177205385,
+            "bits": "bfef699c854fa73e"
+          },
+          "phase": {
+            "value": 4.904297438454446,
+            "bits": "40139e0025d012dc"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 0.30483754198216695,
+            "bits": "3fd38275525a0304"
+          },
+          "phase": {
+            "value": 2.8318248056946302,
+            "bits": "4006a793c383ae10"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.009767688099319752,
+            "bits": "3f840114e78d87d5"
+          },
+          "phase": {
+            "value": 3.1318248101649786,
+            "bits": "40090dfa2a83ae10"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.2861746842966185,
+            "bits": "bfd250af9f7fd082"
+          },
+          "phase": {
+            "value": 3.431824814635327,
+            "bits": "400b74609183ae10"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "points",
+      "case": 1,
+      "initial": 0.25,
+      "step": -0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 2.8889123984477143,
+        "bits": "40071c7e1a82bc1e"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": -0.11705080550699595,
+            "bits": "bfbdf70aa59f7d36"
+          },
+          "phase": {
+            "value": 3.258912403961144,
+            "bits": "400a1240aa9c55b8"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": -0.562428348361654,
+            "bits": "bfe1ff69bc51cfa9"
+          },
+          "phase": {
+            "value": 3.7389124111137013,
+            "bits": "400de94ae902bc1e"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": -0.562428348361654,
+            "bits": "bfe1ff69bc51cfa9"
+          },
+          "phase": {
+            "value": 3.7389124111137013,
+            "bits": "400de94ae902bc1e"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.562428348361654,
+            "bits": "bfe1ff69bc51cfa9"
+          },
+          "phase": {
+            "value": 3.7389124111137013,
+            "bits": "400de94ae902bc1e"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": -0.9310645360045382,
+            "bits": "bfedcb47da935b64"
+          },
+          "phase": {
+            "value": 4.338912420054398,
+            "bits": "40115b0bdb815e0f"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": -0.9972195543130931,
+            "bits": "bfefe938fb969b14"
+          },
+          "phase": {
+            "value": 4.6378003066760005,
+            "bits": "40128d1b860a3572"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 0.28376948004645475,
+            "bits": "3fd229477719c1b4"
+          },
+          "phase": {
+            "value": 0.2877229120368501,
+            "bits": "3fd26a0d5c6085a0"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": -0.8390106114448331,
+            "bits": "bfead92cc824e175"
+          },
+          "phase": {
+            "value": 5.287722986542656,
+            "bits": "401526a0dac6085a"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": -0.6407404547248535,
+            "bits": "bfe480f220488ea9"
+          },
+          "phase": {
+            "value": 5.587722991013004,
+            "bits": "401659d40e46085a"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.385234859777402,
+            "bits": "bfd8a7b01d017a44"
+          },
+          "phase": {
+            "value": 5.887722995483353,
+            "bits": "40178d0741c6085a"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "points",
+      "case": 2,
+      "initial": 5,
+      "step": 0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 1.5707963267948966,
+        "bits": "3ff921fb54442d18"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 0.9829362501231433,
+            "bits": "3fef7436b90a9dea"
+          },
+          "phase": {
+            "value": 1.7557963295516115,
+            "bits": "3ffc17bde45dc6b2"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 0.8340318907423173,
+            "bits": "3feab063a5d1e5c5"
+          },
+          "phase": {
+            "value": 2.155216925904138,
+            "bits": "40013de25f2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.8340318907423173,
+            "bits": "3feab063a5d1e5c5"
+          },
+          "phase": {
+            "value": 2.155216925904138,
+            "bits": "40013de25f2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.8340318907423173,
+            "bits": "3feab063a5d1e5c5"
+          },
+          "phase": {
+            "value": 2.155216925904138,
+            "bits": "40013de25f2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 0.3768337949300027,
+            "bits": "3fd81e0b7e501fa8"
+          },
+          "phase": {
+            "value": 2.7552169348448348,
+            "bits": "40060aaf2d2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 0.08656723406968082,
+            "bits": "3fb629452f3c0551"
+          },
+          "phase": {
+            "value": 3.0549169324442578,
+            "bits": "4008707849e6c201"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": -0.22629115725064747,
+            "bits": "bfccf71bcfe1fcb2"
+          },
+          "phase": {
+            "value": 6.054916932444257,
+            "bits": "4018383c24f36100"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": -0.99823973749118,
+            "bits": "bfeff1947642f3a8"
+          },
+          "phase": {
+            "value": 4.771731699770477,
+            "bits": "40131640d5af33e8"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": -0.9703835175756099,
+            "bits": "bfef0d61bc1211e8"
+          },
+          "phase": {
+            "value": 4.9563719200942815,
+            "bits": "4013d353291e787d"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.8694543387182527,
+            "bits": "bfebd291e7c52060"
+          },
+          "phase": {
+            "value": 5.229088610287647,
+            "bits": "4014ea9634644940"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "points",
+      "case": 3,
+      "initial": 0.25,
+      "step": 0.1,
+      "min": 2,
+      "max": 2.0000001,
+      "initialPhase": {
+        "value": 0,
+        "bits": "0000000000000000"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "mesh",
+      "case": 0,
+      "initial": 0.25,
+      "step": 0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 0.25268025514207865,
+        "bits": "3fd02be9ce0b87cd"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 0.5832144773131427,
+            "bits": "3fe2a9b16853a348"
+          },
+          "phase": {
+            "value": 0.6226802606555083,
+            "bits": "3fe3ecff276c2a4d"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 0.8924199165462914,
+            "bits": "3fec8eb4367bb11e"
+          },
+          "phase": {
+            "value": 1.1026802678080658,
+            "bits": "3ff1a4941082e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.8924199165462914,
+            "bits": "3fec8eb4367bb11e"
+          },
+          "phase": {
+            "value": 1.1026802678080658,
+            "bits": "3ff1a4941082e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.8924199165462914,
+            "bits": "3fec8eb4367bb11e"
+          },
+          "phase": {
+            "value": 1.1026802678080658,
+            "bits": "3ff1a4941082e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 0.9913159099636037,
+            "bits": "3fefb8dc24a98a84"
+          },
+          "phase": {
+            "value": 1.7026802767487625,
+            "bits": "3ffb3e2dac82e1f4"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 0.937326621125331,
+            "bits": "3fedfe9465ece94e"
+          },
+          "phase": {
+            "value": 1.9267154308078849,
+            "bits": "3ffed3d38f404b6f"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": -0.9816420177205385,
+            "bits": "bfef699c854fa73e"
+          },
+          "phase": {
+            "value": 4.904297438454446,
+            "bits": "40139e0025d012dc"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 0.30483754198216695,
+            "bits": "3fd38275525a0304"
+          },
+          "phase": {
+            "value": 2.8318248056946302,
+            "bits": "4006a793c383ae10"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.009767688099319752,
+            "bits": "3f840114e78d87d5"
+          },
+          "phase": {
+            "value": 3.1318248101649786,
+            "bits": "40090dfa2a83ae10"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.2861746842966185,
+            "bits": "bfd250af9f7fd082"
+          },
+          "phase": {
+            "value": 3.431824814635327,
+            "bits": "400b74609183ae10"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "mesh",
+      "case": 1,
+      "initial": 0.25,
+      "step": -0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 2.8889123984477143,
+        "bits": "40071c7e1a82bc1e"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": -0.11705080550699595,
+            "bits": "bfbdf70aa59f7d36"
+          },
+          "phase": {
+            "value": 3.258912403961144,
+            "bits": "400a1240aa9c55b8"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": -0.562428348361654,
+            "bits": "bfe1ff69bc51cfa9"
+          },
+          "phase": {
+            "value": 3.7389124111137013,
+            "bits": "400de94ae902bc1e"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": -0.562428348361654,
+            "bits": "bfe1ff69bc51cfa9"
+          },
+          "phase": {
+            "value": 3.7389124111137013,
+            "bits": "400de94ae902bc1e"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.562428348361654,
+            "bits": "bfe1ff69bc51cfa9"
+          },
+          "phase": {
+            "value": 3.7389124111137013,
+            "bits": "400de94ae902bc1e"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": -0.9310645360045382,
+            "bits": "bfedcb47da935b64"
+          },
+          "phase": {
+            "value": 4.338912420054398,
+            "bits": "40115b0bdb815e0f"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": -0.9972195543130931,
+            "bits": "bfefe938fb969b14"
+          },
+          "phase": {
+            "value": 4.6378003066760005,
+            "bits": "40128d1b860a3572"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 0.28376948004645475,
+            "bits": "3fd229477719c1b4"
+          },
+          "phase": {
+            "value": 0.2877229120368501,
+            "bits": "3fd26a0d5c6085a0"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": -0.8390106114448331,
+            "bits": "bfead92cc824e175"
+          },
+          "phase": {
+            "value": 5.287722986542656,
+            "bits": "401526a0dac6085a"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": -0.6407404547248535,
+            "bits": "bfe480f220488ea9"
+          },
+          "phase": {
+            "value": 5.587722991013004,
+            "bits": "401659d40e46085a"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.385234859777402,
+            "bits": "bfd8a7b01d017a44"
+          },
+          "phase": {
+            "value": 5.887722995483353,
+            "bits": "40178d0741c6085a"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "mesh",
+      "case": 2,
+      "initial": 5,
+      "step": 0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 1.5707963267948966,
+        "bits": "3ff921fb54442d18"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 0.9829362501231433,
+            "bits": "3fef7436b90a9dea"
+          },
+          "phase": {
+            "value": 1.7557963295516115,
+            "bits": "3ffc17bde45dc6b2"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 0.8340318907423173,
+            "bits": "3feab063a5d1e5c5"
+          },
+          "phase": {
+            "value": 2.155216925904138,
+            "bits": "40013de25f2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.8340318907423173,
+            "bits": "3feab063a5d1e5c5"
+          },
+          "phase": {
+            "value": 2.155216925904138,
+            "bits": "40013de25f2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.8340318907423173,
+            "bits": "3feab063a5d1e5c5"
+          },
+          "phase": {
+            "value": 2.155216925904138,
+            "bits": "40013de25f2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 0.3768337949300027,
+            "bits": "3fd81e0b7e501fa8"
+          },
+          "phase": {
+            "value": 2.7552169348448348,
+            "bits": "40060aaf2d2459f7"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 0.08656723406968082,
+            "bits": "3fb629452f3c0551"
+          },
+          "phase": {
+            "value": 3.0549169324442578,
+            "bits": "4008707849e6c201"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": -0.22629115725064747,
+            "bits": "bfccf71bcfe1fcb2"
+          },
+          "phase": {
+            "value": 6.054916932444257,
+            "bits": "4018383c24f36100"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": -0.99823973749118,
+            "bits": "bfeff1947642f3a8"
+          },
+          "phase": {
+            "value": 4.771731699770477,
+            "bits": "40131640d5af33e8"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": -0.9703835175756099,
+            "bits": "bfef0d61bc1211e8"
+          },
+          "phase": {
+            "value": 4.9563719200942815,
+            "bits": "4013d353291e787d"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": -0.8694543387182527,
+            "bits": "bfebd291e7c52060"
+          },
+          "phase": {
+            "value": 5.229088610287647,
+            "bits": "4014ea9634644940"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "mesh",
+      "case": 3,
+      "initial": 0.25,
+      "step": 0.1,
+      "min": 2,
+      "max": 2.0000001,
+      "initialPhase": {
+        "value": 0,
+        "bits": "0000000000000000"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.10000000149011612
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.30000001192092896
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.4000000059604645
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.6499999761581421
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.75
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.800000011920929
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0.8500000238418579
+        }
+      ]
+    },
+    {
+      "kind": "mesh-empty",
+      "case": 0,
+      "initial": 0.25,
+      "step": 0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 0.25268025514207865,
+        "bits": "3fd02be9ce0b87cd"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0.25268025514207865,
+            "bits": "3fd02be9ce0b87cd"
+          },
+          "animationTime": 0
+        }
+      ]
+    },
+    {
+      "kind": "mesh-empty",
+      "case": 1,
+      "initial": 0.25,
+      "step": -0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 2.8889123984477143,
+        "bits": "40071c7e1a82bc1e"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 2.8889123984477143,
+            "bits": "40071c7e1a82bc1e"
+          },
+          "animationTime": 0
+        }
+      ]
+    },
+    {
+      "kind": "mesh-empty",
+      "case": 2,
+      "initial": 5,
+      "step": 0.1,
+      "min": -1,
+      "max": 1,
+      "initialPhase": {
+        "value": 1.5707963267948966,
+        "bits": "3ff921fb54442d18"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 5,
+            "bits": "4014000000000000"
+          },
+          "phase": {
+            "value": 1.5707963267948966,
+            "bits": "3ff921fb54442d18"
+          },
+          "animationTime": 0
+        }
+      ]
+    },
+    {
+      "kind": "mesh-empty",
+      "case": 3,
+      "initial": 0.25,
+      "step": 0.1,
+      "min": 2,
+      "max": 2.0000001,
+      "initialPhase": {
+        "value": 0,
+        "bits": "0000000000000000"
+      },
+      "frames": [
+        {
+          "time": 0.10000000149011612,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 37,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.20000000298023224,
+          "actualFrameRate": 24,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.20000001788139343,
+          "dt": -0.10000000149011612,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.30000001192092896,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": -2,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.4000000059604645,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 29.969999313354492,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.6499999761581421,
+          "dt": 0.25,
+          "actualFrameRate": 120,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.75,
+          "dt": 0.10000000149011612,
+          "actualFrameRate": 500,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.800000011920929,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 1,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        },
+        {
+          "time": 0.8500000238418579,
+          "dt": 0.05000000074505806,
+          "actualFrameRate": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "phase": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "animationTime": 0
+        }
+      ]
+    }
+  ],
+  "execution": {
+    "originalSurfaceUpdate": true,
+    "originalMeshUpdate": true,
+    "originalAnimatorAndFunctionConstructors": true,
+    "originalSurfaceConstructors": false,
+    "GLOrWindow": false,
+    "scope": "JNI allocated PApplet/Surface/Mesh, original parameter-function constructor with null unused expressions, original animator constructor and add/start/update; GPU branch without tracking/geometry, mesh nonempty placeholder or empty array. Actual parameter getters/phases/time. No scene queue, rendering, UI, recording lifecycle or native pixels."
+  },
+  "provenance": {
+    "artifactPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "coreSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+    "jvmPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home/lib/server/libjvm.dylib",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "classes": {
+      "mathart/surface/ParametricSurface": "f845653098ac1a4112420b83cf258596be4569da66eabb0feaacc3020d0e5ceb",
+      "mathart/surface/MeshSurface": "95a1c0c80e593ba4de21fcbdfb8bfb24dbd034fbebce95d4aed7d2829a412906",
+      "mathart/surface/SurfaceParameterAnimator": "d83136d45146b9fad86fe0a9fa79390d02d6e8f6020e09b2207d25e41d8705df",
+      "mathart/surface/SurfaceParameterAnimator$ParamConfig": "216e169a1acd872320ebdd2226f76f16ab5c9dbfbc2db65214c8bed817983f27",
+      "mathart/surface/math/JsonSurfaceFunction": "72726216d1767ea4fb6b6b241bf4cbeae9e5af3d5937663af08dd30cef081d69",
+      "mathart/animation/OscillationEdgeEasing": "8504db872f70e6c5c7aa3b1491dc4b02220d9aadbad189c111d957a04bc8fb60"
+    },
+    "harnessSha256": "23481d3ec68677a96709b380c3afbb4e6ac7d0c9dbe65a80d3be88595e17237b",
+    "runnerSha256": "099da3748beb38a41ef7e821f3cff5c3d531661a5edf8bce88979093e6b5a8b8",
+    "stdoutSha256": [
+      "447ffb3210088a14a1c2cb546aa04dd83d6d70015670abf4ec899dd74c80b4e4",
+      "447ffb3210088a14a1c2cb546aa04dd83d6d70015670abf4ec899dd74c80b4e4"
+    ]
+  },
+  "processes": [
+    {
+      "pid": 90799,
+      "processGroup": 90799,
+      "newSession": true,
+      "timeoutSeconds": 45,
+      "timeoutHit": false,
+      "returnCode": 0,
+      "elapsedSeconds": 0.9203245830140077,
+      "reaped": true
+    },
+    {
+      "pid": 90816,
+      "processGroup": 90816,
+      "newSession": true,
+      "timeoutSeconds": 45,
+      "timeoutHit": false,
+      "returnCode": 0,
+      "elapsedSeconds": 0.35031800001161173,
+      "reaped": true
+    }
+  ],
+  "compile": {
+    "pid": 90796,
+    "processGroup": 90796,
+    "newSession": true,
+    "timeoutSeconds": 30,
+    "timeoutHit": false,
+    "returnCode": 0,
+    "elapsedSeconds": 0.07098016596864909,
+    "reaped": true
+  },
+  "identicalRuns": true
+}

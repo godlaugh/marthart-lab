@@ -1,6 +1,7 @@
+import {sourceSurfaceParameterFrameRate,type SourceSurfaceUpdateFrame} from './sourceSurfaceFrame';
 import type {SourceSurfaceGpuFunction} from './sourceSurfaceGpuFunction';
 import type {SourceSurfaceGpuMeshFrame} from './sourceSurfaceGpuMesh';
-import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetBinding,OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
+import type {OrdinaryCameraTargetBinding,OrdinaryCameraTargetRequest,OrdinarySourceCameraParticles} from './ordinarySourceCameraTimeline';
 import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import type {SourceSurfaceFunction} from './sourceSurfaceFunction';
 import {createSourceSurfaceMeshGeometry,type SourceSurfaceMeshGeometry,type SourceSurfaceMeshGeometryFrame,type SourceSurfaceGpuMeshGeometryFrame,type SourceMeshVector} from './sourceSurfaceMeshGeometry';
@@ -142,11 +143,11 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  interpolateParameterActions(eased:number,finished:boolean):void{this.guarded(()=>this.parameters.interpolate(eased,finished));}
  beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]):void{this.guarded(()=>this.parameters.replace(parameters));}
  finishParameterClip():void{this.guarded(()=>this.parameters.stop());}
- update(frame:OrdinaryCameraParticleFrame):void{this.guarded(()=>{
+ update(frame:SourceSurfaceUpdateFrame):void{this.guarded(()=>{
   if(this.retired)fail('input','已移出的网格不再执行更新');
   if(!Number.isInteger(frame.frameIndex)||frame.frameIndex<0||this.lastUpdate>this.lastDisplay||this.lastUpdate>=0&&frame.frameIndex!==this.lastUpdate+1||frame.frameIndex<=this.lastDisplay||!Number.isFinite(F(frame.time))||frame.time<0||!Number.isFinite(F(frame.deltaTime))||frame.deltaTime<0)fail('input','原版网格更新帧顺序或时间无效；每次更新后必须执行对应显示帧');
   this.lastUpdate=frame.frameIndex;const dt=F(frame.deltaTime);if(dt<=0)return;
-  this.animationTime=F(frame.time);this.parameters.update(dt,F(this.options.frameRate));
+  this.animationTime=F(frame.time);this.parameters.update(dt,sourceSurfaceParameterFrameRate(frame,this.options.frameRate));
   // Native stationary particle positions are only copied by build-time bind.
   // After playback starts bind is prohibited, and display samples its separate
   // inclusive grid. Recalculating that unobserved half-open array would neither
