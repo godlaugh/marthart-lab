@@ -23,7 +23,7 @@ export interface SourceDomainHostSnapshot {
 }
 const F=Math.fround,WORK_LIMIT=2_000_000;
 const unusedCamera={phi:0,theta:0,gamma:0};
-function actualFps(value:number):void {if(typeof value!=='number'||!Number.isFinite(value)||!Number.isFinite(F(value)))throw Error('域着色宿主帧率必须为有限 Float32');}
+export function validateSourceDomainFrameRate(value:number):void {if(typeof value!=='number'||!Number.isFinite(value)||!Number.isFinite(F(value)))throw Error('域着色宿主帧率必须为有限 Float32');}
 
 /** Numerical host boundary. It owns wall time, full reload and the recording
  * anchor, but no GPU target, UI event, displayed-frame lease or encoder.
@@ -60,7 +60,7 @@ export class SourceDomainHostSession {
  snapshot():SourceDomainHostSnapshot {this.ensure();const state=this.runtime.snapshot(),clock=this.hostClock.diagnostics(),r=this.recording;return{updateOrdinal:this.updateOrdinal,paused:clock.paused,state,hostClock:clock,...(r?{recording:{simulationFps:r.simulationFps,ordinal:r.ordinal,warmup:r.ordinal===0,complete:state.clock.queueComplete}}:{})};}
  private advance(dt:number,paused:boolean,frameRate:number):void {this.runtime.setParameterFrameRate(frameRate);this.runtime.advance(dt,paused,this.options.isCancelled);this.updateOrdinal++;}
  update(request:SourceSceneClockRequest,frameRate:number):SourceDomainHostSnapshot {
-  this.live();validateSourceSceneClockRequest(request);this.hostClock.assertPaused(request.paused);actualFps(frameRate);
+  this.live();validateSourceSceneClockRequest(request);this.hostClock.assertPaused(request.paused);validateSourceDomainFrameRate(frameRate);
   return this.mutate(()=>{this.advance(this.hostClock.update(request),request.paused,frameRate);return this.snapshot();});
  }
  setPaused(paused:boolean,timestampMs?:number):SourceDomainHostSnapshot {
@@ -114,7 +114,7 @@ export class SourceDomainHostSession {
  /** Explicit local seek, not native behavior. Frame zero is one fixed update;
   * simulation FPS and parameter-host FPS are separate required inputs. */
  reconstruct(displayFrame:number,simulationFps:number,frameRate:number):SourceDomainHostSnapshot {
-  this.live();if(this.updateOrdinal!==-1)throw Error('域着色重建必须使用新的宿主');this.validateFixed(simulationFps);actualFps(frameRate);
+  this.live();if(this.updateOrdinal!==-1)throw Error('域着色重建必须使用新的宿主');this.validateFixed(simulationFps);validateSourceDomainFrameRate(frameRate);
   if(!Number.isSafeInteger(displayFrame)||displayFrame<0||displayFrame/simulationFps>86400)throw Error('域着色重建帧必须是24小时内非负整数');
   return this.mutate(()=>{for(let i=0;i<=displayFrame;i++)this.advance(F(1/F(simulationFps)),false,frameRate);return this.snapshot();});
  }
@@ -122,12 +122,12 @@ export class SourceDomainHostSession {
  /** Native toolbar begin rebuilds the full-load anchor and forces running.
   * The returned first numerical update still needs a warmup render/discard. */
  beginRecording(simulationFps:number,frameRate:number):{handle:SourceDomainHostRecordingHandle;warmup:SourceDomainHostSnapshot} {
-  this.live();this.validateFixed(simulationFps);actualFps(frameRate);const candidate=this.prepare(this.applied,false);
+  this.live();this.validateFixed(simulationFps);validateSourceDomainFrameRate(frameRate);const candidate=this.prepare(this.applied,false);
   return this.mutate(()=>{this.install(candidate);const handle=Object.freeze({recordingId:++this.serial});this.recording={handle,simulationFps,ordinal:0};this.advance(F(1/F(simulationFps)),false,frameRate);return{handle,warmup:this.snapshot()};});
  }
  private owned(handle:SourceDomainHostRecordingHandle){this.ensure();if(!this.recording||handle!==this.recording.handle)throw Error('域着色录制句柄不属于当前实例');return this.recording;}
  nextRecordingFrame(handle:SourceDomainHostRecordingHandle,ordinal:number,frameRate:number):SourceDomainHostSnapshot {
-  const r=this.owned(handle);actualFps(frameRate);if(!Number.isSafeInteger(ordinal)||ordinal<1||ordinal!==r.ordinal+1||ordinal/r.simulationFps>86400||this.runtime.queueComplete)throw Error('域着色录制必须连续更新且不能越过队列终帧');
+  const r=this.owned(handle);validateSourceDomainFrameRate(frameRate);if(!Number.isSafeInteger(ordinal)||ordinal<1||ordinal!==r.ordinal+1||ordinal/r.simulationFps>86400||this.runtime.queueComplete)throw Error('域着色录制必须连续更新且不能越过队列终帧');
   return this.mutate(()=>{r.ordinal=ordinal;this.advance(F(1/F(r.simulationFps)),false,frameRate);return this.snapshot();});
  }
  /** disableRenderMode changes only wall-clock origin, leaving final numerical

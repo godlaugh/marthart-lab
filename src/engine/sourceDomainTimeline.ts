@@ -1,3 +1,4 @@
+import {sourceDomainQueueDuration} from './sourceDomainQueueDuration';
 import type {AnimationAction,AnimationTrack,SceneDocument} from '../types';
 import {SourceDomainSceneRuntime,type SourceDomainSceneClip} from './sourceDomainSceneRuntime';
 import type {SourceDomainParameterRuntimeAction} from './sourceDomainParameterRuntime';
@@ -62,7 +63,7 @@ export function prepareSourceDomainScene(scene:SceneDocument):SourceDomainPlan {
 interface Layout {starts:readonly number[];lastTime:number;}
 const layouts=new Map<string,Layout>();
 export function resolveSourceDomainTimeline(scene:SceneDocument):SceneDocument['timeline'] {
- const plan=prepareSourceDomainScene(scene),durations=plan.clips.map(c=>c.kind==='animate'&&(c.parameters?.length||c.gradients?.length)?Math.max(0,F(c.duration)):F(c.duration));
+ const plan=prepareSourceDomainScene(scene),durations=plan.clips.map(c=>sourceDomainQueueDuration(c));
  const key=JSON.stringify([plan.fps,plan.fixedDt,durations]);let layout=layouts.get(key);
  if(!layout){const clock=new RootsSceneClock({phi:0,theta:0,gamma:0,zoom:1},durations.map(duration=>({duration,easing:'linear'}))),starts:number[]=[];let frame=0,work=0;
   while(!clock.snapshot().queueComplete){work+=1+durations.length-clock.snapshot().queueIndex;if(work>WORK_LIMIT)throw Error('域着色队列布局超过200万工作预算');const next=clock.step(plan.fixedDt,{allowSignedDt:true});if(next.startedClip!==null)starts[next.startedClip]=frame/plan.fps;frame++;}

@@ -1,3 +1,4 @@
+import {sourceDomainQueueDuration} from './sourceDomainQueueDuration';
 import type {Settings} from '../types';
 import {RootsSceneClock,type RootsSceneFrame} from './rootsSceneClock';
 import {sourceEase,SOURCE_EASING_NAMES} from './sourceEasing';
@@ -73,7 +74,7 @@ export class SourceDomainSceneRuntime {
    },
   });
   this.gradient=new SourceGradientRuntime(()=>this.paletteOffset,frame=>{this.paletteOffset=F(frame.palette);this.writtenSettings.add('paletteOffset');});
-  this.clock=new RootsSceneClock({phi:0,theta:0,gamma:0,zoom:1},this.clips.map(c=>({duration:c.kind==='animate'&&(c.parameters?.length||c.gradients?.length)?Math.max(0,F(c.duration)):F(c.duration),easing:'linear'})));
+  this.clock=new RootsSceneClock({phi:0,theta:0,gamma:0,zoom:1},this.clips.map(c=>({duration:sourceDomainQueueDuration(c),easing:'linear'})));
  }
  get clipCount(){return this.clips.length;}
  get queueComplete(){this.ensure();return this.clock.snapshot().queueComplete;}
