@@ -38,10 +38,13 @@ const int=(v:number)=>Math.min(2147483647,Math.max(-2147483648,Math.trunc(v)));
 const round=(v:number)=>Number.isNaN(v)?0:int(Math.floor(v+.5));
 const lerp=(a:number,b:number,t:number)=>a+(b-a)*t;
 const lerpF=(a:number,b:number,t:number)=>F(F(a)+F(F(F(b)-F(a))*t));
+/** Initial bailout is a stored native field: formula mapping can write below
+ * the ordinary setter's floor (Newton/Nova use 1e-12). Do not apply a setter
+ * again when adopting an already initialized mobject. */
 function state(value:SourceFractalObjectState):SourceFractalObjectState {
  const out=copy(value);for(const key of ['centerX','centerY','centerXLow','centerYLow','zoom','juliaReal','juliaImag'] as const)finite(out[key],key);
  for(const key of ['rotation','rotationRate','bailout','currentTime'] as const)out[key]=float(out[key],key);
- out.iterations=Math.max(1,int(finite(out.iterations,'iterations')));out.bailout=Math.max(F(1e-6),out.bailout);out.zoom=Math.max(1e-6,out.zoom);
+ out.iterations=Math.max(1,int(finite(out.iterations,'iterations')));out.zoom=Math.max(1e-6,out.zoom);
  for(const key of ['ambientAngles','ambientRates'] as const){if(!Array.isArray(out[key])||out[key].length!==3)throw Error('分形角度必须包含三个分量');out[key]=out[key].map(n=>float(n,key)) as [number,number,number];}
  [out.centerX,out.centerXLow]=normalizeSourceFractalCenter(out.centerX,out.centerXLow);[out.centerY,out.centerYLow]=normalizeSourceFractalCenter(out.centerY,out.centerYLow);return out;
 }
@@ -74,6 +77,7 @@ export class SourceFractalSceneClock {
   if(!Array.isArray(initialCamera)||initialCamera.length!==3)throw Error('分形相机初始角度无效');this.initialCamera=initialCamera.map(v=>float(v,'相机角度')) as [number,number,number];this.cameraAngles=[...this.initialCamera];
   this.object=copy(this.initial);this.captured=copy(this.initial);this.clock=this.newClock();
  }
+ get clipCount():number{return this.clips.length;}
  private newClock(){return new RootsSceneClock({phi:0,theta:0,gamma:0,zoom:1},this.clips.map(c=>({duration:c.kind==='animate'&&c.grouped?Math.max(0,c.duration):c.duration,easing:'linear'})));}
  reset():void {this.failed=true;this.hooks.reset?.();this.object=copy(this.initial);this.captured=copy(this.initial);this.cameraAngles=[...this.initialCamera];this.cameraRates=[0,0,0];this.finishedAtStart=false;this.updates=[];this.clock=this.newClock();this.failed=false;}
  private ordinary(c:Extract<SourceFractalSceneClip,{kind:'animate'}>,runtime:number):void {
@@ -108,7 +112,7 @@ export class SourceFractalSceneClock {
     if(next.queueComplete)this.updateObject('completed',next.sceneTime,next.rawDt);
    }
    for(const [k,v] of Object.entries(this.object))if(Array.isArray(v))v.forEach(n=>finite(n,k));else finite(v,k);
-   this.cameraAngles.forEach(v=>finite(v,'相机角度'));if(isCancelled?.())throw Error('分形场景回放已取消');return this.snapshot(next);
+   this.cameraAngles.forEach(v=>finite(v,'相机角度'));if(isCancelled?.())throw new DOMException('分形场景回放已取消','AbortError');return this.snapshot(next);
   }catch(error){this.failed=true;throw error;}
  }
  snapshot(facts:RootsSceneFrame=this.clock.snapshot()):SourceFractalSceneFrame {

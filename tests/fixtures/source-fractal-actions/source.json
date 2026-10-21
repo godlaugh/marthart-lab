@@ -1,0 +1,1183 @@
+{
+  "provenance": {
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "harnessSha256": "1fb706ae34d830fd5df6bc68a474b7ee71bade47a262bae58231a5f8b5b26c9c",
+    "rawOutputSha256": "331555ea8fb072bd8c48ce9cc9121f20d3b8650bca1e9b1600ff29723d1478d5",
+    "classes": {
+      "mathart/fractal/config/JsonComplexFractalConfig": "0eb27dc71f957a7d97c28baf62c30bc35c5aca69c405788ae8bbb06a9cfedac6",
+      "mathart/fractal/animation/FractalParamAnimation": "261e2ff340b7539ea1dc8ad2a21d1d09ff1fda445aabdc1315706df654637eb8",
+      "mathart/fractal/animation/StartFractalParamAnimation": "51bdc474a81e4a078633f231d1fde0a32e748be87707794ba9f1a6c386d28e96",
+      "mathart/fractal/animation/StopFractalParamAnimation": "ecd2224360ebd0564d576f0ccf29459d1813a1e80f64c68652e15276530d15b5",
+      "mathart/animation/ParamEdgeEasingConfig": "1d0e76df2c3630e465a24516cd2c72fe22d7a4fd29c0f68131f707acb71481d0",
+      "mathart/animation/OscillationEdgeEasing": "8504db872f70e6c5c7aa3b1491dc4b02220d9aadbad189c111d957a04bc8fb60",
+      "mathart/animation/gradient/GradientActionConfig": "aac233667191d07c592bd43cb72f18f19b7330c4a6e90770bbe686e95ebdc2f2",
+      "mathart/utils/ConfigUtils": "ab0847601571bd0469e73cad05d415df2373fa2eef0196db2258a86d631a0278"
+    },
+    "kind": "original-jvm-setupTimeline-parser",
+    "repeat": "Two JVM processes produced identical decoded constructor facts.",
+    "limitations": [
+      "AllocObject bypasses config/fractal graphics construction; default edge field initialized using original defaults/fromJson.",
+      "Original setupTimeline constructs actual child animations; no Animation update, GUI, GL or render ran.",
+      "Native exceptions establish parser rejection, not exact exception subtype. Nonfinite output is represented as a string."
+    ]
+  },
+  "cases": [
+    {
+      "input": {
+        "id": "ordinary-f32",
+        "actions": [
+          {
+            "method": "center",
+            "args": [
+              0.123456789123,
+              -0.234567891234
+            ]
+          },
+          {
+            "method": "zoomFractal",
+            "args": [
+              "1e3"
+            ]
+          },
+          {
+            "method": "iterations",
+            "args": [
+              134.9
+            ]
+          },
+          {
+            "method": "rotation",
+            "args": [
+              "PI/7"
+            ]
+          },
+          {
+            "method": "fractalRotate",
+            "args": [
+              0.7
+            ]
+          },
+          {
+            "method": "julia",
+            "args": [
+              null,
+              "invalid"
+            ]
+          },
+          {
+            "method": "bailout",
+            "args": [
+              null
+            ]
+          },
+          {
+            "method": "ambient",
+            "args": [
+              0.1,
+              0.2,
+              0.3
+            ]
+          }
+        ]
+      },
+      "native": {
+        "kind": "ordinary",
+        "targets": {
+          "targetCenterX": 0.12345679104328156,
+          "targetCenterY": -0.23456789553165436,
+          "targetZoom": 1000,
+          "targetRotation": 0.4487989544868469,
+          "targetRotationRate": 0.699999988079071,
+          "targetAmbientPhiRate": 0.10000000149011612,
+          "targetAmbientThetaRate": 0.20000000298023224,
+          "targetAmbientGammaRate": 0.30000001192092896,
+          "targetIterations": 134,
+          "targetBailout": 0,
+          "targetJuliaX": 0,
+          "targetJuliaY": 0
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "overwrite",
+        "actions": [
+          {
+            "method": "rotation",
+            "args": [
+              1
+            ]
+          },
+          {
+            "method": "rotation",
+            "enabled": false,
+            "args": [
+              2
+            ]
+          },
+          {
+            "method": "ambient",
+            "args": [
+              0.1,
+              0.9
+            ]
+          },
+          {
+            "method": "stopAmbient"
+          },
+          {
+            "method": "fractalRotate",
+            "args": [
+              0.3
+            ]
+          },
+          {
+            "method": "zoom",
+            "args": [
+              7
+            ]
+          },
+          {
+            "method": "center",
+            "args": {
+              "x": 1
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "ordinary",
+        "targets": {
+          "targetCenterX": null,
+          "targetCenterY": null,
+          "targetZoom": null,
+          "targetRotation": 2,
+          "targetRotationRate": 0.30000001192092896,
+          "targetAmbientPhiRate": 0,
+          "targetAmbientThetaRate": 0,
+          "targetAmbientGammaRate": 0,
+          "targetIterations": null,
+          "targetBailout": null,
+          "targetJuliaX": null,
+          "targetJuliaY": null
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "all-payloads",
+        "actions": [
+          {
+            "method": "paramStart"
+          },
+          {
+            "method": "fractalParamStop",
+            "args": 42
+          },
+          {
+            "method": "paramStart",
+            "args": [
+              42,
+              {
+                "parameters": {
+                  "a": {}
+                }
+              }
+            ]
+          },
+          {
+            "method": "paramStop",
+            "args": {
+              "parameters": {}
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": null,
+            "step": null,
+            "min": null,
+            "max": null,
+            "edge": null
+          },
+          {
+            "kind": "paramStop",
+            "name": null
+          },
+          {
+            "kind": "paramStart",
+            "name": null,
+            "step": null,
+            "min": null,
+            "max": null,
+            "edge": null
+          },
+          {
+            "kind": "paramStop",
+            "name": null
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "ordered-names",
+        "actions": [
+          {
+            "method": "fractalParamStart",
+            "args": {
+              "parameters": {
+                "z": {},
+                "a": {
+                  "enabled": false
+                },
+                "power_im": {
+                  "step": -0.2,
+                  "min": 2,
+                  "max": -3
+                },
+                "skip": {
+                  "enable": false
+                },
+                "scalar": 4
+              }
+            }
+          },
+          {
+            "method": "paramStop",
+            "args": {
+              "parameters": {
+                "z": {
+                  "step": "NaN"
+                },
+                "a": {}
+              }
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": "a",
+            "step": 0.10000000149011612,
+            "min": -1,
+            "max": 1,
+            "edge": {
+              "window": 0.5,
+              "floor": 0.25,
+              "easing": "SINE_OUT"
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": "power_im",
+            "step": -0.20000000298023224,
+            "min": 2,
+            "max": -3,
+            "edge": {
+              "window": 0.5,
+              "floor": 0.25,
+              "easing": "SINE_OUT"
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": "z",
+            "step": 0.10000000149011612,
+            "min": -1,
+            "max": 1,
+            "edge": {
+              "window": 0.5,
+              "floor": 0.25,
+              "easing": "SINE_OUT"
+            }
+          },
+          {
+            "kind": "paramStop",
+            "name": "a"
+          },
+          {
+            "kind": "paramStop",
+            "name": "z"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "edge-inheritance",
+        "actions": [
+          {
+            "method": "paramStart",
+            "args": {
+              "edgeEasing": {
+                "floor": 0.7,
+                "window": "bad"
+              },
+              "parameters": {
+                "power": {
+                  "edgeEasing": {
+                    "window": -0.2,
+                    "floor": 2,
+                    "easing": "LINEAR"
+                  },
+                  "step": "PI/60"
+                },
+                "bailout": {}
+              }
+            }
+          }
+        ],
+        "globalEdgeEasing": {
+          "window": 0.8,
+          "floor": 0.3,
+          "easing": "SINE_IN"
+        }
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": "power",
+            "step": 0.05235987901687622,
+            "min": -1,
+            "max": 1,
+            "edge": {
+              "window": 1e-06,
+              "floor": 1,
+              "easing": "LINEAR"
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": "bailout",
+            "step": 0.10000000149011612,
+            "min": -1,
+            "max": 1,
+            "edge": {
+              "window": 0.8,
+              "floor": 0.7,
+              "easing": "SINE_IN"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "domains",
+        "actions": [
+          {
+            "method": "paramStart",
+            "args": {
+              "targetDomain": " FRACTAL ",
+              "parameters": {
+                "a": {}
+              }
+            }
+          },
+          {
+            "method": "paramStart",
+            "args": {
+              "targetDomain": " \t "
+            }
+          },
+          {
+            "method": "paramStart",
+            "args": {
+              "targetDomain": null
+            }
+          },
+          {
+            "method": "paramStop",
+            "args": {
+              "targetDomain": "fractal"
+            }
+          },
+          {
+            "method": "paramStop",
+            "args": {
+              "targetDomain": 4
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": null,
+            "step": null,
+            "min": null,
+            "max": null,
+            "edge": null
+          },
+          {
+            "kind": "paramStart",
+            "name": null,
+            "step": null,
+            "min": null,
+            "max": null,
+            "edge": null
+          },
+          {
+            "kind": "paramStop",
+            "name": null
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "gradient-last-valid",
+        "actions": [
+          {
+            "method": "gradientStart",
+            "args": {
+              "mode": "cross_fade",
+              "affectInside": false,
+              "speed": "0x1.8p2"
+            }
+          },
+          {
+            "method": "gradientStart",
+            "args": {
+              "mode": "wat"
+            }
+          },
+          {
+            "method": "gradientStart",
+            "args": {
+              "affectInside": false,
+              "affectOutside": false
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "gradientStart",
+            "mode": "CROSS_FADE",
+            "interpolation": "OKLAB",
+            "speed": 6,
+            "inside": false,
+            "outside": true
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "gradient-first-slot",
+        "actions": [
+          {
+            "method": "gradientStop"
+          },
+          {
+            "method": "gradientStart",
+            "args": [
+              42,
+              {
+                "mode": "wat"
+              }
+            ]
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "gradientStart",
+            "mode": "HUE_ROTATE",
+            "interpolation": "OKLAB",
+            "speed": 60,
+            "inside": true,
+            "outside": true
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "gradient-fields",
+        "actions": [
+          {
+            "method": "gradientStart",
+            "args": {
+              "targetDomain": "OTHER",
+              "mode": " palette_morph ",
+              "interpolation": "bad",
+              "speed": "1+2",
+              "affectInside": "false",
+              "affectOutside": " true "
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "gradientStart",
+            "mode": "PALETTE_MORPH",
+            "interpolation": "OKLAB",
+            "speed": 60,
+            "inside": false,
+            "outside": true
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "parameter-null-scalar",
+        "actions": [
+          {
+            "method": "paramStart",
+            "args": {
+              "parameters": {
+                "a": {
+                  "step": null,
+                  "min": true,
+                  "max": "invalid",
+                  "enable": "TRUE"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": "a",
+            "step": 0,
+            "min": 0,
+            "max": 0,
+            "edge": {
+              "window": 0.5,
+              "floor": 0.25,
+              "easing": "SINE_OUT"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "enable-invalid",
+        "actions": [
+          {
+            "method": "paramStop",
+            "args": {
+              "parameters": {
+                "a": {
+                  "enable": " false "
+                }
+              }
+            }
+          }
+        ]
+      },
+      "native": {
+        "error": true
+      }
+    },
+    {
+      "input": {
+        "id": "parameters-null",
+        "actions": [
+          {
+            "method": "paramStart",
+            "args": {
+              "parameters": null
+            }
+          }
+        ]
+      },
+      "native": {
+        "error": true
+      }
+    },
+    {
+      "input": {
+        "id": "edge-null",
+        "actions": [
+          {
+            "method": "paramStart",
+            "args": {
+              "edgeEasing": null
+            }
+          }
+        ]
+      },
+      "native": {
+        "error": true
+      }
+    },
+    {
+      "input": {
+        "id": "ordinary-null",
+        "actions": [
+          {
+            "method": "center",
+            "args": [
+              null,
+              true
+            ]
+          },
+          {
+            "method": "zoomFractal",
+            "args": [
+              {}
+            ]
+          },
+          {
+            "method": "bailout",
+            "args": [
+              []
+            ]
+          }
+        ]
+      },
+      "native": {
+        "kind": "ordinary",
+        "targets": {
+          "targetCenterX": 0,
+          "targetCenterY": 0,
+          "targetZoom": 0,
+          "targetRotation": null,
+          "targetRotationRate": null,
+          "targetAmbientPhiRate": null,
+          "targetAmbientThetaRate": null,
+          "targetAmbientGammaRate": null,
+          "targetIterations": null,
+          "targetBailout": 0,
+          "targetJuliaX": null,
+          "targetJuliaY": null
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "ordinary-hex-rounding",
+        "actions": [
+          {
+            "method": "zoomFractal",
+            "args": [
+              "1.0000000596046447753906250000000000001"
+            ]
+          },
+          {
+            "method": "rotation",
+            "args": [
+              "0x1.0000010000001p0"
+            ]
+          }
+        ]
+      },
+      "native": {
+        "kind": "ordinary",
+        "targets": {
+          "targetCenterX": null,
+          "targetCenterY": null,
+          "targetZoom": 1.0000001192092896,
+          "targetRotation": 1.0000001192092896,
+          "targetRotationRate": null,
+          "targetAmbientPhiRate": null,
+          "targetAmbientThetaRate": null,
+          "targetAmbientGammaRate": null,
+          "targetIterations": null,
+          "targetBailout": null,
+          "targetJuliaX": null,
+          "targetJuliaY": null
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "stop-ignores-parameter-edge",
+        "actions": [
+          {
+            "method": "paramStop",
+            "args": {
+              "parameters": {
+                "a": {
+                  "min": "NaN",
+                  "edgeEasing": null
+                }
+              }
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "paramStop",
+            "name": "a"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "gradient-null-flags",
+        "actions": [
+          {
+            "method": "gradientStart",
+            "args": {
+              "mode": null,
+              "interpolation": 42,
+              "speed": null,
+              "affectInside": null,
+              "affectOutside": false
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "gradientStart",
+            "mode": "HUE_ROTATE",
+            "interpolation": "OKLAB",
+            "speed": 60,
+            "inside": true,
+            "outside": false
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "id": "method-missing",
+        "actions": [
+          {
+            "args": [
+              1
+            ]
+          }
+        ]
+      },
+      "native": {
+        "error": true
+      }
+    },
+    {
+      "input": {
+        "id": "actions-not-array",
+        "actions": {}
+      },
+      "native": {
+        "error": true
+      }
+    },
+    {
+      "input": {
+        "id": "nonfinite",
+        "actions": [
+          {
+            "method": "rotation",
+            "args": [
+              "1/0"
+            ]
+          }
+        ]
+      },
+      "native": {
+        "kind": "ordinary",
+        "targets": {
+          "targetCenterX": null,
+          "targetCenterY": null,
+          "targetZoom": null,
+          "targetRotation": "Infinity",
+          "targetRotationRate": null,
+          "targetAmbientPhiRate": null,
+          "targetAmbientThetaRate": null,
+          "targetAmbientGammaRate": null,
+          "targetIterations": null,
+          "targetBailout": null,
+          "targetJuliaX": null,
+          "targetJuliaY": null
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "parameter-double-then-float",
+        "actions": [
+          {
+            "method": "paramStart",
+            "args": {
+              "parameters": {
+                "a": {
+                  "min": "1.0000000596046447753906250000000000001",
+                  "max": "0x1.0000010000001p0"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "native": {
+        "kind": "group",
+        "children": [
+          {
+            "kind": "ordinary",
+            "targets": {
+              "targetCenterX": null,
+              "targetCenterY": null,
+              "targetZoom": null,
+              "targetRotation": null,
+              "targetRotationRate": null,
+              "targetAmbientPhiRate": null,
+              "targetAmbientThetaRate": null,
+              "targetAmbientGammaRate": null,
+              "targetIterations": null,
+              "targetBailout": null,
+              "targetJuliaX": null,
+              "targetJuliaY": null
+            }
+          },
+          {
+            "kind": "paramStart",
+            "name": "a",
+            "step": 0.10000000149011612,
+            "min": 1,
+            "max": 1.0000001192092896,
+            "edge": {
+              "window": 0.5,
+              "floor": 0.25,
+              "easing": "SINE_OUT"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "timingProvenance": {
+    "harnessSha256": "9a7bf16698244070a7ecd9297f0110beac139fdcc85705e32cfd8eb0d6dea953",
+    "rawOutputSha256": "06dd92737379e1ec7ddaf84a0ab5cc40adef5140a67483023ae8bacf18a0b3ff",
+    "method": "original JsonComplexFractalConfig.setupTimeline constructs actual FractalZoomTargetAnimation; inspect resulting duration/targetZoom",
+    "repeat": "Two independent JVM processes produced identical decoded results."
+  },
+  "timing": [
+    {
+      "input": {
+        "type": "fractal_zoom",
+        "duration": "1.0000000596046447753906250000000000001",
+        "keys": [
+          {
+            "time": "1.0000000596046447753906250000000000001",
+            "zoom": 10
+          },
+          {
+            "time": 1,
+            "zoom": 20
+          }
+        ]
+      },
+      "native": {
+        "duration": 1,
+        "targetZoom": 20
+      }
+    },
+    {
+      "input": {
+        "type": "fractal_zoom",
+        "duration": "1.0000000596046447753906250000000000001",
+        "keys": [
+          {
+            "time": 1,
+            "zoom": 20
+          },
+          {
+            "time": "1.0000000596046447753906250000000000001",
+            "zoom": 10
+          }
+        ]
+      },
+      "native": {
+        "duration": 1,
+        "targetZoom": 10
+      }
+    },
+    {
+      "input": {
+        "type": "fractal_zoom",
+        "duration": "NaN",
+        "keys": [
+          {
+            "time": "NaN",
+            "zoom": 10
+          },
+          {
+            "time": 2,
+            "zoom": 20
+          }
+        ]
+      },
+      "native": {
+        "duration": "NaN",
+        "targetZoom": 10
+      }
+    },
+    {
+      "input": {
+        "type": "fractal_zoom",
+        "duration": null,
+        "keys": [
+          {
+            "time": null,
+            "zoom": 10
+          },
+          {
+            "time": -1,
+            "zoom": 20
+          }
+        ]
+      },
+      "native": {
+        "duration": 9.999999747378752e-05,
+        "targetZoom": 10
+      }
+    },
+    {
+      "input": {
+        "type": "fractal_zoom",
+        "keys": [
+          {
+            "zoom": 10
+          },
+          {
+            "time": 0.1,
+            "zoom": 20
+          }
+        ]
+      },
+      "native": {
+        "duration": 4,
+        "targetZoom": 20
+      }
+    },
+    {
+      "input": {
+        "type": "fractal_zoom",
+        "duration": "bad",
+        "keys": [
+          {
+            "time": "bad",
+            "zoom": 10
+          },
+          {
+            "time": 0,
+            "zoom": 20
+          }
+        ]
+      },
+      "native": {
+        "duration": 9.999999747378752e-05,
+        "targetZoom": 20
+      }
+    },
+    {
+      "input": {
+        "type": "fractal_zoom",
+        "duration": "Infinity",
+        "zoom": 2
+      },
+      "native": {
+        "duration": "Infinity",
+        "targetZoom": 2
+      }
+    }
+  ]
+}

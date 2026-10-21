@@ -1,5 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import fixture from './fixtures/source-fractal-zoom/source.json';
+import ingress from './fixtures/source-fractal-actions/source.json';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
 import {sceneAtTime,timelineControlsTarget} from '../src/engine/timeline';
@@ -20,6 +21,11 @@ describe('source target import, persistence and timeline consumers',()=>{
   const parsed=run().timeline.tracks[0].sourceFractalZoom!;
   for(const [i,key] of fields.entries())expect(parsed[key]).toBe(key==='zoom'?Math.max(1e-9,Number(sample.target![i].value)):sample.target![i].value);
   expect(parsed.maxZoom).toBe(sample.maxZoom?.value??1e300);
+ });
+ it.each(ingress.timing.map((sample,index)=>({...sample,index})))('preserves JSONObject float duration/key rounding case $index',sample=>{
+  if(typeof sample.native.duration!=='number'){expect(()=>parse([sample.input])).toThrow();return;}
+  const scene=parse([sample.input]),track=parseScene(serializeScene(scene)).timeline.tracks[0];
+  expect(track.duration).toBe(sample.native.duration);expect(track.sourceFractalZoom!.zoom).toBe(sample.native.targetZoom);
  });
  it('normalizes the initial source minimum zoom before capturing or resolving omitted targets',()=>{
   const s=parse([{type:'fractal_zoom',duration:1}],{zoom:1e-9});expect(s.settings.zoom).toBe(1e-6);expect(s.timeline.tracks[0].sourceFractalZoom!.zoom).toBe(1e-6);expect(sceneAtTime(s,.5).settings.zoom).toBeCloseTo(1e-6,18);

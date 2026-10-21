@@ -1,0 +1,491 @@
+{
+  "cases": [
+    {
+      "input": {
+        "fractal": {},
+        "id": "defaults"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 2,
+        "formulaParams": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula_id": "lambda",
+          "type": " juLia "
+        },
+        "id": "lambda-absent"
+      },
+      "configuration": {
+        "formulaId": "lambda",
+        "fractalType": "julia",
+        "power": 2,
+        "formulaParams": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula_id": "lambda",
+          "parameters": {},
+          "julia_constant": [
+            4,
+            5
+          ],
+          "bailout": 99
+        },
+        "id": "lambda-empty"
+      },
+      "configuration": {
+        "formulaId": "lambda",
+        "fractalType": "mandelbrot",
+        "power": 2,
+        "formulaParams": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "bailout": 99,
+        "julia": [
+          4,
+          5
+        ],
+        "parameters": {
+          "floats": {
+            "bailout": 4
+          },
+          "complex": {
+            "lambda": [
+              0.6,
+              0
+            ],
+            "julia_seed": [
+              0.6,
+              0
+            ],
+            "start_value": [
+              0.5,
+              0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formulaId": "julia",
+          "formula_params": {
+            "power": 1.5,
+            "param3": "invalid",
+            "param1": "pi",
+            "param2": null
+          },
+          "power": "3.9",
+          "type": 7
+        },
+        "id": "params-object"
+      },
+      "configuration": {
+        "formulaId": "julia",
+        "fractalType": "mandelbrot",
+        "power": 3,
+        "formulaParams": [
+          2,
+          3.1415927410125732,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula": "z^3.5 + c",
+          "formula_params": {
+            "param1": "2^3"
+          },
+          "julia_constant": [
+            null,
+            true
+          ]
+        },
+        "id": "expression-formula"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 35,
+        "formulaParams": [
+          35,
+          8,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula": "z^3+c2",
+          "power": null
+        },
+        "id": "formula-digit-concat"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 32,
+        "formulaParams": [
+          32,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula": "z^ 9 + c"
+        },
+        "id": "formula-first-space"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 2,
+        "formulaParams": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula": "z^-3 + c",
+          "power": -3.8
+        },
+        "id": "formula-reset-negative"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": -3,
+        "formulaParams": [
+          -3,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formulaId": "lambda",
+          "formula_id": null,
+          "parameters": {},
+          "bailout": null
+        },
+        "id": "alias-suppression"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 2,
+        "formulaParams": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "type": "julia",
+          "julia_constant": [
+            "0x1.2p3",
+            "pi/3"
+          ]
+        },
+        "id": "julia-literal-expression"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "julia",
+        "power": 2,
+        "formulaParams": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          9,
+          1.0471975511965976
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula_id": "binocular",
+          "parameters": {
+            "quad_coeff": {
+              "re": "sqrt(4)",
+              "im": "pi/2"
+            },
+            "relaxation": null,
+            "power": "1e3"
+          }
+        },
+        "id": "binder-shapes"
+      },
+      "configuration": {
+        "formulaId": "binocular",
+        "fractalType": "mandelbrot",
+        "power": 2,
+        "formulaParams": [
+          2,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ],
+        "parameters": {
+          "floats": {
+            "denom_offset": 1,
+            "relaxation": 1,
+            "power": 24,
+            "bailout": 0.0010000000474974513
+          },
+          "complex": {
+            "julia_seed": [
+              0,
+              0
+            ],
+            "quad_coeff": [
+              2,
+              1.5707963267948966
+            ],
+            "const_term": [
+              1,
+              0
+            ],
+            "z0_coeff": [
+              -1,
+              0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula": "z^5+c",
+          "formula_params": {
+            "power": "2^3",
+            "param1": {},
+            "param2": false
+          },
+          "power": "1e3"
+        },
+        "id": "explicit-power-exponents"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 8,
+        "formulaParams": [
+          8,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "formula": "z^10000000 + c",
+          "formula_params": {
+            "power": null
+          }
+        },
+        "id": "native-scientific-null-fallback"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 10000000,
+        "formulaParams": [
+          10000000,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "power": 2147483648.0
+        },
+        "id": "power-number-double"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 2147483647,
+        "formulaParams": [
+          2147483648,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "power": 2147483648
+        },
+        "id": "power-number-long"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": -2147483648,
+        "formulaParams": [
+          -2147483648,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    },
+    {
+      "input": {
+        "fractal": {
+          "power": "2147483648"
+        },
+        "id": "power-string-large"
+      },
+      "configuration": {
+        "formulaId": null,
+        "fractalType": "mandelbrot",
+        "power": 2147483647,
+        "formulaParams": [
+          2147483648,
+          0,
+          0,
+          0
+        ],
+        "bailout": 4,
+        "julia": [
+          -0.8,
+          0.156
+        ]
+      }
+    }
+  ],
+  "metrics": {
+    "elapsedSeconds": 0.999363583046943,
+    "cpuSeconds": 0.747512,
+    "peakProcessRssBytes": 103989248
+  },
+  "provenance": {
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "oracleSourceSha256": "6a691dbb26751ac6c2b0ef7f26e112202e869a4ff77b5b86382b628c935fb637",
+    "rawOutputSha256": "f0642e63e28afa6d2093638b0cedc5944987fd2ef4e534c8e9b6098ba7509559",
+    "inputsSha256": "0b74faa90f9059a03a8452834074430c34c52a7cb6137b5e8dd35c50b436338a",
+    "scope": "Original JsonComplexFractalConfig(null PApplet, real JSONObject) constructor plus numerical config getters and actual JsonFormulaParamBinder. No Mobject constructor, Scene, GUI or renderer. Raw numeric token classes retained in config-inputs.json; parsed JS object cannot distinguish the large-integer long/double cases."
+  }
+}

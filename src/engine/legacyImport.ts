@@ -1,3 +1,4 @@
+import {parseSourceFractalFloatField} from './sourceFractalActionConfig';
 import {normalizeSourceFractalCenter,parseSourceFractalZoomTarget} from './sourceFractalZoom';
 import {importSourceMapPresentationSettings} from './sourceMapPresentationSettings';
 import {importSourceConfigBackground} from './sourceConfigBackground';
@@ -61,7 +62,7 @@ import {hasSymmetryCustom,MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH,symmetryCustomParame
 import {parseDomainSourcePalette} from './domainSourceColor';
 import {parseDomainNativeParameters} from './domainNativeParameters';
 import {prepareDomainNativeConstant} from './domainNativeConstants';
-import {parseDomainSourceFloat,parseDomainSourceDouble,prepareDomainSourceObjectScalar,prepareDomainSourceScalar} from './domainSourceScalar';
+import {parseDomainSourceDouble,prepareDomainSourceObjectScalar,prepareDomainSourceScalar} from './domainSourceScalar';
 import {parseSpirographVersion} from './spirographModel';
 import {normalizeFractalDistancePower} from './fractalDistance';
 import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalPrecision';
@@ -931,12 +932,10 @@ function sourceZoomScalar(r:Reader,path:string,fallback:number):number {
  return result.facts.value;
 }
 function sourceZoomFloat(r:Reader,path:string,fallback:number):number {
- const raw=r.peek(path);if(raw===undefined)return fallback;
- if(typeof raw==='string'){
-  const parsed=parseDomainSourceFloat(raw);if(parsed.ok){r.use(path);return parsed.value;}
-  if(parsed.error.kind==='capacity')fail(`${path} 超出本地标量解析容量 characters=${parsed.error.limit}`);
- }
- return Math.fround(sourceZoomScalar(r,path,fallback));
+ const result=parseSourceFractalFloatField(r.use(path),fallback);
+ if(!result.ok)fail(`${path}: ${result.error.reason}`);
+ r.warnings.push(...result.value.diagnostics.map(message=>`${path}: ${message}`));
+ return result.value.value;
 }
 function sourceZoomTarget(r:Reader,path:string,fallback:{centerX:number;centerY:number;centerXLow:number;centerYLow:number;zoom:number}){
  const target={centerX:sourceZoomScalar(r,path+'.centerX',fallback.centerX),centerY:sourceZoomScalar(r,path+'.centerY',fallback.centerY),centerXLow:sourceZoomScalar(r,path+'.centerXLo',fallback.centerXLow),centerYLow:sourceZoomScalar(r,path+'.centerYLo',fallback.centerYLow),zoom:sourceZoomScalar(r,path+'.zoom',fallback.zoom)};

@@ -1,0 +1,948 @@
+{
+  "cases": [
+    {
+      "id": "mandelbrot-sparse-vs-native",
+      "formula": "mandelbrot",
+      "type": "MANDELBROT",
+      "observed": [
+        {
+          "name": "power",
+          "kind": "float"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "start_point",
+          "kind": "complex"
+        },
+        {
+          "name": "missing",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "bailout",
+          "value": 0.123
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": 5.5
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": -7.75
+        },
+        {
+          "kind": "bailout",
+          "value": 2.25
+        },
+        {
+          "kind": "registry",
+          "name": "start_point",
+          "value": 0.1,
+          "imaginary": 0.2
+        },
+        {
+          "kind": "registry",
+          "name": "missing",
+          "value": 100
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": 10,
+          "imaginary": 20
+        }
+      ]
+    },
+    {
+      "id": "julia-animation-and-registry-order",
+      "formula": "julia",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "power",
+          "kind": "float"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": 3.4
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": 8
+        },
+        {
+          "kind": "registry",
+          "name": "julia_seed",
+          "value": 0.1234567890123,
+          "imaginary": -0.3456789012345
+        },
+        {
+          "kind": "bailout",
+          "value": 0.01
+        },
+        {
+          "kind": "julia",
+          "value": 9,
+          "imaginary": 10
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": 4
+        },
+        {
+          "kind": "animationStart",
+          "bailout": 12,
+          "real": 20,
+          "imaginary": 30
+        },
+        {
+          "kind": "animationUpdate",
+          "progress": 0.5
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": 5
+        },
+        {
+          "kind": "animationUpdate",
+          "progress": 1
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "lambda-julia-priority",
+      "formula": "lambda",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "start_value",
+          "kind": "complex"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "lambda",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "lambda",
+          "value": 0.2,
+          "imaginary": 0.3
+        },
+        {
+          "kind": "julia",
+          "value": 9,
+          "imaginary": 9
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": 4
+        },
+        {
+          "kind": "registry",
+          "name": "julia_seed",
+          "value": 0.8,
+          "imaginary": 0.9
+        },
+        {
+          "kind": "registry",
+          "name": "lambda",
+          "value": 1,
+          "imaginary": 2
+        },
+        {
+          "kind": "registry",
+          "name": "start_value",
+          "value": 3,
+          "imaginary": 4
+        },
+        {
+          "kind": "animationStart",
+          "real": 20,
+          "imaginary": 30
+        },
+        {
+          "kind": "animationUpdate",
+          "progress": 1
+        },
+        {
+          "kind": "registry",
+          "name": "start_value",
+          "value": 5,
+          "imaginary": 6
+        }
+      ]
+    },
+    {
+      "id": "lambda-mandelbrot-priority",
+      "formula": "lambda",
+      "type": "MANDELBROT",
+      "observed": [
+        {
+          "name": "start_value",
+          "kind": "complex"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "lambda",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "lambda",
+          "value": 0.2,
+          "imaginary": 0.3
+        },
+        {
+          "kind": "registry",
+          "name": "start_value",
+          "value": 0.4,
+          "imaginary": 0.5
+        },
+        {
+          "kind": "registry",
+          "name": "julia_seed",
+          "value": 0.8,
+          "imaginary": 0.9
+        },
+        {
+          "kind": "julia",
+          "value": 9,
+          "imaginary": 9
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "id": "newton-native-round-and-floor",
+      "formula": "newton",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "exponent",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "relaxation",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "exponent",
+          "value": -3.6,
+          "imaginary": 2.25
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": -4
+        },
+        {
+          "kind": "bailout",
+          "value": -5
+        },
+        {
+          "kind": "registry",
+          "name": "relaxation",
+          "value": -0.75
+        },
+        {
+          "kind": "registry",
+          "name": "exponent",
+          "value": 3.7,
+          "imaginary": 1.234567890123
+        }
+      ]
+    },
+    {
+      "id": "nova-start-value-fallback",
+      "formula": "nova",
+      "type": "MANDELBROT",
+      "observed": [
+        {
+          "name": "exponent",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "start_value",
+          "kind": "complex"
+        },
+        {
+          "name": "relaxation",
+          "kind": "float"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "julia",
+          "value": 9,
+          "imaginary": 10
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": 3
+        },
+        {
+          "kind": "registry",
+          "name": "exponent",
+          "value": 3.7,
+          "imaginary": 2.5
+        },
+        {
+          "kind": "registry",
+          "name": "start_value",
+          "value": 0.2,
+          "imaginary": 0.3
+        }
+      ]
+    },
+    {
+      "id": "phoenix-components",
+      "formula": "phoenix",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "start_value",
+          "kind": "complex"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "exponent1",
+          "kind": "float"
+        },
+        {
+          "name": "exponent2",
+          "kind": "float"
+        },
+        {
+          "name": "distortion",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "exponent1",
+          "value": 1.5
+        },
+        {
+          "kind": "registry",
+          "name": "exponent2",
+          "value": -2.75
+        },
+        {
+          "kind": "registry",
+          "name": "distortion",
+          "value": 0.1234567890123,
+          "imaginary": -0.456789012345
+        },
+        {
+          "kind": "registry",
+          "name": "julia_seed",
+          "value": 0.2,
+          "imaginary": 0.3
+        }
+      ]
+    },
+    {
+      "id": "magnet-mandelbrot-overrides-domain-seed",
+      "formula": "magnet1",
+      "type": "MANDELBROT",
+      "observed": [
+        {
+          "name": "perturbation",
+          "kind": "complex"
+        },
+        {
+          "name": "parameter",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "convergent_bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "parameter",
+          "value": 0.8,
+          "imaginary": 0.9
+        },
+        {
+          "kind": "registry",
+          "name": "perturbation",
+          "value": 0.2,
+          "imaginary": 0.3
+        },
+        {
+          "kind": "julia",
+          "value": 9,
+          "imaginary": 10
+        },
+        {
+          "kind": "registry",
+          "name": "convergent_bailout",
+          "value": -0.01
+        }
+      ]
+    },
+    {
+      "id": "magnet-julia-parameter",
+      "formula": "magnet2",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "perturbation",
+          "kind": "complex"
+        },
+        {
+          "name": "parameter",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "convergent_bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "parameter",
+          "value": 0.8,
+          "imaginary": 0.9
+        },
+        {
+          "kind": "registry",
+          "name": "perturbation",
+          "value": 0.2,
+          "imaginary": 0.3
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": -4
+        }
+      ]
+    },
+    {
+      "id": "csin-and-start-value",
+      "formula": "c_sin",
+      "type": "MANDELBROT",
+      "observed": [
+        {
+          "name": "start_value",
+          "kind": "complex"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "start_value",
+          "value": 0.2,
+          "imaginary": 0.3
+        },
+        {
+          "kind": "registry",
+          "name": "julia_seed",
+          "value": 0.8,
+          "imaginary": 0.9
+        }
+      ]
+    },
+    {
+      "id": "spiral-raw-dynamic",
+      "formula": "spiral_septagon",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "start_value",
+          "kind": "complex"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "exponent",
+          "kind": "float"
+        },
+        {
+          "name": "singularity_guard_eps",
+          "kind": "float"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "exponent",
+          "value": -5.25
+        },
+        {
+          "kind": "registry",
+          "name": "singularity_guard_eps",
+          "value": -1
+        },
+        {
+          "kind": "registry",
+          "name": "julia_seed",
+          "value": 0.2,
+          "imaginary": 0.3
+        }
+      ]
+    },
+    {
+      "id": "binocular-native-vs-catalog-defaults",
+      "formula": "binocular",
+      "type": "MANDELBROT",
+      "observed": [
+        {
+          "name": "power",
+          "kind": "float"
+        },
+        {
+          "name": "quad_coeff",
+          "kind": "complex"
+        },
+        {
+          "name": "const_term",
+          "kind": "complex"
+        },
+        {
+          "name": "z0_coeff",
+          "kind": "complex"
+        },
+        {
+          "name": "denom_offset",
+          "kind": "float"
+        },
+        {
+          "name": "relaxation",
+          "kind": "float"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "bailout",
+          "value": 5
+        },
+        {
+          "kind": "registry",
+          "name": "quad_coeff",
+          "value": 0.2,
+          "imaginary": 0.3
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": -5.25
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": -10
+        }
+      ]
+    },
+    {
+      "id": "mandelbulb-native-floor",
+      "formula": "mandelbulb_3d",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "power",
+          "kind": "float"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "phase_shift",
+          "kind": "float"
+        },
+        {
+          "name": "phase_speed",
+          "kind": "float"
+        },
+        {
+          "name": "camera_pitch",
+          "kind": "float"
+        },
+        {
+          "name": "surface_epsilon",
+          "kind": "float"
+        },
+        {
+          "name": "shadow_strength",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "remap"
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": 1
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": -0.25
+        },
+        {
+          "kind": "bailout",
+          "value": 0.01
+        },
+        {
+          "kind": "registry",
+          "name": "phase_shift",
+          "value": -0.5
+        }
+      ]
+    },
+    {
+      "id": "lambda-dense-binder",
+      "formula": "lambda",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "start_value",
+          "kind": "complex"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "lambda",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "bind",
+          "parameters": {}
+        },
+        {
+          "kind": "registry",
+          "name": "lambda",
+          "value": 0.25,
+          "imaginary": 0.75
+        },
+        {
+          "kind": "julia",
+          "value": 9,
+          "imaginary": 10
+        },
+        {
+          "kind": "registry",
+          "name": "bailout",
+          "value": 2
+        },
+        {
+          "kind": "bind",
+          "parameters": {
+            "lambda": [
+              0.4,
+              0.5
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "binocular-binder-shapes",
+      "formula": "binocular",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "power",
+          "kind": "float"
+        },
+        {
+          "name": "quad_coeff",
+          "kind": "complex"
+        },
+        {
+          "name": "const_term",
+          "kind": "complex"
+        },
+        {
+          "name": "z0_coeff",
+          "kind": "complex"
+        },
+        {
+          "name": "denom_offset",
+          "kind": "float"
+        },
+        {
+          "name": "relaxation",
+          "kind": "float"
+        },
+        {
+          "name": "julia_seed",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "bind",
+          "parameters": {
+            "power": "1e3",
+            "relaxation": -3,
+            "bailout": "nope",
+            "quad_coeff": {
+              "re": "sqrt(4)",
+              "im": "pi/2"
+            },
+            "const_term": [
+              null,
+              true
+            ],
+            "denom_offset": true,
+            "z0_coeff": [
+              8
+            ],
+            "julia_seed": [
+              0.12345678901234568,
+              -0.234567890123
+            ],
+            "unknown": 7
+          }
+        }
+      ]
+    },
+    {
+      "id": "bulb-binder-normalize-and-clamp",
+      "formula": "mandelbulb_3d",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "power",
+          "kind": "float"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "phase_shift",
+          "kind": "float"
+        },
+        {
+          "name": "phase_speed",
+          "kind": "float"
+        },
+        {
+          "name": "camera_pitch",
+          "kind": "float"
+        },
+        {
+          "name": "surface_epsilon",
+          "kind": "float"
+        },
+        {
+          "name": "shadow_strength",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "bind",
+          "parameters": {
+            "power": "Infinity",
+            "bailout": 100,
+            "phase_shift": 100,
+            "phase_speed": -100,
+            "camera_pitch": "NaN",
+            "surface_epsilon": "-Infinity",
+            "shadow_strength": 99
+          }
+        },
+        {
+          "kind": "registry",
+          "name": "power",
+          "value": 1000
+        }
+      ]
+    },
+    {
+      "id": "newton-binder-components",
+      "formula": "newton",
+      "type": "JULIA",
+      "observed": [
+        {
+          "name": "exponent",
+          "kind": "complex"
+        },
+        {
+          "name": "bailout",
+          "kind": "float"
+        },
+        {
+          "name": "relaxation",
+          "kind": "float"
+        }
+      ],
+      "operations": [
+        {
+          "kind": "bind",
+          "parameters": {
+            "exponent": [
+              true,
+              "0x1.2p3"
+            ],
+            "relaxation": null,
+            "bailout": {}
+          }
+        }
+      ]
+    }
+  ]
+}

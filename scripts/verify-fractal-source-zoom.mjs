@@ -3,6 +3,7 @@ import {createServer} from 'vite';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const fixture=JSON.parse(await readFile('tests/fixtures/source-fractal-zoom/source.json','utf8'));
+const timing=JSON.parse(await readFile('tests/fixtures/source-fractal-actions/source.json','utf8')).timing[0];
 const directory=`.cache/fractal-source-zoom-public-${Date.now()}`;await mkdir(directory,{recursive:true});
 const report={at:new Date().toISOString(),status:'running',scope:'Headless public App import, timeline target editing, actual Worker/WebGL2 rendering, save/reopen and PNG export. Expected numerical samples from original JVM; original whole-window comparison and native frame queue not covered.',checks:[],pageErrors:[]};
 const check=(ok,msg)=>{if(!ok)throw Error(msg);};
@@ -38,6 +39,11 @@ try{
  browser=await chromium.launch({channel:'chrome',headless:true});const context=await browser.newContext({viewport:{width:1440,height:1000},acceptDownloads:true});context.setDefaultTimeout(25000);await context.addInitScript(installObservation);page=await context.newPage();page.on('pageerror',e=>report.pageErrors.push(e.message));
  await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Zoom verification</title>'}));await page.route('**/api/health',r=>r.fulfill({status:503,body:'Local PNG fallback verification'}));await page.goto(origin+'fixture');
  await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const s=createScene(definition('fractal'));Object.assign(s.settings,{iterations:16,formula:'newton'});saveWorkspace(localStorage,{scenes:[s],active:s.id,theme:'dark',language:'en',render:{quality:'low',frameRate:30}});});await page.goto(origin);await fresh(0);await observeRenderer();
+ const timingNative={config_version:'1.0.0',type:'FRACTAL',name:'Double to Float key selection',fractal:{formula_id:'newton',iterations:24,zoom:1},timeline:[timing.input]};
+ let timingMark=await mark();await page.locator('input[type=file][accept=".json"]').setInputFiles({name:'timing.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(timingNative))});await fresh(timingMark);
+ await page.getByRole('button',{name:'Clip fractal_zoom',exact:true}).click();check(Number(await page.getByRole('spinbutton',{name:'Target zoom',exact:true}).inputValue())===timing.native.targetZoom,'Double-to-Float final key was not selected');
+ let timingRow=await scrub(timing.native.duration);check(Math.abs(timingRow.output.fractalRender.view.viewport.zoom-timing.native.targetZoom)<1e-12,'Rounded duration endpoint mismatch');
+ await page.getByRole('button',{name:'Save',exact:true}).click();await page.reload();await fresh(0);await observeRenderer();await scrub(0);timingRow=await scrub(timing.native.duration);check(Math.abs(timingRow.output.fractalRender.view.viewport.zoom-timing.native.targetZoom)<1e-12,'Rounded duration/key lost after save/reopen');report.checks.push({case:'double-to-float-duration-key-save-reopen',expected:timing.native,viewport:timingRow.output.fractalRender.view.viewport});
  for(const id of ['zoom-in/0.5','zoom-out/0.5','equal/0.5']){
   const sample=fixture.samples.find(s=>s.id===id);check(sample,'Missing original sample '+id);const a=sample.start,b=sample.target;
   const native={config_version:'1.0.0',type:'FRACTAL',name:id,fractal:{formula_id:'newton',iterations:24,center_hi_lo:[a.centerX,a.centerXLow,a.centerY,a.centerYLow],zoom:a.zoom},timeline:[{type:'fractal_zoom',duration:2,easing:sample.easing,center_hi_lo:[b.centerX,b.centerXLow,b.centerY,b.centerYLow],zoom:b.zoom,max_zoom:b.maxZoom}]};

@@ -1,0 +1,146 @@
+{
+  "cases": [
+    {
+      "id": "defaults",
+      "fractal": {}
+    },
+    {
+      "id": "lambda-absent",
+      "fractal": {
+        "type": " juLia ",
+        "formula_id": "lambda"
+      }
+    },
+    {
+      "id": "lambda-empty",
+      "fractal": {
+        "formula_id": "lambda",
+        "parameters": {},
+        "bailout": 99,
+        "julia_constant": [
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "id": "params-object",
+      "fractal": {
+        "type": 7,
+        "formulaId": "julia",
+        "power": "3.9",
+        "formula_params": {
+          "power": 1.5,
+          "param1": "pi",
+          "param2": null,
+          "param3": "invalid"
+        }
+      }
+    },
+    {
+      "id": "expression-formula",
+      "fractal": {
+        "formula": "z^3.5 + c",
+        "formula_params": {
+          "param1": "2^3"
+        },
+        "julia_constant": [
+          null,
+          true
+        ]
+      }
+    },
+    {
+      "id": "formula-digit-concat",
+      "fractal": {
+        "formula": "z^3+c2",
+        "power": null
+      }
+    },
+    {
+      "id": "formula-first-space",
+      "fractal": {
+        "formula": "z^ 9 + c"
+      }
+    },
+    {
+      "id": "formula-reset-negative",
+      "fractal": {
+        "formula": "z^-3 + c",
+        "power": -3.8
+      }
+    },
+    {
+      "id": "alias-suppression",
+      "fractal": {
+        "formula_id": null,
+        "formulaId": "lambda",
+        "parameters": {},
+        "bailout": null
+      }
+    },
+    {
+      "id": "julia-literal-expression",
+      "fractal": {
+        "type": "julia",
+        "julia_constant": [
+          "0x1.2p3",
+          "pi/3"
+        ]
+      }
+    },
+    {
+      "id": "binder-shapes",
+      "fractal": {
+        "formula_id": "binocular",
+        "parameters": {
+          "power": "1e3",
+          "quad_coeff": {
+            "re": "sqrt(4)",
+            "im": "pi/2"
+          },
+          "relaxation": null
+        }
+      }
+    },
+    {
+      "id": "explicit-power-exponents",
+      "fractal": {
+        "formula": "z^5+c",
+        "power": "1e3",
+        "formula_params": {
+          "power": "2^3",
+          "param1": {},
+          "param2": false
+        }
+      }
+    },
+    {
+      "id": "native-scientific-null-fallback",
+      "fractal": {
+        "formula": "z^10000000 + c",
+        "formula_params": {
+          "power": null
+        }
+      }
+    },
+    {
+      "id": "power-number-double",
+      "fractal": {
+        "power": 2147483648.0
+      }
+    },
+    {
+      "id": "power-number-long",
+      "fractal": {
+        "power": 2147483648
+      }
+    },
+    {
+      "id": "power-string-large",
+      "fractal": {
+        "power": "2147483648"
+      }
+    }
+  ]
+}
