@@ -1,3 +1,4 @@
+import {sourceSymmetrySceneIdentity} from './sourceSymmetryIdentity';
 import {sourceSamilaSceneIdentity} from './sourceSamilaIdentity';
 import {snapshotGenerationInput} from './generationInput';
 import {retainsIteratedCompiler} from './iteratedIdentity';
@@ -11,6 +12,7 @@ import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
 interface GeneratorPort {
   generate(scene:SceneDocument,context:Context,onProgress?:(output:SceneOutput)=>void):Promise<SceneOutput>;
+  setSymmetryPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSamilaPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   cancel():void;
   dispose():void;
@@ -30,9 +32,12 @@ export interface PerlinRecordingConsumer {
 function metadataContext(context:Context):Context {
   // After initialization, realtime time is display feedback, not a seek.
   // A metadata edit queued during that display may still hold its old value.
-  return context.samilaLive?.clock?{...context,time:0}:context;
+  return (context.samilaLive?.clock||context.symmetryLive)?{...context,time:0}:context;
 }
-interface PlaybackOwner {sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
+type LiveKey='samilaLive'|'symmetryLive';
+const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
+const liveIdentity=(request:Request)=>liveKey(request)==='symmetryLive'?sourceSymmetrySceneIdentity(request.scene):sourceSamilaSceneIdentity(request.scene);
+interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:PerlinRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.
 // These owners are retried explicitly, or once when another queue is created.
@@ -48,7 +53,7 @@ export async function retryRetiredGenerationQueueCleanup():Promise<void>{
 export class GenerationQueue {
   private latest:Request|null=null;
   private running:Request|null=null;
-  private completedSamila?:{request:Request;output:SceneOutput};
+  private completedLive?:{request:Request;output:SceneOutput};
   private timer:ReturnType<typeof setTimeout>|undefined;
   private disposed=false;
   private captureOwner?:{retire:boolean};
@@ -64,9 +69,10 @@ export class GenerationQueue {
     const sameDomain=previous?.kind==='domain'&&scene.kind==='domain'&&previous.id===scene.id;
     const sameSourceBouncing=!!previous&&usesSourceBouncing(previous)&&usesSourceBouncing(scene)&&previous.id===scene.id;
     const sameSourcePerlin=!!previous&&usesSourcePerlin(previous)&&usesSourcePerlin(scene)&&previous.id===scene.id;
-    const liveToken=scene.kind==='samila'?context.samilaLive?.sessionId:undefined,previousLiveToken=previous?.kind==='samila'?this.latest?.context.samilaLive?.sessionId:undefined;
-    const sameSamila=typeof liveToken==='string'&&liveToken.trim().length>0&&liveToken===previousLiveToken;
-    const samilaIdentityChanged=(liveToken!==undefined||previousLiveToken!==undefined)&&!sameSamila;
+    const key=liveKey({scene,context}),previousKey=this.latest?liveKey(this.latest):undefined;
+    const liveToken=key?context[key]?.sessionId:undefined,previousLiveToken=previousKey?this.latest?.context[previousKey]?.sessionId:undefined;
+    const sameLive=key===previousKey&&typeof liveToken==='string'&&liveToken.trim().length>0&&liveToken===previousLiveToken;
+    const liveIdentityChanged=(liveToken!==undefined||previousLiveToken!==undefined)&&!sameLive;
     const native=usesRootsNativePresentation(scene),nativeIdentity=native?rootsPresentationRequestIdentity(scene,context.rootsSessionId):undefined;
     const previousNative=!!previous&&usesRootsNativePresentation(previous);
     const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
@@ -75,8 +81,8 @@ export class GenerationQueue {
     // A recording leases this exact worker, including while begin is pending.
     // Keep only the newest editor request without cancelling that lease.
     if(this.recordingOwner){this.callbacks.busy(true);this.retryRecordingInBackground();return;}
-    if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing&&!sameSourcePerlin&&!sameIterated&&!sameSamila)||nativeIdentityChanged||samilaIdentityChanged){
-      this.rejectPlayback();this.running=null;this.completedSamila=undefined;clearTimeout(this.timer);this.timer=undefined;
+    if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing&&!sameSourcePerlin&&!sameIterated&&!sameLive)||nativeIdentityChanged||liveIdentityChanged){
+      this.rejectPlayback();this.running=null;this.completedLive=undefined;clearTimeout(this.timer);this.timer=undefined;
       // A capture owns two sequential displays. Retire only after its owner
       // finishes restoring the primary destination, even on document replace.
       if(this.captureOwner)this.captureOwner.retire=true;else this.generator.cancel();
@@ -89,63 +95,65 @@ export class GenerationQueue {
   private start(){
     if(this.disposed||this.running||this.captureOwner||this.recordingOwner||!this.latest)return;
     if(this.playbackOwner?.started)return;
-    if(this.playbackOwner&&this.completedSamila){this.startPlayback();return;}
-    const request=this.latest,cached=this.completedSamila;
+    if(this.playbackOwner&&this.completedLive){this.startPlayback();return;}
+    const request=this.latest,cached=this.completedLive;
     // Metadata edits rebind the exact completed capability, without a draw.
     // The owner supplies the render identity; transport facts must also match.
-    if(cached&&request.intent==='metadata'&&request.context.samilaLive&&request.scene!==cached.request.scene&&sourceSamilaSceneIdentity(request.scene)===sourceSamilaSceneIdentity(cached.request.scene)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
-      this.completedSamila={request,output:cached.output};
+    if(cached&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
+      this.completedLive={request,output:cached.output};
       this.callbacks.output(cached.output,this.outputTime(cached.output,request),request.scene);this.callbacks.busy(false);return;
     }
-    this.completedSamila=undefined;this.running=request;
+    this.completedLive=undefined;this.running=request;
     const current=()=>!this.disposed&&this.running===request;
     // Source Bouncing can change only its runtime view while scene/time stay
     // identical. Retain its GPU work, but publish only the latest request.
-    const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||request.context.samilaLive!==undefined)||this.latest===request);
+    const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
-    void this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time)).then(output=>{if(current()&&request.context.samilaLive){if(request.context.samilaLive.clock)request.context={...request.context,time:this.outputTime(output,request)};this.completedSamila={request,output};}publish(output);}).catch((error:Error)=>{
+    void this.generator.generate(request.scene,request.context,output=>publish(output,output.temporal?.time??request.context.time)).then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
       if(publishable()&&error.name!=='AbortError')this.callbacks.error(error);
     }).finally(()=>{
       if(!current())return;
       this.running=null;
-      if(this.playbackOwner){if(this.completedSamila)this.startPlayback();else {this.rejectPlayback(new Error('Samila 当前预览未完成，无法切换播放状态'));this.callbacks.busy(false);}}
+      if(this.playbackOwner){if(this.completedLive)this.startPlayback();else {this.rejectPlayback(new Error('当前实时预览未完成，无法切换播放状态'));this.callbacks.busy(false);}}
       else if(this.latest!==request)this.start();else this.callbacks.busy(false);
     });
   }
   private outputTime(output:SceneOutput,request:Request):number{
-    return output.type==='raster'&&output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:request.context.time;
+    return output.type==='raster'?(output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:request.context.time)):request.context.time;
   }
   /** A transport transition waits for the running display and then owns the
    * completed source. It never renders an extra display or uses an old UI frame. */
-  setSamilaPaused(paused:boolean):Promise<void>{
-    const sessionId=this.latest?.context.samilaLive?.sessionId;
-    if(this.disposed||this.playbackOwner||this.captureOwner||this.recordingOwner||!sessionId||!this.latest?.context.samilaLive?.clock||!this.generator.setSamilaPaused)
-      return Promise.reject(new Error('请等待当前 Samila 后台操作完成后再切换播放状态'));
+  setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
+  setSymmetryPaused(paused:boolean):Promise<void>{return this.setLivePaused('symmetryLive',paused);}
+  private setLivePaused(key:LiveKey,paused:boolean):Promise<void>{
+    const live=this.latest?.context[key],method=key==='symmetryLive'?'setSymmetryPaused':'setSamilaPaused';
+    if(this.disposed||this.playbackOwner||this.captureOwner||this.recordingOwner||!this.latest||liveKey(this.latest)!==key||!live?.sessionId||!live.clock||!this.generator[method])
+      return Promise.reject(new Error('请等待当前实时场景后台操作完成后再切换播放状态'));
     return new Promise((resolve,reject)=>{
-      this.playbackOwner={sessionId,paused,started:false,resolve,reject};
+      this.playbackOwner={key,sessionId:live.sessionId,paused,started:false,resolve,reject};
       clearTimeout(this.timer);this.timer=undefined;this.callbacks.busy(true);this.start();
     });
   }
-  private rejectPlayback(error:Error=new DOMException('Samila 播放会话已更换','AbortError')){
+  private rejectPlayback(error:Error=new DOMException('实时播放会话已更换','AbortError')){
     const owner=this.playbackOwner;this.playbackOwner=undefined;owner?.reject(error);
   }
   private startPlayback(){
-    const owner=this.playbackOwner,source=this.completedSamila;
+    const owner=this.playbackOwner,source=this.completedLive;
     if(!owner||owner.started||!source)return;
-    if(source.request.context.samilaLive?.sessionId!==owner.sessionId){this.rejectPlayback();this.start();return;}
+    if(liveKey(source.request)!==owner.key||source.request.context[owner.key]?.sessionId!==owner.sessionId){this.rejectPlayback();this.start();return;}
     owner.started=true;
-    void this.generator.setSamilaPaused!(source.output,owner.paused).then(()=>{
+    void this.generator[owner.key==='symmetryLive'?'setSymmetryPaused':'setSamilaPaused']!(source.output,owner.paused).then(()=>{
       if(this.playbackOwner!==owner||this.disposed)return;
       // Deferred edits also belong to this clock transition. Their contexts
       // were snapshotted before the acknowledgement, so normalize here once.
-      for(const request of new Set([source.request,this.latest]))if(request?.context.samilaLive?.sessionId===owner.sessionId){
-        const live=request.context.samilaLive;
-        request.context={...request.context,samilaLive:{...live,clock:{...live.clock!,paused:owner.paused}}};
+      for(const request of new Set([source.request,this.latest]))if(request&&liveKey(request)===owner.key&&request.context[owner.key]?.sessionId===owner.sessionId){
+        const live=request.context[owner.key]!;
+        request.context={...request.context,[owner.key]:{...live,clock:{...live.clock!,paused:owner.paused}}};
       }
       owner.resolve();
     }).catch((error:Error)=>{
       if(this.playbackOwner!==owner||this.disposed)return;
-      this.completedSamila=undefined;this.generator.cancel();owner.reject(error);this.callbacks.error(error);
+      this.completedLive=undefined;this.generator.cancel();owner.reject(error);this.callbacks.error(error);
     }).finally(()=>{
       if(this.playbackOwner!==owner)return;
       this.playbackOwner=undefined;
@@ -166,19 +174,19 @@ export class GenerationQueue {
     const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':'samila-paused-capture'];
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!capture)
       throw new Error(`请等待当前${contract.label}预览完成后再保存暂停画面`);
-    const cached=this.completedSamila;this.completedSamila=undefined;
+    const cached=this.completedLive;this.completedLive=undefined;
     const ticket={retire:false};this.captureOwner=ticket;this.callbacks.busy(true);
     const current=()=>!this.disposed&&this.captureOwner===ticket;
     try{
       const result=await capture.call(this.generator,output,size,scale);
-      if(current()&&request.context.samilaLive)this.completedSamila={request,output:result.preview};
+      if(current()&&liveKey(request))this.completedLive={request,output:result.preview};
       if(!current()||this.latest!==request)throw new DOMException('截图期间场景已改变','AbortError');
       // Source capture also redraws the primary destination. Publish that
       // result even if the caller has abandoned its PNG download.
       this.callbacks.output(result.preview,this.outputTime(result.preview,request),request.scene);
       return result.capture;
     }catch(error){
-      if(current()&&error instanceof contract.Error&&error.previewRetained)this.completedSamila=cached;
+      if(current()&&error instanceof contract.Error&&error.previewRetained)this.completedLive=cached;
       if(current()&&this.latest===request&&error instanceof Error&&error.name!=='AbortError'&&!(error instanceof contract.Error&&error.previewRetained))this.callbacks.error(error);
       throw error;
     }finally{
@@ -186,7 +194,7 @@ export class GenerationQueue {
         this.captureOwner=undefined;
         if(this.disposed)this.generator.dispose();
         else {
-          if(ticket.retire){this.completedSamila=undefined;this.generator.cancel();}
+          if(ticket.retire){this.completedLive=undefined;this.generator.cancel();}
           if(this.latest&&this.latest!==request)this.start();else this.callbacks.busy(false);
         }
       }
@@ -271,13 +279,13 @@ export class GenerationQueue {
    * Invalidate request ownership before cancellation rejects its promise. */
   cancel(){
     if(this.disposed)return;
-    this.rejectPlayback();this.completedSamila=undefined;
+    this.rejectPlayback();this.completedLive=undefined;
     if(this.recordingOwner){clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.recordingOwner.stop=true;this.retryRecordingInBackground();return;}
     clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
     this.generator.cancel();this.callbacks.busy(false);
   }
-  dispose(){this.rejectPlayback();this.completedSamila=undefined;this.disposed=true;clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
+  dispose(){this.rejectPlayback();this.completedLive=undefined;this.disposed=true;clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
     if(this.recordingOwner){this.recordingOwner.stop=true;this.retryRecordingInBackground();return;}
     this.generator.dispose();

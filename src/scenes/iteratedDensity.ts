@@ -75,7 +75,7 @@ export type IteratedField =
  | {kind:'symmetry-custom';plan:PreparedSymmetryCustomSource;uniforms:Readonly<Record<string,number>>;parameters:Readonly<Record<string,number>>;time:number}
  | {kind:'samila';mathModel?:SourceSamilaMathModel;equations:{f1:string;f2:string};parameters:Record<string,number>;mapping:string;projection:string;lo:number;hi:number;rotation:number;time:number};
 export interface IteratedFrameJob {symmetryUpdates?:readonly IteratedField[];symmetryFrame?:SourceSymmetryFramePlan;samilaSampling?:SourceSamilaSamplingFacts;symmetrySplat?:SourceSymmetrySplatFacts;symmetryPalette?:SourceSymmetryPaletteFacts;samilaSplat?:SourceSamilaSplatFacts;samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
-function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:SceneDocument):IteratedField {
+export function prepareIteratedField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:SceneDocument):IteratedField {
  const p={...scene.parameters};for(const [key,v]of Object.entries(p))finite(v,`参数 ${key}`);
  if(scene.kind==='symmetry'){
   // A template switch retains authored custom uniforms. Their names obey the
@@ -105,7 +105,7 @@ function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:
  * to IteratedDensitySession, not the GPU adapter. */
 export function prepareIteratedFrame(scene:SceneDocument,time:number,frame:number,authored:SceneDocument=scene):IteratedFrameJob {
  if(!['map','symmetry','samila'].includes(scene.kind))throw new Error('持续批次帧类型无效');finite(time,'持续帧时间');if(!Number.isSafeInteger(frame)||frame<0)throw new Error('持续帧索引无效');
- const cfg=config(scene,authored),field=parseField(scene,cfg,time,authored),samilaProjection=prepareSamilaNdcProjection(scene),transform=samilaProjection?samilaNdcParticleTransform(samilaProjection):parseParticleTransform(scene.settings);
+ const cfg=config(scene,authored),field=prepareIteratedField(scene,cfg,time,authored),samilaProjection=prepareSamilaNdcProjection(scene),transform=samilaProjection?samilaNdcParticleTransform(samilaProjection):parseParticleTransform(scene.settings);
  const {time:ignored,...fieldIdentity}=field;
  // Parsed source has several retained representations. Its program identity
  // already owns their derivation; do not serialize all of them into each frame
@@ -251,7 +251,7 @@ export class IteratedDensitySession {
      const event=sourceSymmetryUpdateEvent(snapshot);if(!event)throw Error('源 Symmetry 缺少同帧对象更新事件');
      // Only the field changes between object calls; reuse this display's
      // normalized configuration instead of rebuilding its palette and camera.
-     job.symmetryUpdates=event.calls.map(call=>parseField({...snapshot,parameters:call.parameters?{...call.parameters}:snapshot.parameters},cfg,call.time,baseScene));
+     job.symmetryUpdates=event.calls.map(call=>prepareIteratedField({...snapshot,parameters:call.parameters?{...call.parameters}:snapshot.parameters},cfg,call.time,baseScene));
      job.symmetryFrame=prepareSourceSymmetryFramePlan({frameIndex:event.frameIndex,updateCount:event.calls.length},!resetParticles&&(s.symmetryFrame?.warmupApplied??false),cfg.burn,cfg.iterations);
     }
     if(!job.history)preflight(base.kind==='samila'?samples:cfg.count*(job.symmetryFrame?job.symmetryFrame.warmupSteps+job.symmetryFrame.iterationSteps:cfg.iterations+(resetParticles?cfg.burn:0)));

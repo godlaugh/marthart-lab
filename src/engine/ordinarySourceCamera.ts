@@ -25,7 +25,9 @@ export function ordinarySourceViewport(scene:Scene,width:number,height:number,ta
  return{logicalWidth:width,logicalHeight:height,referenceLogicalHeight,target,projectionPass:pass==='perspective'||pass==='scene-fade-orthographic'?pass:'unknown'};
 }
 export function prepareOrdinarySourceFrame(frame:OrdinarySourceCameraFrame):SourceCameraPlan {
- if(!frame||frame.model!==SOURCE_CAMERA_MODEL||!Number.isFinite(frame.time)||frame.time<0||frame.time>86400||!Number.isSafeInteger(frame.frameIndex)||frame.frameIndex<0)throw new Error('原版相机呈现帧无效');
+ // Delivered live time may be negative after a native wall-clock reversal.
+ // Fixed seek bounds belong to the timeline request, not camera presentation.
+ if(!frame||frame.model!==SOURCE_CAMERA_MODEL||!Number.isFinite(frame.time)||!Number.isSafeInteger(frame.frameIndex)||frame.frameIndex<0)throw new Error('原版相机呈现帧无效');
  if(!frame.camera||typeof frame.camera!=='object'||['phi','theta','gamma','center','zoom','focalDistance'].some(key=>!Object.hasOwn(frame.camera,key)))throw new Error('原版相机呈现帧必须包含完整相机标量');
  const input:SourceCameraInput={model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:frame.camera};
  const parsed=prepareSourceCamera(input,frame.viewport);if(!parsed.ok)throw parsed.error;

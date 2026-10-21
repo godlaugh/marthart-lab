@@ -22,7 +22,7 @@ try {
  server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});page=await browser.newPage();report.browserVersion=browser.version();
  await page.route('**/realtime-fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'realtime-fixture');
  report.result=await page.evaluate(async fixture=>{
-  const {parseLegacyScene}=await import('/src/engine/legacyImport.ts'),{SourceSamilaHostClock}=await import('/src/engine/sourceSamilaHostClock.ts'),{SourceSamilaTimelineSession}=await import('/src/engine/sourceSamilaReplay.ts'),{SourceSamilaSession}=await import('/src/engine/sourceSamilaSession.ts');
+  const {parseLegacyScene}=await import('/src/engine/legacyImport.ts'),{SourceSceneHostClock}=await import('/src/engine/sourceSceneHostClock.ts'),{SourceSamilaTimelineSession}=await import('/src/engine/sourceSamilaReplay.ts'),{SourceSamilaSession}=await import('/src/engine/sourceSamilaSession.ts');
   const result={cases:[],assertions:0};window.__realtimeEvidence=result;
   const bits=value=>{const d=new DataView(new ArrayBuffer(4));d.setFloat32(0,value);return d.getUint32(0).toString(16).padStart(8,'0');};
   const assert=(v,m)=>{result.assertions++;if(!v)throw Error(m);};
@@ -36,7 +36,7 @@ try {
   const run=async(name,body)=>{const row={name,status:'running',events:[]};result.cases.push(row);try{await body(row);row.status='passed';}catch(e){row.status='failed';row.error=String(e.stack??e);}};
   for(const item of fixture.cases)await run('scalar: '+item.name,async row=>{
    let scene=parseLegacyScene(JSON.stringify(item.raw)).scene,timeline,clock,paused=item.paused??false;
-   const init=()=>{timeline=new SourceSamilaTimelineSession(scene,true);clock=new SourceSamilaHostClock(paused,timeline.snapshot().camera);};init();
+   const init=()=>{timeline=new SourceSamilaTimelineSession(scene,true);clock=new SourceSceneHostClock(paused,timeline.snapshot().camera);};init();
    try{for(const entry of item.expected){const event=entry.input;
     if(event.kind==='apply'){timeline.reset();scene=parseLegacyScene(JSON.stringify(event.raw??item.raw)).scene;init();}
     else if(event.kind==='pause'||event.kind==='resume'){paused=event.kind==='pause';const restore=clock.setPaused(paused,timeline.snapshot().camera,event.millis);if(restore)timeline.writeAngles(restore);}

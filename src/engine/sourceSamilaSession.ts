@@ -1,4 +1,4 @@
-import {SourceSamilaHostClock,validateSourceSamilaClockRequest,type SourceSamilaClockRequest} from './sourceSamilaHostClock';
+import {SourceSceneHostClock,validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 import type {GenerateContext,Palette,SceneDocument,SceneOutput} from '../types';
 import {SOURCE_SAMILA_APPEARANCE_FIELDS} from './sourceSamilaFields';
 import {sourceSamilaSceneIdentity,sourceSamilaApplyIdentity,SOURCE_SAMILA_HOT_SETTINGS as HOT_SETTINGS} from './sourceSamilaIdentity';
@@ -17,7 +17,7 @@ import {prepareDensityTone} from './density';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import {exactRasterDimensions} from './rasterDimensions';
 
-export interface SourceSamilaLiveContext {sessionId:string;pixelDensity:number;dirtyRevision?:number;clock?:SourceSamilaClockRequest;}
+export interface SourceSamilaLiveContext {sessionId:string;pixelDensity:number;dirtyRevision?:number;clock?:SourceSceneClockRequest;}
 export interface SourceSamilaRuntimeFacts {sceneTime:number;rawDt:number;activeDt:number;queueIndex:number;queueComplete:boolean;parameterWriteRevision:number;phi:number;theta:number;gamma:number;paused:boolean;updates:number;clockSource:'worker-wall-clock'|'injected';}
 export type SourceSamilaHotAction=
  | {kind:'parameter';name:string;value:number}
@@ -33,7 +33,7 @@ const copy=<T>(value:T):T=>structuredClone(value);
 function context(c:GenerateContext):SourceSamilaLiveContext {
  const value=c.samilaLive;
  if(!value||typeof value.sessionId!=='string'||!value.sessionId.length||!Number.isSafeInteger(value.pixelDensity)||value.pixelDensity<1||value.dirtyRevision!==undefined&&(!Number.isSafeInteger(value.dirtyRevision)||value.dirtyRevision<0))throw Error('Samila 热会话上下文无效');
- if(value.clock!==undefined)validateSourceSamilaClockRequest(value.clock);
+ if(value.clock!==undefined)validateSourceSceneClockRequest(value.clock);
  if(!Number.isFinite(c.time)||!value.clock&&(c.time<0||c.time>86400))throw Error('Samila 热会话时间无效');return value;
 }
 function validate(scene:SceneDocument,c:GenerateContext):void {
@@ -49,7 +49,7 @@ export class SourceSamilaSession {
  private gpu?:IteratedDensityGpu;
  private readonly random:SourceSamilaRandomSource;
  private readonly cleanup=new GenerationCleanupState();
- private hostClock?:SourceSamilaHostClock;private runtimeFrame?:SourceSamilaFrame;
+ private hostClock?:SourceSceneHostClock;private runtimeFrame?:SourceSamilaFrame;
  private authored?:SceneDocument;private current?:SceneDocument;private timeline?:SourceSamilaTimelineSession;
  private sessionId='';private structure='';private acknowledged:Record<string,number>={};
  private dirty=true;private dirtyRevision=0;private writeRevision=0;private anchor?:number;
@@ -67,7 +67,7 @@ export class SourceSamilaSession {
  snapshotInk():Float32Array {if(this.failed||!this.gpu)throw Error('Samila 热墨迹不可读取');if(this.diagnostics().retainedBytes+this.width*this.height*16>LIMIT)throw Error('Samila 热墨迹复制超过 768 MiB');return this.gpu.readback();}
  private replace(scene:SceneDocument,c:GenerateContext):void {
   if(context(c).clock&&(c.time<0||c.time>86400))throw Error('Samila 本地重建起点需要 0–86400 秒');
-  this.reset();this.authored=copy(scene);this.current=copy(scene);this.sessionId=context(c).sessionId;this.structure=sourceSamilaApplyIdentity(scene);this.acknowledged={...scene.parameters};this.trailDecay=sourceSamilaTrailDecay(scene.settings);this.theta=F(parseSamilaCamera(scene).theta);this.timeline=new SourceSamilaTimelineSession(copy(scene),Boolean(context(c).clock));if(context(c).clock){this.runtimeFrame=c.time>0?this.timeline.reconstruct(c.time):this.timeline.snapshot();this.hostClock=new SourceSamilaHostClock(context(c).clock!.paused,this.runtimeFrame.camera);this.current.parameters={...this.runtimeFrame.parameters};this.theta=F(this.runtimeFrame.camera.theta);this.time=this.runtimeFrame.sceneTime;}this.dirtyRevision=context(c).dirtyRevision??0;
+  this.reset();this.authored=copy(scene);this.current=copy(scene);this.sessionId=context(c).sessionId;this.structure=sourceSamilaApplyIdentity(scene);this.acknowledged={...scene.parameters};this.trailDecay=sourceSamilaTrailDecay(scene.settings);this.theta=F(parseSamilaCamera(scene).theta);this.timeline=new SourceSamilaTimelineSession(copy(scene),Boolean(context(c).clock));if(context(c).clock){this.runtimeFrame=c.time>0?this.timeline.reconstruct(c.time):this.timeline.snapshot();this.hostClock=new SourceSceneHostClock(context(c).clock!.paused,this.runtimeFrame.camera);this.current.parameters={...this.runtimeFrame.parameters};this.theta=F(this.runtimeFrame.camera.theta);this.time=this.runtimeFrame.sceneTime;}this.dirtyRevision=context(c).dirtyRevision??0;
  }
  applyHot(action:SourceSamilaHotAction):void {
   if(this.busy||this.failed||!this.current)throw Error('Samila 热操作需要已初始化且空闲的会话');

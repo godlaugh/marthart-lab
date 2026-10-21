@@ -16,6 +16,7 @@ export function sourceSymmetryReplayBudget(remaining:number,framesLeft:number,in
  if(!Number.isSafeInteger(remaining)||remaining<0||remaining>256||!Number.isSafeInteger(framesLeft)||!Number.isSafeInteger(index)||index<0)throw Error('Symmetry 重播预算无效');
  return remaining===0?0:index===0?(remaining>=16?2:1):Math.max(1,Math.ceil(remaining/Math.max(1,framesLeft)));
 }
+export function sourceSymmetryRenderFps(value:unknown):number {if(typeof value!=='number'||!Number.isInteger(value)||value< -2147483648||value>2147483647)throw Error('Symmetry 宿主 renderFps 必须为 Java int');return value;}
 /** GPU lifetime of one native mobject. Edits explicitly request replay; document
  * differences do not invent events. A full reset is a new incarnation. Camera
  * capture and parameter acknowledgement belong to the calling display owner;
@@ -29,7 +30,8 @@ export class SourceSymmetryReplaySession {
  private remainingBurn=0;private remainingReplay=0;private replayIndex=0;private targetFrames=30;private burnBudget=8;
  private width=0;private height=0;
  /** Native MathArt.config.renderFps, independent of fixed timeline sampling. */
- constructor(private readonly renderFps:number){if(!Number.isInteger(renderFps)||renderFps< -2147483648||renderFps>2147483647)throw Error('Symmetry 宿主 renderFps 必须为 Java int');}
+ constructor(private renderFps:number){this.renderFps=sourceSymmetryRenderFps(renderFps);}
+ setRenderFps(value:number){if(this.failed||this.busy)throw Error('Symmetry 帧率更新需要可用且空闲的会话');this.renderFps=sourceSymmetryRenderFps(value);}
  get usesReplayDisplay(){return this.initialized&&(this.pending||this.active);}
  /** ensureAccumulationBuffers runs before the native replay branch and
   * cancels replay on a target resize. Callers use this for acknowledgment. */
