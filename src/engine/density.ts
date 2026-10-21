@@ -105,7 +105,7 @@ function toneSettings(s:Settings):DensityTone {
   return{toneMap:select(s,'toneMap','log',['linear','log']) as DensityTone['toneMap'],exposure:numberSetting(s,'exposure',0,-16,16),gamma:numberSetting(s,'gamma',2.2,.1,8),contrast:numberSetting(s,'contrast',1,0,8),brightness:numberSetting(s,'brightness',0,-1,1),saturation:numberSetting(s,'saturation',1,0,4),dynamicRange:numberSetting(s,'dynamicRange',32,.001,1e9),paletteMode:select(s,'paletteMode','density',['density','source']) as DensityTone['paletteMode'],transparentBackground:boolean(s,'transparentBackground',false),background};
 }
 /** Sole validated presentation input shared by CPU and GPU backends. */
-interface DensityToneBase {sourcePresentation?:{model:typeof SOURCE_SAMILA_PRESENTATION_MODEL};tone:DensityTone;palette:Palette;background:[number,number,number];gain:number;inverseGamma:number;logWhite:number;}
+interface DensityToneBase {sourceSymmetryPresentation?:import('./sourceSymmetryPresentation').SourceSymmetryPresentationFacts;sourcePresentation?:{model:typeof SOURCE_SAMILA_PRESENTATION_MODEL};tone:DensityTone;palette:Palette;background:[number,number,number];gain:number;inverseGamma:number;logWhite:number;}
 export type DensityToneJob=DensityToneBase&({model:'white-point-v1'}|{model:'normalized-v2';normalization:DensityNormalization}|{model:'samila-normalized-v2';normalization:SamilaNormalization;branch:SamilaToneBranch});
 export function densityAcceptsSignedMass(job:DensityToneJob):boolean{return job.model==='samila-normalized-v2'&&job.normalization.splat.model==='samila-splat-1.7.8';}
 export function prepareDensityTone(palette:Palette,settings:Settings={},facts?:DensityNormalizationFacts|SamilaToneFacts):DensityToneJob {
@@ -119,12 +119,16 @@ export function prepareDensityTone(palette:Palette,settings:Settings={},facts?:D
  }
  if(model==='normalized-v2'){
   if(!facts||facts.kind==='samila')throw new Error('归一调色需要持续累积器提供真实批次事实');
-  const normalization=prepareDensityNormalization(settings,facts),map=facts.kind==='map',background=String(settings.background??'#0a0c14');
-  if(!/^#[0-9a-f]{6}$/i.test(background))throw new Error('密度背景必须为 #RRGGBB');
-  const tone:DensityTone={toneMap:'log',exposure:0,paletteMode:'source',background,transparentBackground:boolean(settings,'transparentBackground',false),brightness:numberSetting(settings,'normalizedBrightness',map?.3:.5,-.5,1.5),contrast:numberSetting(settings,'normalizedContrast',1,.1,2),gamma:numberSetting(settings,'normalizedGamma',2.2,.1,10),dynamicRange:numberSetting(settings,'normalizedDynamicRange',map?.2:.5,.1,1),saturation:numberSetting(settings,'normalizedSaturation',.8,0,1)};
-  return{model,normalization,tone,palette:validatePalette(palette),background:hexRGB(background),gain:1,inverseGamma:1/tone.gamma,logWhite:Math.log(1000)};
+  return prepareNormalizedDensityTone(palette,settings,prepareDensityNormalization(settings,facts));
  }
  const tone=toneSettings(settings);return{model,tone,palette:validatePalette(palette),background:hexRGB(tone.background),gain:2**tone.exposure,inverseGamma:1/tone.gamma,logWhite:Math.log1p(tone.dynamicRange)};
+}
+/** Bind one owner's completed normalization facts without reinterpreting scale. */
+export function prepareNormalizedDensityTone(palette:Palette,settings:Settings,normalization:DensityNormalization):Extract<DensityToneJob,{model:'normalized-v2'}> {
+ const map=normalization.kind==='map',background=String(settings.background??'#0a0c14');
+ if(!/^#[0-9a-f]{6}$/i.test(background))throw new Error('密度背景必须为 #RRGGBB');
+ const tone:DensityTone={toneMap:'log',exposure:0,paletteMode:'source',background,transparentBackground:boolean(settings,'transparentBackground',false),brightness:numberSetting(settings,'normalizedBrightness',map?.3:.5,-.5,1.5),contrast:numberSetting(settings,'normalizedContrast',1,.1,2),gamma:numberSetting(settings,'normalizedGamma',2.2,.1,10),dynamicRange:numberSetting(settings,'normalizedDynamicRange',map?.2:.5,.1,1),saturation:numberSetting(settings,'normalizedSaturation',.8,0,1)};
+ return{model:'normalized-v2',normalization,tone,palette:validatePalette(palette),background:hexRGB(background),gain:1,inverseGamma:1/tone.gamma,logWhite:Math.log(1000)};
 }
 function baseTone(count:number,job:DensityToneJob):number {return job.tone.toneMap==='log'?Math.log1p(count)/job.logWhite:count/job.tone.dynamicRange;}
 /** White-point density is measured in points/pixel, so both transfer modes preserve
@@ -162,6 +166,7 @@ export function toneDensityRgbaPrepared(width:number,height:number,rgba:Float32A
 function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number)=>number,colorSum?:((i:number,k:number)=>number),isCancelled?:()=>boolean,destination?:Uint8ClampedArray,view?:PreparedDensityView):Uint8ClampedArray {
   const {tone,palette,background:bg,gain}=job;if(tone.paletteMode==='source'&&!colorSum)throw new Error('原采样颜色模式需要 RGB 累积');
   const pixels=destination??new Uint8ClampedArray(width*height*4);if(destination)pixels.fill(0);
+  if(job.sourceSymmetryPresentation)throw Error('源 Symmetry 最终呈现需要 GPU；未使用不同的 CPU 调色替代');
   const captured=view&&isCapturedDensityView(view)?view:undefined,samila=view&&!isCapturedDensityView(view)?view:undefined;
   // Interpolate floating sums AND mass before nonlinear tone mapping. Reuse
   // one four-channel sample; presentation never copies the full ink buffer.

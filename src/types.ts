@@ -414,6 +414,7 @@ export interface RasterOutput {
   samilaSampling?:import('./engine/sourceSamilaSampling').SourceSamilaSamplingFacts;
   /** Completed present-target bytes; alpha records native blending, not layer opacity. */
   sourceSamilaPresentation?:SourceSamilaPresentationFacts;
+  sourceSymmetryPresentation?:import('./engine/sourceSymmetryPresentation').SourceSymmetryPresentationFacts;
   type: "raster";
   /** The producer already applied the mathematical camera. Display this image
    * front-on without a second document-camera transform. */
@@ -464,6 +465,8 @@ export interface GenerateContext {
   sourcePointPixelDensity?:number;
   /** Measured primary canvas physical height, retained for offscreen Samila splats. */
   samilaPrimaryPixelHeight?:number;
+  /** Measured primary canvas physical size, retained independently for export tone. */
+  sourceSymmetryToneReference?:import('./engine/sourceSymmetryPresentation').SourceSymmetryToneReference;
   /** Explicit runtime instance; omitted requests use cold fixed-frame replay. */
   samilaLive?:import('./engine/sourceSamilaSession').SourceSamilaLiveContext;
   /** Actual primary canvas facts retained for Perlin simulation and export. */
@@ -484,7 +487,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'samilaLive'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceSymmetryToneReference'|'samilaLive'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

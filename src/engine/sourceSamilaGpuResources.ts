@@ -1,5 +1,5 @@
 import {SOURCE_SAMILA_DIRECT_VERTICES} from './sourceSamilaGpuDirect';
-import {densityGpuToneBytes,sourceSamilaPresentationBytes} from './densityGpuTone';
+import {densityGpuToneBytes,sourceDensityPresentationBytes} from './densityGpuTone';
 export function sourceSamilaDirectGpuPlan(count:number,width:number,height:number,options:{observe?:boolean;textureLimit?:number;sourcePresentation?:boolean}={}){
  if(!Number.isInteger(count)||count<1||count>8_000_000||![width,height].every(n=>Number.isInteger(n)&&n>0&&n<=16384))throw Error('源 Samila direct 容量无效');
  const limit=options.textureLimit??2048;if(!Number.isInteger(limit)||limit<1)throw Error('源 Samila direct 纹理容量无效');
@@ -11,7 +11,7 @@ export function sourceSamilaDirectGpuPlan(count:number,width:number,height:numbe
  const statisticsBytes=capacity*32+rw*rh*32+summaryBytes,observationBytes=options.observe?capacity*16:0;
  const residentBytes=width*height*32+statisticsBytes+observationBytes;
  const peakBytes=residentBytes+width*height*16+width*16+16+densityGpuToneBytes();
- return{model:'source-samila-direct' as const,count,width,height,tw,th,capacity,maxVertices,rw,rh,maxChunks,summaryWidth,summaryHeight,summaryBytes,statisticsBytes,observationBytes,residentBytes,peakBytes,estimatedBytes:peakBytes+256*256*4*2+1024*3*4*2+(options.sourcePresentation?sourceSamilaPresentationBytes(width,height):0)};
+ return{model:'source-samila-direct' as const,count,width,height,tw,th,capacity,maxVertices,rw,rh,maxChunks,summaryWidth,summaryHeight,summaryBytes,statisticsBytes,observationBytes,residentBytes,peakBytes,estimatedBytes:peakBytes+256*256*4*2+1024*3*4*2+(options.sourcePresentation?sourceDensityPresentationBytes(width,height):0)};
 }
 /** Sole owner of direct-draw targets and bounded TF/reduction storage. It owns
  * no persistent particle positions; changing plan always releases the old owner. */

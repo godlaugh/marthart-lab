@@ -11,7 +11,7 @@ import type {IteratedFrameJob,IteratedField} from '../scenes/iteratedDensity';
 import {compileGlslExpression,glslRealPrelude} from './gpuSampler';
 import {paletteBaseColor} from './palette';
 import {toneDensityRgbaPrepared,type DensityToneJob} from './density';
-import {DensityGpuTone,prepareDensityGpuTone,densityGpuToneBytes,sourceSamilaPresentationBytes} from './densityGpuTone';
+import {DensityGpuTone,prepareDensityGpuTone,densityGpuToneBytes,sourceDensityPresentationBytes} from './densityGpuTone';
 import {iteratedInitialChunk,iteratedSamilaSeedChunk} from './iteratedSeed';
 import {createNoisePermutation} from '../scenes/noise';
 import {iteratedNoiseGlsl} from './iteratedGpuNoise';
@@ -46,7 +46,7 @@ export function iteratedGpuBytes(count:number,width:number,height:number,texture
  checked(Number.isInteger(count)&&count>0&&count<=8_000_000,'GPU 粒子数须为 1–8000000');
  checked([width,height,textureWidth].every(n=>Number.isInteger(n)&&n>0&&n<=16384),'GPU 密度尺寸无效');
  const tw=Math.min(textureWidth,count),th=Math.ceil(count/tw),capacity=tw*th,reduce=Math.ceil(tw/2)*Math.ceil(th/2);
- return (sourcePresentation?sourceSamilaPresentationBytes(width,height):0)+(sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
+ return (sourcePresentation?sourceDensityPresentationBytes(width,height):0)+(sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
 }
 export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';sourceSymmetry?:true;}
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
@@ -386,11 +386,12 @@ export class IteratedDensityGpu {
  present(job:DensityToneJob,isCancelled?:()=>boolean,view?:PreparedDensityView):{pixels:Uint8ClampedArray;occupiedPixels:number;maxCount:number;toneBackend:'cpu'|'webgl2';warnings:string[]} {
   if(this.cleanupPending)this.reset();
   try{
-   checkCancelled(isCancelled);const r=this.resources??this.direct;checked(Boolean(r),'GPU 密度状态为空');const captured=view&&isCapturedDensityView(view)?view:undefined,admission=captured?{reason:'源 Map/Sym 相机视图在浮点墨迹上执行共享 CPU 采样与调色'}:prepareDensityGpuTone(job);let reason=admission.reason,destination:Uint8ClampedArray|undefined;
-   if(!job.sourcePresentation)this.tone?.releaseSourcePresentation();
-   const sourceTarget=job.sourcePresentation?sourceSamilaPresentationBytes(r!.width,r!.height):0;
+   checkCancelled(isCancelled);const r=this.resources??this.direct;checked(Boolean(r),'GPU 密度状态为空');const captured=view&&isCapturedDensityView(view)?view:undefined,admission=captured&&!job.sourceSymmetryPresentation?{reason:'源 Map/Sym 相机视图在浮点墨迹上执行共享 CPU 采样与调色'}:prepareDensityGpuTone(job);let reason=admission.reason,destination:Uint8ClampedArray|undefined;
+   if(!job.sourcePresentation&&!job.sourceSymmetryPresentation)this.tone?.releaseSourcePresentation();
+   const sourceTarget=job.sourcePresentation||job.sourceSymmetryPresentation?sourceDensityPresentationBytes(r!.width,r!.height):0;
    checked(r!.bytes+sourceTarget+r!.width*r!.height*4+(r!.sourceNoise?256*256*4*2+1024*3*4*2:0)<=MAX_BYTES,'GPU 完整呈现目标及输出超过 768 MiB 工作预算');
-   if(admission.plan){this.tone??=new DensityGpuTone(this.context());const result=this.tone.render(r!.ink,r!.width,r!.height,admission.plan,isCancelled,view&&!isCapturedDensityView(view)?view:undefined);if(!result.needsCpu)return{...result,toneBackend:'webgl2',warnings:[]};destination=result.pixels;reason='当前像素位于密度取样、色板相位或调色边界的 float32 敏感区';}
+   if(admission.plan){this.tone??=new DensityGpuTone(this.context());const result=this.tone.render(r!.ink,r!.width,r!.height,admission.plan,isCancelled,view);if(!result.needsCpu)return{...result,toneBackend:'webgl2',warnings:[]};destination=result.pixels;reason='当前像素位于密度取样、色板相位或调色边界的 float32 敏感区';}
+   if(job.sourceSymmetryPresentation)throw Error('源 Symmetry GPU 呈现失败：'+reason);
    const rgba=this.readback(),pixels=toneDensityRgbaPrepared(r!.width,r!.height,rgba,job,isCancelled,destination,view);let occupiedPixels=0,maxCount=0;
    for(let i=3;i<rgba.length;i+=4){if((i&65535)===3)checkCancelled(isCancelled);if(rgba[i]>0)occupiedPixels++;maxCount=Math.max(maxCount,rgba[i]);}
    return{pixels,occupiedPixels,maxCount,toneBackend:'cpu',warnings:[`GPU 粒子与累积保留，最终调色回退 CPU：${reason}`]};

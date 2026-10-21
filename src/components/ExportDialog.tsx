@@ -1,3 +1,4 @@
+import {usesSourceSymmetryPresentation,type SourceSymmetryToneReference} from '../engine/sourceSymmetryPresentation';
 import {usesSourceSamilaSampling} from '../engine/sourceSamilaSampling';
 import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
 import {withPerlinFreshRecording,assertPerlinRecordingFrame} from '../engine/sourcePerlinRecording';
@@ -36,6 +37,7 @@ export function ExportDialog({
   sourcePerlinViewport,
   previewPointPixelDensity,
   samilaPrimaryPixelHeight,
+  sourceSymmetryToneReference,
   currentRootsCapture,
   currentSamilaCapture,
   samilaPixelDensity,
@@ -52,6 +54,7 @@ export function ExportDialog({
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   previewPointPixelDensity?:number;
   samilaPrimaryPixelHeight?:number;
+  sourceSymmetryToneReference?:SourceSymmetryToneReference;
   samilaPixelDensity?:number;
   currentSamilaCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentRootsCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
@@ -215,7 +218,8 @@ export function ExportDialog({
       if(usesSourceSurfaceParticles(exportScene)&&previewPointPixelDensity===undefined)throw new Error('源曲面点导出缺少已呈现预览的像素密度，请等待预览完成');
       if(usesSourcePerlin(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin 导出缺少已呈现的预览尺寸，请等待预览完成');
       if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
-      const exportContext={quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
+      const exportContext={...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       if(!bouncing&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas);r.setSize(width,height,1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));
@@ -295,7 +299,7 @@ export function ExportDialog({
         }else{
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
-          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourceSamilaAlpha:kind==='video'?'opaque':'preserve',isCancelled:()=>cancelRef.current});
+          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',isCancelled:()=>cancelRef.current});
         }
         checkCancelled();
         if (kind === "image") {

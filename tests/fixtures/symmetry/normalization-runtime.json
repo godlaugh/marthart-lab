@@ -1,0 +1,416 @@
+{
+  "scope": "Original static Symmetry tone reference factor and scale; no graphics or app entry",
+  "rows": [
+    {
+      "referenceScale": 1,
+      "referenceWidth": 640,
+      "referenceHeight": 480,
+      "recordedPasses": 0,
+      "width": 640,
+      "scale": 2.604166729724966e-05,
+      "batchSize": 8,
+      "height": 480
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 640,
+      "referenceHeight": 480,
+      "recordedPasses": 1,
+      "width": 640,
+      "scale": 2.604166729724966e-05,
+      "batchSize": 8,
+      "height": 480
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 640,
+      "referenceHeight": 480,
+      "recordedPasses": 13,
+      "width": 640,
+      "scale": 0.010833333246409893,
+      "batchSize": 256,
+      "height": 480
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 640,
+      "referenceHeight": 480,
+      "recordedPasses": 2147483647,
+      "width": 640,
+      "scale": 15011999121408.0,
+      "batchSize": 2147483647,
+      "height": 480
+    },
+    {
+      "referenceScale": 0.02163650654256344,
+      "referenceWidth": 1349,
+      "referenceHeight": 842,
+      "recordedPasses": 0,
+      "width": 192,
+      "scale": 7.0431337917398196e-06,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 0.02163650654256344,
+      "referenceWidth": 1349,
+      "referenceHeight": 842,
+      "recordedPasses": 1,
+      "width": 192,
+      "scale": 7.0431337917398196e-06,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 0.02163650654256344,
+      "referenceWidth": 1349,
+      "referenceHeight": 842,
+      "recordedPasses": 13,
+      "width": 192,
+      "scale": 0.0029299436137080193,
+      "batchSize": 256,
+      "height": 128
+    },
+    {
+      "referenceScale": 0.02163650654256344,
+      "referenceWidth": 1349,
+      "referenceHeight": 842,
+      "recordedPasses": 2147483647,
+      "width": 192,
+      "scale": 4060090204160.0,
+      "batchSize": 2147483647,
+      "height": 128
+    },
+    {
+      "referenceScale": 0.016707878559827805,
+      "referenceWidth": 900,
+      "referenceHeight": 701,
+      "recordedPasses": 0,
+      "width": 127,
+      "scale": 1.2680298823397607e-05,
+      "batchSize": 8,
+      "height": 83
+    },
+    {
+      "referenceScale": 0.016707878559827805,
+      "referenceWidth": 900,
+      "referenceHeight": 701,
+      "recordedPasses": 1,
+      "width": 127,
+      "scale": 1.2680298823397607e-05,
+      "batchSize": 8,
+      "height": 83
+    },
+    {
+      "referenceScale": 0.016707878559827805,
+      "referenceWidth": 900,
+      "referenceHeight": 701,
+      "recordedPasses": 13,
+      "width": 127,
+      "scale": 0.005275004077702761,
+      "batchSize": 256,
+      "height": 83
+    },
+    {
+      "referenceScale": 0.016707878559827805,
+      "referenceWidth": 900,
+      "referenceHeight": 701,
+      "recordedPasses": 2147483647,
+      "width": 127,
+      "scale": 7309694599168.0,
+      "batchSize": 2147483647,
+      "height": 83
+    },
+    {
+      "referenceScale": 4194304,
+      "referenceWidth": 1,
+      "referenceHeight": 1,
+      "recordedPasses": 0,
+      "width": 2048,
+      "scale": 8,
+      "batchSize": 8,
+      "height": 2048
+    },
+    {
+      "referenceScale": 4194304,
+      "referenceWidth": 1,
+      "referenceHeight": 1,
+      "recordedPasses": 1,
+      "width": 2048,
+      "scale": 8,
+      "batchSize": 8,
+      "height": 2048
+    },
+    {
+      "referenceScale": 4194304,
+      "referenceWidth": 1,
+      "referenceHeight": 1,
+      "recordedPasses": 13,
+      "width": 2048,
+      "scale": 3328,
+      "batchSize": 256,
+      "height": 2048
+    },
+    {
+      "referenceScale": 4194304,
+      "referenceWidth": 1,
+      "referenceHeight": 1,
+      "recordedPasses": 2147483647,
+      "width": 2048,
+      "scale": 4.611686018427388e+18,
+      "batchSize": 2147483647,
+      "height": 2048
+    },
+    {
+      "referenceScale": 3.725290298461914e-09,
+      "referenceWidth": 16384,
+      "referenceHeight": 16384,
+      "recordedPasses": 0,
+      "width": 1,
+      "scale": 7.999999979801942e-06,
+      "batchSize": 8,
+      "height": 1
+    },
+    {
+      "referenceScale": 3.725290298461914e-09,
+      "referenceWidth": 16384,
+      "referenceHeight": 16384,
+      "recordedPasses": 1,
+      "width": 1,
+      "scale": 7.999999979801942e-06,
+      "batchSize": 8,
+      "height": 1
+    },
+    {
+      "referenceScale": 3.725290298461914e-09,
+      "referenceWidth": 16384,
+      "referenceHeight": 16384,
+      "recordedPasses": 13,
+      "width": 1,
+      "scale": 0.0033279999624937773,
+      "batchSize": 256,
+      "height": 1
+    },
+    {
+      "referenceScale": 3.725290298461914e-09,
+      "referenceWidth": 16384,
+      "referenceHeight": 16384,
+      "recordedPasses": 2147483647,
+      "width": 1,
+      "scale": 4611686006784.0,
+      "batchSize": 2147483647,
+      "height": 1
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 0,
+      "width": 0,
+      "scale": 1,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 1,
+      "width": 0,
+      "scale": 1,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 13,
+      "width": 0,
+      "scale": 1,
+      "batchSize": 256,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 2147483647,
+      "width": 0,
+      "scale": 1,
+      "batchSize": 2147483647,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 0,
+      "width": 192,
+      "scale": 1,
+      "batchSize": 8,
+      "height": 0
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 1,
+      "width": 192,
+      "scale": 1,
+      "batchSize": 8,
+      "height": 0
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 13,
+      "width": 192,
+      "scale": 1,
+      "batchSize": 256,
+      "height": 0
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": 128,
+      "recordedPasses": 2147483647,
+      "width": 192,
+      "scale": 1,
+      "batchSize": 2147483647,
+      "height": 0
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 0,
+      "referenceHeight": 128,
+      "recordedPasses": 0,
+      "width": 192,
+      "scale": 0.00032552084303461015,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 0,
+      "referenceHeight": 128,
+      "recordedPasses": 1,
+      "width": 192,
+      "scale": 0.00032552084303461015,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 0,
+      "referenceHeight": 128,
+      "recordedPasses": 13,
+      "width": 192,
+      "scale": 0.1354166716337204,
+      "batchSize": 256,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 0,
+      "referenceHeight": 128,
+      "recordedPasses": 2147483647,
+      "width": 192,
+      "scale": 187649990066176.0,
+      "batchSize": 2147483647,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": -1,
+      "recordedPasses": 0,
+      "width": 192,
+      "scale": 0.00032552084303461015,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": -1,
+      "recordedPasses": 1,
+      "width": 192,
+      "scale": 0.00032552084303461015,
+      "batchSize": 8,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": -1,
+      "recordedPasses": 13,
+      "width": 192,
+      "scale": 0.1354166716337204,
+      "batchSize": 256,
+      "height": 128
+    },
+    {
+      "referenceScale": 1,
+      "referenceWidth": 192,
+      "referenceHeight": -1,
+      "recordedPasses": 2147483647,
+      "width": 192,
+      "scale": 187649990066176.0,
+      "batchSize": 2147483647,
+      "height": 128
+    }
+  ],
+  "elapsedSeconds": 1.0883428750094026,
+  "harnessSha256": "37f2fc0a41bc38a760aa43676ffb19622666c6677b7bdfeb422c050433f3ac0e",
+  "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+  "sources": [
+    {
+      "name": "MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+      "sha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+    },
+    {
+      "name": "core-4.5.0-acdf3bce2932985b9d091c284407a54.jar",
+      "sha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a"
+    },
+    {
+      "name": "core-common-2.2.0-2212d240dfe1e8a7598ee117ccc316d.jar",
+      "sha256": "e3b45846e588c02815c128bcf54a0aff96bbf298942475a8de5ac36147e17cdd"
+    },
+    {
+      "name": "kotlin-stdlib-2.3.20-17212d4ae1611e51ce4c3c4ba28717fa.jar",
+      "sha256": "178a89ecf130fb03c2cda9c3736dbe1362645e4701ac1ad678706a7e7a539237"
+    },
+    {
+      "name": "kotlin-stdlib-jdk7-1.9.24-36ceb164e825dcfd5d1c5c25482bec8.jar",
+      "sha256": "43eb03a357225662dcc4583d999ca29909dda68c7a285fad260f30f03e8fd4d3"
+    },
+    {
+      "name": "kotlin-stdlib-jdk8-1.9.24-592f5e22e994e5dd4f3868f13bcf74d8.jar",
+      "sha256": "0f14d4e90b6c3f7d399971ff756522cd97224454595143fec0e4b80a2cc023da"
+    },
+    {
+      "name": "runtime-desktop-1.7.3-7ab98d9506ccb634316b9b9eeecf5b8.jar",
+      "sha256": "3f9a38ebd97fb004850eaad453f0b33ce5790d20f5363b15e7f8b5ae2356eb8d"
+    }
+  ],
+  "hostEvidence": {
+    "mathart/symmetrychaos/SymmetryChaosMobject.class": {
+      "classSha256": "f994fa6fc9dcf984c9ffad6e4e539e497ed038935ab701f8c7450d1f5caba54c"
+    },
+    "mathart/scene/Scene.class": {
+      "classSha256": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53"
+    },
+    "mathart/symmetrychaos/GenericSymmetryChaosScene.class": {
+      "classSha256": "1bed99fb57872210a7c16d77bf32c3b136772c4c9cd40e6d20428107d1c07116"
+    }
+  },
+  "hostEvidenceNotes": [
+    "Scene constructor sets useAccumulationBuffer=false at PC144; render background clear at PC204 in that branch.",
+    "GenericSymmetryChaosScene uses the configured background and does not enable scene accumulation in its constructor/construct method.",
+    "SymmetryChaosMobject.presentAccumulation sets SRC_ALPHA/ONE_MINUS_SRC_ALPHA at PC50, invert=false at PC424, foregroundAlphaScale=1 at PC465.",
+    "Tone reference dimensions read primary PApplet.g pixelWidth/pixelHeight at PC627/660, falling back to the current output dimensions.",
+    "These host facts are bytecode-derived, not native window execution."
+  ]
+}

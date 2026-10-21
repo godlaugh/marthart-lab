@@ -1,3 +1,4 @@
+import {SOURCE_SYMMETRY_PRESENTATION_MODEL} from './sourceSymmetryPresentation';
 import {importSourceSymmetryProjectPalette} from './sourceSymmetryPalette';
 import {importSourceSymmetryProjectVisual} from './sourceSymmetryProjectVisual';
 import {importSourceSymmetryProjectParameters,importSourceSymmetryParameters,createSourceSymmetryConfiguration,usesSourceSymmetryConfiguration,usesSourceSymmetryProject,sourceSymmetryDegree,sourceSymmetryTemplate,sourceSymmetryFloat} from './sourceSymmetryConfig';
@@ -1463,6 +1464,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   if(r.has(['settings','dot_size']))r.acknowledge(['settings','dot_size'],'Samila 活动绘制使用 spot_size；通用 dot_size 保留但不参与散点半径');
  }
  if(usesSourceSymmetryProject(scene)){
+  scene.settings.symmetryPresentationModel=SOURCE_SYMMETRY_PRESENTATION_MODEL;scene.settings.densityToneModel='normalized-v2';if(!r.has(['settings','background_color']))scene.settings.background='#000000';
   const palette=importSourceSymmetryProjectPalette(r.use(['palette']));if(!palette.ok)fail(palette.error.reason);scene.palette=palette.value.palette;r.warnings.push(...palette.value.warnings);
   if(r.has(['color']))r.acknowledge(['color'],'原版 Symmetry 项目不输出通用 color 配置；运行时配色可在本地检查器编辑');
   const parsed=importSourceSymmetryProjectVisual(r.peek(['settings']),path=>r.numberToken(path));

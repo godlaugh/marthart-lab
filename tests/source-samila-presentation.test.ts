@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {SOURCE_SAMILA_PRESENTATION_MODEL,sourceSamilaBlendTarget,sourceSamilaDisplayTransform,validateSourceSamilaPresentation} from '../src/engine/sourceSamilaPresentation';
 import {prepareDensityTone,toneDensityRgbaPrepared} from '../src/engine/density';
-import {prepareDensityGpuTone,sourceSamilaPresentationBytes,densityGpuToneBytes} from '../src/engine/densityGpuTone';
+import {prepareDensityGpuTone,sourceDensityPresentationBytes,densityGpuToneBytes} from '../src/engine/densityGpuTone';
 import {iteratedGpuBytes} from '../src/engine/iteratedDensityGpu';
 import {prepareSamilaView} from '../src/engine/samilaCamera';
 import {createScene} from '../src/engine/document';
@@ -15,10 +15,10 @@ const facts:SamilaToneFacts={kind:'samila',historyModel:'bounded-v2',width:1,hei
 function job(extra:Record<string,Settings[string]|undefined>={}){const cfg={...settings};for(const [key,value]of Object.entries(extra))if(value===undefined)delete cfg[key];else cfg[key]=value;const out=prepareDensityTone(palette,cfg,facts);if(out.model!=='samila-normalized-v2')throw Error('type');out.normalization.scale=1;return out;}
 describe('versioned original Samila presentation endpoint',()=>{
  it('budgets the complete source MRT only for the selected presentation version',()=>{
-  const w=513,h=517,extra=sourceSamilaPresentationBytes(w,h);expect(extra).toBe(w*h*20);
+  const w=513,h=517,extra=sourceDensityPresentationBytes(w,h);expect(extra).toBe(w*h*20);
   const old=iteratedGpuBytes(100,w,h,2048,true,false,true),source=iteratedGpuBytes(100,w,h,2048,true,false,true,true);expect(source-old).toBe(extra);
   expect(source).toBeGreaterThan(extra+densityGpuToneBytes()+w*h*48);
-  for(const pair of [[0,1],[1,.5],[8192,8192],[16385,1]])expect(()=>sourceSamilaPresentationBytes(...pair as [number,number])).toThrow();
+  for(const pair of [[0,1],[1,.5],[8192,8192],[16385,1]])expect(()=>sourceDensityPresentationBytes(...pair as [number,number])).toThrow();
  });
  it('clamps raw RGBA before ordinary source-alpha blending, preserving the squared alpha target',()=>{
   // Independent original shader GL observation, not a producer-derived golden.
