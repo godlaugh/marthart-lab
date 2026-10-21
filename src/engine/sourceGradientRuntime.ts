@@ -1,14 +1,14 @@
 import type {DomainSourceInterpolation} from './domainSourcePalette';
 import type {SourceSurfaceGradientMode} from './sourceSurfaceGradient';
 
-/** Shared native arithmetic for targets whose three starting offset getters
- * all return their primary offset (Roots, Surface, Attractor and Perlin). Target application and
+/** Shared native arithmetic. Scalar targets use one starting offset; Symmetry
+ * retains three independent starting offsets. Target application and
  * scene update scheduling remain with those owners. */
 export interface SourceGradientConfiguration {readonly mode:SourceSurfaceGradientMode;readonly interpolation:DomainSourceInterpolation;readonly speed:number;}
 export interface SourceGradientFrame {readonly palette:number;readonly inside:number;readonly outside:number;}
 export interface SourceGradientSnapshot {
  readonly running:boolean;readonly progress:number;readonly speedScale:number;readonly targetSpeed:number;readonly base:number;
- readonly config?:SourceGradientConfiguration;
+ readonly config?:SourceGradientConfiguration;readonly baseOffsets?:SourceGradientFrame;
 }
 export const sourceGradientWrap=(value:number)=>{const r=value%1;return r<0?r+1:r;};
 function shape(value:number,interpolation:DomainSourceInterpolation):number {
@@ -16,16 +16,17 @@ function shape(value:number,interpolation:DomainSourceInterpolation):number {
  return interpolation==='oklch'?((u*u)*u)*(u*(u*6-15)+10):(u*u)*(3-2*u);
 }
 const wave=(p:number,f:number,phase:number)=>Math.sin((p*f+phase)*6.283185307179586);
-export function sourceGradientFrame(base:number,config:SourceGradientConfiguration,progress:number):SourceGradientFrame {
- let palette=base,inside=base,outside=base;
+export function sourceGradientFrame(base:number|SourceGradientFrame,config:SourceGradientConfiguration,progress:number):SourceGradientFrame {
+ const initial=typeof base==='number'?{palette:base,inside:base,outside:base}:base;
+ let {palette,inside,outside}=initial;
  const shaped=shape(config.mode==='offset_cycle'?sourceGradientWrap(progress):progress,config.interpolation);
- if(config.mode==='hue_rotate')palette=base+shaped;
+ if(config.mode==='hue_rotate')palette=initial.palette+shaped;
  else if(config.mode==='offset_cycle'){
-  const d=wave(progress,.5,0)*.05;inside=(base+shaped)+d;outside=(base+shaped)-d*.5;
+  const d=wave(progress,.5,0)*.05;inside=(initial.inside+shaped)+d;outside=(initial.outside+shaped)-d*.5;
  }else if(config.mode==='cross_fade'){
-  const d=(.5+.5*wave(progress,1,.25))*.08;inside=(base+shaped)-d;outside=(base+shaped)+d;palette=base+shaped;
+  const d=(.5+.5*wave(progress,1,.25))*.08;inside=(initial.inside+shaped)-d;outside=(initial.outside+shaped)+d;palette=initial.palette+shaped;
  }else{
-  const d=wave(progress,.75,.35)*.06;inside=(base+shaped)-d;outside=(base+shaped)+d;palette=base+shaped;
+  const d=wave(progress,.75,.35)*.06;inside=(initial.inside+shaped)-d;outside=(initial.outside+shaped)+d;palette=initial.palette+shaped;
  }
  return{palette,inside,outside};
 }
@@ -33,18 +34,18 @@ export function sourceGradientFrameAtAge(snapshot:SourceGradientSnapshot,age:num
  if(!snapshot.config)throw new Error('源渐变没有可采样的运行配置');
  const p=!snapshot.running||age<=0?snapshot.progress:sourceGradientWrap(snapshot.progress-((snapshot.targetSpeed*snapshot.speedScale)*age)/360);
  if(!Number.isFinite(p))throw new Error('源渐变历史进度产生非有限值');
- return sourceGradientFrame(snapshot.base,snapshot.config,p);
+ return sourceGradientFrame(snapshot.baseOffsets??snapshot.base,snapshot.config,p);
 }
 export type SourceGradientAction={readonly kind:'start';readonly config:SourceGradientConfiguration}|{readonly kind:'stop'};
 interface Child {action:SourceGradientAction;finished:boolean;startScale:number;}
 export class SourceGradientRuntime {
  private active=false;private progress=0;private speedScale=0;private targetSpeed=0;private base=0;
- private configuration?:SourceGradientConfiguration;private children:Child[]=[];
- constructor(private readonly readBase:()=>number,private readonly apply:(frame:SourceGradientFrame,config:SourceGradientConfiguration)=>void){}
+ private baseOffsets?:SourceGradientFrame;private configuration?:SourceGradientConfiguration;private children:Child[]=[];
+ constructor(private readonly readBase:()=>number|SourceGradientFrame,private readonly apply:(frame:SourceGradientFrame,config:SourceGradientConfiguration)=>void){}
  get running(){return this.active;}
  get config(){return this.configuration;}
- snapshot():SourceGradientSnapshot{return Object.freeze({running:this.active,progress:this.progress,speedScale:this.speedScale,targetSpeed:this.targetSpeed,base:this.base,config:this.configuration});}
- private applyFrame(){if(this.active)this.apply(sourceGradientFrame(this.base,this.configuration!,this.progress),this.configuration!);}
+ snapshot():SourceGradientSnapshot{return Object.freeze({running:this.active,progress:this.progress,speedScale:this.speedScale,targetSpeed:this.targetSpeed,base:this.base,...(this.baseOffsets?{baseOffsets:Object.freeze({...this.baseOffsets})}:{}),config:this.configuration});}
+ private applyFrame(){if(this.active)this.apply(sourceGradientFrame(this.baseOffsets??this.base,this.configuration!,this.progress),this.configuration!);}
  private scale(value:number){
   // Native setters retain NaN until the same-frame finish callback restores it.
   this.speedScale=value<0?0:value;this.applyFrame();
@@ -54,7 +55,7 @@ export class SourceGradientRuntime {
   // matters because Surface smooths every applied frame, even unchanged phases.
   this.children=actions.map(action=>{
    if(action.kind==='stop')return{action,finished:!this.active,startScale:this.speedScale};
-   this.base=this.readBase();this.configuration=Object.freeze({...action.config});this.progress=0;this.active=true;this.speedScale=0;this.targetSpeed=action.config.speed;
+   const base=this.readBase();this.base=typeof base==='number'?base:base.palette;this.baseOffsets=typeof base==='number'?undefined:{...base};this.configuration=Object.freeze({...action.config});this.progress=0;this.active=true;this.speedScale=0;this.targetSpeed=action.config.speed;
    this.applyFrame();this.scale(0);return{action,finished:false,startScale:0};
   });
  }

@@ -1,3 +1,4 @@
+import {validateSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {validateSourceSymmetryPresentation} from './sourceSymmetryPresentation';
 import {parseSourceSymmetryConfiguration,usesSourceSymmetryConfiguration} from './sourceSymmetryConfig';
 import {validateSourceSamilaSplat} from './sourceSamilaSplat';
@@ -23,7 +24,7 @@ import { PALETTES, validatePalette } from "./palette";
 import {parseFractalColors} from './fractalColor';
 import {parseFractalNumericProfile} from './fractalPrecision';
 import {validateFormulas} from './formulas';
-import {validateFractalKeyframes,validateTimelineExtensions,validateTimelineSchedule} from './timeline';
+import {validateFractalKeyframes,validateTimelineExtensions,validateTimelineSchedule,sourceParticleActionFamily} from './timeline';
 import type {AnimationTrack} from '../types';
 import {parseRenderPreferences,type RenderPreferences} from './preferences';
 import {parseRootParameters} from './rootParameters';
@@ -277,7 +278,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   }
   validateSourceSamilaSplat(data as unknown as SceneDocument);
   validateSourceSamilaPresentation(data as unknown as SceneDocument);
-  validateSourceSymmetryPresentation(data as unknown as SceneDocument);
+  validateSourceSymmetryPresentation(data as unknown as SceneDocument);validateSourceSymmetryGradient(data as unknown as SceneDocument);
   validateSourceSamilaSampling(data as unknown as SceneDocument);
   if(data.formulas!==undefined)data.formulas=validateFormulas(data.formulas);
   const t = data.timeline as Record<string, unknown>;
@@ -305,7 +306,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
       Number(track.start) < 0
     )
       fail("动画轨道无效");
-    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],usesSourceSurfaceGeometry(data as unknown as SceneDocument),usesSourceAttractor(data as unknown as SceneDocument),usesSourcePerlin(data as unknown as SceneDocument));
+    validateTimelineExtensions(track as unknown as AnimationTrack,data.kind as SceneDocument['kind'],t.schedule as SceneDocument['timeline']['schedule'],sourceParticleActionFamily(data as unknown as SceneDocument));
     if(track.type==='fractal_zoom')track.keyframes=validateFractalKeyframes(track as unknown as AnimationTrack);
   }
   validateTimelineSchedule(data as unknown as SceneDocument);

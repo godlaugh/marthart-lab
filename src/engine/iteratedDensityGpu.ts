@@ -249,11 +249,11 @@ export class IteratedDensityGpu {
   * larger 4097 RGBA table and CPU upload; native storage is strictly smaller. */
  private prepareDrawPalette(job:IteratedFrameJob){
   const gl=this.gl!,r=this.resources!,native=job.symmetryPalette?.model==='source-rgb1024',format=native?'source-rgb1024':'local-rgba4097';
-  const {name:ignoredName,offset,cycles,...base}=job.palette,key=JSON.stringify([format,native?{...base,offset,cycles}:base]);this.texture(r.palette,2);
+  const {name:ignoredName,offset,cycles,...base}=job.palette,key=JSON.stringify([format,native?{...base,offset,cycles}:base,job.symmetryPalette?.model==='source-rgb1024'?job.symmetryPalette.frame:undefined]);this.texture(r.palette,2);
   if(r.drawPaletteKey===key)return;
   if(native){
    checked(Boolean(gl.getExtension('OES_texture_float_linear')),'源 Symmetry 色板需要 OES_texture_float_linear');
-   const values=sourceSymmetryPaletteLut(job.palette);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,1024,1,0,gl.RGB,gl.FLOAT,values);
+   const values=sourceSymmetryPaletteLut(job.palette,job.symmetryPalette?.model==='source-rgb1024'?job.symmetryPalette.frame:undefined);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,1024,1,0,gl.RGB,gl.FLOAT,values);
   }else{
    const colors=new Float32Array((PALETTE_INTERVALS+1)*4);for(let i=0;i<=PALETTE_INTERVALS;i++){colors.set(paletteBaseColor(job.palette,i/PALETTE_INTERVALS),i*4);colors[i*4+3]=1;}
    if(r.paletteFormat!==format)gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,PALETTE_INTERVALS+1,1,0,gl.RGBA,gl.FLOAT,colors);

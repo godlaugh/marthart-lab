@@ -1,3 +1,4 @@
+import {SOURCE_SYMMETRY_GRADIENT_MODEL,usesSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {SOURCE_SYMMETRY_PRESENTATION_MODEL} from './sourceSymmetryPresentation';
 import {importSourceSymmetryProjectPalette} from './sourceSymmetryPalette';
 import {importSourceSymmetryProjectVisual} from './sourceSymmetryProjectVisual';
@@ -1100,10 +1101,10 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
 
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
     if(surfaceParameters){if(surfaceParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,surfaceParameters});continue;}
-    if((s.kind==='surface'||usesSourceAttractor(s))&&(method==='gradientStart'||method==='gradientStop')){
+    if((s.kind==='surface'||usesSourceAttractor(s)||usesSourceSymmetryGradient(s))&&(method==='gradientStart'||method==='gradientStop')){
      if(usesSourceAttractor(s)&&(s.attractorSource!.configuration.nativeBackend==='gpu'||!s.attractorSource!.visual.trails.show)){r.acknowledge(actionPath,'原版吸引子仅在 CPU 且显示拖尾时构造渐变；未解析动作参数');continue;}
      if(method==='gradientStop'){track.actions.push({id:crypto.randomUUID(),method,enabled:true});continue;}
-     const facts=usesSourceAttractor(s)?importSourceParticleGradient(raw,'attractor'):surfaceGradient!,argsPath=[...actionPath,'args'];
+     const facts=usesSourceSymmetryGradient(s)?importSourceParticleGradient(raw,'symmetry'):usesSourceAttractor(s)?importSourceParticleGradient(raw,'attractor'):surfaceGradient!,argsPath=[...actionPath,'args'];
      if(facts.payloadPath!==null){
       // Retention records source numeric evidence even when applicability skips
       // execution. Consumption remains limited to the parser's named fields.
@@ -1464,7 +1465,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   if(r.has(['settings','dot_size']))r.acknowledge(['settings','dot_size'],'Samila 活动绘制使用 spot_size；通用 dot_size 保留但不参与散点半径');
  }
  if(usesSourceSymmetryProject(scene)){
-  scene.settings.symmetryPresentationModel=SOURCE_SYMMETRY_PRESENTATION_MODEL;scene.settings.densityToneModel='normalized-v2';if(!r.has(['settings','background_color']))scene.settings.background='#000000';
+  scene.settings.symmetryGradientModel=SOURCE_SYMMETRY_GRADIENT_MODEL;scene.settings.symmetryPresentationModel=SOURCE_SYMMETRY_PRESENTATION_MODEL;scene.settings.densityToneModel='normalized-v2';if(!r.has(['settings','background_color']))scene.settings.background='#000000';
   const palette=importSourceSymmetryProjectPalette(r.use(['palette']));if(!palette.ok)fail(palette.error.reason);scene.palette=palette.value.palette;r.warnings.push(...palette.value.warnings);
   if(r.has(['color']))r.acknowledge(['color'],'原版 Symmetry 项目不输出通用 color 配置；运行时配色可在本地检查器编辑');
   const parsed=importSourceSymmetryProjectVisual(r.peek(['settings']),path=>r.numberToken(path));

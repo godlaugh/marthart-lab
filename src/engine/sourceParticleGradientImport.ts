@@ -59,16 +59,18 @@ function sourceSpeed(raw:unknown,diagnostics:string[]):number {
 }
 
 /** Shared 1.7.8 GradientActionConfig contract. Only Surface excludes
- * untrimmed, case-insensitive FRACTAL; Surface, Attractor and Perlin force both flags true.
+ * untrimmed, case-insensitive FRACTAL; Symmetry accepts blank or trimmed
+ * SYMMETRY_CHAOS. All four particle targets force both flags true.
  * Expected skipped actions are tagged, resource failures never become defaults. */
-export function importSourceParticleGradient(args:unknown,family:'surface'|'attractor'|'perlin'):SourceParticleGradientImportFacts {
+export function importSourceParticleGradient(args:unknown,family:'surface'|'attractor'|'perlin'|'symmetry'):SourceParticleGradientImportFacts {
  const payload=sourceParticleGradientPayload(args),raw=payload?.value??{},diagnostics:string[]=[];
  const facts={payloadPath:payload?.path??null,payloadEmpty:payload!==undefined&&Object.keys(raw).length===0};
- const target=family==='surface'?sourceText(own(raw,'targetDomain')):undefined;
+ const target=family==='surface'||family==='symmetry'?sourceText(own(raw,'targetDomain')):undefined;
  // FRACTAL contains no i; Java equalsIgnoreCase has no locale dependency here.
  if(family==='surface'&&target!==undefined&&target.toUpperCase()==='FRACTAL')return {kind:'skip',reason:'target-domain',...facts,consumedFields:['targetDomain'],diagnostics:['原版粒子渐变排除 targetDomain FRACTAL，跳过此动作；原值保留在 source。']};
+ if(family==='symmetry'&&target!==undefined&&javaTrim(target)!==''&&javaTrim(target).toUpperCase()!=='SYMMETRY_CHAOS')return {kind:'skip',reason:'target-domain',...facts,consumedFields:['targetDomain'],diagnostics:['原版 Symmetry 跳过其它 targetDomain 的渐变；原值保留。']};
  const mode=enumName(own(raw,'mode'),'HUE_ROTATE',diagnostics).toLowerCase(),interpolation=enumName(own(raw,'interpolation'),'OKLAB',diagnostics).toLowerCase(),speed=sourceSpeed(own(raw,'speed'),diagnostics);
- const consumedFields=payload?SOURCE_PARTICLE_GRADIENT_SOURCE_FIELDS.filter(field=>family==='surface'||field!=='targetDomain'):[];
+ const consumedFields=payload?SOURCE_PARTICLE_GRADIENT_SOURCE_FIELDS.filter(field=>family==='surface'||family==='symmetry'||field!=='targetDomain'):[];
  if(Object.hasOwn(raw,'affectInside')||Object.hasOwn(raw,'affectOutside'))diagnostics.push('原版粒子渐变固定同时作用于两侧；输入的区域开关保留但不参与执行。');
  if(!modes.includes(mode))return {kind:'skip',reason:'unknown-mode',...facts,consumedFields,diagnostics:[...new Set([...diagnostics,'原版未识别渐变模式，跳过此动作；原值保留在 source。'])]};
  if(!interpolations.includes(interpolation))diagnostics.push('原版未识别渐变插值，采用 OKLAB；原值保留在 source。');

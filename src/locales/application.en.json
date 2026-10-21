@@ -1234,5 +1234,6 @@
   "实际视频尺寸：{width} × {height} 像素。": "Actual video size: {width} × {height} pixels.",
   "Samila 图像来源": "Samila image source",
   "截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。": "Capturing adds one sample batch, then redraws the preview with another batch. Animation time stays unchanged. Changing dimensions clears the accumulated image.",
-  "从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。": "Replay from the initial state with independent random samples. The current preview’s accumulated image is not copied."
+  "从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。": "Replay from the initial state with independent random samples. The current preview’s accumulated image is not copied.",
+  "渐变更新后续粒子的色板，停止保留最后显示的配色。同片段动作按列表顺序执行。": "Gradients update the palette for subsequent particles. Stopping retains the last displayed colors. Actions in a clip run in list order."
 }

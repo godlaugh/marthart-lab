@@ -127,7 +127,7 @@ function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boo
  if(family==='surface'&&surfaceParameterPath(path))return true;
  if(family==='surface'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&surfaceStaticFields.has(path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
- if((family==='surface'||family==='attractor'||family==='perlin')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
+ if((family==='surface'||family==='attractor'||family==='perlin'||family==='symmetry')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;
  return path[0]==='timeline'&&index(path[1],maxTimelineClips)&&(path.length===3&&typeof path[2]==='string'&&['duration','target_phi','target_theta','target_gamma'].includes(path[2])||path.length===6&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&index(path[5],maxCameraArgs));
 }
 const samilaStaticMaximum=Object.keys(SOURCE_SAMILA_APPEARANCE_FIELDS).length+2+SAMILA_VIEWPORT_SOURCE_FIELDS.length+SOURCE_SAMILA_MATH_FIELDS.length+2+SOURCE_SAMILA_PARAMETER_LIMIT;
@@ -173,8 +173,8 @@ export function parseSourceNumberTokens(raw:unknown,sceneKind:SceneDocument['kin
     bouncingPolygonSource=source;bouncingVertexForms.set(vertex,form);
    }
   }
-  if((roots||sceneKind==='surface'||sceneKind==='attractor'||sceneKind==='perlin')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&!perlinParameterPath(path)&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
-   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify((sceneKind==='surface'||sceneKind==='attractor'||sceneKind==='perlin')?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
+  if((roots||sceneKind==='surface'||sceneKind==='attractor'||sceneKind==='perlin'||sceneKind==='symmetry')&&path[0]==='timeline'&&path[2]==='actions'&&path[4]==='args'&&!perlinParameterPath(path)&&gradientField(path[path.length-1],roots?ROOTS_GRADIENT_SOURCE_FIELDS:SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)){
+   const action=JSON.stringify(path.slice(0,5)),payload=JSON.stringify((sceneKind==='surface'||sceneKind==='attractor'||sceneKind==='perlin'||sceneKind==='symmetry')?path.slice(0,path[5]==='0'?6:5):path.slice(0,-1)),previous=gradientPayloads.get(action);
    if(previous!==undefined&&previous!==payload)throw new Error('一个源动画动作只能保留首个对象的数字词法');
    gradientPayloads.set(action,payload);
   }

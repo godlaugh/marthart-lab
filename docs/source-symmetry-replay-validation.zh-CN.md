@@ -50,6 +50,8 @@
 
 下一步是核对宿主 update/display 调度及渐变动画配置绑定，再在共享帧计划中表达预热、绘制轮数、清除和计数，最后通过真实预览、定位、导出验证消费者。原版完整窗口验收仍为 **0/11**，本轮证据不改变该数值。
 
+后续进展：[渐变动画已接入并验证](source-symmetry-gradient-validation.zh-CN.md)。重建与粒子显示计数仍待接入，不与渐变状态验证混为一项。
+
 ## 证据与复验
 
 - 固定输入、完整输出、动作编号和全部 108 个 classpath JAR 的 SHA-256：`tests/fixtures/symmetry/replay-runtime.json`。

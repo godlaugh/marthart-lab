@@ -68,7 +68,7 @@ export interface OrdinarySourceCameraParticles {
 export interface OrdinarySourceCameraTimelineOptions {
  readonly isCancelled?:()=>boolean;
  /** Explicit producer contract; other scene gradients keep their own clocks. */
- readonly particleActions?:'surface'|'attractor'|'perlin'|'samila';
+ readonly particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry';
  /** Initial main-object mode, required for exact transition/skip scheduling. */
  readonly surfaceMode?:SourceSurfaceMode;
  /** Fresh, synchronous, in-memory producer state per replay. No scalar cache
@@ -98,7 +98,7 @@ const finite=(v:number):number=>{if(!Number.isFinite(v))throw new OrdinarySource
 const lerp=(a:number,b:number,t:number)=>F(a+F(F(b-a)*t));
 const check=(options:OrdinarySourceCameraTimelineOptions)=>{if(options.isCancelled?.())throw new OrdinarySourceCameraTimelineError('cancelled','源相机回放已取消');};
 const noncameraMethods=new Set(['paramStart','paramStop','gradientStart','gradientStop']);
-function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila',initialSurfaceMode?:SourceSurfaceMode):Plan {
+function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry',initialSurfaceMode?:SourceSurfaceMode):Plan {
  if(initialSurfaceMode!==undefined&&(particleActions!=='surface'||!['points','mesh'].includes(initialSurfaceMode)))throw new OrdinarySourceCameraTimelineError('input','源曲面初始模式需要曲面动作合同');
  let surfaceMode=initialSurfaceMode;
  if(!initial||typeof initial!=='object'||['phi','theta','gamma','center','zoom','focalDistance'].some(key=>!Object.hasOwn(initial,key)))throw new OrdinarySourceCameraTimelineError('input','源相机初始标量必须完整');
@@ -232,7 +232,7 @@ function bindTracking(plan:Plan,particles:OrdinarySourceCameraParticles|undefine
 const replays=new Map<string,Replay>();
 type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;updates:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
 const layouts=new Map<string,Layout>();
-function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila',surfaceMode?:SourceSurfaceMode):string|undefined {
+function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry',surfaceMode?:SourceSurfaceMode):string|undefined {
  const key=JSON.stringify([initial,tracks,fps,particleActions,surfaceMode],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
  return key.length<=1_000_000?key:undefined;
 }

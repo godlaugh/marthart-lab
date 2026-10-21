@@ -76,7 +76,7 @@ describe('public native CPU Attractor dispatch',()=>{
  it('validates dormant source gradients and keeps unsupported source parameter actions explicit',()=>{
   const scene=source(),track=structuredClone(scene.timeline.tracks[0]);track.enabled=false;
   track.actions![0].gradient!.speed=-1;
-  expect(()=>validateTimelineExtensions(track,'attractor','ordinary-camera-sequence-v1',false,true)).toThrow();
+  expect(()=>validateTimelineExtensions(track,'attractor','ordinary-camera-sequence-v1','attractor')).toThrow();
   scene.timeline.tracks[0].actions=[{id:'p',method:'paramStart',parameters:[{target:'parameters.speed',min:0,max:10,step:1,enabled:true}]}];
   expect(()=>generateScene(scene,context)).toThrow();
  });
