@@ -1,3 +1,4 @@
+import {parseSourceIteratedDraft} from './sourceIteratedDraft';
 import {validateSourceMapPresentation} from './sourceMapPresentation';
 import {validateSourceMapSplat} from './sourceMapSplat';
 import {validateSourceMapParameters} from './sourceMapParameterIdentity';
@@ -330,6 +331,10 @@ export function parseSceneValue(data: unknown): SceneDocument {
     const prepared=prepareSourceBouncingScene(data as unknown as SceneDocument);
     if(!prepared.ok)fail(`源弹跳 ${prepared.error.path.join('.')}：${prepared.error.reason}`);
     data.bouncingSource=prepared.value;
+  }
+  if(data.iteratedDraft!==undefined){
+    if(!['map','symmetry'].includes(String(data.kind))||!data.mapSource&&!data.symmetrySource)fail('迭代草稿缺少对应源场景');
+    const draft=parseSourceIteratedDraft(data.iteratedDraft);if(!draft.ok)fail(draft.error.reason);data.iteratedDraft=draft.value;
   }
   return data as unknown as SceneDocument;
 }

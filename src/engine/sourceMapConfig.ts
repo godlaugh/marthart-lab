@@ -134,14 +134,18 @@ export function importSourceMapConfiguration(document:unknown,options:SourceMapI
 export function editSourceMapConfiguration(anchor:SourceMapConfiguration,before:SourceMapEditState,next:SourceMapEditState,intent:'edit'|'apply'|'parameters'='edit'):SourceMapResult<{configuration:SourceMapConfiguration;parameters:Record<string,number>}>{return attempt(()=>{
  const valid=unwrap(parseSourceMapConfiguration(anchor),[]);
  if(intent==='apply'&&valid.editorParameters===undefined)fail('input',['editorParameters'],'源 Map 缺少编辑参数来源，请重新导入项目后应用');
- const sameKeys=Object.keys(before.parameters).length===Object.keys(next.parameters).length&&Object.keys(before.parameters).every(k=>Object.hasOwn(next.parameters,k));
- const onlyValues=sameKeys&&Object.keys(next.parameters).some(k=>!Object.is(before.parameters[k],next.parameters[k]))&&JSON.stringify({...before,parameters:null})===JSON.stringify({...next,parameters:null});
- if(intent==='parameters'&&onlyValues){
-  const patch=(entries:SourceMapEntry[])=>entries.map(([k,v])=>[k,Object.hasOwn(next.parameters,k)&&!Object.is(before.parameters[k],next.parameters[k])?finite(next.parameters[k],['parameters',k]):v] as SourceMapEntry);
-  const editor=valid.editorParameters?new Map(patch(valid.editorParameters)):undefined;
-  if(editor)for(const [k,v]of Object.entries(next.parameters))if(!Object.is(before.parameters[k],v))editor.set(k,finite(v,['parameters',k]));
-  const editorState=editor?snapshot([...editor.keys()],valid.editorMap):undefined;
-  return{configuration:{...valid,construction:{...valid.construction,parameters:patch(valid.construction.parameters)},...(editor?{editorParameters:[...editor],editorMap:editorState!.state}:{})},parameters:{...next.parameters}};
+ const beforeNames=Object.keys(before.parameters),nextEntries=Object.entries(next.parameters);
+ const onlyParameters=JSON.stringify({...before,parameters:null})===JSON.stringify({...next,parameters:null});
+ if(intent==='parameters'){
+  if(beforeNames.some(k=>!Object.hasOwn(next.parameters,k)))fail('input',['parameters'],'源 Map 参数热写入不能删除名字，请完整应用');
+  if(!onlyParameters)fail('input',['parameters'],'源 Map 参数热写入不能同时修改构造字段');
+  const changed=nextEntries.filter(([k,v])=>!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v));
+  if(!changed.length)return{configuration:anchor,parameters:{...next.parameters}};
+  const runtime=new Map(valid.construction.parameters),editor=valid.editorParameters?new Map(valid.editorParameters):undefined;
+  for(const [k,v]of changed){const value=finite(v,['parameters',k]);runtime.set(k,value);editor?.set(k,value);}
+  const editorState=editor?snapshot([...editor.keys()],valid.editorMap):valid.editorMap?snapshot([...runtime.keys()],valid.editorMap):undefined;
+  const configuration=unwrap(parseSourceMapConfiguration({...valid,construction:{...valid.construction,parameters:[...runtime]},...(editor?{editorParameters:[...editor]}:{}),...(editorState?{editorMap:editorState.state}:{})}),[]);
+  return{configuration,parameters:{...next.parameters}};
  }
  const constructionChanged=before.batchSize!==next.batchSize||before.dimension!==next.dimension||before.burnIn!==next.burnIn||(['x','y','z'] as const).some(a=>before.equations[a]!==next.equations[a])||(['xMin','xMax','yMin','yMax'] as const).some(k=>!Object.is(before.initial[k],next.initial[k]))||Object.keys(before.parameters).length!==Object.keys(next.parameters).length||Object.entries(next.parameters).some(([k,v])=>!Object.hasOwn(before.parameters,k)||!Object.is(before.parameters[k],v));
  if(intent!=='apply'&&!constructionChanged&&before.iterations===next.iterations)return{configuration:anchor,parameters:{...next.parameters}};

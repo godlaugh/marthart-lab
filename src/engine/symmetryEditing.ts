@@ -1,5 +1,6 @@
 import {usesSourceSymmetryConfiguration} from './sourceSymmetryConfig';
-import type {SceneDocument,ControlSpec} from '../types';
+import {ordinarySourceViewport} from './ordinarySourceCamera';
+import type {SceneDocument,ControlSpec,GenerationInput} from '../types';
 import {SYMMETRY_DEFAULT_PARAMETERS,SYMMETRY_DEFAULT_SETTINGS} from '../scenes/symmetryParameters';
 import {hasSymmetryCustom,prepareSymmetryCustomSource,symmetryCustomCompileDegree} from './symmetryCustom';
 
@@ -41,4 +42,10 @@ export function withSymmetryTemplate(scene:SceneDocument,template:unknown):Scene
  const error=symmetryTemplateSelectionError(scene);if(error)throw new Error(error);
  const equations={...scene.equations};delete equations.glsl;
  return {...scene,equations,parameters:usesSourceSymmetryConfiguration(scene)?{...scene.parameters,...(template==='modified'?{delta:scene.parameters.delta??0,delta_power:scene.parameters.delta_power??1}:{})}:{...SYMMETRY_DEFAULT_PARAMETERS,...scene.parameters},settings:{...scene.settings,template}};
+}
+
+/** Small actual GPU candidate, with the same camera/tone input owners used by
+ * the public viewport. Particle count and mathematical work remain unchanged. */
+export function symmetryCustomValidationInput(scene:SceneDocument):GenerationInput {
+ return {time:Number(scene.settings.iteratedStartTime??0),width:64,height:64,quality:'preview',sourcePointPixelDensity:1,sourceSymmetryToneReference:{width:64,height:64},...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,64,64,'primary',64)}:{})};
 }

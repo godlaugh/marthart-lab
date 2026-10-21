@@ -863,5 +863,8 @@
   "暂停时拖动平移、滚轮缩放；恢复播放保留平移和缩放。": "While paused, drag to pan and scroll to zoom. Pan and zoom are retained on resume.",
   "暂停时拖动旋转、滚轮缩放；恢复播放还原旋转角度、保留缩放。": "While paused, drag to rotate and scroll to zoom. Resume restores rotation and retains zoom.",
   "应用后从头重建场景，并保留当前播放或暂停状态。": "Applying rebuilds the scene from the beginning and keeps it playing or paused.",
-  "应用场景": "Apply scene"
+  "应用场景": "Apply scene",
+  "有未应用的修改；当前动画继续使用运行配置。": "Unapplied changes; the animation continues using the running configuration.",
+  "放弃未应用修改": "Discard unapplied changes",
+  "自定义 GLSL 需要 GPU 首帧验证": "Custom GLSL requires GPU first-frame validation"
 }

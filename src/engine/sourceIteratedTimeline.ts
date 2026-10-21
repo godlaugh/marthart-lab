@@ -47,7 +47,7 @@ export class SourceIteratedTimelineSession {
    const snapshot=(changed:boolean)=>Object.freeze({values:Object.freeze(Object.fromEntries(values)),changed});
    this.parameters=sourceParameters?snapshot(false):undefined;
    this.parameterWriter=sourceParameters?changes=>{
-    for(const [name,value]of changes)if(!values.has(name)||!Number.isFinite(value))throw Error('已有迭代参数热更新无效');
+    for(const [name,value]of changes)if(typeof name!=='string'||!Number.isFinite(value))throw Error('迭代参数热写入无效');
     for(const [name,value]of changes)if(!isJavaBlank(name))values.set(name,value);
     this.parameters=snapshot(false);
    }:undefined;

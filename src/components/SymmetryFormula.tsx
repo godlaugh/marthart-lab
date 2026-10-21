@@ -3,7 +3,7 @@ import type {SceneDocument} from '../types';
 import {symmetryFormula} from '../scenes/symmetryFormula';
 import {useI18n} from '../i18n';
 import {hasSymmetryCustom,prepareSymmetryCustomSource,symmetryCustomCompileDegree} from '../engine/symmetryCustom';
-import {withSymmetryTemplate,withSymmetryCustomSource,symmetryTemplateSelectionError} from '../engine/symmetryEditing';
+import {withSymmetryTemplate,withSymmetryCustomSource,symmetryTemplateSelectionError,symmetryCustomValidationInput} from '../engine/symmetryEditing';
 import {Generator} from '../engine/client';
 
 function CustomSourceEditor({scene,onChange}:{scene:SceneDocument;onChange:(next:SceneDocument)=>void}){
@@ -22,7 +22,7 @@ function CustomSourceEditor({scene,onChange}:{scene:SceneDocument;onChange:(next
    const next=withSymmetryCustomSource(base,draft);
    // Compile and execute the actual selected GPU path at the first frame.
    // This is a small image, not a reduced particle/workload approximation.
-   const output=await generator.generate(next,{time:Number(next.settings.iteratedStartTime??0),width:64,height:64,quality:'preview'});
+   const output=await generator.generate(next,symmetryCustomValidationInput(next));
    if(output.backend!=='webgl2')throw new Error('尚未生成自定义 GLSL 的 GPU 首帧，请检查持续批次与 Replay 起点设置。');
    if(active.current===generator&&current.current===base)onChange(next);
   }catch(e){if(active.current===generator&&current.current===base)setFailure(e instanceof Error?e.message:String(e));}
@@ -38,22 +38,36 @@ function CustomSourceEditor({scene,onChange}:{scene:SceneDocument;onChange:(next
  </div>;
 }
 
-export function SymmetryFormula({scene,onChange}:{scene:SceneDocument;onChange?:(next:SceneDocument)=>void}){
+interface StagedSourceProps {scene:SceneDocument;onStage:(next:SceneDocument)=>void;onApply:()=>void;appliedSource?:string;applying?:boolean}
+function StagedSourceEditor({scene,onStage,onApply,appliedSource,applying}:StagedSourceProps){
+ const {t}=useI18n(),draft=scene.equations.glsl??'';
+ let syntax:string|undefined;try{prepareSymmetryCustomSource(draft,symmetryCustomCompileDegree(scene));}catch(e){syntax=e instanceof Error?e.message:String(e);}
+ return <div className="equation-field">
+  <textarea aria-label={t('自定义 GLSL 源码')} value={draft} spellCheck={false} autoComplete="off" autoCapitalize="off" rows={12} aria-invalid={!!syntax} style={{width:'100%',fontFamily:'monospace',resize:'vertical'}} onChange={e=>onStage({...scene,equations:{...scene.equations,glsl:e.target.value}})}/>
+  <p className="muted">{t('草稿不会改变当前画面。验证首帧成功后应用；需要 GPU 持续批次模式。')}</p>
+  {syntax&&<p role="alert" className="export-error">{t(syntax)}</p>}
+  <button className="apply-button" disabled={applying||!!syntax} onClick={onApply}>{t(applying?'正在验证 GLSL…':'验证并应用 GLSL')}</button>
+  {draft!==(appliedSource??'')&&<button onClick={()=>{const equations={...scene.equations};if(appliedSource===undefined)delete equations.glsl;else equations.glsl=appliedSource;onStage({...scene,equations});}}>{t('放弃源码草稿')}</button>}
+ </div>;
+}
+
+export function SymmetryFormula({scene,onChange,onStage,onApply,customSelected,appliedSource,applying}:{scene:SceneDocument;onChange?:(next:SceneDocument)=>void;onStage?:(next:SceneDocument)=>void;onApply?:()=>void;customSelected?:boolean;appliedSource?:string;applying?:boolean}){
  const {t}=useI18n();
  if(scene.kind!=='symmetry')return null;
- if(hasSymmetryCustom(scene)){
+ const editor=onStage&&onApply?<StagedSourceEditor scene={scene} onStage={onStage} onApply={onApply} appliedSource={appliedSource} applying={applying}/>:onChange?<CustomSourceEditor key={scene.id+'\0'+scene.equations.glsl} scene={scene} onChange={onChange}/>:null;
+ if(customSelected??hasSymmetryCustom(scene)){
   const templateError=symmetryTemplateSelectionError(scene);
   let bindings:readonly string[]|undefined,error:string|undefined;
   try{bindings=prepareSymmetryCustomSource(scene.equations.glsl,symmetryCustomCompileDegree(scene)).bindingNames;}catch(e){error=e instanceof Error?e.message:String(e);}
   return <details open className="inspector-section symmetry-formula"><summary>{t('自定义 GLSL 方程')}</summary><div className="section-body">
    {scene.equations.formula&&<p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{scene.equations.formula}</p>}
-   {onChange?<CustomSourceEditor key={scene.id+'\0'+scene.equations.glsl} scene={scene} onChange={onChange}/>:<pre aria-label={t('自定义 GLSL 源码')} style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:'inherit'}}>{scene.equations.glsl}</pre>}
+   {editor??<pre aria-label={t('自定义 GLSL 源码')} style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:'inherit'}}>{scene.equations.glsl}</pre>}
    <p className="muted">{t('参数按声明的 float uniform 传入；缺失值为 0。源码与说明文字会随项目保存。')}</p>
    {bindings&&<p className="muted">{t('匹配到的参数：{names}',{names:bindings.length?bindings.join(', '):t('无')})}</p>}
    {bindings&&<p className="muted">{t('匹配列表不代表每个参数都影响结果；未被公式使用的参数仍会保留。')}</p>}
    {error&&<p role="alert" className="export-error">{t(error)}</p>}
    <p className="muted">{t('自定义公式需要 GPU。切换模板会停用当前源码，保留已有参数；可撤销恢复。')}</p>
-   {onChange&&<button disabled={!!templateError} onClick={()=>onChange(withSymmetryTemplate(scene,scene.settings.template==='modified'?'modified':'standard'))}>{t('使用模板公式')}</button>}
+   {onChange&&<button disabled={!!templateError} onClick={()=>(onStage??onChange)(withSymmetryTemplate(scene,scene.settings.template==='modified'?'modified':'standard'))}>{t('使用模板公式')}</button>}
    {templateError&&<p role="status" className="muted">{t(templateError)}</p>}
   </div></details>;
  }
@@ -67,5 +81,5 @@ export function SymmetryFormula({scene,onChange}:{scene:SceneDocument;onChange?:
   <style>{style}</style>
   <div className="symmetry-equation" aria-label={t('只读方程')}>{tokens.map((token,i)=>token.key?<button type="button" key={i} data-symmetry-key={token.key} title={t('定位参数 {value0}',{value0:token.key})} onClick={()=>{const field=document.getElementById(token.target!);field?.closest('details')?.setAttribute('open','');field?.focus();field?.scrollIntoView({block:'nearest'});}}>{token.text}</button>:<span key={i}>{token.text}</span>)}</div>
   <p className="muted">{t('悬停高亮对应参数；点击变量可跳到输入框。')}</p>
- </div></details>{onChange&&<details className="inspector-section"><summary>{t('自定义 GLSL 方程')}</summary><div className="section-body"><CustomSourceEditor key={scene.id+'\0'+scene.equations.glsl} scene={scene} onChange={onChange}/></div></details>}</>;
+ </div></details>{onChange&&<details className="inspector-section"><summary>{t('自定义 GLSL 方程')}</summary><div className="section-body">{editor}</div></details>}</>;
 }

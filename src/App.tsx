@@ -1,3 +1,5 @@
+import {PARAMETER_RANGES_KEY} from './engine/parameterEditing';
+import {sourceIteratedEditorScene,sourceIteratedDraftFromEditor,sourceIteratedApplyCandidate,sourceIteratedSettingIsStaged,withSourceIteratedDraft,withoutSourceIteratedDraft,type SourceIteratedDraft} from './engine/sourceIteratedDraft';
 import {sourceIteratedParameterChanges} from './engine/sourceIteratedParameterEdit';
 import {usesSourceMapPresentation} from './engine/sourceMapPresentation';
 import {editSourceMapScene} from './engine/sourceMapScene';
@@ -130,7 +132,7 @@ import {rootsCompletionTime,rootsSchedule} from './scenes/rootsDensity';
 import {readyPlaybackStep} from './engine/previewPlayback';
 import {parseTrailAppearance} from './engine/trailAppearance';
 import {SymmetryFormula} from './components/SymmetryFormula';
-import {withSymmetryTemplate,symmetryAuthoringControls} from './engine/symmetryEditing';
+import {withSymmetryTemplate,symmetryAuthoringControls,symmetryCustomValidationInput} from './engine/symmetryEditing';
 import {hasSymmetryCustom,symmetryCustomParameterNameError} from './engine/symmetryCustom';
 import {hasContinuousDensity,hasProgressiveRoots} from './engine/sceneCamera';
 import {FractalControls} from './components/FractalControls';
@@ -161,6 +163,7 @@ import {usesRootsCameraTimeline} from './engine/rootsCameraTimeline';
 import {rootMathControlVisible,usesRootsNativeMath} from './engine/rootsMathConfig';
 import {RecordDialog} from './components/RecordDialog';
 import {I18nProvider,translate,type Language} from './i18n';
+type IteratedEditIntent='iterated-replay'|'iterated-palette'|'iterated-dot-size'|'map-runtime'|'iterated-apply'|'iterated-parameters';
 const icons: Record<SceneKind, typeof Activity> = {
   surface: Layers,
   attractor: Activity,
@@ -186,11 +189,15 @@ export default function App() {
   const [restored] = useState(initial);
   const [language,setLanguage]=useState<Language>(restored?.language??'zh');
   const t=(text:string,values?:Record<string,string|number>)=>translate(language,text,values);
-  const [scene, setSceneState] = useState<SceneDocument>(
-    () =>
-      restored?.drafts?.[restored.active] ?? restored?.scenes.find((s) => s.id === restored.active) ??
-      createScene(defaultCreationTemplate.definition, defaultCreationTemplate.preset),
-  );
+  const [initialDocument]=useState(()=>restored?.drafts?.[restored.active]??restored?.scenes.find(s=>s.id===restored.active)??createScene(defaultCreationTemplate.definition,defaultCreationTemplate.preset));
+  const [scene,setSceneState]=useState<SceneDocument>(()=>withoutSourceIteratedDraft(initialDocument));
+  const [iteratedDraft,setIteratedDraftState]=useState<SourceIteratedDraft|undefined>(initialDocument.iteratedDraft);
+  const iteratedDraftRef=useRef(iteratedDraft);
+  const editorScene=useMemo(()=>sourceIteratedEditorScene(scene,iteratedDraft),[scene,iteratedDraft]);
+  const applyCheck=useRef<Generator|null>(null),[applying,setApplying]=useState(false);
+  function cancelApplyCheck(){applyCheck.current?.dispose();applyCheck.current=null;setApplying(false);}
+  function setIteratedDraft(value:SourceIteratedDraft|undefined){cancelApplyCheck();iteratedDraftRef.current=value;setIteratedDraftState(value);}
+  useEffect(()=>()=>applyCheck.current?.dispose(),[]);
   const [saved, setSaved] = useState<SceneDocument[]>(restored?.scenes ?? []),
     [library,setLibrary]=useState<Library>(restored?.library??emptyLibrary()),
     [search, setSearch] = useState(""),
@@ -295,15 +302,15 @@ export default function App() {
     bouncingFrame.current=checkpoint;setBouncingCheckpoint(checkpoint);
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
   }
-  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:'iterated-replay'|'map-runtime'|'iterated-apply'|'iterated-parameters') {
+  function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:IteratedEditIntent) {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
     if(nextLive==='map'||nextLive==='symmetry'){
-      if(!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(current,next))&&(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||intent==='iterated-apply'||nextLive==='map'&&!Object.is(current.settings.pointSize,next.settings.pointSize))){
+      if(!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(current,next,[...pendingParameterWrites.current]))&&(currentLive!==nextLive||sourceIteratedApplyIdentity(current)!==sourceIteratedApplyIdentity(next)||intent==='iterated-apply'||nextLive==='map'&&!Object.is(current.settings.pointSize,next.settings.pointSize))){
         replaceLiveSession(intent==='iterated-apply'?undefined:0);playbackClock.current=0;timeRef.current=0;setTime(0);
       }else{
-        if(intent==='iterated-replay'||sourceIteratedReplayIdentity(current)!==sourceIteratedReplayIdentity(next))iteratedReplayRevision.current++;
+        if(intent==='iterated-replay'||intent==='iterated-palette'||sourceIteratedReplayIdentity(current)!==sourceIteratedReplayIdentity(next))iteratedReplayRevision.current++;
         if(nextLive==='map'){
           if(intent==='map-runtime'||SOURCE_MAP_RUNTIME_SETTINGS.some(key=>!Object.is(current.settings[key],next.settings[key])))mapRuntimeRevision.current++;
         }
@@ -337,7 +344,7 @@ export default function App() {
   // Bind measured host dimensions to the authored resolution that produced
   // them. A new aspect must not consume its first samples at the old size.
   const viewportSize=viewportMeasurement&&sameProjectResolution(viewportMeasurement.resolution,scene.projectResolution)?viewportMeasurement.size:null;
-  const libraryDrafts=useMemo(()=>Object.values({...drafts.current,[scene.id]:scene}),[scene,saved]);
+  const libraryDrafts=useMemo(()=>Object.values({...drafts.current,[scene.id]:withSourceIteratedDraft(scene,iteratedDraft)}),[scene,saved,iteratedDraft]);
   const def = definition(scene.kind),
     Icon = icons[scene.kind];
   const experience=bouncingExperience(scene),sourceBouncing=usesSourceBouncing(scene);
@@ -370,26 +377,69 @@ export default function App() {
   function restartSamila(){if(usesSourceSamilaSampling(sceneRef.current)){replaceLiveSession(0);playbackClock.current=0;timeRef.current=0;setTime(0);}}
   function dirtySamila(){if(usesSourceSamilaSampling(sceneRef.current))samilaDirtyRevision.current++;}
   const pendingParameterWrites=useRef(new Map<string,number>());
+  function stageEditor(next:SceneDocument,cameraTexts=iteratedDraftRef.current?.cameraTexts){
+    const current=sceneRef.current;
+    history.current.push(withSourceIteratedDraft(current,iteratedDraftRef.current));if(history.current.length>40)history.current.shift();future.current=[];
+    setIteratedDraft(sourceIteratedDraftFromEditor(current,next,cameraTexts));
+  }
+  function discardIteratedDraft(){
+    history.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));if(history.current.length>40)history.current.shift();future.current=[];setIteratedDraft(undefined);
+  }
   function editParameter(next:SceneDocument,name:string){
-    if(sourceLivePreviewKind(next)==='map'||sourceLivePreviewKind(next)==='symmetry'){
-      edit(next,false,false,'iterated-parameters');
-      if(Object.is(sceneRef.current.parameters[name],next.parameters[name]))pendingParameterWrites.current.set(name,next.parameters[name]);
+    const current=sceneRef.current,family=sourceLivePreviewKind(current);
+    if(family==='map'||family==='symmetry'){
+      // Modified delta_power belongs to the staged template's structural panel.
+      if(family==='symmetry'&&next.settings.template==='modified'&&name==='delta_power'){void applyScene(next);return;}
+      const previous=pendingParameterWrites.current.get(name),hadPrevious=pendingParameterWrites.current.has(name);
+      pendingParameterWrites.current.set(name,next.parameters[name]);
+      const accepted=edit({...current,parameters:{...current.parameters,[name]:next.parameters[name]}},false,false,'iterated-parameters',{editor:next,cameraTexts:iteratedDraftRef.current?.cameraTexts});
+      if(!accepted){if(hadPrevious)pendingParameterWrites.current.set(name,previous!);else pendingParameterWrites.current.delete(name);}
     }else edit(next,true);
   }
-  function edit(next: SceneDocument, samilaDirty=false, display=true, intent?:'iterated-replay'|'map-runtime'|'iterated-apply'|'iterated-parameters') {
-    try{next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit'),intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+  function edit(next:SceneDocument,samilaDirty=false,display=true,intent?:IteratedEditIntent,draftAfter?:{editor:SceneDocument;cameraTexts?:string[]}|null,normalized=false){
+    try{if(!normalized)next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit'),intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(display&&sourceLivePreviewKind(next))liveDisplayRequested.current=true;
     if(samilaDirty)dirtySamila();
-    history.current.push(sceneRef.current);
-    if (history.current.length > 40) history.current.shift();
-    future.current=[];
-    setScene(next,intent);
+    history.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));if(history.current.length>40)history.current.shift();future.current=[];
+    if(draftAfter===null)setIteratedDraft(undefined);
+    else if(draftAfter)setIteratedDraft(sourceIteratedDraftFromEditor(next,draftAfter.editor,draftAfter.cameraTexts));
+    else cancelApplyCheck();
+    setScene(next,intent);return true;
   }
-  function applyScene(next:SceneDocument){
-    const family=sourceLivePreviewKind(next);
-    edit(next,false,true,family==='map'||family==='symmetry'?'iterated-apply':undefined);
+  function editInspector(next:SceneDocument,samilaDirty=false,display=true,intent?:IteratedEditIntent){
+    const current=sceneRef.current,family=sourceLivePreviewKind(current);
+    if(family!=='map'&&family!=='symmetry'){edit(next,samilaDirty,display,intent);return;}
+    if(intent==='iterated-replay'||intent==='iterated-palette'||intent==='iterated-dot-size'||intent==='map-runtime'){
+      const keys=intent==='iterated-replay'?SOURCE_ITERATED_REPLAY_SETTINGS:intent==='iterated-palette'?[]:intent==='iterated-dot-size'?['pointSize']:SOURCE_MAP_RUNTIME_SETTINGS;
+      const runtime={...current,settings:{...current.settings,...Object.fromEntries(keys.filter(k=>Object.hasOwn(next.settings,k)).map(k=>[k,next.settings[k]]))},...(intent==='iterated-palette'?{palette:next.palette}:{})};
+      edit(runtime,false,display,intent,{editor:next,cameraTexts:iteratedDraftRef.current?.cameraTexts});return;
+    }
+    if(!display){
+      const runtime={...current,name:next.name,description:next.description,favorite:next.favorite,settings:{...current.settings,...(Object.hasOwn(next.settings,PARAMETER_RANGES_KEY)?{[PARAMETER_RANGES_KEY]:next.settings[PARAMETER_RANGES_KEY]}:{})}};
+      edit(runtime,false,false,undefined,{editor:next,cameraTexts:iteratedDraftRef.current?.cameraTexts});return;
+    }
+    void applyScene(next);
+  }
+  async function applyScene(next=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current)){
+    const current=sceneRef.current,draft=iteratedDraftRef.current,family=sourceLivePreviewKind(current);
+    if(family!=='map'&&family!=='symmetry'){edit(next);return;}
+    cancelApplyCheck();
+    try{
+      // Merge the action's changed fields before resolving all pending text.
+      const pending=sourceIteratedDraftFromEditor(current,next,draft?.cameraTexts),prepared=sourceIteratedApplyCandidate(next,pending);
+      if(!prepared.ok)throw Error(prepared.error.reason);
+      const candidate=editSourceMapScene(current,editSourceSymmetryConfiguration(current,prepared.value,'apply'),'apply');
+      ordinarySourceCameraInitial(candidate);
+      if(family==='symmetry'&&candidate.equations.glsl&&candidate.equations.glsl!==current.equations.glsl){
+        const generator=new Generator();applyCheck.current=generator;setApplying(true);
+        try{const output=await generator.generate(candidate,symmetryCustomValidationInput(candidate));if(output.backend!=='webgl2')throw Error('自定义 GLSL 需要 GPU 首帧验证');
+          if(applyCheck.current!==generator||sceneRef.current!==current||iteratedDraftRef.current!==draft)return;
+        }catch(error){if(applyCheck.current!==generator||sceneRef.current!==current||iteratedDraftRef.current!==draft)return;throw error;}finally{generator.dispose();if(applyCheck.current===generator){applyCheck.current=null;setApplying(false);}}
+      }
+      pendingParameterWrites.current.clear();edit(candidate,false,true,'iterated-apply',null,true);
+    }catch(error){notify(error instanceof Error?error.message:String(error));}
   }
   function retryDomainGpu(){
     if(sceneRef.current.kind!=='domain'||playingRef.current||recording)return;
@@ -399,18 +449,22 @@ export default function App() {
   }
   function changeSetting(key: string, value: number | string | boolean) {
     try {
+      const current=sceneRef.current,family=sourceLivePreviewKind(current),scene=sourceIteratedEditorScene(current,iteratedDraftRef.current);
+      if(sourceIteratedSettingIsStaged(current,key)){
+        const next=key==='dimension'?changeMapDimension(scene,value):key==='template'?withSymmetryTemplate(scene,value):{...scene,settings:{...scene.settings,[key]:value}};stageEditor(next);return;
+      }
       if(scene.kind==='map'&&key==='dimension'){const next=changeMapDimension(scene,value);if(next!==scene)edit(next);return;}
       if(scene.kind==='symmetry'&&key==='template'){edit(withSymmetryTemplate(scene,value));return;}
       if(scene.kind==='bouncing'&&key==='bouncingPlaybackModel'){setPlaying(false);playbackClock.current=playbackAnchor(timeRef.current);autoPlayPending.current=value==='continuous-v2';}
       const settings=scene.kind==='samila'&&key==='samilaHistoryModel'
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
-      edit({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':sourceLivePreviewKind(scene)==='map'&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
+      editInspector({...scene,settings},usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':family==='symmetry'&&key==='pointSize'?'iterated-dot-size':(family==='map'||family==='symmetry')&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {
     const current=sceneRef.current;
-    return current.id===item.id?{...current,camera:camera.current}:drafts.current[item.id]??item;
+    return current.id===item.id?withSourceIteratedDraft({...current,camera:camera.current},iteratedDraftRef.current):drafts.current[item.id]??item;
   }
   function load(next: SceneDocument, source: 'library' | 'document') {
     showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
@@ -425,6 +479,7 @@ export default function App() {
     // Library navigation resumes work; an explicit file or new document owns
     // its contents even when its identity matches an existing draft.
     if(source==='library')next=workingDocument(next);
+    setIteratedDraft(next.iteratedDraft);next=withoutSourceIteratedDraft(next);
     if(usesSourceBouncing(next))resetBouncingNavigation(next);
     autoPlayPending.current=continuousBouncing(next);
     playingRef.current=false;
@@ -442,9 +497,9 @@ export default function App() {
   function save(favorite?: boolean) {
     try {
     const builtin=def.presets.some(p=>scene.id===`preset:${def.kind}:${p.id}`);
-    const item = parseScene(serializeScene({ ...scene,id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
-    if(builtin)drafts.current[scene.id]=scene;
-    setScene(retainSamilaViewportOnSave(scene,item));camera.current=item.camera;
+    const item = parseScene(serializeScene({ ...workingDocument(scene),id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
+    if(builtin)drafts.current[scene.id]=workingDocument(scene);
+    setScene(retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)));camera.current=item.camera;
     setSaved((current) => {
       const others = current.filter((s) => s.id !== item.id);
       return [...others, item];
@@ -463,7 +518,7 @@ export default function App() {
   function changeArtworkMetadata(item:SceneDocument,values:Partial<Pick<SceneDocument,'name'|'favorite'>>){
     setSaved(current=>current.map(doc=>doc.id===item.id?{...doc,...values}:doc));
     if(drafts.current[item.id])drafts.current[item.id]={...drafts.current[item.id],...values};
-    if(sceneRef.current.id===item.id)edit({...workingDocument(item),...values},false,false);
+    if(sceneRef.current.id===item.id)edit({...sceneRef.current,...values},false,false);
     setLibrary(current=>touchArtwork(current,item.id));
   }
   function createArtwork(kind:SceneKind,folderId:string|null){
@@ -489,14 +544,14 @@ export default function App() {
   function undo() {
     const prev = history.current.pop();
     if (prev) {
-      future.current.push(sceneRef.current);
-      setScene(prev);
+      future.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));
+      setIteratedDraft(prev.iteratedDraft);setScene(withoutSourceIteratedDraft(prev));
       notify(t("已撤销"));
     }
   }
   function redo() {
     const next=future.current.pop();
-    if(next){history.current.push(sceneRef.current);setScene(next);notify(t("已重做"));}
+    if(next){history.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));setIteratedDraft(next.iteratedDraft);setScene(withoutSourceIteratedDraft(next));notify(t("已重做"));}
   }
   function seekBouncingUpdates(updates:number){
     retireBouncingGesture();
@@ -559,7 +614,7 @@ export default function App() {
   }
   function downloadProject() {
     try {
-      const text=serializeScene({ ...scene, camera: camera.current });
+      const text=serializeScene(workingDocument(scene));
       download(new Blob([text], { type: "application/json" }),`${scene.name}.mathart.json`);
       notify(t("项目文件已导出"));
     } catch(error) {notify(error instanceof Error?error.message:String(error));}
@@ -576,7 +631,7 @@ export default function App() {
   }, [toast]);
   persistWorkspace.current=()=>{
       try {
-        drafts.current[scene.id]={...scene,camera:camera.current};
+        drafts.current[scene.id]=withSourceIteratedDraft({...scene,camera:camera.current},iteratedDraftRef.current);
         const scenes = saved;
         saveWorkspace(localStorage, {
           scenes,
@@ -594,7 +649,7 @@ export default function App() {
   useEffect(() => {
     const id = setTimeout(() => persistWorkspace.current(), 600);
     return () => clearTimeout(id);
-  }, [scene, saved, theme, cameraRevision,renderPreferences,language,library]);
+  }, [scene,iteratedDraft,saved,theme,cameraRevision,renderPreferences,language,library]);
   useEffect(()=>{
     // Flush the latest render synchronously before reload/close, including a
     // camera gesture whose debounced React update has not fired yet.
@@ -715,6 +770,8 @@ export default function App() {
         const live=result.context.mapLive??result.context.symmetryLive;
         if(live){liveSessionId.current=live.sessionId;iteratedReplayRevision.current=live.replayRevision;iteratedStartAt.current=live.startAt;mapRuntimeRevision.current=live.mapEdits?.runtimeRevision??0;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
         playingRef.current=live?!live.clock.paused:false;setPlaying(playingRef.current);
+        const editor=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current);
+        setIteratedDraft(sourceIteratedDraftFromEditor(result.scene,editor,iteratedDraftRef.current?.cameraTexts));
         sceneRef.current=result.scene;generationScene.current=result.scene;
         camera.current=result.scene.camera;setSceneState(result.scene);
         timeRef.current=result.context.time;playbackClock.current=result.context.time;
@@ -1124,10 +1181,10 @@ export default function App() {
             playing={playing}
             onTime={seek}
             onPlay={play}
-            onChange={edit}
+            onChange={next=>['map','symmetry'].includes(sourceLivePreviewKind(sceneRef.current)??'')?void applyScene({...sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),timeline:next.timeline}):edit(next)}
           />}
         </main>
-        {inspector && (
+        {inspector && (()=>{const scene=editorScene,edit=editInspector;return (
           <aside className="inspector">
             <div className="panel-heading">
               <h2>{t("场景属性")}</h2>
@@ -1166,7 +1223,7 @@ export default function App() {
             </div>
             <div className="inspector-scroll">
               {!isCreationKind(scene.kind)&&<p className="section-body muted" role="note">{t('此场景的完整创作支持计划于 2.0。已有项目数据可继续保存和备份。')}</p>}
-              {(sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry')&&<div className="section-body"><button data-testid="iterated-apply" disabled={recording} onClick={()=>applyScene(scene.kind==='map'?{...scene,equations:{...formulaDraft}}:scene)}>{t('应用场景')}</button></div>}
+              {(sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry')&&<div className="section-body"><button data-testid="iterated-apply" disabled={recording||applying} onClick={()=>void applyScene(scene)}>{t(applying?'正在验证 GLSL…':'应用场景')}</button>{iteratedDraft&&<><p role="status" data-testid="iterated-draft-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p><button onClick={discardIteratedDraft}>{t('放弃未应用修改')}</button></>}</div>}
               <ProjectResolutionControls resolution={scene.projectResolution} onChange={projectResolution=>{
                 const next={...scene};
                 if(projectResolution)next.projectResolution=projectResolution;else delete next.projectResolution;
@@ -1188,14 +1245,14 @@ export default function App() {
               )}
               {sourceBouncing?<SourceBouncingControls key={`source-bouncing:${scene.id}:${tab}`} scene={scene} tab={tab} onChange={edit}/>:tab === "geometry" ? (
                 <>
-                  <SymmetryFormula scene={scene} onChange={applyScene}/>
+                  <SymmetryFormula scene={scene} onChange={applyScene} {...(sourceLivePreviewKind(sceneRef.current)==='symmetry'?{onStage:stageEditor,onApply:()=>void applyScene(scene),customSelected:!!sceneRef.current.equations.glsl,appliedSource:sceneRef.current.equations.glsl,applying}: {})}/>
                   {scene.kind==='perlin'&&!usesSourcePerlin(scene)&&<PerlinPresetControls scene={scene} preset={perlinPreset} onChange={edit}/>}
                   {experience.equations&&!usesRootsNativeMath(scene)&&def.equations.length > 0 && (
                     <details open className="inspector-section">
                       <summary>{t(scene.kind==='bouncing'?'初始位置公式':"数学公式")}<span className="mono">ƒ(x)</span>
                       </summary>
                       <div className="section-body">
-                        <EquationEditor scene={scene} equations={def.equations} draft={formulaDraft} onChange={setFormulaDraft} applyOnBlur={experience.applyEquationsOnBlur} onApply={()=>{restartSamila();applyScene({...scene,equations:{...formulaDraft}});}}/>
+                        <EquationEditor scene={scene} equations={def.equations} draft={sourceLivePreviewKind(sceneRef.current)==='map'?scene.equations:formulaDraft} onChange={draft=>sourceLivePreviewKind(sceneRef.current)==='map'?stageEditor({...scene,equations:draft}):setFormulaDraft(draft)} applyOnBlur={experience.applyEquationsOnBlur} onApply={()=>{restartSamila();void applyScene(sourceLivePreviewKind(sceneRef.current)==='map'?scene:{...scene,equations:{...formulaDraft}});}}/>
 
                       </div>
                     </details>
@@ -1292,7 +1349,7 @@ export default function App() {
                   <SourcePerlinGpuControls key={`source-perlin:${scene.id}`} scene={scene} onChange={edit} tab="geometry"/>
                   <SourceAttractorControls key={`source-attractor:${scene.id}`} scene={scene} onChange={edit}/>
                   <SourceSurfaceControls key={`source-mesh:${scene.id}`} scene={scene} onChange={edit}/>
-                  {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={applyScene} disabled={recording||playing&&sourceLivePreviewKind(scene)!=='map'&&sourceLivePreviewKind(scene)!=='symmetry'}/>}
+                  {scene.sourceCamera&&<OrdinarySourceCameraControls scene={scene} onChange={applyScene} {...(['map','symmetry'].includes(sourceLivePreviewKind(sceneRef.current)??'')?{draftValues:iteratedDraft?.cameraTexts,onDraftChange:(values:string[])=>stageEditor(scene,values)}:{})} disabled={recording||playing&&sourceLivePreviewKind(scene)!=='map'&&sourceLivePreviewKind(scene)!=='symmetry'}/>}
                   {scene.kind==='samila'&&<details open className="inspector-section"><summary>{t('Samila 相机')}</summary><div className="section-body">
                     <p className="muted">{t(samilaSourceProjection?'原版视口：拖动按画布比例平移，滚轮围绕原点缩放。调整视图会清空并重新采样；不会自动适配边界。':'启用后切换为持续批次、限幅历史与 XY 投影。相机旋转保留累积图像；编辑起始角会重新计算历史。')}</p>
                     {!samilaCameraActive&&<button disabled={busy||playing} onClick={()=>edit({...scene,settings:initializeSamilaCamera(scene.settings)})}>{t('启用锚定 theta 相机')}</button>}
@@ -1334,7 +1391,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-replay':undefined)}/>}
+                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={edit} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-palette':undefined)}/>}
                       {!usesSourceSamilaSplat(scene)&&!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",
@@ -1415,7 +1472,7 @@ export default function App() {
             <div className="inspector-footer">
               <span className="status-dot" />{t("更改自动保存到本机")}</div>
           </aside>
-        )}
+        );})()}
       </div>
       <footer className="status-bar">
         <span className="status-dot" />

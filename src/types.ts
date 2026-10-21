@@ -1,3 +1,4 @@
+import type {SourceIteratedDraft} from './engine/sourceIteratedDraft';
 import type {SourceMapConfiguration} from './engine/sourceMapConfig';
 import type {SourceSymmetryConfiguration} from './engine/sourceSymmetryConfig';
 import type {SourceSamilaParameterAction} from './engine/sourceSamilaParameter';
@@ -213,6 +214,8 @@ export interface SpirographFrameRequest {
   recording?:{startFrame:number;fps:number};
 }
 export interface SceneDocument {
+  /** Local editor draft; effective rendering fields remain independently valid. */
+  iteratedDraft?:SourceIteratedDraft;
   /** Explicit project canvas dimensions; omission retains existing sizing. */
   projectResolution?: ProjectResolution;
   domainSourcePalette?: DomainSourcePalette;
