@@ -359,6 +359,8 @@ export default function App() {
   const viewportSize=viewportMeasurement&&sameProjectResolution(viewportMeasurement.resolution,scene.projectResolution)?viewportMeasurement.size:null;
   const libraryDrafts=useMemo(()=>Object.values({...drafts.current,[scene.id]:withSourceIteratedDraft(scene,iteratedDraft)}),[scene,saved,iteratedDraft]);
   const displayScene=useMemo(()=>output?sourceQueuePresentedScene(outputScene??scene,output)??outputScene??scene:scene,[output,outputScene,scene]);
+  const displayFormulas=output?.type==='raster'?output.formulaPresentation:undefined;
+  const displayHasFormulas=displayFormulas?displayFormulas.labels.length>0:!displayScene.fractalSource&&!!(displayScene.formulas?.main.visible||displayScene.formulas?.additional.some(label=>label.visible));
   const def = definition(scene.kind),
     Icon = icons[scene.kind];
   const experience=bouncingExperience(scene),sourceBouncing=usesSourceBouncing(scene);
@@ -1167,8 +1169,8 @@ export default function App() {
               pickingJulia={pickingJulia&&!busy&&!playing&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'}
               onPickJulia={values=>{setPickingJulia(false);edit({...scene,settings:{...scene.settings,...values}});notify('已从选中位置打开 Julia 视图；可撤销返回。');}}
             />
-            <FormulaOverlay scene={displayScene}/>
-            {!displayScene.formulas?.main.visible&&!displayScene.formulas?.additional.some(label=>label.visible)&&<div className="viewport-caption">
+            <FormulaOverlay scene={displayScene} presentation={displayFormulas}/>
+            {!displayHasFormulas&&<div className="viewport-caption">
               <span className="eyebrow">{def.englishName.toUpperCase()}</span>
               <h1>{scene.name}</h1>
               <p>{t(def.description)}</p>

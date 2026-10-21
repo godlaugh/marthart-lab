@@ -1,5 +1,6 @@
 import {usesSourceFractal} from './sourceFractalDocument';
 import {SourceFractalLiveSession} from './sourceFractalLiveSession';
+import {formulaPresentation} from './formulas';
 import {fractalRecordingFrameFacts,validateFractalRecordingFrameInput} from './sourceFractalRecording';
 import {sceneAtFractalFrame} from './timeline';
 import {SourceIteratedSession} from './sourceIteratedSession';
@@ -398,6 +399,9 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(usesSourceBouncing(scene)){owner.select(scene,context);return owner.sourceBouncing.generate(scene,context);}
     if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
+    // A fresh source Scene constructs its labels from its input configuration,
+    // before any source queue update. Deliver that same text with every pass.
+    const formulas=usesSourceFractal(scene)?formulaPresentation(scene):undefined;
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or
     // simulation allocation. Progress frames may use an earlier scene time.
@@ -407,6 +411,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     }
     const mode=sourceCameraMode(scene);
     const bind=(output:SceneOutput)=>{
+      if(formulas){if(output.type!=='raster')throw Error('源分形标注需要实际栅格帧');output.formulaPresentation=structuredClone(formulas);}
       if(mode.kind==='ordinary')return bindOrdinarySourceCamera(output,sceneAtTime(scene,output.temporal?.time??context.time),context);
       if(mode.kind==='captured-density'){
         if(output.type!=='raster'||!output.cameraResolved||!output.sourceCameraFrame)throw new Error('源密度相机需要携带相机帧的已投影像素图像');
@@ -414,7 +419,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
       }
       return output;
     };
-    const scoped=scene.sourceCamera&&context.onProgress?{...context,onProgress:(output:SceneOutput)=>context.onProgress!(bind(output))}:context;
+    const scoped=(scene.sourceCamera||formulas)&&context.onProgress?{...context,onProgress:(output:SceneOutput)=>context.onProgress!(bind(output))}:context;
     const output=bind(generateSceneFrame(scene,scoped,owner)),warnings=timelineWarnings(scene);
     if(warnings.length)output.warnings=[...new Set([...(output.warnings??[]),...warnings])];
     return output;

@@ -18,6 +18,7 @@ const options={width:2,height:2,simulationFps:10};
 function raster(index:number,mode:'initial'|'recording'|'stopped'='recording'):SourceRecordingRaster {
  const fixed=mode==='recording',snapshot=mode==='stopped',size=fixed?6:4,time=mode==='initial'?2:(index+1)/10,complete=index===2,queueIndex=complete?1:0;
  return{type:'raster',width:size,height:size,pixels:new Uint8ClampedArray(size*size*4),stats:{samples:1,generated:size*size,invalid:0},
+  formulaPresentation:{referenceWidth:4,referenceHeight:4,labels:[]},
   fractalRender:{profile:FRACTAL_SOURCE_NUMERIC_PROFILE,execution:{backend:'webgl2'},requestedSize:[size,size],rasterSize:[size,size]} as unknown as SourceRecordingRaster['fractalRender'],
   fractalLive:{sessionId:'retained',revision:3,clock:fixed?'fixed-source-queue':'realtime-source-queue',clockSource:fixed?'fixed-step':'worker-wall-clock',target:fixed?'offscreen':'primary',renderKind:snapshot?'snapshot':'update',sceneTime:time,rawDt:snapshot?0:.1,activeDt:snapshot?0:.1,queueIndex,queueComplete:complete,paused:mode==='initial',updateOrdinal:index,objectUpdates:snapshot?0:1,actualFrameRate:fixed?10:59,
    presentation:{settings:{centerX:1},evaluatedFractalScene:{displayFrame:index,simulationFps:10,scene:{sceneTime:time,queueIndex,queueComplete:complete}}} as unknown as NonNullable<SourceRecordingRaster['fractalLive']>['presentation']},

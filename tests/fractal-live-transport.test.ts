@@ -54,6 +54,15 @@ describe('Fractal live worker client contract',()=>{
   else delete output.fractalLive;
   w.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});expect((await caught).message).toContain('不匹配');expect(w.terminated).toBe(true);
  });
+ for(const live of [false,true])for(const progress of [false,true])for(const missing of [false,true])it(`fails closed for ${missing?'missing':'malformed'} labels on ${live?'live':'fresh'} ${progress?'progress':'final'} frames`,async()=>{
+  FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);const generator=new Generator(),s=scene(),c=context();if(!live)delete c.fractalLive;
+  const delivered=vi.fn(),pending=generator.generate(s,c,delivered),caught=pending.catch(e=>e),worker=FakeWorker.instances[0],request=worker.messages[0],output=rendered(s);
+  if(output.type!=='raster')throw Error('raster');
+  if(missing)delete output.formulaPresentation;else output.formulaPresentation={referenceWidth:NaN,referenceHeight:720,labels:[]};
+  if(progress)worker.emit({operation:'generate-progress',id:request.id,sessionId:request.sessionId,output});
+  else worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});
+  expect((await caught).message).toContain(live?'不匹配':'公式标注无效');expect(delivered).not.toHaveBeenCalled();expect(worker.terminated).toBe(true);generator.dispose();
+ });
  it('renews a validated current PNG capability and retains it after owner-confirmed configuration rejection',async()=>{
   FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);const generator=new Generator(),s=scene(),c=context(),first=generator.generate(s,c),w=FakeWorker.instances[0],request=w.messages[0],output=rendered(s,c);
   w.emit({operation:'generate',sessionId:request.sessionId,id:request.id,output});await first;
@@ -66,7 +75,7 @@ describe('Fractal live worker client contract',()=>{
   expect(control).toMatchObject({operation:'fractal-playback',sourceId:captureRequest.id});
   w.emit({operation:'fractal-playback',sessionId:control.sessionId,id:control.id,sourceId:captureRequest.id,paused:false});await pause;expect(w.terminated).toBe(false);generator.dispose();
  });
- for(const mismatch of ['target','revision','ordinal','state','size','facts'] as const)it(`invalidates a current PNG with mismatched ${mismatch}`,async()=>{
+ for(const mismatch of ['target','revision','ordinal','state','size','facts','labels'] as const)it(`invalidates a current PNG with mismatched ${mismatch}`,async()=>{
   FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);const generator=new Generator(),s=scene(),first=generator.generate(s,context()),w=FakeWorker.instances[0],request=w.messages[0],output=rendered(s);
   w.emit({operation:'generate',sessionId:request.sessionId,id:request.id,output});await first;
   const capture=generator.captureFractalPaused(output,{width:3,height:5}).catch(e=>e),captureRequest=w.messages.at(-1)!,result=captured(s);
@@ -75,6 +84,7 @@ describe('Fractal live worker client contract',()=>{
   else if(mismatch==='ordinal')result.capture.fractalLive!.updateOrdinal++;
   else if(mismatch==='state'){const frame=result.preview.fractalLive!.presentation.evaluatedFractalScene!;result.preview.fractalLive!.presentation.evaluatedFractalScene={...frame,formula:{...frame.formula,native:{...frame.formula.native,bailout:100}}};}
   else if(mismatch==='size'){result.capture.width=5;result.capture.height=3;}
+  else if(mismatch==='labels')delete result.capture.formulaPresentation;
   else delete result.capture.fractalCurrentImage;
   w.emit({operation:'fractal-paused-capture',sessionId:captureRequest.sessionId,id:captureRequest.id,result});expect(await capture).toMatchObject({previewRetained:false,message:expect.stringContaining('不匹配')});expect(w.terminated).toBe(true);
  });

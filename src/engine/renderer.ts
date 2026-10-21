@@ -14,7 +14,7 @@ import type {SourceCameraPlan} from './sourceCamera';
 import {implicitMeshPresentation,createImplicitWireframe} from './implicitMeshPresentation';
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import type { SceneDocument, SceneOutput, CameraState, RasterOutput } from "../types";
+import type { SceneDocument, SceneOutput, CameraState, RasterOutput, FormulaPresentation } from "../types";
 import { vertexColors } from "./palette";
 import {createMeshMaterial} from './meshMaterial';
 import {parseMeshAppearance} from './meshAppearance';
@@ -22,7 +22,7 @@ import {createSurfaceWireframe,createThickWireframe} from './thickWireframe';
 import {createThickTrails} from './thickTrails';
 import {parseTrailAppearance} from './trailAppearance';
 import {compositeFormulas} from './formulaCanvas';
-import {formulaLabels} from './formulas';
+import {formulaPresentation} from './formulas';
 import {encodeRgbaPng} from './rgbaPng';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {fitGeometryCamera} from './cameraFit';
@@ -40,6 +40,7 @@ export class ArtRenderer {
   private sourceCameraPlan?:SourceCameraPlan;
   private sourceClear?:readonly [number,number,number,number];
   private sourceCompositedRaster?:RasterOutput;
+  private formulaFrame?:FormulaPresentation;
   private readonly surfaceOverlayScene=new THREE.Scene();
   private surfaceOverlay?:ReturnType<typeof createSourceSurfaceOverlay>;
   private interactiveRequested=true;
@@ -165,6 +166,7 @@ export class ArtRenderer {
     const implicitAppearance=document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
     if(implicitAppearance&&output.type==='geometry')implicitMeshPresentation(output,implicitAppearance.wireframe);
     this.document=document;
+    this.formulaFrame=output.type==='raster'?output.formulaPresentation:undefined;
     this.sourceCompositedRaster=(sourceMap||sourceSamila||sourceSymmetry)&&output.type==='raster'?output:undefined;
     const cameraResolved=output.type==='raster'&&output.cameraResolved===true;
     if(cameraResolved!==this.cameraResolved)fit=true;
@@ -423,18 +425,22 @@ export class ArtRenderer {
       try{this.renderer.autoClear=false;this.renderer.render(this.surfaceOverlayScene,this.camera);}finally{this.renderer.autoClear=autoClear;}
     }
   }
-  async blob(type = "image/png", quality = 0.95, options?:{sourcePresentationAlpha:'preserve'|'opaque';isCancelled?:()=>boolean}): Promise<Blob> {
+  async blob(type = "image/png", quality = 0.95, options?:{sourcePresentationAlpha:'preserve'|'opaque';signal?:AbortSignal;isCancelled?:()=>boolean}): Promise<Blob> {
     this.render();
-    if(this.sourceCompositedRaster&&type==='image/png'&&(!this.document||formulaLabels(this.document).length===0)){
+    if(options?.signal?.aborted||options?.isCancelled?.())throw new DOMException('图像导出已取消','AbortError');
+    if(this.document?.fractalSource&&!this.formulaFrame)throw new Error('源图像缺少实际帧的公式标注');
+    const presentation=this.formulaFrame??(this.document?formulaPresentation(this.document):undefined);
+    const isCancelled=()=>!!options?.signal?.aborted||!!options?.isCancelled?.();
+    if(this.sourceCompositedRaster&&type==='image/png'&&!presentation?.labels.length){
       const frame=this.sourceCompositedRaster,gl=this.renderer.getContext();
       if(frame.width!==gl.drawingBufferWidth||frame.height!==gl.drawingBufferHeight)throw new Error('源合成图像导出尺寸必须与已生成图像一致');
       if(!Number.isSafeInteger(frame.width*frame.height)||frame.width*frame.height>MAX_RASTER_PIXELS||frame.pixels.length!==frame.width*frame.height*4)throw new Error('源合成图像导出超过共享 RGBA 图像容量或像素不完整');
       // Canvas serializes a composited display, not the native target bytes.
       // Preserve PNG RGBA explicitly. Video keeps that target RGB and makes
       // alpha opaque before PNG transport; no additional background mix.
-      return encodeRgbaPng(frame.pixels,frame.width,frame.height,options?.isCancelled,{alpha:options?.sourcePresentationAlpha??'preserve'});
+      return encodeRgbaPng(frame.pixels,frame.width,frame.height,isCancelled,{alpha:options?.sourcePresentationAlpha??'preserve'});
     }
-    if(this.sourceClear&&type==='image/png'&&(!this.document||formulaLabels(this.document).length===0)){
+    if(this.sourceClear&&type==='image/png'&&!presentation?.labels.length){
       // Canvas.toBlob would unpremultiply source framebuffer bytes. Reuse the
       // existing lossless encoder for unannotated source PNGs, including hidden
       // RGB at alpha zero. Annotated/non-PNG exports retain their compositor.
@@ -447,20 +453,20 @@ export class ArtRenderer {
       for(let y=0;y<Math.floor(height/2);y++){
         const a=y*stride,b=(height-1-y)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);
       }
-      return encodeRgbaPng(pixels,width,height);
+      return encodeRgbaPng(pixels,width,height,isCancelled);
     }
-    const canvas=this.document?await compositeFormulas(this.renderer.domElement,this.document):this.renderer.domElement;
-    return new Promise((resolve, reject) =>
-      canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("图像导出失败"))),
-        type,
-        quality,
-      ),
-    );
+    const source=this.renderer.domElement;
+    const canvas=presentation?await compositeFormulas(source,presentation,options):source;
+    try{
+      const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('图像导出失败')),type,quality));
+      if(isCancelled())throw new DOMException('图像导出已取消','AbortError');
+      return blob;
+    }finally{if(canvas!==source)canvas.width=canvas.height=0;}
   }
+
   dispose() {
     this.clear();
-    this.sourceCompositedRaster=undefined;
+    this.sourceCompositedRaster=undefined;this.formulaFrame=undefined;this.document=null;
     this.surfaceOverlay?.geometry.dispose();this.surfaceOverlay?.material.dispose();this.surfaceOverlayScene.clear();
     this.controls.dispose();
     this.grid.geometry.dispose();

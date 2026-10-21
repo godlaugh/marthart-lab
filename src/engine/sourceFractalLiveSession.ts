@@ -1,4 +1,5 @@
-import type {GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
+import type {FormulaPresentation,GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
+import {formulaPresentation} from './formulas';
 import type {PausedCaptureResult} from './generationProtocol';
 import {snapshotGenerationInput} from './generationInput';
 import {generateFractal,prepareFractalRender} from '../scenes/complex';
@@ -75,13 +76,16 @@ export class SourceFractalLiveSession {
  private retained?:SceneDocument;
  /** Complete last full-load JSON/render anchor; hot edits never replace it. */
  private applied?:SceneDocument;
+ /** TexMobjects belong to the full-loaded Scene, not the hot Mobject config. */
+ private retainedFormulas?:FormulaPresentation;
+ private appliedFormulas?:FormulaPresentation;
  private recording?:{handle:SourceFractalHostRecordingHandle;clock:SourceQueueRecordingClock;author:SceneDocument;primary:GenerationInput;target:GenerationInput;next:number;cancel?:()=>boolean;finished?:SourceFractalHostSnapshot};
  private handoff?:NonNullable<SourceFractalLiveSession['recording']>;
  private sessionId='';private revision=0;private startAt?:number;private failed=false;private busy=false;
  private cancel?:()=>boolean;
  private completed?:{sceneId:string;sessionId:string;revision:number;width:number;height:number;context:GenerationInput};
  constructor(private readonly render:(scene:SceneDocument,context:GenerateContext)=>SceneOutput=generateFractal){}
- reset():void {if(this.recording)throw Error('请先结束分形录制再释放实例');this.host=undefined;this.retained=undefined;this.applied=undefined;this.handoff=undefined;this.sessionId='';this.revision=0;this.startAt=undefined;this.failed=false;this.completed=undefined;this.cancel=undefined;}
+ reset():void {if(this.recording)throw Error('请先结束分形录制再释放实例');this.host=undefined;this.retained=undefined;this.applied=undefined;this.retainedFormulas=undefined;this.appliedFormulas=undefined;this.handoff=undefined;this.sessionId='';this.revision=0;this.startAt=undefined;this.failed=false;this.completed=undefined;this.cancel=undefined;}
  diagnostics(){return{sessionId:this.sessionId,revision:this.revision,failed:this.failed,host:this.host&&!this.failed?this.host.snapshot():undefined,retainedBytes:this.retained?JSON.stringify(this.retained).length*2:0};}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {
   const value=this.completed,v=c.fractalLive;return !this.recording&&!this.failed&&!this.busy&&!!value&&!!v&&scene.id===value.sceneId&&v.sessionId===value.sessionId&&v.revision===value.revision&&c.width===value.width&&c.height===value.height&&c.fractalViewport?.target==='primary';
@@ -94,14 +98,14 @@ export class SourceFractalLiveSession {
  private admit(scene:SceneDocument,c:GenerateContext){
   if(!supportsSourceFractalLive(scene))throw Error('分形实时预览需要完整 Newton/Nova 源配置与源队列');
   const configuration=prepareSourceFractalScene(scene),candidate=new SourceFractalHostSession(configuration,{paused:c.fractalLive!.clock.paused,isCancelled:()=>this.cancel?.()??false});
-  prepareFractalRender(display(scene,candidate.snapshot()),c);return{configuration,candidate};
+  prepareFractalRender(display(scene,candidate.snapshot()),c);return{configuration,candidate,formulas:formulaPresentation(scene)};
  }
  private facts(snapshot:SourceFractalHostSnapshot,scene:SceneDocument,actualFrameRate:number,target:'primary'|'offscreen',updated:boolean):SourceFractalLiveFacts {
   const s=snapshot.state.scene;
   return{sessionId:this.sessionId,revision:this.revision,clock:snapshot.recording?'fixed-source-queue':'realtime-source-queue',clockSource:snapshot.recording?'fixed-step':snapshot.hostClock.clockSource,target,renderKind:updated?'update':'snapshot',sceneTime:s.sceneTime,rawDt:updated?s.rawDt:0,activeDt:updated?s.activeDt:0,queueIndex:s.queueIndex,queueComplete:s.queueComplete,paused:snapshot.paused,updateOrdinal:snapshot.updateOrdinal,objectUpdates:updated?s.objectUpdates.length:0,actualFrameRate:Math.fround(actualFrameRate),presentation:presentation(scene)};
  }
  private bind(output:SceneOutput,facts:SourceFractalLiveFacts):Raster {
-  if(output.type!=='raster'||!output.fractalRender)throw Error('分形实时预览未返回源栅格事实');output.fractalLive=copy(facts);return output;
+  if(output.type!=='raster'||!output.fractalRender||!this.retainedFormulas)throw Error('分形实时预览未返回源栅格事实');output.fractalLive=copy(facts);output.formulaPresentation=copy(this.retainedFormulas);return output;
  }
  /** Local current-state PNG: two complete renders bind the same numerical
   * snapshot, never an update or authored-document replay. This does not claim
@@ -145,7 +149,7 @@ export class SourceFractalLiveSession {
    this.busy=true;
    try{
     const started=this.host.beginRecording(options.simulationFps);
-    this.retained=anchor;this.completed=undefined;this.handoff=undefined;
+    this.retained=anchor;this.retainedFormulas=copy(this.appliedFormulas!);this.completed=undefined;this.handoff=undefined;
     this.recording={handle:started.handle,clock,author,primary,target,next:0,cancel:c.isCancelled};
     const warmup=this.renderRecording(started.warmup);
     return{handle:started.handle,scene:clean(anchor),context:snapshotGenerationInput(primary),clock:{...clock},warmup};
@@ -198,14 +202,14 @@ export class SourceFractalLiveSession {
     if(initial.id!==scene.id||initial.kind!==scene.kind)throw Error('分形配置快照与当前文档身份不匹配');
     const admitted=this.admit(initial,c),retained=clean(initial);
     if(live.startAt!==undefined)admitted.candidate.reconstruct(live.startAt);
-    this.host=admitted.candidate;this.retained=retained;this.applied=retained;this.sessionId=live.sessionId;this.revision=live.revision;this.startAt=live.startAt;this.failed=false;mutated=true;
+    this.host=admitted.candidate;this.retained=retained;this.applied=retained;this.retainedFormulas=admitted.formulas;this.appliedFormulas=copy(admitted.formulas);this.sessionId=live.sessionId;this.revision=live.revision;this.startAt=live.startAt;this.failed=false;mutated=true;
    }else if(live.revision>this.revision){
     if(!live.configuration||live.configuration.kind!=='fractal'||live.configuration.id!==scene.id)throw Error('分形配置版本需要对应文档事件的完整配置快照');
     const configuration=live.configuration,admitted=this.admit(configuration,c),hot=live.intent==='hot'||this.host!.snapshot().paused;
     const retained=hot?hotScene(this.retained!,configuration):clean(configuration);
     prepareFractalRender(display(retained,admitted.candidate.snapshot()),c);
     mutated=true;if(live.intent==='hot')this.host!.hotApply(admitted.configuration);else this.host!.applyConfiguration(admitted.configuration);
-    this.retained=retained;if(!hot)this.applied=retained;this.revision=live.revision;
+    this.retained=retained;if(!hot){this.applied=retained;this.retainedFormulas=admitted.formulas;this.appliedFormulas=copy(admitted.formulas);}this.revision=live.revision;
    }
    // Same-revision author edits are staged, even if render-affecting. Only the
    // captured revision event above may replace live render configuration.

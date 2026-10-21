@@ -112,6 +112,9 @@ export type ParticleCameraSample = {status:'available';particleId:number;positio
 export interface FormulaStyle {visible:boolean;x:number;y:number;scale:number;color:string;anchor?:'top-left'|'center';}
 export interface FormulaLabel extends FormulaStyle {id:string;latex:string;}
 export interface FormulaConfig {referenceWidth:number;referenceHeight:number;main:FormulaStyle&{latex?:string};additional:FormulaLabel[];}
+/** Resolved labels owned by the delivered frame. Empty labels are explicit;
+ * consumers must not replace them with a newer authoring draft. */
+export interface FormulaPresentation {referenceWidth:number;referenceHeight:number;labels:readonly FormulaLabel[];}
 export type AnimationClipType = "numeric" | "wait" | "animate" | "align" | "trails" | "param" | "fractal_zoom" | "surface_mode_transition" | "spirograph_finish_wait";
 export interface OscillationEdgeEasing {window:number;floor:number;easing:string;}
 export interface ParameterAnimation {
@@ -405,6 +408,7 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  formulaPresentation?:FormulaPresentation;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveFacts;
   fractalCurrentImage?:{model:'local-current-numerical-snapshot';baseSize:readonly[number,number];scale:1|3|5;resampling:'none'|'openjdk21-software-bicubic'};
   /** Actual completed source recording draw, never a planning prediction. */

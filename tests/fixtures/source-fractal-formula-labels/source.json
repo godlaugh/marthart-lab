@@ -1,0 +1,1063 @@
+{
+  "provenance": {
+    "kind": "original-jvm-formula-label-methods",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "harnessSha256": "85d7c378d530fa9e264320f52b205bb47cb2ff26257a93033e51fa18d0ed0a08",
+    "rawOutputSha256": "605fa92a2eac4db6a304bfed80a14a9c0627eee5861284d5182d6e9f9d47b03b",
+    "repeatRawOutputSha256": "605fa92a2eac4db6a304bfed80a14a9c0627eee5861284d5182d6e9f9d47b03b",
+    "classes": {
+      "mathart/fractal/config/JsonComplexFractalConfig": "0eb27dc71f957a7d97c28baf62c30bc35c5aca69c405788ae8bbb06a9cfedac6",
+      "mathart/fractal/config/BaseComplexFractalConfig": "fe20a5205097459e79cbb34556ee3fe3cd099fa02fc500bce149aa5f49065b62",
+      "mathart/fractal/formula/StandardFormulaCatalog": "36d643048c6cd09851eb2e4cacac106956b5c04588aa017e332c7a02ebbdbf1a",
+      "mathart/fractal/formula/FormulaRegistry": "a938e5c2978731bbd67ff10786c31364152489a7005f546ec0f05b297e9a166f",
+      "mathart/fractal/formula/JsonFormulaParamBinder": "4e6de780a3397450a738031e50ac132dcd9602b514f54b6d8b10b2f7687c4150",
+      "mathart/fractal/formula/FormulaParamSet": "8ca80de40a8c52eb3e2d0f0e5f5d9870ee4577fa608da41aa2e93b91d6bd8d74",
+      "mathart/fractal/formula/FormulaParamDefinition": "e330f0a5304d04bfd31291ba3444363f9eb96e72d8f24ba0d4656ec9efb49129"
+    },
+    "repeat": "Two independent JVM processes produced identical decoded results.",
+    "executed": [
+      "AllocObject JsonComplexFractalConfig followed by private formatReal(double) and formatComplex(double[]) calls.",
+      "Original JsonComplexFractalConfig(null, JSONObject) constructor and private buildFractalLatex(), using the original formula registry/binder and initial configuration values."
+    ],
+    "limits": [
+      "Formula inputs omit settings/main_equation/color sections so configuration creation needs no PApplet instance.",
+      "No Scene, TexMobject, PApplet, renderer, graphics, native host, recording callback, or encoder construction/execution.",
+      "The fixture proves the captured formatter and initial-label cases; it does not establish rendered TeX pixels or all Java numeric formatting values.",
+      "Numeric inputs preserve exact IEEE-754 bits; nonfinite value labels are strings. Formula input numbers are parsed by original JSONObject/binder code."
+    ]
+  },
+  "real": [
+    {
+      "id": "zero",
+      "input": {
+        "value": 0,
+        "bits": "0000000000000000"
+      },
+      "output": "0"
+    },
+    {
+      "id": "negative-zero",
+      "input": {
+        "value": 0,
+        "bits": "8000000000000000"
+      },
+      "output": "0"
+    },
+    {
+      "id": "integer",
+      "input": {
+        "value": 3,
+        "bits": "4008000000000000"
+      },
+      "output": "3"
+    },
+    {
+      "id": "negative-integer",
+      "input": {
+        "value": -3,
+        "bits": "c008000000000000"
+      },
+      "output": "-3"
+    },
+    {
+      "id": "ordinary",
+      "input": {
+        "value": 3.141592653589793,
+        "bits": "400921fb54442d18"
+      },
+      "output": "3.1416"
+    },
+    {
+      "id": "ordinary-negative",
+      "input": {
+        "value": -3.141592653589793,
+        "bits": "c00921fb54442d18"
+      },
+      "output": "-3.1416"
+    },
+    {
+      "id": "nan",
+      "input": {
+        "value": "NaN",
+        "bits": "7ff8000000000000"
+      },
+      "output": "0"
+    },
+    {
+      "id": "positive-infinity",
+      "input": {
+        "value": "Infinity",
+        "bits": "7ff0000000000000"
+      },
+      "output": "0"
+    },
+    {
+      "id": "negative-infinity",
+      "input": {
+        "value": "-Infinity",
+        "bits": "fff0000000000000"
+      },
+      "output": "0"
+    },
+    {
+      "id": "positive-min-subnormal",
+      "input": {
+        "value": 5e-324,
+        "bits": "0000000000000001"
+      },
+      "output": "0"
+    },
+    {
+      "id": "negative-min-subnormal",
+      "input": {
+        "value": -5e-324,
+        "bits": "8000000000000001"
+      },
+      "output": "0"
+    },
+    {
+      "id": "epsilon-below",
+      "input": {
+        "value": 9.999999999999997e-07,
+        "bits": "3eb0c6f7a0b5ed8c"
+      },
+      "output": "0"
+    },
+    {
+      "id": "epsilon-exact",
+      "input": {
+        "value": 1e-06,
+        "bits": "3eb0c6f7a0b5ed8d"
+      },
+      "output": "0"
+    },
+    {
+      "id": "epsilon-above",
+      "input": {
+        "value": 1.0000000000000002e-06,
+        "bits": "3eb0c6f7a0b5ed8e"
+      },
+      "output": "0"
+    },
+    {
+      "id": "negative-epsilon-below",
+      "input": {
+        "value": -9.999999999999997e-07,
+        "bits": "beb0c6f7a0b5ed8c"
+      },
+      "output": "0"
+    },
+    {
+      "id": "negative-epsilon-exact",
+      "input": {
+        "value": -1e-06,
+        "bits": "beb0c6f7a0b5ed8d"
+      },
+      "output": "-0"
+    },
+    {
+      "id": "negative-epsilon-above",
+      "input": {
+        "value": -1.0000000000000002e-06,
+        "bits": "beb0c6f7a0b5ed8e"
+      },
+      "output": "-0"
+    },
+    {
+      "id": "integer-plus-near",
+      "input": {
+        "value": 1.000000999999,
+        "bits": "3ff000010c6f6874"
+      },
+      "output": "1"
+    },
+    {
+      "id": "integer-plus-threshold",
+      "input": {
+        "value": 1.000001,
+        "bits": "3ff000010c6f7a0b"
+      },
+      "output": "1"
+    },
+    {
+      "id": "integer-plus-far",
+      "input": {
+        "value": 1.000001000001,
+        "bits": "3ff000010c6f8ba3"
+      },
+      "output": "1"
+    },
+    {
+      "id": "integer-minus-near",
+      "input": {
+        "value": 0.999999000001,
+        "bits": "3feffffde7212f18"
+      },
+      "output": "1"
+    },
+    {
+      "id": "integer-minus-threshold",
+      "input": {
+        "value": 0.999999,
+        "bits": "3feffffde7210be9"
+      },
+      "output": "1"
+    },
+    {
+      "id": "integer-minus-far",
+      "input": {
+        "value": 0.999998999999,
+        "bits": "3feffffde720e8ba"
+      },
+      "output": "1"
+    },
+    {
+      "id": "negative-integer-near",
+      "input": {
+        "value": -1.000000999999,
+        "bits": "bff000010c6f6874"
+      },
+      "output": "-1"
+    },
+    {
+      "id": "negative-integer-threshold",
+      "input": {
+        "value": -1.000001,
+        "bits": "bff000010c6f7a0b"
+      },
+      "output": "-1"
+    },
+    {
+      "id": "negative-integer-far",
+      "input": {
+        "value": -1.000001000001,
+        "bits": "bff000010c6f8ba3"
+      },
+      "output": "-1"
+    },
+    {
+      "id": "half-1.23445-below",
+      "input": {
+        "value": 1.2344499999999998,
+        "bits": "3ff3c04ea4a8c154"
+      },
+      "output": "1.2344"
+    },
+    {
+      "id": "half-1.23445",
+      "input": {
+        "value": 1.23445,
+        "bits": "3ff3c04ea4a8c155"
+      },
+      "output": "1.2345"
+    },
+    {
+      "id": "half-1.23445-above",
+      "input": {
+        "value": 1.2344500000000003,
+        "bits": "3ff3c04ea4a8c156"
+      },
+      "output": "1.2345"
+    },
+    {
+      "id": "half-1.23455-below",
+      "input": {
+        "value": 1.2345499999999998,
+        "bits": "3ff3c0b780346dc5"
+      },
+      "output": "1.2345"
+    },
+    {
+      "id": "half-1.23455",
+      "input": {
+        "value": 1.23455,
+        "bits": "3ff3c0b780346dc6"
+      },
+      "output": "1.2346"
+    },
+    {
+      "id": "half-1.23455-above",
+      "input": {
+        "value": 1.2345500000000003,
+        "bits": "3ff3c0b780346dc7"
+      },
+      "output": "1.2346"
+    },
+    {
+      "id": "negative-half-1.23445-below",
+      "input": {
+        "value": -1.2344500000000003,
+        "bits": "bff3c04ea4a8c156"
+      },
+      "output": "-1.2345"
+    },
+    {
+      "id": "negative-half-1.23445",
+      "input": {
+        "value": -1.23445,
+        "bits": "bff3c04ea4a8c155"
+      },
+      "output": "-1.2345"
+    },
+    {
+      "id": "negative-half-1.23445-above",
+      "input": {
+        "value": -1.2344499999999998,
+        "bits": "bff3c04ea4a8c154"
+      },
+      "output": "-1.2344"
+    },
+    {
+      "id": "negative-half-1.23455",
+      "input": {
+        "value": -1.23455,
+        "bits": "bff3c0b780346dc6"
+      },
+      "output": "-1.2346"
+    },
+    {
+      "id": "half-2.67505-below",
+      "input": {
+        "value": 2.6750499999999997,
+        "bits": "400566809d495182"
+      },
+      "output": "2.675"
+    },
+    {
+      "id": "half-2.67505",
+      "input": {
+        "value": 2.67505,
+        "bits": "400566809d495183"
+      },
+      "output": "2.6751"
+    },
+    {
+      "id": "half-2.67505-above",
+      "input": {
+        "value": 2.6750500000000006,
+        "bits": "400566809d495184"
+      },
+      "output": "2.6751"
+    },
+    {
+      "id": "half-.10005-below",
+      "input": {
+        "value": 0.10004999999999999,
+        "bits": "3fb99ce075f6fd21"
+      },
+      "output": "0.1"
+    },
+    {
+      "id": "half-.10005",
+      "input": {
+        "value": 0.10005,
+        "bits": "3fb99ce075f6fd22"
+      },
+      "output": "0.1001"
+    },
+    {
+      "id": "half-.10005-above",
+      "input": {
+        "value": 0.10005000000000001,
+        "bits": "3fb99ce075f6fd23"
+      },
+      "output": "0.1001"
+    },
+    {
+      "id": "half-.00005-below",
+      "input": {
+        "value": 4.9999999999999996e-05,
+        "bits": "3f0a36e2eb1c432c"
+      },
+      "output": "0"
+    },
+    {
+      "id": "half-.00005",
+      "input": {
+        "value": 5e-05,
+        "bits": "3f0a36e2eb1c432d"
+      },
+      "output": "0.0001"
+    },
+    {
+      "id": "half-.00005-above",
+      "input": {
+        "value": 5.000000000000001e-05,
+        "bits": "3f0a36e2eb1c432e"
+      },
+      "output": "0.0001"
+    },
+    {
+      "id": "negative-half-.00005-below",
+      "input": {
+        "value": -4.9999999999999996e-05,
+        "bits": "bf0a36e2eb1c432c"
+      },
+      "output": "-0"
+    },
+    {
+      "id": "negative-half-.00005",
+      "input": {
+        "value": -5e-05,
+        "bits": "bf0a36e2eb1c432d"
+      },
+      "output": "-0.0001"
+    },
+    {
+      "id": "negative-half-.00005-above",
+      "input": {
+        "value": -5.000000000000001e-05,
+        "bits": "bf0a36e2eb1c432e"
+      },
+      "output": "-0.0001"
+    },
+    {
+      "id": "half-.00015",
+      "input": {
+        "value": 0.00015,
+        "bits": "3f23a92a30553261"
+      },
+      "output": "0.0002"
+    },
+    {
+      "id": "negative-half-.00015",
+      "input": {
+        "value": -0.00015,
+        "bits": "bf23a92a30553261"
+      },
+      "output": "-0.0002"
+    },
+    {
+      "id": "half-9.99995",
+      "input": {
+        "value": 9.99995,
+        "bits": "4023fff972474539"
+      },
+      "output": "10"
+    },
+    {
+      "id": "negative-half-9.99995",
+      "input": {
+        "value": -9.99995,
+        "bits": "c023fff972474539"
+      },
+      "output": "-10"
+    },
+    {
+      "id": "one-point-five",
+      "input": {
+        "value": 1.5,
+        "bits": "3ff8000000000000"
+      },
+      "output": "1.5"
+    },
+    {
+      "id": "negative-one-point-five",
+      "input": {
+        "value": -1.5,
+        "bits": "bff8000000000000"
+      },
+      "output": "-1.5"
+    },
+    {
+      "id": "trim-zeroes",
+      "input": {
+        "value": 12.34,
+        "bits": "4028ae147ae147ae"
+      },
+      "output": "12.34"
+    },
+    {
+      "id": "half-1.00005-below",
+      "input": {
+        "value": 1.0000499999999999,
+        "bits": "3ff000346dc5d638"
+      },
+      "output": "1"
+    },
+    {
+      "id": "half-1.00005",
+      "input": {
+        "value": 1.00005,
+        "bits": "3ff000346dc5d639"
+      },
+      "output": "1.0001"
+    },
+    {
+      "id": "half-1.00005-above",
+      "input": {
+        "value": 1.0000500000000003,
+        "bits": "3ff000346dc5d63a"
+      },
+      "output": "1.0001"
+    },
+    {
+      "id": "relaxation-double-below",
+      "input": {
+        "value": 1.0001499999999999,
+        "bits": "3ff0009d495182a9"
+      },
+      "output": "1.0001"
+    },
+    {
+      "id": "relaxation-double",
+      "input": {
+        "value": 1.00015,
+        "bits": "3ff0009d495182aa"
+      },
+      "output": "1.0002"
+    },
+    {
+      "id": "relaxation-double-above",
+      "input": {
+        "value": 1.0001500000000003,
+        "bits": "3ff0009d495182ab"
+      },
+      "output": "1.0002"
+    },
+    {
+      "id": "relaxation-float32",
+      "input": {
+        "value": 1.0001499652862549,
+        "bits": "3ff0009d40000000"
+      },
+      "output": "1.0001"
+    },
+    {
+      "id": "large-fraction",
+      "input": {
+        "value": 1000000000.12345,
+        "bits": "41cdcd65000fcd36"
+      },
+      "output": "1000000000.1235"
+    },
+    {
+      "id": "safe-integer-max",
+      "input": {
+        "value": 9007199254740991,
+        "bits": "433fffffffffffff"
+      },
+      "output": "9007199254740991"
+    },
+    {
+      "id": "long-max-below",
+      "input": {
+        "value": 9.223372036854775e+18,
+        "bits": "43dfffffffffffff"
+      },
+      "output": "9223372036854774784"
+    },
+    {
+      "id": "long-max-rounded-double",
+      "input": {
+        "value": 9.223372036854776e+18,
+        "bits": "43e0000000000000"
+      },
+      "output": "9223372036854775807"
+    },
+    {
+      "id": "long-max-above",
+      "input": {
+        "value": 9.223372036854778e+18,
+        "bits": "43e0000000000001"
+      },
+      "output": "9223372036854775807"
+    },
+    {
+      "id": "long-min",
+      "input": {
+        "value": -9.223372036854776e+18,
+        "bits": "c3e0000000000000"
+      },
+      "output": "-9223372036854775808"
+    },
+    {
+      "id": "long-min-below",
+      "input": {
+        "value": -9.223372036854778e+18,
+        "bits": "c3e0000000000001"
+      },
+      "output": "-9223372036854775808"
+    },
+    {
+      "id": "long-min-above",
+      "input": {
+        "value": -9.223372036854775e+18,
+        "bits": "c3dfffffffffffff"
+      },
+      "output": "-9223372036854774784"
+    },
+    {
+      "id": "largest-finite",
+      "input": {
+        "value": 1.7976931348623157e+308,
+        "bits": "7fefffffffffffff"
+      },
+      "output": "9223372036854775807"
+    },
+    {
+      "id": "negative-largest-finite",
+      "input": {
+        "value": -1.7976931348623157e+308,
+        "bits": "ffefffffffffffff"
+      },
+      "output": "-9223372036854775808"
+    }
+  ],
+  "complex": [
+    {
+      "id": "null",
+      "input": null,
+      "output": "0"
+    },
+    {
+      "id": "empty",
+      "input": [],
+      "output": "0"
+    },
+    {
+      "id": "one-element",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        }
+      ],
+      "output": "0"
+    },
+    {
+      "id": "zero",
+      "input": [
+        {
+          "value": 0,
+          "bits": "0000000000000000"
+        },
+        {
+          "value": 0,
+          "bits": "0000000000000000"
+        }
+      ],
+      "output": "0"
+    },
+    {
+      "id": "negative-zero",
+      "input": [
+        {
+          "value": 0,
+          "bits": "8000000000000000"
+        },
+        {
+          "value": 0,
+          "bits": "8000000000000000"
+        }
+      ],
+      "output": "0"
+    },
+    {
+      "id": "real",
+      "input": [
+        {
+          "value": 3.141592653589793,
+          "bits": "400921fb54442d18"
+        },
+        {
+          "value": 0,
+          "bits": "0000000000000000"
+        }
+      ],
+      "output": "3.1416"
+    },
+    {
+      "id": "imaginary-one",
+      "input": [
+        {
+          "value": 0,
+          "bits": "0000000000000000"
+        },
+        {
+          "value": 1,
+          "bits": "3ff0000000000000"
+        }
+      ],
+      "output": "1i"
+    },
+    {
+      "id": "imaginary-negative-one",
+      "input": [
+        {
+          "value": 0,
+          "bits": "0000000000000000"
+        },
+        {
+          "value": -1,
+          "bits": "bff0000000000000"
+        }
+      ],
+      "output": "-1i"
+    },
+    {
+      "id": "both-positive",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": 0.25,
+          "bits": "3fd0000000000000"
+        }
+      ],
+      "output": "3 + 0.25i"
+    },
+    {
+      "id": "negative-imaginary",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": -0.25,
+          "bits": "bfd0000000000000"
+        }
+      ],
+      "output": "3 - 0.25i"
+    },
+    {
+      "id": "both-negative",
+      "input": [
+        {
+          "value": -3,
+          "bits": "c008000000000000"
+        },
+        {
+          "value": -0.25,
+          "bits": "bfd0000000000000"
+        }
+      ],
+      "output": "-3 - 0.25i"
+    },
+    {
+      "id": "imaginary-epsilon-below",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": 9.999999999999997e-07,
+          "bits": "3eb0c6f7a0b5ed8c"
+        }
+      ],
+      "output": "3"
+    },
+    {
+      "id": "imaginary-epsilon",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": 1e-06,
+          "bits": "3eb0c6f7a0b5ed8d"
+        }
+      ],
+      "output": "3 + 0i"
+    },
+    {
+      "id": "imaginary-negative-epsilon",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": -1e-06,
+          "bits": "beb0c6f7a0b5ed8d"
+        }
+      ],
+      "output": "3 - 0i"
+    },
+    {
+      "id": "real-epsilon-below",
+      "input": [
+        {
+          "value": 9.999999999999997e-07,
+          "bits": "3eb0c6f7a0b5ed8c"
+        },
+        {
+          "value": 1,
+          "bits": "3ff0000000000000"
+        }
+      ],
+      "output": "1i"
+    },
+    {
+      "id": "real-epsilon",
+      "input": [
+        {
+          "value": 1e-06,
+          "bits": "3eb0c6f7a0b5ed8d"
+        },
+        {
+          "value": 1,
+          "bits": "3ff0000000000000"
+        }
+      ],
+      "output": "0 + 1i"
+    },
+    {
+      "id": "both-small",
+      "input": [
+        {
+          "value": 1e-06,
+          "bits": "3eb0c6f7a0b5ed8d"
+        },
+        {
+          "value": -1e-06,
+          "bits": "beb0c6f7a0b5ed8d"
+        }
+      ],
+      "output": "0 - 0i"
+    },
+    {
+      "id": "half-rounding",
+      "input": [
+        {
+          "value": 1.23445,
+          "bits": "3ff3c04ea4a8c155"
+        },
+        {
+          "value": -1.23455,
+          "bits": "bff3c0b780346dc6"
+        }
+      ],
+      "output": "1.2345 - 1.2346i"
+    },
+    {
+      "id": "third-component-ignored",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": 0.25,
+          "bits": "3fd0000000000000"
+        },
+        {
+          "value": 9,
+          "bits": "4022000000000000"
+        }
+      ],
+      "output": "3 + 0.25i"
+    },
+    {
+      "id": "nan-real",
+      "input": [
+        {
+          "value": "NaN",
+          "bits": "7ff8000000000000"
+        },
+        {
+          "value": 1,
+          "bits": "3ff0000000000000"
+        }
+      ],
+      "output": "0 + 1i"
+    },
+    {
+      "id": "nan-imaginary",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": "NaN",
+          "bits": "7ff8000000000000"
+        }
+      ],
+      "output": "3 + 0i"
+    },
+    {
+      "id": "infinite-real",
+      "input": [
+        {
+          "value": "Infinity",
+          "bits": "7ff0000000000000"
+        },
+        {
+          "value": 1,
+          "bits": "3ff0000000000000"
+        }
+      ],
+      "output": "0 + 1i"
+    },
+    {
+      "id": "infinite-imaginary",
+      "input": [
+        {
+          "value": 3,
+          "bits": "4008000000000000"
+        },
+        {
+          "value": "-Infinity",
+          "bits": "fff0000000000000"
+        }
+      ],
+      "output": "3 - 0i"
+    }
+  ],
+  "formula": [
+    {
+      "id": "newton-no-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "newton"
+        }
+      },
+      "output": "z_{n+1} = z_n - 1 \\frac{z_n^3 - 1}{3 z_n^{3-1}}"
+    },
+    {
+      "id": "newton-empty-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "newton",
+          "parameters": {}
+        }
+      },
+      "output": "z_{n+1} = z_n - 1 \\frac{z_n^3 - 1}{3 z_n^{3-1}}"
+    },
+    {
+      "id": "newton-config-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "newton",
+          "parameters": {
+            "exponent": [
+              2.718281828459045,
+              0.33335
+            ],
+            "relaxation": 1.00015
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n - 1.0001 \\frac{z_n^2.7183 + 0.3334i - 1}{2.7183 + 0.3334i z_n^{2.7183 + 0.3334i-1}}"
+    },
+    {
+      "id": "newton-legacy-power-does-not-supply-label",
+      "input": {
+        "fractal": {
+          "formula_id": "newton",
+          "power": 9,
+          "formula_params": {
+            "power": 7
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n - 1 \\frac{z_n^3 - 1}{3 z_n^{3-1}}"
+    },
+    {
+      "id": "newton-negative-initial-parameter-clamped",
+      "input": {
+        "fractal": {
+          "formula_id": "newton",
+          "parameters": {
+            "exponent": [
+              3,
+              -1
+            ],
+            "relaxation": -2
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n - 0 \\frac{z_n^3 - 1i - 1}{3 - 1i z_n^{3 - 1i-1}}"
+    },
+    {
+      "id": "nova-no-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "nova"
+        }
+      },
+      "output": "z_{n+1} = z_n - 1 \\frac{z_n^3 - 1}{3 z_n^{3-1}} + 0"
+    },
+    {
+      "id": "nova-legacy-julia-does-not-supply-label",
+      "input": {
+        "fractal": {
+          "formula_id": "nova",
+          "julia_constant": [
+            0.7,
+            -0.8
+          ]
+        }
+      },
+      "output": "z_{n+1} = z_n - 1 \\frac{z_n^3 - 1}{3 z_n^{3-1}} + 0"
+    },
+    {
+      "id": "nova-config-parameters",
+      "input": {
+        "fractal": {
+          "formula_id": "nova",
+          "parameters": {
+            "exponent": [
+              3,
+              0.25
+            ],
+            "relaxation": 0.12345,
+            "julia_seed": [
+              0,
+              -1
+            ]
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n - 0.1235 \\frac{z_n^3 + 0.25i - 1}{3 + 0.25i z_n^{3 + 0.25i-1}} + -1i"
+    },
+    {
+      "id": "nova-mandelbrot-label-uses-julia-seed-not-start",
+      "input": {
+        "fractal": {
+          "formula_id": "nova",
+          "type": "MANDELBROT",
+          "parameters": {
+            "exponent": [
+              3,
+              0
+            ],
+            "start_value": [
+              2,
+              0.75
+            ],
+            "julia_seed": [
+              -0.4,
+              0.6
+            ]
+          }
+        }
+      },
+      "output": "z_{n+1} = z_n - 1 \\frac{z_n^3 - 1}{3 z_n^{3-1}} + -0.4 + 0.6i"
+    },
+    {
+      "id": "fallback-default",
+      "input": {
+        "fractal": {}
+      },
+      "output": "z_{n+1} = z^2 + c"
+    },
+    {
+      "id": "fallback-unknown-id-escapes-underscore",
+      "input": {
+        "fractal": {
+          "formula_id": "unknown_registry_id",
+          "formula": "z_n^9 + c"
+        }
+      },
+      "output": "z_{n+1} = z\\_n^9 + c"
+    }
+  ]
+}

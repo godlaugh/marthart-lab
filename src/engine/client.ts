@@ -13,13 +13,19 @@ import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperation
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
+import {validateFormulaPresentation} from './formulaConfig';
+import {usesSourceFractal} from './sourceFractalDocument';
+function validOutputFormulas(output:SceneOutput,required=false):boolean {
+  try{if(output?.type!=='raster')return !required;if(output.formulaPresentation===undefined)return !required;output.formulaPresentation=validateFormulaPresentation(output.formulaPresentation);return true;}
+  catch{return false;}
+}
 function recordingRaster(value:unknown,family:string):value is SourceRecordingRaster {
   const v=value as SourceRecordingRaster|undefined;return !!v&&v.type==='raster'&&Number.isSafeInteger(v.width)&&v.width>0&&Number.isSafeInteger(v.height)&&v.height>0&&v.pixels instanceof Uint8ClampedArray&&v.pixels.byteLength===v.width*v.height*4&&(family==='fractal'?!!v.fractalLive&&!!v.fractalRender:family==='perlin'?!!v.sourcePerlinFrame:family==='map'?!!v.mapLive:family==='symmetry'&&!!v.symmetryLive);
 }
 type Completed={id:number;scene:SceneDocument;context:GenerationInput;output:SceneOutput};
 type FractalRequest={sessionId:string;revision:number;paused:boolean;actualFrameRate:number};
 function validFractalOutput(output:SceneOutput,request:FractalRequest,target:'primary'|'offscreen'='primary',renderKind:'update'|'snapshot'='update',clock:'realtime-source-queue'|'fixed-source-queue'='realtime-source-queue'):boolean {
-  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.fractalRender)return false;
+  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.fractalRender||!validOutputFormulas(output,true))return false;
   const live=output.fractalLive,frame=live?.presentation?.evaluatedFractalScene?.scene;
   return !!live&&live.sessionId===request.sessionId&&live.revision===request.revision&&live.target===target&&live.renderKind===renderKind&&live.paused===request.paused&&live.actualFrameRate===Math.fround(request.actualFrameRate)&&live.clock===clock&&(clock==='fixed-source-queue'?live.clockSource==='fixed-step':['worker-wall-clock','injected'].includes(live.clockSource))&&Number.isSafeInteger(live.updateOrdinal)&&live.updateOrdinal>=0&&Number.isSafeInteger(live.objectUpdates)&&live.objectUpdates>=0&&[live.sceneTime,live.rawDt,live.activeDt].every(Number.isFinite)&&Number.isSafeInteger(live.queueIndex)&&live.queueIndex>=0&&typeof live.queueComplete==='boolean'&&!!frame&&frame.sceneTime===live.sceneTime&&frame.queueIndex===live.queueIndex&&frame.queueComplete===live.queueComplete;
 }
@@ -157,6 +163,7 @@ export class Generator {
         return;
       }
       if (data.operation === 'generate-progress') {
+        if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,usesSourceFractal(p.scene))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
         if(p.operation==='generate'&&p.fractal&&!validFractalOutput(data.output,p.fractal)){this.invalidate(new Error('分形实时进度响应身份或状态不匹配'));return;}
         if (p.operation === 'generate') p.onProgress?.(data.output);
         return;
@@ -181,6 +188,7 @@ export class Generator {
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
       else if (p.operation === 'generate' && data.operation === 'generate') {
+        if(!p.fractal&&!validOutputFormulas(data.output,usesSourceFractal(p.scene))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
         if(p.fractal&&!validFractalOutput(data.output,p.fractal)){p.reject(new Error('分形实时响应身份或状态不匹配'));this.invalidate(new Error('分形实时响应身份或状态不匹配'));return;}
         if(data.id===this.currentInputId)this.completed={id:data.id,scene:p.scene,context:p.context,output:data.output};
         p.resolve(data.output);

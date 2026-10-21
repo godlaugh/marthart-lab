@@ -24,6 +24,7 @@ import type {SourceRecordingConsumer} from '../engine/generationQueue';
 import {prepareSourcePausedUpscale} from '../engine/sourcePausedUpscale';
 import {validateRasterRequest} from '../engine/rasterDimensions';
 import {encodeRgbaPng} from '../engine/rgbaPng';
+import {encodeFormulaRaster} from '../engine/formulaCanvas';
 import { Generator } from "../engine/client";
 import { ArtRenderer } from "../engine/renderer";
 import { sceneAtTime, normalizeTimelineTime,resolveTimeline } from "../engine/timeline";
@@ -217,7 +218,7 @@ export function ExportDialog({
         const captured=await currentPausedCapture.capture({width,height},pausedImageScale);
         checkCancelled();
         if(captured.type!=='raster')throw new Error(t('暂停截图没有生成图像'));
-        const blob=await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);
+        const blob=sourceFractalLive?await encodeFormulaRaster(captured,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);
         checkCancelled();
         const url=service?(await request('/api/images',{method:'POST',headers:{'content-type':'image/png'},body:blob})).url:URL.createObjectURL(blob);
         checkCancelled();
@@ -260,7 +261,7 @@ export function ExportDialog({
           frame:async(output,index,start)=>{
             checkCancelled();
             (retainedFractal?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,start.clock,index+1);
-            const blob=await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
+            const blob=retainedFractal?await encodeFormulaRaster(output,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
             checkCancelled();
             if(delivery)await delivery.upload(blob,index);
             else await request(`/api/exports/${sessionRef.current!.id}/frames?index=${index}`,{method:'POST',headers:{'content-type':'image/png'},body:blob});
@@ -285,7 +286,7 @@ export function ExportDialog({
       if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
       const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,target:'offscreen' as const}}:undefined;
-      if(!bouncing&&!(kind==='video'&&(perlinFrames||fractalFrames))){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas);r.setSize(width,height,1);}
+      if(!bouncing&&!sourceFractal&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas);r.setSize(width,height,1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));
         checkCancelled();assertSourceBouncingExportFrame(warmup,bouncing,bouncing.warmup);
@@ -367,14 +368,17 @@ export function ExportDialog({
         if(perlinRecording)assertPerlinRecordingFrame(output,perlinRecording,frame+1);
         if(fractalRecording)assertFractalRecordingFrame(output,fractalRecording,frame+1);
         let blob:Blob;
-        if(bouncing||perlinRecording||fractalRecording){
+        if(sourceFractal){
+          if(output.type!=='raster')throw new Error('分形没有生成图像');
+          blob=await encodeFormulaRaster(output,kind==='image'&&format==='jpg'?'image/jpeg':'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current});
+        }else if(bouncing||perlinRecording){
           if(bouncing)assertSourceBouncingExportFrame(output,bouncing,bouncing.frames[frame]);
           if(output.type!=='raster')throw new Error('录制帧没有生成图像');
           blob=await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
         }else{
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
-          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',isCancelled:()=>cancelRef.current});
+          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',signal:abort.signal,isCancelled:()=>cancelRef.current});
         }
         checkCancelled();
         if (kind === "image") {

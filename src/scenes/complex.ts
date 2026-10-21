@@ -147,11 +147,10 @@ export function fractalConfig(s:Settings,source?:FractalSourceNativePrecisionInp
  trapShape:sourceColor?'point':select(s,'trapShape','ring',['point','ring','cross']),trapRadius:sourceColor?0:val(s,'trapRadius',.5,0,100),
  trapCenter:sourceColor?[0,0]:[val(s,'trapReal',0),val(s,'trapImag',0)],trapRotation:sourceColor?0:val(s,'trapRotation',0),trapAspect:sourceColor?1:val(s,'trapAspect',1,.01,100)};
 }
-/** Display derives from the same validated configuration as the orbit evaluator. */
-export function fractalEquationLatex(settings:Settings,source?:FractalSourceNativePrecisionInput):string {
- // Source labels describe the same evaluated shader inputs as the image. Local
- // color and dormant authoring values do not participate in that expression.
- const c=fractalConfig(source?{}:settings,source),n=(v:number)=>String(v).replace(/e([+-]?\d+)/i,'\\times 10^{$1}');
+/** Local-scene description uses the local orbit configuration. Imported source
+ * scenes own their constructor-captured text in sourceFractalFormulaLatex. */
+export function fractalEquationLatex(settings:Settings):string {
+ const c=fractalConfig(settings),n=(v:number)=>String(v).replace(/e([+-]?\d+)/i,'\\times 10^{$1}');
  const z=(v:Complex)=>v[1]===0?n(v[0]):`\\left(${n(v[0])}${v[1]<0?'-':'+'}${n(Math.abs(v[1]))}i\\right)`;
  const p=z(c.power),julia=c.formula==='julia'||c.variant==='julia',constant=julia?z(c.julia):'w';
  let rhs='',seed=c.formula==='newton'||c.formula==='binocular'||julia?'w':z(c.start),extra='';
