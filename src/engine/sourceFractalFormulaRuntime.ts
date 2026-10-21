@@ -121,11 +121,13 @@ export class SourceFractalFormulaRuntime {
   }
  }
 }
-/** Initial applyConfig replacement on a fresh mobject. Source null ParamSet and
- * supplied-empty ParamSet remain distinct through packing and late overrides. */
-export function createSourceFractalFormulaFromConfig(config:SourceFractalFormulaConfiguration):SourceFractalFormulaRuntime {
+/** Source null ParamSet and supplied-empty ParamSet remain distinct through
+ * packing and late overrides. applyConfig maps against the existing native bailout/Julia before its optional
+ * legacy setters. Fresh objects supply zeros; hot application supplies their
+ * current fields, including writes made by an in-flight ordinary animation. */
+export function createSourceFractalFormulaFromConfig(config:SourceFractalFormulaConfiguration,previous:Pick<SourceFractalFormulaNativeState,'bailout'|'julia'>={bailout:0,julia:[0,0]}):SourceFractalFormulaRuntime {
  const fractalType=type(config.fractalType),raw=config.formulaId,formulaId=sourceFractalFormulaIdentity({...config,fractalType});
- const runtime=new SourceFractalFormulaRuntime({formulaId,fractalType,initialNative:{power:Math.max(2,int(config.power)),bailout:0,julia:[0,0],formulaParams:config.formulaParams},...(raw!=null&&config.parameters?{parameters:config.parameters}:{})});
+ const runtime=new SourceFractalFormulaRuntime({formulaId,fractalType,initialNative:{power:Math.max(2,int(config.power)),bailout:previous.bailout,julia:previous.julia,formulaParams:config.formulaParams},...(raw!=null&&config.parameters?{parameters:config.parameters}:{})});
  if(raw!=null)runtime.remap(config.parameters===undefined);
  if(raw==null||config.parameters===undefined){runtime.setBailout(config.bailout);runtime.setJuliaConstant(...config.julia);}
  return runtime;

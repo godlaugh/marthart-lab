@@ -58,6 +58,12 @@ describe('retained String HashMap producing order', () => {
    }
   }
  });
+ it('replays a cleared HashMap with its retained bucket capacity',()=>{
+  expect(prepareRootsSourceMemberOrder(['exponent','exponent_im'],{initialCapacity:64})).toMatchObject({ok:true,value:{capacity:64,keys:['exponent','exponent_im']}});
+  expect(order(['exponent','exponent_im']).keys).toEqual(['exponent_im','exponent']);
+  expect(prepareRootsSourceMemberOrder([],{initialCapacity:64})).toMatchObject({ok:true,value:{capacity:64,keys:[]}});
+  for(const initialCapacity of [-1,1,8,15,17,24,Infinity,NaN,262144])expect(prepareRootsSourceMemberOrder([],{initialCapacity})).toEqual({ok:false,error:{kind:'input',reason:'invalid-initial-capacity'}});
+ });
  it('does not fabricate order after duplicate input or resource overflow', () => {
   expect(prepareRootsSourceMemberOrder(['x', 'x'])).toEqual({ ok: false, error: { kind: 'duplicate-key', key: 'x', firstIndex: 0, index: 1 } });
   expect(prepareRootsSourceMemberOrder(Array(65537).fill('x'))).toMatchObject({ ok: false, error: { kind: 'capacity', resource: 'members' } });

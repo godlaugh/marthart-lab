@@ -2,13 +2,15 @@ import {sourceJavaStringHash} from './sourceJavaHash';
 import { sourceJavaDecimalDigit } from './rootsSourceCharacters';
 import { sourceNumberTokenValid } from './sourceNumberTokens';
 /** Retained JRE String-key HashMap insertion/iteration, used once at native
- * JSON import. This is not JSON member order, sorted order, or JS own-key order.
- * No deletion/access-order map is exposed: JSONObject constructs by putOnce.
+ * JSON import or registry insertion replay. This is not JSON member order,
+ * sorted order, or JS own-key order. A cleared live registry may retain its
+ * allocated bucket capacity; deletion/access-order maps are not modeled.
  * Evidence: roots-native-solver/{HashMap,JSONObject}.json and
  * roots-native-map-order/HashMap$TreeNode.json (static classfiles, no JVM run). */
 export const ROOTS_SOURCE_ORDER_LIMITS = Object.freeze({ members: 65536, characters: 8 * 1024 * 1024 });
 export type RootsSourceOrderError =
  | { kind: 'input'; reason: 'non-string-key'; index: number }
+ | { kind: 'input'; reason: 'invalid-initial-capacity' }
  | { kind: 'duplicate-key'; key: string; firstIndex: number; index: number }
  | { kind: 'capacity'; resource: 'members' | 'characters'; actual: number; limit: number };
 export type RootsSourceResult<T, E = RootsSourceOrderError> = { ok: true; value: T } | { ok: false; error: E };
@@ -131,7 +133,9 @@ function resize(table: (Entry | null)[]): (Entry | null)[] {
 }
 /** Local memory admission, not a native JSON format limit: at most 65,536
  * nodes, 131,072 bucket references and 8 Mi UTF-16 key units. */
-export function prepareRootsSourceMemberOrder(keys: readonly string[]): RootsSourceResult<RootsSourceMemberOrder> {
+export function prepareRootsSourceMemberOrder(keys: readonly string[],options:{initialCapacity?:number}={}): RootsSourceResult<RootsSourceMemberOrder> {
+ const initialCapacity=options.initialCapacity??0;
+ if(!Number.isSafeInteger(initialCapacity)||initialCapacity!==0&&(initialCapacity<16||initialCapacity>131072||(initialCapacity&(initialCapacity-1))!==0))return{ok:false,error:{kind:'input',reason:'invalid-initial-capacity'}};
  if (keys.length > ROOTS_SOURCE_ORDER_LIMITS.members) return { ok: false, error: { kind: 'capacity', resource: 'members', actual: keys.length, limit: ROOTS_SOURCE_ORDER_LIMITS.members } };
  const seen = new Map<string, number>(); let characters = 0;
  for (let i = 0; i < keys.length; i++) {
@@ -143,7 +147,7 @@ export function prepareRootsSourceMemberOrder(keys: readonly string[]): RootsSou
   if (firstIndex !== undefined) return { ok: false, error: { kind: 'duplicate-key', key, firstIndex, index: i } };
   seen.set(key, i);
  }
- let table: (Entry | null)[] = [];
+ let table: (Entry | null)[] = Array(initialCapacity).fill(null);
  for (let i = 0; i < keys.length; i++) {
   if (!table.length) table = resize(table);
   const x = entry(keys[i], i), bucket = x.hash & (table.length - 1), head = table[bucket];

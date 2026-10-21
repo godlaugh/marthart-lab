@@ -81,6 +81,19 @@ export class SourceFractalSceneClock {
   if(!Array.isArray(initialCamera)||initialCamera.length!==3)throw Error('分形相机初始角度无效');this.initialCamera=initialCamera.map(v=>float(v,'相机角度')) as [number,number,number];this.cameraAngles=[...this.initialCamera];
   this.object=copy(this.initial);this.captured=copy(this.initial);this.clock=this.newClock();
  }
+ /** Existing animation baselines and SceneManager progress survive applyConfig.
+  * Config center is a Double, so this path replaces (rather than retains) DD lows. */
+ applyObjectConfiguration(value:Pick<SourceFractalObjectState,'centerX'|'centerY'|'zoom'|'rotation'|'iterations'|'bailout'|'juliaReal'|'juliaImag'>):void {
+  if(this.failed)throw Error('分形场景时钟上次更新失败，必须重置');
+  const next=state({...this.object,centerX:value.centerX,centerY:value.centerY,centerXLow:0,centerYLow:0,zoom:value.zoom,rotation:value.rotation,iterations:value.iterations,bailout:value.bailout,juliaReal:value.juliaReal,juliaImag:value.juliaImag});
+  this.object=next;
+ }
+ /** Host resume restores camera angles without advancing time or mobject state. */
+ writeCameraAngles(value:readonly [number,number,number]):void {
+  if(this.failed)throw Error('分形场景时钟上次更新失败，必须重置');
+  if(!Array.isArray(value)||value.length!==3)throw Error('分形相机角度需要三个分量');
+  this.cameraAngles=value.map(v=>float(v,'相机角度')) as [number,number,number];
+ }
  get clipCount():number{return this.clips.length;}
  private newClock(){return new RootsSceneClock({phi:0,theta:0,gamma:0,zoom:1},this.clips.map(c=>({duration:c.kind==='animate'&&c.grouped?Math.max(0,c.duration):c.duration,easing:'linear'})));}
  reset():void {this.failed=true;this.hooks.reset?.();this.object=copy(this.initial);this.captured=copy(this.initial);this.cameraAngles=[...this.initialCamera];this.cameraRates=[0,0,0];this.finishedAtStart=false;this.updates=[];this.writtenViewFields.clear();this.clock=this.newClock();this.failed=false;}

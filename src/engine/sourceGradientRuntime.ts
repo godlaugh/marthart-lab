@@ -50,6 +50,9 @@ export class SourceGradientRuntime {
  get running(){return this.active;}
  get config(){return this.configuration;}
  snapshot():SourceGradientSnapshot{return Object.freeze({running:this.active,progress:this.progress,speedScale:this.speedScale,targetSpeed:this.targetSpeed,base:this.base,...(this.baseOffsets?{baseOffsets:Object.freeze({...this.baseOffsets})}:{}),config:this.configuration});}
+ /** Immediate host stop retains phase/configuration and existing queue children.
+  * A later scale callback does not turn the animator back on. */
+ stop():void {this.active=false;this.targetSpeed=0;this.speedScale=0;}
  private applyFrame(){if(this.active)this.apply(sourceGradientFrame(this.baseOffsets??this.base,this.configuration!,this.progress),this.configuration!);}
  private scale(value:number){
   // Native setters retain NaN until the same-frame finish callback restores it.
@@ -70,7 +73,7 @@ export class SourceGradientRuntime {
    this.scale(child.action.kind==='start'?eased:child.startScale*(1-eased));
    if(finish){
     if(child.action.kind==='start')this.scale(1);
-    else{this.scale(0);this.active=false;this.targetSpeed=0;this.speedScale=0;}
+    else{this.scale(0);this.stop();}
     child.finished=true;
    }
   }

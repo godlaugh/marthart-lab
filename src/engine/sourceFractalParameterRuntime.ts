@@ -43,6 +43,10 @@ function configuration(input:SourceFractalParameterConfiguration):Configuration 
 export class SourceFractalParameterRuntime {
  private readonly entries=new Map<string,Entry>();
  private order:readonly string[]=[];
+ // HashMap.clear retains its allocated table. Replaying insertion since the
+ // latest clear must start at that capacity, not at the latest grown capacity.
+ private orderInitialCapacity=0;
+ private orderCapacity=0;
  private children:Child[]=[];
  private active=false;
  private failed=false;
@@ -89,7 +93,7 @@ export class SourceFractalParameterRuntime {
  private add(name:string,c:Configuration):void {
   this.spend(8+name.length);const old=this.entries.get(name),entry:Entry={name,configuration:c,scale:1,scalarPhase:old?.scalarPhase,complexPhase:old?.complexPhase,fixedImaginary:old?.fixedImaginary};
   this.entries.set(name,entry);
-  if(!old){this.spend(this.entries.size*4);const order=prepareRootsSourceMemberOrder([...this.entries.keys()]);if(!order.ok)throw Error('原版分形参数注册表超过本地容量');this.order=order.value.keys;}
+  if(!old){this.spend(this.entries.size*4);const order=prepareRootsSourceMemberOrder([...this.entries.keys()],{initialCapacity:this.orderInitialCapacity});if(!order.ok)throw Error('原版分形参数注册表超过本地容量');this.order=order.value.keys;this.orderCapacity=order.value.capacity;}
   if(this.active)this.sync(entry);
  }
  private start(){
@@ -129,6 +133,9 @@ export class SourceFractalParameterRuntime {
    if(finished)child.finished=true;
   }
  });}
+ /** Mobject.applyConfig clears registry state, not the already-started queue
+  * children. Their later scale callbacks must not re-register these entries. */
+ clear():void {this.run(()=>{this.spend();this.entries.clear();this.order=[];this.orderInitialCapacity=this.orderCapacity;});}
  stop():void {this.run(()=>{this.spend();this.active=false;});}
  private write(entry:Entry,binding:Binding,value:number):void {
   value=finite(value,'写入值');
