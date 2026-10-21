@@ -38,5 +38,7 @@ export class SourceSceneHostClock {
   if(paused){this.saved=angles(current);this.paused=true;return;}
   const now=this.read(timestampMs),restore={...this.saved};this.lastTime=now;this.paused=false;return restore;
  }
+ /** Native MathArt.forceResume does not reset Scene.lastTime or restore angles. */
+ forceResume():void {this.paused=false;}
  diagnostics(){return{paused:this.paused,lastTime:this.lastTime,savedAngles:{...this.saved},clockSource:this.source};}
 }

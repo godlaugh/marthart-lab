@@ -1,0 +1,2205 @@
+{
+  "execution": {
+    "originalSceneManager": true,
+    "originalDomainColoringSceneUpdate": true,
+    "originalDomainMobjectUpdate": true,
+    "originalSetupTimeline": true,
+    "originalMathArtStartRecording": true,
+    "originalMathArtGetEffectiveFps": true,
+    "originalMathArtConfigConstructor": true,
+    "originalSceneSetRenderMode": true,
+    "originalIsAutoRecordingComplete": true,
+    "originalMathArtConstructor": false,
+    "originalDomainConfigConstructor": false,
+    "originalMobjectConstructor": false,
+    "sceneConstructOrRender": false,
+    "windowOrGL": false,
+    "realRecorderOrEncoder": false,
+    "initialization": "JNI AllocObject MathArt/JsonDomainConfig/DomainMobject; original MathArtConfig and active animator/Scene constructors; assigned observed PApplet.frameRate; original startRecording flags and Scene.setRenderMode60; original setupTimeline/update/isAutoRecordingComplete; private original state read by reflection",
+    "scope": "7 bounded cases: configured recording60 versus explicitly injected observed FPS37/24/varying37-24-12; empty queue, wait0, wait1/60, wait2/60 completion. Native warmup/render/encoder not executed; derivedHostPolicy counters implement separately audited discard-before-autoStop order only."
+  },
+  "provenance": {
+    "artifactPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "coreSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+    "jvmPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home/lib/server/libjvm.dylib",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "classes": {
+      "mathart/MathArt": "3cf332de2b196ed835006b963b2149553b5a66f17999f6b92dd75ce4cdd56cc0",
+      "mathart/config/MathArtConfig": "d5ab3f16075662ddcbf738767e42b87f082a63a9a5cfe9956e2134f658b4ab9f",
+      "mathart/domaincoloring/DomainColoringMobject": "686cb8652a1c2f0e4d696a375ad04285bf24903a0e7c71ef221c14c38a837c38",
+      "mathart/domaincoloring/DomainColoringScene": "b8f116b692be3cd7fe78d61d110be8129b45a917c2a3facd3d83d6eae8945190",
+      "mathart/domaincoloring/animation/DomainParamAnimation": "520cfbe82bb78cd069643173648d5d9b877163c04614c6102afdc71f79d661ec",
+      "mathart/domaincoloring/animation/DomainParameterAnimator": "e8e3ddfcf9fbfc73acaf8729812bcb571c22e1a1c1cbd606c102a8502f6d5094",
+      "mathart/domaincoloring/config/JsonDomainColoringConfig": "9679de5eccd992a84fe0e748e2d97014fcedbdaa5a77c6d02f357d05f557ada2",
+      "mathart/scene/Scene": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "mathart/scene/SceneManager": "973ee64fef4c06b615eab028ae0668db1917ac1b7db47a62b0a73fc278b760e7",
+      "mathart/animation/Animation": "63b961d5b29c2b70c7b6ddb7e10af117d586a8c408592f4ab1a5cbb238f68212",
+      "mathart/animation/AnimationGroup": "2b31113da7c66415bf723cbbea37e9fe601144a8de9be91a2a236d04971324d8",
+      "mathart/animation/gradient/GradientAnimator": "fdff4ef0cfaa79d38aa51e577b4075d2257db143d709b6b0b156584be63c7095",
+      "mathart/domaincoloring/animation/DomainParameterAnimator$ParamConfig": "8959f82ff9fbbd9d221bf7523a28e6d6d4f694e416e9d313ef71236e82be632e",
+      "mathart/domaincoloring/animation/StartDomainParamAnimation": "7a391c5fd5b253c13bb9450873fec33a92c1bb89aa3a1f0d8b4bf687e79019a8",
+      "mathart/domaincoloring/animation/StopDomainParamAnimation": "c2193a552c9bf23eee400ae44ff4685d63f4f3c9f92e764464b1e7f41285033a",
+      "mathart/animation/gradient/GradientRuntimeState": "cf5739c2cd51f12404776a7aa475a3f07b7157b4b9d617fae1f72649c7b8f9d5",
+      "mathart/animation/gradient/GradientActionConfig": "aac233667191d07c592bd43cb72f18f19b7330c4a6e90770bbe686e95ebdc2f2",
+      "mathart/animation/gradient/StartGradientAnimation": "5b97472084686f6f8d8fb534d15b501647b84cd065d4adf1fe60d7f2993f604c",
+      "mathart/animation/gradient/StopGradientAnimation": "3bfc37ed28b22475e438de93a89e8947f7142d1202bf46d9e2795d4f42601cb8",
+      "mathart/domaincoloring/config/BaseDomainColoringConfig": "879ed2cfa45e2d66c68fd894696024516750224ff726bc44d705e3c3d64450c0",
+      "mathart/domaincoloring/curve/LevelCurveParams": "8afcb17030384592a75c7f838b55eb6b7d3154a9f5bf2ac3acaec46811dcc4e2",
+      "mathart/animation/ParamEdgeEasingConfig": "1d0e76df2c3630e465a24516cd2c72fe22d7a4fd29c0f68131f707acb71481d0",
+      "mathart/animation/OscillationEdgeEasing": "8504db872f70e6c5c7aa3b1491dc4b02220d9aadbad189c111d957a04bc8fb60"
+    },
+    "harnessSha256": "ea35d4e6cb80457e4311123b886e09100a2f1684a631c9be861a421ee493b97a",
+    "runnerSha256": "88f56e6e0ed2452541c896c72446c063ca67e79d7e25283fdc87880cd0f26ee0",
+    "stdoutSha256": [
+      "348e302b67cd893cac71733576f51a32533c2d63ec7960ab9dc2f2301365750d",
+      "348e302b67cd893cac71733576f51a32533c2d63ec7960ab9dc2f2301365750d"
+    ]
+  },
+  "sourceSha256": "5ba8a04111caba6e8e1c5975eeb19529410b0d47557d0b0fd522dfa93a9a9e9b",
+  "cases": [
+    {
+      "id": 0,
+      "name": "recording-config60-observed37",
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.1,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.02,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "gradientStart",
+                "args": {
+                  "mode": "HUE_ROTATE",
+                  "speed": 60
+                }
+              },
+              {
+                "method": "domainRotate",
+                "args": [
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "firstCompleteFrame": 5,
+      "derivedOfferedFrames": 5,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "effectiveMathArtFps": {
+          "value": 60,
+          "bits": "42700000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.005555556155741215,
+              "bits": "3bb60b62"
+            },
+            "rotationRate": {
+              "value": 0.1666666716337204,
+              "bits": "3e2aaaab"
+            },
+            "sceneTime": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.004111099775684606,
+                "bits": "3f70d6ccf165001f"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 2.5704291601869045e-06,
+              "bits": "362c7fa3"
+            }
+          }
+        },
+        {
+          "index": 1,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.01666666939854622,
+              "bits": "3c88888a"
+            },
+            "rotationRate": {
+              "value": 0.3333333432674408,
+              "bits": "3eaaaaab"
+            },
+            "sceneTime": {
+              "value": 0.03333333507180214,
+              "bits": "3d088889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.01233302139793991,
+                "bits": "3f89420e1c852944"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 2.310528543603141e-05,
+              "bits": "37c1d239"
+            }
+          }
+        },
+        {
+          "index": 2,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.03333333879709244,
+              "bits": "3d08888a"
+            },
+            "rotationRate": {
+              "value": 0.5000000596046448,
+              "bits": "3f000001"
+            },
+            "sceneTime": {
+              "value": 0.05000000447034836,
+              "bits": "3d4cccce"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.024664167932198288,
+                "bits": "3f9941904a9b7ce3"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.22496838029474e-05,
+              "bits": "38c1762c"
+            }
+          }
+        },
+        {
+          "index": 3,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.055555559694767,
+              "bits": "3d638e3a"
+            },
+            "rotationRate": {
+              "value": 0.6666666865348816,
+              "bits": "3f2aaaab"
+            },
+            "sceneTime": {
+              "value": 0.06666667014360428,
+              "bits": "3d888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.04109953516425309,
+                "bits": "3fa50aff8ed291da"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.00025561402435414493,
+              "bits": "398603ef"
+            }
+          }
+        },
+        {
+          "index": 4,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.0833333358168602,
+              "bits": "3daaaaab"
+            },
+            "rotationRate": {
+              "value": 0.8333333730697632,
+              "bits": "3f555556"
+            },
+            "sceneTime": {
+              "value": 0.0833333358168602,
+              "bits": "3daaaaab"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.06162759512855035,
+                "bits": "3faf8da6f3376ce5"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.000573345459997654,
+              "bits": "3a164c90"
+            }
+          }
+        },
+        {
+          "index": 5,
+          "actualAutoRecordingComplete": true,
+          "state": {
+            "rotation": {
+              "value": 0.11666666716337204,
+              "bits": "3deeeeef"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "values": {
+              "a": {
+                "value": 0.0862261309960525,
+                "bits": "3fb612ea6cb04bda"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.0011195560218766332,
+              "bits": "3a92be11"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "recording-config60-observed24",
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.1,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.02,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "gradientStart",
+                "args": {
+                  "mode": "HUE_ROTATE",
+                  "speed": 60
+                }
+              },
+              {
+                "method": "domainRotate",
+                "args": [
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "firstCompleteFrame": 5,
+      "derivedOfferedFrames": 5,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 24,
+          "bits": "41c00000"
+        },
+        "effectiveMathArtFps": {
+          "value": 60,
+          "bits": "42700000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.005555556155741215,
+              "bits": "3bb60b62"
+            },
+            "rotationRate": {
+              "value": 0.1666666716337204,
+              "bits": "3e2aaaab"
+            },
+            "sceneTime": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.0026666636651191166,
+                "bits": "3f65d866276551ca"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 2.5704291601869045e-06,
+              "bits": "362c7fa3"
+            }
+          }
+        },
+        {
+          "index": 1,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.01666666939854622,
+              "bits": "3c88888a"
+            },
+            "rotationRate": {
+              "value": 0.3333333432674408,
+              "bits": "3eaaaaab"
+            },
+            "sceneTime": {
+              "value": 0.03333333507180214,
+              "bits": "3d088889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.00799991514376163,
+                "bits": "3f8062426f4e4c3b"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 2.310528543603141e-05,
+              "bits": "37c1d239"
+            }
+          }
+        },
+        {
+          "index": 2,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.03333333879709244,
+              "bits": "3d08888a"
+            },
+            "rotationRate": {
+              "value": 0.5000000596046448,
+              "bits": "3f000001"
+            },
+            "sceneTime": {
+              "value": 0.05000000447034836,
+              "bits": "3d4cccce"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.015999319010787865,
+                "bits": "3f9062201fa36f7b"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.22496838029474e-05,
+              "bits": "38c1762c"
+            }
+          }
+        },
+        {
+          "index": 3,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.055555559694767,
+              "bits": "3d638e3a"
+            },
+            "rotationRate": {
+              "value": 0.6666666865348816,
+              "bits": "3f2aaaab"
+            },
+            "sceneTime": {
+              "value": 0.06666667014360428,
+              "bits": "3d888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.026663508589104257,
+                "bits": "3f9b4dadc58c19fd"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.00025561402435414493,
+              "bits": "398603ef"
+            }
+          }
+        },
+        {
+          "index": 4,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.0833333358168602,
+              "bits": "3daaaaab"
+            },
+            "rotationRate": {
+              "value": 0.8333333730697632,
+              "bits": "3f555556"
+            },
+            "sceneTime": {
+              "value": 0.0833333358168602,
+              "bits": "3daaaaab"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.039989337521824354,
+                "bits": "3fa4797b81b09c25"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.000573345459997654,
+              "bits": "3a164c90"
+            }
+          }
+        },
+        {
+          "index": 5,
+          "actualAutoRecordingComplete": true,
+          "state": {
+            "rotation": {
+              "value": 0.11666666716337204,
+              "bits": "3deeeeef"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "values": {
+              "a": {
+                "value": 0.055970738171804736,
+                "bits": "3faca83253f635ed"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.0011195560218766332,
+              "bits": "3a92be11"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "recording-config60-observed37-24-12",
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.1,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.02,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "gradientStart",
+                "args": {
+                  "mode": "HUE_ROTATE",
+                  "speed": 60
+                }
+              },
+              {
+                "method": "domainRotate",
+                "args": [
+                  1
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "firstCompleteFrame": 5,
+      "derivedOfferedFrames": 5,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "effectiveMathArtFps": {
+          "value": 60,
+          "bits": "42700000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.005555556155741215,
+              "bits": "3bb60b62"
+            },
+            "rotationRate": {
+              "value": 0.1666666716337204,
+              "bits": "3e2aaaab"
+            },
+            "sceneTime": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.004111099775684606,
+                "bits": "3f70d6ccf165001f"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 2.5704291601869045e-06,
+              "bits": "362c7fa3"
+            }
+          }
+        },
+        {
+          "index": 1,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.01666666939854622,
+              "bits": "3c88888a"
+            },
+            "rotationRate": {
+              "value": 0.3333333432674408,
+              "bits": "3eaaaaab"
+            },
+            "sceneTime": {
+              "value": 0.03333333507180214,
+              "bits": "3d088889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.009444304604457469,
+                "bits": "3f8357891b46e00f"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 2.310528543603141e-05,
+              "bits": "37c1d239"
+            }
+          }
+        },
+        {
+          "index": 2,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.03333333879709244,
+              "bits": "3d08888a"
+            },
+            "rotationRate": {
+              "value": 0.5000000596046448,
+              "bits": "3f000001"
+            },
+            "sceneTime": {
+              "value": 0.05000000447034836,
+              "bits": "3d4cccce"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 12,
+              "bits": "41400000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.013444040586174582,
+                "bits": "3f8b888c952654d6"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.22496838029474e-05,
+              "bits": "38c1762c"
+            }
+          }
+        },
+        {
+          "index": 3,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.055555559694767,
+              "bits": "3d638e3a"
+            },
+            "rotationRate": {
+              "value": 0.6666666865348816,
+              "bits": "3f2aaaab"
+            },
+            "sceneTime": {
+              "value": 0.06666667014360428,
+              "bits": "3d888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.029884441040894827,
+                "bits": "3f9e9a06e3b83360"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.00025561402435414493,
+              "bits": "398603ef"
+            }
+          }
+        },
+        {
+          "index": 4,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0.0833333358168602,
+              "bits": "3daaaaab"
+            },
+            "rotationRate": {
+              "value": 0.8333333730697632,
+              "bits": "3f555556"
+            },
+            "sceneTime": {
+              "value": 0.0833333358168602,
+              "bits": "3daaaaab"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.04320876897388157,
+                "bits": "3fa61f75b34956dc"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.000573345459997654,
+              "bits": "3a164c90"
+            }
+          }
+        },
+        {
+          "index": 5,
+          "actualAutoRecordingComplete": true,
+          "state": {
+            "rotation": {
+              "value": 0.11666666716337204,
+              "bits": "3deeeeef"
+            },
+            "rotationRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "sceneTime": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 12,
+              "bits": "41400000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "values": {
+              "a": {
+                "value": 0.0511998293591382,
+                "bits": "3faa36dd315109f9"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.0011195560218766332,
+              "bits": "3a92be11"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "empty-queue",
+      "input": {
+        "timeline": []
+      },
+      "firstCompleteFrame": 0,
+      "derivedOfferedFrames": 0,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "effectiveMathArtFps": {
+          "value": 60,
+          "bits": "42700000"
+        },
+        "queueIndex": 0,
+        "complete": true,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "actualAutoRecordingComplete": true,
+          "state": {
+            "rotation": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rotationRate": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "sceneTime": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": true,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "zero-wait",
+      "input": {
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 0
+          }
+        ]
+      },
+      "firstCompleteFrame": 0,
+      "derivedOfferedFrames": 0,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "effectiveMathArtFps": {
+          "value": 60,
+          "bits": "42700000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "actualAutoRecordingComplete": true,
+          "state": {
+            "rotation": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rotationRate": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "one-fixed-step-wait",
+      "input": {
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 0.01666666753590107
+          }
+        ]
+      },
+      "firstCompleteFrame": 0,
+      "derivedOfferedFrames": 0,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "effectiveMathArtFps": {
+          "value": 60,
+          "bits": "42700000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "actualAutoRecordingComplete": true,
+          "state": {
+            "rotation": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rotationRate": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "sceneTime": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "two-fixed-step-wait",
+      "input": {
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 0.03333333507180214
+          }
+        ]
+      },
+      "firstCompleteFrame": 1,
+      "derivedOfferedFrames": 1,
+      "initial": {
+        "rotation": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rotationRate": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "effectiveMathArtFps": {
+          "value": 60,
+          "bits": "42700000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "frames": [
+        {
+          "index": 0,
+          "actualAutoRecordingComplete": false,
+          "state": {
+            "rotation": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rotationRate": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "sceneTime": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        },
+        {
+          "index": 1,
+          "actualAutoRecordingComplete": true,
+          "state": {
+            "rotation": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rotationRate": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "sceneTime": {
+              "value": 0.03333333507180214,
+              "bits": "3d088889"
+            },
+            "rawDt": {
+              "value": 0.01666666753590107,
+              "bits": "3c888889"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "effectiveMathArtFps": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 1,
+            "complete": true,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

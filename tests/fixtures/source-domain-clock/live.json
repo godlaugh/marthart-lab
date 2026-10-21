@@ -1,0 +1,2272 @@
+{
+  "execution": {
+    "originalSceneRealtimeBranch": true,
+    "originalDomainUpdate": true,
+    "originalSceneManager": true,
+    "originalParameterGradientAnimators": true,
+    "originalMathArtTogglePauseForceResume": true,
+    "setRenderModeCalled": false,
+    "sceneConstructOrRender": false,
+    "GUIorGL": false,
+    "originalPAppletMillis": "wallClockRuns only; inherited original method, millisOffset positioned from currentTimeMillis immediately before each operation; observed before/after millis bracket retained, timing not claimed deterministic",
+    "scriptedMillis": "local generated ClockMathArt extends original MathArt and overrides only millis() to increment a read counter and return a prescribed signed int; not the original PApplet millis implementation",
+    "initialization": "JNI AllocObject MathArt or local ClockMathArt, original minimal Scene/Camera/manager constructors; original scalar setters and animator constructors; explicit config saveVideo=false, initStep=RUNNING, pauseListener=null; no original MathArt/DomainConfig/Mobject constructors; host frameRate set explicitly per operation",
+    "pauseScope": "original MathArt.togglePause and forceResume with initialized currentScene/camera; inherited original loop/noLoop only change booleans; no GUI event or draw-loop scheduling is claimed",
+    "limits": "Numerical evidence only. Actual PApplet.frameRate field is an injected host observation, not a GUI-derived measurement. Scripted clock is deterministic; original wall clock observations may differ between runs."
+  },
+  "provenance": {
+    "jar": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "coreSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+    "jvm": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home/lib/server/libjvm.dylib",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "classes": {
+      "mathart/MathArt": "3cf332de2b196ed835006b963b2149553b5a66f17999f6b92dd75ce4cdd56cc0",
+      "mathart/scene/Scene": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "mathart/scene/SceneManager": "973ee64fef4c06b615eab028ae0668db1917ac1b7db47a62b0a73fc278b760e7",
+      "mathart/scene/CameraController": "80a478f361fdcbca2d8aeda2cc96f55e500a3527fa889ffd69765d815d0be9dd",
+      "mathart/domaincoloring/DomainColoringScene": "b8f116b692be3cd7fe78d61d110be8129b45a917c2a3facd3d83d6eae8945190",
+      "mathart/domaincoloring/DomainColoringMobject": "686cb8652a1c2f0e4d696a375ad04285bf24903a0e7c71ef221c14c38a837c38",
+      "mathart/domaincoloring/config/JsonDomainColoringConfig": "9679de5eccd992a84fe0e748e2d97014fcedbdaa5a77c6d02f357d05f557ada2",
+      "mathart/domaincoloring/animation/DomainParameterAnimator": "e8e3ddfcf9fbfc73acaf8729812bcb571c22e1a1c1cbd606c102a8502f6d5094",
+      "mathart/animation/gradient/GradientAnimator": "fdff4ef0cfaa79d38aa51e577b4075d2257db143d709b6b0b156584be63c7095",
+      "processing/core/PApplet": "5e2413f11fbdd22e9e8b4a27ed2c260e9678fadf41984183796f98680ba9c35f"
+    },
+    "harnessSha256": "8ad910c735fb2ce0835d301a34f6bc5925be530a823d5cb28b6c6ceb1ad51474",
+    "runnerSha256": "1bd602466214d980366247cc38eaf5da669d84376033a6362151a8cbf234a447",
+    "builderSha256": "5ef46467cdc6efdc04130317355d7cfb66c85f00a6745202bf03c18d3da399ac",
+    "localClockClassSha256": "8b2785f47956850a2d98415ccdafc275c7102f3b3f28e662005206d066c89c5a",
+    "stdoutSha256": [
+      "42829f3573eb8baa593be18fc4826cb6ecf32ca1b1e71570b0d853558a700a48",
+      "42829f3573eb8baa593be18fc4826cb6ecf32ca1b1e71570b0d853558a700a48"
+    ]
+  },
+  "sourceSha256": "ba5cfb6515f9f6e904d16208903cc0e6de55fa50c947b792d79b22466c85c4f1",
+  "cases": [
+    {
+      "id": 0,
+      "name": "toggle-pause-resume-variable-fps",
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.02,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "gradientStart",
+                "args": {
+                  "mode": "HUE_ROTATE",
+                  "speed": 120
+                }
+              },
+              {
+                "method": "domainRotate",
+                "args": [
+                  0.7
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          }
+        ]
+      },
+      "initial": {
+        "lastTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "hostPaused": false,
+        "rotation": {
+          "value": 0.30000001192092896,
+          "bits": "3e99999a"
+        },
+        "rotationRate": {
+          "value": 0.10000000149011612,
+          "bits": "3dcccccd"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "operations": [
+        {
+          "index": 0,
+          "operation": "update",
+          "requestedMillis": 1000,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        },
+        {
+          "index": 1,
+          "operation": "update",
+          "requestedMillis": 1016,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 1.0160000324249268,
+              "bits": "3f820c4a"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30422401428222656,
+              "bits": "3e9bc340"
+            },
+            "rotationRate": {
+              "value": 0.13200005888938904,
+              "bits": "3e072b06"
+            },
+            "sceneTime": {
+              "value": 0.016000032424926758,
+              "bits": "3c831280"
+            },
+            "rawDt": {
+              "value": 0.016000032424926758,
+              "bits": "3c831280"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.0012629380293808252,
+                "bits": "3f54b125621dbe0d"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.705432830742211e-07,
+              "bits": "3582439d"
+            }
+          }
+        },
+        {
+          "index": 2,
+          "operation": "update",
+          "requestedMillis": 1016,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 24,
+            "bits": "41c00000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 1.0160000324249268,
+              "bits": "3f820c4a"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30422401428222656,
+              "bits": "3e9bc340"
+            },
+            "rotationRate": {
+              "value": 0.13200005888938904,
+              "bits": "3e072b06"
+            },
+            "sceneTime": {
+              "value": 0.016000032424926758,
+              "bits": "3c831280"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.0012629380293808252,
+                "bits": "3f54b125621dbe0d"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.705432830742211e-07,
+              "bits": "3582439d"
+            }
+          }
+        },
+        {
+          "index": 3,
+          "operation": "update",
+          "requestedMillis": 1033,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 29.969999313354492,
+            "bits": "41efc28f"
+          },
+          "state": {
+            "lastTime": {
+              "value": 1.0329999923706055,
+              "bits": "3f843958"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.3098679780960083,
+              "bits": "3e9ea704"
+            },
+            "rotationRate": {
+              "value": 0.16599997878074646,
+              "bits": "3e29fbe6"
+            },
+            "sceneTime": {
+              "value": 0.03299999237060547,
+              "bits": "3d072b00"
+            },
+            "rawDt": {
+              "value": 0.01699995994567871,
+              "bits": "3c8b4380"
+            },
+            "pAppletFrameRate": {
+              "value": 29.969999313354492,
+              "bits": "41efc28f"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.003504681187674742,
+                "bits": "3f6cb5d962afe0b6"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.876745934889186e-06,
+              "bits": "3725b44d"
+            }
+          }
+        },
+        {
+          "index": 4,
+          "operation": "togglePause",
+          "requestedMillis": 1100,
+          "operationMillisCalls": 0,
+          "inputFps": {
+            "value": 29.969999313354492,
+            "bits": "41efc28f"
+          },
+          "state": {
+            "lastTime": {
+              "value": 1.0329999923706055,
+              "bits": "3f843958"
+            },
+            "hostPaused": true,
+            "rotation": {
+              "value": 0.3098679780960083,
+              "bits": "3e9ea704"
+            },
+            "rotationRate": {
+              "value": 0.16599997878074646,
+              "bits": "3e29fbe6"
+            },
+            "sceneTime": {
+              "value": 0.03299999237060547,
+              "bits": "3d072b00"
+            },
+            "rawDt": {
+              "value": 0.01699995994567871,
+              "bits": "3c8b4380"
+            },
+            "pAppletFrameRate": {
+              "value": 29.969999313354492,
+              "bits": "41efc28f"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.003504681187674742,
+                "bits": "3f6cb5d962afe0b6"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.876745934889186e-06,
+              "bits": "3725b44d"
+            }
+          }
+        },
+        {
+          "index": 5,
+          "operation": "update",
+          "requestedMillis": 2000,
+          "operationMillisCalls": 0,
+          "inputFps": {
+            "value": 5,
+            "bits": "40a00000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 1.0329999923706055,
+              "bits": "3f843958"
+            },
+            "hostPaused": true,
+            "rotation": {
+              "value": 0.3098679780960083,
+              "bits": "3e9ea704"
+            },
+            "rotationRate": {
+              "value": 0.16599997878074646,
+              "bits": "3e29fbe6"
+            },
+            "sceneTime": {
+              "value": 0.03299999237060547,
+              "bits": "3d072b00"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 5,
+              "bits": "40a00000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.003504681187674742,
+                "bits": "3f6cb5d962afe0b6"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.876745934889186e-06,
+              "bits": "3725b44d"
+            }
+          }
+        },
+        {
+          "index": 6,
+          "operation": "togglePause",
+          "requestedMillis": 3000,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 29.969999313354492,
+            "bits": "41efc28f"
+          },
+          "state": {
+            "lastTime": {
+              "value": 3,
+              "bits": "40400000"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.3098679780960083,
+              "bits": "3e9ea704"
+            },
+            "rotationRate": {
+              "value": 0.16599997878074646,
+              "bits": "3e29fbe6"
+            },
+            "sceneTime": {
+              "value": 0.03299999237060547,
+              "bits": "3d072b00"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 29.969999313354492,
+              "bits": "41efc28f"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.003504681187674742,
+                "bits": "3f6cb5d962afe0b6"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.876745934889186e-06,
+              "bits": "3725b44d"
+            }
+          }
+        },
+        {
+          "index": 7,
+          "operation": "update",
+          "requestedMillis": 3016,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 29.969999313354492,
+            "bits": "41efc28f"
+          },
+          "state": {
+            "lastTime": {
+              "value": 3.0160000324249268,
+              "bits": "40410625"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.3162040114402771,
+              "bits": "3ea1e57e"
+            },
+            "rotationRate": {
+              "value": 0.19800004363059998,
+              "bits": "3e4ac086"
+            },
+            "sceneTime": {
+              "value": 0.04900002479553223,
+              "bits": "3d48b440"
+            },
+            "rawDt": {
+              "value": 0.016000032424926758,
+              "bits": "3c831280"
+            },
+            "pAppletFrameRate": {
+              "value": 29.969999313354492,
+              "bits": "41efc28f"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.0066375114160992605,
+                "bits": "3f7b2fef6757f40b"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 3.788335379795171e-05,
+              "bits": "381ee4f1"
+            }
+          }
+        },
+        {
+          "index": 8,
+          "operation": "update",
+          "requestedMillis": 3050,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 1,
+            "bits": "3f800000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 3.049999952316284,
+              "bits": "40433333"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.334291934967041,
+              "bits": "3eab2850"
+            },
+            "rotationRate": {
+              "value": 0.2659998834133148,
+              "bits": "3e883123"
+            },
+            "sceneTime": {
+              "value": 0.08299994468688965,
+              "bits": "3da9fbe0"
+            },
+            "rawDt": {
+              "value": 0.03399991989135742,
+              "bits": "3d0b4380"
+            },
+            "pAppletFrameRate": {
+              "value": 1,
+              "bits": "3f800000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.02920933470060896,
+                "bits": "3f9de90d451baea7"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.00028792116791009903,
+              "bits": "3996f420"
+            }
+          }
+        },
+        {
+          "index": 9,
+          "operation": "update",
+          "requestedMillis": 3040,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 60,
+            "bits": "42700000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 3.0399999618530273,
+              "bits": "40428f5c"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.334291934967041,
+              "bits": "3eab2850"
+            },
+            "rotationRate": {
+              "value": 0.24599990248680115,
+              "bits": "3e7be766"
+            },
+            "sceneTime": {
+              "value": 0.07299995422363281,
+              "bits": "3d958100"
+            },
+            "rawDt": {
+              "value": -0.009999990463256836,
+              "bits": "bc23d700"
+            },
+            "pAppletFrameRate": {
+              "value": 60,
+              "bits": "42700000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.02920933470060896,
+                "bits": "3f9de90d451baea7"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.00028792116791009903,
+              "bits": "3996f420"
+            }
+          }
+        },
+        {
+          "index": 10,
+          "operation": "update",
+          "requestedMillis": 4000,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 4,
+              "bits": "40800000"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 1.305191993713379,
+              "bits": "3fa71088"
+            },
+            "rotationRate": {
+              "value": 0.699999988079071,
+              "bits": "3f333333"
+            },
+            "sceneTime": {
+              "value": 0.5,
+              "bits": "3f000000"
+            },
+            "rawDt": {
+              "value": 0.9600000381469727,
+              "bits": "3f75c290"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 1,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.8701928193982956,
+                "bits": "3febd89e9c90f36b"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.45828649401664734,
+              "bits": "3eeaa487"
+            }
+          }
+        },
+        {
+          "index": 11,
+          "operation": "update",
+          "requestedMillis": 4100,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 4.099999904632568,
+              "bits": "40833333"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 1.4451918601989746,
+              "bits": "3fb8fc0c"
+            },
+            "rotationRate": {
+              "value": 0.699999988079071,
+              "bits": "3f333333"
+            },
+            "sceneTime": {
+              "value": 0.5999999046325684,
+              "bits": "3f199998"
+            },
+            "rawDt": {
+              "value": 0.09999990463256836,
+              "bits": "3dccccc0"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 1,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.932995786494444,
+                "bits": "3feddb19fac994fa"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.5581261515617371,
+              "bits": "3f0ee15b"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "zero-sentinel-and-force-resume",
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.02,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "gradientStart",
+                "args": {
+                  "mode": "HUE_ROTATE",
+                  "speed": 120
+                }
+              },
+              {
+                "method": "domainRotate",
+                "args": [
+                  0.7
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          }
+        ]
+      },
+      "initial": {
+        "lastTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "hostPaused": false,
+        "rotation": {
+          "value": 0.30000001192092896,
+          "bits": "3e99999a"
+        },
+        "rotationRate": {
+          "value": 0.10000000149011612,
+          "bits": "3dcccccd"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "operations": [
+        {
+          "index": 0,
+          "operation": "update",
+          "requestedMillis": 0,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        },
+        {
+          "index": 1,
+          "operation": "update",
+          "requestedMillis": 16,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.01600000075995922,
+              "bits": "3c83126f"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        },
+        {
+          "index": 2,
+          "operation": "update",
+          "requestedMillis": 32,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.03200000151991844,
+              "bits": "3d03126f"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30422401428222656,
+              "bits": "3e9bc340"
+            },
+            "rotationRate": {
+              "value": 0.13199999928474426,
+              "bits": "3e072b02"
+            },
+            "sceneTime": {
+              "value": 0.01600000075995922,
+              "bits": "3c83126f"
+            },
+            "rawDt": {
+              "value": 0.01600000075995922,
+              "bits": "3c83126f"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.001262933059941916,
+                "bits": "3f54b1200c20912c"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.705356660560938e-07,
+              "bits": "3582435a"
+            }
+          }
+        },
+        {
+          "index": 3,
+          "operation": "togglePause",
+          "requestedMillis": 70,
+          "operationMillisCalls": 0,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.03200000151991844,
+              "bits": "3d03126f"
+            },
+            "hostPaused": true,
+            "rotation": {
+              "value": 0.30422401428222656,
+              "bits": "3e9bc340"
+            },
+            "rotationRate": {
+              "value": 0.13199999928474426,
+              "bits": "3e072b02"
+            },
+            "sceneTime": {
+              "value": 0.01600000075995922,
+              "bits": "3c83126f"
+            },
+            "rawDt": {
+              "value": 0.01600000075995922,
+              "bits": "3c83126f"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.001262933059941916,
+                "bits": "3f54b1200c20912c"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.705356660560938e-07,
+              "bits": "3582435a"
+            }
+          }
+        },
+        {
+          "index": 4,
+          "operation": "update",
+          "requestedMillis": 90,
+          "operationMillisCalls": 0,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.03200000151991844,
+              "bits": "3d03126f"
+            },
+            "hostPaused": true,
+            "rotation": {
+              "value": 0.30422401428222656,
+              "bits": "3e9bc340"
+            },
+            "rotationRate": {
+              "value": 0.13199999928474426,
+              "bits": "3e072b02"
+            },
+            "sceneTime": {
+              "value": 0.01600000075995922,
+              "bits": "3c83126f"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.001262933059941916,
+                "bits": "3f54b1200c20912c"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.705356660560938e-07,
+              "bits": "3582435a"
+            }
+          }
+        },
+        {
+          "index": 5,
+          "operation": "forceResume",
+          "requestedMillis": 200,
+          "operationMillisCalls": 0,
+          "inputFps": {
+            "value": 24,
+            "bits": "41c00000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.03200000151991844,
+              "bits": "3d03126f"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30422401428222656,
+              "bits": "3e9bc340"
+            },
+            "rotationRate": {
+              "value": 0.13199999928474426,
+              "bits": "3e072b02"
+            },
+            "sceneTime": {
+              "value": 0.01600000075995922,
+              "bits": "3c83126f"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.001262933059941916,
+                "bits": "3f54b1200c20912c"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 9.705356660560938e-07,
+              "bits": "3582435a"
+            }
+          }
+        },
+        {
+          "index": 6,
+          "operation": "update",
+          "requestedMillis": 216,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 24,
+            "bits": "41c00000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.2160000056028366,
+              "bits": "3e5d2f1b"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.4882240295410156,
+              "bits": "3ef9f880"
+            },
+            "rotationRate": {
+              "value": 0.4999999403953552,
+              "bits": "3efffffe"
+            },
+            "sceneTime": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "rawDt": {
+              "value": 0.18400000035762787,
+              "bits": "3e3c6a7f"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.11874210078286794,
+                "bits": "3fbe65e1df85501f"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.019226137548685074,
+              "bits": "3c9d8022"
+            }
+          }
+        },
+        {
+          "index": 7,
+          "operation": "togglePause",
+          "requestedMillis": 300,
+          "operationMillisCalls": 0,
+          "inputFps": {
+            "value": 24,
+            "bits": "41c00000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.2160000056028366,
+              "bits": "3e5d2f1b"
+            },
+            "hostPaused": true,
+            "rotation": {
+              "value": 0.4882240295410156,
+              "bits": "3ef9f880"
+            },
+            "rotationRate": {
+              "value": 0.4999999403953552,
+              "bits": "3efffffe"
+            },
+            "sceneTime": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "rawDt": {
+              "value": 0.18400000035762787,
+              "bits": "3e3c6a7f"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.11874210078286794,
+                "bits": "3fbe65e1df85501f"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.019226137548685074,
+              "bits": "3c9d8022"
+            }
+          }
+        },
+        {
+          "index": 8,
+          "operation": "togglePause",
+          "requestedMillis": 500,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 24,
+            "bits": "41c00000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.5,
+              "bits": "3f000000"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.4882240295410156,
+              "bits": "3ef9f880"
+            },
+            "rotationRate": {
+              "value": 0.4999999403953552,
+              "bits": "3efffffe"
+            },
+            "sceneTime": {
+              "value": 0.20000000298023224,
+              "bits": "3e4ccccd"
+            },
+            "rawDt": {
+              "value": 0.18400000035762787,
+              "bits": "3e3c6a7f"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.11874210078286794,
+                "bits": "3fbe65e1df85501f"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.019226137548685074,
+              "bits": "3c9d8022"
+            }
+          }
+        },
+        {
+          "index": 9,
+          "operation": "update",
+          "requestedMillis": 516,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 24,
+            "bits": "41c00000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 0.515999972820282,
+              "bits": "3f041893"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.5052480101585388,
+              "bits": "3f0157ef"
+            },
+            "rotationRate": {
+              "value": 0.531999945640564,
+              "bits": "3f083126"
+            },
+            "sceneTime": {
+              "value": 0.21599997580051422,
+              "bits": "3e5d2f19"
+            },
+            "rawDt": {
+              "value": 0.015999972820281982,
+              "bits": "3c831260"
+            },
+            "pAppletFrameRate": {
+              "value": 24,
+              "bits": "41c00000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0.12971555293216547,
+                "bits": "3fc09a84ecd02792"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0.02285509742796421,
+              "bits": "3cbb3a9d"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "signed-millis-wrap",
+      "input": {
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.3,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.02,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "gradientStart",
+                "args": {
+                  "mode": "HUE_ROTATE",
+                  "speed": 120
+                }
+              },
+              {
+                "method": "domainRotate",
+                "args": [
+                  0.7
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.2
+          }
+        ]
+      },
+      "initial": {
+        "lastTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "hostPaused": false,
+        "rotation": {
+          "value": 0.30000001192092896,
+          "bits": "3e99999a"
+        },
+        "rotationRate": {
+          "value": 0.10000000149011612,
+          "bits": "3dcccccd"
+        },
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "rawDt": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "pAppletFrameRate": {
+          "value": 37,
+          "bits": "42140000"
+        },
+        "queueIndex": 0,
+        "complete": false,
+        "values": {
+          "a": {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          "b": {
+            "value": 0.2,
+            "bits": "3fc999999999999a"
+          },
+          "scale": {
+            "value": 2.5,
+            "bits": "4004000000000000"
+          },
+          "phaseDensity": {
+            "value": 12,
+            "bits": "4028000000000000"
+          },
+          "modDensity": {
+            "value": 8,
+            "bits": "4020000000000000"
+          },
+          "phaseSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          "modSharpness": {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          }
+        },
+        "paletteOffset": {
+          "value": 0,
+          "bits": "00000000"
+        }
+      },
+      "operations": [
+        {
+          "index": 0,
+          "operation": "update",
+          "requestedMillis": 2147483600,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 2147483.75,
+              "bits": "4a03126f"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        },
+        {
+          "index": 1,
+          "operation": "update",
+          "requestedMillis": 2147483647,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": 2147483.75,
+              "bits": "4a03126f"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        },
+        {
+          "index": 2,
+          "operation": "update",
+          "requestedMillis": -2147483648,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": -2147483.75,
+              "bits": "ca03126f"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": -4294967.5,
+              "bits": "ca83126f"
+            },
+            "rawDt": {
+              "value": -4294967.5,
+              "bits": "ca83126f"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        },
+        {
+          "index": 3,
+          "operation": "update",
+          "requestedMillis": -2147483600,
+          "operationMillisCalls": 1,
+          "inputFps": {
+            "value": 37,
+            "bits": "42140000"
+          },
+          "state": {
+            "lastTime": {
+              "value": -2147483.75,
+              "bits": "ca03126f"
+            },
+            "hostPaused": false,
+            "rotation": {
+              "value": 0.30000001192092896,
+              "bits": "3e99999a"
+            },
+            "rotationRate": {
+              "value": 0.10000000149011612,
+              "bits": "3dcccccd"
+            },
+            "sceneTime": {
+              "value": -4294967.5,
+              "bits": "ca83126f"
+            },
+            "rawDt": {
+              "value": 0,
+              "bits": "00000000"
+            },
+            "pAppletFrameRate": {
+              "value": 37,
+              "bits": "42140000"
+            },
+            "queueIndex": 0,
+            "complete": false,
+            "values": {
+              "a": {
+                "value": 0,
+                "bits": "0000000000000000"
+              },
+              "b": {
+                "value": 0.2,
+                "bits": "3fc999999999999a"
+              },
+              "scale": {
+                "value": 2.5,
+                "bits": "4004000000000000"
+              },
+              "phaseDensity": {
+                "value": 12,
+                "bits": "4028000000000000"
+              },
+              "modDensity": {
+                "value": 8,
+                "bits": "4020000000000000"
+              },
+              "phaseSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              },
+              "modSharpness": {
+                "value": 1,
+                "bits": "3ff0000000000000"
+              }
+            },
+            "paletteOffset": {
+              "value": 0,
+              "bits": "00000000"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -71,6 +71,7 @@ export class SourceDomainSceneRuntime {
   this.clock=new RootsSceneClock({phi:0,theta:0,gamma:0,zoom:1},this.clips.map(c=>({duration:c.kind==='animate'&&(c.parameters?.length||c.gradients?.length)?Math.max(0,F(c.duration)):F(c.duration),easing:'linear'})));
  }
  get clipCount(){return this.clips.length;}
+ get queueComplete(){this.ensure();return this.clock.snapshot().queueComplete;}
  private ensure(){if(this.failed)throw Error('域场景上次更新失败，需要重建完整实例');}
  setParameterFrameRate(value:number):void {this.ensure();this.parameterFps=float(value,'宿主帧率');}
  private update(kind:SourceDomainUpdatePhase['kind'],dt:number):void {
