@@ -36,6 +36,8 @@
 
 这些验证不包括原生 JOGL、窗口抗锯齿、DITHER 实际状态、系统窗口合成或原版导出文件。原版实时批次计数、重放节奏、梯度动画及完整混沌轨迹还需继续核对。当前归一化消费的是本地累积器实际完成的批次；方法一致不等于已经证明宿主时序一致。
 
+后续已补充 [重放、清除与渐变触发规则](source-symmetry-replay-validation.zh-CN.md) 的 146 组原版方法运行证据，明确了编辑色板与渐变帧的不同语义；宿主调度和生产时序接入仍待完成。
+
 ## 复核与成本
 
 - 原版输入输出及来源：`tests/fixtures/symmetry/normalization-runtime.json`；JNI 运行源代码：`scripts/oracles/source-symmetry-normalization.c`。使用已有 JNI 头文件编译后，依次传入应用随附 `libjvm.dylib`、应用 JAR classpath 和包含 `cases` 的输入 JSON。它不启动 GUI，不安装 Java。
