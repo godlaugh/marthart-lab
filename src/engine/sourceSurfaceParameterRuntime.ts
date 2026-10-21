@@ -1,5 +1,6 @@
 import type {OscillationEdgeEasing} from '../types';
 import {sourceEase} from './sourceEasing';
+import {sourceOscillationEdgeScale} from './sourceOscillationEdge';
 
 export interface SourceSurfaceParameterConfiguration {
  readonly min:number;readonly max:number;readonly step:number;
@@ -119,17 +120,7 @@ export class SourceSurfaceParameterRuntime {
   this.start();
  }
  stop():void {this.spend();this.active=false;}
- private edgeScale(phase:number,edge:Readonly<OscillationEdgeEasing>):number {
-  phase=finite(phase,'相位');
-  // Native local lookup normalizes by repeated subtraction, unlike the stored
-  // phase's single subtraction below. Charge every reduction and reject a
-  // subtraction that cannot advance at binary64 precision.
-  while(phase>TAU){this.spend();const next=phase-TAU;if(next===phase)throw new Error('原版曲面参数相位约简无法推进');phase=next;}
-  while(phase<0){this.spend();const next=phase+TAU;if(next===phase)throw new Error('原版曲面参数相位约简无法推进');phase=next;}
-  const distance=(to:number)=>{const d=Math.abs(phase-to)%TAU;return d>Math.PI?TAU-d:d;};
-  const q=clamp(Math.min(distance(Math.PI/2),distance(3*Math.PI/2))/edge.window);
-  return finite(edge.floor+(1-edge.floor)*sourceEase(edge.easing,F(q)),'端点速度');
- }
+
  update(dt:number,frameRate:number):void {
   if(!this.active)return;
   dt=finite(F(dt),'帧间隔');frameRate=finite(F(frameRate),'帧率');const rate=frameRate>1?frameRate:60;
@@ -137,7 +128,7 @@ export class SourceSurfaceParameterRuntime {
    this.spend();const c=entry.configuration;if(!c.enabled)continue;
    if(c.span<=1e-6){this.options.write(entry.name,c.min);continue;}
    let phase=entry.phase??0;
-   const delta=(((Math.abs(c.step)*entry.scale)*this.edgeScale(phase,c.edge))/c.half)*(dt*rate);
+   const delta=(((Math.abs(c.step)*entry.scale)*sourceOscillationEdgeScale(phase,c.edge,units=>this.spend(units)))/c.half)*(dt*rate);
    phase=finite(phase+delta,'相位');if(phase>TAU)phase-=TAU;entry.phase=phase;
    this.options.write(entry.name,finite(c.middle+c.half*Math.sin(phase),'数值'));
   }

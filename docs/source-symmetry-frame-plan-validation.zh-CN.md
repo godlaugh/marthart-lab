@@ -78,3 +78,5 @@ node scripts/verify-captured-density-public.mjs .cache/public-new-run
 使用项目固定 Node/npm。前两项 GPU 验证脚本要求输出目录不存在；数学着色器回归还要求已留存的原版 JAR 与 shader 提取证据。机器结果保存在 `.cache/source-symmetry-frame-plan-*`，不进入 Git。
 
 **仍待完成：** 用户实时暂停时重复 display 的驱动、编辑色板/变换触发的分帧重建、源参数动画完整时序，以及原版完整窗口逐帧对照。当前修复覆盖固定时间线采样与队列结束语义，不代表这些剩余路径已一致。
+
+后续进展：[参数动画内核已通过原版 312 帧对照](source-symmetry-parameter-runtime-validation.zh-CN.md)，导入、时间线及 GPU 消费者尚待接入。
