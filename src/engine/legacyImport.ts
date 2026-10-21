@@ -1,3 +1,4 @@
+import {SOURCE_SYMMETRY_MATH,usesSourceSymmetryMath} from './sourceSymmetryMath';
 import {importSourceSamilaAppearance,importSourceSamilaPalette} from './sourceSamilaAppearanceImport';
 import {SAMILA_SOURCE_SPLAT_MODEL,usesSourceSamilaSplat} from './sourceSamilaSplat';
 import {SOURCE_SAMILA_PRESENTATION_MODEL} from './sourceSamilaPresentation';
@@ -375,7 +376,7 @@ function iteratedLegacy(r:Reader,s:SceneDocument){
  if(s.kind==='samila'&&!usesSourceSamilaSplat(s)){numberTo(r,s,'settings.alpha','alpha',{min:0,max:1});booleanTo(r,s,'settings.show_trails','showTrails');numberTo(r,s,'settings.trail_lifetime','trailLifetime',{min:.001,max:3600});}
  else if(s.kind!=='samila'){if(r.has('settings.show_trails'))r.acknowledge('settings.show_trails','Map/Symmetry 密度由 accumulation_decay 控制；此通用拖尾标记未作为线段历史');if(r.has('settings.trail_lifetime'))r.acknowledge('settings.trail_lifetime','Map/Symmetry 的包内密度管线采用逐帧 accumulation_decay，不将通用寿命字段误作另一层衰减');}
  const custom=hasSymmetryCustom(s);
- const backend=usesSourceSamilaSplat(s)?undefined:r.str('settings.render_mode');if(usesSourceSamilaSplat(s))s.settings.iteratedBackend='gpu';if(backend){const mode=backend.toUpperCase();if(!['CPU','GPU','AUTO'].includes(mode))fail('未知持续批次 render_mode');s.settings.iteratedBackend=mode==='CPU'?'cpu':mode==='GPU'?'gpu':'auto';if(!custom)r.warnings.push('持续批次后端选择已保留：GPU 使用独立 float32 状态和浮点累积；设备或公式不支持时明确回退 CPU，不保证原版随机序列、像素或性能相同。');}
+ const backend=usesSourceSamilaSplat(s)?undefined:r.str('settings.render_mode');if(usesSourceSamilaSplat(s))s.settings.iteratedBackend='gpu';if(backend){const mode=backend.toUpperCase();if(!['CPU','GPU','AUTO'].includes(mode))fail('未知持续批次 render_mode');s.settings.iteratedBackend=mode==='CPU'?'cpu':mode==='GPU'?'gpu':'auto';}
  if(usesSourceSamilaSplat(s))r.warnings.push('Samila 使用源噪声查找表、散点核与固定 60 Hz 衰减公式；本地随机流、最终窗口合成与热调整尺寸尚未证明原版整图一致。');
  else r.warnings.push(custom
   ?'自定义 GLSL 源码与参数已保留；持续批次使用 WebGL2 片元着色器，最后一次 calculate_next 写出的 stepMetric 用于颜色。CPU 选择或 GPU 不可用时明确报错；不改用内置公式。GLSL ES 3.00 支持与循环预算有明确限制，原版像素、随机序列及性能未对照。'
@@ -417,7 +418,10 @@ function symmetry(r:Reader,s:SceneDocument){
  s.settings.initialMode='box';for(const axis of ['X','Y'])for(const edge of ['Min','Max']){const key='initial'+axis+edge;s.settings[key]=edge==='Min'?.001:.002;numberTo(r,s,`settings.${axis.toLowerCase()}0_${edge.toLowerCase()}`,key);}
  const template=r.str('equation.template')??'standard';s.settings.template=template;
  if(!['standard','modified'].includes(template))r.warnings.push(hasSymmetryCustom(s)?`未知对称模板 ${template} 已保留；当前使用自定义 GLSL。`:`未知对称模板 ${template}，保留标识；生成器会明确报错。`);
- if(!hasSymmetryCustom(s))numberTo(r,s,'parameters.delta_power','deltaPower',{min:1,max:6,integer:true});
+ // Preserve dormant built-in settings without restricting custom uniforms.
+ // The template-switch owner validates them when custom GLSL is removed.
+ numberTo(r,s,'parameters.delta_power','deltaPower',hasSymmetryCustom(s)?{}:{min:1,max:6,integer:true});
+ if(s.settings.iteratedBackend!=='cpu')s.settings.symmetryMathModel=SOURCE_SYMMETRY_MATH;
  if(formula!==undefined&&formula!==null)r.warnings.push('equation.formula 已保留为只读说明；实际计算使用非空 equation.glsl 或所选模板。');
 }
 
@@ -1345,7 +1349,7 @@ function spirographTimeline(r:Reader,s:SceneDocument):void {
  resolveTimeline(s); // Validate the current queue budget without persisting derived starts.
 }
 
-export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';samilaPresentation?:'auto'|'legacy-v1';samilaSampling?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';}
+export interface LegacyImportOptions {samilaCamera?:'auto'|'legacy-v1';samilaProjection?:'auto'|'legacy-v1';samilaMath?:'auto'|'legacy-v1';samilaTimeline?:'auto'|'legacy-v1';samilaSplat?:'auto'|'legacy-v1';samilaPresentation?:'auto'|'legacy-v1';samilaSampling?:'auto'|'legacy-v1';iteratedCamera?:'auto'|'legacy-v1';iteratedMath?:'auto'|'legacy-v1';}
 
 /** Import original MathArt JSON while retaining every original value separately. */
 export function parseLegacyScene(text:string,options:LegacyImportOptions={}):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
@@ -1444,6 +1448,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  let samilaTheta:number|undefined;
  if(kind==='samila'&&!usesSamilaSourceProjection(scene)&&r.has('camera')){r.object('camera');samilaTheta=r.num('camera.theta',scene.parameters);}
  if(kind==='samila'&&samilaTheta!==undefined&&options.samilaCamera!=='legacy-v1')scene.settings=initializeSamilaCamera({...scene.settings,samilaCameraTheta:samilaTheta});
+ if(options.iteratedMath==='legacy-v1')delete scene.settings.symmetryMathModel;
  if((kind==='map'||kind==='symmetry')&&options.iteratedCamera!=='legacy-v1')scene.settings.iteratedCameraModel=CAPTURED_DENSITY_CAMERA_MODEL;
  if(ordinaryScope&&(!['map','symmetry'].includes(kind)||options.iteratedCamera!=='legacy-v1'))ordinaryCamera(r,scene,ordinaryScope);
  if(usesCapturedDensityCamera(scene))r.warnings.push('Map/Symmetry 已启用源相机捕获投影：Map 相机变化清空密度，Symmetry 角度变化保留密度旋转；新窗口与导出按本地固定时钟重放，随机序列、点覆盖和原版完整画面仍未对照。');
@@ -1468,5 +1473,8 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   if(r.has('camera'))r.acknowledge('camera','仅已启用的 Samila 锚定模型消费 theta；其他相机字段未应用');
  }
 
+ if(['map','symmetry','samila'].includes(kind)&&r.has('settings.render_mode')&&!hasSymmetryCustom(scene)&&!usesSourceSamilaSplat(scene))r.warnings.push(usesSourceSymmetryMath(scene)
+  ?'持续批次后端选择已保留：源 Symmetry 使用 GPU 复数迭代、原始步长度量及非有限状态传播；GPU 不可用时明确报错，不回退到不同的 CPU 数学。随机序列、点覆盖与原版整图仍未证明一致。'
+  :'持续批次后端选择已保留：GPU 使用独立 float32 状态和浮点累积；设备或公式不支持时明确回退 CPU，不保证原版随机序列、像素或性能相同。');
  r.remaining();return{scene,warnings:r.warnings,source,...(r.sourceNumberTokens.length?{sourceNumberTokens:r.sourceNumberTokens}:{})};
 }

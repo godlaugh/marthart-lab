@@ -1,6 +1,7 @@
 import {usesSourceSamilaMath} from '../engine/sourceSamilaMath';
 import {mapDimension} from '../engine/mapDimension';
 import {hasSymmetryCustom} from '../engine/symmetryCustom';
+import {usesSourceSymmetryMath} from '../engine/sourceSymmetryMath';
 import type {ControlSpec, GenerateContext, SceneDefinition, SceneDocument, SceneOutput, Settings} from '../types';
 import {compileReal, finite, numberSetting, random} from '../engine/expression';
 import {vertexColors} from '../engine/palette';
@@ -88,6 +89,7 @@ function generateMap(scene:SceneDocument,c:GenerateContext):SceneOutput {
 
 function generateSymmetry(scene:SceneDocument,c:GenerateContext):SceneOutput {
   if(scene.settings.iteratedMode==='continuous')return generateIteratedDensity(scene,c);
+  if(usesSourceSymmetryMath(scene))throw new Error('源 Symmetry 数学需要持续批次 GPU；不能以单次 CPU 采样替代。');
   if(hasSymmetryCustom(scene))throw new Error('自定义 Symmetry GLSL 仅支持持续批次密度；单次采样不可用。');
   const s=scene.settings,requested=integer(s,'count',80000,1,1000000),limit=c.quality==='export'?500000:120000;
   const g=new Geometry(Math.min(requested,limit),'points',scene),count=budget(requested,limit,g,'对称混沌点数');

@@ -16,6 +16,7 @@ import {iteratedNoiseGlsl} from './iteratedGpuNoise';
 import {compileSamilaGpuField} from './iteratedGpuSamila';
 import {symmetryCustomFragmentSource} from './symmetryCustomShader';
 import {SAMILA_HISTORY_CEILING} from './samilaHistory';
+import {sourceSymmetryGpuField} from './sourceSymmetryMath';
 
 export interface IteratedGpuOptions {resetParticles:boolean;clearInk:boolean;width:number;height:number;projection:DensityProjection;padding:number;bounds?:DensityBounds;isCancelled?:()=>boolean;}
 export interface IteratedGpuFacts {bounds:DensityBounds;steps:number;invalid:number;accepted:number;clipped:number;sampleInvalid:number;}
@@ -45,13 +46,14 @@ export function iteratedGpuBytes(count:number,width:number,height:number,texture
  const tw=Math.min(textureWidth,count),th=Math.ceil(count/tw),capacity=tw*th,reduce=Math.ceil(tw/2)*Math.ceil(th/2);
  return (sourcePresentation?sourceSamilaPresentationBytes(width,height):0)+(sourceSplat?256*256*4*2+1024*3*4*2:0)+capacity*(customStorage?48:72)+reduce*64+width*height*(boundedHistory?48:32)+width*16+(PALETTE_INTERVALS+1)*32+CHUNK*16+512+densityGpuToneBytes();
 }
-export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';}
+export interface IteratedGpuFieldSource {source:string;uniforms:Readonly<Record<string,number>>;key:string;stage?:'fragment';sourceSymmetry?:true;}
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
  * Parameter values remain uniforms and never enter a shader-cache key. */
 export function iteratedGpuFieldSource(field:IteratedField):IteratedGpuFieldSource {
  if(field.kind==='symmetry-custom')return{source:symmetryCustomFragmentSource(field.plan),uniforms:field.uniforms,key:field.plan.programKey,stage:'fragment'};
  if(field.kind==='samila')return compileSamilaGpuField(field);
  if(field.kind==='symmetry'){
+  if(field.mathModel)return sourceSymmetryGpuField(field.parameters);
   const q=field.parameters,values=[q.lambda,q.alpha,q.beta,q.gamma,q.omega,q.n,q.template==='modified'?(q.delta??0):0,q.deltaPower??1];
   checked(values.every(finite32),'对称参数超出 GPU float32');
   const uniforms=Object.fromEntries(values.map((v,i)=>['q'+i,v]));
@@ -80,6 +82,11 @@ bool bad(vec3 p){return !finiteVector(p);}
 `;
 const STEP_MAIN=`void main(){uint id=uint(gl_VertexID);vec3 p=oldState.xyz;uint invalid=resetCounter==1?0u:oldMetadata.r;float metric=0.;bool valid=true;
 for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=nextPoint(p);valid=!bad(next)&&(samila==1||stableLength(next)<=escapeRadius);if(valid){metric=samila==1?0.:stableLength(next-p);p=next;}else{invalid++;p=samila==1?next:initial(id,serialBase+uint(j));}}
+newState=vec4(p,metric);newMetadata=uvec2(invalid,valid?1u:0u);gl_Position=vec4(0.);}`;
+// Source update preserves even nonfinite state; local diagnostics may hide an
+// invalid splat but must never reseed or clamp the mathematical trajectory.
+const SOURCE_SYMMETRY_STEP_MAIN=`void main(){vec3 p=oldState.xyz;float metric=oldState.w;uint invalid=resetCounter==1?0u:oldMetadata.r;bool valid=(oldMetadata.g&1u)!=0u;
+for(int j=0;j<256;j++){if(j>=steps)break;vec3 next=p;float nextMetric=metric;calculate_next(p,next,nextMetric);next.z=0.;p=next;metric=nextMetric;valid=finiteVector(p)&&finiteFloat(metric);if(!valid)invalid++;}
 newState=vec4(p,metric);newMetadata=uvec2(invalid,valid?1u:0u);gl_Position=vec4(0.);}`;
 const TRANSFORM=`${FLOAT_CLASSIFY}
 uniform vec3 scale,offset;uniform vec2 turn;uniform ivec2 axes;
@@ -186,7 +193,7 @@ export class IteratedDensityGpu {
  private setBounds(p:Program,b:DensityBounds){checkBounds(b);this.gl!.uniform4f(this.location(p,'bounds'),Math.fround(b.minX),Math.fround(b.maxX),Math.fround(b.minY),Math.fround(b.maxY));}
  private iterate(job:IteratedFrameJob,source:IteratedGpuFieldSource,steps:number,serial:number,resetCounter:boolean,cancel?:()=>boolean){
   if(source.stage==='fragment'){this.iterateCustom(job,source,steps,serial,resetCounter,cancel);return;}
-  const gl=this.gl!,r=this.resources!,p=this.program('step:legacy'+source.key,STEP+source.source+STEP_MAIN,EMPTY,['newState','newMetadata']);
+  const gl=this.gl!,r=this.resources!,p=this.program('step:'+source.key,STEP+source.source+(source.sourceSymmetry?SOURCE_SYMMETRY_STEP_MAIN:STEP_MAIN),EMPTY,['newState','newMetadata']);
   checked(Object.keys(source.uniforms).length+16<=gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS),'GPU 公式 uniform 容量不足');gl.useProgram(p.value);for(const [name,value]of Object.entries(source.uniforms))this.f(p,name,value);
   const cfg=job.config;gl.uniform1ui(this.location(p,'seed'),cfg.seed);gl.uniform1ui(this.location(p,'serialBase'),serial);gl.uniform3f(this.location(p,'lower'),...cfg.bounds.map(v=>Math.fround(v[0])) as [number,number,number]);gl.uniform3f(this.location(p,'upper'),...cfg.bounds.map(v=>Math.fround(v[1])) as [number,number,number]);this.i(p,'dimension',cfg.dimension);this.i(p,'samila',job.kind==='samila'?1:0);this.i(p,'resetCounter',resetCounter?1:0);this.i(p,'steps',steps);this.f(p,'escapeRadius',cfg.escape);
   const next=1-r.side;gl.bindVertexArray(r.vao);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,r.counters[r.side]);gl.enableVertexAttribArray(1);gl.vertexAttribIPointer(1,2,gl.UNSIGNED_INT,0,0);gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,r.feedback);gl.enable(gl.RASTERIZER_DISCARD);

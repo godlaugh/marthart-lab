@@ -1,3 +1,4 @@
+import {usesSourceSymmetryMath,SOURCE_SYMMETRY_MATH} from '../engine/sourceSymmetryMath';
 import {SourceSamilaSamplingSession,usesSourceSamilaSampling,validateSourceSamilaSampling,prepareSourceSamilaSamplingBatch,sourceSamilaSample,type SourceSamilaSamplingFacts} from '../engine/sourceSamilaSampling';
 import {SOURCE_SAMILA_PRESENTATION_MODEL,usesSourceSamilaPresentation,sourceSamilaDisplayTransform,validateSourceSamilaPresentation} from '../engine/sourceSamilaPresentation';
 import {usesSourceSamilaSplat,prepareSourceSamilaSplat,sourceSamilaFloat,sourceSamilaUsesPaletteLut,validateSourceSamilaSplat,sourceSamilaFallbackColor,sourceSamilaDecay,sourceSamilaPointDiameter,sourceSamilaSplatMass,sourceSamilaPaletteLut,sourceSamilaPaletteCoordinate,sampleSourceSamilaPalette,type SourceSamilaSplatFacts} from '../engine/sourceSamilaSplat';
@@ -53,11 +54,11 @@ function config(scene:SceneDocument):IteratedConfig {
  for(const [lo,hi]of bounds)if(hi<lo)throw new Error('初始盒上限必须不小于下限');
  const fps=usesSourceSamilaTimeline(scene)?numberSetting({fps:scene.timeline.fps},'fps',60,1,120):int(s,'iteratedFps',60,1,120),metricMin=numberSetting(s,'stepMetricMin',0,0,1e12),metricMax=numberSetting(s,'stepMetricMax',2,.001,1e12),metricMode=option(s,'stepMetricNormalize','clamp',['clamp','robust']) as 'clamp'|'robust';normalizeStepMetric(0,metricMin,metricMax,metricMode);
  let decay=sourceSplat?sourceSamilaDecay(s):numberSetting(s,'accumulationDecay',1,0,1);if(!sourceSplat&&kind==='samila'&&bool(s,'showTrails',true))decay*=Math.pow(.01,1/(fps*numberSetting(s,'trailLifetime',4,.001,3600)));
- return{...(sourceSplat?{sourcePaletteLut:sourceSamilaUsesPaletteLut(s,scene.palette)}:{}),...(kind==='samila'?{samilaHistoryModel:samilaHistoryModel(s)}:{}),count:int(s,'batchSize',4096,1,MAX_BATCH),fps,startTime:numberSetting(s,'iteratedStartTime',0,0,86400),seed:usesSourceSamilaSampling(scene)?0:int(s,'seed',1,0,0xffffffff),burn:kind==='samila'?0:int(s,'burnIn',kind==='map'?100:200,0,100000),iterations:kind==='samila'?1:int(s,'iterationsPerFrame',1,1,16),dimension,escape:numberSetting(s,'escapeRadius',kind==='symmetry'?10:100,.001,1e12),bounds,decay,alpha:sourceSplat?sourceSamilaFloat(s,'alpha',.1):kind==='samila'?numberSetting(s,'alpha',.1,0,1):1,record:usesSourceSamilaSampling(scene)?true:bool(s,'recordTrails',true),pointSize:sourceSplat?1:numberSetting(s,'pointSize',1,.1,32),metricMin,metricMax,metricMode,color:sourceSplat?'noise':option(s,'iteratedColor',kind==='samila'?'noise':'step',['step','noise','index','radius','angle','height']),colorSpeed:sourceSplat?0:numberSetting(s,'colorSpeed',.22,.001,100),colorPhase:sourceSplat?sourceSamilaFloat(s,'colorPhase',180):numberSetting(s,'colorPhase',0,-1e9,1e9)};
+ return{...(sourceSplat?{sourcePaletteLut:sourceSamilaUsesPaletteLut(s,scene.palette)}:{}),...(kind==='samila'?{samilaHistoryModel:samilaHistoryModel(s)}:{}),count:int(s,'batchSize',4096,1,MAX_BATCH),fps,startTime:numberSetting(s,'iteratedStartTime',0,0,86400),seed:usesSourceSamilaSampling(scene)?0:int(s,'seed',1,0,0xffffffff),burn:kind==='samila'?0:int(s,'burnIn',kind==='map'?100:200,0,100000),iterations:kind==='samila'?1:int(s,'iterationsPerFrame',1,1,16),dimension,escape:usesSourceSymmetryMath(scene)?0:numberSetting(s,'escapeRadius',kind==='symmetry'?10:100,.001,1e12),bounds,decay,alpha:sourceSplat?sourceSamilaFloat(s,'alpha',.1):kind==='samila'?numberSetting(s,'alpha',.1,0,1):1,record:usesSourceSamilaSampling(scene)?true:bool(s,'recordTrails',true),pointSize:sourceSplat?1:numberSetting(s,'pointSize',1,.1,32),metricMin,metricMax,metricMode,color:sourceSplat?'noise':option(s,'iteratedColor',kind==='samila'?'noise':'step',['step','noise','index','radius','angle','height']),colorSpeed:sourceSplat?0:numberSetting(s,'colorSpeed',.22,.001,100),colorPhase:sourceSplat?sourceSamilaFloat(s,'colorPhase',180):numberSetting(s,'colorPhase',0,-1e9,1e9)};
 }
 export type IteratedField =
  | {kind:'map';equations:{x:string;y:string;z?:string};parameters:Record<string,number>;dimension:2|3;time:number}
- | {kind:'symmetry';parameters:SymmetryParameters;time:number}
+ | {kind:'symmetry';mathModel?:typeof SOURCE_SYMMETRY_MATH;parameters:SymmetryParameters;time:number}
  | {kind:'symmetry-custom';plan:PreparedSymmetryCustomSource;uniforms:Readonly<Record<string,number>>;parameters:Readonly<Record<string,number>>;time:number}
  | {kind:'samila';mathModel?:SourceSamilaMathModel;equations:{f1:string;f2:string};parameters:Record<string,number>;mapping:string;projection:string;lo:number;hi:number;rotation:number;time:number};
 export interface IteratedFrameJob {samilaSampling?:SourceSamilaSamplingFacts;samilaSplat?:SourceSamilaSplatFacts;samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
@@ -79,7 +80,7 @@ function parseField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:
  }
  if(scene.kind!=='symmetry'&&!usesSourceSamilaMath(scene))for(const key of Object.keys(p)){const error=existingParameterNameError(key,scene.kind);if(error)throw new Error(error);}
  if(scene.kind==='map')return{kind:'map',equations:{x:scene.equations.x??'sin(a*y)+c*cos(a*x)',y:scene.equations.y??'sin(b*x)+d*cos(b*y)',z:scene.equations.z},parameters:p,dimension:cfg.dimension,time};
- if(scene.kind==='symmetry'){const s=scene.settings,defaults=SYMMETRY_DEFAULT_PARAMETERS,q=validateSymmetryParameters({lambda:p.lambda??defaults.lambda,alpha:p.alpha??defaults.alpha,beta:p.beta??defaults.beta,gamma:p.gamma??defaults.gamma,omega:p.omega??defaults.omega,n:int(s,'degree',SYMMETRY_DEFAULT_SETTINGS.degree,2,50),template:option(s,'template',SYMMETRY_DEFAULT_SETTINGS.template,['standard','modified']) as 'standard'|'modified',delta:p.delta??defaults.delta,deltaPower:int(s,'deltaPower',SYMMETRY_DEFAULT_SETTINGS.deltaPower,1,6)});return{kind:'symmetry',parameters:q,time};}
+ if(scene.kind==='symmetry'){const s=scene.settings,defaults=SYMMETRY_DEFAULT_PARAMETERS,q=validateSymmetryParameters({lambda:p.lambda??defaults.lambda,alpha:p.alpha??defaults.alpha,beta:p.beta??defaults.beta,gamma:p.gamma??defaults.gamma,omega:p.omega??defaults.omega,n:int(s,'degree',SYMMETRY_DEFAULT_SETTINGS.degree,2,50),template:option(s,'template',SYMMETRY_DEFAULT_SETTINGS.template,['standard','modified']) as 'standard'|'modified',delta:p.delta??defaults.delta,deltaPower:int(s,'deltaPower',SYMMETRY_DEFAULT_SETTINGS.deltaPower,1,6)});return{kind:'symmetry',...(usesSourceSymmetryMath(scene)?{mathModel:SOURCE_SYMMETRY_MATH}:{}),parameters:q,time};}
  const s=scene.settings,sourceMath=usesSourceSamilaMath(scene),range=sourceMath?prepareSourceSamilaRange(numberSetting(s,'start',-Math.PI),numberSetting(s,'stop',Math.PI),usesSourceSamilaSampling(scene)?'source-pcg':'legacy-finite-span'):{lo:numberSetting(s,'start',-Math.PI,-1000,1000),hi:numberSetting(s,'stop',Math.PI,-1000,1000)}, {lo,hi}=range;if(!sourceMath&&hi<=lo)throw new Error('Samila 采样上限必须大于下限');
  const selection=sourceMath?resolveSourceSamilaSelection(String(s.mapping??'f2_f1'),String(s.projection??'cartesian')):resolveSamilaSelection(String(s.mapping??'f1_f2'),String(s.projection??'polar'),cfg.seed),rotation=(usesSamilaSourceProjection(scene)?numberSetting(s,'rotation',0):numberSetting(s,'rotation',0,-10000,10000))+time*numberSetting(s,'rotationSpeed',0,-100,100);
  if(sourceMath&&(typeof scene.equations.f1!=='string'||typeof scene.equations.f2!=='string'))throw Error('源 Samila 数学需要显式 f1/f2 公式');
@@ -106,6 +107,7 @@ interface SamilaPrograms {readonly f1?:RealEvaluator;readonly f2?:RealEvaluator;
 function compileField(job:IteratedFrameJob,programs?:SamilaPrograms):Field {
  const f=job.field,cfg=job.config;
  if(f.kind==='map'){const step=compileMapIterator(f.equations,f.parameters,f.dimension,f.time);return{step:point=>builtInIterationResult(point,step(point),cfg.escape)};}
+ if(f.kind==='symmetry'&&f.mathModel)throw new Error('源 Symmetry 数学需要 GPU');
  if(f.kind==='symmetry')return{step:point=>builtInIterationResult(point,[...symmetryStep(point[0],point[1],f.parameters),0],cfg.escape)};
  if(f.kind==='symmetry-custom')throw new Error('自定义 Symmetry GLSL 仅支持 GPU 持续密度；不能使用 CPU 内建方程替代。');
  if(!programs)throw new Error('Samila CPU 公式尚未编译');
@@ -161,12 +163,13 @@ export class IteratedDensitySession {
    // Actual completed counts and raster dimensions are bound after simulation.
    const baseline=config(runtime.atTime(Number(baseScene.settings.iteratedStartTime??0)));
    const tone=prepareDensityTone(current.palette,current.settings,baseScene.kind==='samila'&&baseline.samilaHistoryModel==='bounded-v2'?samilaToneFacts(baseline,c.width,c.height,0,prepareSourceSamilaSplat(current,{width:c.width,height:c.height,primaryPixelHeight:c.samilaPrimaryPixelHeight,path:'points'})):baseScene.kind==='map'||baseScene.kind==='symmetry'?{kind:baseScene.kind,width:c.width,height:c.height,recordedPasses:0,batchSize:1}:undefined);
-   const requested=option(baseScene.settings,'iteratedBackend','auto',['auto','cpu','gpu']),custom=hasSymmetryCustom(baseScene);
+   const requested=option(baseScene.settings,'iteratedBackend','auto',['auto','cpu','gpu']),custom=hasSymmetryCustom(baseScene),sourceSymmetry=usesSourceSymmetryMath(baseScene);
+   if(sourceSymmetry&&requested==='cpu')throw new Error('源 Symmetry 数学需要 GPU；本地 CPU 极坐标实现不能替代原版复数迭代。');
    if(custom&&requested==='cpu')throw new Error('自定义 Symmetry GLSL 仅支持 GPU 持续密度；不能使用 CPU 内建方程替代。');
-   const wantsGpu=custom||requested==='gpu'||requested==='auto'&&(usesSourceSamilaSplat(baseScene)||Number(baseScene.settings.batchSize??4096)>=50000);
+   const wantsGpu=custom||sourceSymmetry||requested==='gpu'||requested==='auto'&&(usesSourceSamilaSplat(baseScene)||Number(baseScene.settings.batchSize??4096)>=50000);
    const attemptKey=identity(inputScene(baseScene),c.width,c.height)+(runtime.key??'')+JSON.stringify([c.sourceViewport,c.samilaPrimaryPixelHeight]),prior=this.fallback?.key===attemptKey?this.fallback:undefined;
    let reason=prior?.reason;
-   if(wantsGpu&&!prior){try{return this.run(baseScene,c,'webgl2',current,tone,runtime);}catch(error){this.resetRuntime([error],true);if(error instanceof DOMException&&error.name==='AbortError')throw error;reason=error instanceof Error?error.message:String(error);if(custom)throw new Error(`自定义 Symmetry GLSL 无法在 GPU 上执行；未使用内建方程替代：${reason}`);}}
+   if(wantsGpu&&!prior){try{return this.run(baseScene,c,'webgl2',current,tone,runtime);}catch(error){this.resetRuntime([error],true);if(error instanceof DOMException&&error.name==='AbortError')throw error;reason=error instanceof Error?error.message:String(error);if(sourceSymmetry)throw new Error(`源 Symmetry GPU 计算失败；未回退到不同的 CPU 数学：${reason}`);if(custom)throw new Error(`自定义 Symmetry GLSL 无法在 GPU 上执行；未使用内建方程替代：${reason}`);}}
    const output=this.run(baseScene,c,'cpu',current,tone,runtime);
    if(wantsGpu&&reason){this.fallback={key:attemptKey,reason};output.warnings=[...(output.warnings??[]),`GPU 持续密度不可用，已完整重放 CPU：${reason}`];}
    output.stats.elapsedMs=performance.now()-started;return output;
@@ -298,7 +301,7 @@ export class IteratedDensitySession {
   if(s.samilaSplat){warnings.push(s.samilaSampling?'源 Samila splat 使用固定二维 Simplex LUT、源色板与点覆盖；CPU 栅格化为派生近似，未声明原版整图一致。':'源 Samila splat 使用固定二维 Simplex LUT、源色板与点覆盖；随机点流仍为本地确定性流，CPU 栅格化为派生近似，未声明原版整图一致。');if(s.samilaSplat.referenceKind==='local-output')warnings.push('未提供主画布物理高度；本地显式使用输出高度作为点尺寸参考，不能当作原版主画布证据。');}
   if(backend==='webgl2'&&!s.samilaSplat)warnings.push('GPU 使用 float32 持久粒子与浮点密度、4097 点色板插值；混沌轨迹和颜色可能与 CPU 双精度不同，不承诺原版像素一致。');
   if(view.projection!=='xy')warnings.push(`当前密度投影为 ${view.projection.toUpperCase()}；三维坐标先做空间变换再投影。`);
-  if(s.invalid)warnings.push(base.kind==='samila'?`${s.invalid} 次无效 Samila 数学采样已跳过。`:`${s.invalid} 次无效数学结果已显式跳过；迭代粒子从确定的初始盒重生。`);
+  if(s.invalid)warnings.push(usesSourceSymmetryMath(base)?`${s.invalid} 次源 Symmetry 非有限结果已跳过绘制；数学状态保留，未重生粒子。`:base.kind==='samila'?`${s.invalid} 次无效 Samila 数学采样已跳过。`:`${s.invalid} 次无效数学结果已显式跳过；迭代粒子从确定的初始盒重生。`);
   if(s.clipped)warnings.push(`${s.clipped} 个样本完全位于密度视口之外。`);
   return{type:'raster',cameraResolved:true,...(s.samilaSampling?{samilaSampling:{...s.samilaSampling}}:{}),...(tone.sourcePresentation?{sourceSamilaPresentation:{model:SOURCE_SAMILA_PRESENTATION_MODEL,stage:'present-target-rgba8' as const,display:'opaque-rgb-copy' as const,backend:toneBackend==='webgl2'?'webgl2' as const:'cpu-derived' as const}}:{}),...(s.samilaSplat?{samilaSplat:{...s.samilaSplat}}:{}),...(sourceFrame?{sourceCameraFrame:sourceFrame}:{}),...(samilaView?{samilaView,samilaViewportTransform:s.samilaGeometry??samilaViewportTransform(current)}:{}),dimension:2,backend,width,height,pixels,density:{projection:view.projection,bounds:{...s.bounds},inputPoints:s.deposited,examined:s.deposited,accepted:s.accepted,clipped:s.clipped,invalid:s.sampleInvalid,occupiedPixels:occupied,maxCount,toneBackend,cancelled:false},temporal:{time:Math.min(c.time,shownTime),windowStart:initial.startTime,frames:Math.max(0,target+1),samplingFps:initial.fps,recordedPoints:s.deposited,cacheHits:this.hits},stats:{samples:s.steps,generated:s.accepted,invalid:s.invalid,elapsedMs:performance.now()-started},warnings};
  }
@@ -317,9 +320,11 @@ export const iteratedDensityControls:ControlSpec[]=[
  select('iteratedColor','持续样本配色',[['step','最后一步距离'],['noise','空间噪声'],['index','粒子序号'],['radius','距原点距离'],['angle','极角'],['height','高度']]),
  n('stepMetricMin','步长度量下限',0,1e12,.01),n('stepMetricMax','步长度量上限',.001,1e12,.01),select('stepMetricNormalize','步长归一化',[['clamp','截断'],['robust','稳健压缩']]),n('colorSpeed','样本颜色频率',.001,100,.01),n('colorPhase','样本颜色相位 · 度',-1e9,1e9,1),
 ];
-export function visibleIteratedControls(kind:SceneKind,settings:Settings,controls:ControlSpec[],timeline?:SceneDocument['timeline'],palette?:Pick<Palette,'mode'>):ControlSpec[] {
+export function visibleIteratedControls(kind:SceneKind,settings:Settings,controls:ControlSpec[],timeline?:SceneDocument['timeline'],palette?:Pick<Palette,'mode'>,equations:SceneDocument['equations']={}):ControlSpec[] {
  if(!['map','symmetry','samila'].includes(kind))return controls;
  const sourceSampling=usesSourceSamilaSampling({kind,settings}),sourceSplat=usesSourceSamilaSplat({kind,settings}),sourceMath=usesSourceSamilaMath({kind,settings}),active=settings.iteratedMode==='continuous',normalized=active&&((kind!=='samila'&&settings.densityToneModel==='normalized-v2')||(kind==='samila'&&settings.densityToneModel==='samila-normalized-v2')),own=new Set(iteratedDensityControls.map(c=>c.key)),hidden=new Set<string>();
+ const sourceSymmetry=usesSourceSymmetryMath({kind,settings,equations});
+ if(sourceSymmetry)for(const key of ['escapeRadius','iteratedMode'])hidden.add(key);
  if(kind!=='samila')hidden.add('samilaHistoryModel');
  if(timeline&&usesSourceSamilaTimeline({kind,settings,timeline}))hidden.add('iteratedFps');
  if(sourceMath)hidden.add('iteratedMode');
@@ -338,5 +343,6 @@ export function visibleIteratedControls(kind:SceneKind,settings:Settings,control
   if(sourceMath&&c.key==='funcSeed')return{...c,min:-2147483648,max:2147483647,label:'源函数种子（保留值）',help:'原版数学采样不消费此字段；本地随机探索属于独立工具。'};
   if(sourceMath&&c.key==='seed')return{...c,label:'本地重放随机种子',help:'用于可重放的本地采样，不是原版每帧 ThreadLocalRandom 随机流。'};
   if(sourceMath&&(c.key==='mapping'||c.key==='projection'))return{...c,options:c.options?.map(o=>o.value==='random'?{...o,label:c.key==='mapping'?'源 RANDOM · 等同 F1_VS_F2':'源 RANDOM · 等同直角投影'}:o)};
+  if(sourceSymmetry&&c.key==='iteratedBackend')return{...c,options:c.options?.filter(o=>o.value!=='cpu')};
   return c;});
 }
