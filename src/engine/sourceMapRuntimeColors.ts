@@ -16,8 +16,8 @@ export function sourceMapRuntimeColors(settings:Settings):SourceMapRuntimeColors
 
 /** ProjectState reads Java float literals; direct JsonMap config additionally
  * accepts ConfigUtils expressions. Keep these entry points distinct. */
-export function importSourceMapColor(name:keyof SourceMapRuntimeColors,raw:unknown,entry:'project'|'runtime-config'):{ok:true;value:number}|{ok:false;reason:string}{
- const parsed=importSourceMapFloat(raw,ranges[name][2],entry);if(!parsed.ok)return parsed;const value=parsed.value;
+export function importSourceMapColor(name:keyof SourceMapRuntimeColors,raw:unknown,entry:'project'|'runtime-config',numberToken?:string):{ok:true;value:number}|{ok:false;reason:string}{
+ const parsed=importSourceMapFloat(raw,ranges[name][2],entry,numberToken);if(!parsed.ok)return parsed;const value=parsed.value;
  if(Number.isNaN(value))return{ok:false,reason:'源 Map 着色标量为 NaN，不能保存'};
  const [min,max]=ranges[name];return{ok:true,value:Math.max(min,Math.min(max,value))};
 }

@@ -426,6 +426,7 @@ export interface RasterOutput {
   samilaSampling?:import('./engine/sourceSamilaSampling').SourceSamilaSamplingFacts;
   /** Completed present-target bytes; alpha records native blending, not layer opacity. */
   sourceSamilaPresentation?:SourceSamilaPresentationFacts;
+  sourceMapPresentation?:import('./engine/sourceMapPresentation').SourceMapPresentationFacts;
   sourceSymmetryPresentation?:import('./engine/sourceSymmetryPresentation').SourceSymmetryPresentationFacts;
   type: "raster";
   /** The producer already applied the mathematical camera. Display this image
@@ -478,7 +479,8 @@ export interface GenerateContext {
   /** Measured primary canvas physical height, retained for offscreen Samila splats. */
   samilaPrimaryPixelHeight?:number;
   /** Measured primary canvas physical size, retained independently for export tone. */
-  sourceSymmetryToneReference?:import('./engine/sourceSymmetryPresentation').SourceSymmetryToneReference;
+  sourceMapToneReference?:import('./engine/sourceIteratedPresentation').SourceIteratedToneReference;
+  sourceSymmetryToneReference?:import('./engine/sourceIteratedPresentation').SourceIteratedToneReference;
   /** Explicit runtime instance; omitted requests use cold fixed-frame replay. */
   samilaLive?:import('./engine/sourceSamilaSession').SourceSamilaLiveContext;
   symmetryLive?:import('./engine/sourceSymmetrySession').SourceSymmetryLiveContext;
@@ -500,7 +502,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceSymmetryToneReference'|'samilaLive'|'symmetryLive'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'symmetryLive'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

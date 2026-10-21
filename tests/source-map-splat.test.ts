@@ -29,7 +29,7 @@ describe('Map source scatter configuration and display boundary',()=>{
   const cfg=prepareIteratedFrame(scene,0,0).config;expect(cfg.color).toBe('step');expect(cfg.colorSpeed).toBe(F(.37));expect(cfg.colorPhase).toBe(F(F(F(213.7)*F(Math.PI))/180));
  });
  it('versions new imports without migrating prior saved Map scenes',()=>{
-  const scene=project(),legacy=structuredClone(scene);delete legacy.settings.mapSplatModel;expect(prepareIteratedFrame(parseScene(serializeScene(legacy)),0,0).densitySplat).toBeUndefined();
+  const scene=project(),legacy=structuredClone(scene);delete legacy.settings.mapPresentationModel;delete legacy.settings.mapSplatModel;expect(prepareIteratedFrame(parseScene(serializeScene(legacy)),0,0).densitySplat).toBeUndefined();
   for(const mutate of [(s:typeof scene)=>{s.settings.mapSplatModel='unknown';},(s:typeof scene)=>{delete s.settings.mapMathModel;}]){const bad=structuredClone(scene);mutate(bad);expect(()=>parseScene(serializeScene(bad))).toThrow();}
  });
  it('uses display footprint capacity and exposes source ranges in controls',()=>{

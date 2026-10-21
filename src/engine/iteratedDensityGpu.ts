@@ -455,12 +455,12 @@ export class IteratedDensityGpu {
  present(job:DensityToneJob,isCancelled?:()=>boolean,view?:PreparedDensityView):{pixels:Uint8ClampedArray;occupiedPixels:number;maxCount:number;toneBackend:'cpu'|'webgl2';warnings:string[]} {
   if(this.cleanupPending)this.reset();
   try{
-   checkCancelled(isCancelled);const r=this.resources??this.direct;checked(Boolean(r),'GPU 密度状态为空');const captured=view&&isCapturedDensityView(view)?view:undefined,admission=captured&&!job.sourceSymmetryPresentation?{reason:'源 Map/Sym 相机视图在浮点墨迹上执行共享 CPU 采样与调色'}:prepareDensityGpuTone(job);let reason=admission.reason,destination:Uint8ClampedArray|undefined;
-   if(!job.sourcePresentation&&!job.sourceSymmetryPresentation)this.tone?.releaseSourcePresentation();
-   const sourceTarget=job.sourcePresentation||job.sourceSymmetryPresentation?sourceDensityPresentationBytes(r!.width,r!.height):0;
+   checkCancelled(isCancelled);const r=this.resources??this.direct;checked(Boolean(r),'GPU 密度状态为空');const captured=view&&isCapturedDensityView(view)?view:undefined,admission=captured&&!job.sourceSymmetryPresentation&&!job.sourceMapPresentation?{reason:'源 Map/Sym 相机视图在浮点墨迹上执行共享 CPU 采样与调色'}:prepareDensityGpuTone(job);let reason=admission.reason,destination:Uint8ClampedArray|undefined;
+   if(!job.sourcePresentation&&!job.sourceSymmetryPresentation&&!job.sourceMapPresentation)this.tone?.releaseSourcePresentation();
+   const sourceTarget=job.sourcePresentation||job.sourceSymmetryPresentation||job.sourceMapPresentation?sourceDensityPresentationBytes(r!.width,r!.height):0;
    checked(r!.bytes+sourceTarget+r!.width*r!.height*4+(r!.sourceNoise?256*256*4*2+1024*3*4*2:0)<=MAX_BYTES,'GPU 完整呈现目标及输出超过 768 MiB 工作预算');
    if(admission.plan){this.tone??=new DensityGpuTone(this.context());const result=this.tone.render(r!.ink,r!.width,r!.height,admission.plan,isCancelled,view);if(!result.needsCpu)return{...result,toneBackend:'webgl2',warnings:[]};destination=result.pixels;reason='当前像素位于密度取样、色板相位或调色边界的 float32 敏感区';}
-   if(job.sourceSymmetryPresentation)throw Error('源 Symmetry GPU 呈现失败：'+reason);
+   if(job.sourceSymmetryPresentation||job.sourceMapPresentation)throw Error('源迭代密度 GPU 呈现失败：'+reason);
    const rgba=this.readback(),pixels=toneDensityRgbaPrepared(r!.width,r!.height,rgba,job,isCancelled,destination,view);let occupiedPixels=0,maxCount=0;
    for(let i=3;i<rgba.length;i+=4){if((i&65535)===3)checkCancelled(isCancelled);if(rgba[i]>0)occupiedPixels++;maxCount=Math.max(maxCount,rgba[i]);}
    return{pixels,occupiedPixels,maxCount,toneBackend:'cpu',warnings:[`GPU 粒子与累积保留，最终调色回退 CPU：${reason}`]};

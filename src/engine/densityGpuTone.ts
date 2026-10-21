@@ -1,4 +1,6 @@
-import {SOURCE_SYMMETRY_PRESENT_GLSL,sourceIteratedBrightnessUniform} from './sourceSymmetryPresentation';
+import {SOURCE_MAP_PRESENT_GLSL} from './sourceMapPresentation';
+import {sourceIteratedBrightnessUniform} from './sourceIteratedPresentation';
+import {SOURCE_SYMMETRY_PRESENT_GLSL} from './sourceSymmetryPresentation';
 import {isCapturedDensityView,validateDensityView,type PreparedDensityView} from './densityPresentation';
 import {SOURCE_SAMILA_PRESENT_GLSL,sourceSamilaDisplayTransform} from './sourceSamilaPresentation';
 import {densityAcceptsSignedMass} from './density';
@@ -12,25 +14,32 @@ const QUAD=HEADER+'void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_
 const finite=(v:number)=>Number.isFinite(v)&&Number.isFinite(Math.fround(v));
 const require=(condition:boolean,message:string)=>{if(!condition)throw new Error(message);};
 const cancel=(fn?:()=>boolean)=>{if(fn?.())throw new DOMException('GPU 密度调色已取消','AbortError');};
-export interface DensityGpuTonePlan {job:DensityToneJob;stops:Float32Array;mode:number;hsvStops:boolean;endpoint:[number,number,number];constant:[number,number,number];cosine:typeof DEFAULT_COSINE;}
+export interface DensityGpuTonePlan {sourceFamily?:'map'|'symmetry'|'samila';job:DensityToneJob;stops:Float32Array;mode:number;hsvStops:boolean;endpoint:[number,number,number];constant:[number,number,number];cosine:typeof DEFAULT_COSINE;}
 export type DensityGpuToneAdmission={plan:DensityGpuTonePlan;reason?:never}|{plan?:never;reason:string};
 /** Only capability/precision applicability is decided here. Settings and palette
  * validity belong to prepareDensityTone; no raw scene data enters this adapter. */
 export function prepareDensityGpuTone(job:DensityToneJob):DensityGpuToneAdmission {
  const {tone,palette:p}=job;
+ const sourceFamily=job.sourceMapPresentation?'map':job.sourceSymmetryPresentation?'symmetry':job.sourcePresentation?'samila':undefined;
+ if([job.sourceMapPresentation,job.sourceSymmetryPresentation,job.sourcePresentation].filter(Boolean).length>1)return{reason:'源密度呈现不能混用场景身份'};
+ if(sourceFamily==='map'||sourceFamily==='symmetry'){
+  const facts=sourceFamily==='map'?job.sourceMapPresentation!:job.sourceSymmetryPresentation!;
+  if(job.model!=='normalized-v2'||job.normalization.kind!==sourceFamily||facts.model!==`${sourceFamily}-present-1.7.8`||facts.stage!=='scene-target-rgba8'||facts.display!=='opaque-rgb-copy')return{reason:'源密度呈现身份与归一事实不匹配'};
+  if(sourceFamily==='map'&&(!job.sceneBackground||job.sceneBackground.length!==4||!job.sceneBackground.every(v=>finite(v)&&v>=0&&v<=1)))return{reason:'源 Map 呈现缺少有效场景清屏 RGBA'};
+ }else if(sourceFamily==='samila'&&(job.model!=='samila-normalized-v2'||job.sourcePresentation!.model!=='samila-present-1.7.8'))return{reason:'源 Samila 呈现身份与归一事实不匹配'};
  if(![job.gain,job.inverseGamma,job.logWhite,tone.dynamicRange,tone.contrast,tone.brightness,tone.saturation,...job.background].every(finite))return{reason:'调色参数超出 GPU float32 范围'};
  if(job.model!=='white-point-v1'&&(!finite(job.normalization.scale)||Math.fround(job.normalization.scale)<=0))return{reason:'归一密度尺度需要 CPU 双精度调色'};
- if(!job.sourcePresentation&&!job.sourceSymmetryPresentation&&tone.contrast!==0&&Math.abs(tone.contrast)<1e-20)return{reason:'极小对比度需要 CPU 双精度调色'};
+ if(!job.sourcePresentation&&!job.sourceSymmetryPresentation&&!job.sourceMapPresentation&&tone.contrast!==0&&Math.abs(tone.contrast)<1e-20)return{reason:'极小对比度需要 CPU 双精度调色'};
  // Source colors have already been sampled and accumulated, so every palette
  // representation remains eligible when only the RGB/mass average is needed.
- if(tone.paletteMode==='source')return{plan:{job,stops:new Float32Array([0,0,0,0,0,0,0,1]),mode:0,hsvStops:false,endpoint:[0,0,0],constant:[0,0,0],cosine:DEFAULT_COSINE}};
+ if(tone.paletteMode==='source')return{plan:{job,sourceFamily,stops:new Float32Array([0,0,0,0,0,0,0,1]),mode:0,hsvStops:false,endpoint:[0,0,0],constant:[0,0,0],cosine:DEFAULT_COSINE}};
  if(p.mode==='curve')return{reason:'曲线色板保留共享 CPU 分段三次插值调色'};
  if(!finite(p.cycles)||!finite(p.offset)||Math.abs(p.cycles)>64||Math.abs(p.offset)>64)return{reason:'大色板周期或偏移需要 CPU 双精度相位'};
  const locations=palettePositions(p),hsvStops=p.interpolation==='hsv',stops=new Float32Array(p.stops.length*4);
  for(let i=0;i<p.stops.length;i++){stops.set(hsvStops?rgbHSV(hexRGB(p.stops[i])):hexRGB(p.stops[i]),i*4);stops[i*4+3]=locations[i];if(i&&stops[i*4+3]<=stops[(i-1)*4+3])return{reason:'相邻色标位置在 GPU float32 中重合'};}
  const cosine=p.cosine??DEFAULT_COSINE;
  if(p.mode==='cosine'&&Object.values(cosine).flat().some(v=>!finite(v)||Math.abs(v)>64))return{reason:'大余弦色板参数需要 CPU 双精度相位'};
- return{plan:{job,stops,mode:p.cycles===0?4:{linear:0,sine:1,hsv:2,cosine:3}[p.mode as 'linear'|'sine'|'hsv'|'cosine'],hsvStops,endpoint:paletteColor(p,1-Number.EPSILON),constant:paletteColor(p,0),cosine}};
+ return{plan:{job,sourceFamily,stops,mode:p.cycles===0?4:{linear:0,sine:1,hsv:2,cosine:3}[p.mode as 'linear'|'sine'|'hsv'|'cosine'],hsvStops,endpoint:paletteColor(p,1-Number.EPSILON),constant:paletteColor(p,0),cosine}};
 }
 /** Two MRT targets, two reductions, and a bounded integer view-index tile.
  * Includes CPU upload scratch as well as owned GPU presentation storage. */
@@ -125,7 +134,7 @@ export interface DensityGpuToneResult{pixels:Uint8ClampedArray;occupiedPixels:nu
 /** Borrows a session's GL context and ink. Owns only presentation handles;
  * disposal never deletes the borrowed ink or loses its context. */
 export class DensityGpuTone {
- private sourceTarget?:{output:WebGLTexture;statistics:WebGLTexture;width:number;height:number;bytes:number};private sourceToneProgram?:Program;private symmetryToneProgram?:Program;private programs:Program[]=[];private textures:WebGLTexture[]=[];private framebuffer?:WebGLFramebuffer;
+ private sourceTarget?:{output:WebGLTexture;statistics:WebGLTexture;width:number;height:number;bytes:number};private sourceToneProgram?:Program;private symmetryToneProgram?:Program;private mapToneProgram?:Program;private programs:Program[]=[];private textures:WebGLTexture[]=[];private framebuffer?:WebGLFramebuffer;
  constructor(private readonly gl:WebGL2RenderingContext){}
  diagnostics(){return{retainedBytes:(this.textures.length?densityGpuToneBytes()-1024*16-DENSITY_TONE_TILE**2*4:0)+this.sourceTargetBytes(),programs:this.programs.length};}
  private program(vertex:string,fragment:string):Program{
@@ -154,7 +163,7 @@ export class DensityGpuTone {
  private target(texture:WebGLTexture,width:number,height:number,second?:WebGLTexture){const gl=this.gl;gl.bindFramebuffer(gl.FRAMEBUFFER,this.framebuffer!);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT1,gl.TEXTURE_2D,second??null,0);gl.drawBuffers(second?[gl.COLOR_ATTACHMENT0,gl.COLOR_ATTACHMENT1]:[gl.COLOR_ATTACHMENT0]);require(gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE,'GPU 调色 framebuffer 不完整');gl.viewport(0,0,width,height);}
  private ensure(){if(this.framebuffer)return;const gl=this.gl;try{require(gl.getParameter(gl.MAX_DRAW_BUFFERS)>=2,'GPU 调色需要两个颜色输出');require(gl.getParameter(gl.MAX_TEXTURE_SIZE)>=1024,'GPU 调色纹理容量不足');this.program(QUAD,FRAGMENT);this.program(QUAD,REDUCTION);this.texture(512,512,gl.RGBA8,gl.RGBA,gl.UNSIGNED_BYTE);this.texture(512,512,gl.RGBA32UI,gl.RGBA_INTEGER,gl.UNSIGNED_INT);this.texture(128,128,gl.RGBA32UI,gl.RGBA_INTEGER,gl.UNSIGNED_INT);this.texture(128,128,gl.RGBA32UI,gl.RGBA_INTEGER,gl.UNSIGNED_INT);this.texture(1024,1,gl.RGBA32F,gl.RGBA,gl.FLOAT);this.texture(DENSITY_TONE_TILE,DENSITY_TONE_TILE,gl.R32UI,gl.RED_INTEGER,gl.UNSIGNED_INT);const f=gl.createFramebuffer();require(Boolean(f),'GPU 调色 framebuffer 分配失败');this.framebuffer=f!;require(gl.getError()===gl.NO_ERROR,'GPU 调色分配失败');}catch(error){this.dispose();throw error;}}
  render(ink:WebGLTexture,width:number,height:number,plan:DensityGpuTonePlan,isCancelled?:()=>boolean,view?:PreparedDensityView):DensityGpuToneResult{
-  cancel(isCancelled);require(Number.isInteger(width)&&Number.isInteger(height)&&width>0&&height>0&&width<=16384&&height<=16384&&width*height<=33554432,'GPU 调色输出超出 128 MiB');if(view)validateDensityView(view,width,height);this.ensure();if(plan.job.sourcePresentation||plan.job.sourceSymmetryPresentation)return this.renderSource(ink,width,height,plan,isCancelled,view);this.releaseSourcePresentation();if(view&&isCapturedDensityView(view))throw Error('本地调色不接收源密度相机');const gl=this.gl,[output,statistics,reductionA,reductionB,stops,viewIndices]=this.textures,[tone,reduce]=this.programs;
+  cancel(isCancelled);require(Number.isInteger(width)&&Number.isInteger(height)&&width>0&&height>0&&width<=16384&&height<=16384&&width*height<=33554432,'GPU 调色输出超出 128 MiB');if(view)validateDensityView(view,width,height);this.ensure();if(plan.sourceFamily)return this.renderSource(ink,width,height,plan,isCancelled,view);this.releaseSourcePresentation();if(view&&isCapturedDensityView(view))throw Error('本地调色不接收源密度相机');const gl=this.gl,[output,statistics,reductionA,reductionB,stops,viewIndices]=this.textures,[tone,reduce]=this.programs;
   const job=plan.job,t=job.tone,p=job.palette,pixels=new Uint8ClampedArray(width*height*4),facts=new Uint32Array(4);let occupiedPixels=0,maxBits=0,needsCpu=false;const indices=view?new Uint32Array(DENSITY_TONE_TILE**2):undefined;
   gl.bindVertexArray(null);gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.DITHER);gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.pixelStorei(gl.PACK_ALIGNMENT,1);
   this.bind(stops,1);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,plan.stops.length/4,1,gl.RGBA,gl.FLOAT,plan.stops);gl.useProgram(tone.program);this.i(tone,'ink',0);this.i(tone,'stops',1);this.i(tone,'viewIndices',2);this.i(tone,'hasView',view?1:0);this.bind(viewIndices,2);this.xy(tone,'imageSize',width,height);this.i(tone,'stopCount',plan.stops.length/4);this.i(tone,'sourceColor',t.paletteMode==='source'?1:0);this.i(tone,'toneMode',t.toneMap==='log'?1:0);this.i(tone,'transparent',t.transparentBackground?1:0);this.i(tone,'mode',plan.mode);this.i(tone,'hsvStops',plan.hsvStops?1:0);
@@ -177,19 +186,19 @@ export class DensityGpuTone {
   }finally{gl.pixelStorei(gl.PACK_ROW_LENGTH,0);gl.pixelStorei(gl.PACK_SKIP_PIXELS,0);gl.pixelStorei(gl.PACK_SKIP_ROWS,0);gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
  }
  private renderSource(ink:WebGLTexture,width:number,height:number,plan:DensityGpuTonePlan,isCancelled?:()=>boolean,view?:PreparedDensityView):DensityGpuToneResult {
-  const gl=this.gl,job=plan.job,symmetry=Boolean(job.sourceSymmetryPresentation);if(job.model==='white-point-v1'||(symmetry?job.model!=='normalized-v2':job.model!=='samila-normalized-v2'))throw Error('源密度呈现调色类型无效');
-  if(symmetry){require(Boolean(gl.getExtension('OES_texture_float_linear')),'源 Symmetry 呈现需要浮点线性采样');if(view&&(!isCapturedDensityView(view)||view.family!=='symmetry'))throw Error('源 Symmetry 呈现相机类型不匹配');}else if(view&&isCapturedDensityView(view))throw Error('源密度呈现相机类型不匹配');
-  const transform=symmetry?{delta:view&&isCapturedDensityView(view)?view.rotation:0,aspect:Math.fround(width/height)}:sourceSamilaDisplayTransform(view&&!isCapturedDensityView(view)?view:undefined,width,height),{output,statistics}=this.ensureSourceTarget(width,height),[,,reductionA,reductionB]=this.textures,reduce=this.programs[1];
+  const gl=this.gl,job=plan.job,symmetry=plan.sourceFamily==='symmetry',map=plan.sourceFamily==='map',iterated=symmetry||map;if(job.model==='white-point-v1'||(iterated?job.model!=='normalized-v2':job.model!=='samila-normalized-v2'))throw Error('源密度呈现调色类型无效');
+  if(iterated){if(symmetry)require(Boolean(gl.getExtension('OES_texture_float_linear')),'源 Symmetry 呈现需要浮点线性采样');if(view&&(!isCapturedDensityView(view)||view.family!==(map?'map':'symmetry')))throw Error('源迭代密度呈现相机类型不匹配');}else if(view&&isCapturedDensityView(view))throw Error('源密度呈现相机类型不匹配');
+  const transform=iterated?{delta:view&&isCapturedDensityView(view)?view.rotation:0,aspect:Math.fround(width/height)}:sourceSamilaDisplayTransform(view&&!isCapturedDensityView(view)?view:undefined,width,height),{output,statistics}=this.ensureSourceTarget(width,height),[,,reductionA,reductionB]=this.textures,reduce=this.programs[1];
   const vertex=HEADER+'out vec2 texCoord;void main(){float x=float((gl_VertexID&1)<<1)-1.;float y=float(gl_VertexID&2)-1.;gl_Position=vec4(x,y,0.,1.);texCoord=vec2((x+1.)*.5,(y+1.)*.5);}';
-  const tone=symmetry?(this.symmetryToneProgram??(this.symmetryToneProgram=this.program(vertex,HEADER+SOURCE_SYMMETRY_PRESENT_GLSL))):(this.sourceToneProgram??(this.sourceToneProgram=this.program(vertex,HEADER+SOURCE_SAMILA_PRESENT_GLSL)));
+  const tone=map?(this.mapToneProgram??(this.mapToneProgram=this.program(vertex,HEADER+SOURCE_MAP_PRESENT_GLSL))):symmetry?(this.symmetryToneProgram??(this.symmetryToneProgram=this.program(vertex,HEADER+SOURCE_SYMMETRY_PRESENT_GLSL))):(this.sourceToneProgram??(this.sourceToneProgram=this.program(vertex,HEADER+SOURCE_SAMILA_PRESENT_GLSL)));
   const pixels=new Uint8ClampedArray(width*height*4),scratch=new Uint8Array(DENSITY_TONE_TILE**2*4),facts=new Uint32Array(4);let occupiedPixels=0,maxBits=0;
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.DITHER);gl.pixelStorei(gl.PACK_ALIGNMENT,1);gl.pixelStorei(gl.PACK_ROW_LENGTH,0);gl.pixelStorei(gl.PACK_SKIP_PIXELS,0);gl.pixelStorei(gl.PACK_SKIP_ROWS,0);
   gl.useProgram(tone.program);this.i(tone,'ink',0);this.i(tone,'usePaletteLUT',job.model==='samila-normalized-v2'&&job.branch==='palette-average'?1:0);this.rgb(tone,'backgroundRgb',job.background);
-  for(const[name,value]of Object.entries({displayRotation:transform.delta,viewportAspect:transform.aspect,brightness:symmetry?sourceIteratedBrightnessUniform(job.tone.brightness):job.tone.brightness,contrast:job.tone.contrast,gamma:job.tone.gamma,dynamicRange:job.tone.dynamicRange,saturation:job.tone.saturation,scale:job.normalization.scale}))this.f(tone,name,value);
+  for(const[name,value]of Object.entries({displayRotation:transform.delta,viewportAspect:transform.aspect,brightness:iterated?sourceIteratedBrightnessUniform(job.tone.brightness):job.tone.brightness,contrast:job.tone.contrast,gamma:job.tone.gamma,dynamicRange:job.tone.dynamicRange,saturation:job.tone.saturation,scale:job.normalization.scale}))this.f(tone,name,value);
   this.bind(ink,0);const oldMin=gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER),oldMag=gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER);
   try {
-   if(symmetry)for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,gl.LINEAR);
-   cancel(isCancelled);gl.useProgram(tone.program);this.bind(ink,0);this.xy(tone,'origin',0,0);this.target(output,width,height,statistics);gl.clearBufferfv(gl.COLOR,0,new Float32Array(symmetry?[...job.background,1]:[0,0,0,0]));gl.clearBufferuiv(gl.COLOR,1,new Uint32Array(4));
+   if(iterated)for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,map?gl.NEAREST:gl.LINEAR);
+   cancel(isCancelled);gl.useProgram(tone.program);this.bind(ink,0);this.xy(tone,'origin',0,0);this.target(output,width,height,statistics);gl.clearBufferfv(gl.COLOR,0,new Float32Array(iterated?(job.sceneBackground??[...job.background,1]):[0,0,0,0]));gl.clearBufferuiv(gl.COLOR,1,new Uint32Array(4));
    // Preserve the source's complete viewport and four-vertex strip. Offsetting
    // a viewport changes varying rounding at NEAREST boundaries, even when the
    // same shader is used. Only the subsequent integer reduction/readback tiles.
@@ -206,5 +215,5 @@ export class DensityGpuTone {
   }cancel(isCancelled);return{pixels,occupiedPixels,maxCount:new Float32Array(new Uint32Array([maxBits]).buffer)[0],needsCpu:false};
   }finally{this.bind(ink,0);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,oldMin);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,oldMag);gl.disable(gl.BLEND);gl.pixelStorei(gl.PACK_ROW_LENGTH,0);gl.pixelStorei(gl.PACK_SKIP_PIXELS,0);gl.pixelStorei(gl.PACK_SKIP_ROWS,0);gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
  }
- dispose(){this.releaseSourcePresentation();for(const t of this.textures)this.gl.deleteTexture(t);for(const p of this.programs)this.gl.deleteProgram(p.program);if(this.framebuffer)this.gl.deleteFramebuffer(this.framebuffer);this.textures=[];this.programs=[];this.sourceToneProgram=undefined;this.symmetryToneProgram=undefined;this.framebuffer=undefined;}
+ dispose(){this.releaseSourcePresentation();for(const t of this.textures)this.gl.deleteTexture(t);for(const p of this.programs)this.gl.deleteProgram(p.program);if(this.framebuffer)this.gl.deleteFramebuffer(this.framebuffer);this.textures=[];this.programs=[];this.sourceToneProgram=undefined;this.symmetryToneProgram=undefined;this.mapToneProgram=undefined;this.framebuffer=undefined;}
 }

@@ -1,10 +1,11 @@
+import {deriveSourceIteratedNormalization} from './sourceIteratedPresentation';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareIteratedFrame,prepareIteratedField} from '../scenes/iteratedDensity';
 import {SourceIteratedTimelineSession,bindSourceIterationFrame,type SourceIteratedTimelineResult} from './sourceIteratedTimeline';
 import {SourceIteratedReplaySession,sourceIteratedRenderFps,type SourceIteratedDisplayFacts} from './sourceIteratedReplaySession';
 import {SourceSceneHostClock,validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 import {sourceLivePreviewKind} from './sourceLivePreview';
-import {prepareSourceSymmetryTone,deriveSourceSymmetryNormalization} from './sourceSymmetryPresentation';
+import {prepareSourceSymmetryTone} from './sourceSymmetryPresentation';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from './ordinarySourceCamera';
 import {prepareCapturedDensityCamera,prepareCapturedDensityView,type CapturedDensityAnchor} from './sourceDensityCamera';
 import {prepareSourceDensitySplat,sourceDensitySplatPixelTests} from './sourceDensitySplat';
@@ -110,7 +111,7 @@ export class SourceSymmetrySession {
  private present(c:GenerateContext,result:ReturnType<SourceSymmetrySession['display']>):Raster {
    const {scene:current,job,sourceFrame,display}=result;
    const prepared=prepareSourceSymmetryTone(current,c);if(prepared.model!=='normalized-v2')throw Error('Symmetry 实时呈现需要源归一模型');
-   const normalization=deriveSourceSymmetryNormalization({kind:'symmetry',width:c.width,height:c.height,recordedPasses:display.accumulationPasses,batchSize:job.config.count},prepared.sourceSymmetryPresentation!.reference);
+   const normalization=deriveSourceIteratedNormalization({kind:'symmetry',width:c.width,height:c.height,recordedPasses:display.accumulationPasses,batchSize:job.config.count},prepared.sourceSymmetryPresentation!.reference);
    const tone={...prepared,normalization},shown=this.replay!.present(tone,c.isCancelled,prepareCapturedDensityView(this.anchor!,sourceFrame.camera,c.width,c.height)),frame=this.frame!.frame;
    const facts:SourceSymmetryLiveFacts={sessionId:this.sessionId,clock:'realtime-source-queue',clockSource:this.clock!.diagnostics().clockSource,sceneTime:frame.sceneTime,rawDt:frame.rawDt,activeDt:frame.activeDt,queueIndex:frame.queueIndex,queueComplete:frame.queueComplete,paused:this.clock!.diagnostics().paused,objectUpdates:this.frame!.update.calls.length,replayRevision:this.revision,display};
    return{type:'raster',dimension:2,cameraResolved:true,backend:'webgl2',width:c.width,height:c.height,pixels:shown.pixels,sourceCameraFrame:sourceFrame,symmetryLive:facts,symmetrySplat:job.densitySplat,symmetryPalette:job.symmetryPalette,sourceSymmetryPresentation:{...prepared.sourceSymmetryPresentation!,scale:normalization.scale},density:{projection:'xy',bounds:display.gpu.bounds,inputPoints:this.deposited,examined:this.deposited,accepted:this.accepted,clipped:this.clipped,invalid:this.sampleInvalid,occupiedPixels:shown.occupiedPixels,maxCount:shown.maxCount,toneBackend:shown.toneBackend,cancelled:false},temporal:{time:frame.sceneTime,windowStart:0,frames:this.displays,samplingFps:context(c).renderFps,recordedPoints:this.deposited,cacheHits:0},stats:{samples:this.steps,generated:this.accepted,invalid:this.invalid},warnings:['Symmetry 实时会话按源调度更新和重播；本地 WebGL 验证不等于原版整窗口像素对照。',...shown.warnings]};

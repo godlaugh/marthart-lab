@@ -1,4 +1,7 @@
 {
+  "Map 颜色由步长度量、颜色速度和相位控制。": "Map colors are controlled by the step metric, color speed, and phase.",
+  "背景 Alpha": "Background alpha",
+  "保留原场景清屏透明度；PNG 保留透明通道。": "Preserve the scene background alpha. PNG retains the alpha channel.",
   "原版视口：拖动按画布比例平移，滚轮围绕原点缩放。调整视图会清空并重新采样；不会自动适配边界。": "Source viewport: drag to pan relative to the canvas, and scroll to scale around the origin. Navigation clears and resamples the image without auto-fitting its bounds.",
   "MathArt 导入失败：{path} 超出本地标量解析容量 {resource}={limit}": "MathArt import failed: {path} exceeds the local scalar parsing capacity: {resource}={limit}.",
   "MathArt 导入失败：{path} 原版标量转换结果为 {classification}；本地持久化与动画要求有限数值": "MathArt import failed: The source scalar conversion for {path} produced {classification}; local persistence and animation require a finite value.",

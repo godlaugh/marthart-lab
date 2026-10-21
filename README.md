@@ -69,7 +69,9 @@ npm run desktop:test
 
 当前仍处于 2.0 场景补全阶段。曲面 CPU 点／网格的导入、统一配置编辑、保存重开、切换时间线和黑色淡入淡出已接通，并完成实际 PNG 与 MP4 导出验证；GPU 点与网格也已完成本地导入、回放及 PNG／MP4 验证。吸引子源 CPU／GPU 的导入、编辑、保存重开、回放、PNG／MP4 导出也已接通，其它剩余差异仍待完成。原版整图一致性验收仍为 0/11，现有 1.0 应用包未替换。具体行为和验证边界见[曲面中文验证记录](docs/source-surface-validation.zh-CN.md)。
 
-**Map 散点与亮度更正（2026-10-21，M3）**：源 Map 的散点覆盖与固定余弦颜色已通过 116 组原 shader 对照；共享 Symmetry 散点 170 组回归通过。修复 Symmetry 亮度上传及旧对照输入后，独立 30 组结果零差。349 个文件／6,506 项测试和 Web 构建通过。Map 最终呈现、实时会话及原版完整窗口对照仍待完成，详见[中文验收记录](docs/source-map-splat-validation.zh-CN.md)。
+**Map 最终呈现（2026-10-21，M3）**：新源项目已使用原最终调色、主画布参考尺寸和背景 RGBA 规则。47 组原 shader 对照零差；实际背景编辑、保存重开、PNG／MP4 通过。351 个测试文件／6,593 项测试及 Web 构建通过。实时会话与原版整窗对照仍待完成，详见[中文验收记录](docs/source-map-presentation-validation.zh-CN.md)。
+
+**Map 散点与亮度更正（2026-10-21，M3）**：源 Map 的散点覆盖与固定余弦颜色已通过 116 组原 shader 对照；共享 Symmetry 散点 170 组回归通过。修复 Symmetry 亮度上传及旧对照输入后，独立 30 组结果零差。349 个文件／6,506 项测试和 Web 构建通过。Map 最终呈现已在上文补齐；实时会话及原版完整窗口对照仍待完成，详见[中文验收记录](docs/source-map-splat-validation.zh-CN.md)。
 
 **Map 参数队列与重播（2026-10-21，M3）**：新源项目的参数开始／停止动作、每帧有序更新和独立颜色目标已接入编辑器、保存及固定时钟 GPU 生成。原 JVM 72 组参数／405 个快照、129 组重播 helper、实际 GPU 重播及界面保存／PNG 检查通过。Map 实时界面生命周期、源最终调色及原版整窗对照仍待完成；详情见[中文验收记录](docs/source-map-timeline-replay-validation.zh-CN.md)。此前的[构造与初态验证](docs/source-map-initialization-validation.zh-CN.md)继续有效。
 

@@ -1,5 +1,7 @@
+import {usesSourceMapPresentation} from '../engine/sourceMapPresentation';
+import type {SourceIteratedToneReference} from '../engine/sourceIteratedPresentation';
 import {sourceLivePreviewKind} from '../engine/sourceLivePreview';
-import {usesSourceSymmetryPresentation,type SourceSymmetryToneReference} from '../engine/sourceSymmetryPresentation';
+import {usesSourceSymmetryPresentation} from '../engine/sourceSymmetryPresentation';
 import {usesSourceSamilaSampling} from '../engine/sourceSamilaSampling';
 import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
 import {withPerlinFreshRecording,assertPerlinRecordingFrame} from '../engine/sourcePerlinRecording';
@@ -38,7 +40,7 @@ export function ExportDialog({
   sourcePerlinViewport,
   previewPointPixelDensity,
   samilaPrimaryPixelHeight,
-  sourceSymmetryToneReference,
+  sourceMapToneReference,sourceSymmetryToneReference,
   currentRootsCapture,
   currentSamilaCapture,
   currentSymmetryCapture,
@@ -57,7 +59,8 @@ export function ExportDialog({
   sourcePerlinViewport?:{width:number;height:number;pixelDensity:number};
   previewPointPixelDensity?:number;
   samilaPrimaryPixelHeight?:number;
-  sourceSymmetryToneReference?:SourceSymmetryToneReference;
+  sourceMapToneReference?:SourceIteratedToneReference;
+  sourceSymmetryToneReference?:SourceIteratedToneReference;
   samilaPixelDensity?:number;
   symmetryPixelDensity?:number;
   currentSymmetryCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
@@ -223,8 +226,9 @@ export function ExportDialog({
       if(usesSourceSurfaceParticles(exportScene)&&previewPointPixelDensity===undefined)throw new Error('源曲面点导出缺少已呈现预览的像素密度，请等待预览完成');
       if(usesSourcePerlin(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin 导出缺少已呈现的预览尺寸，请等待预览完成');
       if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
+      if(usesSourceMapPresentation(exportScene)&&sourceMapToneReference===undefined)throw Error('Map 导出缺少已呈现主画布尺寸，请等待预览完成');
       if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
-      const exportContext={...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
+      const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       if(!bouncing&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas);r.setSize(width,height,1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));

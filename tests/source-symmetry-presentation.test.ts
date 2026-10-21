@@ -1,10 +1,11 @@
+import {deriveSourceIteratedNormalization,sourceIteratedBrightnessUniform} from '../src/engine/sourceIteratedPresentation';
 import {readFileSync} from 'node:fs';
 import {describe,it,expect} from 'vitest';
 import {parseProjectFile,parseLegacyScene} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
 import {snapshotGenerationInput} from '../src/engine/generationInput';
 import {toneDensityRgbaPrepared} from '../src/engine/density';
-import {prepareSourceSymmetryTone,deriveSourceSymmetryNormalization,sourceIteratedBrightnessUniform} from '../src/engine/sourceSymmetryPresentation';
+import {prepareSourceSymmetryTone} from '../src/engine/sourceSymmetryPresentation';
 import {visibleIteratedControls,generateIteratedDensity} from '../src/scenes/iteratedDensity';
 import {normalizedDensityControls} from '../src/engine/densityNormalization';
 
@@ -15,9 +16,9 @@ describe('Symmetry source normalization and presentation boundaries',()=>{
   const facts={kind:'symmetry' as const,...row},reference={width:row.referenceWidth,height:row.referenceHeight};
   if([row.width,row.height,row.referenceWidth,row.referenceHeight].some(v=>v<=0)){
    // Native helper accepts invalid geometry, but an actual render cannot.
-   expect(()=>deriveSourceSymmetryNormalization(facts,reference)).toThrow('尺寸');return;
+   expect(()=>deriveSourceIteratedNormalization(facts,reference)).toThrow('尺寸');return;
   }
-  expect(deriveSourceSymmetryNormalization(facts,reference).scale).toBe(row.scale);
+  expect(deriveSourceIteratedNormalization(facts,reference).scale).toBe(row.scale);
  });
  it('uses source presentation by project import and preserves its fields on reopening',()=>{
   const scene=parseScene(serializeScene(parseProjectFile(JSON.stringify(input)).scene));

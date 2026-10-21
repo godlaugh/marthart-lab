@@ -69,12 +69,12 @@ describe('production continuous normalized state',()=>{
   const s=scene();Object.assign(s.settings,{iteratedBackend:'gpu',batchSize:5000000,normalizedGamma:0});const canvas=vi.fn(()=>{throw Error('GPU constructed before validation');});vi.stubGlobal('OffscreenCanvas',canvas);const owner=new TemporalGenerationSession();
   try{expect(()=>generateScene(s,ctx,owner)).toThrow(/normalizedGamma/);expect(canvas).not.toHaveBeenCalled();expect(owner.iterated.diagnostics().retainedBytes).toBe(0);}finally{vi.unstubAllGlobals();owner.reset();}
  });
- it('imports source tone into dormant v2 fields without guessing a reference or changing valid v1 values',()=>{
-  for(const [type,brightness,shape]of [['MAP_ATTRACTOR',.3,.2],['SYMMETRY_CHAOS',.5,.5]]as const){const imported=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type,name:'tone',equations:{x_next:'x',y_next:'y'},settings:{batch_size:2,gamma:3,dynamicRange:.4,invert:true}}));
+ it('explicit legacy import keeps source tone in dormant v2 fields without guessing a reference or changing valid v1 values',()=>{
+  for(const [type,brightness,shape]of [['MAP_ATTRACTOR',.3,.2],['SYMMETRY_CHAOS',.5,.5]]as const){const imported=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type,name:'tone',equations:{x_next:'x',y_next:'y'},settings:{batch_size:2,gamma:3,dynamicRange:.4,invert:true}}),{iteratedMath:'legacy-v1'});
    expect(imported.scene.settings).toMatchObject({gamma:3,dynamicRange:.4,normalizedGamma:3,normalizedDynamicRange:.4,normalizedBrightness:brightness});expect(imported.scene.settings.densityToneModel).toBeUndefined();expect(imported.scene.settings.densityReferenceWidth).toBeUndefined();expect(imported.warnings.join()).toContain('参考画布尺寸未知');expect(imported.warnings.join()).toContain('Invert');
-   const omitted=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type,name:'tone',equations:{x_next:'x',y_next:'y'},settings:{batch_size:2}}));expect(omitted.scene.settings.normalizedDynamicRange).toBe(shape);
+   const omitted=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type,name:'tone',equations:{x_next:'x',y_next:'y'},settings:{batch_size:2}}),{iteratedMath:'legacy-v1'});expect(omitted.scene.settings.normalizedDynamicRange).toBe(shape);
   }
-  const imported=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'MAP_ATTRACTOR',name:'bounds',equations:{x_next:'x',y_next:'y'},settings:{brightness:1.5,gamma:10,dynamic_range:32}}));expect(imported.scene.settings).toMatchObject({brightness:1,gamma:8,dynamicRange:32,normalizedBrightness:1.5,normalizedGamma:10,normalizedDynamicRange:1});expect(imported.warnings.join()).toContain('原值保留');
+  const imported=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'MAP_ATTRACTOR',name:'bounds',equations:{x_next:'x',y_next:'y'},settings:{brightness:1.5,gamma:10,dynamic_range:32}}),{iteratedMath:'legacy-v1'});expect(imported.scene.settings).toMatchObject({brightness:1,gamma:8,dynamicRange:32,normalizedBrightness:1.5,normalizedGamma:10,normalizedDynamicRange:1});expect(imported.warnings.join()).toContain('原值保留');
  });
  it('counts recorded passes separately from iterations, decay, clipped and invalid samples',()=>{
   for(const mode of ['finite','invalid','clipped']){const s=scene();if(mode==='invalid')s.equations.x='1/0';if(mode==='clipped')s.settings.offsetX=100;

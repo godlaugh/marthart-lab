@@ -105,7 +105,7 @@ function toneSettings(s:Settings):DensityTone {
   return{toneMap:select(s,'toneMap','log',['linear','log']) as DensityTone['toneMap'],exposure:numberSetting(s,'exposure',0,-16,16),gamma:numberSetting(s,'gamma',2.2,.1,8),contrast:numberSetting(s,'contrast',1,0,8),brightness:numberSetting(s,'brightness',0,-1,1),saturation:numberSetting(s,'saturation',1,0,4),dynamicRange:numberSetting(s,'dynamicRange',32,.001,1e9),paletteMode:select(s,'paletteMode','density',['density','source']) as DensityTone['paletteMode'],transparentBackground:boolean(s,'transparentBackground',false),background};
 }
 /** Sole validated presentation input shared by CPU and GPU backends. */
-interface DensityToneBase {sourceSymmetryPresentation?:import('./sourceSymmetryPresentation').SourceSymmetryPresentationFacts;sourcePresentation?:{model:typeof SOURCE_SAMILA_PRESENTATION_MODEL};tone:DensityTone;palette:Palette;background:[number,number,number];gain:number;inverseGamma:number;logWhite:number;}
+interface DensityToneBase {sceneBackground?:readonly[number,number,number,number];sourceMapPresentation?:import('./sourceMapPresentation').SourceMapPresentationFacts;sourceSymmetryPresentation?:import('./sourceSymmetryPresentation').SourceSymmetryPresentationFacts;sourcePresentation?:{model:typeof SOURCE_SAMILA_PRESENTATION_MODEL};tone:DensityTone;palette:Palette;background:[number,number,number];gain:number;inverseGamma:number;logWhite:number;}
 export type DensityToneJob=DensityToneBase&({model:'white-point-v1'}|{model:'normalized-v2';normalization:DensityNormalization}|{model:'samila-normalized-v2';normalization:SamilaNormalization;branch:SamilaToneBranch});
 export function densityAcceptsSignedMass(job:DensityToneJob):boolean{return job.model==='samila-normalized-v2'&&job.normalization.splat.model==='samila-splat-1.7.8';}
 export function prepareDensityTone(palette:Palette,settings:Settings={},facts?:DensityNormalizationFacts|SamilaToneFacts):DensityToneJob {
@@ -166,7 +166,7 @@ export function toneDensityRgbaPrepared(width:number,height:number,rgba:Float32A
 function mapDensity(width:number,height:number,job:DensityToneJob,mass:(i:number)=>number,colorSum?:((i:number,k:number)=>number),isCancelled?:()=>boolean,destination?:Uint8ClampedArray,view?:PreparedDensityView):Uint8ClampedArray {
   const {tone,palette,background:bg,gain}=job;if(tone.paletteMode==='source'&&!colorSum)throw new Error('原采样颜色模式需要 RGB 累积');
   const pixels=destination??new Uint8ClampedArray(width*height*4);if(destination)pixels.fill(0);
-  if(job.sourceSymmetryPresentation)throw Error('源 Symmetry 最终呈现需要 GPU；未使用不同的 CPU 调色替代');
+  if(job.sourceSymmetryPresentation||job.sourceMapPresentation)throw Error('源迭代密度最终呈现需要 GPU；未使用不同的 CPU 调色替代');
   const captured=view&&isCapturedDensityView(view)?view:undefined,samila=view&&!isCapturedDensityView(view)?view:undefined;
   // Interpolate floating sums AND mass before nonlinear tone mapping. Reuse
   // one four-channel sample; presentation never copies the full ink buffer.

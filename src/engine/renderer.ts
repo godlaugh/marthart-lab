@@ -1,3 +1,4 @@
+import {usesSourceMapPresentation} from './sourceMapPresentation';
 import {usesSourceSymmetryPresentation} from './sourceSymmetryPresentation';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourceSamilaPresentation} from './sourceSamilaPresentation';
@@ -142,7 +143,8 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.sourceGpuMesh&&(output.backend!=='webgl2'||output.topology!=='mesh'||output.positions.length||output.sourcePointAppearance||output.sourceMeshAppearance||output.sourceGpuPoints))throw new Error('GPU 网格需要独立的种子缓冲与匹配后端');
     if(output.type==='geometry'&&output.sourceGpuPoints&&(!output.sourcePointAppearance||output.backend!=='webgl2'))throw new Error('GPU 曲面种子缺少匹配的点外观与后端');
     if(usesSourceBouncing(document)!==!!output.sourceBouncingFrame||output.sourceBouncingFrame&&(output.type!=='raster'||!output.cameraResolved))throw new Error('源弹跳需要与文档配对的已投影图像');
-    const sourceSamila=output.type==='raster'?output.sourceSamilaPresentation:undefined,sourceSymmetry=output.type==='raster'?output.sourceSymmetryPresentation:undefined;
+    const sourceMap=output.type==='raster'?output.sourceMapPresentation:undefined,sourceSamila=output.type==='raster'?output.sourceSamilaPresentation:undefined,sourceSymmetry=output.type==='raster'?output.sourceSymmetryPresentation:undefined;
+    if(usesSourceMapPresentation(document)!==!!sourceMap||sourceMap&&(output.type!=='raster'||!output.cameraResolved||sourceMap.model!=='map-present-1.7.8'||sourceMap.stage!=='scene-target-rgba8'||sourceMap.display!=='opaque-rgb-copy'))throw Error('源 Map 需要与文档配对的场景合成图像');
     if(usesSourceSymmetryPresentation(document)!==!!sourceSymmetry||sourceSymmetry&&(output.type!=='raster'||!output.cameraResolved||sourceSymmetry.model!=='symmetry-present-1.7.8'||sourceSymmetry.stage!=='scene-target-rgba8'||sourceSymmetry.display!=='opaque-rgb-copy'))throw Error('源 Symmetry 需要与文档配对的场景合成图像');
     if(usesSourceSamilaPresentation(document)!==!!sourceSamila||sourceSamila&&(output.type!=='raster'||!output.cameraResolved||sourceSamila.model!=='samila-present-1.7.8'||sourceSamila.stage!=='present-target-rgba8'||sourceSamila.display!=='opaque-rgb-copy'))throw new Error('源 Samila 需要与文档配对的已合成图像');
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
@@ -163,7 +165,7 @@ export class ArtRenderer {
     const implicitAppearance=document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
     if(implicitAppearance&&output.type==='geometry')implicitMeshPresentation(output,implicitAppearance.wireframe);
     this.document=document;
-    this.sourceCompositedRaster=(sourceSamila||sourceSymmetry)&&output.type==='raster'?output:undefined;
+    this.sourceCompositedRaster=(sourceMap||sourceSamila||sourceSymmetry)&&output.type==='raster'?output:undefined;
     const cameraResolved=output.type==='raster'&&output.cameraResolved===true;
     if(cameraResolved!==this.cameraResolved)fit=true;
     this.cameraResolved=cameraResolved;
@@ -195,7 +197,7 @@ export class ArtRenderer {
         // records native blending, not another layer opacity. Samila's normal
         // native window copies the target with blending disabled to an opaque
         // surface; PNG preserves the separately retained target alpha below.
-        new THREE.MeshBasicMaterial({ map: texture, transparent:!output.rootsPresentation&&!output.sourceBouncingFrame&&!sourceSamila&&!sourceSymmetry }),
+        new THREE.MeshBasicMaterial({ map: texture, transparent:!output.rootsPresentation&&!output.sourceBouncingFrame&&!sourceMap&&!sourceSamila&&!sourceSymmetry }),
       );
       this.group.add(plane);
       this.controls.enableRotate = false;
