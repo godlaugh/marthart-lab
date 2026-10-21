@@ -86,26 +86,29 @@ self.onmessage = (
       send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context,preview:lease.preview}},outputBuffers(lease.preview));
       completed={id,scene,context};recording=undefined;return;
     }
-    if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'){
+    if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'){
       const source=captureSource=completed;
       if(!source||source.id!==event.data.sourceId)throw new Error('暂停截图对应的预览已过期');
       captureSourceMatched=true;
-      const perlin=event.data.operation==='perlin-paused-capture',samila=event.data.operation==='samila-paused-capture';
+      const perlin=event.data.operation==='perlin-paused-capture',samila=event.data.operation==='samila-paused-capture',symmetry=event.data.operation==='symmetry-paused-capture';
       const {width,height}=event.data.size,scale=event.data.scale;
       if(scale!==1&&scale!==3&&scale!==5)throw new Error('暂停 PNG 放大倍率须为 1、3 或 5');
       if(perlin&&(!source.scene.perlinSource||source.scene.kind!=='perlin'||!source.context.sourcePerlinViewport||source.context.sourceViewport?.target!=='primary'))
         throw new Error('Perlin 暂停截图需要完整配置和已完成主画布的实际尺寸与密度');
       if(samila&&(!source.context.samilaLive||source.scene.kind!=='samila'))throw new Error('Samila 暂停截图需要已完成的实时主预览');
-      // Perlin and Samila inherit parent density. Native render-buffer rounding can make
+      if(symmetry&&(!source.context.symmetryLive||source.scene.kind!=='symmetry'||source.context.sourceViewport?.target!=='primary'))throw new Error('Symmetry 暂停截图需要已完成的实时主预览');
+      // Source scenes inherit parent density. Native render-buffer rounding can make
       // actual physical base dimensions differ from the user's requested size.
-      const base=perlin||samila?prepareSourcePausedCaptureSize({width,height},samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height};
+      const base=perlin||samila||symmetry?prepareSourcePausedCaptureSize({width,height},symmetry?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height};
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
       if(upscale)validateRasterRequest({time:0,quality:'export',width:upscale.width,height:upscale.height});
       const additionalBytes=sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);
       // The request carries only a completed-frame capability. The worker owns
       // scene history and its original primary context; no fresh replay occurs.
       completed=undefined;
-      const result=samila
+      const result=symmetry
+        ?temporalSession.sourceSymmetry.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes})
+        :samila
         ?temporalSession.sourceSamila.capturePaused(source.scene,{...source.context,quality:'export',width,height},{additionalBytes})
         :perlin
         ?temporalSession.sourcePerlin.capturePaused(source.scene,{...source.context,quality:'export',width,height,sourceViewport:{...source.context.sourceViewport!,target:'offscreen'}},{additionalBytes})
@@ -118,7 +121,7 @@ self.onmessage = (
       result.capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,captureWidth,captureHeight,scale);
       result.capture.width=upscale?.width??captureWidth;result.capture.height=upscale?.height??captureHeight;
       const imageFacts={enhancement:'mathart-1.7.8-scale1' as const,baseSize:[captureWidth,captureHeight] as const,scale,resampling:upscale?'openjdk21-software-bicubic' as const:'none' as const,originalRuntimeCompared:false as const};
-      if(perlin||samila)result.capture.sourcePausedImage=imageFacts;else result.capture.rootsPausedImage=imageFacts;
+      if(perlin||samila||symmetry)result.capture.sourcePausedImage=imageFacts;else result.capture.rootsPausedImage=imageFacts;
       completed={...source,id};
       send({operation:event.data.operation,id,result:{capture:result.capture,preview:result.preview}},[...new Set([...outputBuffers(result.capture),...outputBuffers(result.preview)])]);
       return;
@@ -173,7 +176,9 @@ self.onmessage = (
     }else     if(isPausedCaptureOperation(operation)){
       // Check the session owner, not an error category: a late capacity or
       // readback failure may already have changed/retired shared density ink.
-      const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='samila-paused-capture'
+      const retained=!captureRendered&&captureSourceMatched&&!!captureSource&&(operation==='symmetry-paused-capture'
+        ?temporalSession.sourceSymmetry.matchesCompletedPrimary(captureSource.scene,captureSource.context)
+        :operation==='samila-paused-capture'
         ?temporalSession.sourceSamila.matchesCompletedPrimary(captureSource.scene,captureSource.context)
         :operation==='perlin-paused-capture'
         ?temporalSession.sourcePerlin.matchesCompletedPrimary(captureSource.scene,captureSource.context)

@@ -23,6 +23,15 @@ describe('owned Symmetry queue and display acknowledgement',()=>{
   const again=owner.step(100,{paused:true});expect(again.parameters!.changed).toBe(false);expect(again.parameters!.values).toEqual(paused.parameters!.values);expect(again.palette).toEqual(paused.palette);expect(again.frame.sceneTime).toBe(paused.frame.sceneTime);
   expect(first.parameters!.values.lambda).not.toBe(paused.parameters!.values.lambda);
  });
+ it('captures a display without ticking the queue or replaying the last update calls',()=>{
+  const owner=new SourceSymmetryTimelineSession(scene(.001));
+  const previous=owner.step(F(1/60),{acknowledgeParameters:false});
+  expect(previous.update.calls.length).toBeGreaterThan(0);expect(previous.parameters!.changed).toBe(false);
+  const capture=owner.display();expect(capture.frame).toEqual(previous.frame);expect(capture.update.calls).toEqual([]);
+  expect(capture.parameters!.values).toEqual(previous.parameters!.values);expect(capture.parameters!.changed).toBe(true);expect(capture.palette).toEqual(previous.palette);
+  expect(owner.display().parameters!.changed).toBe(false);
+  const resumed=owner.step(F(1/60));expect(resumed.frame.frameIndex).toBe(previous.frame.frameIndex+1);expect(resumed.parameters!.values.lambda).toBeGreaterThan(capture.parameters!.values.lambda);
+ });
  it('leaves tiny unacknowledged writes to accumulate across repeated pauses',()=>{
   const owner=new SourceSymmetryTimelineSession(scene(4e-10));owner.step(F(1/60));
   const tiny=owner.step(F(1/60));expect(tiny.parameters!.changed).toBe(false);

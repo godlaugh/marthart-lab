@@ -62,4 +62,4 @@ node scripts/verify-source-symmetry-live-ui.mjs .cache/source-symmetry-replay/ne
 
 任务分别启动新进程，内部包含持续会话，没有独立拆分系统缓存冷/热成本。测试和构建并行运行。CPU/RSS 为 250 毫秒采样：可能漏掉短进程和峰值，CPU 是观察下界，RSS 可能重复计算共享页，未消除短任务内 PID 复用。GPU 实际内存与单任务 agent token 未测量；没有等价旧版完整实时界面基线，不声称性能提升。
 
-下一阶段需要补齐 Symmetry 当前暂停画面的导出及其资源生命周期。目前通用导出仍按固定时间重新生成，不能将其称为实时累积图像的原样保存。原版整窗对照、跨 GPU/JOGL 的完整效果一致性和 2.0 总体验收仍未完成。
+后续已补齐当前暂停场景导出及其资源生命周期，见 [暂停截图验收](source-symmetry-paused-capture-validation.zh-CN.md)。截图会额外绘制导出图和主预览，不是原样读取上次显示的像素。原版整窗对照、跨 GPU/JOGL 的完整效果一致性和 2.0 总体验收仍未完成。

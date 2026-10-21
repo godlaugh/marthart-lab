@@ -156,6 +156,7 @@ export class Generator {
   captureSamilaPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{
     return this.capturePaused('samila-paused-capture',output,size,scale);
   }
+  captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('symmetry-paused-capture',output,size,scale);}
   setSamilaPaused(output:SceneOutput,paused:boolean):Promise<void>{return this.setLivePaused('samila-playback',output,paused);}
   setSymmetryPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('symmetry-playback',output,paused,timestampMs);}
   private setLivePaused(operation:'samila-playback'|'symmetry-playback',output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
@@ -175,7 +176,7 @@ export class Generator {
   private capturePaused(operation:PausedCaptureOperation,output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
     if(this.recording)return Promise.reject(this.recordingError('Perlin 录制期间不能截图'));
     const source=this.completed,roots=operation==='roots-paused-capture',contract=pausedCaptureContracts[operation];
-    const eligible=output.type==='raster'&&(roots?!!output.rootsPresentation:operation==='samila-paused-capture'?output.samilaLive?.target==='primary'&&source?.scene.kind==='samila':!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
+    const eligible=output.type==='raster'&&(roots?!!output.rootsPresentation:operation==='symmetry-paused-capture'?!!output.symmetryLive&&output.sourceCameraFrame?.viewport.target==='primary'&&source?.scene.kind==='symmetry':operation==='samila-paused-capture'?output.samilaLive?.target==='primary'&&source?.scene.kind==='samila':!!output.sourcePerlinFrame&&source?.scene.kind==='perlin'&&!!source.scene.perlinSource);
     if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
       return Promise.reject(new Error(`当前${contract.label}画面尚未完成或已过期，请等待预览完成后重试`));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;

@@ -193,6 +193,21 @@ export class IteratedDensityGpu {
   try{const capacity=tw*th,positions=customStorage?[]:[buffer(capacity*16),buffer(capacity*16)],counters=customStorage?[]:[buffer(capacity*8),buffer(capacity*8)],stateTextures=Array.from({length:customStorage?2:1},()=>texture(tw,th,gl.RGBA32F,gl.RGBA,gl.FLOAT)),counterTextures=Array.from({length:customStorage?2:1},()=>texture(tw,th,gl.RG32UI,gl.RG_INTEGER,gl.UNSIGNED_INT)),ink=texture(width,height,gl.RGBA32F,gl.RGBA,gl.FLOAT),inkScratch=boundedHistory?texture(width,height,gl.RGBA32F,gl.RGBA,gl.FLOAT):undefined,palette=texture(PALETTE_INTERVALS+1,1,gl.RGBA32F,gl.RGBA,gl.FLOAT),rw=Math.ceil(tw/2),rh=Math.ceil(th/2),noise=texture(256,1,gl.R8UI,gl.RED_INTEGER,gl.UNSIGNED_BYTE),floatReduce=[texture(rw,rh,gl.RGBA32F,gl.RGBA,gl.FLOAT),texture(rw,rh,gl.RGBA32F,gl.RGBA,gl.FLOAT)],uintReduce=[texture(rw,rh,gl.RGBA32UI,gl.RGBA_INTEGER,gl.UNSIGNED_INT),texture(rw,rh,gl.RGBA32UI,gl.RGBA_INTEGER,gl.UNSIGNED_INT)];framebuffer=gl.createFramebuffer();feedback=gl.createTransformFeedback();checked(Boolean(framebuffer&&feedback),'GPU 状态对象分配失败');const v=vao(),drawVao=vao();checked(gl.getError()===gl.NO_ERROR,'GPU 缓冲分配失败');this.resources={count,capacity,tw,th,width,height,positions,counters,stateTextures,counterTextures,storage:customStorage?'texture':'buffer',ink,inkScratch,palette,noise,floatReduce,uintReduce,framebuffer:framebuffer!,feedback:feedback!,vao:v,drawVao,side:0,bytes,paletteFormat:'local-rgba4097'};this.target(ink,width,height);gl.clearBufferfv(gl.COLOR,0,new Float32Array(4));this.pendingAllocation=undefined;this.pendingAllocationBytes=0;}
   catch(e){this.resources=undefined;try{releaseAllocation();this.pendingAllocation=undefined;this.pendingAllocationBytes=0;}catch(cleanupError){this.cleanupPending=true;throw new AggregateError([e,cleanupError],'GPU 分配失败且清理待重试');}throw e;}
  }
+ /** Preflight both capture transitions before changing the retained primary.
+  * Includes overlapping old ink/tone, both returned images, and caller-owned
+  * enhancement/upscale storage. Driver and compiled-program overhead is unknown. */
+ validateAccumulationCapture(width:number,height:number,additionalBytes:number):void {
+  const r=this.resources,gl=this.gl;
+  checked(Boolean(r&&gl&&!this.direct&&!r.inkScratch&&!this.cleanupPending),'GPU 截图需要可用的单累积目标');
+  checked(Number.isSafeInteger(additionalBytes)&&additionalBytes>=0,'GPU 截图额外内存预算无效');
+  const state=r!,limit=gl!.getParameter(gl!.MAX_TEXTURE_SIZE) as number;
+  checked(width<=limit&&height<=limit,'截图超过 GPU 纹理尺寸');
+  const images=(width*height+state.width*state.height)*4;
+  for(const [w,h,oldW,oldH] of [[width,height,state.width,state.height],[state.width,state.height,width,height]]){
+   const bytes=iteratedGpuBytes(state.count,w,h,state.tw,false,state.storage==='texture',true,true);
+   checked(Number.isSafeInteger(bytes+images+additionalBytes)&&bytes+oldW*oldH*36+images+additionalBytes<=MAX_BYTES,'GPU 暂停截图及恢复峰值超过 768 MiB');
+  }
+ }
  /** Replace only the accumulation attachment. Particle buffers/textures,
   * counters, shader programs and frame sequence keep their existing owner. */
  resizeAccumulation(width:number,height:number,isCancelled?:()=>boolean):boolean {

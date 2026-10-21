@@ -18,6 +18,7 @@ interface GeneratorPort {
   dispose():void;
   captureRootsPaused?(output:SceneOutput,size:RootsPausedCaptureSize,scale?:1|3|5):Promise<RootsPausedCaptureResult>;
   capturePerlinPaused?(output:SceneOutput,size:PerlinPausedCaptureSize,scale?:1|3|5):Promise<PerlinPausedCaptureResult>;
+  captureSymmetryPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSamilaPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   beginPerlinRecording?(output:SceneOutput,options:PerlinRecordingOptions):Promise<PerlinRecordingStart>;
   nextPerlinRecordingFrame?(handle:PerlinRecordingHandle,displayFrame:number):Promise<PerlinRecordingRaster>;
@@ -169,9 +170,10 @@ export class GenerationQueue {
   captureSamilaPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{
     return this.capturePaused('captureSamilaPaused',output,size,scale);
   }
-  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
+  captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureSymmetryPaused',output,size,scale);}
+  private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
     if(this.recordingOwner&&!this.recordingOwner.active)await this.retryPerlinRecordingCleanup();
-    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':'samila-paused-capture'];
+    const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':'samila-paused-capture'];
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!capture)
       throw new Error(`请等待当前${contract.label}预览完成后再保存暂停画面`);
     const cached=this.completedLive;this.completedLive=undefined;

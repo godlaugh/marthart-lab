@@ -6,34 +6,17 @@ import {createServer} from 'vite';
 import {createServer as createTcpServer} from 'node:net';
 import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {inflateSync} from 'node:zlib';
+import {decodePng} from './png-rgba.mjs';
 import {execFileSync} from 'node:child_process';
 import {isDeepStrictEqual} from 'node:util';
 import {createExportServer} from '../server/index.mjs';
 const check=(v,m)=>{if(!v)throw Error(m);},sha=v=>createHash('sha256').update(v).digest('hex');
-function decodePng(bytes){
- check(bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),'not a PNG');
- let width=0,height=0,ended=false;const compressed=[];
- for(let at=8;at<bytes.length;){
-  check(at+12<=bytes.length,'truncated PNG chunk');const length=bytes.readUInt32BE(at),end=at+length+12;
-  check(end<=bytes.length,'truncated PNG payload');const type=bytes.toString('ascii',at+4,at+8),data=bytes.subarray(at+8,end-4);
-  let crc=-1;for(const value of bytes.subarray(at+4,end-4)){crc^=value;for(let bit=0;bit<8;bit++)crc=crc&1?(crc>>>1)^0xedb88320:crc>>>1;}
-  check(((crc^-1)>>>0)===bytes.readUInt32BE(end-4),'PNG CRC mismatch');
-  if(type==='IHDR'){check(length===13&&!width,'invalid PNG header');width=data.readUInt32BE(0);height=data.readUInt32BE(4);check(data.subarray(8).equals(Buffer.from([8,6,0,0,0])),'expected non-interlaced RGBA8 PNG');}
-  else if(type==='IDAT')compressed.push(data);
-  else if(type==='IEND'){check(length===0&&end===bytes.length,'invalid PNG end');ended=true;}
-  at=end;
- }
- check(width>0&&height>0&&ended&&compressed.length,'incomplete PNG');const stride=width*4,raw=inflateSync(Buffer.concat(compressed));check(raw.length===(stride+1)*height,'invalid PNG row length');const rgba=Buffer.alloc(stride*height);
- const paeth=(a,b,c)=>{const p=a+b-c,pa=Math.abs(p-a),pb=Math.abs(p-b),pc=Math.abs(p-c);return pa<=pb&&pa<=pc?a:pb<=pc?b:c;};
- for(let y=0;y<height;y++){const filter=raw[y*(stride+1)];check(filter<=4,'invalid PNG row filter');for(let x=0;x<stride;x++){const a=x>=4?rgba[y*stride+x-4]:0,b=y?rgba[(y-1)*stride+x]:0,c=y&&x>=4?rgba[(y-1)*stride+x-4]:0;rgba[y*stride+x]=(raw[y*(stride+1)+1+x]+[0,a,b,Math.floor((a+b)/2),paeth(a,b,c)][filter])&255;}}
- return{width,height,rgba};
-}
+
 const realtime=process.argv.includes('--realtime'),directory=process.argv.slice(2).find(v=>!v.startsWith('--'))??'.cache/source-samila-hot-public';
 if(process.argv.includes('--help')){console.log('node scripts/verify-source-samila-hot-public.mjs [report-dir] [--realtime]');process.exit(0);}
 await mkdir(directory,{recursive:true});
 const report={status:'running',realtime,nativeParity:false,cases:[],limits:['Real App/Worker/file transport; original fixed-JAR JSON has recorded small-workload overrides.','Runtime random words are local system entropy. Independent cold exports are not compared to retained-preview pixels.','No native application or desktop GUI used; no native image or RNG parity claimed.','Functional elapsed wall time only; CPU time and peak process-family memory unmeasured.','When --realtime is selected, actual UI scheduling is uncontrolled: the trace records observed wall-clock deltas, checks queue completion and pause/resume ordering, and does not claim native callback cadence.']},started=performance.now();
-async function hashes(){const entries=await readdir('src',{recursive:true,withFileTypes:true}),paths=entries.filter(e=>e.isFile()).map(e=>e.parentPath+'/'+e.name);paths.push('scripts/verify-source-samila-hot-public.mjs');return Object.fromEntries(await Promise.all(paths.sort().map(async p=>[p,sha(await readFile(p))])));}
+async function hashes(){const entries=await readdir('src',{recursive:true,withFileTypes:true}),paths=entries.filter(e=>e.isFile()).map(e=>e.parentPath+'/'+e.name);paths.push('scripts/verify-source-samila-hot-public.mjs','scripts/png-rgba.mjs');return Object.fromEntries(await Promise.all(paths.sort().map(async p=>[p,sha(await readFile(p))])));}
 report.sourceBefore=await hashes();let browser,page,server,exportServer;const errors=[];
 function audit(){
  const Native=window.Worker,a=window.__hot={requests:[],completed:[],controls:[],controlResponses:[],errors:[],pixels:new Map(),owners:new WeakMap(),rendered:[],created:0,terminated:[]};

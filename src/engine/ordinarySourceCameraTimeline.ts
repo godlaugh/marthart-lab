@@ -271,6 +271,8 @@ export class OrdinarySourceCameraTimelineSession {
  }
  private live():Replay {check(this.options);if(this.mode==='fixed')throw new OrdinarySourceCameraTimelineError('input','固定帧回放不能作为实时队列续接');this.mode='live';let state=this.cache.get('owned');if(!state){state=createReplay(this.initial,this.tracks,this.fps,this.options);this.cache.set('owned',state);}return state;}
  snapshot():OrdinarySourceCameraFrame {const state=this.live();return snapshotReplay(state,state.facts.sceneTime);}
+ /** Render the current owned state without Scene.update or clock advancement. */
+ display():OrdinarySourceCameraFrame {try{const state=this.live();if(state.frameIndex<0)throw new OrdinarySourceCameraTimelineError('input','显示需要已初始化的场景');state.particles?.displayFrame?.(state.frameIndex,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
  /** Explicit local seek reconstruction; not a native Scene seek operation. */
  reconstruct(time:number):OrdinarySourceCameraFrame {this.reset();this.evaluate(time);this.mode='live';return this.snapshot();}
  step(dt:number,options:{paused?:boolean}={}):OrdinarySourceCameraFrame {if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new OrdinarySourceCameraTimelineError('input','源队列暂停标记无效');try{const state=this.live();advanceReplay(state,dt,options.paused===true,this.options,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}

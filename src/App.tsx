@@ -1458,6 +1458,15 @@ export default function App() {
           sourceSymmetryToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceSymmetryPresentation?.reference:undefined}
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}
           samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
+          symmetryPixelDensity={sourceLivePreviewKind(scene)==='symmetry'?viewportMeasurement?.pixelRatio:undefined}
+          currentSymmetryCapture={sourceLivePreviewKind(scene)==='symmetry'?{
+            size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
+            ready:completedFrameReady&&output?.type==='raster'&&output.symmetryLive?.sessionId===liveSessionId.current,
+            capture:async(size,scale)=>{
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Symmetry 画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current.captureSymmetryPaused(output,size,scale);
+            },
+          }:undefined}
           currentSamilaCapture={usesSourceSamilaSampling(scene)?{
             size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
             ready:completedFrameReady&&output?.type==='raster'&&output.samilaLive?.sessionId===liveSessionId.current,

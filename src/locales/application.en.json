@@ -1235,5 +1235,8 @@
   "Samila 图像来源": "Samila image source",
   "截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。": "Capturing adds one sample batch, then redraws the preview with another batch. Animation time stays unchanged. Changing dimensions clears the accumulated image.",
   "从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。": "Replay from the initial state with independent random samples. The current preview’s accumulated image is not copied.",
-  "渐变更新后续粒子的色板，停止保留最后显示的配色。同片段动作按列表顺序执行。": "Gradients update the palette for subsequent particles. Stopping retains the last displayed colors. Actions in a clip run in list order."
+  "渐变更新后续粒子的色板，停止保留最后显示的配色。同片段动作按列表顺序执行。": "Gradients update the palette for subsequent particles. Stopping retains the last displayed colors. Actions in a clip run in list order.",
+  "Symmetry 图像来源": "Symmetry image source",
+  "截图会额外绘制导出图和主预览，动画时间保持不变。同尺寸会继续累积或推进重播；改变尺寸会清空累积画面并取消重播。": "Capturing draws the export and primary preview again without advancing animation time. Equal dimensions continue accumulation or replay; changing dimensions clears the image and cancels replay.",
+  "从初始状态按固定时间重放，不复制当前实时累积画面。": "Reconstruct at a fixed time from the initial state; this does not copy the current live accumulation."
 }

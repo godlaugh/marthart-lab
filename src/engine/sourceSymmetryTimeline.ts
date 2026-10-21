@@ -87,6 +87,12 @@ export class SourceSymmetryTimelineSession {
   this.acknowledgeParameters=options.acknowledgeParameters!==false;
   return this.run(()=>this.session.step(dt,{paused:options.paused}));
  }
+ /** Offscreen capture has a display but no preceding scene/object update. */
+ display(acknowledgeParameters=true){
+  if(typeof acknowledgeParameters!=='boolean')throw Error('Symmetry 参数显示确认标记无效');
+  this.acknowledgeParameters=acknowledgeParameters;this.calls=[];
+  return this.run(()=>this.session.display());
+ }
  /** A local seek reconstructs a fresh fixed trajectory before entering live
   * mode; it is not an operation advertised by the original native scene. */
  reconstruct(time:number){return this.run(()=>this.session.reconstruct(time));}
