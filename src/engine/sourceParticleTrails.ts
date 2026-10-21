@@ -3,11 +3,15 @@ export interface SourceParticleTrails {
  readonly positions:Float32Array;readonly colors:Float32Array;readonly alphas:Float32Array;readonly indices:Uint32Array;
  readonly particleIds:Uint32Array;readonly records:number;readonly oldestTime:number;
 }
-const TRAIL_RECORDS=1_000_000,TRAIL_BLOCK=4096;
+const TRAIL_BLOCK=4096;
+// Pool records hold four float32 components and one uint32 next link. Other
+// families retain their existing 1M policy; an owner may opt into this byte bound.
+export const SOURCE_PARTICLE_TRAIL_POOL_BYTES=32*1024*1024;
+export const SOURCE_PARTICLE_TRAIL_MAX_RECORDS=Math.floor(SOURCE_PARTICLE_TRAIL_POOL_BYTES/20);
 /** Source Dot3D FIFO semantics with pooled typed storage. Native per-dot
  * retention is preserved; lazy blocks replace thousands of mostly empty arrays.
- * The 1M aggregate record bound includes NaN separators and precedes allocation.
- * Known storage: <=20MB pool + 12 bytes/particle metadata, <=40MB snapshot;
+ * The caller-selected aggregate bound includes NaN separators and precedes allocation.
+ * Known storage: <=32 MiB pool + 12 bytes/particle metadata, <=64 MiB snapshot;
  * renderer instance buffers have their own owner budgets. Colors are now
  * produced here; scene consumers must not reconstruct them from current heads. */
 export class SourceParticleTrailHistory {
@@ -15,7 +19,8 @@ export class SourceParticleTrailHistory {
  private readonly blocks:{values:Float32Array;next:Uint32Array}[]=[];
  private readonly maximum:number;
  private free=0;private fresh=1;private total=0;
- constructor(particles:number,private readonly lifetime:number,private readonly fade:boolean,private readonly packed:Uint32Array,private readonly check:()=>void,private readonly capacityError:()=>never){
+ constructor(particles:number,private readonly lifetime:number,private readonly fade:boolean,private readonly packed:Uint32Array,private readonly check:()=>void,private readonly capacityError:()=>never,private readonly recordLimit=1_000_000){
+  if(!Number.isSafeInteger(recordLimit)||recordLimit<0||recordLimit>SOURCE_PARTICLE_TRAIL_MAX_RECORDS)throw new RangeError('Particle trail pool exceeds 32 MiB.');
   this.heads=new Uint32Array(particles);this.tails=new Uint32Array(particles);this.counts=new Uint32Array(particles);
   const product=F(lifetime*60),integer=Math.max(-2147483648,Math.min(2147483647,Math.trunc(product)));
   this.maximum=Math.max(0,(integer+120)|0); // JVM f2i then signed iadd.
@@ -36,9 +41,9 @@ export class SourceParticleTrailHistory {
   let id=this.free;
   if(id)this.free=this.next(id);
   else{
-   if(this.fresh>TRAIL_RECORDS)this.capacityError();
+   if(this.fresh>this.recordLimit)this.capacityError();
    id=this.fresh++;
-   if(this.index(id)===0){this.check();const size=Math.min(TRAIL_BLOCK,TRAIL_RECORDS-id+1);this.blocks.push({values:new Float32Array(size*4),next:new Uint32Array(size)});}
+   if(this.index(id)===0){this.check();const size=Math.min(TRAIL_BLOCK,this.recordLimit-id+1);this.blocks.push({values:new Float32Array(size*4),next:new Uint32Array(size)});}
   }
   const block=this.block(id),i=this.index(id),at=i*4;block.values[at]=x;block.values[at+1]=y;block.values[at+2]=z;block.values[at+3]=time;block.next[i]=0;
   if(this.tails[slot])this.link(this.tails[slot],id);else this.heads[slot]=id;

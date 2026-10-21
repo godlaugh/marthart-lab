@@ -2,6 +2,7 @@ import {describe,it,expect} from 'vitest';
 import * as THREE from 'three';
 import {prepareSourceCamera,type SourceCameraPlan} from '../src/engine/sourceCamera';
 import {sourceProcessingLineBuffers} from '../src/engine/sourceProcessingLineRenderer';
+import {sourceProcessingLineInstances} from '../src/engine/sourceProcessingStroke';
 import {createSourceSurfaceMeshLines} from '../src/engine/sourceSurfaceLineRenderer';
 import type {SourceSurfaceMeshWireframeFrame} from '../src/engine/sourceSurfaceMeshWireframe';
 const lineBuffers=(frame:SourceSurfaceMeshWireframeFrame,plan:SourceCameraPlan)=>sourceProcessingLineBuffers(frame.positions,frame.lineWidth,plan);
@@ -63,12 +64,12 @@ describe('Processing CPU independent line tessellation',()=>{
  });
  it('creates an empty draw with owned buffers when no lines are present',()=>{
   const mesh=createSourceSurfaceMeshLines(frame([]),plan);
-  expect(mesh.geometry.getIndex()!.count).toBe(0);expect(mesh.geometry.getAttribute('color').count).toBe(0);release(mesh);
+  expect((mesh.geometry as THREE.InstancedBufferGeometry).instanceCount).toBe(0);expect(mesh.geometry.getAttribute('colorA').count).toBe(0);release(mesh);
  });
  it('preserves packed stroke alpha and zero-alpha grayscale fallback without mesh fill alpha',()=>{
   for(const [packed,rgba] of [[0xff,[1,1,1,1]],[0,[0,0,0,1]],[0xff0000,[1,0,0,0]],[0x800000ff,[0,0,1,Math.fround(128/255)]]] as const){
    const mesh=createSourceSurfaceMeshLines(frame(undefined,2,packed),plan,.5);
-   expect(Array.from(mesh.geometry.getAttribute('color').array.slice(0,4))).toEqual([rgba[0],rgba[1],rgba[2],Math.fround(rgba[3]*.5)]);release(mesh);
+   expect(Array.from(mesh.geometry.getAttribute('colorA').array.slice(0,4))).toEqual([rgba[0],rgba[1],rgba[2],Math.fround(rgba[3]*.5)]);release(mesh);
   }
  });
  it('uses logical viewport, source depth bias and blend, and orders lines after filled meshes',()=>{
@@ -87,4 +88,19 @@ describe('Processing CPU independent line tessellation',()=>{
   expect(()=>createSourceSurfaceMeshLines(frame(),{...plan,viewport:{...plan.viewport,projectionPass:'unknown'}})).toThrow(/未知/);
   for(const opacity of [-1,2,NaN])expect(()=>createSourceSurfaceMeshLines(frame(),plan,opacity)).toThrow(/透明度/);
  });
+});
+
+it('compact instances reconstruct every retained expanded vertex bit, including signed zero and rounded direction transforms',()=>{
+ for(const m of [identity,[1,1,-1,16777216,0,1,0,0,0,0,1,0,0,0,0,1],[0,0,0,0,0,-2,0,0,0,0,3,0,0,0,0,1]]){
+  const input=new Float32Array([0,0,0,16777216,1,16777216,0,0,0,0,0,0,NaN,0,0,1,1,1]),view=withMatrix(m);
+  const expanded=lineBuffers({...frame(),positions:input},view),compact=sourceProcessingLineInstances(input,2,view);
+  const positions=new Float32Array(compact.count*16),directions=new Float32Array(compact.count*16);
+  for(let pair=0;pair<compact.count;pair++)for(let v=0;v<4;v++){
+   const at=pair*8+(v<2?0:4),target=pair*16+v*4;
+   positions.set(compact.positions.subarray(at,at+4),target);directions.set(compact.directions.subarray(at,at+4),target);
+   if(v===1||v===2)directions[target+3]=-directions[target+3];
+  }
+  expect(new Uint32Array(positions.buffer)).toEqual(new Uint32Array(expanded.positions.buffer));
+  expect(new Uint32Array(directions.buffer)).toEqual(new Uint32Array(expanded.directions.buffer));
+ }
 });

@@ -9,16 +9,16 @@ const plan=parsed.value.plan;
 const trails=():SourceParticleTrails=>({positions:new Float32Array([-30,0,0,0,20,0,30,0,0]),colors:new Float32Array([1,0,0,.1234567,.5,.9,0,0,1]),alphas:new Float32Array([1,.3,0]),indices:new Uint32Array([0,1,1,2,1,0,0,1]),particleIds:new Uint32Array([0,0,0]),records:3,oldestTime:0});
 const release=(mesh:ReturnType<typeof createSourceParticleTrailLines>)=>{mesh.geometry.dispose();mesh.material.dispose();};
 describe('source particle independent Processing LINES',()=>{
- it('expands only index pairs with endpoint RGBA, preserving shared, reversed and duplicate edges without joins',()=>{
+ it('instances only index pairs with endpoint RGBA, preserving shared, reversed and duplicate edges without joins',()=>{
   const input=trails(),mesh=createSourceParticleTrailLines(input,2,plan,.37);
   try{
-   const geometry=mesh.geometry,color=geometry.getAttribute('color').array;
-   expect(geometry.getAttribute('position').count).toBe(16);expect(geometry.index?.count).toBe(24);
+   const geometry=mesh.geometry as THREE.InstancedBufferGeometry,color=geometry.getAttribute('colorA').array;
+   expect(geometry.instanceCount).toBe(4);expect(geometry.getAttribute('endpointA').count).toBe(4);expect(geometry.index?.count).toBe(6);
    for(let pair=0;pair<4;pair++)for(let v=0;v<4;v++){
     const index=input.indices[pair*2+(v<2?0:1)];
-    expect(Array.from(color.slice(pair*16+v*4,pair*16+v*4+4))).toEqual([...input.colors.slice(index*3,index*3+3),Math.fround(input.alphas[index]*.37)]);
+    expect(Array.from(color.slice(pair*8+(v<2?0:4),pair*8+(v<2?0:4)+4))).toEqual([...input.colors.slice(index*3,index*3+3),Math.fround(input.alphas[index]*.37)]);
    }
-   expect(Array.from(geometry.index!.array)).toEqual([0,1,2,2,1,3,4,5,6,6,5,7,8,9,10,10,9,11,12,13,14,14,13,15]);
+   expect(Array.from(geometry.index!.array)).toEqual([0,1,2,2,1,3]);
    const before=Array.from(color);input.colors.fill(0);input.alphas.fill(0);input.positions.fill(0);input.indices.fill(2);expect(Array.from(color)).toEqual(before);
   }finally{release(mesh);}
  });
@@ -28,11 +28,11 @@ describe('source particle independent Processing LINES',()=>{
  });
  it('accepts empty trails without allocating vertices',()=>{
   const mesh=createSourceParticleTrailLines({...trails(),positions:new Float32Array(),colors:new Float32Array(),alphas:new Float32Array(),indices:new Uint32Array()},1,plan);
-  try{expect(mesh.geometry.index?.count).toBe(0);}finally{release(mesh);}
+  try{expect((mesh.geometry as THREE.InstancedBufferGeometry).instanceCount).toBe(0);}finally{release(mesh);}
  });
- it('rejects malformed indexed topology and all expanded storage above 256 MiB before allocation',()=>{
+ it('rejects malformed indexed topology and all instance storage above 256 MiB before allocation',()=>{
   for(const indices of [undefined,new Uint16Array([0,1]),new Uint32Array([0]),new Uint32Array([0,3])])expect(()=>createSourceParticleTrailLines({...trails(),indices:indices as Uint32Array},1,plan)).toThrow(/索引|缓冲/);
-  const indices=new Uint32Array((Math.floor(256*1024*1024/216)+1)*2);
+  const indices=new Uint32Array((Math.floor((256*1024*1024-40)/96)+1)*2);
   expect(()=>createSourceParticleTrailLines({...trails(),indices},1,plan)).toThrow(/256 MiB/);
  });
  it('rejects wrong color shapes and invalid normalized channel values',()=>{

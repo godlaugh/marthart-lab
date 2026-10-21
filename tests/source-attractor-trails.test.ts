@@ -141,3 +141,14 @@ describe('source Attractor operation and complete-request budgets',()=>{
   expect(()=>owner.snapshot()).toThrow('2000 万');
  });
 });
+
+it('retains the full 2000-particle, 10-substep, 10-second native FIFO beyond the old aggregate cap',()=>{
+ const owner=new SourceAttractorCpuParticles(options({particle_count_cpu:2000,sub_steps:10,trail_lifetime:10,time_step:.005},200,['#ffcc2233']));
+ for(let i=0;i<73;i++)owner.update(frame(i,i/30,1/30));
+ const snapshot=owner.snapshot(),trails=snapshot.trails!;
+ expect(trails.records).toBe(2000*720);expect(trails.positions.length).toBe(2000*720*3);expect(trails.indices.length).toBe(2000*719*2);
+ expect(trails.oldestTime).toBe(Math.fround(1/30));expect(snapshot.integrationSteps[0]).toBe(200+73*10);
+ expect(owner.diagnostics().retainedBytes).toBeLessThan(34*1024*1024);
+ // The first slot's last trail endpoint and current head have the same owner.
+ expect(trails.positions.slice(719*3,720*3)).toEqual(snapshot.positions.slice(0,3));
+});

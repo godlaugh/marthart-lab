@@ -4,10 +4,10 @@ import {writeSourceEyePosition} from './sourceProcessingGeometry';
 const F=Math.fround;
 // Complete expanded position/direction/color vec4 arrays and uint32 triangles.
 const BYTES_PER_PAIR=4*4*4*3+6*4,MAX_BUFFER_BYTES=256*1024*1024;
-function pairCount(positions:Float32Array,width:number,indices?:Uint32Array):number {
+function pairCount(positions:Float32Array,width:number,indices?:Uint32Array,bytesPerPair=BYTES_PER_PAIR,fixedBytes=0):number {
  if(!(positions instanceof Float32Array)||positions.length%3!==0||indices!==undefined&&!(indices instanceof Uint32Array))throw new Error('源 Processing 线条缓冲无效');
  const count=indices===undefined?positions.length/6:indices.length/2;
- if(!Number.isInteger(count)||count*BYTES_PER_PAIR>MAX_BUFFER_BYTES)throw new Error('源 Processing 线条缓冲无效或展开后超过 256 MiB 本地容量');
+ if(!Number.isInteger(count)||count*bytesPerPair+fixedBytes>MAX_BUFFER_BYTES)throw new Error('源 Processing 线条缓冲无效或展开后超过 256 MiB 本地容量');
  if(!Number.isFinite(F(width))||width<=0)throw new Error('源 Processing 线条宽度无效');
  if(indices)for(const index of indices)if(index>=positions.length/3)throw new Error('源 Processing 线条索引越界');
  return count;
@@ -222,6 +222,20 @@ export function sourceProcessingLineDisplay(plan:SourceCameraPlan):{scale:[numbe
 export function sourceProcessingLineBuffers(input:Float32Array,lineWidth:number,plan:SourceCameraPlan,sourceIndices?:Uint32Array):{positions:Float32Array;directions:Float32Array;indices:Uint32Array} {
  return expandLineBuffers(input,lineWidth,plan,sourceIndices,pairCount(input,lineWidth,sourceIndices));
 }
+/** Compact independent LINES: two transformed endpoints/directions per instance.
+ * Charge both endpoint RGBA arrays before allocating, plus the shared quad.
+ * The expanded boundary above remains available for retained tessellation proofs. */
+export function sourceProcessingLineInstances(input:Float32Array,lineWidth:number,plan:SourceCameraPlan,sourceIndices?:Uint32Array):{positions:Float32Array;directions:Float32Array;count:number} {
+ const count=pairCount(input,lineWidth,sourceIndices,96,40),m=plan.modelView.rowMajor;
+ const half=F(F(F(lineWidth)*sourceProcessingTransformScale(m))/2);
+ const positions=new Float32Array(count*8),directions=new Float32Array(count*8);
+ for(let pair=0;pair<count;pair++){
+  const a=sourceIndices?sourceIndices[pair*2]:pair*2,b=sourceIndices?sourceIndices[pair*2+1]:pair*2+1;
+  writeStrokeVertex(input,m,a*3,b*3,positions,directions,pair*8,half);
+  writeStrokeVertex(input,m,b*3,a*3,positions,directions,pair*8+4,half);
+ }
+ return{positions,directions,count};
+}
 function expandLineBuffers(input:Float32Array,lineWidth:number,plan:SourceCameraPlan,sourceIndices:Uint32Array|undefined,count:number):{positions:Float32Array;directions:Float32Array;indices:Uint32Array} {
  const m=plan.modelView.rowMajor;
  const halfWidth=F(F(F(lineWidth)*sourceProcessingTransformScale(m))/2);
@@ -239,18 +253,16 @@ function expandLineBuffers(input:Float32Array,lineWidth:number,plan:SourceCamera
 // Ben Fry/Casey Reas (2004–12), MIT (2001–04), LGPL-2.1-or-later.
 // Preserve shader operations including identity modelview multiplication and
 // perspective mix. Immediate flush has already baked the CPU modelview.
-export const sourceProcessingLineVertex=`precision highp float;
+function lineVertex(attributes:string,setup=''){return`precision highp float;
 precision highp int;
 uniform mat4 lineModelview;
 uniform mat4 projection;
 uniform vec4 viewport;
 uniform int perspective;
 uniform vec3 scale;
-in vec4 position;
-in vec4 color;
-in vec4 direction;
+${attributes}
 out vec4 vertColor;
-void main(){
+void main(){${setup}
  vec4 posp=lineModelview*position;
  vec4 posq=lineModelview*(position+vec4(direction.xyz,0));
  posp.xyz=posp.xyz*scale;
@@ -267,7 +279,18 @@ void main(){
  gl_Position.xy=p.xy+offset.xy*mix(noPerspScale,perspScale,float(perspective>0));
  gl_Position.zw=p.zw;
  vertColor=color;
-}`;
+}`;}
+export const sourceProcessingLineVertex=lineVertex(`in vec4 position;
+in vec4 color;
+in vec4 direction;`);
+export const sourceProcessingInstancedLineVertex=lineVertex(`in float strokeVertex;
+in vec4 endpointA;in vec4 endpointB;
+in vec4 directionA;in vec4 directionB;
+in vec4 colorA;in vec4 colorB;`, `
+ vec4 position=strokeVertex<2.0?endpointA:endpointB;
+ vec4 direction=strokeVertex<2.0?directionA:directionB;
+ if(strokeVertex==1.0||strokeVertex==2.0)direction.w=-direction.w;
+ vec4 color=strokeVertex<2.0?colorA:colorB;`);
 export const sourceProcessingLineFragment=`precision mediump float;
 precision mediump int;
 in vec4 vertColor;

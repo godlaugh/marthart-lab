@@ -1,5 +1,5 @@
 import {sourceAttractorWorkBudget} from './sourceAttractorWork';
-import {SourceParticleTrailHistory,type SourceParticleTrails} from './sourceParticleTrails';
+import {SourceParticleTrailHistory,SOURCE_PARTICLE_TRAIL_MAX_RECORDS,type SourceParticleTrails} from './sourceParticleTrails';
 import {parseSourceAttractorVisualConfiguration,type SourceAttractorVisualConfiguration} from './sourceAttractorVisualConfig';
 import {SourceAttractorColorRuntime} from './sourceAttractorColorRuntime';
 import type {SourceGradientAction} from './sourceGradientRuntime';
@@ -87,7 +87,7 @@ export class SourceAttractorCpuParticles implements OrdinarySourceCameraParticle
    this.color=new SourceAttractorColorRuntime({count:this.count,nativeBackend:'cpu',showTrails:v.trails.show,palette:v.palette,reserve:n=>this.reserve(n),isCancelled:this.options.isCancelled});
    // No warmup records. Native Dot3D capacity is fixed at construction even
    // when recording is disabled; pooled storage stays lazy until first add.
-   this.history=new SourceParticleTrailHistory(this.count,F(v.trails.lifetime),v.trails.fade,this.color.packed,()=>this.check(),()=>{throw new SourceAttractorCpuError('capacity','原版吸引子拖尾超过本地 100 万记录预算');});
+   this.history=new SourceParticleTrailHistory(this.count,F(v.trails.lifetime),v.trails.fade,this.color.packed,()=>this.check(),()=>{throw new SourceAttractorCpuError('capacity','原版吸引子拖尾超过本地 32 MiB 记录池预算');},SOURCE_PARTICLE_TRAIL_MAX_RECORDS);
   }
  }
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())throw new SourceAttractorCpuError('cancelled','原版吸引子回放已取消');}
