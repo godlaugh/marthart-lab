@@ -1,22 +1,23 @@
-import type {PerlinFreshRecordingPlan,PerlinRecordingClock} from './sourcePerlinRecording';
+import type {SourceQueueRecordingClock} from './sourceRecordingClock';
+import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { GenerationInput, GenerationStatus, SceneDocument, SceneOutput } from '../types';
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
 
-export type PerlinRecordingRaster=Extract<SceneOutput,{type:'raster'}>;
-export interface PerlinRecordingOptions {width:number;height:number;simulationFps:number;}
-export interface PerlinRecordingHandle {readonly sessionId:number;readonly recordingId:number;}
-export interface PerlinRecordingStart {handle:PerlinRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:PerlinRecordingClock;warmup:PerlinRecordingRaster;}
-export interface PerlinRecordingStop {scene:SceneDocument;context:GenerationInput;preview:PerlinRecordingRaster;}
-export type PerlinRecordingOperation='perlin-recording-begin'|'perlin-recording-frame'|'perlin-recording-finish';
-export function isPerlinRecordingOperation(operation:string):operation is PerlinRecordingOperation{return operation==='perlin-recording-begin'||operation==='perlin-recording-frame'||operation==='perlin-recording-finish';}
+export type SourceRecordingRaster=Extract<SceneOutput,{type:'raster'}>;
+export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;}
+export interface SourceRecordingHandle {readonly sessionId:number;readonly recordingId:number;}
+export interface SourceRecordingStart {handle:SourceRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceQueueRecordingClock;warmup:SourceRecordingRaster;}
+export interface SourceRecordingStop {scene:SceneDocument;context:GenerationInput;preview:SourceRecordingRaster;}
+export type SourceRecordingOperation='source-recording-begin'|'source-recording-frame'|'source-recording-finish';
+export function isSourceRecordingOperation(operation:string):operation is SourceRecordingOperation{return operation==='source-recording-begin'||operation==='source-recording-frame'||operation==='source-recording-finish';}
 /** Retention is an acknowledgement from the current owner, never inferred from
  * an error message. A retained begin failure exposes its exact local handle so
  * callers can finish a recording whose warmup response could not be delivered. */
-export class PerlinRecordingOperationError extends Error {
- constructor(message:string,readonly previewRetained:boolean,readonly recordingRetained:boolean,readonly handle?:PerlinRecordingHandle){super(message);this.name='PerlinRecordingOperationError';}
+export class SourceRecordingOperationError extends Error {
+ constructor(message:string,readonly previewRetained:boolean,readonly recordingRetained:boolean,readonly handle?:SourceRecordingHandle){super(message);this.name='SourceRecordingOperationError';}
 }
 
 export interface PausedCaptureSize {width:number;height:number;}
@@ -64,9 +65,9 @@ export type GenerationRequest = { sessionId: number } & (
   | IteratedPlaybackRequest
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
   | PausedCaptureRequest
-  | {operation:'perlin-recording-begin';id:number;sourceId:number;options:PerlinRecordingOptions}
-  | {operation:'perlin-recording-frame';id:number;recordingId:number;displayFrame:number}
-  | {operation:'perlin-recording-finish';id:number;recordingId:number}
+  | {operation:'source-recording-begin';id:number;sourceId:number;options:SourceRecordingOptions}
+  | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number}
+  | {operation:'source-recording-finish';id:number;recordingId:number}
   | { operation: 'search-stable'; id: number; scene: SceneDocument; options: StableSearchOptions }
   | { operation: 'spirograph-recording-plan'; id:number; scene:SceneDocument; startFrame:number; fps:number }
   | { operation: 'perlin-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
@@ -75,9 +76,9 @@ export type GenerationRequest = { sessionId: number } & (
 export type GenerationPayload =
   | {operation:IteratedPlaybackOperation;id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
-  | {operation:'perlin-recording-begin';id:number;recordingId:number;result:Omit<PerlinRecordingStart,'handle'>}
-  | {operation:'perlin-recording-frame';id:number;recordingId:number;displayFrame:number;output:PerlinRecordingRaster}
-  | {operation:'perlin-recording-finish';id:number;recordingId:number;result:PerlinRecordingStop}
+  | {operation:'source-recording-begin';id:number;recordingId:number;result:Omit<SourceRecordingStart,'handle'>}
+  | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number;output:SourceRecordingRaster}
+  | {operation:'source-recording-finish';id:number;recordingId:number;result:SourceRecordingStop}
   | { operation: 'generate'; id: number; output: SceneOutput }
   | { operation: PausedCaptureOperation; id:number; result:PausedCaptureResult }
   | { operation: 'generate-progress'; id: number; output: SceneOutput }

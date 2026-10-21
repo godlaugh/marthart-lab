@@ -1497,7 +1497,7 @@ export default function App() {
             ready:completedFrameReady,
             record:async(options,consumer,signal)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Perlin 画面尚未完成或已过期，请等待预览完成后重试');
-              return generationQueue.current.recordPerlin(output,options,consumer,signal);
+              return generationQueue.current.recordSource(output,options,consumer,signal);
             },
           }:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{

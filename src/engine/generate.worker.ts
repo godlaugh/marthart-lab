@@ -4,7 +4,7 @@ import { generateScene, TemporalGenerationSession } from './temporal';
 import { searchStableAttractor } from './stableSearch';
 import { exploreComplex } from './complexExplore';
 import type { GenerationRequest, GenerationPayload } from './generationProtocol';
-import {isPausedCaptureOperation,isPerlinRecordingOperation} from './generationProtocol';
+import {isPausedCaptureOperation,isSourceRecordingOperation} from './generationProtocol';
 import {outputBuffers} from './outputBuffers';
 import {planRootsFreshRecording} from './rootsRecording';
 import type {GenerationInput,SceneDocument} from '../types';
@@ -15,12 +15,14 @@ import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-type RuntimeStart=ReturnType<typeof temporalSession.sourcePerlin.beginRecording>;
+function recordingProducer(scene:SceneDocument){return scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
+type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
 type RecordingRaster=RuntimeStart['warmup'];
-let recording:{id:number;runtime:RuntimeStart;finish?:ReturnType<typeof temporalSession.sourcePerlin.finishRecording>;preview?:RecordingRaster;pendingFrame?:{index:number;output:RecordingRaster}}|undefined;
+let recording:{id:number;producer:RecordingProducer;runtime:RuntimeStart;finish?:ReturnType<RecordingProducer['finishRecording']>;preview?:RecordingRaster;pendingFrame?:{index:number;output:RecordingRaster}}|undefined;
 function retainsRecording(){
  if(!recording)return false;
- return recording.finish?temporalSession.sourcePerlin.matchesCompletedPrimary(recording.finish.scene,recording.finish.context):temporalSession.sourcePerlin.ownsRecording(recording.runtime.handle);
+ return recording.finish?recording.producer.matchesCompletedPrimary(recording.finish.scene,recording.finish.context):recording.producer.ownsRecording(recording.runtime.handle);
 }
 
 self.onmessage = (
@@ -36,7 +38,7 @@ self.onmessage = (
   let captureSourceMatched=false;
   try {
     // A failed release keeps the old owner and must still answer this request.
-    if(recording&&(owner!==sessionId||!isPerlinRecordingOperation(operation)))throw new Error('Perlin 录制期间不能执行其它后台任务');
+    if(recording&&(owner!==sessionId||!isSourceRecordingOperation(operation)))throw new Error('源场景录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
     if(event.data.operation==='symmetry-playback'||event.data.operation==='map-playback'){
       const source=completed,family=event.data.operation==='map-playback'?'map':'symmetry',key=family==='map'?'mapLive':'symmetryLive';
@@ -53,38 +55,39 @@ self.onmessage = (
       completed={...source,context:{...source.context,samilaLive:{...source.context.samilaLive,clock:{...source.context.samilaLive.clock,paused:event.data.paused}}}};
       send({operation:'samila-playback',id,sourceId:source.id,paused:event.data.paused});return;
     }
-    if(event.data.operation==='perlin-recording-begin'){
-      if(recording)throw new Error('Perlin 录制已开始');
+    if(event.data.operation==='source-recording-begin'){
+      if(recording)throw new Error('源场景录制已开始');
       const source=recordingSource=completed;
-      if(!source||source.id!==event.data.sourceId)throw new Error('Perlin 录制对应的主预览已过期');
-      const runtime=temporalSession.sourcePerlin.beginRecording(source.scene,source.context,event.data.options);
-      recording={id,runtime};completed=undefined;
+      if(!source||source.id!==event.data.sourceId)throw new Error('源场景录制对应的主预览已过期');
+      const producer=recordingProducer(source.scene);if(!producer)throw new Error('当前场景不支持源录制');
+      const runtime=producer.beginRecording(source.scene,source.context,event.data.options);
+      recording={id,producer,runtime};completed=undefined;
       send({operation:event.data.operation,id,recordingId:id,result:{scene:runtime.scene,context:runtime.context,clock:runtime.clock,warmup:runtime.warmup}},outputBuffers(runtime.warmup));return;
     }
-    if(event.data.operation==='perlin-recording-frame'||event.data.operation==='perlin-recording-finish'){
+    if(event.data.operation==='source-recording-frame'||event.data.operation==='source-recording-finish'){
       const lease=recording;
-      if(!lease||lease.id!==event.data.recordingId)throw new Error('Perlin 录制身份已过期');
-      if(event.data.operation==='perlin-recording-frame'){
-        if(lease.finish)throw new Error('Perlin 录制已停止，等待主预览恢复');
+      if(!lease||lease.id!==event.data.recordingId)throw new Error('源场景录制身份已过期');
+      if(event.data.operation==='source-recording-frame'){
+        if(lease.finish)throw new Error('源场景录制已停止，等待主预览恢复');
         const displayFrame=event.data.displayFrame;
-        if(!Number.isSafeInteger(displayFrame)||displayFrame<1)throw new Error('Perlin 录制帧序号无效');
+        if(!Number.isSafeInteger(displayFrame)||displayFrame<1)throw new Error('源场景录制帧序号无效');
         const pending=lease.pendingFrame;
-        if(pending&&pending.index!==displayFrame)throw new Error('Perlin 上一录制帧尚未交付，请重试该帧或结束录制');
-        const output=pending?.output??temporalSession.sourcePerlin.nextRecordingFrame(lease.runtime.handle,displayFrame);
-        if(output.pixels.byteLength!==output.width*output.height*4)throw new Error('Perlin 录制帧传输状态未知，请结束录制');
+        if(pending&&pending.index!==displayFrame)throw new Error('源场景上一录制帧尚未交付，请重试该帧或结束录制');
+        const output=pending?.output??lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame);
+        if(output.pixels.byteLength!==output.width*output.height*4)throw new Error('源场景录制帧传输状态未知，请结束录制');
         lease.pendingFrame={index:displayFrame,output};
         send({operation:event.data.operation,id,recordingId:lease.id,displayFrame,output},outputBuffers(output));lease.pendingFrame=undefined;return;
       }
       // finishRecording mutates runtime ownership exactly once. If publication
       // fails, retain its result and completed preview for an explicit retry.
-      lease.finish??=temporalSession.sourcePerlin.finishRecording(lease.runtime.handle);
+      lease.finish??=lease.producer.finishRecording(lease.runtime.handle);
       const {scene,context}=lease.finish;
       if(!lease.preview||lease.preview.pixels.byteLength!==lease.preview.width*lease.preview.height*4){
         const output=generateScene(scene,context,temporalSession);
-        if(output.type!=='raster')throw new Error('Perlin 录制结束没有生成主预览');
+        if(output.type!=='raster')throw new Error('源场景录制结束没有生成主预览');
         lease.preview=output;
       }
-      send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context,preview:lease.preview}},outputBuffers(lease.preview));
+      send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:{...context,time:lease.preview.mapLive?.sceneTime??lease.preview.symmetryLive?.sceneTime??context.time},preview:lease.preview}},outputBuffers(lease.preview));
       completed={id,scene,context};recording=undefined;return;
     }
     if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture'){
@@ -166,12 +169,12 @@ self.onmessage = (
     send({ operation: 'generate', id, output }, outputBuffers(output));
   } catch (error) {
     const message=error instanceof Error?error.message:String(error);
-    if(isPerlinRecordingOperation(operation)||leaseAtEntry){
+    if(isSourceRecordingOperation(operation)||leaseAtEntry){
       const retained=owner===sessionId&&retainsRecording();
       // Foreign and stale requests cannot revoke the actual lease. A runtime
       // failure does revoke it, even if the textual error looks recoverable.
       if(recording&&!retainsRecording()){recording=undefined;completed=undefined;}
-      const previewRetained=!recording&&!!recordingSource&&owner===sessionId&&temporalSession.sourcePerlin.matchesCompletedPrimary(recordingSource.scene,recordingSource.context);
+      const previewRetained=!recording&&!!recordingSource&&owner===sessionId&&recordingProducer(recordingSource.scene)?.matchesCompletedPrimary(recordingSource.scene,recordingSource.context);
       if(recordingSource)completed=previewRetained?recordingSource:undefined;
       send({id,operation,error:message,...(retained?{retainedRecordingId:recording!.id}:{}),...(previewRetained?{retainedSourceId:recordingSource!.id}:{})});
     }else     if(isPausedCaptureOperation(operation)){

@@ -1,4 +1,5 @@
-import {planPerlinRecordingClock,assertPerlinRecordingFrame,type PerlinRecordingClock} from '../engine/sourcePerlinRecording';
+import type {SourceQueueRecordingClock} from '../engine/sourceRecordingClock';
+import {planPerlinRecordingClock,assertPerlinRecordingFrame} from '../engine/sourcePerlinRecording';
 import {prepareSourcePausedCaptureSize} from '../engine/sourcePausedCaptureSize';
 import {sourcePerlinBackgroundRgba} from '../engine/sourcePerlinBackground';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
@@ -54,7 +55,7 @@ type Configuration=ReturnType<typeof prepareConfiguration>;
 function ownConfiguration(value:Configuration):Configuration{return {...value,document:structuredClone(value.document)};}
 function copyContext(c:GenerateContext):GenerateContext{return {...c,sourceViewport:c.sourceViewport?{...c.sourceViewport}:undefined,sourcePerlinViewport:c.sourcePerlinViewport?{...c.sourcePerlinViewport}:undefined};}
 type Binding={view:View;width:number;height:number;density:number;kind:'primary'|'offscreen'};
-type Recording={handle:object;scene:SceneDocument;context:GenerateContext;clock:PerlinRecordingClock;next:number;frame?:OrdinarySourceCameraFrame};
+type Recording={handle:object;scene:SceneDocument;context:GenerateContext;clock:SourceQueueRecordingClock;next:number;frame?:OrdinarySourceCameraFrame};
 /** Simulation resources and canvas attachments have separate lifetimes. Local
  * cold replay still resets both. Toolbar recording resets only simulation and
  * uses the last applied snapshot, keeping primary and export pixel history. */

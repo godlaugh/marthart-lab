@@ -5,8 +5,8 @@ import {retainsIteratedCompiler} from './iteratedIdentity';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
-import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCaptureResult,PerlinPausedCaptureSize,PausedCaptureSize,PausedCaptureResult,PerlinRecordingOptions,PerlinRecordingHandle,PerlinRecordingStart,PerlinRecordingStop,PerlinRecordingRaster} from './generationProtocol';
-import {pausedCaptureContracts,PerlinRecordingOperationError} from './generationProtocol';
+import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCaptureResult,PerlinPausedCaptureSize,PausedCaptureSize,PausedCaptureResult,SourceRecordingOptions,SourceRecordingHandle,SourceRecordingStart,SourceRecordingStop,SourceRecordingRaster} from './generationProtocol';
+import {pausedCaptureContracts,SourceRecordingOperationError} from './generationProtocol';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
@@ -22,15 +22,15 @@ interface GeneratorPort {
   captureMapPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSymmetryPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureSamilaPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
-  beginPerlinRecording?(output:SceneOutput,options:PerlinRecordingOptions):Promise<PerlinRecordingStart>;
-  nextPerlinRecordingFrame?(handle:PerlinRecordingHandle,displayFrame:number):Promise<PerlinRecordingRaster>;
-  finishPerlinRecording?(handle:PerlinRecordingHandle):Promise<PerlinRecordingStop>;
-  hasPerlinRecording?(handle:PerlinRecordingHandle):boolean;
+  beginSourceRecording?(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>;
+  nextSourceRecordingFrame?(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceRecordingRaster>;
+  finishSourceRecording?(handle:SourceRecordingHandle):Promise<SourceRecordingStop>;
+  hasSourceRecording?(handle:SourceRecordingHandle):boolean;
 }
 interface Request {scene:SceneDocument;context:Context;intent?:'metadata';}
-export interface PerlinRecordingConsumer {
-  start?:(start:PerlinRecordingStart)=>void|Promise<void>;
-  frame:(frame:PerlinRecordingRaster,encodedIndex:number,start:PerlinRecordingStart)=>void|Promise<void>;
+export interface SourceRecordingConsumer {
+  start?:(start:SourceRecordingStart)=>void|Promise<void>;
+  frame:(frame:SourceRecordingRaster,encodedIndex:number,start:SourceRecordingStart)=>void|Promise<void>;
 }
 function metadataContext(context:Context):Context {
   // After initialization, realtime time is display feedback, not a seek.
@@ -42,14 +42,14 @@ const playbackMethods={samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPau
 const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
 const liveIdentity=(request:Request)=>liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
-interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:PerlinRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
+interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.
 // These owners are retried explicitly, or once when another queue is created.
 const retiredQueues=new Set<GenerationQueue>();
 export async function retryRetiredGenerationQueueCleanup():Promise<void>{
-  const results=await Promise.allSettled([...retiredQueues].map(queue=>queue.retryPerlinRecordingCleanup()));
+  const results=await Promise.allSettled([...retiredQueues].map(queue=>queue.retrySourceRecordingCleanup()));
   const errors=results.flatMap(result=>result.status==='rejected'?[result.reason]:[]);
-  if(errors.length)throw new AggregateError(errors,'已卸载预览的 Perlin 录制清理仍未完成');
+  if(errors.length)throw new AggregateError(errors,'已卸载预览的源场景录制清理仍未完成');
 }
 /** Coalesce time changes while retaining the latest requested frame. Domain
  * native Roots and continuous Map/Symmetry edits retain their renderer instance; an
@@ -63,7 +63,7 @@ export class GenerationQueue {
   private captureOwner?:{retire:boolean};
   private recordingOwner?:RecordingOwner;
   private playbackOwner?:PlaybackOwner;
-  constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:PerlinRecordingStop,originalScene:SceneDocument)=>void}){
+  constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void}){
     if(retiredQueues.size)void retryRetiredGenerationQueueCleanup().catch(error=>{if(!this.disposed)this.callbacks.error(error);});
   }
   request(scene:SceneDocument,context:Context,delayMs=0,intent?:'metadata'){
@@ -177,7 +177,7 @@ export class GenerationQueue {
   captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureMapPaused',output,size,scale);}
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureSymmetryPaused',output,size,scale);}
   private async capturePaused(method:'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
-    if(this.recordingOwner&&!this.recordingOwner.active)await this.retryPerlinRecordingCleanup();
+    if(this.recordingOwner&&!this.recordingOwner.active)await this.retrySourceRecordingCleanup();
     const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':method==='captureMapPaused'?'map-paused-capture':'samila-paused-capture'];
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!capture)
       throw new Error(`请等待当前${contract.label}预览完成后再保存暂停画面`);
@@ -209,42 +209,42 @@ export class GenerationQueue {
   }
   /** Consume one encoded frame at a time. Warmup is delivered only to start;
    * the next worker frame is not requested until the consumer has finished. */
-  async recordPerlin(output:SceneOutput,options:PerlinRecordingOptions,consumer:PerlinRecordingConsumer,signal?:AbortSignal):Promise<void>{
-    if(this.recordingOwner&&!this.recordingOwner.active)await this.retryPerlinRecordingCleanup();
+  async recordSource(output:SceneOutput,options:SourceRecordingOptions,consumer:SourceRecordingConsumer,signal?:AbortSignal):Promise<void>{
+    if(this.recordingOwner&&!this.recordingOwner.active)await this.retrySourceRecordingCleanup();
     const request=this.latest;
-    if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!this.generator.beginPerlinRecording||!this.generator.nextPerlinRecordingFrame||!this.generator.finishPerlinRecording||!this.generator.hasPerlinRecording)
-      throw new Error('请等待当前 Perlin 预览或录制完成');
-    if(signal?.aborted)throw new DOMException('Perlin 录制已取消','AbortError');
+    if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!this.generator.beginSourceRecording||!this.generator.nextSourceRecordingFrame||!this.generator.finishSourceRecording||!this.generator.hasSourceRecording)
+      throw new Error('请等待当前源场景预览或录制完成');
+    if(signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');
     const owner:RecordingOwner={request,stop:false,active:true};this.recordingOwner=owner;this.callbacks.busy(true);
-    const abort=()=>{owner.stop=true;},check=()=>{if(owner.stop||signal?.aborted)throw new DOMException('Perlin 录制已取消','AbortError');};
+    const abort=()=>{owner.stop=true;},check=()=>{if(owner.stop||signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');};
     signal?.addEventListener('abort',abort,{once:true});
     let failed=false,failure:unknown;
     try{
-      const start=await this.generator.beginPerlinRecording(output,options);owner.handle=start.handle;
+      const start=await this.generator.beginSourceRecording(output,options);owner.handle=start.handle;
       const lastDisplayFrame=start.clock.lastDisplayFrame,handle=start.handle;
       check();await consumer.start?.(start);check();
       for(let displayFrame=1;displayFrame<=lastDisplayFrame;displayFrame++){
-        const frame=await this.generator.nextPerlinRecordingFrame(handle,displayFrame);
+        const frame=await this.generator.nextSourceRecordingFrame(handle,displayFrame);
         check();await consumer.frame(frame,displayFrame-1,start);check();
       }
     }catch(error){
-      if(error instanceof PerlinRecordingOperationError&&error.recordingRetained&&error.handle)owner.handle=error.handle;
-      if(error instanceof PerlinRecordingOperationError&&!error.previewRetained)owner.invalidPreview=error;
+      if(error instanceof SourceRecordingOperationError&&error.recordingRetained&&error.handle)owner.handle=error.handle;
+      if(error instanceof SourceRecordingOperationError&&!error.previewRetained)owner.invalidPreview=error;
       failed=true;failure=error;
     }finally{
       signal?.removeEventListener('abort',abort);owner.active=false;
       try{await this.finishRecordingOwner(owner);}catch(error){
-        failure=failed?new AggregateError([failure,error],'Perlin 录制失败且停止清理未完成'):error;failed=true;
+        failure=failed?new AggregateError([failure,error],'源场景录制失败且停止清理未完成'):error;failed=true;
       }
     }
     if(failed)throw failure;
   }
   /** A failed finish keeps its handle and worker owned. Retrying is explicit
    * and also happens on the next request/cancel/dispose, never via terminate. */
-  retryPerlinRecordingCleanup():Promise<void>{
+  retrySourceRecordingCleanup():Promise<void>{
     const owner=this.recordingOwner;
     if(!owner)return Promise.resolve();
-    if(owner.active)return Promise.reject(new Error('Perlin 录制仍在处理帧'));
+    if(owner.active)return Promise.reject(new Error('源场景录制仍在处理帧'));
     return this.finishRecordingOwner(owner);
   }
   private retryRecordingInBackground(){
@@ -254,13 +254,13 @@ export class GenerationQueue {
   private finishRecordingOwner(owner:RecordingOwner):Promise<void>{
     if(owner.cleanup)return owner.cleanup;
     const cleanup=async()=>{
-      let stop:PerlinRecordingStop|undefined;
+      let stop:SourceRecordingStop|undefined;
       try{
-        if(owner.handle&&this.generator.hasPerlinRecording!(owner.handle))stop=await this.generator.finishPerlinRecording!(owner.handle);
+        if(owner.handle&&this.generator.hasSourceRecording!(owner.handle))stop=await this.generator.finishSourceRecording!(owner.handle);
       }catch(error){
         // A confirmed released client lease cannot be retried. A retained one
         // stays reachable here, even during unmount, until cleanup succeeds.
-        if(owner.handle&&this.generator.hasPerlinRecording!(owner.handle)){if(this.disposed)retiredQueues.add(this);throw error;}
+        if(owner.handle&&this.generator.hasSourceRecording!(owner.handle)){if(this.disposed)retiredQueues.add(this);throw error;}
         if(!this.disposed&&this.latest===owner.request)this.callbacks.error(error instanceof Error?error:new Error(String(error)));
         this.releaseRecordingOwner(owner);throw error;
       }
@@ -268,7 +268,11 @@ export class GenerationQueue {
       try{
         if(!stop&&owner.invalidPreview&&!this.disposed&&this.latest===owner.request)this.callbacks.error(owner.invalidPreview);
         if(stop&&!this.disposed&&latest?.scene===owner.request.scene){
-          this.latest=expected={scene:stop.scene,context:{...latest.context,time:stop.context.time}};
+          // Keep deferred viewport changes, but never reuse the pre-recording
+          // live session or seek time after the runtime has been rebuilt.
+          const context=snapshotGenerationInput(deferred?{...latest.context,time:stop.context.time,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive}:stop.context);
+          this.latest=expected={scene:stop.scene,context};
+          if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);
           if(this.latest?.scene===stop.scene)this.callbacks.output(stop.preview,stop.context.time,stop.scene);
         }

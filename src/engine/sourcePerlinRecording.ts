@@ -1,3 +1,4 @@
+import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import type {SceneDocument,SceneOutput} from '../types';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {ORDINARY_CAMERA_SEQUENCE,resolveOrdinarySourceCameraTimeline} from './ordinarySourceCameraTimeline';
@@ -18,20 +19,14 @@ export function withPerlinFreshRecording(scene:SceneDocument,simulationFps:numbe
   throw new SourcePerlinRecordingError('input','Perlin 录制模拟帧率必须为 1–120 的整数');
  return {...scene,timeline:{...scene.timeline,fps:simulationFps}};
 }
-export interface PerlinRecordingClock {
- readonly simulationFps:number;
- readonly warmupUpdates:1;readonly updates:number;readonly encodedFrames:number;
- readonly firstEncodedUpdate:2|null;readonly lastDisplayFrame:number;
- readonly completionReason:'animation-queue';
-}
-export interface PerlinFreshRecordingPlan extends PerlinRecordingClock {
+export interface PerlinFreshRecordingPlan extends SourceQueueRecordingClock {
  readonly policy:'fresh-local-source-queue-replay';readonly encoderFps:number;
 }
 /** Scene.isAutoRecordingComplete inherits manager.isFinished. MathArt.draw
  * updates, renders, discards its one warmup (or encodes), THEN tests completion.
  * The clock owns float32 folding and one-child-per-frame advancement. This
  * scalar plan does not choose a configuration snapshot or framebuffer lifetime. */
-export function planPerlinRecordingClock(scene:SceneDocument,simulationFps:number,isCancelled?:()=>boolean):PerlinRecordingClock {
+export function planPerlinRecordingClock(scene:SceneDocument,simulationFps:number,isCancelled?:()=>boolean):SourceQueueRecordingClock {
  if(isCancelled?.())throw new SourcePerlinRecordingError('cancelled','Perlin 录制规划已取消');
  const configured=withPerlinFreshRecording(scene,simulationFps);
  const layout=resolveOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(configured)!,configured.timeline.tracks,simulationFps,{particleActions:'perlin',isCancelled});
@@ -47,7 +42,7 @@ export function planPerlinFreshRecording(scene:SceneDocument,options:{simulation
 }
 /** Validate facts from the actual retained render, including the discarded
  * warmup. Never turn a prediction into permission to encode a missing frame. */
-export function assertPerlinRecordingFrame(output:SceneOutput,plan:PerlinRecordingClock,displayFrame:number):void {
+export function assertPerlinRecordingFrame(output:SceneOutput,plan:SourceQueueRecordingClock,displayFrame:number):void {
  const frame=output.type==='raster'?output.sourcePerlinFrame:undefined;
  if(!Number.isSafeInteger(displayFrame)||displayFrame<0||displayFrame>plan.lastDisplayFrame||!frame||
   frame.frameIndex!==displayFrame||frame.queueComplete!==(displayFrame===plan.lastDisplayFrame))

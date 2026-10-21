@@ -12,7 +12,7 @@ const raster=(frameIndex=0):Extract<SceneOutput,{type:'raster'}>=>({type:'raster
 const clock={simulationFps:10,warmupUpdates:1,updates:3,encodedFrames:2,firstEncodedUpdate:2,lastDisplayFrame:2,completionReason:'animation-queue'};
 let runtimeHandle:object,worker:{onmessage?:(e:MessageEvent<GenerationRequest>)=>void;postMessage:ReturnType<typeof vi.fn>};
 const send=(r:GenerationRequest)=>{worker.onmessage!({data:r} as MessageEvent<GenerationRequest>);return worker.postMessage.mock.calls.at(-1)![0] as GenerationResponse;};
-const begin=()=>{send({operation:'generate',id:1,sessionId:7,scene,context});return send({operation:'perlin-recording-begin',id:2,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}});};
+const begin=()=>{send({operation:'generate',id:1,sessionId:7,scene,context});return send({operation:'source-recording-begin',id:2,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}});};
 beforeEach(async()=>{
  vi.resetModules();vi.resetAllMocks();owners.active=false;owners.primary=false;runtimeHandle=Object.freeze({runtime:true});
  owners.reset.mockImplementation(()=>{owners.active=false;owners.primary=false;});
@@ -30,67 +30,67 @@ afterEach(()=>vi.unstubAllGlobals());
 // native rendering. The real WebGL recording verifier covers the live runtime.
 describe('Perlin recording worker lease ownership',()=>{
  it('routes the exact completed source and runtime handle, then refreshes primary with effective state',()=>{
-  const started=begin();expect(started).toMatchObject({operation:'perlin-recording-begin',recordingId:2,result:{scene:effective,clock}});
+  const started=begin();expect(started).toMatchObject({operation:'source-recording-begin',recordingId:2,result:{scene:effective,clock}});
   expect(owners.perlin.beginRecording).toHaveBeenCalledWith(scene,context,{width:4,height:4,simulationFps:10});
-  const frame=send({operation:'perlin-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1});expect(frame).toMatchObject({operation:'perlin-recording-frame',recordingId:2,displayFrame:1});expect(owners.perlin.nextRecordingFrame).toHaveBeenCalledWith(runtimeHandle,1);
-  const stop=send({operation:'perlin-recording-finish',id:4,sessionId:7,recordingId:2});expect(stop).toMatchObject({operation:'perlin-recording-finish',recordingId:2,result:{scene:effective,context:resumed}});
+  const frame=send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1});expect(frame).toMatchObject({operation:'source-recording-frame',recordingId:2,displayFrame:1});expect(owners.perlin.nextRecordingFrame).toHaveBeenCalledWith(runtimeHandle,1);
+  const stop=send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2});expect(stop).toMatchObject({operation:'source-recording-finish',recordingId:2,result:{scene:effective,context:resumed}});
   expect(owners.perlin.finishRecording).toHaveBeenCalledExactlyOnceWith(runtimeHandle);expect(owners.generate).toHaveBeenLastCalledWith(effective,resumed,expect.anything());
   const captured=send({operation:'perlin-paused-capture',id:5,sessionId:7,sourceId:4,size:{width:4,height:4},scale:1});expect(captured).not.toHaveProperty('error');
   expect(owners.perlin.capturePaused).toHaveBeenCalledWith(effective,expect.objectContaining({time:.1}),expect.anything());
  });
  it('rejects ordinary tasks, foreign sessions and stale handles without resetting the active lease',()=>{
   begin();const resetCount=owners.reset.mock.calls.length;
-  const requests:GenerationRequest[]=[{operation:'generate',id:3,sessionId:7,scene,context},{operation:'perlin-paused-capture',id:4,sessionId:7,sourceId:1,size:{width:4,height:4},scale:1},{operation:'perlin-recording-plan',id:5,sessionId:7,scene,simulationFps:10,encoderFps:10},{operation:'search-stable',id:6,sessionId:7,scene,options:{}},{operation:'perlin-recording-frame',id:7,sessionId:7,recordingId:999,displayFrame:1},{operation:'perlin-recording-frame',id:8,sessionId:8,recordingId:2,displayFrame:1}];
+  const requests:GenerationRequest[]=[{operation:'generate',id:3,sessionId:7,scene,context},{operation:'perlin-paused-capture',id:4,sessionId:7,sourceId:1,size:{width:4,height:4},scale:1},{operation:'perlin-recording-plan',id:5,sessionId:7,scene,simulationFps:10,encoderFps:10},{operation:'search-stable',id:6,sessionId:7,scene,options:{}},{operation:'source-recording-frame',id:7,sessionId:7,recordingId:999,displayFrame:1},{operation:'source-recording-frame',id:8,sessionId:8,recordingId:2,displayFrame:1}];
   for(const request of requests){const response=send(request);expect(response).toHaveProperty('error');if(request.sessionId===7)expect(response).toHaveProperty('retainedRecordingId',2);else expect(response).not.toHaveProperty('retainedRecordingId');}
   expect(owners.reset).toHaveBeenCalledTimes(resetCount);expect(owners.generate).toHaveBeenCalledTimes(1);expect(owners.perlin.nextRecordingFrame).not.toHaveBeenCalled();
-  expect(send({operation:'perlin-recording-frame',id:9,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('error');
+  expect(send({operation:'source-recording-frame',id:9,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('error');
  });
  it('requires the exact completed source and preserves only runtime-proven previews on begin failure',()=>{
   send({operation:'generate',id:1,sessionId:7,scene,context});
-  expect(send({operation:'perlin-recording-begin',id:2,sessionId:7,sourceId:999,options:{width:4,height:4,simulationFps:10}})).toHaveProperty('error');expect(owners.perlin.beginRecording).not.toHaveBeenCalled();
+  expect(send({operation:'source-recording-begin',id:2,sessionId:7,sourceId:999,options:{width:4,height:4,simulationFps:10}})).toHaveProperty('error');expect(owners.perlin.beginRecording).not.toHaveBeenCalled();
   owners.perlin.beginRecording.mockImplementationOnce(()=>{throw Error('preflight');});
-  expect(send({operation:'perlin-recording-begin',id:3,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}})).toMatchObject({error:'preflight',retainedSourceId:1});
+  expect(send({operation:'source-recording-begin',id:3,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}})).toMatchObject({error:'preflight',retainedSourceId:1});
   owners.perlin.beginRecording.mockImplementationOnce(()=>{owners.primary=false;throw Error('mutated then failed');});
-  const failed=send({operation:'perlin-recording-begin',id:4,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}});expect(failed).toHaveProperty('error');expect(failed).not.toHaveProperty('retainedSourceId');
+  const failed=send({operation:'source-recording-begin',id:4,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}});expect(failed).toHaveProperty('error');expect(failed).not.toHaveProperty('retainedSourceId');
  });
  it('retains a warmup completed before its response failed, allowing orderly finish',()=>{
   send({operation:'generate',id:1,sessionId:7,scene,context});worker.postMessage.mockImplementationOnce(()=>{throw Error('warmup send failed');});
-  expect(send({operation:'perlin-recording-begin',id:2,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}})).toMatchObject({error:'warmup send failed',retainedRecordingId:2});
-  expect(send({operation:'perlin-recording-finish',id:3,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.perlin.beginRecording).toHaveBeenCalledOnce();
+  expect(send({operation:'source-recording-begin',id:2,sessionId:7,sourceId:1,options:{width:4,height:4,simulationFps:10}})).toMatchObject({error:'warmup send failed',retainedRecordingId:2});
+  expect(send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.perlin.beginRecording).toHaveBeenCalledOnce();
  });
  it('retries an undelivered frame without advancing again and rejects a later frame until delivery',()=>{
   begin();worker.postMessage.mockImplementationOnce(()=>{throw Error('frame send failed');});
-  expect(send({operation:'perlin-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1})).toMatchObject({retainedRecordingId:2,error:'frame send failed'});
-  expect(send({operation:'perlin-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:2})).toHaveProperty('error');
-  expect(send({operation:'perlin-recording-frame',id:5,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('error');expect(owners.perlin.nextRecordingFrame).toHaveBeenCalledOnce();
+  expect(send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1})).toMatchObject({retainedRecordingId:2,error:'frame send failed'});
+  expect(send({operation:'source-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:2})).toHaveProperty('error');
+  expect(send({operation:'source-recording-frame',id:5,sessionId:7,recordingId:2,displayFrame:1})).not.toHaveProperty('error');expect(owners.perlin.nextRecordingFrame).toHaveBeenCalledOnce();
  });
  it('retains recoverable bad-index failures but revokes a failed runtime',()=>{
-  begin();owners.perlin.nextRecordingFrame.mockImplementationOnce(()=>{throw Error('index');});expect(send({operation:'perlin-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:99})).toMatchObject({retainedRecordingId:2,error:'index'});
-  owners.perlin.nextRecordingFrame.mockImplementationOnce(()=>{owners.active=false;throw Error('model failed');});const response=send({operation:'perlin-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:1});expect(response).toHaveProperty('error');expect(response).not.toHaveProperty('retainedRecordingId');
-  expect(send({operation:'perlin-recording-finish',id:5,sessionId:7,recordingId:2})).toHaveProperty('error');expect(owners.perlin.finishRecording).not.toHaveBeenCalled();
+  begin();owners.perlin.nextRecordingFrame.mockImplementationOnce(()=>{throw Error('index');});expect(send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:99})).toMatchObject({retainedRecordingId:2,error:'index'});
+  owners.perlin.nextRecordingFrame.mockImplementationOnce(()=>{owners.active=false;throw Error('model failed');});const response=send({operation:'source-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:1});expect(response).toHaveProperty('error');expect(response).not.toHaveProperty('retainedRecordingId');
+  expect(send({operation:'source-recording-finish',id:5,sessionId:7,recordingId:2})).toHaveProperty('error');expect(owners.perlin.finishRecording).not.toHaveBeenCalled();
  });
  it('retries failed finish publication without stopping or rendering twice and rejects duplicate successful finish',()=>{
-  begin();worker.postMessage.mockImplementationOnce(()=>{throw Error('finish send failed');});expect(send({operation:'perlin-recording-finish',id:3,sessionId:7,recordingId:2})).toMatchObject({retainedRecordingId:2,error:'finish send failed'});
-  expect(send({operation:'perlin-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:1})).toHaveProperty('error');
-  expect(send({operation:'perlin-recording-finish',id:5,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();expect(owners.generate).toHaveBeenCalledTimes(2);
-  expect(send({operation:'perlin-recording-finish',id:6,sessionId:7,recordingId:2})).toHaveProperty('error');expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();
+  begin();worker.postMessage.mockImplementationOnce(()=>{throw Error('finish send failed');});expect(send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2})).toMatchObject({retainedRecordingId:2,error:'finish send failed'});
+  expect(send({operation:'source-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:1})).toHaveProperty('error');
+  expect(send({operation:'source-recording-finish',id:5,sessionId:7,recordingId:2})).not.toHaveProperty('error');expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();expect(owners.generate).toHaveBeenCalledTimes(2);
+  expect(send({operation:'source-recording-finish',id:6,sessionId:7,recordingId:2})).toHaveProperty('error');expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();
   expect(send({operation:'perlin-paused-capture',id:7,sessionId:7,sourceId:5,size:{width:4,height:4},scale:1})).not.toHaveProperty('error');
  });
  it('retains ownership after an ambiguous transferred response and re-reads a detached finish preview',()=>{
   begin();
   const transferThenFail=(data:unknown,options:{transfer:Transferable[]})=>{structuredClone(data,{transfer:options.transfer});throw Error('ambiguous delivered response');};
   worker.postMessage.mockImplementationOnce(transferThenFail);
-  expect(send({operation:'perlin-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1})).toMatchObject({retainedRecordingId:2});
-  const retry=send({operation:'perlin-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:1});
+  expect(send({operation:'source-recording-frame',id:3,sessionId:7,recordingId:2,displayFrame:1})).toMatchObject({retainedRecordingId:2});
+  const retry=send({operation:'source-recording-frame',id:4,sessionId:7,recordingId:2,displayFrame:1});
   expect(retry).toHaveProperty('error');expect(retry).toHaveProperty('retainedRecordingId',2);expect(owners.perlin.nextRecordingFrame).toHaveBeenCalledOnce();
   worker.postMessage.mockImplementationOnce(transferThenFail);
-  expect(send({operation:'perlin-recording-finish',id:5,sessionId:7,recordingId:2})).toMatchObject({retainedRecordingId:2});
-  expect(send({operation:'perlin-recording-finish',id:6,sessionId:7,recordingId:2})).not.toHaveProperty('error');
+  expect(send({operation:'source-recording-finish',id:5,sessionId:7,recordingId:2})).toMatchObject({retainedRecordingId:2});
+  expect(send({operation:'source-recording-finish',id:6,sessionId:7,recordingId:2})).not.toHaveProperty('error');
   expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();expect(owners.generate).toHaveBeenCalledTimes(3);
   expect(owners.generate).toHaveBeenLastCalledWith(effective,resumed,expect.anything());
  });
  it('invalidates the lease if the required primary refresh fails',()=>{
-  begin();owners.generate.mockImplementationOnce(()=>{owners.primary=false;throw Error('primary failed');});const response=send({operation:'perlin-recording-finish',id:3,sessionId:7,recordingId:2});expect(response).toHaveProperty('error','primary failed');expect(response).not.toHaveProperty('retainedRecordingId');
-  expect(send({operation:'perlin-recording-finish',id:4,sessionId:7,recordingId:2})).toHaveProperty('error');expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();
+  begin();owners.generate.mockImplementationOnce(()=>{owners.primary=false;throw Error('primary failed');});const response=send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2});expect(response).toHaveProperty('error','primary failed');expect(response).not.toHaveProperty('retainedRecordingId');
+  expect(send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2})).toHaveProperty('error');expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();
  });
 });

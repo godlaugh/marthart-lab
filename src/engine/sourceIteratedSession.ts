@@ -1,5 +1,6 @@
+import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {snapshotGenerationInput} from './generationInput';
-import {planSourceIteratedRecording,assertSourceIteratedRecordingFrame,type SourceIteratedRecordingClock} from './sourceIteratedRecording';
+import {planSourceIteratedRecording,assertSourceIteratedRecordingFrame} from './sourceIteratedRecording';
 import {deriveSourceIteratedNormalization} from './sourceIteratedPresentation';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareIteratedFrame,prepareIteratedField} from '../scenes/iteratedDensity';
@@ -55,7 +56,7 @@ export class SourceIteratedSession {
  private readonly cleanup=new GenerationCleanupState();
  private timeline?:SourceIteratedTimelineSession;private replay?:SourceIteratedReplaySession;private clock?:SourceSceneHostClock;
  private applied?:SceneDocument;
- private recording?:{handle:object;clock:SourceIteratedRecordingClock;primary:GenerateContext;target:GenerateContext;next:number};
+ private recording?:{handle:object;clock:SourceQueueRecordingClock;primary:GenerateContext;target:GenerateContext;next:number};
  private authored?:SceneDocument;private frame?:SourceIteratedTimelineResult;private anchor?:CapturedDensityAnchor;
  private sessionId='';private shape='';private startAt?:number;private revision=0;private busy=false;private failed=false;
  private steps=0;private accepted=0;private invalid=0;private clipped=0;private sampleInvalid=0;private deposited=0;private displays=0;
