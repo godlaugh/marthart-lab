@@ -876,5 +876,8 @@
   "目标 X 低位": "Target X low",
   "目标 Y 低位": "Target Y low",
   "目标缩放": "Target zoom",
-  "缩放上限": "Maximum zoom"
+  "缩放上限": "Maximum zoom",
+  "分形视频模式": "Fractal video mode",
+  "分形队列在预热帧内已结束，没有可编码帧；请延长队列": "The Fractal queue ended during warmup with no frames to encode; extend the queue.",
+  "从当前配置重新开始，先绘制一帧预热，再录到队列结束。使用三倍导出画布，MP4 使用原版质量设置。模拟帧率与编码帧率默认相同；分别调整播放速度是本地扩展。": "Start fresh from the current configuration, discard one warmup frame, then record until the queue ends. Render at triple size; MP4 uses the source quality settings. Simulation and encoder FPS default to the same value; independent speed adjustment is a local extension."
 }

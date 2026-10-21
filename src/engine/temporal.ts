@@ -1,3 +1,6 @@
+import {usesSourceFractal} from './sourceFractalDocument';
+import {fractalRecordingFrameFacts,validateFractalRecordingFrameInput} from './sourceFractalRecording';
+import {sceneAtFractalFrame} from './timeline';
 import {SourceIteratedSession} from './sourceIteratedSession';
 import {SourceSamilaSession} from './sourceSamilaSession';
 import {usesSourcePerlinCpu} from './sourcePerlinIdentity';
@@ -305,6 +308,15 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
     try{return generateRootsNativePresentation(scene,context,session.rootsNative);}
     catch(error){session.reset([error]);throw error;}
   }
+  if(context.fractalRecording!==undefined){
+    const input=validateFractalRecordingFrameInput(context.fractalRecording);
+    if(input.simulationFps!==scene.timeline.fps)throw Error('分形录制模拟帧率与场景不一致');
+    const current=sceneAtFractalFrame(scene,input.displayFrame,context.isCancelled);
+    const output=definition(scene.kind).generate(current,context);
+    if(output.type!=='raster')throw Error('分形录制没有生成像素画面');
+    output.fractalRecording=fractalRecordingFrameFacts(current.evaluatedFractalScene!,input);
+    return output;
+  }
   const current = sceneAtTime(scene, context.time,{isCancelled:context.isCancelled}), settings = current.settings;
   if(scene.kind==='domain')return generateDomain(current,context,session.domain);
   const tracking=prepareParticleCamera(scene,context.time);
@@ -369,6 +381,7 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
 
 /** All public callers receive the same unsupported-timeline evidence. */
 export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
+  if(context.fractalRecording!==undefined&&!usesSourceFractal(scene))throw Error('分形录制帧只能用于完整源分形场景');
   if((context.sourceBouncingFrame!==undefined||context.sourceBouncingView!==undefined)&&!usesSourceBouncing(scene))throw new Error('源弹跳检查点只能用于带源弹跳配置的场景');
   if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');
   const owner=session??new TemporalGenerationSession();

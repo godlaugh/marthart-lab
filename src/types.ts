@@ -1,3 +1,4 @@
+import type {SourceFractalRecordingFrameInput,SourceFractalRecordingFrame} from './engine/sourceFractalRecording';
 import type {SourceFractalZoomTarget} from './engine/sourceFractalZoom';
 import type {SourceFractalDocumentPayload,SourceFractalActionsPayload} from './engine/sourceFractalDocument';
 import type {SourceFractalEvaluation} from './engine/sourceFractalTimeline';
@@ -404,6 +405,8 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  /** Actual completed source recording draw, never a planning prediction. */
+  fractalRecording?:SourceFractalRecordingFrame;
   /** Numeric and navigation facts owned by this delivered source Fractal image. */
   fractalRender?:FractalSourceFrameFacts;
   /** PNG postprocessing follows base-size rendering; it does not resample the
@@ -504,6 +507,7 @@ export interface GenerateContext {
   /** Actual local logical canvas size, separate from preview sampling pixels.
    * Offscreen requests use the explicit export dimensions; neither proves
    * the original application's operating-system DPI or framebuffer scale. */
+  fractalRecording?:SourceFractalRecordingFrameInput;
   fractalViewport?:{logicalWidth:number;logicalHeight:number;target:'primary'|'offscreen'};
   /** Runtime owner token. Saved document identity can change on Save As without
    * replacing a live Roots instance; explicit Open supplies a fresh token. */
@@ -517,7 +521,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'sourcePerlinViewport'|'fractalViewport'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

@@ -1,3 +1,4 @@
+import type {FractalFreshRecordingPlan} from './sourceFractalRecording';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { GenerationInput, GenerationStatus, SceneDocument, SceneOutput } from '../types';
@@ -72,6 +73,7 @@ export type GenerationRequest = { sessionId: number } & (
   | {operation:'source-recording-finish';id:number;recordingId:number}
   | { operation: 'search-stable'; id: number; scene: SceneDocument; options: StableSearchOptions }
   | { operation: 'spirograph-recording-plan'; id:number; scene:SceneDocument; startFrame:number; fps:number }
+  | { operation: 'fractal-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'perlin-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'roots-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
@@ -89,6 +91,7 @@ export type GenerationPayload =
   | { operation: 'generate-status'; id: number; status: GenerationStatus }
   | { operation: 'search-stable'; id: number; result: StableSearchResult }
   | { operation: 'spirograph-recording-plan'; id:number; result:SpirographRecordingPlan }
+  | { operation: 'fractal-recording-plan'; id:number; result:FractalFreshRecordingPlan }
   | { operation: 'perlin-recording-plan'; id:number; result:PerlinFreshRecordingPlan }
   | { operation: 'roots-recording-plan'; id:number; result:RootsFreshRecordingPlan }
   | { operation: 'search-stable'; id: number; progress: StableSearchProgress }

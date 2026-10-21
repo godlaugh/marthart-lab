@@ -1,5 +1,5 @@
 import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument';
-import {bindSourceFractalFrame,replaySourceFractal,resolveSourceFractalTimeline,validateSourceFractalTrack} from './sourceFractalTimeline';
+import {bindSourceFractalFrame,replaySourceFractal,replaySourceFractalFrame,resolveSourceFractalTimeline,validateSourceFractalTrack} from './sourceFractalTimeline';
 import {SOURCE_EASING_NAMES} from './sourceEasing';
 import {parseSourceFractalZoomTarget,evaluateSourceFractalZoom} from './sourceFractalZoom';
 import {usesSourceMapParameters,validateSourceMapParameters} from './sourceMapParameterIdentity';
@@ -478,6 +478,11 @@ function validateTrack(track: AnimationTrack, scene: SceneDocument) {
 
 type TimelineEvaluator = (position: number, base: SceneDocument) => SceneDocument;
 const compiledTimelines = new Map<string, TimelineEvaluator>();
+/** Explicit source recording ordinals bypass local seconds/loop sampling. */
+export function sceneAtFractalFrame(scene:SceneDocument,displayFrame:number,isCancelled?:()=>boolean):SceneDocument {
+ if(!usesSourceFractal(scene))throw Error('分形录制帧需要完整源分形配置');
+ const out=copyState(scene);for(const target of bindSourceFractalFrame(out,replaySourceFractalFrame(scene,displayFrame,isCancelled)))recordWrittenTarget(out,target);return out;
+}
 /** Pure evaluation: starts are ordered chronologically, ties follow document order. */
 export function sceneAtTime(scene: SceneDocument, position: number, options?:{isCancelled?:()=>boolean}): SceneDocument {
   finite(position, '时间位置');

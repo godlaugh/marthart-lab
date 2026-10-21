@@ -61,6 +61,12 @@ const sessions=new Map<string,CachedReplay>();
 /** One retained state per scene identity, with a bounded four-entry cache.
  * A changed authoring input or backwards seek reconstructs every child. */
 export function replaySourceFractal(scene:SceneDocument,time:number,isCancelled?:()=>boolean):SourceFractalEvaluation {
+ return replay(scene,{time},isCancelled);
+}
+export function replaySourceFractalFrame(scene:SceneDocument,displayFrame:number,isCancelled?:()=>boolean):SourceFractalEvaluation {
+ return replay(scene,{displayFrame},isCancelled);
+}
+function replay(scene:SceneDocument,position:{time:number}|{displayFrame:number},isCancelled?:()=>boolean):SourceFractalEvaluation {
  const plan=prepareSourceFractalScene(scene),key=JSON.stringify(plan,(_key,value:unknown)=>typeof value==='number'&&Object.is(value,-0)?{negativeZero:true}:value);
  let cached=sessions.get(key);
  if(!cached){
@@ -70,7 +76,7 @@ export function replaySourceFractal(scene:SceneDocument,time:number,isCancelled?
   cached=entry;sessions.set(key,cached);if(sessions.size>4)sessions.delete(sessions.keys().next().value!);
  }
  cached.used=0;cached.cancel=isCancelled;
- try{const frame=cached.playback.evaluate(time);return{...cached.runtime.snapshot(),displayFrame:frame.displayFrame,simulationFps:plan.fps};}
+ try{const frame='displayFrame' in position?cached.playback.evaluateFrame(position.displayFrame):cached.playback.evaluate(position.time);return{...cached.runtime.snapshot(),displayFrame:frame.displayFrame,simulationFps:plan.fps};}
  catch(error){sessions.delete(key);throw error;}
  finally{cached.cancel=undefined;}
 }

@@ -1539,6 +1539,7 @@ export default function App() {
           time={time}
           currentSourceBouncingFrame={output?.sourceBouncingFrame?{ready:completedFrameReady,frame:output.sourceBouncingFrame}:undefined}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}
+          fractalPixelDensity={presentedSource===scene&&presentedOutput?.type==='raster'&&presentedOutput.fractalRender?viewportMeasurement?.pixelRatio:undefined}
           sourcePerlinViewport={presentedSource===scene?presentedOutput?.sourcePerlinFrame?.sourceViewport:undefined}
           previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
           previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourcePointAppearance?.referencePixelDensity:undefined}

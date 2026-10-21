@@ -13,7 +13,7 @@ function compare(frame:ReturnType<SourceFractalPlaybackSession['evaluate']>,row:
 describe('Fractal host frame selection and recording ordinals',()=>{
  it('renders actual original fixed 24 FPS updates, retaining one state and rebuilding backwards',()=>{
   const {session,creations}=create(),sample=fixture.cases[4];
-  sample.frames.forEach(row=>{const frame=session.evaluate(row.index/24);expect(frame.displayFrame).toBe(row.index);compare(frame,row);});
+  sample.frames.forEach(row=>{const frame=session.evaluateFrame(row.index);expect(frame.displayFrame).toBe(row.index);compare(frame,row);});
   expect(creations()).toBe(1);compare(session.evaluate(0),sample.frames[0]);expect(creations()).toBe(2);
   compare(session.evaluate(.5/24),sample.frames[0]);expect(creations()).toBe(2);
  });
@@ -38,5 +38,11 @@ describe('Fractal host frame selection and recording ordinals',()=>{
   const session=new SourceFractalPlaybackSession({fps:60,isCancelled:()=>cancelled,createScene:()=>new SourceFractalSceneClock(initial(),[{kind:'wait',duration:1}],{update(){if(interrupt)cancelled=true;}})});
   expect(()=>session.step(.1)).toThrow(expect.objectContaining({name:'AbortError'}));
   cancelled=false;interrupt=false;expect(()=>session.snapshot()).toThrow('需要重置');session.reset();expect(()=>session.step(.1)).not.toThrow();
+ });
+ it('rejects non-ordinal and out-of-domain frame requests before creating or poisoning state',()=>{
+  const {session,creations}=create();
+  for(const frame of [-1,.5,NaN,Infinity,Number.MAX_SAFE_INTEGER])expect(()=>session.evaluateFrame(frame)).toThrow('显示帧');
+  expect(creations()).toBe(0);compare(session.evaluateFrame(0),fixture.cases[4].frames[0]);expect(creations()).toBe(1);
+  const live=create().session;live.step(0);expect(()=>live.evaluateFrame(0)).toThrow('实时');
  });
 });

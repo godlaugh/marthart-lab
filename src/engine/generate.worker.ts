@@ -1,3 +1,4 @@
+import {planFractalFreshRecording} from './sourceFractalRecording';
 import {planPerlinFreshRecording} from './sourcePerlinRecording';
 import { definition } from "../scenes";
 import { generateScene, TemporalGenerationSession } from './temporal';
@@ -143,6 +144,10 @@ self.onmessage = (
       return;
     }
     const {scene}=event.data;
+    if(event.data.operation==='fractal-recording-plan'){
+      const result=planFractalFreshRecording(scene,{simulationFps:event.data.simulationFps,encoderFps:event.data.encoderFps});
+      send({operation:'fractal-recording-plan',id,result});return;
+    }
     if(event.data.operation==='perlin-recording-plan'){
       const result=planPerlinFreshRecording(scene,{simulationFps:event.data.simulationFps,encoderFps:event.data.encoderFps});
       send({operation:'perlin-recording-plan',id,result});return;

@@ -50,11 +50,17 @@ export class SourceFractalPlaybackSession {
  /** The display grid uses each original fixed update, including terminal
   * double object updates. Seconds choose an ordinal, never a partial last dt. */
  evaluate(time:number):SourceFractalPlaybackFrame {
-  timeValue(time);if(this.mode==='live')throw new SourceFractalPlaybackError('state','实时分形实例不能直接改为固定帧回放');
+  timeValue(time);return this.evaluateFrame(Math.floor(time*this.options.fps+1e-9));
+ }
+ /** Recording supplies an exact display ordinal. Do not round-trip it through
+  * seconds: fixed frame 0 is the first update, including the discarded warmup. */
+ evaluateFrame(displayFrame:number):SourceFractalPlaybackFrame {
+  if(!Number.isSafeInteger(displayFrame)||displayFrame<0||displayFrame/this.options.fps>86400)throw new SourceFractalPlaybackError('input','分形显示帧必须是 24 小时范围内的非负整数');
+  if(this.mode==='live')throw new SourceFractalPlaybackError('state','实时分形实例不能直接改为固定帧回放');
   return this.run(()=>{
-   const target=Math.floor(time*this.options.fps+1e-9);this.owned();
-   if(target<this.index){this.reset();this.owned();}
-   this.mode='fixed';while(this.index<target)this.advance(Math.fround(1/this.options.fps));
+   this.owned();
+   if(displayFrame<this.index){this.reset();this.owned();}
+   this.mode='fixed';while(this.index<displayFrame)this.advance(Math.fround(1/this.options.fps));
    return this.facts(this.owned().snapshot());
   });
  }
