@@ -415,6 +415,7 @@ export interface RasterOutput {
   samilaView?:PreparedSamilaView;
   /** Live display ownership, separate from cold fixed-frame replay. */
   mapLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveFacts;
+  iteratedRecording?:import('./engine/sourceIteratedRecording').SourceIteratedRecordingFrame;
   symmetryLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveFacts;
   samilaLive?:{sessionId:string;target:'primary'|'offscreen';displayIndex:number;accumulationPasses:number;anchorTheta:number;parameterChanged:boolean;cleared:boolean;clock:'fixed-source-queue'|'realtime-source-queue';runtime?:import('./engine/sourceSamilaSession').SourceSamilaRuntimeFacts};
   symmetryFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;

@@ -26,6 +26,9 @@ export class SourceSceneHostClock {
  constructor(paused:boolean,initial:SourceSceneSavedAngles,private readonly now:()=>number=workerMillis){if(typeof paused!=='boolean')throw Error('场景 初始暂停状态无效');this.paused=paused;this.saved=angles(initial);}
  private read(timestampMs?:number):number {const value=sourceNow(timestampMs??this.now());this.source=timestampMs===undefined?'worker-wall-clock':'injected';return value;}
  assertPaused(paused:boolean):void {if(paused!==this.paused)throw Error('场景 暂停状态变化必须通过独立 setPaused 操作');}
+ /** Scene.disableRenderMode resets wall time without pausing or restoring
+  * saved angles. Recording completion must not reuse pause/resume semantics. */
+ resetTime(timestampMs?:number):void {this.lastTime=this.read(timestampMs);}
  update(request:SourceSceneClockRequest):number {
   validateSourceSceneClockRequest(request);this.assertPaused(request.paused);if(this.paused)return 0;
   const now=this.read(request.timestampMs),dt=this.lastTime===0?0:F(now-this.lastTime);this.lastTime=now;return dt;
