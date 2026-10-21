@@ -1,6 +1,6 @@
 /** Public App acceptance of the nine documented Map/Symmetry parameter sets.
  * This verifies local authoring/replay/export, not original-app pixel parity.
- * Run from studio: node scripts/verify-guide-density-examples.mjs <new-directory> [time-seconds]
+ * Run from studio: node scripts/verify-guide-density-examples.mjs <new-directory> [time-seconds] [legacy-v1|source-kernel]
  */
 import { chromium } from '@playwright/test';
 import { createServer } from 'vite';
@@ -24,13 +24,16 @@ const cases = [
 const directory = process.argv[2];
 check(directory, 'Supply a new output directory');
 const time = Number(process.argv[3] ?? 0);
+const mathProfile = process.argv[4] ?? 'legacy-v1';
+check(['legacy-v1', 'source-kernel'].includes(mathProfile), 'Unknown math profile');
 check(Number.isFinite(time) && time >= 0 && time <= 5, 'Time must be between 0 and 5 seconds');
 await mkdir(directory); // Preserve previous evidence; never overwrite a run.
 const report = {
-  at: new Date().toISOString(), status: 'running', cases: [], nativeParity: false,
+  at: new Date().toISOString(), status: 'running', cases: [], nativeParity: false, mathProfile,
   workload: { batchSize: 50000, burnIn: 50, iterationsPerFrame: 1, seed: 1, width: 512, height: 384, time },
   limits: [
     'Guide equations/parameters, local document defaults and mathematical viewport; not original JSON camera/render defaults.',
+    'source-kernel changes only Symmetry arithmetic. Initialization remains the local counter RNG; source constructor seed and Java Random are not selected.',
     'One fixed-time output at exploration workload, with fixed 60 Hz accumulation up to that time. No high-quality, video, long-running or original whole-window parity claim.',
     'PNG export is browser-local; the optional video export service is not started or tested.',
     'Labels name guide examples; visual morphology is recorded, not assumed from those names.',
@@ -122,10 +125,11 @@ try {
   const origin = server.resolvedUrls.local[0];
   await page.route('**/fixture', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html>' }));
   await page.goto(origin + 'fixture');
-  const documents = await page.evaluate(async ({ cases, workload }) => {
+  const documents = await page.evaluate(async ({ cases, workload, mathProfile }) => {
     const { createScene, serializeScene, saveWorkspace } = await import('/src/engine/document.ts');
     const { definition } = await import('/src/scenes/index.ts');
     const { initializeNormalizedDensity } = await import('/src/engine/densityNormalization.ts');
+    const { SOURCE_SYMMETRY_MATH } = await import('/src/engine/sourceSymmetryMath.ts');
     const initial = createScene(definition('surface'));
     Object.assign(initial.settings, { uSegments: 3, vSegments: 3 });
     saveWorkspace(localStorage, { scenes: [initial], active: initial.id, theme: 'dark', language: 'en', render: { quality: 'standard', frameRate: 30 } });
@@ -135,11 +139,12 @@ try {
       scene.parameters = spec.parameters;
       if (spec.equations) scene.equations = spec.equations;
       Object.assign(scene.settings, { iteratedMode: 'continuous', iteratedBackend: 'gpu', batchSize: workload.batchSize, burnIn: workload.burnIn, iterationsPerFrame: workload.iterationsPerFrame, seed: workload.seed }, spec.settings);
+      if (spec.kind === 'symmetry' && mathProfile === 'source-kernel') scene.settings.symmetryMathModel = SOURCE_SYMMETRY_MATH;
       scene.settings = initializeNormalizedDensity(spec.kind, scene.settings, workload.width, workload.height);
       scene.timeline.tracks = []; scene.timeline.duration = 6;
       return serializeScene(scene);
     });
-  }, { cases, workload: report.workload });
+  }, { cases, workload: report.workload, mathProfile });
   await page.goto(origin);
   await page.waitForFunction(() => window.__guideAudit.completed.length > 0);
   await installRendererAudit();
@@ -166,6 +171,7 @@ try {
     await page.reload();
     const reopened = await ready(spec.name);
     check(JSON.stringify(reopened.request.scene.parameters) === JSON.stringify(saved.parameters), spec.id + ' reopen parameters changed');
+    check((reopened.request.scene.settings.symmetryMathModel ?? 'legacy-v1') === (spec.kind === 'symmetry' && mathProfile === 'source-kernel' ? 'mathart-1.7.8-gpu-v1' : 'legacy-v1'), spec.id + ' math model changed on reopen');
     row.saveReopen = true;
     await installRendererAudit();
     await seek(spec.name);
