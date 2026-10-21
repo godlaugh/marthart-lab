@@ -1,3 +1,4 @@
+import {usesSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {SOURCE_SYMMETRY_GRADIENT_MODEL,usesSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {SOURCE_SYMMETRY_PRESENTATION_MODEL} from './sourceSymmetryPresentation';
 import {importSourceSymmetryProjectPalette} from './sourceSymmetryPalette';
@@ -21,7 +22,7 @@ import {importSourceAttractorConfig} from './sourceAttractorConfig';
 import {importSourceAttractorVisualConfig} from './sourceAttractorVisualConfig';
 import {importSourceParticleGradient} from './sourceParticleGradientImport';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
-import {importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT,type SourceRegistryParameterResult} from './sourceRegistryParameterConfig';
+import {SOURCE_SYMMETRY_PARAMETER_MODEL,importSourceSymmetryParameterAction,importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT,type SourceRegistryParameterResult} from './sourceRegistryParameterConfig';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
 import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type SourceSurfaceGradientImportFacts} from './sourceSurfaceGradientConfig';
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
@@ -979,8 +980,8 @@ interface OrdinaryTimelineAction {path:string[];method:string;raw:unknown;surfac
 interface OrdinaryTimelineClip {path:string[];originalType:string;type:string;actions:OrdinaryTimelineAction[];surfaceParameterClip?:SourceSurfaceParameterClip;}
 /** Parse structural dispatch once. Geometry selection and queue compilation use
  * the same enabled clips/actions; disabled source clips are never inspected. */
-function surfaceParameterImport<T>(r:Reader,prefix:readonly string[],result:SourceRegistryParameterResult<{configuration:T;consumedPaths:string[][];numericPaths:string[][];diagnostics:string[]}>):T {
- if(!result.ok)return fail(`${pathLabel([...prefix,...result.error.path])} 曲面源参数 ${result.error.kind}: ${result.error.reason}`);
+function sourceParameterImport<T>(r:Reader,prefix:readonly string[],result:SourceRegistryParameterResult<{configuration:T;consumedPaths:string[][];numericPaths:string[][];diagnostics:string[]}>):T {
+ if(!result.ok)return fail(`${pathLabel([...prefix,...result.error.path])} 源参数 ${result.error.kind}: ${result.error.reason}`);
  for(const path of result.value.consumedPaths)r.use([...prefix,...path]);
  for(const path of result.value.numericPaths)r.retainNumberToken([...prefix,...path]);
  for(const diagnostic of result.value.diagnostics)r.warnings.push(`${pathLabel(prefix)}: ${diagnostic}`);
@@ -988,7 +989,7 @@ function surfaceParameterImport<T>(r:Reader,prefix:readonly string[],result:Sour
 }
 function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:OrdinarySourceScalarScope,capturedDensity=false):OrdinaryTimelineClip[] {
  let edgeDefaults:OscillationEdgeEasing={...SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT};
- if(surface&&r.has(['settings','param_edge_easing']))edgeDefaults=surfaceParameterImport(r,['settings','param_edge_easing'],importSourceRegistryParameterEdge(r.peek(['settings','param_edge_easing'])));
+ if(surface&&r.has(['settings','param_edge_easing']))edgeDefaults=sourceParameterImport(r,['settings','param_edge_easing'],importSourceRegistryParameterEdge(r.peek(['settings','param_edge_easing'])));
  const clips=r.peek(['timeline']);if(clips===undefined)return[];
  if(!Array.isArray(clips)||clips.length>1000)fail('timeline 应为最多 1000 段的数组');
  if(!clips.length)r.use(['timeline']);
@@ -1018,12 +1019,12 @@ function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:Ordina
       r.warnings.push(`${pathLabel(actionPath)} ${method}：原版此场景未取得数组或对象参数，跳过此动作；片段时长和原值保留。`);
       continue;
      }
-     const surfaceParameters=surface&&(method==='paramStart'||method==='paramStop')?surfaceParameterImport(r,[...actionPath,'args'],importSourceSurfaceParameterAction(method,args,{scope:parameterScope!,memberOrder:path=>r.sourceKeys([...actionPath,'args',...path]),edgeDefaults})):undefined;
+     const surfaceParameters=surface&&(method==='paramStart'||method==='paramStop')?sourceParameterImport(r,[...actionPath,'args'],importSourceSurfaceParameterAction(method,args,{scope:parameterScope!,memberOrder:path=>r.sourceKeys([...actionPath,'args',...path]),edgeDefaults})):undefined;
      actions.push({path:actionPath,method,raw:args,...(surface&&method==='gradientStart'?{surfaceGradient:importSourceSurfaceGradient(args)}:{}),...(surfaceParameters?{surfaceParameters}:{})});
     }
    }
   }
-  const surfaceParameterClip=surface&&type==='param'?surfaceParameterImport(r,[...path,'parameters'],importSourceSurfaceParameterClip(r.peek([...path,'parameters']),{scope:parameterScope!,memberOrder:relative=>r.sourceKeys([...path,'parameters',...relative])})):undefined;
+  const surfaceParameterClip=surface&&type==='param'?sourceParameterImport(r,[...path,'parameters'],importSourceSurfaceParameterClip(r.peek([...path,'parameters']),{scope:parameterScope!,memberOrder:relative=>r.sourceKeys([...path,'parameters',...relative])})):undefined;
   result.push({path,originalType,type,actions,...(surfaceParameterClip?{surfaceParameterClip}:{})});
  }
  return result;
@@ -1100,6 +1101,10 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
     }
 
     if(r.has([...actionPath,'enabled']))r.acknowledge([...actionPath,'enabled'],'原版不读取动作级开关，使用片段级 enabled');
+    if(usesSourceSymmetryParameters(s)&&(method==='paramStart'||method==='paramStop')){
+     const symmetryParameters=sourceParameterImport(r,[...actionPath,'args'],importSourceSymmetryParameterAction(method,raw,{scope,memberOrder:relative=>r.sourceKeys([...actionPath,'args',...relative])}));
+     if(symmetryParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,symmetryParameters});continue;
+    }
     if(surfaceParameters){if(surfaceParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,surfaceParameters});continue;}
     if((s.kind==='surface'||usesSourceAttractor(s)||usesSourceSymmetryGradient(s))&&(method==='gradientStart'||method==='gradientStop')){
      if(usesSourceAttractor(s)&&(s.attractorSource!.configuration.nativeBackend==='gpu'||!s.attractorSource!.visual.trails.show)){r.acknowledge(actionPath,'原版吸引子仅在 CPU 且显示拖尾时构造渐变；未解析动作参数');continue;}
@@ -1465,7 +1470,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   if(r.has(['settings','dot_size']))r.acknowledge(['settings','dot_size'],'Samila 活动绘制使用 spot_size；通用 dot_size 保留但不参与散点半径');
  }
  if(usesSourceSymmetryProject(scene)){
-  scene.settings.symmetryGradientModel=SOURCE_SYMMETRY_GRADIENT_MODEL;scene.settings.symmetryPresentationModel=SOURCE_SYMMETRY_PRESENTATION_MODEL;scene.settings.densityToneModel='normalized-v2';if(!r.has(['settings','background_color']))scene.settings.background='#000000';
+  scene.settings.symmetryParameterModel=SOURCE_SYMMETRY_PARAMETER_MODEL;scene.settings.symmetryGradientModel=SOURCE_SYMMETRY_GRADIENT_MODEL;scene.settings.symmetryPresentationModel=SOURCE_SYMMETRY_PRESENTATION_MODEL;scene.settings.densityToneModel='normalized-v2';if(!r.has(['settings','background_color']))scene.settings.background='#000000';
   const palette=importSourceSymmetryProjectPalette(r.use(['palette']));if(!palette.ok)fail(palette.error.reason);scene.palette=palette.value.palette;r.warnings.push(...palette.value.warnings);
   if(r.has(['color']))r.acknowledge(['color'],'原版 Symmetry 项目不输出通用 color 配置；运行时配色可在本地检查器编辑');
   const parsed=importSourceSymmetryProjectVisual(r.peek(['settings']),path=>r.numberToken(path));

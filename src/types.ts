@@ -155,6 +155,7 @@ export interface AnimationAction {
   /** Ordered source operations within this action; All is one registry operation. */
   domainParameters?:DomainParameterAction[];
   surfaceParameters?:SourceSurfaceParameterAction[];
+  symmetryParameters?:SourceSymmetryParameterOperation[];
   /** Dedicated source Perlin child; admitted only by its source queue. */
   perlinParameters?:SourcePerlinParameterAction;
   /** Dedicated source Samila child; initial phase belongs to its queue runtime. */

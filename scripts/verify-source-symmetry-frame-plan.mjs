@@ -6,7 +6,7 @@ import {createServer} from 'vite';
 import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const out=process.argv[2];if(!out)throw Error('Supply a new output directory');await mkdir(out);
-const sources=['src/engine/iteratedDensityGpu.ts','src/engine/sourceSymmetryFramePlan.ts','src/engine/sourceSymmetryGradient.ts','src/engine/timeline.ts','src/scenes/iteratedDensity.ts','scripts/verify-source-symmetry-frame-plan.mjs'];
+const sources=['src/engine/iteratedDensityGpu.ts','src/engine/sourceSymmetryFramePlan.ts','src/engine/sourceSymmetryGradient.ts','src/engine/sourceSymmetryTimeline.ts','src/engine/sourceSymmetryParameterRuntime.ts','src/engine/sourceSymmetryParameterIdentity.ts','src/engine/sourceRegistryParameterConfig.ts','src/engine/timeline.ts','src/scenes/iteratedDensity.ts','scripts/verify-source-symmetry-frame-plan.mjs'];
 const snapshot=async()=>Object.fromEntries(await Promise.all(sources.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));
 const report={status:'running',nativeWindowExecuted:false,sourceBefore:await snapshot()},started=performance.now();let server,browser;
 try{

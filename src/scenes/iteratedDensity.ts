@@ -1,5 +1,7 @@
+import {usesSourceSymmetryParameters} from '../engine/sourceSymmetryParameterIdentity';
 import {prepareSourceSymmetryFramePlan,type SourceSymmetryFramePlan} from '../engine/sourceSymmetryFramePlan';
-import {sourceSymmetryPaletteFrame,sourceSymmetryUpdateEvent,usesSourceSymmetryGradient} from '../engine/sourceSymmetryGradient';
+import {usesSourceSymmetryGradient} from '../engine/sourceSymmetryGradient';
+import {sourceSymmetryPaletteFrame,sourceSymmetryUpdateEvent,sourceSymmetryParameterFrame} from '../engine/sourceSymmetryTimeline';
 import {usesSourceSymmetryPresentation,validateSourceSymmetryPresentation,prepareSourceSymmetryTone,deriveSourceSymmetryNormalization,clearSourceSymmetryTarget} from '../engine/sourceSymmetryPresentation';
 import {prepareSourceSymmetryPalette,type SourceSymmetryPaletteFacts} from '../engine/sourceSymmetryPalette';
 import {prepareSourceSymmetrySplat,sourceSymmetrySplatPixelTests,type SourceSymmetrySplatFacts} from '../engine/sourceSymmetrySplat';
@@ -242,7 +244,9 @@ export class IteratedDensitySession {
    const frameBytes=backend==='webgl2'?iteratedGpuBytes(cfg.count,width,height,2048,cfg.samilaHistoryModel==='bounded-v2',job.field.kind==='symmetry-custom',Boolean(job.samilaSplat),Boolean(preparedTone.sourcePresentation||preparedTone.sourceSymmetryPresentation),usesSourceSamilaSampling(baseScene))+width*height*4:(job.samilaSplat?256*256*4+1024*3*4:0)+(base.kind==='samila'?0:cfg.count*33)+width*height*36;if(frameBytes+(sourceSampling?this.sampling.projectedBytes(frame)+this.samplingKey.length*2:this.samplingBytes())>MAX_LIVE_BYTES)throw new Error('持续密度动画状态超过 768 MiB 工作预算');
    if(sourceSampling)job.samilaSampling=prepareSourceSamilaSamplingBatch(this.sampling,frame,cfg.count,passes);
    if(backend==='webgl2'){
-    const resetParticles=s.structuralKey!==job.structuralKey,clear=(job.history?.clear??(resetParticles||s.fieldKey!==job.fieldKey))||job.sourceCamera?.clearInk===true;
+    const parameterFrame=sourceSymmetryParameterFrame(snapshot);
+    if(usesSourceSymmetryParameters(baseScene)&&!parameterFrame)throw Error('源 Symmetry 缺少同帧参数快照');
+    const resetParticles=s.structuralKey!==job.structuralKey,clear=(job.history?.clear??(resetParticles||(parameterFrame?parameterFrame.changed:s.fieldKey!==job.fieldKey)))||job.sourceCamera?.clearInk===true;
     if(usesSourceSymmetryGradient(baseScene)){const event=sourceSymmetryUpdateEvent(snapshot);if(!event)throw Error('源 Symmetry 缺少同帧对象更新事件');job.symmetryFrame=prepareSourceSymmetryFramePlan(event,!resetParticles&&(s.symmetryFrame?.warmupApplied??false),cfg.burn,cfg.iterations);}
     if(!job.history)preflight(base.kind==='samila'?samples:cfg.count*(job.symmetryFrame?job.symmetryFrame.warmupSteps+job.symmetryFrame.iterationSteps:cfg.iterations+(resetParticles?cfg.burn:0)));
     if(cfg.record&&!job.history){pixelTests+=job.symmetrySplat?sourceSymmetrySplatPixelTests(job.symmetrySplat,cfg.count):cfg.count*(Math.ceil(job.samilaSplat?Math.max(sourceSamilaPointDiameter(job.samilaSplat),Math.max(Math.fround(job.samilaSplat.radius*Math.fround(.6)),Math.fround(.8))):cfg.pointSize)+2)**2;if(pixelTests>MAX_PIXEL_TESTS)throw new Error('GPU 持续密度单次累积像素测试上界超过 20 亿；请减少点尺寸、批次或时间');}

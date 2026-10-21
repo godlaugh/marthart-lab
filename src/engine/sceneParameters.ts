@@ -18,6 +18,10 @@ export function parameterTimelineReferences(scene:Pick<SceneDocument,'timeline'>
     if(action.method==='paramStart')for(const p of action.samilaParameters?.parameters??[])add('parameters.'+p.name,track.enabled);
     continue; // Source stop acts on the drift registry, not a named initial value.
    }
+   if(action.symmetryParameters){
+    for(const operation of action.symmetryParameters)if(operation.scope.kind==='named')add('parameters.'+operation.scope.name,track.enabled,action.method==='paramStop'?'stop':'value');
+    continue; // Native ignores action-level enabled and keeps exact source names.
+   }
    const enabled=track.enabled&&action.enabled!==false;if(action.method==='paramStart')ranges(action.parameters,enabled);if(action.method==='paramStop')add(action.args?.target,enabled,'stop');
   }
  }

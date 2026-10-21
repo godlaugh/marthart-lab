@@ -32,7 +32,7 @@ function savedConfig(raw:unknown,path:readonly string[]):SourceRegistryParameter
  if(!object(raw))return fail('input',path,'需要参数配置对象');keys(raw,['min','max','step','edgeEasing'],path);
  return{min:finite(raw.min,[...path,'min']),max:finite(raw.max,[...path,'max']),step:finite(raw.step,[...path,'step']),edgeEasing:savedEdge(raw.edgeEasing,[...path,'edgeEasing'])};
 }
-function parseParameterActions<Model extends SourceRegistryParameterModel>(raw:unknown,method:'paramStart'|'paramStop',model:Model):SourceRegistryParameterAction<Model>[] {
+export function parseSourceRegistryParameterActions<Model extends SourceRegistryParameterModel>(raw:unknown,method:'paramStart'|'paramStop',model:Model):SourceRegistryParameterAction<Model>[] {
  let characters=0;return bounded<unknown>(raw,[]).map((value,index)=>{
   const path=[String(index)];if(!object(value))return fail('input',path,'需要源参数动作对象');keys(value,['model','scope','configuration'],path);
   if(value.model!==model||!object(value.scope))return fail('input',path,'源参数模型或作用域无效');
@@ -42,8 +42,8 @@ function parseParameterActions<Model extends SourceRegistryParameterModel>(raw:u
   return{model,scope:scope.kind==='all'?{kind:'all'}:{kind:'named',name:name(scope.name,[...path,'scope','name'])}};
  });
 }
-export const parseSourceSurfaceParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSurfaceParameterAction[]=>parseParameterActions(raw,method,SOURCE_SURFACE_PARAMETER_MODEL);
-export const parseSourceSymmetryParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSymmetryParameterOperation[]=>parseParameterActions(raw,method,SOURCE_SYMMETRY_PARAMETER_MODEL);
+export const parseSourceSurfaceParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSurfaceParameterAction[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_SURFACE_PARAMETER_MODEL);
+export const parseSourceSymmetryParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSymmetryParameterOperation[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_SYMMETRY_PARAMETER_MODEL);
 export function parseSourceSurfaceParameterClip(raw:unknown):SourceSurfaceParameterClip{
  if(!object(raw)||raw.model!==SOURCE_SURFACE_PARAMETER_MODEL)return fail('input',[],'需要源参数片段模型');keys(raw,['model','parameters'],[]);
  const seen=new Set<string>();let characters=0;return{model:SOURCE_SURFACE_PARAMETER_MODEL,parameters:bounded<unknown>(raw.parameters,['parameters']).map((item,index)=>{

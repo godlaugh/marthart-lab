@@ -4,7 +4,7 @@ import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {serializeScene,parseScene} from '../src/engine/document';
 import {SOURCE_SURFACE_PARAMETER_MODEL as model,SOURCE_SURFACE_PARAMETER_DEFAULT} from '../src/engine/sourceRegistryParameterConfig';
-import {SurfaceParameterActionsEditor,SurfaceParameterClipEditor} from '../src/components/Timeline';
+import {RegistryParameterActionsEditor,SurfaceParameterClipEditor} from '../src/components/Timeline';
 import {I18nProvider} from '../src/i18n';
 import {parseSourceNumberTokens} from '../src/engine/sourceNumberTokens';
 const source=(timeline:unknown[],settings={})=>({config_version:'1.0.0',type:'SURFACE',name:'Source parameter import',parameters:{a:2,b:3},equations:{x:'u+a',y:'v',z:'a'},settings:{u_segments:2,v_segments:2,speed_u:0,speed_v:0,show_trails:false,...settings},timeline});
@@ -48,7 +48,7 @@ describe('source Surface parameter public import and explicit editors',()=>{
  });
  it('renders named/all source editing without local target selectors or phase units',()=>{
   const values=[{model,scope:{kind:'named' as const,name:'a.b'},configuration:{...SOURCE_SURFACE_PARAMETER_DEFAULT}}],before=structuredClone(values);
-  const html=render(createElement(SurfaceParameterActionsEditor,{values,method:'paramStart',onChange:()=>{throw Error('render mutation');}}));
+  const html=render(createElement(RegistryParameterActionsEditor,{model,values,method:'paramStart',onChange:()=>{throw Error('render mutation');}}));
   expect(html).toContain('data-testid="surface-parameter-actions"');expect(html).toContain('a.b');expect(html).toContain('Step per frame');expect(html).toContain('All parameter animations');expect(html).not.toContain('rad/s');expect(values).toEqual(before);
  });
  it('separates standalone replacement editing from named-action edge ramp controls',()=>{
@@ -56,6 +56,6 @@ describe('source Surface parameter public import and explicit editors',()=>{
   expect(html).toContain('data-testid="surface-parameter-clip"');expect(html).toContain('A standalone parameter clip replaces the current parameter animations');expect(html).not.toContain('Edge window');expect(html).not.toContain('type="checkbox" checked=""');
  });
  it('does not manufacture source configuration when opening an old or malformed action',()=>{
-  const html=render(createElement(SurfaceParameterActionsEditor,{method:'paramStart',onChange:()=>{throw Error('render mutation');}}));expect(html).toContain('Configure source parameters');expect(html).not.toContain('Step per frame');
+  const html=render(createElement(RegistryParameterActionsEditor,{model,method:'paramStart',onChange:()=>{throw Error('render mutation');}}));expect(html).toContain('Configure source parameters');expect(html).not.toContain('Step per frame');
  });
 });

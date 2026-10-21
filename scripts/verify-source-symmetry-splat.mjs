@@ -22,7 +22,7 @@ try{
  report.cases=await page.evaluate(async ({shaders,paletteFixture,gradient,gradientFixture})=>{
   const {parseProjectFile}=await import('/src/engine/legacyImport.ts'),{parseScene,serializeScene}=await import('/src/engine/document.ts');
   const {prepareIteratedFrame}=await import('/src/scenes/iteratedDensity.ts'),{IteratedDensityGpu}=await import('/src/engine/iteratedDensityGpu.ts');
-  const {SourceSymmetryGradientRuntime,bindSourceSymmetryPaletteFrame}=await import('/src/engine/sourceSymmetryGradient.ts');
+  const {SourceSymmetryGradientRuntime}=await import('/src/engine/sourceSymmetryGradient.ts');const {bindSourceSymmetryPaletteFrame}=await import('/src/engine/sourceSymmetryTimeline.ts');
   const {prepareSourceSymmetrySplat}=await import('/src/engine/sourceSymmetrySplat.ts');
   const width=64,height=48,count=4,canvas=new OffscreenCanvas(width,height),gl=canvas.getContext('webgl2');if(!gl||!gl.getExtension('EXT_color_buffer_float')||!gl.getExtension('EXT_float_blend')||!gl.getExtension('OES_texture_float_linear'))throw Error('Oracle WebGL float target unavailable');
   const textures=[],programs=[],shaderObjects=[],fbo=gl.createFramebuffer(),vao=gl.createVertexArray();

@@ -1,6 +1,7 @@
+import type {SourceSymmetryParameterAction} from './sourceSymmetryParameterRuntime';
 import {normalizeSourceSamilaParameterAction,type SourceSamilaParameterAction} from './sourceSamilaParameter';
 import {sourceSurfaceFadeRatio,sourceSurfaceTransitionFrame,type SourceSurfaceMode} from './sourceSurfaceTransition';
-import {parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceRegistryParameterConfig';
+import {parseSourceSymmetryParameterActions,parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceRegistryParameterConfig';
 import {parseSourcePerlinParameterAction,SourcePerlinParameterFailure,type SourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import type {SourceSurfaceParameterAction,SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
 import {parseSourceParticleGradientConfiguration} from './sourceParticleGradientConfig';
@@ -54,6 +55,8 @@ export interface OrdinarySourceCameraParticles {
  /** Perlin InstantAction calls setShowTrails: both drawing existing trails and
   * recording new trail points follow this value. Accumulation is separate. */
  setShowTrails?(enabled:boolean):void;
+ beginSymmetryParameterActions?(actions:readonly SourceSymmetryParameterAction[]):void;
+ advanceSymmetryParameterActions?(dt:number):void;
  beginSamilaParameterActions?(actions:readonly SourceSamilaParameterAction[],duration:number,easing:string):void;
  advanceSamilaParameterActions?(dt:number):void;
  beginPerlinParameterActions?(actions:readonly SourcePerlinParameterAction[]):void;
@@ -68,7 +71,7 @@ export interface OrdinarySourceCameraParticles {
 export interface OrdinarySourceCameraTimelineOptions {
  readonly isCancelled?:()=>boolean;
  /** Explicit producer contract; other scene gradients keep their own clocks. */
- readonly particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry';
+ readonly particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry'|'symmetry-parameters';
  /** Initial main-object mode, required for exact transition/skip scheduling. */
  readonly surfaceMode?:SourceSurfaceMode;
  /** Fresh, synchronous, in-memory producer state per replay. No scalar cache
@@ -87,7 +90,7 @@ type Axis='phi'|'theta'|'gamma';
 type Targets=Partial<Record<Axis,number>>;
 type Tracking={readonly kind:'origin'}|Extract<OrdinaryCameraTargetBinding,{kind:'bound'}>;
 type TrackingAction={readonly kind:'origin'}|{readonly kind:'bind';readonly request:OrdinaryCameraTargetRequest};
-interface Clip extends RootsSceneClip {readonly samilaParameterActions?:readonly SourceSamilaParameterAction[];readonly samilaParameterDuration?:number;readonly surfaceTransition?:{to:SourceSurfaceMode;fadeRatio:number};readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];readonly trailAction?:{readonly kind:'record'|'show';readonly enabled:boolean};readonly gradientActions?:readonly SourceGradientAction[];readonly surfaceParameterActions?:readonly SourceSurfaceParameterAction[];readonly perlinParameterActions?:readonly SourcePerlinParameterAction[];readonly surfaceParameterClip?:readonly ({name:string}&SourceSurfaceParameterConfiguration)[];}
+interface Clip extends RootsSceneClip {readonly symmetryParameterActions?:readonly SourceSymmetryParameterAction[];readonly samilaParameterActions?:readonly SourceSamilaParameterAction[];readonly childDuration?:number;readonly surfaceTransition?:{to:SourceSurfaceMode;fadeRatio:number};readonly trackId:string;readonly targets?:Targets;readonly align?:Targets;readonly focal?:number;readonly trackingActions?:readonly TrackingAction[];readonly trailAction?:{readonly kind:'record'|'show';readonly enabled:boolean};readonly gradientActions?:readonly SourceGradientAction[];readonly surfaceParameterActions?:readonly SourceSurfaceParameterAction[];readonly perlinParameterActions?:readonly SourcePerlinParameterAction[];readonly surfaceParameterClip?:readonly ({name:string}&SourceSurfaceParameterConfiguration)[];}
 interface Plan {initial:SourceCameraScalars;clips:Clip[];diagnostics:OrdinaryCameraDiagnostic[];fps:number;dt:number;}
 const F=Math.fround,axes=['phi','theta','gamma'] as const,TAU=F(2*Math.PI),names=new Set(SOURCE_EASING_NAMES);
 const WORK_LIMIT=2_000_000; // Bounded synchronous frames plus remaining-queue folds, as the existing source clock.
@@ -98,7 +101,7 @@ const finite=(v:number):number=>{if(!Number.isFinite(v))throw new OrdinarySource
 const lerp=(a:number,b:number,t:number)=>F(a+F(F(b-a)*t));
 const check=(options:OrdinarySourceCameraTimelineOptions)=>{if(options.isCancelled?.())throw new OrdinarySourceCameraTimelineError('cancelled','源相机回放已取消');};
 const noncameraMethods=new Set(['paramStart','paramStop','gradientStart','gradientStop']);
-function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry',initialSurfaceMode?:SourceSurfaceMode):Plan {
+function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry'|'symmetry-parameters',initialSurfaceMode?:SourceSurfaceMode):Plan {
  if(initialSurfaceMode!==undefined&&(particleActions!=='surface'||!['points','mesh'].includes(initialSurfaceMode)))throw new OrdinarySourceCameraTimelineError('input','源曲面初始模式需要曲面动作合同');
  let surfaceMode=initialSurfaceMode;
  if(!initial||typeof initial!=='object'||['phi','theta','gamma','center','zoom','focalDistance'].some(key=>!Object.hasOwn(initial,key)))throw new OrdinarySourceCameraTimelineError('input','源相机初始标量必须完整');
@@ -112,7 +115,7 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
  const warn=(track:AnimationTrack,code:OrdinaryCameraDiagnostic['code'],message:string)=>diagnostics.push({trackId:track.id,code,message});
  for(const track of tracks){
   if(!track.enabled)continue;
-  if(particleActions==='samila'&&!['wait','animate'].includes(track.type??'numeric'))throw new OrdinarySourceCameraTimelineError('unsupported','源 Samila 规范队列仅支持等待与动作组',track.id);
+  if((particleActions==='samila'||particleActions==='symmetry-parameters')&&!['wait','animate'].includes(track.type??'numeric'))throw new OrdinarySourceCameraTimelineError('unsupported','此源规范队列仅支持等待与动作组',track.id);
   const instant=track.type==='trails',duration=float(track.duration,'源片段时长');
   // Generic Animation keeps zero duration. Its queue consumes one update,
   // using the full remaining-queue dt; 0/0 is retained through child finish.
@@ -134,9 +137,10 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
    const targets:Targets={};for(const axis of axes)if(track.orientation?.[axis]!==undefined)targets[axis]=float(track.orientation[axis],`align ${axis}`);clip.align=targets;
   }else if(track.type==='animate'){
    if(track.actions!==undefined&&(!Array.isArray(track.actions)||track.actions.length>64))throw new OrdinarySourceCameraTimelineError('capacity','源相机片段最多 64 个动作',track.id);
-   const targets:Targets={},trackingActions:TrackingAction[]=[],gradientActions:SourceGradientAction[]=[],surfaceParameterActions:SourceSurfaceParameterAction[]=[],perlinParameterActions:SourcePerlinParameterAction[]=[],samilaParameterActions:SourceSamilaParameterAction[]=[];
+   const targets:Targets={},trackingActions:TrackingAction[]=[],gradientActions:SourceGradientAction[]=[],surfaceParameterActions:SourceSurfaceParameterAction[]=[],perlinParameterActions:SourcePerlinParameterAction[]=[],samilaParameterActions:SourceSamilaParameterAction[]=[],symmetryParameterActions:SourceSymmetryParameterAction[]=[];
    for(const [actionIndex,action] of (track.actions??[]).entries()){
     if(!action||typeof action!=='object')throw new OrdinarySourceCameraTimelineError('input','源相机动作无效',track.id);
+    if(action.symmetryParameters!==undefined&&(particleActions!=='symmetry-parameters'||!['paramStart','paramStop'].includes(action.method)))throw new OrdinarySourceCameraTimelineError('input','Symmetry 参数只能由对应源队列消费',track.id);
     if(action.samilaParameters!==undefined&&(particleActions!=='samila'||!['paramStart','paramStop'].includes(action.method)))throw new OrdinarySourceCameraTimelineError('input','Samila 参数配置只能由对应源参数动作消费',track.id);
     if(particleActions==='samila'&&!['ambient','stopAmbient','rotatePhi','rotateTheta','rotateGamma','rotateTo','zoom','focal','paramStart','paramStop'].includes(action.method))throw new OrdinarySourceCameraTimelineError('unsupported',`源 Samila 不分派 ${action.method}`,track.id);
     if(action.perlinParameters!==undefined&&(particleActions!=='perlin'||!['paramStart','paramStop'].includes(action.method)))throw new OrdinarySourceCameraTimelineError('input','Perlin 参数配置只能由对应源参数动作消费',track.id);
@@ -160,6 +164,10 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
      const parsed=normalizeSourceSamilaParameterAction(action.samilaParameters);if(!parsed.ok)throw new OrdinarySourceCameraTimelineError('input',parsed.error.reason,track.id);
      if(parsed.value.kind!==(action.method==='paramStart'?'start':'stop'))throw new OrdinarySourceCameraTimelineError('input','Samila 参数方法不匹配',track.id);
      samilaParameterActions.push(parsed.value);
+    }
+    else if(particleActions==='symmetry-parameters'&&(action.method==='paramStart'||action.method==='paramStop')){
+     if(action.parameters!==undefined||action.domainParameters!==undefined||action.surfaceParameters!==undefined||action.perlinParameters!==undefined||action.samilaParameters!==undefined)throw new OrdinarySourceCameraTimelineError('input','Symmetry 源参数不能混用其他模型',track.id);
+     for(const operation of parseSourceSymmetryParameterActions(action.symmetryParameters,action.method))symmetryParameterActions.push({kind:action.method==='paramStart'?'start':'stop',scope:operation.scope,...(operation.configuration?{configuration:operation.configuration}:{}),duration,easing:track.easing});
     }
     else if(particleActions==='surface'&&(action.method==='paramStart'||action.method==='paramStop')){
      if(action.parameters!==undefined||action.domainParameters!==undefined)throw new OrdinarySourceCameraTimelineError('input','曲面源参数动作不能混用其他参数模型',track.id);
@@ -188,7 +196,9 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
    if(gradientActions.length)clip.gradientActions=gradientActions;
    if(surfaceParameterActions.length)clip.surfaceParameterActions=surfaceParameterActions;
    if(perlinParameterActions.length)clip.perlinParameterActions=perlinParameterActions;
-   if(samilaParameterActions.length){clip.samilaParameterActions=samilaParameterActions;clip.samilaParameterDuration=duration;clip.duration=Math.max(0,duration);}
+   if(symmetryParameterActions.length)clip.symmetryParameterActions=symmetryParameterActions;
+   if(particleActions==='symmetry-parameters'&&(symmetryParameterActions.length||gradientActions.length)){clip.childDuration=duration;clip.duration=Math.max(0,duration);}
+   if(samilaParameterActions.length){clip.samilaParameterActions=samilaParameterActions;clip.childDuration=duration;clip.duration=Math.max(0,duration);}
   }else if(track.type==='param'&&particleActions==='surface'){
    if(track.parameterAnimations!==undefined||track.parameterClock!==undefined||track.replaceParameters!==undefined)throw new OrdinarySourceCameraTimelineError('input','曲面源参数片段不能混用其他参数模型',track.id);
    clip.surfaceParameterClip=parseSourceSurfaceParameterClip(track.surfaceParameterClip).parameters;
@@ -232,7 +242,7 @@ function bindTracking(plan:Plan,particles:OrdinarySourceCameraParticles|undefine
 const replays=new Map<string,Replay>();
 type Layout={schedule:typeof ORDINARY_CAMERA_SEQUENCE;span:number;updates:number;clips:{trackId:string;start:number;duration:number;sourceDuration:number}[];diagnostics:OrdinaryCameraDiagnostic[]};
 const layouts=new Map<string,Layout>();
-function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry',surfaceMode?:SourceSurfaceMode):string|undefined {
+function inputKey(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fps:number,particleActions?:'surface'|'attractor'|'perlin'|'samila'|'symmetry'|'symmetry-parameters',surfaceMode?:SourceSurfaceMode):string|undefined {
  const key=JSON.stringify([initial,tracks,fps,particleActions,surfaceMode],(_key,value)=>typeof value==='number'?{number:Object.is(value,-0)?'-0':String(value)}:value);
  return key.length<=1_000_000?key:undefined;
 }
@@ -276,6 +286,7 @@ function createReplay(initial:SourceCameraScalars,tracks:readonly AnimationTrack
   if(plan.clips.some(c=>c.trailAction?.kind==='record')&&typeof particles?.setRecordingTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源拖尾片段需要支持录制开关的粒子生产者');
   if(plan.clips.some(c=>c.trailAction?.kind==='show')&&typeof particles?.setShowTrails!=='function')throw new OrdinarySourceCameraTimelineError('unsupported','源 Perlin 拖尾片段需要支持显示与记录开关的生产者');
   if(plan.clips.some(c=>c.gradientActions?.length)&&(typeof particles?.beginGradientActions!=='function'||typeof particles?.interpolateGradientActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源粒子渐变需要支持完整生命周期的粒子生产者');
+  if(plan.clips.some(c=>c.symmetryParameterActions?.length)&&(typeof particles?.beginSymmetryParameterActions!=='function'||typeof particles?.advanceSymmetryParameterActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源 Symmetry 参数需要专属参数生产者');
   if(plan.clips.some(c=>c.samilaParameterActions?.length)&&(typeof particles?.beginSamilaParameterActions!=='function'||typeof particles?.advanceSamilaParameterActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源 Samila 参数需要专属参数生产者');
   if(plan.clips.some(c=>c.perlinParameterActions?.length)&&(typeof particles?.beginPerlinParameterActions!=='function'||typeof particles?.interpolatePerlinParameterActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源 Perlin 参数需要专属参数生产者');
   if(plan.clips.some(c=>c.surfaceParameterActions?.length)&&(typeof particles?.beginParameterActions!=='function'||typeof particles?.interpolateParameterActions!=='function'))throw new OrdinarySourceCameraTimelineError('unsupported','源曲面参数动作需要支持完整生命周期的粒子生产者');
@@ -322,7 +333,8 @@ function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySo
      if(options.particleActions){
       // All starts precede child updates. Perlin orders parameter children
       // before its last gradient; Surface/Attractor retain existing order.
-      if(options.particleActions==='samila')replay.particles?.beginSamilaParameterActions?.(clip.samilaParameterActions??[],clip.samilaParameterDuration??clip.duration,clip.easing);
+      if(options.particleActions==='symmetry-parameters')replay.particles?.beginSymmetryParameterActions?.(clip.symmetryParameterActions??[]);
+      if(options.particleActions==='samila')replay.particles?.beginSamilaParameterActions?.(clip.samilaParameterActions??[],clip.childDuration??clip.duration,clip.easing);
       if(options.particleActions==='perlin')replay.particles?.beginPerlinParameterActions?.(clip.perlinParameterActions??[]);
       replay.particles?.beginGradientActions?.(clip.gradientActions??[]);
       if(clip.surfaceParameterClip)replay.particles!.beginParameterClip!(clip.surfaceParameterClip);
@@ -335,7 +347,7 @@ function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySo
     // A Samila group clamps its own duration to zero, but each camera child
     // retains the original negative duration. Parameter children own their
     // separate duration<=0 progress rule below.
-    const runtime=F((facts.startedClip!==null?0:before.clipRuntime)+facts.activeDt),cameraDuration=clip.samilaParameterDuration??clip.duration,eased=sourceEase(clip.easing,Math.max(0,Math.min(1,F(runtime/cameraDuration))));
+    const runtime=F((facts.startedClip!==null?0:before.clipRuntime)+facts.activeDt),cameraDuration=clip.childDuration??clip.duration,eased=sourceEase(clip.easing,Math.max(0,Math.min(1,F(runtime/cameraDuration))));
     particleEased=eased;
     for(const axis of axes)if(replay.targets[axis]!==undefined)camera[axis]=lerp(replay.start[axis],replay.targets[axis]!,eased);
     if(clip.focal!==undefined)camera.focalDistance=lerp(replay.start.focalDistance,clip.focal,eased);
@@ -345,6 +357,7 @@ function advanceReplay(replay:Replay,dt:number,paused:boolean,options:OrdinarySo
     if(tracking){const to=point(tracking);camera.center=to.map((v,i)=>lerp(replay.start.center[i],v,eased)) as [number,number,number];if(facts.finishedClip!==null)replay.tracking=tracking;}
    }
    if(particleEased!==undefined&&options.particleActions){
+    if(clip.symmetryParameterActions?.length)replay.particles!.advanceSymmetryParameterActions!(facts.activeDt);
     if(clip.samilaParameterActions?.length)replay.particles!.advanceSamilaParameterActions!(facts.activeDt);
     if(clip.perlinParameterActions?.length){
      const eased=clip.duration<=0?sourceEase(clip.easing,1):particleEased;

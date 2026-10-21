@@ -1,5 +1,7 @@
 # Symmetry 参数动画内核：原版运行对照
 
+后续进展：[参数动画接入与界面验收](source-symmetry-parameter-integration-validation.zh-CN.md)已完成项目、共享队列、GPU 及公开导出接线。以下保留本阶段当时的验证范围。
+
 2026-10-21。**已取得 45 组、312 帧原版 JVM 参数状态，并完成本地参数动画内核对照。尚未接入 MathArt Lab 的导入与共享时间线，不代表参数动画的画面效果已经验收。** 完整原版窗口一致性仍为 0/11。
 
 后续进展见[参数动作解析验证](source-symmetry-parameter-config-validation.zh-CN.md)：原始动作解析到内核的对照已扩展至 63 组、366 帧；公开项目与 GPU 接入仍待完成。以下保留本轮原始验证范围。
