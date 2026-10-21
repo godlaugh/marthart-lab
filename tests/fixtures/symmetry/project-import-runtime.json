@@ -1,0 +1,2390 @@
+{
+  "scope": "Original headless ProjectState import/export, PApplet constructor for palette parsing, JsonSymmetryChaosConfig and SymmetryChaosMobject seed; no application entry point, graphics initialization, or window operations. Prior oldParameter=99 is inserted before each import to test reset.",
+  "elapsedSeconds": 1.6934906669775955,
+  "cases": [
+    {
+      "stages": [
+        {
+          "seed": "-3476768661433560873",
+          "exportedParameters": {},
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [],
+          "editorValues": {}
+        },
+        {
+          "seed": "7152971218630249646",
+          "exportedParameters": {
+            "alpha": 2.3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "alpha"
+          ],
+          "editorValues": {
+            "alpha": "2.3"
+          }
+        }
+      ],
+      "id": "absent"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-3476768661433560873",
+          "exportedParameters": {},
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [],
+          "editorValues": {}
+        },
+        {
+          "seed": "7152971218630249646",
+          "exportedParameters": {
+            "alpha": 2.3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "alpha"
+          ],
+          "editorValues": {
+            "alpha": "2.3"
+          }
+        }
+      ],
+      "id": "empty"
+    },
+    {
+      "stages": [
+        {
+          "seed": "8562236325647494735",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "7320914160403065690",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "normal"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-7791977169379413278",
+          "exportedParameters": {
+            "lambda": 0,
+            "omega": 0,
+            "beta": 0,
+            "gamma": 0
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "beta",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "0.0",
+            "omega": "0.0",
+            "beta": "0.0",
+            "gamma": "0.0"
+          }
+        },
+        {
+          "seed": "587151960602516085",
+          "exportedParameters": {
+            "lambda": 0,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 0,
+            "gamma": 0
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "0.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "0.0",
+            "gamma": "0.0"
+          }
+        }
+      ],
+      "id": "booleans"
+    },
+    {
+      "stages": [
+        {
+          "seed": "3120199025325611132",
+          "exportedParameters": {
+            "alpha": 0,
+            "omega": 0,
+            "gamma": 0,
+            "beta": 0
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "gamma",
+            "beta",
+            "alpha"
+          ],
+          "editorValues": {
+            "alpha": "0.0",
+            "omega": "0.0",
+            "gamma": "0.0",
+            "beta": "0.0"
+          }
+        },
+        {
+          "seed": "3812994696847716921",
+          "exportedParameters": {
+            "alpha": 2.3,
+            "omega": 0,
+            "gamma": 0,
+            "beta": 0
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "gamma",
+            "beta",
+            "alpha"
+          ],
+          "editorValues": {
+            "alpha": "2.3",
+            "omega": "0.0",
+            "gamma": "0.0",
+            "beta": "0.0"
+          }
+        }
+      ],
+      "id": "malformed"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-5503059242491240530",
+          "exportedParameters": {
+            "alpha": 2.3,
+            "omega": 0,
+            "gamma": 0.001,
+            "beta": 4.5
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "gamma",
+            "beta",
+            "alpha"
+          ],
+          "editorValues": {
+            "alpha": "2.3",
+            "omega": "-0.0",
+            "gamma": "0.001",
+            "beta": "4.5"
+          }
+        },
+        {
+          "seed": "-5503059242491240530",
+          "exportedParameters": {
+            "alpha": 2.3,
+            "omega": 0,
+            "gamma": 0.001,
+            "beta": 4.5
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "gamma",
+            "beta",
+            "alpha"
+          ],
+          "editorValues": {
+            "alpha": "2.3",
+            "omega": "-0.0",
+            "gamma": "0.001",
+            "beta": "4.5"
+          }
+        }
+      ],
+      "id": "decimal-strings"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-2187518756499200120",
+          "exportedParameters": {
+            "use_modified_equation": 1
+          },
+          "exportedEquation": {
+            "template": "modified",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "use_modified_equation"
+          ],
+          "editorValues": {
+            "use_modified_equation": "1.0"
+          }
+        },
+        {
+          "seed": "4716621266334318884",
+          "exportedParameters": {
+            "alpha": 2.3,
+            "use_modified_equation": 1
+          },
+          "exportedEquation": {
+            "template": "modified",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "use_modified_equation",
+            "alpha"
+          ],
+          "editorValues": {
+            "alpha": "2.3",
+            "use_modified_equation": "1.0"
+          }
+        }
+      ],
+      "id": "legacy-flag"
+    },
+    {
+      "stages": [
+        {
+          "seed": "8690058972824991389",
+          "exportedParameters": {
+            "delta_power": 2.7,
+            "alpha": 2,
+            "use_modified_equation": 0
+          },
+          "exportedEquation": {
+            "template": "modified",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "use_modified_equation",
+            "alpha",
+            "delta_power"
+          ],
+          "editorValues": {
+            "delta_power": "2.7",
+            "alpha": "2.0",
+            "use_modified_equation": "0.0"
+          }
+        },
+        {
+          "seed": "8851372157912024047",
+          "exportedParameters": {
+            "delta_power": 2.7,
+            "alpha": 2.3,
+            "use_modified_equation": 0
+          },
+          "exportedEquation": {
+            "template": "modified",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 256,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "use_modified_equation",
+            "alpha",
+            "delta_power"
+          ],
+          "editorValues": {
+            "delta_power": "2.7",
+            "alpha": "2.3",
+            "use_modified_equation": "0.0"
+          }
+        }
+      ],
+      "id": "modified-fractional-power"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-4208313490484415883",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "-4806571443166471148",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "settings-omitted"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-4208313490484415883",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "-4806571443166471148",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "backend-cpu"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-4208313490484415883",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "-4806571443166471148",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "backend-auto"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-4208313490484415883",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "-4806571443166471148",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "backend-unknown"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-4208313490484415883",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "-4806571443166471148",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "initial-box"
+    },
+    {
+      "stages": [
+        {
+          "seed": "1449766396678230631",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 3,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 4,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 2,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "1404778164381913792",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 3,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 4,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 2,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "fractional-settings"
+    },
+    {
+      "stages": [
+        {
+          "seed": "4630219154490092970",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 4,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 3,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 2,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "6847021929609463139",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 4,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 3,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 2,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "string-settings"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-4208313490484415883",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "-4806571443166471148",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 262144,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "fallback-settings"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-6307451519045199659",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": -2.43,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 1,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 0,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "-2.43",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        },
+        {
+          "seed": "6337689959677222227",
+          "exportedParameters": {
+            "lambda": 2,
+            "alpha": 2.3,
+            "omega": 0,
+            "beta": 1,
+            "gamma": 0.05,
+            "symmetry_degree": 3
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 35,
+            "scale_y": 35,
+            "batch_size": 1,
+            "scale_x": 35,
+            "accumulation_decay": 1,
+            "burn_in_steps": 0,
+            "dynamic_range": 0.20000000298023224,
+            "show_trails": true,
+            "saturation": 0.800000011920929,
+            "iterations_per_frame": 1,
+            "brightness": 0.30000001192092896,
+            "background_color": "#000000",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 2.200000047683716,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "alpha",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "2.0",
+            "alpha": "2.3",
+            "omega": "0.0",
+            "beta": "1.0",
+            "gamma": "0.05",
+            "symmetry_degree": "3.0"
+          }
+        }
+      ],
+      "id": "minimum-settings"
+    },
+    {
+      "stages": [
+        {
+          "seed": "-7177969083545469003",
+          "exportedParameters": {
+            "lambda": -2.4,
+            "delta_power": 1,
+            "alpha": 2.2,
+            "delta": 0,
+            "omega": 0,
+            "beta": -0.1,
+            "gamma": 0.5,
+            "symmetry_degree": 12
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "p = lambda + alpha*|z|\u00b2 + beta*Re(z^n)\nx' = p*x + gamma*Re(z^{n-1}) - omega*y\ny' = p*y - gamma*Im(z^{n-1}) + omega*x",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 0,
+            "scale_y": 185,
+            "batch_size": 6562144,
+            "scale_x": 185,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.10000000149011612,
+            "show_trails": true,
+            "saturation": 1,
+            "iterations_per_frame": 1,
+            "brightness": 0.6272727251052856,
+            "background_color": "#FFFFFF",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1.128889799118042,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 1.3978304862976074,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "delta",
+            "alpha",
+            "delta_power",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "-2.4",
+            "delta_power": "1.0",
+            "alpha": "2.2",
+            "delta": "0.0",
+            "omega": "0.0",
+            "beta": "-0.1",
+            "gamma": "0.5",
+            "symmetry_degree": "12.0"
+          }
+        },
+        {
+          "seed": "-5089779842895319786",
+          "exportedParameters": {
+            "lambda": -2.4,
+            "delta_power": 1,
+            "alpha": 2.3,
+            "delta": 0,
+            "omega": 0,
+            "beta": -0.1,
+            "gamma": 0.5,
+            "symmetry_degree": 12
+          },
+          "exportedEquation": {
+            "template": "standard",
+            "formula": "p = lambda + alpha*|z|\u00b2 + beta*Re(z^n)\nx' = p*x + gamma*Re(z^{n-1}) - omega*y\ny' = p*y - gamma*Im(z^{n-1}) + omega*x",
+            "random_type": "ANY"
+          },
+          "exportedSettings": {
+            "scale_z": 0,
+            "scale_y": 185,
+            "batch_size": 6562144,
+            "scale_x": 185,
+            "accumulation_decay": 1,
+            "burn_in_steps": 100,
+            "dynamic_range": 0.10000000149011612,
+            "show_trails": true,
+            "saturation": 1,
+            "iterations_per_frame": 1,
+            "brightness": 0.6272727251052856,
+            "background_color": "#FFFFFF",
+            "trail_lifetime": 4,
+            "render_mode": "GPU",
+            "contrast": 1.128889799118042,
+            "line_weight": 0.6800000071525574,
+            "offset_x": 0,
+            "dot_size": 1.5,
+            "offset_y": 0,
+            "gamma": 1.3978304862976074,
+            "offset_z": 0
+          },
+          "editorOrder": [
+            "omega",
+            "symmetry_degree",
+            "beta",
+            "delta",
+            "alpha",
+            "delta_power",
+            "gamma",
+            "lambda"
+          ],
+          "editorValues": {
+            "lambda": "-2.4",
+            "delta_power": "1.0",
+            "alpha": "2.3",
+            "delta": "0.0",
+            "omega": "0.0",
+            "beta": "-0.1",
+            "gamma": "0.5",
+            "symmetry_degree": "12.0"
+          }
+        }
+      ],
+      "id": "emperor-packaged"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "absent",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        }
+      }
+    },
+    {
+      "id": "empty",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "id": "normal",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        }
+      }
+    },
+    {
+      "id": "booleans",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "lambda": true,
+          "beta": "true",
+          "omega": false,
+          "gamma": "FALSE"
+        }
+      }
+    },
+    {
+      "id": "malformed",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "alpha": "x",
+          "gamma": {},
+          "beta": [],
+          "omega": null
+        }
+      }
+    },
+    {
+      "id": "decimal-strings",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "alpha": " 2.3 ",
+          "beta": "0x1.2p2",
+          "gamma": "1e-3",
+          "omega": "-0.0"
+        }
+      }
+    },
+    {
+      "id": "legacy-flag",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "use_modified_equation": 1
+        }
+      }
+    },
+    {
+      "id": "modified-fractional-power",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "settings": {
+          "batch_size": 256,
+          "render_mode": "GPU"
+        },
+        "parameters": {
+          "delta_power": 2.7,
+          "alpha": 2,
+          "use_modified_equation": 0
+        },
+        "equation": {
+          "template": "modified"
+        }
+      }
+    },
+    {
+      "id": "settings-omitted",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        }
+      }
+    },
+    {
+      "id": "backend-cpu",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "render_mode": "CPU"
+        }
+      }
+    },
+    {
+      "id": "backend-auto",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "render_mode": "AUTO"
+        }
+      }
+    },
+    {
+      "id": "backend-unknown",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "render_mode": {
+            "unexpected": true
+          }
+        }
+      }
+    },
+    {
+      "id": "initial-box",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "x0_min": -3,
+          "x0_max": 2,
+          "y0_min": "bad",
+          "y0_max": null
+        }
+      }
+    },
+    {
+      "id": "fractional-settings",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": 3.9,
+          "iterations_per_frame": 2.7,
+          "burn_in_steps": 4.9
+        }
+      }
+    },
+    {
+      "id": "string-settings",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": "4",
+          "iterations_per_frame": "2",
+          "burn_in_steps": "3"
+        }
+      }
+    },
+    {
+      "id": "fallback-settings",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": "bad",
+          "iterations_per_frame": false,
+          "burn_in_steps": null
+        }
+      }
+    },
+    {
+      "id": "minimum-settings",
+      "document": {
+        "type": "SYMMETRY_CHAOS",
+        "config_version": "1.0.0",
+        "parameters": {
+          "lambda": 2,
+          "alpha": -2.43,
+          "beta": 1,
+          "gamma": 0.05,
+          "omega": 0,
+          "symmetry_degree": 3
+        },
+        "settings": {
+          "batch_size": -1,
+          "iterations_per_frame": 0,
+          "burn_in_steps": -5
+        }
+      }
+    },
+    {
+      "id": "emperor-packaged",
+      "document": {
+        "settings": {
+          "scale_z": 0,
+          "scale_y": 185,
+          "batch_size": 6562144,
+          "invert": false,
+          "scale_x": 185,
+          "accumulation_decay": 1,
+          "burn_in_steps": 100,
+          "dynamic_range": 0.10000000149011612,
+          "show_trails": true,
+          "saturation": 1,
+          "iterations_per_frame": 1,
+          "brightness": 0.6272727251052856,
+          "background_color": "#FFFFFF",
+          "trail_lifetime": 4,
+          "render_mode": "GPU",
+          "contrast": 1.128889799118042,
+          "line_weight": 0.6800000071525574,
+          "offset_x": 0,
+          "dot_size": 1.5,
+          "offset_y": 0,
+          "gamma": 1.3978304862976074,
+          "offset_z": 0
+        },
+        "equation": {
+          "template": "standard",
+          "formula": "p = lambda + alpha*|z|\u00b2 + beta*Re(z^n)\nx' = p*x + gamma*Re(z^{n-1}) - omega*y\ny' = p*y - gamma*Im(z^{n-1}) + omega*x"
+        },
+        "main_equation": {
+          "color": "#FFFFFF",
+          "scale": 0.25,
+          "position": [
+            0,
+            100
+          ],
+          "enabled": false
+        },
+        "name": "Emperors_Cloak",
+        "description": "Emperor's Cloak - \u4e94\u91cd\u5bf9\u79f0\u6df7\u6c8c\u5438\u5f15\u5b50",
+        "timeline": [
+          {
+            "duration": 1,
+            "label": "Animate",
+            "type": "animate",
+            "easing": "SINE_IN_OUT",
+            "actions": [
+              {
+                "args": [
+                  0,
+                  0.10000000149011612,
+                  0
+                ],
+                "method": "ambient"
+              },
+              {
+                "args": [
+                  {
+                    "targetDomain": "SYMMETRY_CHAOS",
+                    "parameters": {
+                      "gamma": {
+                        "min": 0.30000001192092896,
+                        "max": 0.6000000238418579,
+                        "enable": true,
+                        "step": 0.0003
+                      }
+                    }
+                  }
+                ],
+                "method": "paramStart"
+              }
+            ]
+          },
+          {
+            "duration": 10,
+            "label": "\u7b49\u5f85",
+            "type": "wait",
+            "easing": "SINE_IN_OUT"
+          }
+        ],
+        "palette": [
+          "#FA845A",
+          "#FB9657",
+          "#FBA853",
+          "#FBB94E",
+          "#F0C652",
+          "#C7C46D",
+          "#9BC081",
+          "#65BB91",
+          "#45AD95",
+          "#4E9890",
+          "#53848A",
+          "#556F84",
+          "#587C7D",
+          "#5B9475",
+          "#5DAC69",
+          "#5FC456"
+        ],
+        "type": "SYMMETRY_CHAOS",
+        "camera": {
+          "phi": "0",
+          "theta": "0",
+          "gamma": "0"
+        },
+        "parameters": {
+          "lambda": -2.4,
+          "delta_power": 1,
+          "alpha": 2.2,
+          "delta": 0,
+          "omega": 0,
+          "beta": -0.1,
+          "gamma": 0.5,
+          "symmetry_degree": 12
+        },
+        "config_version": "1.0.0",
+        "isUserScene": true
+      }
+    }
+  ],
+  "harnessSha256": "b481bcf6260b35aa024c0d94e5fcc0d148edfa9178bbf7944fff82002f038de6",
+  "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+  "sources": [
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+      "sha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/core-4.5.0-acdf3bce2932985b9d091c284407a54.jar",
+      "sha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/core-common-2.2.0-2212d240dfe1e8a7598ee117ccc316d.jar",
+      "sha256": "e3b45846e588c02815c128bcf54a0aff96bbf298942475a8de5ac36147e17cdd"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/kotlin-stdlib-2.3.20-17212d4ae1611e51ce4c3c4ba28717fa.jar",
+      "sha256": "178a89ecf130fb03c2cda9c3736dbe1362645e4701ac1ad678706a7e7a539237"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/kotlin-stdlib-jdk7-1.9.24-36ceb164e825dcfd5d1c5c25482bec8.jar",
+      "sha256": "43eb03a357225662dcc4583d999ca29909dda68c7a285fad260f30f03e8fd4d3"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/kotlin-stdlib-jdk8-1.9.24-592f5e22e994e5dd4f3868f13bcf74d8.jar",
+      "sha256": "0f14d4e90b6c3f7d399971ff756522cd97224454595143fec0e4b80a2cc023da"
+    },
+    {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/runtime-desktop-1.7.3-7ab98d9506ccb634316b9b9eeecf5b8.jar",
+      "sha256": "3f9a38ebd97fb004850eaad453f0b33ce5790d20f5363b15e7f8b5ae2356eb8d"
+    }
+  ]
+}

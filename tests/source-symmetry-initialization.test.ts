@@ -11,6 +11,7 @@ import {prepareIteratedFrame} from '../src/scenes/iteratedDensity';
 import {iteratedBaselineKey} from '../src/engine/iteratedIdentity';
 const f32=(hex:string)=>new Float32Array(new Uint32Array([parseInt(hex,16)]).buffer)[0];
 const bits=(v:Float32Array)=>Array.from(new Uint32Array(v.buffer,v.byteOffset,v.length),n=>n.toString(16).padStart(8,'0'));
+const runtimeImported=(raw:object)=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',name:'Runtime fixture',type:'SYMMETRY_CHAOS',...raw}),{symmetryEntry:'runtime-config'}).scene;
 const imported=(raw:object={})=>parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'Initialization fixture',type:'SYMMETRY_CHAOS',...raw})).scene;
 describe('source Symmetry constructor and Random stream',()=>{
  for(const row of fixture.directOrderedRuntimeParameters)it(row.id,()=>{
@@ -21,8 +22,8 @@ describe('source Symmetry constructor and Random stream',()=>{
   const hash=createHash('sha256');for(let offset=0;offset<row.examinedPrefixParticles;offset+=65536){const block=iteratedInitialChunk(config,offset,Math.min(65536,row.examinedPrefixParticles-offset));hash.update(new Uint8Array(block.buffer));}
   expect(hash.digest('hex')).toBe(row.prefixRgbaFloat32LittleEndianSha256);
  });
- for(const row of fixture.boundedJsonFixtures)it('public import/save/reopen: '+row.id,()=>{
-  const scene=imported(row.rawSourceInput),reopened=parseScene(serializeScene(scene));
+ for(const row of fixture.boundedJsonFixtures)it('runtime-config import/save/reopen: '+row.id,()=>{
+  const scene=parseLegacyScene(JSON.stringify({config_version:'1.0.0',name:'Runtime fixture',type:'SYMMETRY_CHAOS',...row.rawSourceInput}),{symmetryEntry:'runtime-config'}).scene,reopened=parseScene(serializeScene(scene));
   expect(reopened.symmetrySource).toEqual(scene.symmetrySource);
   expect(sourceSymmetryInitialSeed(reopened.symmetrySource!)).toBe(row.initialStateSeedSignedDecimal);
   const config=prepareIteratedFrame(reopened,0,0).config;expect(config.count).toBe(row.batchSize);expect(reopened.settings.degree).toBe(row.runtimeSymmetryDegree);
@@ -64,10 +65,10 @@ describe('source Symmetry constructor and Random stream',()=>{
   const camera=editSourceSymmetryConfiguration(scene,{...scene,camera:{...scene.camera}});expect(camera.symmetrySource).toBe(scene.symmetrySource);
   expect(parseScene(serializeScene(rebuilt)).symmetrySource).toEqual(rebuilt.symmetrySource);
  });
- it('uses native literal/fallback bounds and normalizes reversed axes',()=>{
-  const config=prepareIteratedFrame(imported({settings:{batch_size:3,x0_min:'0x1p-1',x0_max:'0.25',y0_min:'sin(1)',y0_max:'0.003'}}),0,0).config;
+ it('direct runtime config uses native literal/fallback bounds and normalizes reversed axes',()=>{
+  const config=prepareIteratedFrame(runtimeImported({settings:{batch_size:3,x0_min:'0x1p-1',x0_max:'0.25',y0_min:'sin(1)',y0_max:'0.003'}}),0,0).config;
   expect(config.bounds[0]).toEqual([.25,.5]);expect(config.bounds[1]).toEqual([Math.fround(.001),Math.fround(.003)]);
-  expect(()=>imported({parameters:null})).toThrow('parameters');expect(()=>imported({settings:{x0_min:'Infinity'}})).toThrow('float32');
+  expect(()=>imported({parameters:null})).toThrow('parameters');expect(()=>runtimeImported({settings:{x0_min:'Infinity'}})).toThrow('float32');
  });
  it('retains native arbitrary parameter keys without mutating object prototypes',()=>{
   for(const name of ['__proto__','prototype','constructor','bad-name','']){

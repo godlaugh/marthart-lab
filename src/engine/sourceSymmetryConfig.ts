@@ -14,6 +14,8 @@ export type SourceSymmetryEntry=readonly [string,number];
 export interface SourceSymmetryConfiguration {
  model:typeof SOURCE_SYMMETRY_CONFIG;
  editorMap?:SourceSnapshotMap;
+ /** Original ProjectState values can differ from effective engine defaults. */
+ editorParameters?:SourceSymmetryEntry[];
  construction:{batchSize:number;degree:number;parameters:SourceSymmetryEntry[]};
 }
 export type SourceSymmetryResult<T>={ok:true;value:T}|{ok:false;error:{kind:'input'|'capacity';reason:string}};
@@ -64,30 +66,55 @@ export function importSourceSymmetryParameters(raw:unknown,order:readonly string
  if(template==='modified'){if(!values.has('delta'))values.set('delta',0);if(!values.has('delta_power'))values.set('delta_power',1);}
  const ordered=[...values];return{ok:true,value:{parameters:Object.fromEntries(ordered),ordered}};
 }
-export function createSourceSymmetryConfiguration(batchSize:number,ordered:readonly SourceSymmetryEntry[],editorMap?:SourceSnapshotMap):SourceSymmetryResult<SourceSymmetryConfiguration>{
- return parseSourceSymmetryConfiguration({model:SOURCE_SYMMETRY_CONFIG,...(editorMap?{editorMap}:{}),construction:{batchSize,degree:sourceSymmetryDegree(Object.fromEntries(ordered)),parameters:ordered}});
+/** File loading in MathArtSession uses ProjectState.fromJson -> toJson.
+ * Its parameter reader accepts only Java Double values; failed conversions
+ * become zero, and reset clears all previous parameters before import. */
+export function importSourceSymmetryProjectParameters(raw:unknown,order:readonly string[],template:string):SourceSymmetryResult<{parameters:Record<string,number>;ordered:SourceSymmetryEntry[];editorMap:SourceSnapshotMap;editorParameters:SourceSymmetryEntry[]}>{
+ const editorParameters:SourceSymmetryEntry[]=[];
+ if(raw!==undefined&&!record(raw))return error('源 Symmetry 项目参数需要对象');
+ if(record(raw)){
+  if(order.length!==Object.keys(raw).length||new Set(order).size!==order.length||order.some(k=>!Object.hasOwn(raw,k)))return error('源 Symmetry 项目参数顺序与对象不匹配');
+  for(const key of order){const item=raw[key];let value=0;
+   if(typeof item==='number')value=item;
+   else if(typeof item==='string'){const parsed=parseDomainSourceDouble(item);if(parsed.ok)value=parsed.value;else if(parsed.error.kind==='capacity')return error('源 Symmetry 参数字符串超过解析容量','capacity');}
+   if(!Number.isFinite(value))return error('源 Symmetry 非有限编辑参数暂不能保存到本地项目');editorParameters.push([key,value]);
+  }
+ }
+ const editor=prepareSourceSnapshotMap(editorParameters.map(([key])=>key));if(!editor.ok)return error(editor.error.reason,editor.error.kind);
+ const json=prepareRootsSourceMemberOrder(editor.keys);if(!json.ok)return error('源 Symmetry 项目 JSON 参数顺序失败');
+ const runtime=importSourceSymmetryParameters(Object.fromEntries(editorParameters),json.value.keys,template);if(!runtime.ok)return runtime;
+ return{ok:true,value:{...runtime.value,editorMap:editor.state,editorParameters}};
+}
+export function createSourceSymmetryConfiguration(batchSize:number,ordered:readonly SourceSymmetryEntry[],editorMap?:SourceSnapshotMap,editorParameters?:readonly SourceSymmetryEntry[]):SourceSymmetryResult<SourceSymmetryConfiguration>{
+ return parseSourceSymmetryConfiguration({model:SOURCE_SYMMETRY_CONFIG,...(editorMap?{editorMap}:{}),...(editorParameters?{editorParameters}:{}),construction:{batchSize,degree:sourceSymmetryDegree(Object.fromEntries(ordered)),parameters:ordered}});
+}
+function readEntries(raw:unknown,label:string):SourceSymmetryResult<SourceSymmetryEntry[]>{
+ if(!Array.isArray(raw)||raw.length>65536)return error(`源 Symmetry ${label}参数超过本地容量`,'capacity');
+ const seen=new Set<string>(),entries:SourceSymmetryEntry[]=[];let characters=0;
+ for(const row of raw){
+  if(!Array.isArray(row)||row.length!==2||typeof row[0]!=='string'||typeof row[1]!=='number'||!Number.isFinite(row[1])||seen.has(row[0]))return error(`源 Symmetry ${label}参数无效或重复`);
+  if((characters+=row[0].length)>8*1024*1024)return error(`源 Symmetry ${label}参数名超过本地容量`,'capacity');seen.add(row[0]);entries.push([row[0],row[1]]);
+ }
+ return{ok:true,value:entries};
 }
 export function parseSourceSymmetryConfiguration(raw:unknown):SourceSymmetryResult<SourceSymmetryConfiguration>{
  if(!record(raw)||raw.model!==SOURCE_SYMMETRY_CONFIG||!record(raw.construction))return error('源 Symmetry 构造配置无效');
  const c=raw.construction;if(!Number.isInteger(c.batchSize)||Number(c.batchSize)<1||Number(c.batchSize)>8000000)return error('源 Symmetry 粒子数超过本地 1–8000000 容量');
- if(!Array.isArray(c.parameters)||c.parameters.length>65536)return error('源 Symmetry 构造参数超过本地容量','capacity');
- const seen=new Set<string>(),entries:SourceSymmetryEntry[]=[];let characters=0;
- for(const row of c.parameters){
-  if(!Array.isArray(row)||row.length!==2||typeof row[0]!=='string'||typeof row[1]!=='number'||!Number.isFinite(row[1])||seen.has(row[0]))return error('源 Symmetry 构造参数无效或重复');
-  if((characters+=row[0].length)>8*1024*1024)return error('源 Symmetry 构造参数名超过本地容量','capacity');
-  seen.add(row[0]);entries.push([row[0],row[1]]);
- }
+ const construction=readEntries(c.parameters,'构造');if(!construction.ok)return construction;const entries=construction.value;
  const degree=sourceSymmetryDegree(Object.fromEntries(entries));if(c.degree!==degree)return error('源 Symmetry 构造阶数与参数不一致');
- const keys=entries.map(([key])=>key);
+ let editorParameters:SourceSymmetryEntry[]|undefined;
+ if(raw.editorParameters!==undefined){const editor=readEntries(raw.editorParameters,'编辑');if(!editor.ok)return editor;editorParameters=editor.value;}
+ const keys=(editorParameters??entries).map(([key])=>key),editorNames=new Set(keys);
  const editor=raw.editorMap===undefined?prepareSourceSnapshotMap(keys):parseSourceSnapshotMap(raw.editorMap);if(!editor.ok)return error(editor.error.reason,editor.error.kind);
- if(editor.keys.length!==keys.length||editor.keys.some(key=>!seen.has(key)))return error('源 Symmetry 编辑参数树与构造参数不匹配');
- return{ok:true,value:{model:SOURCE_SYMMETRY_CONFIG,editorMap:editor.state,construction:{batchSize:c.batchSize as number,degree,parameters:entries}}};
+ if(editor.keys.length!==keys.length||editor.keys.some(key=>!editorNames.has(key)))return error('源 Symmetry 编辑参数树与编辑参数不匹配');
+ return{ok:true,value:{model:SOURCE_SYMMETRY_CONFIG,editorMap:editor.state,...(editorParameters?{editorParameters}:{}),construction:{batchSize:c.batchSize as number,degree,parameters:entries}}};
 }
 export function usesSourceSymmetryConfiguration(scene:Pick<SceneDocument,'kind'|'symmetrySource'>):boolean {
  if(scene.symmetrySource===undefined)return false;
  if(scene.kind!=='symmetry'||scene.symmetrySource.model!==SOURCE_SYMMETRY_CONFIG)throw Error('未知源 Symmetry 构造配置');
  return true;
 }
+export function usesSourceSymmetryProject(scene:Pick<SceneDocument,'kind'|'symmetrySource'>):boolean{return usesSourceSymmetryConfiguration(scene)&&scene.symmetrySource!.editorParameters!==undefined;}
 const mix=(seed:bigint,value:bigint)=>sourceJavaMix64(seed^value);
 export function sourceSymmetryInitialSeed(configuration:SourceSymmetryConfiguration):string {
  const c=configuration.construction;let seed=mix(mix(-7046029254386353131n,BigInt(c.batchSize)),BigInt(c.degree));
@@ -111,11 +138,18 @@ export function editSourceSymmetryConfiguration(before:SceneDocument,next:SceneD
  const changed=structural.some(key=>!Object.is(before.settings[key],next.settings[key]))||before.equations.glsl!==next.equations.glsl||Object.keys(before.parameters).length!==Object.keys(parameters).length||Object.entries(parameters).some(([key,value])=>!Object.hasOwn(before.parameters,key)||!Object.is(value,before.parameters[key]));
  next={...next,settings:{...next.settings,degree:sourceSymmetryDegree(parameters),deltaPower:parameters.delta_power??1}};
  if(!changed)return next;
- const anchor=next.symmetrySource!,previous=anchor.editorMap===undefined?prepareSourceSnapshotMap(anchor.construction.parameters.map(([key])=>key)):parseSourceSnapshotMap(anchor.editorMap);if(!previous.ok)throw Error(previous.error.reason);
- const editor=prepareSourceSnapshotMap(Object.keys(next.parameters),previous.state);if(!editor.ok)throw Error(editor.error.reason);
+ const anchor=next.symmetrySource!,previous=anchor.editorMap===undefined?prepareSourceSnapshotMap((anchor.editorParameters??anchor.construction.parameters).map(([key])=>key)):parseSourceSnapshotMap(anchor.editorMap);if(!previous.ok)throw Error(previous.error.reason);
+ // Patch explicit user changes into the ProjectState map. Engine-injected
+ // defaults and rounded values are not authored editor entries.
+ const values=new Map<string,number>(anchor.editorParameters??Object.entries(next.parameters));
+ if(anchor.editorParameters){
+  for(const key of Object.keys(before.parameters))if(!Object.hasOwn(parameters,key))values.delete(key);
+  for(const [key,value]of Object.entries(parameters))if(!Object.hasOwn(before.parameters,key)||!Object.is(value,before.parameters[key]))values.set(key,value);
+ }
+ const editor=prepareSourceSnapshotMap([...values.keys()],previous.state);if(!editor.ok)throw Error(editor.error.reason);
  const json=prepareRootsSourceMemberOrder(editor.keys);if(!json.ok)throw Error('源 Symmetry 重建 JSON 参数顺序失败：'+JSON.stringify(json.error));
- const parsed=importSourceSymmetryParameters(next.parameters,json.value.keys,String(next.settings.template));if(!parsed.ok)throw Error(parsed.error.reason);
- const retained=prepareSourceSnapshotMap(parsed.value.ordered.map(([key])=>key),editor.state);if(!retained.ok)throw Error(retained.error.reason);
- const created=createSourceSymmetryConfiguration(Number(next.settings.batchSize),parsed.value.ordered,retained.state);if(!created.ok)throw Error(created.error.reason);
+ const parsed=importSourceSymmetryParameters(Object.fromEntries(values),json.value.keys,String(next.settings.template));if(!parsed.ok)throw Error(parsed.error.reason);
+ const retained=anchor.editorParameters?editor:prepareSourceSnapshotMap(parsed.value.ordered.map(([key])=>key),editor.state);if(!retained.ok)throw Error(retained.error.reason);
+ const created=createSourceSymmetryConfiguration(Number(next.settings.batchSize),parsed.value.ordered,retained.state,anchor.editorParameters?[...values]:undefined);if(!created.ok)throw Error(created.error.reason);
  return{...next,parameters:parsed.value.parameters,settings:{...next.settings,degree:created.value.construction.degree,deltaPower:parsed.value.parameters.delta_power??1},symmetrySource:created.value};
 }

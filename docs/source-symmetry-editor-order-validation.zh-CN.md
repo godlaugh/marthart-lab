@@ -2,6 +2,8 @@
 
 2026-10-21。**已修复有限数值参数在编辑、保存、重开后的构造顺序。原版整窗效果验收仍为 0/11。** 这是[初始化修复](source-symmetry-initialization-validation.zh-CN.md)的后续；此前未知的 Compose 参数遍历规则现在有原版 JVM 实测证据。
 
+后续更新：[项目导入入口修复](source-symmetry-project-import-validation.zh-CN.md)已验证下文当时未知的畸形参数与缺项规则，并修正文件导入入口。整窗对照仍待完成。
+
 ## 修复了什么
 
 原版检查器通过 Compose `SnapshotStateMap` 保存参数，再生成 `JSONObject` 并重建 Symmetry。参数顺序进入初始随机种子的计算，顺序不同会改变图案。原先只保留当前键顺序，不能重现原版删除参数后保留的树结构。
