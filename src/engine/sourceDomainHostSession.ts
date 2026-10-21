@@ -1,6 +1,11 @@
 import {SourceDomainSceneRuntime,type SourceDomainSceneConfiguration} from './sourceDomainSceneRuntime';
 import {SourceSceneHostClock,validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 
+/** Deltas are Processing logical mouse coordinates; count is MouseEvent's int.
+ * The native toolbar only delivers these gestures while paused. */
+export type SourceDomainViewportGesture=
+ |{readonly kind:'pan';readonly dx:number;readonly dy:number;readonly width:number;readonly height:number}
+ |{readonly kind:'wheel';readonly count:number};
 export interface SourceDomainHostOptions {
  readonly paused?:boolean;
  readonly now?:()=>number;
@@ -60,6 +65,36 @@ export class SourceDomainHostSession {
  }
  setPaused(paused:boolean,timestampMs?:number):SourceDomainHostSnapshot {
   this.live();validateSourceSceneClockRequest({paused,timestampMs});return this.mutate(()=>{this.hostClock.setPaused(paused,unusedCamera,timestampMs);return this.snapshot();});
+ }
+ /** Runtime navigation is independent of authored Apply and the recording
+  * anchor. It neither updates the scene nor advances display ordinal. Finite
+  * positive dimensions are a local admission boundary for native division. */
+ navigatePaused(gesture:SourceDomainViewportGesture):SourceDomainHostSnapshot {
+  this.live();if(!this.hostClock.diagnostics().paused)throw Error('域着色视口手势只接受暂停状态');
+  if(!gesture||typeof gesture!=='object')throw Error('域着色视口手势无效');
+  const state=this.runtime.snapshot(),scale=Number(state.settings.scale??2.5);
+  if(!Number.isFinite(scale))throw Error('域着色当前缩放无效');
+  if(gesture.kind==='pan'){
+   const {dx,dy,width,height}=gesture;
+   if(![dx,dy].every(v=>typeof v==='number'&&Number.isFinite(F(v)))||![width,height].every(v=>Number.isInteger(v)&&v>0&&v<=2147483647))throw Error('域着色平移需要有限增量和正整数逻辑尺寸');
+   const aspect=F(F(width)/Math.max(1,F(height))),inverse=1/Math.max(scale,1e-9);
+   const x=((-F(dx)/width)*2)*aspect*inverse,y=((-F(dy)/height)*2)*inverse;
+   if(![x,y,Number(state.settings.centerX??0)+x,Number(state.settings.centerY??0)+y].every(Number.isFinite))throw Error('域着色平移超出有限数值范围');
+   return this.mutate(()=>{this.runtime.addViewportCenterDelta(x,y);return this.snapshot();});
+  }
+  if(gesture.kind==='wheel'){
+   if(!Number.isInteger(gesture.count)||gesture.count< -2147483648||gesture.count>2147483647)throw Error('域着色滚轮需要原版整数计数');
+   const next=scale*Math.pow(F(1.05),-F(gesture.count));
+   if(!Number.isFinite(next))throw Error('域着色滚轮缩放超出有限数值范围');
+   return this.mutate(()=>{this.runtime.setViewportScale(next);return this.snapshot();});
+  }
+  throw Error('域着色不支持此视口手势');
+ }
+ /** Generic Inspector value commit, distinct from full Apply and an animator
+  * scalar write. No redraw or fresh frame is implied by the returned snapshot. */
+ updateParameter(name:string,value:number):SourceDomainHostSnapshot {
+  this.live();if(typeof name!=='string'||typeof value!=='number'||!Number.isFinite(value))throw Error('域着色参数热写入需要字符串名称和有限值');
+  return this.mutate(()=>{this.runtime.updateParameter(name,value);return this.snapshot();});
  }
  /** Reset/recording helpers can force looping without the toolbar resume clock reset. */
  forceResume():SourceDomainHostSnapshot {this.live();return this.mutate(()=>{this.hostClock.forceResume();return this.snapshot();});}

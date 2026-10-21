@@ -76,6 +76,7 @@ export type GenerationRequest = { sessionId: number } & (
   | {operation:'iterated-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
   | IteratedPlaybackRequest
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
+  | {operation:'domain-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'fractal-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | PausedCaptureRequest
   | {operation:'source-recording-begin';id:number;sourceId:number;options:SourceRecordingOptions}
@@ -92,6 +93,7 @@ export type GenerationPayload =
   | {operation:'iterated-parameters';id:number;sourceId:number}
   | {operation:IteratedPlaybackOperation;id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'samila-playback';id:number;sourceId:number;paused:boolean}
+  | {operation:'domain-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'fractal-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'source-recording-begin';id:number;recordingId:number;result:Omit<SourceRecordingStart,'handle'>}
   | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number;output:SourceRecordingRaster}

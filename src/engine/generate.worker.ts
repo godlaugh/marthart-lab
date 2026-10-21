@@ -69,6 +69,13 @@ self.onmessage = (
       completed={...source,context:{...source.context,samilaLive:{...source.context.samilaLive,clock:{...source.context.samilaLive.clock,paused:event.data.paused}}}};
       send({operation:'samila-playback',id,sourceId:source.id,paused:event.data.paused});return;
     }
+    if(event.data.operation==='domain-playback'){
+      const source=completed,live=source?.context.domainLive;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='domain'||!live||typeof event.data.paused!=='boolean'||!temporalSession.sourceDomain.matchesCompletedPrimary(source.scene,source.context))throw Error('域着色播放控制对应的实时主预览已过期');
+      temporalSession.sourceDomain.setPaused(event.data.paused,event.data.timestampMs);
+      completed={...source,context:{...source.context,domainLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
+      send({operation:'domain-playback',id,sourceId:source.id,paused:event.data.paused});return;
+    }
     if(event.data.operation==='fractal-playback'){
       const source=completed,live=source?.context.fractalLive;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='fractal'||!live||typeof event.data.paused!=='boolean'||!temporalSession.sourceFractal.matchesCompletedPrimary(source.scene,source.context))throw Error('分形播放控制对应的实时主预览已过期');

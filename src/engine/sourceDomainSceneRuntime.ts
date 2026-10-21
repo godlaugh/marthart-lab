@@ -30,6 +30,9 @@ export class SourceDomainSceneRuntime {
  private readonly clips:readonly SourceDomainSceneClip[];
  private readonly clock:RootsSceneClock;
  private readonly values:{settings:Settings;parameters:Record<string,number>};
+ /** BaseConfig fields are separate from mutable mobject viewport/curve values.
+  * Formula parameter writes, in contrast, mutate the config map itself. */
+ private readonly configuredSettings:Settings;
  private readonly parameters:SourceDomainParameterRuntime;
  private readonly gradient:SourceGradientRuntime;
  private readonly writtenSettings=new Set<string>();
@@ -57,6 +60,7 @@ export class SourceDomainSceneRuntime {
   // These fields have dedicated owners; retaining a second mutable copy would
   // let downstream rendering accidentally consume an initial value.
   delete this.values.settings.rotation;delete this.values.settings.paletteOffset;
+  this.configuredSettings=structuredClone(this.values.settings);
   const bindings=new Map<string,ReturnType<typeof domainParameterBinding>>();
   const binding=(name:string)=>{let value=bindings.get(name);if(!value){value=domainParameterBinding(name);bindings.set(name,value);}return value;};
   this.parameters=new SourceDomainParameterRuntime({reserve:options.reserve,
@@ -74,6 +78,31 @@ export class SourceDomainSceneRuntime {
  get queueComplete(){this.ensure();return this.clock.snapshot().queueComplete;}
  private ensure(){if(this.failed)throw Error('域场景上次更新失败，需要重建完整实例');}
  setParameterFrameRate(value:number):void {this.ensure();this.parameterFps=float(value,'宿主帧率');}
+ /** Direct original mobject setters: no queue callback, time, rotation, label
+  * or retained BaseConfig mutation. Browser gestures belong to the host adapter. */
+ addViewportCenterDelta(dx:number,dy:number):void {
+  this.ensure();finite(dx,'横向视口增量');finite(dy,'纵向视口增量');
+  const x=finite(this.values.settings.centerX??0,'当前中心 X')+dx,y=finite(this.values.settings.centerY??0,'当前中心 Y')+dy;
+  finite(x,'中心 X 结果');finite(y,'中心 Y 结果');
+  this.values.settings.centerX=x;this.values.settings.centerY=y;
+ }
+ setViewportScale(value:number):void {this.ensure();this.values.settings.scale=Math.max(1e-9,finite(value,'视口缩放'));}
+ /** DomainScene.setParameter -> retained BaseConfig.setFormulaParam -> same
+  * mobject.applyConfig. This is not the animation scalar setter: names such as
+  * "scale" are literal config-map keys here, not viewport bindings. Current
+  * animated formula values already belong to that map and must survive.
+  * clear/stop retain already-started children and HashMap allocation history.
+  * This numerical owner does not compile shaders or own renderer constant
+  * caches; calling it alone does not establish a rendered UI hot edit. */
+ updateParameter(name:string,value:number):void {
+  this.ensure();if(typeof name!=='string')throw Error('域场景参数名称必须是字符串');finite(value,'参数值');
+  try{
+   this.options.reserve(1+name.length+Object.keys(this.values.parameters).length);
+   const settings=structuredClone(this.configuredSettings);
+   Object.defineProperty(this.values.parameters,name,{value,writable:true,configurable:true,enumerable:true});
+   this.values.settings=settings;this.parameters.clear();this.parameters.stop();
+  }catch(error){this.failed=true;throw error;}
+ }
  private update(kind:SourceDomainUpdatePhase['kind'],dt:number):void {
   const before=this.rotation;
   if(dt>0){

@@ -19,6 +19,7 @@ interface GeneratorPort {
   setMapPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSymmetryPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSamilaPaused?(output:SceneOutput,paused:boolean):Promise<void>;
+  setDomainPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setFractalPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   cancel():void;
   dispose():void;
@@ -53,13 +54,14 @@ export interface SourceRecordingConsumer {
 function metadataContext(context:Context):Context {
   // After initialization, realtime time is display feedback, not a seek.
   // A metadata edit queued during that display may still hold its old value.
+  if(context.domainLive){const {configuration:_,actualFrameRate:__,...live}=context.domainLive;return {...context,time:0,domainLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   if(context.fractalLive){const {configuration:_,actualFrameRate:__,...live}=context.fractalLive;return {...context,time:0,fractalLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   return (context.samilaLive?.clock||context.symmetryLive||context.mapLive)?{...context,time:0}:context;
 }
-type LiveKey='samilaLive'|'symmetryLive'|'mapLive'|'fractalLive';
-const playbackMethods={samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused'} as const;
-const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
-const liveIdentity=(request:Request)=>liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
+type LiveKey='samilaLive'|'symmetryLive'|'mapLive'|'fractalLive'|'domainLive';
+const playbackMethods={samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused',domainLive:'setDomainPaused'} as const;
+const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
+const liveIdentity=(request:Request)=>liveKey(request)==='domainLive'?'domain-retained':liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.
@@ -109,6 +111,8 @@ export class GenerationQueue {
     const writes=new Map([...(carried??[]),...(parameterWrites??[])]);
     const input=snapshotGenerationInput(context),pendingFractal=sameLive&&this.latest!==this.completedLive?.request?this.latest?.context.fractalLive:undefined;
     if(input.fractalLive&&pendingFractal?.configuration&&input.fractalLive.revision===pendingFractal.revision&&input.fractalLive.configuration===undefined)input.fractalLive.configuration=structuredClone(pendingFractal.configuration);
+    const pendingDomain=sameLive&&this.latest!==this.completedLive?.request?this.latest?.context.domainLive:undefined;
+    if(input.domainLive&&pendingDomain?.configuration&&input.domainLive.revision===pendingDomain.revision&&input.domainLive.configuration===undefined)input.domainLive.configuration=structuredClone(pendingDomain.configuration);
     this.latest={scene,context:input,intent,...(writes.size?{parameterWrites:[...writes].filter(([k,v])=>Object.is(scene.parameters[k],v))}:{})};
     // A recording leases this exact worker, including while begin is pending.
     // Keep only the newest editor request without cancelling that lease.
@@ -141,13 +145,13 @@ export class GenerationQueue {
     // identical. Retain its GPU work, but publish only the latest request.
     const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
-    const parameterEdit=liveKey(request)!=='fractalLive'&&cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
+    const parameterEdit=liveKey(request)!=='fractalLive'&&liveKey(request)!=='domainLive'&&cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
     const generate=()=>this.generator.generate(request.scene,request.context,output=>publish(output,this.outputTime(output,request)));
     const operation=parameterEdit?this.generator.updateIteratedParameters!(cached!.output,request.scene,parameterEdit).then(()=>{
       if(!current())throw new DOMException('迭代参数会话已更换','AbortError');
       return request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
-    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
       if(current()&&cached&&liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError&&error.previewRetained){
         // Keep the rejected document as the author's draft, but return this
         // request's applied context to the owner-confirmed completed version.
@@ -163,7 +167,7 @@ export class GenerationQueue {
   }
   private outputTime(output:SceneOutput,request:Request):number{
     const fallback=output.temporal?.time??request.context.time;
-    return output.type==='raster'?(output.fractalLive?.sceneTime??output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:fallback)):fallback;
+    return output.type==='raster'?(output.domainLive?.sceneTime??output.fractalLive?.sceneTime??output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:fallback)):fallback;
   }
  /** Ordered input events lease the completed live owner. A document edit or
   * transport transition ends the gesture before its deferred work runs. */
@@ -198,6 +202,7 @@ export class GenerationQueue {
   setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
   setMapPaused(paused:boolean):Promise<void>{return this.setLivePaused('mapLive',paused);}
   setSymmetryPaused(paused:boolean):Promise<void>{return this.setLivePaused('symmetryLive',paused);}
+  setDomainPaused(paused:boolean):Promise<void>{return this.setLivePaused('domainLive',paused);}
   setFractalPaused(paused:boolean):Promise<void>{return this.setLivePaused('fractalLive',paused);}
   private setLivePaused(key:LiveKey,paused:boolean):Promise<void>{
     const live=this.latest?.context[key],method=playbackMethods[key];

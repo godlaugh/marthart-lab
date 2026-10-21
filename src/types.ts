@@ -411,6 +411,7 @@ export interface RootsProgress {
 }
 export interface RasterOutput {
   formulaPresentation?:FormulaPresentation;
+  domainLive?:import('./engine/sourceDomainLiveSession').SourceDomainLiveFacts;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveFacts;
   /** Base-size current pixels; formula composition and whole-image PNG processing are still pending. */
   fractalCurrentImage?:{model:'local-current-numerical-snapshot';stage:'base-before-formulas';requestedSize:readonly[number,number];logicalSize:readonly[number,number];pixelDensity:number;baseSize:readonly[number,number];scale:1|3|5};
@@ -509,6 +510,7 @@ export interface GenerateContext {
   sourceSymmetryToneReference?:import('./engine/sourceIteratedPresentation').SourceIteratedToneReference;
   /** Explicit runtime instance; omitted requests use cold fixed-frame replay. */
   samilaLive?:import('./engine/sourceSamilaSession').SourceSamilaLiveContext;
+  domainLive?:import('./engine/sourceDomainLiveSession').SourceDomainLiveContext;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveContext;
   /** Observed parent pixel density, independent of preview raster downscaling. */
   fractalPixelDensity?:number;
@@ -533,7 +535,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;
