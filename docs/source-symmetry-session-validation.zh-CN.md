@@ -39,3 +39,5 @@
 需要继续接入编辑事件、GPU 重播预算、暂停/恢复的宿主时钟、显示计数和实际界面操作验证。新会话接口并不代表这些功能已完成。原版整窗口效果验收仍为 **0/11**；最近只读窗口检查仍报告 Mac 锁定，本轮未移动窗口或注入原生输入。
 
 本地证据：`.cache/source-symmetry-parameters/session-edit-boundary/manifest.json` 与 `bootstrap-links.json`；测试日志 `session-tests.log`、构建日志 `session-build.log`、GPU 结果 `session-gpu/report.json`、公共页面结果 `session-public/report.json` 均位于 `.cache/source-symmetry-parameters/`。固定 JAR SHA-256：`a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018`。
+
+后续进展：[GPU 重播执行层验收](source-symmetry-replay-gpu-validation.zh-CN.md)。执行层已通过真实 GPU 检查；界面、Worker 和宿主时钟接入仍未完成。

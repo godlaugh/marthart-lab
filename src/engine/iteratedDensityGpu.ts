@@ -336,7 +336,7 @@ export class IteratedDensityGpu {
   checkCancelled(options.isCancelled);const source=job.samilaSampling?undefined:iteratedGpuFieldSource(job.field);const cfg=job.config;checked(['map','symmetry','samila'].includes(job.kind),'GPU 持续密度类型无效');const customStorage=job.field.kind==='symmetry-custom',samila=job.kind==='samila',boundedHistory=samila&&cfg.samilaHistoryModel==='bounded-v2',history=job.history;
   checked(!history||boundedHistory,'GPU 历史规则与模型不匹配');
   const symmetryFrame=job.symmetryFrame,warmup=symmetryFrame?.warmupSteps??(options.resetParticles?cfg.burn:0),iterations=symmetryFrame?.iterationSteps??cfg.iterations;
-  if(symmetryFrame)checked(job.kind==='symmetry'&&symmetryFrame.model==='symmetry-frame-1.7.8'&&Number.isSafeInteger(warmup)&&warmup>=0&&warmup<=cfg.burn&&iterations===(symmetryFrame.objectUpdated?cfg.iterations:0)&&(!warmup||symmetryFrame.objectUpdated),'GPU Symmetry 更新计划无效');
+  if(symmetryFrame)checked(job.kind==='symmetry'&&symmetryFrame.model==='symmetry-frame-1.7.8'&&Number.isSafeInteger(warmup)&&warmup>=0&&warmup<=cfg.burn&&(symmetryFrame.phase==='replay'?symmetryFrame.objectUpdated===false&&(iterations===0||iterations===cfg.iterations):symmetryFrame.phase===undefined&&iterations===(symmetryFrame.objectUpdated?cfg.iterations:0)&&(!warmup||symmetryFrame.objectUpdated)),'GPU Symmetry 更新计划无效');
   if(job.samilaSampling){checked(samila&&!!job.samilaSplat&&job.field.kind==='samila'&&job.field.mathModel==='mathart-1.7.8'&&!!job.samilaProjection&&!!history,'源 Samila PCG 缺少已解析场/历史事实');validateSourceSamilaSamplingBatch(job.samilaSampling,cfg.count,history!.passes,job.frame);}
   if(boundedHistory)checked(!!history&&history.densityCeiling===SAMILA_HISTORY_CEILING&&[0,1,6].includes(history.passes)&&history.samples===cfg.count*history.passes&&(job.samilaSampling!==undefined||history.randomFrames.length===history.passes&&history.randomFrames.every(f=>Number.isSafeInteger(f)&&f>=0)&&new Set(history.randomFrames).size===history.passes)&&(history.passes>0)===cfg.record,'GPU Samila 缺少有效历史帧事实');
   checked(Number.isSafeInteger(job.frame)&&job.frame>=0&&(samila||cfg.burn+1+job.frame*16+cfg.iterations<=0xffffffff),'GPU 随机序号超出 32 位');
@@ -385,7 +385,7 @@ export class IteratedDensityGpu {
    gl.bindVertexArray(r.drawVao);this.texture(this.stateTexture(),0);this.i(p,'states',0);this.texture(this.counterTexture(),1);this.i(p,'counters',1);this.i(p,'stateWidth',r.tw);gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.ONE,gl.ONE);
    try{for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);this.i(p,'particleOffset',offset);gl.drawArraysInstanced(pointSplat?.path==='points'?gl.POINTS:gl.TRIANGLES,0,pointSplat?.path==='points'?1:6,Math.min(CHUNK,cfg.count-offset));}}finally{gl.disable(gl.BLEND);gl.bindVertexArray(null);}
   }
-   if(!symmetryFrame||symmetryFrame.objectUpdated)invalid+=stat[0]+stat[1]*4294967296;accepted+=stat[2];clipped+=stat[3];sampleInvalid+=cfg.record?cfg.count-stat[2]-stat[3]:0;
+   if(!symmetryFrame||symmetryFrame.objectUpdated||symmetryFrame.phase==='replay'&&(warmup>0||iterations>0))invalid+=stat[0]+stat[1]*4294967296;accepted+=stat[2];clipped+=stat[3];sampleInvalid+=cfg.record?cfg.count-stat[2]-stat[3]:0;
   }
 
   checked(gl.getError()===gl.NO_ERROR&&!gl.isContextLost(),'GPU 持续密度执行失败');checkCancelled(options.isCancelled);this.structuralKey=job.structuralKey;this.frame=job.frame;
