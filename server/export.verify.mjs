@@ -152,3 +152,34 @@ test('slow frame upload times out, returns an error and releases the encoder',as
  await new Promise((resolve,reject)=>{const req=http.request(s.url+`/api/exports/${id}/frames?index=0`,{method:'POST',headers:{'content-type':'image/png','content-length':red.length+100}},res=>{assert.equal(res.statusCode,408);res.resume();res.on('end',resolve);});req.on('error',reject);req.write(red.subarray(0,20));});
  await until(()=>s.app.ownedProcessCount===0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
 });
+
+for(const format of ['mp4','webm','gif'])test(`scaled ${format} accepts only declared input dimensions and emits requested output`,async()=>{
+ const s=await service(),large=await fixture('blue','png','192x144'),{id}=await create(s,{format,inputWidth:192,inputHeight:144});
+ await frame(s,id,0,red,400);for(let i=0;i<3;i++)await frame(s,id,i,large);
+ await request(s,`/api/exports/${id}/finish`,{method:'POST'});const file=path.join(s.root,`${id}.${format}`),{stdout}=await exec('ffprobe',['-v','error','-count_frames','-show_entries','stream=width,height,nb_read_frames','-of','json',file]);
+ const v=JSON.parse(stdout).streams[0];assert.equal(v.width,64);assert.equal(v.height,48);assert.equal(Number(v.nb_read_frames),3);evidence.push({scaled:format,...v});await stop(s.app);
+});
+
+test('scaled input budgets, paired dimensions and encoder profile are validated before spawning',async()=>{
+ const s=await service({limits:{maxPixels:192*144,maxFramePixels:192*144*3}});
+ for(const [params,status] of [[{inputWidth:192},400],[{inputWidth:192,inputHeight:null},400],[{inputWidth:192,inputHeight:145},413],[{inputWidth:192,inputHeight:144,frames:4},413],[{profile:'mathart',format:'gif'},400],[{profile:'unknown'},400],[{quality:'high'},400],[{profile:'mathart',quality:'unknown'},400]]){
+  await request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:64,height:48,fps:6,frames:3,format:'mp4',...params})},status);
+  assert.equal(s.app.ownedProcessCount,0);
+ }
+ await stop(s.app);
+});
+
+for(const [quality,preset,crf,tune] of [['low','veryfast','28'],['medium','medium','23'],['high','slow','18','animation'],['production','veryslow','10','animation']])test(`MathArt ${quality} profile matches independently encoded raw RGBA at decoded-frame boundary`,async()=>{
+ // Independent original argv, transcribed from VideoRecorder.buildFfmpegCommand.
+ // PNG transport must preserve actual source bytes, including alpha; comparison
+ // uses the same installed FFmpeg, not a claim about the original bundled runtime.
+ const s=await service(),png=(await exec('ffmpeg',['-v','error','-f','lavfi','-i','testsrc=s=192x144:r=6','-frames:v','1','-vf','format=rgba','-f','image2pipe','-c:v','png','pipe:1'],{encoding:'buffer',maxBuffer:2*1024**2})).stdout;
+ const input=path.join(s.root,'reference-input.png');await writeFile(input,png);
+ const rgba=(await exec('ffmpeg',['-v','error','-i',input,'-f','rawvideo','-pix_fmt','rgba','pipe:1'],{encoding:'buffer',maxBuffer:2*1024**2})).stdout;
+ const reference=path.join(s.root,'reference.mp4');
+ const args=['-v','error','-y','-f','rawvideo','-vcodec','rawvideo','-s','192x144','-r','6','-pix_fmt','rgba','-i','-','-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1',...(tune?['-tune',tune]:[]),'-crf',crf,'-preset',preset,'-movflags','+faststart+write_colr','-vf','scale=64:48:flags=lanczos','-threads','2',reference];
+ await new Promise((resolve,reject)=>{const child=spawn('ffmpeg',args,{stdio:['pipe','ignore','pipe']});let error='';child.stderr.on('data',b=>error+=b);child.once('error',reject);child.once('close',code=>code===0?resolve():reject(Error(error)));child.stdin.end(Buffer.concat([rgba,rgba,rgba]));});
+ const {id}=await create(s,{profile:'mathart',quality,inputWidth:192,inputHeight:144});for(let i=0;i<3;i++)await frame(s,id,i,png);await request(s,`/api/exports/${id}/finish`,{method:'POST'});
+ const actual=path.join(s.root,`${id}.mp4`),probe=async file=>JSON.parse((await exec('ffprobe',['-v','error','-count_frames','-show_entries','stream=width,height,nb_read_frames,pix_fmt,color_range,color_space,color_transfer,color_primaries','-of','json',file])).stdout).streams[0],a=await probe(actual),r=await probe(reference);assert.deepEqual(a,r);
+ const decode=async file=>(await exec('ffmpeg',['-v','error','-i',file,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{encoding:'buffer',maxBuffer:2*1024**2})).stdout;assert.deepEqual(await decode(actual),await decode(reference));evidence.push({quality,decodedRawReferenceEqual:true,...a});await stop(s.app);
+});

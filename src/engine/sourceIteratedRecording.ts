@@ -1,3 +1,4 @@
+import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import type {SceneDocument,SceneOutput} from '../types';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
@@ -26,4 +27,10 @@ export function assertSourceIteratedRecordingFrame(output:SceneOutput,clock:Sour
  if(!Number.isSafeInteger(displayFrame)||displayFrame<0||displayFrame>clock.lastDisplayFrame||!facts||!live||
   facts.displayFrame!==displayFrame||facts.simulationFps!==clock.simulationFps||facts.warmup!==(displayFrame===0)||
   facts.complete!==(displayFrame===clock.lastDisplayFrame)||facts.complete!==live.queueComplete||live.clock!=='fixed-source-queue')throw Error('迭代场景录制帧与实际队列完成状态不一致');
+}
+
+/** Native video buffer scale is three before inherited-density rounding. */
+export function sourceIteratedRecordingSize(size:{width:number;height:number},density:number){
+ if(![size.width,size.height].every(n=>Number.isSafeInteger(n)&&n>0))throw Error('迭代场景录制输出尺寸必须为正整数');
+ return prepareSourcePausedCaptureSize({width:Math.fround(Math.fround(size.width)*3),height:Math.fround(Math.fround(size.height)*3)},density);
 }

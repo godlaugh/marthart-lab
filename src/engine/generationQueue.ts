@@ -29,6 +29,8 @@ interface GeneratorPort {
 }
 interface Request {scene:SceneDocument;context:Context;intent?:'metadata';}
 export interface SourceRecordingConsumer {
+  /** Finish the encoder before releasing fixed-step runtime ownership. */
+  complete?:(start:SourceRecordingStart)=>void|Promise<void>;
   start?:(start:SourceRecordingStart)=>void|Promise<void>;
   frame:(frame:SourceRecordingRaster,encodedIndex:number,start:SourceRecordingStart)=>void|Promise<void>;
 }
@@ -227,6 +229,7 @@ export class GenerationQueue {
         const frame=await this.generator.nextSourceRecordingFrame(handle,displayFrame);
         check();await consumer.frame(frame,displayFrame-1,start);check();
       }
+      await consumer.complete?.(start);check();
     }catch(error){
       if(error instanceof SourceRecordingOperationError&&error.recordingRetained&&error.handle)owner.handle=error.handle;
       if(error instanceof SourceRecordingOperationError&&!error.previewRetained)owner.invalidPreview=error;

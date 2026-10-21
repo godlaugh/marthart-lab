@@ -1,6 +1,6 @@
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {snapshotGenerationInput} from './generationInput';
-import {planSourceIteratedRecording,assertSourceIteratedRecordingFrame} from './sourceIteratedRecording';
+import {planSourceIteratedRecording,assertSourceIteratedRecordingFrame,sourceIteratedRecordingSize} from './sourceIteratedRecording';
 import {deriveSourceIteratedNormalization} from './sourceIteratedPresentation';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareIteratedFrame,prepareIteratedField} from '../scenes/iteratedDensity';
@@ -149,8 +149,7 @@ export class SourceIteratedSession {
   if(this.recording||!this.matchesCompletedPrimary(scene,c)||!this.applied||c.sourceViewport?.target!=='primary')throw Error('迭代场景录制需要已完成且匹配的主预览');
   this.cleanup.prepare();cancel(c);
   const clock=planSourceIteratedRecording(this.applied,options.simulationFps,c.isCancelled);
-  if(![options.width,options.height].every(n=>Number.isSafeInteger(n)&&n>0))throw Error('迭代场景录制输出尺寸必须为正整数');
-  const size=prepareSourcePausedCaptureSize({width:Math.fround(Math.fround(options.width)*3),height:Math.fround(Math.fround(options.height)*3)},c.sourcePointPixelDensity??NaN);
+  const size=sourceIteratedRecordingSize(options,c.sourcePointPixelDensity??NaN);
   this.replay!.validateCapture(size.width,size.height,0);
   const applied=structuredClone(this.applied),effective={...structuredClone(scene),equations:applied.equations,parameters:applied.parameters,settings:applied.settings,sourceCamera:applied.sourceCamera,mapSource:applied.mapSource,symmetrySource:applied.symmetrySource,palette:applied.palette,projectResolution:applied.projectResolution,timeline:{...applied.timeline,fps:options.simulationFps}};
   const live:SourceIteratedLiveContext={sessionId:crypto.randomUUID(),renderFps:options.simulationFps,replayRevision:0,mapEdits:this.family==='map'?{runtimeRevision:0,dotSizeRevision:0}:undefined,clock:{paused:false}};

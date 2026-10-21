@@ -140,3 +140,14 @@ describe('Perlin recording queue lease',()=>{
   expect(f.port.finishSourceRecording).toHaveBeenCalledTimes(2);gate.resolve(f.stop);await retry;expect(f.port.cancel).not.toHaveBeenCalled();f.queue.dispose();
  });
 });
+
+describe('recording encoder completion ownership',()=>{
+ it.each(['success','cancel','failure'] as const)('retains runtime until encoder completion settles: %s',async outcome=>{
+  const f=await fixture(),encoder=deferred<void>(),controller=new AbortController(),complete=vi.fn(()=>encoder.promise);
+  const task=f.queue.recordSource(raster,options,{frame:vi.fn(),complete},controller.signal),caught=task.catch(e=>e);await flush();
+  expect(complete).toHaveBeenCalledExactlyOnceWith(f.start);expect(f.port.finishSourceRecording).not.toHaveBeenCalled();expect(f.port.hasSourceRecording(f.handle)).toBe(true);
+  if(outcome==='cancel')controller.abort();const failure=new Error('encoder finish failed');if(outcome==='failure')encoder.reject(failure);else encoder.resolve();
+  const result=await caught;if(outcome==='cancel')expect(result.name).toBe('AbortError');else if(outcome==='failure')expect(result).toBe(failure);else expect(result).toBeUndefined();
+  expect(f.port.finishSourceRecording).toHaveBeenCalledExactlyOnceWith(f.handle);expect(f.port.cancel).not.toHaveBeenCalled();f.queue.dispose();
+ });
+});

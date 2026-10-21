@@ -8,6 +8,16 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const defaultRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../.cache/exports');
 const formats={mp4:{mime:'video/mp4',args:['-c:v','libx264','-preset','medium','-crf','18','-pix_fmt','yuv420p','-movflags','+faststart']},webm:{mime:'video/webm',args:['-c:v','libvpx-vp9','-crf','25','-b:v','0']},gif:{mime:'image/gif',args:['-vf','split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse']}};
+
+// MathArt 1.7.8 config default is high; its UI offers these four qualities.
+const mathartQuality={low:{preset:'veryfast',crf:'28'},medium:{preset:'medium',crf:'23'},high:{preset:'slow',crf:'18',tune:'animation'},production:{preset:'veryslow',crf:'10',tune:'animation'}};
+const mathartMp4Args=['-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-movflags','+faststart+write_colr'];
+function encoderArguments(format,profile,scale,quality){
+ const filters=[...(scale?[scale]:[]),...(format==='gif'?['split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse']:[])];
+ const q=mathartQuality[quality??'high'];
+ const codec=profile==='mathart'?[...mathartMp4Args,'-preset',q.preset,'-crf',q.crf,...(q.tune?['-tune',q.tune]:[])]:format==='gif'?[]:formats[format].args;
+ return [...(filters.length?['-vf',filters.join(',')]:[]),...codec];
+}
 const imageFormats={'image/png':'png','image/jpeg':'jpg'};
 const uuidPattern='[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
 const ownedName=new RegExp(`^${uuidPattern}\\.(png|jpg|mp4|webm|gif)$`);
@@ -160,16 +170,22 @@ export async function createExportServer(options={}){
    let input;try{input=JSON.parse((await readBody(req,8192,limits.bodyTimeoutMs)).toString());}catch(e){if(e instanceof SyntaxError)throw new HttpError(400,'JSON 请求无效');throw e;}
    if(!input||typeof input!=='object'||Array.isArray(input))throw new HttpError(400,'导出参数无效');
    const {width,height,fps,format,frames}=input;
+   const inputWidth=input.inputWidth===undefined?width:input.inputWidth,inputHeight=input.inputHeight===undefined?height:input.inputHeight;
+   if((input.inputWidth===undefined)!==(input.inputHeight===undefined)||![inputWidth,inputHeight].every(Number.isSafeInteger)||inputWidth<1||inputHeight<1||inputWidth>16384||inputHeight>16384)throw new HttpError(400,'输入帧尺寸无效');
+   if(input.quality!==undefined&&(input.profile!=='mathart'||!Object.hasOwn(mathartQuality,input.quality)))throw new HttpError(400,'视频质量无效');
+   if(input.profile!==undefined&&(input.profile!=='mathart'||format!=='mp4'))throw new HttpError(400,'视频编码配置无效');
    if(!Object.hasOwn(formats,format)||![width,height,fps,frames].every(Number.isSafeInteger)||width<16||height<16||width>7680||height>4320||width%2||height%2||fps<1||fps>120||frames<1||frames>limits.maxFrames)throw new HttpError(400,'导出参数无效');
-   if(width*height>limits.maxPixels||width*height*frames>limits.maxFramePixels)throw new HttpError(413,'导出总像素数超过资源上限');
+   if(Math.max(width*height,inputWidth*inputHeight)>limits.maxPixels||Math.max(width*height,inputWidth*inputHeight)*frames>limits.maxFramePixels)throw new HttpError(413,'导出总像素数超过资源上限');
    if([...sessions.values()].filter(s=>['encoding','finishing'].includes(s.status)).length>=limits.maxActive)throw new HttpError(409,'已有两个导出任务，请先完成或取消');
    for(const [id,s] of sessions){if(sessions.size<limits.maxRecords)break;if(s.status==='complete'||s.cleaned)sessions.delete(id);}
    if(sessions.size>=limits.maxRecords)throw new HttpError(429,'导出任务记录达到上限');
    reserve(limits.maxOutputBytes);
    const id=randomUUID(),file=path.join(root,`${id}.${format}`),partial=path.join(root,`${id}.partial.${format}`);
+   const scale=inputWidth!==width||inputHeight!==height?`scale=${width}:${height}:flags=lanczos`:undefined;
+   const codecArgs=encoderArguments(format,input.profile,scale,input.quality);
    let p;
-   try{p=ownedSpawn(['-hide_banner','-loglevel','error','-nostdin','-y','-f','image2pipe','-vcodec','png','-framerate',String(fps),'-threads','2','-i','pipe:0','-an','-filter_threads','2','-filter_complex_threads','2',...formats[format].args,'-threads','2','-fs',String(limits.maxOutputBytes),'-progress','pipe:3','-nostats',partial]);}catch(error){reservedBytes-=limits.maxOutputBytes;reservedFiles--;throw error;}
-   const s={id,file,partial,process:p,status:'encoding',format,width,height,fps,expected:frames,frames:0,encodedFrames:0,inputBytes:0,error:'',locked:false,reserved:limits.maxOutputBytes};sessions.set(id,s);
+   try{p=ownedSpawn(['-hide_banner','-loglevel','error','-nostdin','-y','-f','image2pipe','-vcodec','png','-framerate',String(fps),'-threads','2','-i','pipe:0','-an','-filter_threads','2','-filter_complex_threads','2',...codecArgs,'-threads','2','-fs',String(limits.maxOutputBytes),'-progress','pipe:3','-nostats',partial]);}catch(error){reservedBytes-=limits.maxOutputBytes;reservedFiles--;throw error;}
+   const s={id,file,partial,process:p,status:'encoding',format,width,height,inputWidth,inputHeight,fps,expected:frames,frames:0,encodedFrames:0,inputBytes:0,error:'',locked:false,reserved:limits.maxOutputBytes};sessions.set(id,s);
    const unwatch=disconnect(req,res,s);let progress='';
    p.child.stderr.on('data',chunk=>{s.error=(s.error+chunk.toString()).slice(-8000);});
    p.child.stdio[3].on('data',chunk=>{progress+=chunk.toString();let end;while((end=progress.indexOf('\n'))>=0){const line=progress.slice(0,end);progress=progress.slice(end+1);if(/^frame=\d+$/.test(line))s.encodedFrames=Number(line.slice(6));}progress=progress.slice(-4096);});
@@ -201,7 +217,7 @@ export async function createExportServer(options={}){
    const index=url.searchParams.get('index');if(index===null||!/^\d+$/.test(index)||!Number.isSafeInteger(Number(index))||Number(index)!==s.frames||s.frames>=s.expected||s.locked)throw new HttpError(409,'帧顺序不匹配');
    s.locked=true;clearIdle(s);const unwatch=disconnect(req,res,s);
    try{return await withUpload(req,limits.maxFrameBytes,async bytes=>{
-    const size=pngSize(bytes);if(size.width!==s.width||size.height!==s.height)throw new HttpError(400,'PNG 帧尺寸不匹配');
+    const size=pngSize(bytes);if(size.width!==s.inputWidth||size.height!==s.inputHeight)throw new HttpError(400,'PNG 帧尺寸不匹配');
     if(s.inputBytes+bytes.length>limits.maxInputBytes){await abort(s,'failed','累计帧数据超过资源上限');throw new HttpError(413,s.error);}
     if(s.status!=='encoding')throw new HttpError(409,s.error||'任务已结束');
     await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{void abort(s,'failed','编码写入超时');reject(new HttpError(504,'编码写入超时'));},limits.writeTimeoutMs);timer.unref();s.process.child.stdin.write(bytes,error=>{clearTimeout(timer);error?reject(error):resolve();});});

@@ -353,7 +353,7 @@ export default function App() {
     setToast(t(message));
   }
   const rootsSessionId=useRef(crypto.randomUUID());
-  const liveSessionId=useRef(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
+  const liveSessionId=useRef<string>(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
   const iteratedReplayRevision=useRef(0),iteratedStartAt=useRef<number|undefined>(0),mapRuntimeRevision=useRef(0);
   const iteratedLiveFacts=output?.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
   const iteratedReplayPending=!!iteratedLiveFacts&&!error&&!previewCancelled&&outputScene===scene&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true;
@@ -698,7 +698,10 @@ export default function App() {
         // The queue finishes the owned recording even if its dialog unmounted.
         // Do not replace a document the user selected or edited meanwhile.
         if(sceneRef.current!==originalScene)return;
-        autoPlayPending.current=false;playingRef.current=false;setPlaying(false);
+        autoPlayPending.current=false;
+        const live=result.context.mapLive??result.context.symmetryLive;
+        if(live){liveSessionId.current=live.sessionId;iteratedReplayRevision.current=live.replayRevision;iteratedStartAt.current=live.startAt;mapRuntimeRevision.current=live.mapEdits?.runtimeRevision??0;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
+        playingRef.current=live?!live.clock.paused:false;setPlaying(playingRef.current);
         sceneRef.current=result.scene;generationScene.current=result.scene;
         camera.current=result.scene.camera;setSceneState(result.scene);
         timeRef.current=result.context.time;playbackClock.current=result.context.time;
@@ -1493,11 +1496,12 @@ export default function App() {
               return generationQueue.current.capturePerlinPaused(output,size,scale);
             },
           }:undefined}
-          currentPerlinRecording={scene.perlinSource?{
+          currentSourceRecording={scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
             ready:completedFrameReady,
             record:async(options,consumer,signal)=>{
-              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前 Perlin 画面尚未完成或已过期，请等待预览完成后重试');
-              return generationQueue.current.recordSource(output,options,consumer,signal);
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前录制画面尚未完成或已过期，请等待预览完成后重试');
+              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene||scene.perlinSource)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
+              return generationQueue.current.recordSource(output,options,{complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);
             },
           }:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{
