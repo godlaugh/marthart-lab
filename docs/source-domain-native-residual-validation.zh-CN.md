@@ -1,6 +1,6 @@
 # 域着色原版残差：真实提交边界验证
 
-2026-10-22：原版真实 VBO 捕获与浏览器重放已完成。捕获前后完整原版 PNG 字节相同；使用真实顶点、索引、矩阵和原版 shader 的浏览器重放，仍保留相同的 **744 个中心区域差异像素**。这排除了“浏览器遗漏原版顶点提交数据”这一具体假设，**没有证明域着色家族已通过一致性验收**。
+2026-10-22 更新：真实 VBO 的原生独立重放已与实际 Scene 数学区域零差异。原生与禁用 ANGLE program cache 的浏览器 UV/z 全图一致，但颜色仍有 **744 个中心区域差异像素**；注入原生最终复数值后只剩 1 个像素相差 1。主要残差已定位到复数迭代执行，尚无经验证可集成的生产修复，**域着色家族未通过一致性验收**。
 
 ## 对照对象与范围
 
@@ -59,6 +59,30 @@
 
 旧受控副本还有一条有效但有限的发现：相同诊断坐标下，原生 GL 与 ANGLE Metal 的 `c_pow(z,2)` 有 64,952 个像素出现低位差；注入相同原生 z 后差异不变，27 次迭代会放大它。该发现证明坐标之后的数学执行也能不同，但输入来自旧诊断顶点，不能把全部 744 个实际 Scene 残差直接归因给超越函数。
 
+## 正确输入下的原生重放与数学分层
+
+后续一次原生运行使用捕获的真实 VBO、索引、原版 vertex/fragment shader 和实际 uniform，在独立 FBO 直接输出 RGBA8。**与原版实际 Scene 的固定 ROI 为 0 差异**；完整原版 raw PNG 仍与上述基线 SHA 相同。该校准通过后才采集 UV/z、`c_pow`、首次和 27 次迭代的 float32 输出。本次 9.441 秒、exit 0、stderr 空、无超时，进程组不存在；许可、设置与正常策略检查继续保持，策略刷新前备份。
+
+所有本轮浏览器控制显式使用 `--enable-angle-features=disableProgramCaching`，设备为 ANGLE Metal / Apple M2 Max。该参数与桌面验证保持一致，防止其他场景实验中已观察到的 program cache 干扰；此前未带参数的结果保留为历史记录，不混算。
+
+| 正确 VBO 的 Native/Metal 比较 | 全图不同像素 | 含义 |
+|---|---:|---|
+| UV/z | 0 | 本组残差不来自坐标映射或插值输出 |
+| `c_pow(z,2)` float 输出 | 64,847 | 坐标之后已经存在数学低位差 |
+| 首次 `sin(w+z²)` 迭代 | 47,462 | 差异在第一次复数求值出现 |
+| 27 次迭代 float 输出 | 43,522 | 迭代会放大差异，含非有限值分歧 |
+| 最终 RGBA8 | 1,779；固定 ROI 744 | 原生独立重放相对浏览器数学内容，不含 Scene 水印对比 |
+
+27 次迭代有 257 个非有限分量分歧；其距离不按有限误差处理。统计将 NaN/NaN 视为相同的非数值结果，不声称 NaN payload 位相同。原生 float 色彩再由 CPU 量化为 RGBA8 会另有 2 个 ROI ±1 像素差，因而校准使用直接原生 RGBA8，不用这个量化版本代替。
+
+单变量注入进一步分开坐标、迭代与着色：
+
+- 注入同一原生 z：原有 744 / 最大 195 的 ROI 色彩差异完全不变。
+- 注入原生独立 `pow(z,2)` 输出：首次迭代全图零差异，但 27 次迭代后的 ROI 色彩反而变成 1,536 / 最大 200。独立表达式的输出不能未经验证替代循环里的原式；编译上下文或循环内执行差异尚未分离。
+- 注入原生最终复数值 fz：全图只剩 1 个色彩像素相差 1，位置 `(305,425)`，原生 `[177,190,183,255]`，浏览器 `[177,190,182,255]`。大量颜色残差随迭代终值替换而消失。
+
+因此主要残差边界现在可定位到复数迭代执行；仍不能声称某一个 sin/atan/log/exp 指令独占原因。给生产路径加入探针值、按像素特判或更换数学恒等式均不是已验证的修复。本轮没有修改产品公式、色彩算法、顶点或验收容差。
+
 ## 可复验交付与限制
 
 精简记录：[真实 draw fixture](../tests/fixtures/source-domain-draw-boundary/native.json)，包含 VBO/索引值及原始字节摘要、实际矩阵、必要 viewport uniform、原版 vertex shader、JAR/class/输入/probe/宿主摘要。应用 JAR 与 class 摘要已重新核对本机原产物。没有提交原版二进制、大图或缓存。
@@ -69,10 +93,10 @@
 node scripts/verify-source-domain-vertex-boundary.mjs
 ```
 
-需要本项目锁定依赖及已有 Chrome，不安装浏览器、不启动原版应用、不读取许可文件，也不依赖私有大缓存。脚本先核对 fixture 字节摘要，再以浏览器实际 float FBO 比较四种顶点表示；记录实际设备与零容差结果到 `.cache/source-domain-vertex-boundary-verification.json`。本机已执行通过：clip 与精确 UV 两项均 0 差，旧生成 UV 为 103,714 像素差。若其他设备结果不同，保留报告并调查，不能据此自动放宽容差。
+需要本项目锁定依赖及已有 Chrome，不安装浏览器、不启动原版应用、不读取许可文件，也不依赖私有大缓存。脚本先核对 fixture 字节摘要，显式禁用 ANGLE program cache，再以浏览器实际 float FBO 比较四种顶点表示；记录实际设备与零容差结果到 `.cache/source-domain-vertex-boundary-verification.json`。本机已执行通过：clip 与精确 UV 两项均 0 差，旧生成 UV 为 103,714 像素差。若其他设备结果不同，保留报告并调查，不能据此自动放宽容差。
 
-脚本不包含原版完整 fragment，因此不能独立复现 744 个颜色残差，也不能证明原生 fragment 插值一致。下一项有效实验应使用捕获的真实 VBO 在原生独立 GL 上重放，先验证其数学内容与实际 Scene 一致，再输出原生 UV/z 和复数中间值，区分实际插值与数学执行层。
+脚本不包含原版完整 fragment，因此不能独立复现 744 个颜色残差或证明原生数学执行一致。新的[原生重放摘要](../tests/fixtures/source-domain-draw-boundary/native-replay.json)保存校准、分层统计、剩余色彩像素与原始证据摘要，大型 float 数据仍在本机缓存。下一项有意义的工作应在已校准的真实输入上记录逐次迭代，区分原生循环中与独立表达式的求值差异，再验证具体实现改动；目前没有可据此直接提交的生产修复。
 
-私有完整证据位于 `.cache/domain-native-residual-20261022/`：`stage-comparison.json`、`retained-source-webgl-comparison.json`；`float-boundary/` 保留受控 float 数据及失败假设；`draw-capture-plan/native-stride-domain/` 保留成功原版运行、真实 VBO、完整 PNG；`draw-capture-plan/actual-vbo-comparison.json` 和 `success-verification.json` 对应本轮测量。它们不随 Git 提交。
+私有完整证据位于 `.cache/domain-native-residual-20261022/`：`stage-comparison.json`、`retained-source-webgl-comparison.json`；`float-boundary/` 保留受控 float 数据及失败假设；`draw-capture-plan/native-stride-domain/` 保留成功原版运行、真实 VBO、完整 PNG；`draw-capture-plan/actual-vbo-comparison.json` 和 `success-verification.json` 对应本轮测量。`actual-native-replay/` 保留本轮原生独立重放、禁用缓存的浏览器脚本、注入对照及全部 float 输出。这些私有缓存不随 Git 提交。
 
 本次成果是残差归因与可重现输入边界，未新增 runtime 功能、未修改生产代码，也未完成域着色全图、动画或家族一致性验收。

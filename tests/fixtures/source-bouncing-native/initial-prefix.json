@@ -1,0 +1,243 @@
+{
+  "evidenceKind": "Actual bundled JVM/JOGL readback after original paused Scene render; particle image missing, not accepted as whole-image reference",
+  "scope": "Original2M SPIRAL input; only16 initial RGBA32F state texels captured, no full-state claim",
+  "sourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+  "probeSha256": "61d2f770c4abc9c406f3151a2c7115b700d0916226cc08f28879898aef87e63e",
+  "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+  "input": {
+    "settings": {
+      "velocity_noise": 0,
+      "initial_angle_spread": 0,
+      "particle_count": 2000000,
+      "shape_num_points": 5,
+      "sub_steps": 1,
+      "circle_radius": 0.550000011920929,
+      "dot_size": 1.25,
+      "container_shape": "CIRCLE",
+      "initial_circle_center_x": 0,
+      "initial_circle_center_y": 0,
+      "scale_z": 1,
+      "y0_min": 0,
+      "scale_y": 360,
+      "initial_position_mode": "SPIRAL",
+      "shape_k": 4,
+      "scale_x": 360,
+      "initial_circle_radius": 0,
+      "particle_radius": 0.006000000052154064,
+      "y0_max": 0,
+      "shape_formula": "",
+      "line_weight": 1,
+      "velocity_center_x": 0,
+      "velocity_center_y": 0,
+      "shape_fill_mode": "OUTLINE",
+      "offset_x": 0,
+      "offset_y": 0,
+      "offset_z": 0,
+      "shape_lissajous_a": 3,
+      "shape_rose_k": 3,
+      "shape_superellipse_n": 2,
+      "seed": 1,
+      "shape_tightness": 0.1599999964237213,
+      "shape_lissajous_b": 4,
+      "initial_angle": 1.5707963705062866,
+      "x0_max": 0,
+      "shape_inner_ratio": 0.6200000047683716,
+      "time_step": 0.012000000104308128,
+      "render_mode": "GPU",
+      "record_duration": 10,
+      "initial_speed": 0.20000000298023224,
+      "x0_min": 0,
+      "shape_line_width": 0.010999999940395355,
+      "initial_velocity_mode": "UNIFORM",
+      "shape_lissajous_delta": 1.5707963705062866,
+      "shape_num_turns": 5.5,
+      "show_trails": true,
+      "background_color": "#000000",
+      "circle_center_x": 0,
+      "trail_lifetime": 4,
+      "circle_center_y": 0
+    },
+    "polygon": [
+      [
+        -4.021447708169035e-08,
+        0.9200000166893005
+      ],
+      [
+        -0.7967432737350464,
+        -0.4600001871585846
+      ],
+      [
+        0.7967435121536255,
+        -0.45999979972839355
+      ]
+    ],
+    "main_equation": {
+      "color": "#FFFFFF",
+      "scale": 0.25,
+      "position": [
+        0,
+        200
+      ],
+      "enabled": false
+    },
+    "name": "bouncing1",
+    "description": "GPU SDF bouncing boundary collision inside a closed polygon.",
+    "timeline": [
+      {
+        "duration": 5,
+        "label": "Wait",
+        "type": "wait",
+        "easing": "SINE_IN_OUT",
+        "enabled": true
+      }
+    ],
+    "palette": [
+      "#FC6255",
+      "#FF862F",
+      "#FFCD62",
+      "#83C167",
+      "#58C4DD",
+      "#9A72AC"
+    ],
+    "type": "BOUNCING_PARTICLES",
+    "camera": {
+      "phi": "0",
+      "theta": "0",
+      "gamma": "0"
+    },
+    "parameters": {},
+    "config_version": "1.0.0",
+    "isUserScene": true
+  },
+  "observed": {
+    "paletteCount": [
+      6
+    ],
+    "offset": [
+      0,
+      0,
+      0
+    ],
+    "first16StateTexels": [
+      0.20246340334415436,
+      0.02527858503162861,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.038600143045186996,
+      0.04732673242688179,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      -0.12243779748678207,
+      0.2500385344028473,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      -0.0801943987607956,
+      0.24390816688537598,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.06310463696718216,
+      0.24422964453697205,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.04551291465759277,
+      0.10359171032905579,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      -0.060077864676713943,
+      -0.054557085037231445,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      -0.015933416783809662,
+      -0.02095550298690796,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      -0.13080203533172607,
+      -0.13777776062488556,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.09880312532186508,
+      0.0537172295153141,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.08152349293231964,
+      -0.16653279960155487,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.0011959448456764221,
+      0.0007189239258877933,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.17908510565757751,
+      0.11633104085922241,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      -0.07798972725868225,
+      -0.10674505680799484,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      0.07654470950365067,
+      0.14733171463012695,
+      -8.742278012618954e-09,
+      0.20000000298023224,
+      -0.16133734583854675,
+      0.07814107835292816,
+      -8.742278012618954e-09,
+      0.20000000298023224
+    ],
+    "texSize": [
+      1415
+    ],
+    "modelview": [
+      0.6172839403152466,
+      0,
+      0,
+      0,
+      0,
+      0.6172839403152466,
+      0,
+      0,
+      0,
+      0,
+      0.6172839403152466,
+      0,
+      0,
+      0,
+      -240,
+      1
+    ],
+    "scale": [
+      360,
+      360,
+      1
+    ],
+    "program": 4,
+    "projection": [
+      1.9200003147125244,
+      0,
+      0,
+      0,
+      0,
+      -1.6000001430511475,
+      0,
+      0,
+      0,
+      0,
+      -1.000400185585022,
+      -1,
+      0,
+      0,
+      -4.800960540771484,
+      0
+    ],
+    "radius": [
+      0.7716048955917358
+    ],
+    "speedScale": [
+      5
+    ],
+    "particleCount": [
+      2000000
+    ]
+  },
+  "nativeRawPngSha256": "b0129102ec7d4be9d29cef2efe216720265a2068568f7a6bd68a280f5e998d00"
+}

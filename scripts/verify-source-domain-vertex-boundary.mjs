@@ -17,7 +17,7 @@ if (digest(indexBytes) !== fixture.draw.indexBytesSha256 || digest(fixture.verte
   throw new Error('Recorded indices or original vertex shader changed');
 }
 
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--enable-angle-features=disableProgramCaching'] });
 try {
   const page = await browser.newPage();
   const report = await page.evaluate((fixture) => {
@@ -109,6 +109,7 @@ try {
     }
     return { device, pixels: width * height, comparisons };
   }, fixture);
+  report.browserLaunchArgs = ['--enable-angle-features=disableProgramCaching'];
   report.scope = 'Browser coordinate-only replay of recorded native draw inputs; not native color or family acceptance';
   report.originalRawPngSha256 = fixture.source.originalRawPngSha256;
   report.exactCoordinateChecksPassed = report.comparisons.clip.changedPixels === 0 && report.comparisons.explicitUv.changedPixels === 0;

@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-22",
+  "scope": "Original native Scene plus independent native actual-VBO replay and cache-disabled browser controls. One preset/time/device; no family acceptance.",
+  "originalRawPngSha256": "7c9a176bcaa2760b704203a0710d16ee3b3efc5df718283b86c3b9034ef07fe5",
+  "native": {
+    "exit": 0,
+    "seconds": 9.441234791069292,
+    "stderrEmpty": true,
+    "processGroupExists": false,
+    "settingsUnchanged": true,
+    "licenseUnchanged": true,
+    "normalPolicyBackup": true,
+    "rgba8ReplayCalibration": {
+      "roi": [
+        55,
+        55,
+        445,
+        510
+      ],
+      "pixels": 177450,
+      "changed": 0,
+      "max": 0
+    }
+  },
+  "browser": {
+    "args": [
+      "--enable-angle-features=disableProgramCaching"
+    ],
+    "device": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+    "coordinateBytesEqualNative": true,
+    "coordinateSha256": "a98d70951c57d855af8e88c886c366f32b0dd489bd924e6bac8ac238928b120b",
+    "nativeZInjectionLeavesOutputBytesUnchanged": {
+      "color8": true,
+      "color": true,
+      "pow": true,
+      "iter1": true,
+      "iter27": true
+    }
+  },
+  "comparison": {
+    "color8": {
+      "whole": {
+        "differentPixels": 1779,
+        "differentComponents": 3721,
+        "maxFiniteAbsolute": 215.0,
+        "meanFiniteAbsolute": 0.03561333333333333,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "roi": {
+        "differentPixels": 744,
+        "differentComponents": 1526,
+        "maxFiniteAbsolute": 195.0,
+        "meanFiniteAbsolute": 0.02284305438151592,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "nativeZRoi": {
+        "differentPixels": 744,
+        "differentComponents": 1526,
+        "maxFiniteAbsolute": 195.0,
+        "meanFiniteAbsolute": 0.02284305438151592,
+        "nonfiniteDisagreementComponents": 0
+      }
+    },
+    "color": {
+      "whole": {
+        "differentPixels": 40606,
+        "differentComponents": 115447,
+        "maxFiniteAbsolute": 0.8445532098412514,
+        "meanFiniteAbsolute": 0.00013966228038072586,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "roi": {
+        "differentPixels": 27112,
+        "differentComponents": 77653,
+        "maxFiniteAbsolute": 0.7639723345637321,
+        "meanFiniteAbsolute": 8.966685315527423e-05,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "nativeZRoi": {
+        "differentPixels": 27112,
+        "differentComponents": 77653,
+        "maxFiniteAbsolute": 0.7639723345637321,
+        "meanFiniteAbsolute": 8.966685315527423e-05,
+        "nonfiniteDisagreementComponents": 0
+      }
+    },
+    "coords": {
+      "whole": {
+        "differentPixels": 0,
+        "differentComponents": 0,
+        "maxFiniteAbsolute": 0.0,
+        "meanFiniteAbsolute": 0.0,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "roi": {
+        "differentPixels": 0,
+        "differentComponents": 0,
+        "maxFiniteAbsolute": 0.0,
+        "meanFiniteAbsolute": 0.0,
+        "nonfiniteDisagreementComponents": 0
+      }
+    },
+    "pow": {
+      "whole": {
+        "differentPixels": 64847,
+        "differentComponents": 127449,
+        "maxFiniteAbsolute": 4.76837158203125e-07,
+        "meanFiniteAbsolute": 3.985833970810472e-09,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "roi": {
+        "differentPixels": 39284,
+        "differentComponents": 77654,
+        "maxFiniteAbsolute": 2.682209014892578e-07,
+        "meanFiniteAbsolute": 2.4643884865306243e-09,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "nativeZRoi": {
+        "differentPixels": 39284,
+        "differentComponents": 77654,
+        "maxFiniteAbsolute": 2.682209014892578e-07,
+        "meanFiniteAbsolute": 2.4643884865306243e-09,
+        "nonfiniteDisagreementComponents": 0
+      }
+    },
+    "iter1": {
+      "whole": {
+        "differentPixels": 47462,
+        "differentComponents": 66685,
+        "maxFiniteAbsolute": 8.344650268554688e-07,
+        "meanFiniteAbsolute": 4.5325983141922266e-09,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "roi": {
+        "differentPixels": 25836,
+        "differentComponents": 32653,
+        "maxFiniteAbsolute": 5.066394805908203e-07,
+        "meanFiniteAbsolute": 2.5804629803299913e-09,
+        "nonfiniteDisagreementComponents": 0
+      },
+      "nativeZRoi": {
+        "differentPixels": 25836,
+        "differentComponents": 32653,
+        "maxFiniteAbsolute": 5.066394805908203e-07,
+        "meanFiniteAbsolute": 2.5804629803299913e-09,
+        "nonfiniteDisagreementComponents": 0
+      }
+    },
+    "iter27": {
+      "whole": {
+        "differentPixels": 43522,
+        "differentComponents": 70529,
+        "maxFiniteAbsolute": 9.302541362401561e+37,
+        "meanFiniteAbsolute": 6.902924225787963e+32,
+        "nonfiniteDisagreementComponents": 257
+      },
+      "roi": {
+        "differentPixels": 24529,
+        "differentComponents": 39546,
+        "maxFiniteAbsolute": 2.8889963806249185e+37,
+        "meanFiniteAbsolute": 1.607119105378051e+32,
+        "nonfiniteDisagreementComponents": 100
+      },
+      "nativeZRoi": {
+        "differentPixels": 24529,
+        "differentComponents": 39546,
+        "maxFiniteAbsolute": 2.8889963806249185e+37,
+        "meanFiniteAbsolute": 1.607119105378051e+32,
+        "nonfiniteDisagreementComponents": 100
+      }
+    }
+  },
+  "injectionComparison": {
+    "color8-native-pow": {
+      "whole": {
+        "differentPixels": 3461,
+        "maxFiniteAbsolute": 205.0,
+        "nonfiniteDisagreements": 0
+      },
+      "roi": {
+        "differentPixels": 1536,
+        "maxFiniteAbsolute": 200.0,
+        "nonfiniteDisagreements": 0
+      }
+    },
+    "iter1-native-pow": {
+      "whole": {
+        "differentPixels": 0,
+        "maxFiniteAbsolute": 0.0,
+        "nonfiniteDisagreements": 0
+      },
+      "roi": {
+        "differentPixels": 0,
+        "maxFiniteAbsolute": 0.0,
+        "nonfiniteDisagreements": 0
+      }
+    },
+    "iter27-native-pow": {
+      "whole": {
+        "differentPixels": 84178,
+        "maxFiniteAbsolute": 6.564173057288522e+37,
+        "nonfiniteDisagreements": 467
+      },
+      "roi": {
+        "differentPixels": 46525,
+        "maxFiniteAbsolute": 3.5494357347247203e+37,
+        "nonfiniteDisagreements": 168
+      }
+    },
+    "color8-native-fz": {
+      "whole": {
+        "differentPixels": 1,
+        "maxFiniteAbsolute": 1.0,
+        "nonfiniteDisagreements": 0
+      },
+      "roi": {
+        "differentPixels": 1,
+        "maxFiniteAbsolute": 1.0,
+        "nonfiniteDisagreements": 0
+      }
+    }
+  },
+  "remainingColorPixel": [
+    {
+      "xyTopLeft": [
+        305,
+        425
+      ],
+      "native": [
+        177,
+        190,
+        183,
+        255
+      ],
+      "browserWithNativeFz": [
+        177,
+        190,
+        182,
+        255
+      ]
+    }
+  ],
+  "hashes": {
+    "raw.png": "7c9a176bcaa2760b704203a0710d16ee3b3efc5df718283b86c3b9034ef07fe5",
+    "NativeSceneProbe.java": "728c879bf85d059d43db69935ff4b78ff76bb6ff7a2eb3e584daae862facd841",
+    "draw-vertex.bin": "94103df838a41590442f25b607b5cccfa40da1a9568a3c4df8445365799657fd",
+    "draw-texCoord.bin": "eeb394f1726eac2bb9656979b5b3190f0fc2bfc9a3df8e179d13da2ebc8c513a",
+    "draw-indices.bin": "cdd30f0b81cab4dfa7b9612bc1866099b922c77e381302d6efd3f70ca0a9d0de",
+    "color8.rgba": "c458603efe6ec25009c9bc40d15ccb1f0b188911a7565513667e19812768e597",
+    "coords.f32": "a98d70951c57d855af8e88c886c366f32b0dd489bd924e6bac8ac238928b120b",
+    "pow.f32": "9556b2c0484cd66674f6be4a8db6d4d360237fbe54f674540ea7e7f72cf5a0e6",
+    "iter1.f32": "03d16cc5c49531f9b80dd908fcea571a6038daf8f7a0a39b01689065118cb0b1",
+    "iter27.f32": "0391f83ac9a870e6f04b6736b753e5c6b52bfb6424e6b4b55de5ea33610140a8"
+  }
+}
