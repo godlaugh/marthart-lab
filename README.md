@@ -44,6 +44,8 @@ npm run preview:v2
 
 2026-10-22 已取得原版 Cornucopia 的真实窗口与时间 0 PNG，并验证虚拟工作屏上的播放／暂停操作。跨屏像素密度、文字叠加和原版保存后挂起仍待处理，整图验收保持 0/11，详见[原版窗口恢复与首张对照记录](docs/native-window-recovery-validation.zh-CN.md)。
 
+后续已取得未跨屏的 500 × 600 原版参考图，修正新导入曲面的公式位置、大小及暂停 PNG 合成顺序，横纵画布与保存重开已验证。自动方程文本、字形和部分点像素仍有差异，详见[曲面公式布局验收](docs/source-surface-formula-layout-validation.zh-CN.md)。
+
 ## 桌面应用
 
 ```sh

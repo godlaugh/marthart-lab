@@ -1,3 +1,5 @@
+import type {FormulaContent} from '../types';
+import {presentFormulas,resolveFormulaContent} from '../engine/formulas';
 import {sourceParticlePointAppearance} from '../engine/sourceParticlePointAppearance';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {replaySourceSurface,type SourceSurfaceParticles} from '../engine/sourceSurfaceParticles';
@@ -19,17 +21,22 @@ export function validateSourceSurfacePresentation(scene:SceneDocument,context:Ge
  if(!usesSourceSurfaceHost(scene))sourceParticlePointAppearance(scene.settings.pointSize,prepared,context.sourcePointPixelDensity);
 }
 export function generateSourceSurface(scene:SceneDocument,context:GenerateContext):SceneOutput {
- const started=performance.now();validateSourceSurfacePresentation(scene,context);
+ const started=performance.now();validateSourceSurfacePresentation(scene,context);const formulas=resolveFormulaContent(scene);
  if(usesSourceSurfaceHost(scene)){
   const replay=replaySourceSurfaceHost(scene,context.time,'all',context.isCancelled);
-  return presentSourceSurfaceFrame(scene,context,{kind:'host',frame:replay.frame,snapshot:replay.host.snapshot()},started);
+  return presentSourceSurfaceFrame(scene,context,{kind:'host',frame:replay.frame,snapshot:replay.host.snapshot()},started,formulas);
  }
  const replay=replaySourceSurface(scene,context.time,'all',context.isCancelled);
- return presentSourceSurfaceFrame(scene,context,{kind:'points',frame:replay.frame,points:replay.particles.snapshot()},started);
+ return presentSourceSurfaceFrame(scene,context,{kind:'points',frame:replay.frame,points:replay.particles.snapshot()},started,formulas);
 }
 /** Rendering consumes one producer-owned frame; it never reconstructs a queue
  * or interprets authored parameter values as the current animation state. */
-export function presentSourceSurfaceFrame(scene:SceneDocument,context:GenerateContext,state:SourceSurfaceDisplayState,started=performance.now()):SceneOutput {
+export function presentSourceSurfaceFrame(scene:SceneDocument,context:GenerateContext,state:SourceSurfaceDisplayState,started=performance.now(),formulas?:FormulaContent):SceneOutput {
+ const output=surfaceGeometry(scene,context,state,started);
+ output.formulaPresentation=presentFormulas(formulas??resolveFormulaContent(scene),output.sourceCameraFrame?.viewport);
+ return output;
+}
+function surfaceGeometry(scene:SceneDocument,context:GenerateContext,state:SourceSurfaceDisplayState,started:number):Extract<SceneOutput,{type:'geometry'}> {
  const frame=state.frame;let points:ReturnType<SourceSurfaceParticles['snapshot']>;
  const configuration=usesSourceSurfaceHost(scene)?scene.surfaceSource:undefined;
  let pointRadius=scene.settings.pointSize,trailWidth=Number(scene.settings.trailWidth);

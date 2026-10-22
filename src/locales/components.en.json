@@ -897,5 +897,8 @@
   "尚未确认录制保存结果，重试会继续同一个任务。": "The recording save result is not confirmed. Retry continues the same task.",
   "从上次完整应用的场景录制": "Record the last fully applied scene",
   "从上次完整应用的场景开始，预热后录到队列结束，编码完成后继续播放。帧率同时用于模拟和编码。要将修改作为录制起点，请先播放并点击“应用场景”。": "Start from the last fully applied scene, warm up, then record until the queue ends. Playback continues after encoding. The frame rate controls both simulation and encoding. To record your edits, play the scene and click Apply scene first.",
-  "域着色片段按列表顺序执行；预览与导出使用固定帧率，时间跳转会重建对应画面。队列结束后，已启动的旋转、参数与渐变仍可继续。": "Domain coloring clips run in list order. Preview and export use a fixed frame rate; seeking rebuilds the selected frame. Active rotation, parameters, and gradients can continue after the queue ends."
+  "域着色片段按列表顺序执行；预览与导出使用固定帧率，时间跳转会重建对应画面。队列结束后，已启动的旋转、参数与渐变仍可继续。": "Domain coloring clips run in list order. Preview and export use a fixed frame rate; seeking rebuilds the selected frame. Active rotation, parameters, and gradients can continue after the queue ends.",
+  "水平偏移": "Horizontal offset",
+  "垂直偏移": "Vertical offset",
+  "位置相对画布中心，单位为主预览逻辑像素；正值向右、向下。缩放保留原版数值，导出按主预览高度换算。": "Position is relative to the canvas centre in primary preview logical pixels; positive values move right and down. Scale keeps the original value; export uses the primary preview height."
 }

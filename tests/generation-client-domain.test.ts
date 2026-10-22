@@ -75,7 +75,7 @@ describe('Domain capture transport validation',()=>{
   if(corrupt==='time')result.capture.domainLive!.sceneTime++;
   if(corrupt==='target')result.capture.domainLive!.target='primary';
   if(corrupt==='size')result.capture.sourceCurrentImage.scale=5;
-  if(corrupt==='formula')result.capture.formulaPresentation!.referenceWidth++;
+  if(corrupt==='formula')Object.assign(result.capture.formulaPresentation!,{referenceWidth:0});
   if(corrupt==='paired-state')result.capture.domainLive!.presentation.parameters.a=123;
   const pending=f.g.captureDomainPaused(f.output,{width:4,height:2},3),caught=pending.catch(e=>e),p=w.messages.at(-1)!;w.emit({operation:'domain-paused-capture',sessionId:p.sessionId,id:p.id,result});
   const response=await caught;if(corrupt==='none'){expect(response).toBe(result);expect(w.terminated).toBe(false);}else{expect(response).toBeInstanceOf(Error);expect(w.terminated).toBe(true);}f.g.dispose();

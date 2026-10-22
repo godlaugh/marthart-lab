@@ -21,11 +21,24 @@ import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperation
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
-import {validateFormulaPresentation} from './formulaConfig';
+import {validateFrameFormulas} from './formulaConfig';
 import {usesSourceFractal} from './sourceFractalDocument';
-function validOutputFormulas(output:SceneOutput,required=false):boolean {
-  try{if(output?.type!=='raster')return !required;if(output.formulaPresentation===undefined)return !required;output.formulaPresentation=validateFormulaPresentation(output.formulaPresentation);return true;}
-  catch{return false;}
+import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+type FormulaOutputContract =
+ |{kind:'optional'}
+ |{kind:'raster'}
+ |{kind:'surface-geometry';layout:'source-surface-centered-v1'|undefined};
+function generationFormulaContract(scene:SceneDocument):FormulaOutputContract {
+ if(usesSourceSurfaceGeometry(scene))return{kind:'surface-geometry',layout:scene.formulas?.layout};
+ return{kind:usesSourceFractal(scene)?'raster':'optional'};
+}
+function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
+ try{
+  if(!output||contract.kind==='raster'&&output.type!=='raster'||contract.kind==='surface-geometry'&&output.type!=='geometry')return false;
+  if(output.formulaPresentation===undefined)return contract.kind==='optional';
+  output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,output.sourceCameraFrame?.viewport);
+  return contract.kind!=='surface-geometry'||output.formulaPresentation.layout===contract.layout;
+ }catch{return false;}
 }
 type RasterRecordingResponse=
  |(Omit<Extract<GenerationResponse,{operation:'source-recording-begin'}>,'result'>&{result:Omit<SourceRecordingStart,'handle'>})
@@ -46,12 +59,12 @@ type Completed={id:number;scene:SceneDocument;context:GenerationInput;output:Sce
 const surfaceFrame=(source:Completed)=>source.surfaceFrame??(source.output.type==='geometry'?source.output.surfaceLive?.frame:undefined);
 type LiveRasterRequest={sessionId:string;revision:number;paused:boolean;actualFrameRate:number};
 function validFractalOutput(output:SceneOutput,request:LiveRasterRequest,target:'primary'|'offscreen'='primary',renderKind:'update'|'snapshot'='update',clock:'realtime-source-queue'|'fixed-source-queue'='realtime-source-queue'):boolean {
-  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.fractalRender||!validOutputFormulas(output,true))return false;
+  if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.fractalRender||!validOutputFormulas(output,{kind:'raster'}))return false;
   const live=output.fractalLive,frame=live?.presentation?.evaluatedFractalScene?.scene;
   return !!live&&live.sessionId===request.sessionId&&live.revision===request.revision&&live.target===target&&live.renderKind===renderKind&&live.paused===request.paused&&live.actualFrameRate===Math.fround(request.actualFrameRate)&&live.clock===clock&&(clock==='fixed-source-queue'?live.clockSource==='fixed-step':['worker-wall-clock','injected'].includes(live.clockSource))&&Number.isSafeInteger(live.updateOrdinal)&&live.updateOrdinal>=0&&Number.isSafeInteger(live.objectUpdates)&&live.objectUpdates>=0&&[live.sceneTime,live.rawDt,live.activeDt].every(Number.isFinite)&&Number.isSafeInteger(live.queueIndex)&&live.queueIndex>=0&&typeof live.queueComplete==='boolean'&&!!frame&&frame.sceneTime===live.sceneTime&&frame.queueIndex===live.queueIndex&&frame.queueComplete===live.queueComplete;
 }
 function validDomainOutput(output:SceneOutput,request:LiveRasterRequest,input:GenerationInput,target:'primary'|'offscreen'='primary',recording=false):boolean {
- if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.domainRender||!validOutputFormulas(output,true))return false;
+ if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.domainRender||!validOutputFormulas(output,{kind:'raster'}))return false;
  const live=output.domainLive,frame=live?.presentation?.evaluatedDomainScene,clock=frame?.clock,render=output.domainRender.sourceClock;
  if(!live||!clock||!render||target==='primary'&&JSON.stringify(live.viewport)!==JSON.stringify(input.domainLive?.viewport)||output.width>input.width||output.height>input.height||output.width*output.height>MAX_RASTER_PIXELS||input.quality==='export'&&(output.width!==input.width||output.height!==input.height))return false;
  // Paused repaint reports the last consumed parameter FPS, not an observation
@@ -220,13 +233,13 @@ export class Generator {
         const result=data.result;
         try{
           const plan=sourceSurfaceCapturePlan(p.source.context,p.size,p.scale),frame=surfaceFrame(p.source);
-          if(data.sourceId!==p.source.id||!result?.scene||result.scene.id!==p.source.scene.id||result.scene.kind!=='surface'||!validSourceSurfaceOutput(result.capture,plan.captureContext)||!validSourceSurfaceOutput(result.preview,p.source.context)||result.capture.surfaceLive?.renderKind!=='snapshot'||result.preview.surfaceLive?.renderKind!=='snapshot'||JSON.stringify(result.capture.surfaceLive.frame)!==JSON.stringify(frame)||JSON.stringify(result.preview.surfaceLive.frame)!==JSON.stringify(frame))throw Error('曲面截图响应状态不匹配');
+          if(data.sourceId!==p.source.id||!result?.scene||result.scene.id!==p.source.scene.id||result.scene.kind!=='surface'||!validSourceSurfaceOutput(result.capture,plan.captureContext)||!validSourceSurfaceOutput(result.preview,p.source.context)||result.capture.surfaceLive?.renderKind!=='snapshot'||result.preview.surfaceLive?.renderKind!=='snapshot'||JSON.stringify(result.capture.surfaceLive.frame)!==JSON.stringify(frame)||JSON.stringify(result.preview.surfaceLive.frame)!==JSON.stringify(frame)||JSON.stringify(result.capture.formulaPresentation)!==JSON.stringify(p.source.output.formulaPresentation)||JSON.stringify(result.preview.formulaPresentation)!==JSON.stringify(p.source.output.formulaPresentation))throw Error('曲面截图响应状态不匹配');
         }catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));return;}
         // Keep the operation pending across module loading and readback. A
         // cancelled transport cannot publish the subsequently encoded image.
         const cancelled=()=>this.pending.get(data.id)!==p||this.worker!==worker;
         void import('./renderSurfaceCapture').then(({renderSurfaceCapture})=>renderSurfaceCapture(result,p.source.context,p.size,p.scale,cancelled)).then(value=>{
-          if(cancelled())return;this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
+          if(cancelled())return;const plan=sourceSurfaceCapturePlan(p.source.context,p.size,p.scale);if(!validCurrentImage(value.capture,p.size,p.scale,plan.base)||!validOutputFormulas(value.capture,{kind:'raster'}))throw Error('曲面截图基础图像或公式无效');this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
         }).catch(error=>{if(cancelled())return;this.pending.delete(data.id);this.completed=p.source;p.reject(new SurfacePausedCaptureError(error instanceof Error?error.message:String(error),true));});
         return;
       }
@@ -348,7 +361,7 @@ export class Generator {
         return;
       }
       if (data.operation === 'generate-progress') {
-        if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,usesSourceFractal(p.scene))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
+        if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
         if(p.operation==='generate'&&p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){this.invalidate(new Error('曲面实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.domain&&!validDomainOutput(data.output,p.domain,p.context)){this.invalidate(new Error('域着色实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.fractal&&!validFractalOutput(data.output,p.fractal)){this.invalidate(new Error('分形实时进度响应身份或状态不匹配'));return;}
@@ -375,7 +388,7 @@ export class Generator {
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
       else if (p.operation === 'generate' && data.operation === 'generate') {
-        if(!p.fractal&&!validOutputFormulas(data.output,usesSourceFractal(p.scene))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
+        if(!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
         if(p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){const error=new Error('曲面实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.domain&&!validDomainOutput(data.output,p.domain,p.context)){const error=new Error('域着色实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.fractal&&!validFractalOutput(data.output,p.fractal)){p.reject(new Error('分形实时响应身份或状态不匹配'));this.invalidate(new Error('分形实时响应身份或状态不匹配'));return;}

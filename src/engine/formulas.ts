@@ -1,13 +1,15 @@
 import {parse} from 'mathjs';
-import type {SceneDocument,FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation} from '../types';
+import type {SourceCameraViewport} from './sourceCamera';
+import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+import type {SceneDocument,FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation,FormulaContent} from '../types';
 import {fractalEquationLatex} from '../scenes/complex';
 import {sourceFractalFormulaLatex} from './sourceFractalFormulaLatex';
 import {symmetryEquationLatex} from '../scenes/symmetryFormula';
 import {hasSymmetryCustom} from './symmetryCustom';
-export type {FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation} from '../types';
-export function defaultFormulas():FormulaConfig{return{referenceWidth:1280,referenceHeight:720,main:{visible:false,x:32,y:80,scale:1,color:'#ffffff'},additional:[]};}
+export type {FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation,FormulaContent} from '../types';
+export function defaultFormulas():Extract<FormulaConfig,{layout?:undefined}>{return{referenceWidth:1280,referenceHeight:720,main:{visible:false,x:32,y:80,scale:1,color:'#ffffff'},additional:[]};}
 export {validateFormulas,validateFormulaPresentation} from './formulaConfig';
-import {validateFormulas,validateFormulaPresentation} from './formulaConfig';
+import {validateFormulas,validateFormulaPresentation,sourceFormulaPrimaryHeight} from './formulaConfig';
 export function mainEquation(scene:SceneDocument):string {
   if(scene.kind==='fractal')return scene.fractalSource?sourceFractalFormulaLatex(scene.fractalSource.formula):fractalEquationLatex(scene.settings);
   if(scene.kind==='symmetry')return hasSymmetryCustom(scene)?'z_{k+1}=\\operatorname{calculate\\_next}(z_k)':symmetryEquationLatex(scene.settings);
@@ -20,13 +22,31 @@ export function mainEquation(scene:SceneDocument):string {
   if(!lines.length)return `\\text{${scene.kind}}`;
   return `\\begin{aligned}${lines.join('\\\\')}\\end{aligned}`;
 }
-export function formulaLabels(scene:SceneDocument):FormulaLabel[]{
-  return [...formulaPresentation(scene).labels];
+export function formulaLabels(scene:SceneDocument):FormulaLabel[]{return [...resolveFormulaContent(scene).labels];}
+/** Text parsing belongs to Scene construction/Apply, not animation draws. */
+export function resolveFormulaContent(scene:SceneDocument):FormulaContent {
+  const config=scene.formulas?validateFormulas(scene.formulas):defaultFormulas(),extra=config.additional.filter(f=>f.visible&&f.latex.trim());
+  const labels=config.main.visible?[{...config.main,id:'main-equation',latex:config.main.latex?.trim()?config.main.latex:mainEquation(scene)},...extra]:extra;
+  if(config.layout==='source-surface-centered-v1'){
+    if(!usesSourceSurfaceGeometry(scene))throw new Error('源曲面公式布局需要源曲面项目');
+    return{layout:config.layout,labels};
+  }
+  return{referenceWidth:config.referenceWidth,referenceHeight:config.referenceHeight,labels};
 }
-/** Resolve text and layout once at the producing Scene boundary. Source
- * Fractal callers retain this value for the lifetime of that full-loaded Scene. */
-export function formulaPresentation(scene:SceneDocument):FormulaPresentation {
-  const config=scene.formulas?validateFormulas(scene.formulas):defaultFormulas(),labels=config.additional.filter(f=>f.visible&&f.latex.trim());
-  return validateFormulaPresentation({referenceWidth:config.referenceWidth,referenceHeight:config.referenceHeight,labels:config.main.visible?[{...config.main,id:'main-equation',latex:config.main.latex?.trim()?config.main.latex:mainEquation(scene)},...labels]:labels});
+/** The producing frame binds the source's primary logical height once. A
+ * consumer never derives it from document resolution, target aspect or DPR. */
+export function presentFormulas(content:FormulaContent,viewport?:SourceCameraViewport):FormulaPresentation {
+  return validateFormulaPresentation(content.layout==='source-surface-centered-v1'?{...content,primaryLogicalHeight:sourceFormulaPrimaryHeight(viewport)}:content);
 }
-export function formulaPlacement(config:Pick<FormulaConfig,'referenceWidth'|'referenceHeight'>,label:FormulaLabel,width:number,height:number,dimensions?:{width:number;height:number}){const scale=label.scale*Math.min(width/config.referenceWidth,height/config.referenceHeight),center=label.anchor==='center';return{x:label.x*width/config.referenceWidth-(center?(dimensions?.width??0)*scale/2:0),y:label.y*height/config.referenceHeight-(center?(dimensions?.height??0)*scale/2:0),scale};}
+export function formulaPresentation(scene:SceneDocument,viewport?:SourceCameraViewport):FormulaPresentation {return presentFormulas(resolveFormulaContent(scene),viewport);}
+export function formulaPlacement(config:FormulaPresentation|FormulaConfig,label:FormulaLabel,width:number,height:number,dimensions?:{width:number;height:number}){
+  if(config.layout==='source-surface-centered-v1'){
+    if(!('primaryLogicalHeight' in config)||!Number.isFinite(config.primaryLogicalHeight)||config.primaryLogicalHeight<=0)throw new Error('源曲面公式缺少实际主画布尺寸');
+    const ratio=height/config.primaryLogicalHeight,scale=label.scale*2.5*ratio;
+    // JLaTeXMath's 50-unit font versus MathJax's 20-unit SVG. This is a
+    // font-unit conversion, independent of viewport size and aspect ratio.
+    return{x:width/2+label.x*ratio-(dimensions?.width??0)*scale/2,y:height/2+label.y*ratio-(dimensions?.height??0)*scale/2,scale};
+  }
+  const scale=label.scale*Math.min(width/config.referenceWidth,height/config.referenceHeight),center=label.anchor==='center';
+  return{x:label.x*width/config.referenceWidth-(center?(dimensions?.width??0)*scale/2:0),y:label.y*height/config.referenceHeight-(center?(dimensions?.height??0)*scale/2:0),scale};
+}

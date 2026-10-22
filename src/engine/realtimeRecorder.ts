@@ -1,5 +1,5 @@
-import type {SceneDocument} from '../types';
-import {formulaLabels,formulaPlacement} from './formulas';
+import type {FormulaPresentation} from '../types';
+import {formulaPresentation,formulaPlacement} from './formulas';
 import type {PresentedFrame} from './presentedFrame';
 import {recordingDurationError} from './recordingContract';
 export interface RecordingFrame extends PresentedFrame {canvas:HTMLCanvasElement;}
@@ -39,7 +39,7 @@ export class RealtimeRecorder {
     if(!mime)throw new Error('浏览器没有可用的录制编码器');
     // captureStream emits an initial frame even at rate zero. Complete its
     // formula layer before creating the stream, so that frame is not partial.
-    try{context.drawImage(initial.canvas,0,0,canvas.width,canvas.height);await this.formulas(context,initial.scene,canvas.width,canvas.height);if(this.stopping)throw new DOMException('录制已取消','AbortError');if(getFrame()?.source!==initial.source)throw new Error('录制期间场景已更改，请重新开始录制。');}catch(error){this.cleanup();throw error;}
+    try{context.drawImage(initial.canvas,0,0,canvas.width,canvas.height);await this.formulas(context,initial,canvas.width,canvas.height);if(this.stopping)throw new DOMException('录制已取消','AbortError');if(getFrame()?.source!==initial.source)throw new Error('录制期间场景已更改，请重新开始录制。');}catch(error){this.cleanup();throw error;}
     const stream=canvas.captureStream(0);this.stream=stream;
     const track=stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
     if(typeof track?.requestFrame!=='function'){this.cleanup();throw new Error('此浏览器不支持逐帧提交画布，请使用逐帧导出。');}
@@ -67,7 +67,7 @@ export class RealtimeRecorder {
             const frame={...available};
             if(frame.source!==initial.source)throw new Error('录制期间场景已更改，请重新开始录制。');
             context.clearRect(0,0,canvas.width,canvas.height);context.drawImage(frame.canvas,0,0,canvas.width,canvas.height);
-            await this.formulas(context,frame.scene,canvas.width,canvas.height);
+            await this.formulas(context,frame,canvas.width,canvas.height);
             if(this.stopping)return;
             track.requestFrame();this.frames++;if(frame.revision!==lastRevision){frameVersions++;lastRevision=frame.revision;}sceneEnd=frame.sceneTime;onProgress((performance.now()-this.started)/1000,this.frames,frameVersions);
           }catch(error){this.failure=error instanceof Error?error:new Error(String(error));this.stop();return;}
@@ -77,8 +77,8 @@ export class RealtimeRecorder {
       try{recorder.start(1000);onStarted?.(initial,this.started);this.timer=setTimeout(()=>this.stop(),maxDuration*1000);this.animation=requestAnimationFrame(tick);}catch(error){this.cleanup();reject(error);}
     });
   }
-  private async formulas(context:CanvasRenderingContext2D,scene:SceneDocument,width:number,height:number){
-    const labels=formulaLabels(scene);if(!labels.length){this.images.clear();return;}
+  private async formulas(context:CanvasRenderingContext2D,frame:PresentedFrame,width:number,height:number){
+    const presentation:FormulaPresentation=frame.formulaPresentation??formulaPresentation(frame.scene),labels=presentation.labels;if(!labels.length){this.images.clear();return;}
     const {renderFormulaSvg}=await import('./formulaSvg');
     const retained=new Map<string,{image:HTMLImageElement;width:number;height:number}>();let pixels=0;
     for(const label of labels){
@@ -89,7 +89,7 @@ export class RealtimeRecorder {
         const url=URL.createObjectURL(new Blob([svg.source],{type:'image/svg+xml'})),image=new Image();
         try{image.src=url;await image.decode();rendered={image,width:svg.width,height:svg.height};}finally{URL.revokeObjectURL(url);}
       }else{pixels+=Math.ceil(rendered.width)*Math.ceil(rendered.height);if(pixels>16_000_000)throw new Error('公式图像超出实时录制缓存预算');}
-      retained.set(key,rendered);const p=formulaPlacement(scene.formulas!,label,width,height,rendered);context.drawImage(rendered.image,p.x,p.y,rendered.width*p.scale,rendered.height*p.scale);
+      retained.set(key,rendered);const p=formulaPlacement(presentation,label,width,height,rendered);context.drawImage(rendered.image,p.x,p.y,rendered.width*p.scale,rendered.height*p.scale);
     }
     if(!this.stopping)this.images=retained;
   }

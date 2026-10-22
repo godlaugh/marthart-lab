@@ -1,7 +1,7 @@
 import type {SceneDocument,SceneOutput} from '../types';
 import {ArtRenderer} from './renderer';
 import {outputBuffers} from './outputBuffers';
-import {formulaPresentation} from './formulas';
+import {validateFormulaPresentation} from './formulaConfig';
 import type {sourceRecordingSize} from './sourceRecordingSize';
 
 const retired=new Set<SurfaceRecordingRenderer>();
@@ -40,7 +40,7 @@ export class SurfaceRecordingRenderer {
   check();
   // Video receives raw draw pixels. Paused PNG enhancement/upscale belongs to
   // its separate capture path; formulas are composed by the video consumer.
-  return{type:'raster',width,height,pixels,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:formulaPresentation(this.scene)};
+  return{type:'raster',width,height,pixels,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
  }
  dispose():void {
   if(this.disposed)return;const errors:unknown[]=[];

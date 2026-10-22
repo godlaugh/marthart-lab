@@ -25,6 +25,7 @@ describe('Surface transport capabilities',()=>{
  const mutations:Record<string,(o:Extract<SceneOutput,{type:'geometry'}>)=>void>={
   session:o=>{o.surfaceLive!.sessionId='foreign';},revision:o=>{o.surfaceLive!.revision++;},pause:o=>{o.surfaceLive!.paused=false;},
   frame:o=>{o.surfaceLive!.frame={...o.surfaceLive!.frame,frameIndex:o.surfaceLive!.frame.frameIndex+1};},camera:o=>{o.sourceCameraFrame!.camera={...o.sourceCameraFrame!.camera,phi:99};},viewport:o=>{o.sourceCameraFrame!.viewport={...o.sourceCameraFrame!.viewport,logicalWidth:3};},
+  formulas:o=>{delete o.formulaPresentation;},formulaModel:o=>{o.formulaPresentation={layout:'future',labels:[]} as never;},
   time:o=>{o.surfaceLive!.frame={...o.surfaceLive!.frame,sceneTime:NaN};},queue:o=>{o.surfaceLive!.frame={...o.surfaceLive!.frame,queueIndex:-1};},
  };
  it.each(Object.entries(mutations))('rejects malformed %s in final and progress delivery',async(_name,mutate)=>{
@@ -33,6 +34,12 @@ describe('Surface transport capabilities',()=>{
    expect(()=>w.emit({operation,sessionId:r.sessionId,id:r.id,output:f.output} as GenerationResponse)).not.toThrow();
    expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
   }
+ });
+ it.each(['generate','generate-progress'] as const)('rejects raster with valid labels for ordinary source Surface %s',async operation=>{
+  const f=fixture(),context={...f.context,surfaceLive:undefined},delivered=vi.fn(),pending=f.g.generate(f.scene,context,delivered),caught=pending.catch(e=>e),worker=Transport.instances[0],request=worker.messages[0];
+  const output:SceneOutput={type:'raster',width:64,height:48,pixels:new Uint8ClampedArray(64*48*4),stats:{samples:1,generated:1,invalid:0},formulaPresentation:f.output.formulaPresentation};
+  if(operation==='generate')worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});else worker.emit({operation:'generate-progress',id:request.id,sessionId:request.sessionId,output});
+  expect((await caught).message).toContain('公式标注无效');expect(delivered).not.toHaveBeenCalled();expect(worker.terminated).toBe(true);f.g.dispose();
  });
  it('requires the completed output identity and validates playback acknowledgement',async()=>{
   const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;

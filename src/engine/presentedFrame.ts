@@ -1,9 +1,9 @@
-import type {SceneDocument} from '../types';
+import type {SceneDocument,FormulaPresentation} from '../types';
 /** Identity is the immutable request document object, not its user-visible id.
  * A revision denotes one successful presentation (including camera/resize),
  * not a new mathematical sample, a new pixel image, or an encoded video frame. */
 export interface PresentedFrame {
- source:SceneDocument;scene:SceneDocument;sceneTime:number;revision:number;
+ source:SceneDocument;scene:SceneDocument;sceneTime:number;revision:number;formulaPresentation?:FormulaPresentation;
 }
 const cameraAnimated=(scene:SceneDocument)=>scene.timeline.tracks.some(track=>track.enabled&&track.target.startsWith('camera.'));
 /** Keep fitted/manual views during ordinary generation, but consume completed
@@ -19,9 +19,9 @@ export function applyPresentedCamera(previous:PresentedFrame|null,source:SceneDo
 export class PresentedFrameOwner {
  private value:PresentedFrame|null=null;
  private revision=0;
- present(source:SceneDocument,scene:SceneDocument,sceneTime:number){
+ present(source:SceneDocument,scene:SceneDocument,sceneTime:number,formulaPresentation?:FormulaPresentation){
   if(!Number.isFinite(sceneTime)||sceneTime<0)throw new Error('已呈现帧时间无效');
-  this.value={source,scene,sceneTime,revision:++this.revision};
+  this.value={source,scene,sceneTime,revision:++this.revision,...(formulaPresentation?{formulaPresentation:structuredClone(formulaPresentation)}:{})};
  }
  appearance(scene?:SceneDocument){if(this.value)this.value={...this.value,scene:scene??this.value.scene,revision:++this.revision};}
  clear(){this.value=null;}

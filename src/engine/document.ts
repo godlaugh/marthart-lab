@@ -293,7 +293,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   validateSourceSamilaPresentation(data as unknown as SceneDocument);
   validateSourceMapPresentation(data as unknown as SceneDocument);validateSourceSymmetryPresentation(data as unknown as SceneDocument);validateSourceSymmetryGradient(data as unknown as SceneDocument);validateSourceSymmetryParameters(data as unknown as SceneDocument);validateSourceMapParameters(data as unknown as SceneDocument);validateSourceMapSplat(data as unknown as SceneDocument);
   validateSourceSamilaSampling(data as unknown as SceneDocument);
-  if(data.formulas!==undefined)data.formulas=validateFormulas(data.formulas);
+  if(data.formulas!==undefined){const formulas=validateFormulas(data.formulas);data.formulas=formulas;if(formulas.layout==='source-surface-centered-v1'&&!usesSourceSurfaceGeometry(data as unknown as SceneDocument))throw new Error('源曲面公式布局需要源曲面项目');}
   const t = data.timeline as Record<string, unknown>;
   if (
     typeof t.duration !== "number" ||

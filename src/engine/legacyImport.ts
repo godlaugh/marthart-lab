@@ -1,3 +1,4 @@
+import type {FormulaConfig} from '../types';
 import {DOMAIN_SCENE_SEQUENCE} from './sourceDomainTimeline';
 import {importSourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
 import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument';
@@ -287,17 +288,17 @@ function common(r:Reader,s:SceneDocument){
 }
 function formulaAnnotations(r:Reader,s:SceneDocument){
  if(!r.has('main_equation')&&!r.has('formulas'))return;
- const config=defaultFormulas();
+ const sourceSurface=usesSourceSurfaceGeometry(s),config:FormulaConfig=sourceSurface?{layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]}:defaultFormulas();
  const latex=(path:string)=>{const value=r.str(path)??'';if(value.length>8192)fail(`${path} 超过 8192 字符`);const trimmed=value.trim();return trimmed.startsWith('\\(')&&trimmed.endsWith('\\)')||trimmed.startsWith('\\[')&&trimmed.endsWith('\\]')?trimmed.slice(2,-2).trim():value;};
  const style=(path:string,visible:boolean)=>{
   const position=r.use(path+'.position');if(position!==undefined&&(!Array.isArray(position)||position.length!==2||position.some(v=>typeof v!=='number'||!Number.isFinite(v))))fail(`${path}.position 应为两个有限坐标`);
-  const [x,y]=(position??[0,200]) as number[],color=r.str(path+'.color')??'#ffffff',scale=(r.num(path+'.scale')??.25)*2.5;
-  return{visible:r.bool(path+'.enabled')??visible,x:config.referenceWidth/2+x,y:config.referenceHeight/2+y,scale,color,anchor:'center' as const};
+  const [x,y]=(position??[0,200]) as number[],color=r.str(path+'.color')??'#ffffff',scale=(r.num(path+'.scale')??.25)*(sourceSurface?1:2.5);
+  return{visible:r.bool(path+'.enabled')??visible,x:config.layout==='source-surface-centered-v1'?x:config.referenceWidth/2+x,y:config.layout==='source-surface-centered-v1'?y:config.referenceHeight/2+y,scale,color,anchor:'center' as const};
  };
  if(r.has('main_equation')){r.object('main_equation');config.main={...style('main_equation',false),...(r.has('main_equation.latex')?{latex:latex('main_equation.latex')}:{})};}
  if(r.has('formulas')){const formulas=r.peek('formulas');if(!Array.isArray(formulas)||formulas.length>32)fail('formulas 应为最多 32 条公式的数组');config.additional=formulas.map((_,i)=>{const path=`formulas.${i}`;r.object(path);return{...style(path,true),id:`imported-formula-${i+1}`,latex:latex(path+'.latex')};});if(!formulas.length)r.use('formulas');}
  try{s.formulas=validateFormulas(config);}catch(error){fail(error instanceof Error?error.message:String(error));}
- r.warnings.push('公式内容、居中锚点、颜色和相对缩放已导入；位置转换至 1280×720 参考画布，原版窗口尺寸及 JLaTeXMath 字体度量未逐帧对照，可在公式标注面板调整。');
+ r.warnings.push(sourceSurface?'源曲面公式保留居中偏移与源缩放，预览和导出使用实际主画布逻辑高度；MathJax 与 JLaTeXMath 字形度量仍未完成一致性验证。':'公式内容、居中锚点、颜色和相对缩放已导入；位置转换至 1280×720 参考画布，原版窗口尺寸及 JLaTeXMath 字体度量未逐帧对照，可在公式标注面板调整。');
 }
 function geometryMaterial(r:Reader,s:SceneDocument){
  numberTo(r,s,'settings.shininess','shininess',{min:0,max:100});

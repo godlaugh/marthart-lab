@@ -70,6 +70,13 @@ describe('Fractal live worker client contract',()=>{
   else worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});
   expect((await caught).message).toContain(live?'不匹配':'公式标注无效');expect(delivered).not.toHaveBeenCalled();expect(worker.terminated).toBe(true);generator.dispose();
  });
+ it.each(['generate','generate-progress'] as const)('rejects geometry with otherwise valid labels for a fresh source Fractal %s',async operation=>{
+  FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);const generator=new Generator(),s=scene(),c=context();delete c.fractalLive;
+  const delivered=vi.fn(),pending=generator.generate(s,c,delivered),caught=pending.catch(e=>e),worker=FakeWorker.instances[0],request=worker.messages[0];
+  const valid=rendered(s),output:SceneOutput={type:'geometry',topology:'points',positions:new Float32Array([0,0,0]),stats:{samples:1,generated:1,invalid:0},formulaPresentation:valid.formulaPresentation};
+  if(operation==='generate')worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output});else worker.emit({operation:'generate-progress',id:request.id,sessionId:request.sessionId,output});
+  expect((await caught).message).toContain('公式标注无效');expect(delivered).not.toHaveBeenCalled();expect(worker.terminated).toBe(true);generator.dispose();
+ });
  it('renews a validated current PNG capability and retains it after owner-confirmed configuration rejection',async()=>{
   FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);const generator=new Generator(),s=scene(),c=context(),first=generator.generate(s,c),w=FakeWorker.instances[0],request=w.messages[0],output=rendered(s,c);
   w.emit({operation:'generate',sessionId:request.sessionId,id:request.id,output});await first;

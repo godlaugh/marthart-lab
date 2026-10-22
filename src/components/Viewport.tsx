@@ -332,7 +332,7 @@ export const Viewport = forwardRef<
       renderedScene.current=frameScene;
       lastId.current = source.id;
       deliveredOutput.current={source,output};
-      presented.current.present(source,output.sourceCameraFrame?{...frameScene,evaluatedSourceCamera:output.sourceCameraFrame}:{...frameScene,camera:renderer.current.cameraState()},(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);
+      presented.current.present(source,output.sourceCameraFrame?{...frameScene,evaluatedSourceCamera:output.sourceCameraFrame}:{...frameScene,camera:renderer.current.cameraState()},(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time,output.formulaPresentation);
       presentationCallbacks.current.onPresented?.(presented.current.read());
     }
     else {deliveredOutput.current=null;presented.current.clear();presentationCallbacks.current.onPresented?.(null);}

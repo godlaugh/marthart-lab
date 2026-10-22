@@ -9,12 +9,12 @@ async function files(dir){const result=[];for(const e of await readdir(dir,{with
 async function hashes(){return Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-surface-live.mjs'].sort().map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));}
 report.sourceBefore=await hashes();let server,browser;const started=performance.now(),errors=[];
 try{
- server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();
+ server=await createServer({server:{host:'127.0.0.1',port:0,strictPort:false,hmr:false},logLevel:'error'});await server.listen();
  browser=await chromium.launch({channel:'chrome',headless:true});report.browser=browser.version();
  const page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await page.route('**/surface-live-verifier',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Surface live verification</title>'}));await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/surface-live-verifier`);
  report.rows=await page.evaluate(async()=>{
-  const {GenerationQueue}=await import('/src/engine/generationQueue.ts'),{Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),THREE=await import('/node_modules/three/build/three.module.js');
+  const {GenerationQueue}=await import('/src/engine/generationQueue.ts'),{Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),{encodeFormulaRaster}=await import('/src/engine/formulaCanvas.ts'),THREE=await import('/node_modules/three/build/three.module.js');
   const check=(v,m)=>{if(!v)throw Error(m);},digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
   const rows=[];
   for(const backend of ['CPU','GPU'])for(const mode of backend==='CPU'?['POINTS','MESH','SWITCH']:['POINTS','MESH']){
@@ -50,12 +50,13 @@ try{
     let invalidEdit=false;try{await g.updateSurfaceParameter(edited,'a',NaN);}catch{invalidEdit=true;}check(invalidEdit,'nonfinite edit accepted');
     const editCurrent=await g.currentSurface(edited);check(await render(editCurrent,s)===editedHash,'unknown parameter changed pixels');
     const captureBefore=structuredClone(editCurrent.surfaceLive.frame),capture=await g.captureSurfacePaused(editCurrent,{width:65,height:49},3);
-    check(capture.capture.width===195&&capture.capture.height===147&&capture.capture.pixels.length===195*147*4,'capture dimensions');
+    check(capture.capture.width===65&&capture.capture.height===49&&capture.capture.pixels.length===65*49*4&&capture.capture.sourceCurrentImage?.stage==='base-before-formulas'&&capture.capture.sourceCurrentImage.scale===3,'capture base dimensions');
+    const capturePng=await encodeFormulaRaster(capture.capture),decoded=await createImageBitmap(capturePng);try{check(decoded.width===195&&decoded.height===147,'encoded 3x PNG dimensions');}finally{decoded.close();}
     const rgba=capture.capture.pixels;check(rgba.some((v,i)=>i%4!==3&&v!==rgba[i%4]),'capture contains only a flat background');
     check(JSON.stringify(capture.preview.surfaceLive.frame)===JSON.stringify(captureBefore),'capture advanced queue');
     check(await render(capture.preview,s)===editedHash,'capture changed primary pixels');
     const captureHash=await digest(capture.capture.pixels),captureAgain=await g.captureSurfacePaused(capture.preview,{width:65,height:49},3);
-    check(await digest(captureAgain.capture.pixels)===captureHash,'repeated capture changed pixels');
+    check(await digest(captureAgain.capture.pixels)===captureHash,'repeated capture changed pixels');check(await digest(await (await encodeFormulaRaster(captureAgain.capture)).arrayBuffer())===await digest(await capturePng.arrayBuffer()),'repeated 3x PNG changed');
     let capacityRejected=false;try{await g.captureSurfacePaused(captureAgain.preview,{width:30000,height:30000},5);}catch{capacityRejected=true;}check(capacityRejected,'oversized capture accepted');
     const afterCapture=await g.currentSurface(captureAgain.preview);check(await render(afterCapture,s)===editedHash,'capture capacity failure lost preview');
     const navBefore=structuredClone(afterCapture.surfaceLive.frame),dragged=await g.navigateSurfacePaused(afterCapture,{kind:'drag',dx:37,dy:-33}),zoomed=await g.navigateSurfacePaused(dragged,{kind:'wheel',count:-3});

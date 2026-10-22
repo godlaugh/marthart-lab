@@ -112,10 +112,15 @@ export interface ParticleCameraRequest {time:number;index:number;}
 export type ParticleCameraSample = {status:'available';particleId:number;position:[number,number,number]} | {status:'out-of-range'|'unavailable';particleId?:number};
 export interface FormulaStyle {visible:boolean;x:number;y:number;scale:number;color:string;anchor?:'top-left'|'center';}
 export interface FormulaLabel extends FormulaStyle {id:string;latex:string;}
-export interface FormulaConfig {referenceWidth:number;referenceHeight:number;main:FormulaStyle&{latex?:string};additional:FormulaLabel[];}
+export interface LegacyFormulaLayout {layout?:undefined;referenceWidth:number;referenceHeight:number;}
+/** Source positions remain signed offsets from the canvas centre, in primary
+ * logical units. Scale retains the source value; font-unit conversion is display-only. */
+export interface SourceSurfaceFormulaLayout {layout:'source-surface-centered-v1';referenceWidth?:never;referenceHeight?:never;}
+export type FormulaConfig=(LegacyFormulaLayout|SourceSurfaceFormulaLayout)&{main:FormulaStyle&{latex?:string};additional:FormulaLabel[];};
 /** Resolved labels owned by the delivered frame. Empty labels are explicit;
  * consumers must not replace them with a newer authoring draft. */
-export interface FormulaPresentation {referenceWidth:number;referenceHeight:number;labels:readonly FormulaLabel[];}
+export type FormulaContent=(LegacyFormulaLayout|SourceSurfaceFormulaLayout)&{labels:readonly FormulaLabel[];};
+export type FormulaPresentation=(LegacyFormulaLayout|(SourceSurfaceFormulaLayout&{primaryLogicalHeight:number}))&{labels:readonly FormulaLabel[];};
 export type AnimationClipType = "numeric" | "wait" | "animate" | "align" | "trails" | "param" | "fractal_zoom" | "surface_mode_transition" | "spirograph_finish_wait";
 export interface OscillationEdgeEasing {window:number;floor:number;easing:string;}
 export interface ParameterAnimation {
@@ -330,6 +335,7 @@ export interface Preset {
   document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedDomainScene" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
 }
 export interface GeometryOutput {
+  formulaPresentation?:FormulaPresentation;
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
   /** Implicit work counts include confirmed attempts before a CPU replay;
    * requested counts describe one requested grid. Quality counts describe the

@@ -1,9 +1,7 @@
 import type {GenerationInput} from '../types';
 import {sourceSurfaceCapturePlan,type SourceSurfaceCapturePreparation,type SourceSurfacePausedCaptureResult} from './sourceSurfaceCapture';
 import {outputBuffers} from './outputBuffers';
-import {enhanceSourcePausedImage} from './sourcePausedImage';
-import {upscaleSourcePausedImage} from './sourcePausedUpscale';
-import {formulaPresentation} from './formulas';
+import {validateFormulaPresentation} from './formulaConfig';
 /** Main-thread offscreen canvas: the same geometry renderer as the viewport,
  * with its own GL resources. Never reconstruct or update the source scene. */
 export async function renderSurfaceCapture(prepared:SourceSurfaceCapturePreparation,context:GenerationInput,size:{width:number;height:number},scale:1|3|5,isCancelled:()=>boolean):Promise<SourceSurfacePausedCaptureResult> {
@@ -23,8 +21,9 @@ export async function renderSurfaceCapture(prepared:SourceSurfaceCapturePreparat
   if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw Error('曲面截图像素回读失败');
   const stride=width*4,row=new Uint8ClampedArray(stride);
   for(let y=0;y<Math.floor(height/2);y++){const a=y*stride,b=(height-1-y)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);}
-  check();pixels=enhanceSourcePausedImage(pixels,width,height);
-  if(scale!==1)pixels=upscaleSourcePausedImage(pixels,width,height,scale,isCancelled);check();
-  return{preview:prepared.preview,capture:{type:'raster',width:plan.width,height:plan.height,pixels,stats:prepared.capture.stats,formulaPresentation:formulaPresentation(prepared.scene),sourceCameraFrame:prepared.capture.sourceCameraFrame}};
+  check();
+  // Scene overlays belong to the base draw. The shared encoder composites
+  // formulas before whole-image enhancement and optional image enlargement.
+  return{preview:prepared.preview,capture:{type:'raster',width,height,pixels,stats:prepared.capture.stats,formulaPresentation:validateFormulaPresentation(prepared.capture.formulaPresentation),sourceCameraFrame:prepared.capture.sourceCameraFrame,sourceCurrentImage:{model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[size.width,size.height],logicalSize:[plan.base.logicalWidth,plan.base.logicalHeight],pixelDensity:plan.base.density,baseSize:[width,height],scale}}};
  }finally{renderer.dispose();renderer.renderer.forceContextLoss();canvas.width=canvas.height=0;}
 }

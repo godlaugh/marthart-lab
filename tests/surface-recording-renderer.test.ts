@@ -10,7 +10,7 @@ vi.mock('../src/engine/renderer',()=>({ArtRenderer:class{
 }}));
 import {SurfaceRecordingRenderer,retrySurfaceRecordingRendererCleanup,surfaceRecordingRendererCleanupCount} from '../src/engine/renderSurfaceRecording';
 const scene=createScene(definition('surface')),size=sourceRecordingSize({width:1,height:1},1);
-const geometry:Extract<SceneOutput,{type:'geometry'}>={type:'geometry',topology:'points',positions:new Float32Array([0,0,0]),stats:{samples:1,generated:1,invalid:0,elapsedMs:0}};
+const geometry:Extract<SceneOutput,{type:'geometry'}>={type:'geometry',topology:'points',positions:new Float32Array([0,0,0]),formulaPresentation:{referenceWidth:1280,referenceHeight:720,labels:[]},stats:{samples:1,generated:1,invalid:0,elapsedMs:0}};
 beforeEach(()=>{retrySurfaceRecordingRendererCleanup();Object.assign(state,{created:0,draws:0,disposals:0,releases:0,failDispose:false,failRelease:false,lost:false,error:0,width:0,height:0});vi.stubGlobal('document',{createElement:()=>({width:0,height:0})});});
 afterEach(()=>{retrySurfaceRecordingRendererCleanup();vi.unstubAllGlobals();});
 describe('Surface recording GL resource owner',()=>{

@@ -1,3 +1,5 @@
+import {resolveFormulaContent} from './formulas';
+import type {FormulaContent} from '../types';
 import {planSourceSurfaceRecording,assertSourceSurfaceRecordingFrame,type SourceSurfaceRecordingFrame} from './sourceSurfaceRecording';
 import type {SourceRecordingOptions} from './generationProtocol';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
@@ -32,7 +34,7 @@ export interface SourceSurfaceLiveFacts {
  /** Counts actual producer construction, including local revision replacement. */
  constructions:number;
 }
-type Owned={scene:SceneDocument;sessionId:string;revision:number;startAt?:number;clock:SourceSceneHostClock;queue:OrdinarySourceCameraTimelineSession;producer:SourceSurfaceHost|SourceSurfaceParticles};
+type Owned={scene:SceneDocument;formulas:FormulaContent;sessionId:string;revision:number;startAt?:number;clock:SourceSceneHostClock;queue:OrdinarySourceCameraTimelineSession;producer:SourceSurfaceHost|SourceSurfaceParticles};
 type Recording={handle:object;clock:SourceQueueRecordingClock;author:SceneDocument;primary:GenerationInput;target:GenerationInput;next:number;actualFrameRate:number;cancel?:()=>boolean;pending?:{frame:OrdinarySourceCameraFrame;actualFrameRate:number};finished?:OrdinarySourceCameraFrame};
 function observedRate(value:number|undefined):number{return sourceSurfaceParameterFrameRate({frameIndex:0,time:0,deltaTime:0,actualFrameRate:value},NaN);}
 function context(c:GenerateContext):SourceSurfaceLiveContext {
@@ -64,7 +66,7 @@ export class SourceSurfaceLiveSession {
   const applied=structuredClone(v.configuration??scene);
   if(applied.id!==scene.id||!usesSourceSurfaceGeometry(applied)||!usesSourceSurfaceGeometry(scene))throw Error('曲面实时会话需要匹配的源曲面配置');
   delete applied.evaluatedSourceCamera;const fps=simulationFps??applied.timeline.fps;
-  validateSourceSurfacePresentation(applied,c);const initial=ordinarySourceCameraInitial(applied)!;
+  validateSourceSurfacePresentation(applied,c);const initial=ordinarySourceCameraInitial(applied)!,formulas=resolveFormulaContent(applied);
   let producer:Owned['producer'];
   const configuration=usesSourceSurfaceHost(applied)?prepareSourceSurfaceScene(applied).configuration:undefined;
   const prepared=configuration?undefined:prepareSourceSurfaceParticles(applied);
@@ -73,7 +75,7 @@ export class SourceSurfaceLiveSession {
    createParticles:()=>producer=configuration?new SourceSurfaceHost({configuration,equations:applied.equations,parameters:applied.parameters,palette:applied.surfaceSourcePalette,frameRate:fps,coverage:'all',reserve:this.reserve,isCancelled:()=>this.cancel?.()??false}):prepared!.create('all',()=>this.cancel?.()??false,this.reserve),
   });
   if(v.startAt===undefined)queue.snapshot();else queue.reconstruct(v.startAt);this.check();
-  return{scene:applied,sessionId:v.sessionId,revision:v.revision,startAt:v.startAt,clock:new SourceSceneHostClock(v.clock.paused,initial),queue,producer:producer!};
+  return{scene:applied,formulas,sessionId:v.sessionId,revision:v.revision,startAt:v.startAt,clock:new SourceSceneHostClock(v.clock.paused,initial),queue,producer:producer!};
  }
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {
   const own=this.owned,done=this.completed,v=c.surfaceLive,a=c.sourceViewport,b=done?.context.sourceViewport;
@@ -98,7 +100,7 @@ export class SourceSurfaceLiveSession {
  }
  private display(own:Owned,frame:OrdinarySourceCameraFrame,c:GenerateContext,kind:'update'|'snapshot',constructions=this.constructions):SceneOutput {
   const state:SourceSurfaceDisplayState=own.producer instanceof SourceSurfaceHost?{kind:'host',frame,snapshot:own.producer.snapshot()}:{kind:'points',frame,points:own.producer.snapshot()};
-  const output=presentSourceSurfaceFrame(own.scene,c,state);
+  const output=presentSourceSurfaceFrame(own.scene,c,state,performance.now(),own.formulas);
   if(output.type!=='geometry')throw Error('曲面实时会话要求几何输出');
   output.surfaceLive={sessionId:own.sessionId,revision:own.revision,paused:own.clock.diagnostics().paused,renderKind:kind,clockSource:own.clock.diagnostics().clockSource,frame:structuredClone(frame),constructions};
   return output;
