@@ -41,3 +41,5 @@
 - `.cache/surface-recording-worker-browser-final/report.json`：并行负载期间的超时记录。
 
 使用 `node scripts/verify-source-surface-recording.mjs <新证据目录> --worker` 复现真实 Worker 验证；省略 `--worker` 验证直接会话。上述 `.cache` 证据不进入 Git。
+
+后续进展：生产客户端与队列已接通，见[曲面录制客户端与队列验收](source-surface-recording-client-validation.zh-CN.md)。录制界面和 FFmpeg 输出仍待连接。

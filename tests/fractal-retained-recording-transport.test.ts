@@ -25,7 +25,7 @@ function raster(index:number,mode:'initial'|'recording'|'stopped'='recording'):S
   ...(fixed?{fractalRecording:{displayFrame:index,simulationFps:10,warmup:index===0,complete,queueIndex,sceneTime:time}}:{})};
 }
 const startResult=()=>({scene:anchor,context:structuredClone(primary),clock:{...clock},warmup:raster(0)});
-const stopResult=(index=2):SourceRecordingStop=>({scene:structuredClone(author),context:{...structuredClone(primary),time:(index+1)/10},preview:raster(index,'stopped')});
+const stopResult=(index=2)=>({scene:structuredClone(author),context:{...structuredClone(primary),time:(index+1)/10},preview:raster(index,'stopped')});
 class FakeWorker {
  static all:FakeWorker[]=[];messages:GenerationRequest[]=[];terminated=false;
  onmessage:((event:{data:GenerationResponse})=>void)|null=null;onerror:((event:{message:string})=>void)|null=null;

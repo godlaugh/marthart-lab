@@ -1,7 +1,7 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {Generator} from '../src/engine/client';
 import {parseProjectFile} from '../src/engine/legacyImport';
-import type {GenerationInput} from '../src/types';
+import type {GenerationInput,SceneOutput} from '../src/types';
 import type {GenerationRequest,GenerationResponse,SourceRecordingOptions} from '../src/engine/generationProtocol';
 
 /** Real client, worker handler, numerical owner and CPU renderer. Only the
@@ -29,6 +29,7 @@ beforeEach(async()=>{
  vi.stubGlobal('self',worker);vi.stubGlobal('Worker',Transport);await import('../src/engine/generate.worker');
 });
 afterEach(()=>vi.unstubAllGlobals());
+function raster(output:SceneOutput){if(output.type!=='raster')throw Error('expected domain raster');return output;}
 const options:SourceRecordingOptions={width:13,height:9,simulationFps:60,actualFrameRate:37};
 async function setup(empty=false){
  const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'DOMAIN_COLORING',name:'wire',domainColoring:{formula:'z+a'},timeline:empty?[]:[{type:'wait',duration:.1}]})).scene;
@@ -41,7 +42,7 @@ describe('Domain recording production transport',()=>{
   const f=await setup(),start=await f.g.beginSourceRecording(f.output,{...options,actualFrameRate:-0});
   expect(Object.is(start.warmup.domainLive!.actualFrameRate,-0)).toBe(true);
   const frame=await f.g.nextSourceRecordingFrame(start.handle,1,-0);expect(Object.is(frame.domainLive!.actualFrameRate,-0)).toBe(true);
-  const stop=await f.g.finishSourceRecording(start.handle);expect(Object.is(stop.preview.domainLive!.actualFrameRate,-0)).toBe(true);f.g.dispose();
+  const stop=await f.g.finishSourceRecording(start.handle);expect(Object.is(raster(stop.preview).domainLive!.actualFrameRate,-0)).toBe(true);f.g.dispose();
  });
  it('requires explicit observations and exact completed/recording capabilities, then restores usable primary',async()=>{
   const f=await setup();await expect(f.g.beginSourceRecording({...f.output},options)).rejects.toThrow('主预览');
@@ -51,7 +52,7 @@ describe('Domain recording production transport',()=>{
   await expect(f.g.nextSourceRecordingFrame({...start.handle},1,24)).rejects.toThrow('身份');
   await expect(f.g.nextSourceRecordingFrame(start.handle,1)).rejects.toThrow('Float32');
   expect(await f.g.nextSourceRecordingFrame(start.handle,1,24)).toMatchObject({domainLive:{actualFrameRate:24,updateOrdinal:1}});
-  const stop=await f.g.finishSourceRecording(start.handle);expect(stop.preview.domainLive).toMatchObject({updateOrdinal:1,actualFrameRate:24,paused:false,renderKind:'snapshot'});
+  const stop=await f.g.finishSourceRecording(start.handle);expect(raster(stop.preview).domainLive).toMatchObject({updateOrdinal:1,actualFrameRate:24,paused:false,renderKind:'snapshot'});
   expect(f.g.hasSourceRecording(start.handle)).toBe(false);await f.g.setDomainPaused(stop.preview,true);await f.g.navigateDomainPaused(stop.preview,{kind:'wheel',count:1});f.g.dispose();
  });
  it('retains completed primary when worker rejects oversized recording admission',async()=>{
@@ -65,7 +66,7 @@ describe('Domain recording production transport',()=>{
   const failure=await f.g.beginSourceRecording(f.output,options).catch(e=>e);
   expect(failure).toMatchObject({recordingRetained:true,previewRetained:false});expect(f.g.hasSourceRecording(failure.handle)).toBe(true);
   await expect(f.g.nextSourceRecordingFrame(failure.handle,1,24)).rejects.toThrow('warmup');
-  const stop=await f.g.finishSourceRecording(failure.handle);expect(stop.preview.domainLive!.updateOrdinal).toBe(0);expect(port.terminated).toBe(false);f.g.dispose();
+  const stop=await f.g.finishSourceRecording(failure.handle);expect(raster(stop.preview).domainLive!.updateOrdinal).toBe(0);expect(port.terminated).toBe(false);f.g.dispose();
  });
  it('retries an undelivered frame exactly once and rejects changed observations at both adapters',async()=>{
   const f=await setup(),start=await f.g.beginSourceRecording(f.output,options);fail={operation:'source-recording-frame'};
@@ -74,18 +75,18 @@ describe('Domain recording production transport',()=>{
   port.postMessage({operation:'source-recording-frame',id:100,sessionId:start.handle.sessionId,recordingId:start.handle.recordingId,displayFrame:1,actualFrameRate:12});
   expect(port.received.at(-1)).toMatchObject({retainedRecordingId:start.handle.recordingId,error:expect.stringContaining('改变')});
   const frame=await f.g.nextSourceRecordingFrame(start.handle,1,24);expect(frame.domainLive!.updateOrdinal).toBe(1);
-  const stop=await f.g.finishSourceRecording(start.handle);expect(stop.preview.domainLive!.presentation.evaluatedDomainScene!.clock).toEqual(frame.domainLive!.presentation.evaluatedDomainScene!.clock);f.g.dispose();
+  const stop=await f.g.finishSourceRecording(start.handle);expect(raster(stop.preview).domainLive!.presentation.evaluatedDomainScene!.clock).toEqual(frame.domainLive!.presentation.evaluatedDomainScene!.clock);f.g.dispose();
  });
  it('stops an uncertain detached frame without replaying its numerical update',async()=>{
   const f=await setup(),start=await f.g.beginSourceRecording(f.output,options);fail={operation:'source-recording-frame',afterTransfer:true};
   await expect(f.g.nextSourceRecordingFrame(start.handle,1,24)).rejects.toMatchObject({recordingRetained:true});
   await expect(f.g.nextSourceRecordingFrame(start.handle,1,24)).rejects.toThrow('传输状态未知');
-  const stop=await f.g.finishSourceRecording(start.handle);expect(stop.preview.domainLive).toMatchObject({updateOrdinal:1,actualFrameRate:24});f.g.dispose();
+  const stop=await f.g.finishSourceRecording(start.handle);expect(raster(stop.preview).domainLive).toMatchObject({updateOrdinal:1,actualFrameRate:24});f.g.dispose();
  });
  it.each([false,true])('retries stop publication without an extra update (detached=%s)',async afterTransfer=>{
   const f=await setup(),start=await f.g.beginSourceRecording(f.output,options),frame=await f.g.nextSourceRecordingFrame(start.handle,1,24);fail={operation:'source-recording-finish',afterTransfer};
   await expect(f.g.finishSourceRecording(start.handle)).rejects.toMatchObject({recordingRetained:true});
-  const stop=await f.g.finishSourceRecording(start.handle);expect(stop.preview.domainLive!.presentation.evaluatedDomainScene).toEqual({...frame.domainLive!.presentation.evaluatedDomainScene,simulationFps:f.scene.timeline.fps});expect(port.terminated).toBe(false);f.g.dispose();
+  const stop=await f.g.finishSourceRecording(start.handle);expect(raster(stop.preview).domainLive!.presentation.evaluatedDomainScene).toEqual({...frame.domainLive!.presentation.evaluatedDomainScene,simulationFps:f.scene.timeline.fps});expect(port.terminated).toBe(false);f.g.dispose();
  });
  const malformed={
   observation:(r:any)=>{r.result.warmup.domainLive.actualFrameRate=60;},
@@ -111,6 +112,6 @@ describe('Domain recording production transport',()=>{
  });
  it('supports a zero-encoded-frame queue through the real worker',async()=>{
   const f=await setup(true),start=await f.g.beginSourceRecording(f.output,options);expect(start.clock).toMatchObject({updates:1,encodedFrames:0,lastDisplayFrame:0});
-  const stop=await f.g.finishSourceRecording(start.handle);expect(stop.preview.domainLive!.updateOrdinal).toBe(0);f.g.dispose();
+  const stop=await f.g.finishSourceRecording(start.handle);expect(raster(stop.preview).domainLive!.updateOrdinal).toBe(0);f.g.dispose();
  });
 });

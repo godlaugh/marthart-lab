@@ -9,11 +9,10 @@ import type {RootsFreshRecordingPlan} from './rootsRecording';
 
 export type SourceRecordingRaster=Extract<SceneOutput,{type:'raster'}>;
 export type SourceRecordingWireStart=Omit<SourceRecordingStart,'handle'|'warmup'>&{warmup:SceneOutput};
-export type SourceRecordingWireStop=Omit<SourceRecordingStop,'preview'>&{preview:SceneOutput};
-export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;/** Domain requires the independently observed FPS for warmup. */actualFrameRate?:number;}
+export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;/** Domain and Surface require the independently observed FPS for warmup. */actualFrameRate?:number;}
 export interface SourceRecordingHandle {readonly sessionId:number;readonly recordingId:number;}
 export interface SourceRecordingStart {handle:SourceRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceQueueRecordingClock;warmup:SourceRecordingRaster;}
-export interface SourceRecordingStop {scene:SceneDocument;context:GenerationInput;preview:SourceRecordingRaster;}
+export interface SourceRecordingStop {scene:SceneDocument;context:GenerationInput;preview:SceneOutput;}
 export type SourceRecordingOperation='source-recording-begin'|'source-recording-frame'|'source-recording-finish';
 export function isSourceRecordingOperation(operation:string):operation is SourceRecordingOperation{return operation==='source-recording-begin'||operation==='source-recording-frame'||operation==='source-recording-finish';}
 /** Retention is an acknowledgement from the current owner, never inferred from
@@ -121,7 +120,7 @@ export type GenerationPayload =
   | {operation:'fractal-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'source-recording-begin';id:number;recordingId:number;result:SourceRecordingWireStart}
   | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number;output:SceneOutput}
-  | {operation:'source-recording-finish';id:number;recordingId:number;result:SourceRecordingWireStop}
+  | {operation:'source-recording-finish';id:number;recordingId:number;result:SourceRecordingStop}
   | { operation: 'generate'; id: number; output: SceneOutput }
   | { operation: PausedCaptureOperation; id:number; result:PausedCaptureResult }
   | { operation: 'generate-progress'; id: number; output: SceneOutput }

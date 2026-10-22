@@ -411,6 +411,8 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  /** Geometry recording readback retains its producing Surface facts. */
+  surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
   formulaPresentation?:FormulaPresentation;
   domainLive?:import('./engine/sourceDomainLiveSession').SourceDomainLiveFacts;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveFacts;

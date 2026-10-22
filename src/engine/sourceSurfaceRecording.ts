@@ -21,6 +21,6 @@ export function planSourceSurfaceRecording(scene:SceneDocument,simulationFps:num
  return{simulationFps,warmupUpdates:1,updates,encodedFrames:updates-1,firstEncodedUpdate:updates>1?2:null,lastDisplayFrame:updates-1,completionReason:'animation-queue'};
 }
 export function assertSourceSurfaceRecordingFrame(output:SceneOutput,clock:SourceQueueRecordingClock,displayFrame:number):void {
- const live=output.type==='geometry'?output.surfaceLive:undefined,record=live?.recording;
+ const live=output.surfaceLive,record=live?.recording;
  if(!Number.isSafeInteger(displayFrame)||displayFrame<0||displayFrame>clock.lastDisplayFrame||!live||live.paused||live.renderKind!=='update'||live.clockSource!=='fixed-step'||!record||output.sourceCameraFrame?.viewport.target!=='offscreen'||record.displayFrame!==displayFrame||record.simulationFps!==clock.simulationFps||!Number.isFinite(record.actualFrameRate)||record.warmup!==(displayFrame===0)||record.complete!==(displayFrame===clock.lastDisplayFrame)||record.complete!==live.frame.queueComplete||live.frame.frameIndex!==displayFrame)throw Error('曲面录制帧与实际队列完成状态不一致');
 }
