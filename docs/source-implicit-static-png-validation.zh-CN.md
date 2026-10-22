@@ -53,3 +53,5 @@
 这属于完整 PNG 组件任务比较，不是整个 UI 导出耗时。浏览器 Worker 启动/转移调度、公式、GL、GPU 内存及 agent token 未测量。采样期间其他已知重任务已停止。输入没有被修改。
 
 本地完整证据位于 `.cache/implicit-static-png-20261022/`：`native-enhancement-comparison.json`、`comparison.json`、`comparison.png`、`public-final/report.json`、`performance-{before,after}.json`、`tests-final.log`、`build-final.log`。缓存包含本地原版材料，不进入版本库；受控公开回归脚本仅依赖仓库 fixture，不依赖这些缓存。
+
+后续进展：公式帧与位置已在同日修复并实际导出验证，中心差异进一步降为 135 个像素；旧保存布局保持兼容。见[公式帧验证](source-implicit-formula-frame-validation.zh-CN.md)。

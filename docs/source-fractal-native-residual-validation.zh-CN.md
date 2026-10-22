@@ -119,6 +119,34 @@ float32(500 * float32(1 / 600))      = 0.8333333730697632
 
 源码推导还指出一个关键区别：**输出低字为 0，不等于输入低字被忽略。** 若假设允许实数代数式重排，使误差补偿消去，`ds_add` 的 `t2` 仍保留 `a.y + b.y`；`ds_mul` 的高字仍可能保留 `a.x*b.y + a.y*b.x + a.y*b.y`，平方同理。实际浮点求值顺序另需验证。这只是有条件的代数推导，不是原生机器码观测。当前用高字单精度替换整段函数的实验会丢弃这些输入低字，所以不能把它称为正确的原生降阶模型。保留非零输入低字的贡献，是后续跨深缩放验证与生产方案必须解决的边界。
 
+## 非零输入低字的原生验证
+
+随后只增加一次串行原生运行，继续先验证原始 PNG、实际 fragment SHA 和独立 RGBA8 数学区域零差异。使用原始 DS 函数，在独立诊断程序中通过运行时 `vec4` uniform 数组提供输入；没有修改原场景、原资源或许可证。每项包含 `a.high / a.low / b.high / b.low`，具体值及来源保存在 `nonzero-low/inputs.json` 和 `inputs.f32`。
+
+20 组输入覆盖正负抵消、半 ULP、十进制拆分、不同数量级，以及将中心 `-0.743643887037151` 与约 10⁶、10⁹、10¹²、10¹⁵ 的 zoom 分别拆成 high/low。分别观测 add、sub、mul、div、sqr 和坐标链 `a + 0.375 × (1 / b)`。这是 **120 个不同的运算输入组合**；每组在缓冲区中重复成块，并非 300000 个独立样本。大 zoom 输入只是坐标算术验证，不是深缩放整图、扰动路径或参考轨道验收。
+
+原生仍全部输出 low=0，但高字明确受非零输入 low 影响。例如：
+
+```text
+a = (1, 2⁻²⁵), b = (-1, 2⁻²⁶)
+原生 ds_add 输出 = (2⁻²⁵, 0)
+忽略输入低字的单精度替换输出 = (0, 0)
+```
+
+因此此前“浅样例 DS 全部退化后零差异”的做法不能推广。关闭程序缓存的浏览器对照结果如下：
+
+| 浏览器模型 | 120 个组合中的差异数 | 差异分布 |
+| --- | ---: | --- |
+| 原始 DS 函数副本 | 5 | add 3、sqr 2 |
+| 代数消去补偿，但保留输入 low 和交叉项 | 5 | add 3、sqr 2 |
+| 忽略全部输入 low | 8 | add 3、div 1、sqr 4 |
+
+CPU float32 求值树枚举找到 16 种加法括号顺序，都能匹配当前 20 个原生加法输出；不能据此唯一确定原生实际求值树。平方候选 `(a.high + 2*a.low)*a.high + a.low*a.low` 则匹配当前全部 20 个平方输出，普通的“高字平方 + 交叉项”分组还差 2 个。
+
+进一步在浏览器诊断副本中使用候选分组，并用运行时全 1 的 uint mask 对 float 位模式作恒等变换，阻止编译器跨指定边界合并舍入。该屏障保留数值及输入低字，不是把低字清零。此候选通过 **119/120**：100 个独立 add/sub/mul/div/sqr 组合均逐位匹配，坐标链的 `split-decimals` 仍差 1 ULP（原生 `1.9499999284744263`，候选 `1.9500000476837158`）。不加屏障的同类候选仍有 3 个加法组合失败。
+
+这证明保留输入低字及求值顺序是必要的，但当前候选尚未完整成立。独立算术程序里的原始浏览器 DS 输出低字也全部为 0，与前面完整迭代上下文中的非零低字不同，必须保留编译上下文限制。当前没有原生后端机器码，候选树不唯一，单函数通过也未保证组合调用通过；不将这个诊断模型接入产品，不宣称深缩放问题已解决。
+
 ## 运行记录与复现入口
 
 本轮原生运行保持正常许可初始化、场景策略和水印。未修改场景资源、许可证或系统设置，未创建可见窗口、未操作主屏。策略缓存正常刷新前有备份；`settings.conf` 前后 SHA 相同，`license.dat` 前后均不存在。
@@ -128,6 +156,8 @@ float32(500 * float32(1 / 600))      = 0.8333333730697632
 浏览器缓存控制首次启动因未传 `--enable-automation`，CDP 拒绝读取命令行，在绘制前退出并关闭浏览器和本地服务器，记录保留在 `corrected/no-program-cache/runtime.json`。补齐观测参数后使用新目录成功完成，耗时 5.641 秒；`runtime.json` 确认浏览器及服务器已关闭、所记录浏览器进程已不存在，独立 GL 资源在 finally 中清理。
 
 后续函数级、aspect 和轨道三组浏览器诊断各自保留 `runtime.json`、实际启动参数、Chrome 版本、设备及退出结果。三组浏览器、本地服务器均已关闭，记录的浏览器进程均已不存在。
+
+非零 low 原生运行退出码 0，耗时 7.197 秒，未超时，已回收且进程组不存在；策略缓存正常刷新前备份，settings SHA 未变，license 文件前后不存在，窗口检查为 0。其两组浏览器运行同样记录了 `disableProgramCaching` 实际参数、设备及清理结果，浏览器和本地服务器已关闭，记录的浏览器进程不存在。
 
 本地证据根目录为 `studio/.cache/fractal-native-residual-20261022/`（缓存不入库）：
 
@@ -141,5 +171,17 @@ float32(500 * float32(1 / 600))      = 0.8333333730697632
 - `float-boundary/corrected/no-program-cache-controlled/`：最终控制结果；`comparison.json` 为原生对照，`cross-run.json` 为前后文件 SHA 与逐字节比较，`runtime.json` 为真实命令行、Chrome 版本及清理记录，`browser-report.json` 为设备和实际完成模式。
 - `float-boundary/browser-arithmetic-controls.mjs`、`browser-aspect-controls.mjs`、`browser-orbit-controls.mjs`：三组后续受控程序；`compare-arithmetic-controls.py` 可从保留的原始数据重算全部结果。
 - `float-boundary/corrected/arithmetic-controls/`、`aspect-controls/`、`orbit-controls/`：各组 `comparison.json`、原始输出、实际 Metal 源码和运行记录；`aspect-controls/cpu-aspect-comparison.json` 保存两种宽高比的 CPU float32 对照。
+- `nonzero-low/native-display-fractal/`：一次非零 low 原生运行及原图校准、实际函数源码、runtime uniform 输入、原始 RGBA32F 和清理记录。
+- `nonzero-low/comparison.json`、`native-summary.json`、`cpu-candidates.json`、`ordered-comparison.json`：120 个组合的逐项比较、原生值、候选求值树及剩余 1 个链式差异；对应 Python 脚本可从原始文件重算。
+- `nonzero-low/browser/`、`browser-ordered/`：两组浏览器原始输出、实际 MSL、启动参数和资源清理记录。
+
+非零 low 结果可以直接从保留的原始数据重算，不启动原版、不访问主屏。以下命令从 `studio/` 执行，需要 Python 的 NumPy 和 Pillow：
+
+```sh
+python3 .cache/fractal-native-residual-20261022/nonzero-low/compare.py
+python3 .cache/fractal-native-residual-20261022/nonzero-low/cpu-candidates.py
+```
+
+需要浏览器复放时，`nonzero-low/browser.mjs` 和 `browser-ordered.mjs` 的两个参数分别是保留的 `native-display-fractal` 目录、一个已创建的新结果目录；脚本记录完整实际启动参数并关闭所拥有的浏览器与服务器。原生证据的再采集入口为该目录的 `prepare.py`、`run.py`，执行过的 Java 源码也保存在原生输出目录。再采集须使用新目录并串行处理同一原版策略缓存，不能覆盖这次捕获。119/120 只是这些固定诊断输入的结果，不是完整算法、深缩放图像或任意输入的通过率。
 
 浏览器脚本接受原生输出目录、结果目录，以及可选的 `collapse` 参数。原生浮点原始文件保留，可直接重算统计，无需再次启动原版。下一步若继续定位，应保持直接 RGBA8 校准，针对编译上下文建立更小的因果实验；本轮不作跨公式或深缩放外推。
