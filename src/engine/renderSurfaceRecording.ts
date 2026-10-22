@@ -40,7 +40,7 @@ export class SurfaceRecordingRenderer {
   check();
   // Video receives raw draw pixels. Paused PNG enhancement/upscale belongs to
   // its separate capture path; formulas are composed by the video consumer.
-  return{type:'raster',width,height,pixels,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:formulaPresentation(this.scene)};
+  return{type:'raster',width,height,pixels,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:formulaPresentation(this.scene)};
  }
  dispose():void {
   if(this.disposed)return;const errors:unknown[]=[];

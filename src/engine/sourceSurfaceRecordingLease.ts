@@ -3,7 +3,7 @@ import type {SourceRecordingOptions,SourceRecordingWireStart,SourceRecordingStop
 import {validSourceQueueRecordingClock,type SourceQueueRecordingClock} from './sourceRecordingClock';
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {sourceSurfaceParameterFrameRate} from './sourceSurfaceFrame';
-import {validSourceSurfaceOutput} from './sourceSurfaceResponse';
+import {validSourceSurfaceOutput,validSourceSurfacePresentation} from './sourceSurfaceResponse';
 import {assertSourceSurfaceRecordingFrame} from './sourceSurfaceRecording';
 import {snapshotGenerationInput} from './generationInput';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -22,7 +22,7 @@ export class SourceSurfaceRecordingLease {
  private attempt?:{index:number;rate:number};private next=1;private warmupDelivered=false;
  private renderer?:SurfaceRecordingRenderer;private stopping=false;
  constructor(scene:SceneDocument,input:GenerationInput,output:Geometry,options:SourceRecordingOptions){
-  if(!validSourceSurfaceOutput(output,input)||!usesSourceSurfaceGeometry(scene)||output.sourceCameraFrame?.viewport.target!=='primary')throw Error('曲面录制需要已完成的源主预览');
+  if(!validSourceSurfacePresentation(output,input)||!usesSourceSurfaceGeometry(scene)||output.sourceCameraFrame?.viewport.target!=='primary')throw Error('曲面录制需要已完成的源主预览');
   const actualFrameRate=rate(options.actualFrameRate);
   if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('曲面录制模拟帧率必须为 1–120 的整数');
   this.options={...options,actualFrameRate};this.size=sourceRecordingSize(options,input.sourcePointPixelDensity??1);

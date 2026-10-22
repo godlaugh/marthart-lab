@@ -16,7 +16,7 @@ afterEach(()=>{retrySurfaceRecordingRendererCleanup();vi.unstubAllGlobals();});
 describe('Surface recording GL resource owner',()=>{
  it('reuses one renderer and returns top-down raw pixels with formula metadata',()=>{
   const owner=new SurfaceRecordingRenderer(scene,size),a=owner.render(geometry,()=>false),b=owner.render(geometry,()=>false);
-  expect(a.pixels[0]).toBe(3);expect(a.pixels[24]).toBe(1);expect(b.pixels).toEqual(a.pixels);expect(a.formulaPresentation).toBeDefined();expect(state.created).toBe(1);expect(state.draws).toBe(2);
+  expect(a.pixels[0]).toBe(3);expect(a.pixels[24]).toBe(1);expect(b.pixels).toEqual(a.pixels);expect(a.formulaPresentation).toBeDefined();expect(a.cameraResolved).toBe(true);expect(state.created).toBe(1);expect(state.draws).toBe(2);
   owner.dispose();owner.dispose();expect(state.disposals).toBe(1);expect(state.releases).toBe(1);
  });
  it.each(['failDispose','failRelease'] as const)('retains the exact failed resource and retries only unfinished release stages: %s',failure=>{

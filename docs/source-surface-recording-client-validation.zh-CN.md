@@ -51,3 +51,7 @@
 - `.cache/surface-recording-client-pixel-comparison.json`：136 个录制帧的逐帧摘要比较。
 
 运行 `node scripts/verify-source-surface-recording.mjs <新证据目录> --client` 可复现客户端验证。省略模式参数为直接会话路径，`--worker` 为直接 Worker 路径；各模式的验证边界分别记录在报告中。`.cache` 不进入 Git。
+
+## 后续进展
+
+界面、公式叠加与实际视频输出已在后续工作接通，见[曲面录制界面与视频文件验收](source-surface-recording-ui-validation.zh-CN.md)。本报告上文保留当时的验证范围。

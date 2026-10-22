@@ -826,6 +826,12 @@ export default function App() {
         // Do not replace a document the user selected or edited meanwhile.
         if(sceneRef.current!==originalScene)return;
         autoPlayPending.current=false;
+        if(result.context.surfaceLive){
+          const live=result.context.surfaceLive;liveSessionId.current=live.sessionId;surfaceEdit.current={revision:live.revision};iteratedStartAt.current=live.startAt;
+          surfaceActualFps.current=undefined;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;
+          playingRef.current=!live.clock.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
+          setTime(result.context.time);setPreviewCancelled(false);return;
+        }
         if(result.context.domainLive){
           const live=result.context.domainLive;liveSessionId.current=live.sessionId;domainEdit.current={revision:live.revision};iteratedStartAt.current=live.startAt;
           domainActualFps.current=undefined;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;
@@ -934,7 +940,7 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":sourceLivePreviewKind(scene)==='surface'?'曲面录制':sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
@@ -1618,9 +1624,9 @@ export default function App() {
           {toast}
         </div>
       )}
-      {(exporting||recording&&(sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain')) && (
+      {(exporting||recording&&(sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain')) && (
         <ExportDialog
-          mode={recording?(sourceLivePreviewKind(scene)==='domain'?'domain-recording':'fractal-recording'):'export'}
+          mode={recording?(sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':'fractal-recording'):'export'}
           scene={{ ...scene, camera: camera.current }}
           time={time}
           currentSourceBouncingFrame={output?.sourceBouncingFrame?{ready:completedFrameReady,frame:output.sourceBouncingFrame}:undefined}
@@ -1684,14 +1690,14 @@ export default function App() {
               return generationQueue.current.capturePerlinPaused(output,size,scale);
             },
           }:undefined}
-          currentSourceRecording={sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
-            ready:sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'?completedFrameAvailable:completedFrameReady,
+          currentSourceRecording={sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
+            ready:sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'?completedFrameAvailable:completedFrameReady,
             record:async(options,consumer,signal)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前录制画面尚未完成或已过期，请等待预览完成后重试');
-              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene||scene.perlinSource)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
-              const domain=sourceLivePreviewKind(scene)==='domain',initialFps=domainActualFps.current??renderPreferences.frameRate;let lastFrameStart=performance.now();
-              const actualFrameRate=domain?()=>{const now=performance.now(),delta=now-lastFrameStart;lastFrameStart=now;return delta>0?1000/delta:initialFps;}:consumer.actualFrameRate;
-              return generationQueue.current.recordSource(output,domain?{...options,actualFrameRate:initialFps}:options,{actualFrameRate,shouldStop:consumer.shouldStop,complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);
+              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene||scene.perlinSource)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=frame.surfaceLive?.frame.sceneTime??frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
+              const kind=sourceLivePreviewKind(scene),observedFps=kind==='domain'||kind==='surface',initialFps=(kind==='surface'?surfaceActualFps.current:domainActualFps.current)??renderPreferences.frameRate;let lastFrameStart=performance.now();
+              const actualFrameRate=observedFps?()=>{const now=performance.now(),delta=now-lastFrameStart;lastFrameStart=now;return delta>0?1000/delta:initialFps;}:consumer.actualFrameRate;
+              return generationQueue.current.recordSource(output,observedFps?{...options,actualFrameRate:initialFps}:options,{actualFrameRate,shouldStop:consumer.shouldStop,complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);
             },
           }:undefined}
           currentRootsCapture={usesRootsNativePresentation(scene)?{
@@ -1707,7 +1713,7 @@ export default function App() {
         />
       )}
       {inputDialog&&<TextPrompt request={inputDialog} onClose={()=>setInputDialog(null)}/>}
-      {recording&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
+      {recording&&sourceLivePreviewKind(scene)!=='surface'&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
         onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(sourceLivePreviewKind(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}

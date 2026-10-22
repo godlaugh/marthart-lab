@@ -46,6 +46,17 @@ describe('Surface retained recording client',()=>{
   await expect(f.generator.beginSourceRecording(f.output,{...f.options,actualFrameRate:NaN})).rejects.toMatchObject({previewRetained:true});
   const start=await f.generator.beginSourceRecording(f.output,f.options);await expect(f.generator.nextSourceRecordingFrame(start.handle,1)).rejects.toThrow();await expect(f.generator.nextSourceRecordingFrame({...start.handle},1,24)).rejects.toThrow('身份');await f.generator.finishSourceRecording(start.handle);f.generator.dispose();
  });
+ it('records again after a running preview is paused without repainting its image',async()=>{
+  const f=await setup();await f.generator.setSurfacePaused(f.output,false,1100);
+  const context={...f.context,surfaceLive:{...f.context.surfaceLive!,clock:{paused:false,timestampMs:1250}}};
+  const running=await f.generator.generate(f.scene,context);expect(running.surfaceLive!.paused).toBe(false);
+  await f.generator.setSurfacePaused(running,true,1300);
+  const start=await f.generator.beginSourceRecording(running,f.options);expect(start.warmup.surfaceLive!.recording!.displayFrame).toBe(0);
+  const stop=await f.generator.finishSourceRecording(start.handle);
+  await f.generator.setSurfacePaused(stop.preview,true,1400);
+  const again=await f.generator.beginSourceRecording(stop.preview,f.options);expect(again.warmup.surfaceLive!.constructions).toBe(start.warmup.surfaceLive!.constructions+1);
+  await f.generator.finishSourceRecording(again.handle);f.generator.dispose();
+ });
  it('repaints a failed client frame without another worker update',async()=>{
   const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options);draw.fail=true;
   await expect(f.generator.nextSourceRecordingFrame(start.handle,1,24)).rejects.toMatchObject({recordingRetained:true});
