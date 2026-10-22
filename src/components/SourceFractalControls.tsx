@@ -8,7 +8,7 @@ import {parseSourceFractalDocument} from '../engine/sourceFractalDocument';
 import {SOURCE_FRACTAL_FORMULA_METADATA,bindSourceFractalFormulaParameters,type SourceFractalFormulaConfiguration,type SourceFractalFormulaParamSet} from '../engine/sourceFractalFormulaRuntime';
 
 type Props={scene:SceneDocument;onChange:(scene:SceneDocument,intent?:'hot'|'apply'|'stage')=>void;section?:'formula'|'color'|'all'};
-const names:Record<string,string>={exponent:'指数',bailout:'收敛阈值',relaxation:'松弛系数',start_value:'初始复数',julia_seed:'Julia 常数'};
+const names:Record<string,string>={power:'幂次',exponent:'指数',bailout:'退出阈值',relaxation:'松弛系数',start_value:'初始复数',julia_seed:'Julia 常数'};
 export function SourceFractalControls({scene,onChange,section='all'}:Props){
  const {t}=useI18n(),[error,setError]=useState(''),source=scene.fractalSource;
  if(!source)return null;
@@ -18,13 +18,13 @@ export function SourceFractalControls({scene,onChange,section='all'}:Props){
  const defaults=(formulaId=id)=>{const bound=bindSourceFractalFormulaParameters(formulaId,{});if(!bound.ok){setError(bound.error.reason);return;}return bound.value.parameters;};
  const number=(key:string,label:string,value:number,write:(value:number)=>void,min?:number,max?:number,step?:number)=><Control key={key} spec={{key:`fractal-source-${key}`,label,type:'number',group:'原版分形',min,max,step}} value={value} onChange={v=>{const n=Number(v);if(Number.isFinite(n))write(n);}}/>;
  const writeParameters=(next:SourceFractalFormulaParamSet)=>emit({...formula,parameters:next});
- const precision=String(scene.settings.perturbationPrecision??'high'),precisionOptions=[{value:'low',label:'低'},{value:'medium',label:'中'},{value:'high',label:'高'}];
+ const precision=String(scene.settings.perturbationPrecision??'high'),precisionOptions=[{value:'low',label:'低'},{value:'medium',label:'中'},{value:'high',label:'高'},{value:'ultra',label:'ULTRA（源阈值与中相同）'}];
  if(!precisionOptions.some(option=>option.value===precision))precisionOptions.push({value:precision,label:precision||'空值（保留）'});
  return <div data-testid="source-fractal-controls">
   {section!=='color'&&<>
    <details open className="inspector-section"><summary>{t('原版分形公式')}</summary><div className="section-body">
     {error&&<p role="alert">{t(error)}</p>}
-    <label className="field"><span>{t('原版公式')}</span><select aria-label={t('原版公式')} value={id} onChange={e=>{const next=e.target.value;if(next===id)return;if(parameters===undefined)emit({...formula,formulaId:next});else{const bound=defaults(next);if(bound)emit({...formula,formulaId:next,parameters:bound});}}}>{!['newton','nova'].includes(id)&&<option value={id}>{id||t('未指定')}</option>}<option value="newton">Newton</option><option value="nova">Nova</option></select></label>
+    <label className="field"><span>{t('原版公式')}</span><select aria-label={t('原版公式')} value={id} onChange={e=>{const next=e.target.value;if(next===id)return;if(parameters===undefined)emit({...formula,formulaId:next});else{const bound=defaults(next);if(bound)emit({...formula,formulaId:next,parameters:bound});}}}>{!['newton','nova','mandelbrot','julia'].includes(id)&&<option value={id}>{id||t('未指定')}</option>}<option value="mandelbrot">Mandelbrot</option><option value="julia">Julia</option><option value="newton">Newton</option><option value="nova">Nova</option></select></label>
     <p className="muted">{t('切换公式会将已启用的公式参数恢复为该公式默认值。动画片段保留，可继续检查参数名称。')}</p>
     <label className="field"><span>{t('分形变体')}</span><select aria-label={t('分形变体')} value={formula.fractalType} onChange={e=>emit({...formula,fractalType:e.target.value as 'mandelbrot'|'julia'})}><option value="mandelbrot">{t('参数平面')}</option><option value="julia">Julia</option></select></label>
     {id==='newton'&&<p className="muted">{t('Newton 使用参数平面；保留的 Julia 变体不参与画面计算。')}</p>}
@@ -47,7 +47,7 @@ export function SourceFractalControls({scene,onChange,section='all'}:Props){
    <details open className="inspector-section"><summary>{t('分形视口与计算')}</summary><div className="section-body">
     {([['centerX','中心 X',0],['centerY','中心 Y',0],['centerXLow','中心 X 低位',0],['centerYLow','中心 Y 低位',0],['zoom','缩放',1],['rotation','旋转（弧度）',0],['iterations','最大迭代',200]] as const).map(([key,label,fallback])=>number(key,label,Number(scene.settings[key]??fallback),n=>change({...scene,settings:{...scene.settings,[key]:key==='iterations'?Math.max(1,Math.trunc(n)):n}}),key==='zoom'?1e-6:key==='iterations'?1:undefined,key==='zoom'?1e28:undefined,key==='iterations'?1:undefined))}
     <Control spec={{key:'fractal-source-backend',label:'计算后端',type:'select',group:'计算',options:[{value:'auto',label:'自动'},{value:'webgl2',label:'WebGL2'},{value:'cpu',label:'CPU'}]}} value={String(scene.settings.fractalBackend??'auto')} onChange={v=>change({...scene,settings:{...scene.settings,fractalBackend:v}},'apply')}/>
-    {scene.settings.fractalBackend==='cpu'&&<p role="alert">{t('当前选择 CPU；源 Newton/Nova 需要 WebGL2。请选择自动或 WebGL2 后端，或切回本地数值规则。')}</p>}
+    {scene.settings.fractalBackend==='cpu'&&<p role="alert">{t(id==='newton'||id==='nova'?'当前选择 CPU；源 Newton/Nova 需要 WebGL2。请选择自动或 WebGL2 后端，或切回本地数值规则。':'当前选择 CPU；源分形需要 WebGL2。请选择自动或 WebGL2 后端，或切回本地数值规则。')}</p>}
     <Control spec={{key:'fractal-source-render-method',label:'渲染方法',type:'select',group:'计算',options:[{value:'multi-pass',label:'多遍渲染'},{value:'one-pass',label:'单遍渲染'},{value:'guessing',label:'猜测填充'}]}} value={String(scene.settings.renderMethod??'multi-pass')} onChange={v=>change({...scene,settings:{...scene.settings,renderMethod:v}},'stage')}/>
     <Control spec={{key:'fractal-source-precision',label:'扰动精度',type:'select',group:'计算',options:precisionOptions}} value={precision} onChange={v=>change({...scene,settings:{...scene.settings,perturbationPrecision:v}},'stage')}/>
     <p className="muted">{t('原版分形使用 WebGL2。动画按队列执行，前一片段结束后下一帧开始后续片段。')}</p>

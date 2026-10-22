@@ -21,9 +21,9 @@ const nav=(s:ReturnType<typeof scene>,w:number,h:number,lw=w,lh=h)=>planeNavigat
 
 describe('source Newton/Nova viewport applicability and completed facts',()=>{
  it('centralizes source activation and leaves the marker dormant for other formulas',()=>{
-  for(const formula of ['newton','nova'])expect(fractalViewportRules(FRACTAL_SOURCE_NUMERIC_PROFILE,formula)).toEqual({sourceNewtonNova:true,verticalRange:2,yDirection:'down'});
-  for(const formula of ['mandelbrot','julia','binocular','newton-custom'])expect(fractalViewportRules(FRACTAL_SOURCE_NUMERIC_PROFILE,formula)).toEqual({sourceNewtonNova:false,verticalRange:4,yDirection:'up'});
-  expect(fractalViewportRules('local-v1','newton').sourceNewtonNova).toBe(false);
+  for(const formula of ['newton','nova'])expect(fractalViewportRules(FRACTAL_SOURCE_NUMERIC_PROFILE,formula)).toEqual({sourceArithmetic:true,verticalRange:2,yDirection:'down'});
+  for(const formula of ['mandelbrot','julia','binocular','newton-custom'])expect(fractalViewportRules(FRACTAL_SOURCE_NUMERIC_PROFILE,formula)).toEqual({sourceArithmetic:false,verticalRange:4,yDirection:'up'});
+  expect(fractalViewportRules('local-v1','newton').sourceArithmetic).toBe(false);
   const s=scene();s.settings.formula='mandelbrot';expect(nav(s,400,200).spanY).toBe(4);expect(s.settings.fractalNumericProfile).toBe(FRACTAL_SOURCE_NUMERIC_PROFILE);
  });
  it('prevents a direct old DD call from silently evaluating source Newton/Nova',()=>{

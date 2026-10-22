@@ -44,11 +44,11 @@ describe('source Newton/Nova authoring boundary',()=>{
  it.each([[undefined,'medium'],[null,'medium'],['LOW','low'],['Medium','medium'],['HIGH','high']])('normalizes supported native precision %j to %s',(raw,expected)=>{
   expect(imported(native('newton',raw)).settings.perturbationPrecision).toBe(expected);
  });
- it.each(['ULTRA','ultra','future-precision',''])('preserves unsupported native precision %j and explicitly rejects calculation',precision=>{
+ it.each(['future-precision',''])('preserves unsupported native precision %j and explicitly rejects calculation',precision=>{
   const raw=native('nova',precision),scene=imported(raw),restored=parseScene(serializeScene(scene));
   expect(restored.settings.perturbationPrecision).toBe(precision);expect(restored.provenance?.original).toEqual(raw);
-  expect(plan(restored)).toEqual({ok:false,error:{kind:'input',field:'precision',reason:'Source precision requires low, medium or high'}});
-  expect(()=>generateScene(restored,{time:0,width:1,height:1,quality:'preview'})).toThrow('Source precision requires low, medium or high');
+  expect(plan(restored)).toEqual({ok:false,error:{kind:'input',field:'precision',reason:'Source precision requires low, medium, high or ultra'}});
+  expect(()=>generateScene(restored,{time:0,width:1,height:1,quality:'preview'})).toThrow('Source precision requires low, medium, high or ultra');
   expect(markup(restored)).toContain(`value="${precision}" selected`);
  });
  it('does not upgrade a saved local Newton document or native non-Newton precision',()=>{
@@ -56,7 +56,7 @@ describe('source Newton/Nova authoring boundary',()=>{
   const restored=imported(JSON.parse(serializeScene(scene)));expect(restored.settings.fractalNumericProfile).toBeUndefined();expect(fractalConfig(restored.settings).convergenceMode).toBe('legacy');
   expect(markup(restored)).toContain('control-convergenceMode');
   const other=imported({config_version:'1.0.0',type:'FRACTAL',name:'Local Mandelbrot',fractal:{formula_id:'mandelbrot',perturbation_precision:'ULTRA'}});
-  expect(other.settings.fractalNumericProfile).toBeUndefined();expect(other.settings.perturbationPrecision).toBe('ultra');
+  expect(other.settings.fractalNumericProfile).toBe('mathart-1.7.8-power-v1');expect(other.settings.perturbationPrecision).toBe('ultra');
  });
  it('shows source constraints while keeping CPU and dormant author choices unchanged',()=>{
   const scene=imported(native('newton'));Object.assign(scene.settings,{convergenceMode:'residual',fractalBackend:'cpu'});const before=serializeScene(scene),html=markup(scene);

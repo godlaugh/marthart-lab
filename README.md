@@ -52,6 +52,8 @@ npm run preview:v2
 
 剩余 6 个公式像素现已归因于原版水印阴影及后处理，在相同叠加输入下固定区域 RGBA 全部一致。修复正常 macOS Toolkit 与 JOGL 的宿主线程生命周期后，原版 Cornucopia 离屏 PNG 已与真实窗口输出逐字节相同，完整 300,000 像素零差异，连续三帧通过。该校准只覆盖原版的此场景、尺寸和暂停状态；MathArt Lab 的 11 家族整图／动画验收仍待完成。详见[离屏参考验证](docs/native-offscreen-reference-validation.zh-CN.md)。
 
+隐式曲面的 CPU 网格已改为原版两轴切片线与无光照渐变填充，固定中心区域平均 RGB 误差从 55.52 降至 2.04；两组原版线坐标完整 Float32 字节一致，实际导出通过，但填充拓扑、遮挡和公式仍有差异。见[隐式外观验证](docs/implicit-appearance-validation.zh-CN.md)。原版 Mandelbrot／Julia 现使用独立源数值通道，并修复 ULTRA 精度导入报错；原版参考轨道六组全比特一致，真实 PNG 导出通过。渐进渲染生命周期和整图验收仍待完成，见[分形源规则验证](docs/source-fractal-power-validation.zh-CN.md)。域着色已进一步区分坐标与复数数学低位差异，尚不足以归因全部原生残差，见[域着色残差调查](docs/domain-native-residual-validation.zh-CN.md)。11 家族整图／动画验收保持 0/11。
+
 ## 桌面应用
 
 ```sh

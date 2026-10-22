@@ -1,3 +1,5 @@
+import {activeFractalFormulaIdentity} from './engine/sourceFractalIdentity';
+import {applyFractalJuliaSeed} from './engine/complexViewport';
 import {sourceQueuePresentedScene} from './engine/sourceQueuePresentation';
 import {PARAMETER_RANGES_KEY} from './engine/parameterEditing';
 import {sourceIteratedEditorScene,sourceIteratedDraftFromEditor,sourceIteratedApplyCandidate,sourceIteratedSettingIsStaged,withSourceIteratedDraft,withoutSourceIteratedDraft,type SourceIteratedDraft} from './engine/sourceIteratedDraft';
@@ -1146,7 +1148,7 @@ export default function App() {
               <span />
               {output?.backend==='webgl2'?'GPU · WebGL 2':output?.backend==='cpu'?'CPU':t('WebGL 2 画布')}
             </span>
-            {scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'&&<button disabled={busy||playing} aria-pressed={pickingJulia} onClick={()=>setPickingJulia(v=>!v)}>{t(pickingJulia?'取消点选':'点选 Julia 种子')}</button>}
+            {scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbrot'&&(scene.fractalSource!==undefined||scene.settings.variant!=='julia')&&<button disabled={busy||playing} aria-pressed={pickingJulia} onClick={()=>setPickingJulia(v=>!v)}>{t(pickingJulia?'取消点选':'点选 Julia 种子')}</button>}
             <button title={t("适合画布")} disabled={samilaNavigationLocked||sourceBouncing} onClick={() => viewport.current?.fit()}>
               <Maximize size={15} />
             </button>
@@ -1216,8 +1218,8 @@ export default function App() {
                 if(begin){history.current.push(expected);if(history.current.length>40)history.current.shift();future.current=[];}
                 sceneRef.current=next;setScene(next);return next;
               }}
-              pickingJulia={pickingJulia&&!busy&&!playing&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'}
-              onPickJulia={values=>{setPickingJulia(false);edit({...scene,settings:{...scene.settings,...values}});notify('已从选中位置打开 Julia 视图；可撤销返回。');}}
+              pickingJulia={pickingJulia&&!busy&&!playing&&scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbrot'&&(scene.fractalSource!==undefined||scene.settings.variant!=='julia')}
+              onPickJulia={values=>{setPickingJulia(false);edit(applyFractalJuliaSeed(scene,values));notify('已从选中位置打开 Julia 视图；可撤销返回。');}}
             />
             <FormulaOverlay scene={displayScene} presentation={displayFormulas} canvas={viewport.current?.frame()?.canvas}/>
             {!displayHasFormulas&&<div className="viewport-caption">
@@ -1240,7 +1242,7 @@ export default function App() {
               </div>
             )}
             <div className="viewport-bottom">
-              {!scene.sourceCamera&&<span className="interaction-hint">{t(sourceBouncing?"暂停时拖动旋转、滚轮缩放 · 播放恢复旋转角度":pickingJulia&&scene.kind==='fractal'&&scene.settings.formula==='mandelbrot'&&scene.settings.variant!=='julia'?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>}
+              {!scene.sourceCamera&&<span className="interaction-hint">{t(sourceBouncing?"暂停时拖动旋转、滚轮缩放 · 播放恢复旋转角度":pickingJulia&&scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbrot'&&(scene.fractalSource!==undefined||scene.settings.variant!=='julia')?"点击图像选择 Julia 种子 · Escape 取消":samilaNavigationLocked?"拖动平移 · 滚轮缩放 · theta 旋转 · 空格播放":hasMathematicalPlane(scene)?"拖动平移 · 滚轮缩放 · 空格播放":"拖动旋转 · 滚轮缩放 · 空格播放")}</span>}
               {!sourceBouncing&&<div className="view-chips">
                 <button
                   className={scene.settings.showGrid ? "active" : ""}

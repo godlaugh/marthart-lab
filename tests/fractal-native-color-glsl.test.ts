@@ -1,3 +1,4 @@
+import {FRACTAL_NATIVE_POWER_GLSL} from '../src/engine/fractalNativePowerGlsl';
 import {describe,expect,it} from 'vitest';
 import {createHash} from 'node:crypto';
 import {FRACTAL_NATIVE_COLOR_PARTS,FRACTAL_NATIVE_COLOR_TAIL} from '../src/engine/fractalNativeColorGlsl';
@@ -20,7 +21,10 @@ describe('literal source color provenance and old-profile compatibility',()=>{
  it('preserves the complete final-color body, including high-word current z and same-DE-params fallback',()=>{
   expect(hash(FRACTAL_NATIVE_COLOR_TAIL)).toBe('be34f0a23c1345891a3e0f56f9126c1131b15eba681973c9c3cf80b571286635');expect(FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT).toContain(FRACTAL_NATIVE_COLOR_TAIL);
  });
- it('leaves the accepted 3549 omitted-color shader byte identical',()=>expect(hash(FRACTAL_SOURCE_RASTER_FRAGMENT)).toBe('0debb41d7cdcd83489f3fe72a5c63881132d17d7b2c8c7609bb3ad8a551fcbf9'));
+ it('changes the accepted omitted-color shader only by power dispatch and escape transport',()=>{
+  const previous=FRACTAL_SOURCE_RASTER_FRAGMENT.replace('\n'+FRACTAL_NATIVE_POWER_GLSL,'').replace('else if(fid==FID_NOVA)iterateNova(zr,zi,cr,ci,pr,pi,relax,nr,ni);else iterateFormula(zr,zi,cr,ci,ft,pr,pi,nr,ni);','else iterateNova(zr,zi,cr,ci,pr,pi,relax,nr,ni);').replace('Newton/Nova/Mandelbrot/Julia','Newton/Nova').replace('49159','16391').replace('+(exitKind==1?32768:0)','');
+  expect(hash(previous)).toBe('0debb41d7cdcd83489f3fe72a5c63881132d17d7b2c8c7609bb3ad8a551fcbf9');
+ });
  it('uses the source trace in the same raster invocation and keeps exactly four MRT outputs',()=>{
   expect(FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT).not.toContain('void traceStep');expect(FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT).not.toContain('traceStep(trapPoint)');
   expect(FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT.match(/layout\(location=/g)).toHaveLength(4);expect(FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT).toContain('sourceInside=fragColor;');

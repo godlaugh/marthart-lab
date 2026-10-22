@@ -1,3 +1,4 @@
+import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import type {ControlSpec,SceneDocument,Settings} from '../types';
 import {numberSetting} from './expression';
 export interface SurfaceWireOptions {decoupled:boolean;uLines:number;vLines:number;curveSamples:number;}
@@ -41,6 +42,7 @@ export const meshMaterialControls:ControlSpec[]=[
 const materialKeys=new Set(meshMaterialControls.map(c=>c.key));
 export function isMeshMaterialControlVisible(scene:SceneDocument,key:string):boolean {
  if(!materialKeys.has(key))return true;
+ if(usesSourceImplicitCpuMesh(scene))return key==='meshFill'||key==='meshWireframe'||key==='meshWireframeWidth'&&scene.settings.meshWireframe===true;
  const surface=scene.kind==='surface',wireOnly=surface&&scene.settings.renderMode==='wireframe';
  if(!['surface','implicit'].includes(scene.kind)||!wireOnly&&scene.settings.renderMode!=='mesh')return false;
  const wire=wireOnly||scene.settings.meshWireframe===true;

@@ -10,7 +10,7 @@ import {validSourceQueueRecordingClock,type SourceQueueRecordingClock} from './s
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
-import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalSourcePrecision';
+import {sourceProfileForFormula} from './fractalSourcePrecision';
 import {snapshotGenerationInput} from './generationInput';
 import type {SourceViewportNavigationEvent} from './sourceViewportNavigation';
 import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
@@ -127,7 +127,7 @@ function validFractalRecordingStop(stop:SourceRecordingStop,lease:RetainedRecord
  // Preview sampling may shrink this raster, including when the recording
  // anchor has a different iteration budget from the previous live document.
  // The renderer owns that decision and reports requested and actual sizes.
- return render?.profile===FRACTAL_SOURCE_NUMERIC_PROFILE&&render.execution?.backend==='webgl2'&&render.requestedSize?.[0]===lease.primary.width&&render.requestedSize?.[1]===lease.primary.height&&render.rasterSize?.[0]===output.width&&render.rasterSize?.[1]===output.height&&(lease.primary.quality!=='export'||output.width===lease.primary.width&&output.height===lease.primary.height)&&output.fractalRecording===undefined&&output.fractalLive!.sceneTime===stop.context.time&&output.fractalLive!.rawDt===0&&output.fractalLive!.activeDt===0&&output.fractalLive!.objectUpdates===0;
+ return render!==undefined&&render.profile===sourceProfileForFormula(render.formula)&&render.execution?.backend==='webgl2'&&render.requestedSize?.[0]===lease.primary.width&&render.requestedSize?.[1]===lease.primary.height&&render.rasterSize?.[0]===output.width&&render.rasterSize?.[1]===output.height&&(lease.primary.quality!=='export'||output.width===lease.primary.width&&output.height===lease.primary.height)&&output.fractalRecording===undefined&&output.fractalLive!.sceneTime===stop.context.time&&output.fractalLive!.rawDt===0&&output.fractalLive!.activeDt===0&&output.fractalLive!.objectUpdates===0;
 }
 type SourceCaptureSize=ReturnType<typeof prepareSourcePausedCaptureSize>;
 function validCurrentImage(capture:PausedCaptureResult['capture'],size:PausedCaptureSize,scale:1|3|5,base:SourceCaptureSize):boolean {

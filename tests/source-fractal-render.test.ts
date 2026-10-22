@@ -56,7 +56,7 @@ describe('mapped source formula render ownership',()=>{
  });
  it('requires evaluated source state and explicitly rejects formulas without a proven source renderer',()=>{
   expect(prepareSourceFractalRenderInput(undefined)).toMatchObject({ok:false,error:{kind:'input'}});
-  for(const id of ['mandelbrot','lambda','mandelbulb_3d']){
+  for(const id of ['lambda','mandelbulb_3d']){
    const frame=runtime(formula({formulaId:id,parameters:undefined})).snapshot(),before=structuredClone(frame);
    expect(prepareSourceFractalRenderInput(frame)).toMatchObject({ok:false,error:{kind:'unsupported',formulaId:id}});expect(frame).toEqual(before);
   }
@@ -72,12 +72,12 @@ describe('mapped source formula render ownership',()=>{
   });
   const before=structuredClone(s),out=def.generate(s,ctx),expected=sourceFractalRenderInput(r.snapshot());
   expect(seen?.formulaParams).toEqual(expected.native.formulaParams);expect(seen?.dynamicParams).toEqual(expected.native.dynamicParams);expect(seen?.reference.power).toBe(7);
-  expect(out.type==='raster'&&out.fractalRender?.view.rules.sourceNewtonNova).toBe(true);expect(s).toEqual(before);
+  expect(out.type==='raster'&&out.fractalRender?.view.rules.sourceArithmetic).toBe(true);expect(s).toEqual(before);
  });
  it('does not run missing or unsupported evaluated source state through local rendering',()=>{
   const s=createScene(def),sample=vi.spyOn(fractalGpu,'sample');s.fractalSource={model:'mathart-1.7.8-scene-v1',formula:formula()};
   expect(()=>def.generate(s,ctx)).toThrow('时间线求值');
-  s.evaluatedFractalScene={...runtime(formula({formulaId:'mandelbrot',parameters:undefined})).snapshot(),displayFrame:0,simulationFps:60};
+  s.evaluatedFractalScene={...runtime(formula({formulaId:'lambda',parameters:undefined})).snapshot(),displayFrame:0,simulationFps:60};
   expect(()=>def.generate(s,ctx)).toThrow('渲染尚未验证');expect(sample).not.toHaveBeenCalled();
  });
 });

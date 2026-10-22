@@ -4,10 +4,13 @@ import ingress from './fixtures/source-fractal-actions/source.json';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
 import {sceneAtTime,timelineControlsTarget} from '../src/engine/timeline';
-const raw=(timeline:unknown[],fractal:Record<string,unknown>={})=>({config_version:'1.0.0',type:'FRACTAL',name:'zoom',fractal:{formula_id:'mandelbrot',center:[0,0],zoom:1,...fractal},timeline});
+const raw=(timeline:unknown[],fractal:Record<string,unknown>={})=>({config_version:'1.0.0',type:'FRACTAL',name:'zoom',fractal:{formula_id:'phoenix',center:[0,0],zoom:1,...fractal},timeline});
 const parse=(timeline:unknown[],fractal:Record<string,unknown>={})=>parseProjectFile(JSON.stringify(raw(timeline,fractal))).scene;
 const fields=['zoom','centerX','centerXLow','centerY','centerYLow'] as const;
-describe('source target import, persistence and timeline consumers',()=>{
+// This fixture invokes a standalone target callback at arbitrary progress.
+// Phoenix retains the legacy hybrid import/absolute-time adapter. Complete
+// source Mandelbrot clocks are covered by source-fractal-power and scene-runtime.
+describe('legacy hybrid source target import, persistence and timeline consumers',()=>{
  it.each(fixture.samples.filter(s=>s.progress>=0&&s.progress<=1))('replays imported original sample $id',sample=>{
   const a=sample.start,b=sample.target;
   const scene=parse([{type:'fractal_zoom',duration:1,easing:sample.easing,center_hi_lo:[b.centerX,b.centerXLow,b.centerY,b.centerYLow],zoom:b.zoom,max_zoom:b.maxZoom}],{center:undefined,center_hi_lo:[a.centerX,a.centerXLow,a.centerY,a.centerYLow],zoom:a.zoom});

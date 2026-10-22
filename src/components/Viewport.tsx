@@ -1,3 +1,5 @@
+import {activeFractalFormulaIdentity} from '../engine/sourceFractalIdentity';
+import {sourceProfileForFormula} from '../engine/fractalSourcePrecision';
 import {usesSourceDomain} from '../engine/sourceDomainTimeline';
 import type {SourceDomainNavigationEvent} from '../engine/sourceDomainLiveSession';
 import {sourceIteratedLiveKind,sourceLivePreviewKind} from '../engine/sourceLivePreview';
@@ -226,7 +228,7 @@ export const Viewport = forwardRef<
           drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,mode:'samila',began:false};
         }else{
           if(hasDeliveredSamila())return;
-          if(current.pickingJulia){const scene=renderedScene.current,output=latestOutput.current;if(!scene||output?.type!=='raster')return;const bounds=element.getBoundingClientRect(),rect=rasterPresentationRect(element.clientWidth,element.clientHeight,output.width,output.height),x=(event.clientX-bounds.left-rect.x)/rect.scale,y=(event.clientY-bounds.top-rect.y)/rect.scale;current.onPickJulia?.(juliaSeedAtPointer(scene.settings,x,y,output.width,output.height));event.preventDefault();return;}
+          if(current.pickingJulia){const scene=renderedScene.current,output=latestOutput.current;if(!scene||output?.type!=='raster')return;const bounds=element.getBoundingClientRect(),rect=rasterPresentationRect(element.clientWidth,element.clientHeight,output.width,output.height),x=(event.clientX-bounds.left-rect.x)/rect.scale,y=(event.clientY-bounds.top-rect.y)/rect.scale;current.onPickJulia?.(juliaSeedAtPointer(scene.fractalSource?{...scene.settings,formula:activeFractalFormulaIdentity(scene)!,variant:'mandelbrot',fractalNumericProfile:sourceProfileForFormula(activeFractalFormulaIdentity(scene)!)}:scene.settings,x,y,output.width,output.height));event.preventDefault();return;}
           const plane=current.plane?planeView():undefined;if(current.plane&&!plane)return;
           const view=current.bulb?parseBulbCameraSettings(current.scene.settings):plane!.view;
           drag={id:event.pointerId,x:event.clientX,y:event.clientY,camera:view,mode:current.bulb?'bulb':'plane',scale:plane?.rect.scale??1};

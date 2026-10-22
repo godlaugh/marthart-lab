@@ -1,3 +1,4 @@
+import {SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
 import type {FormulaConfig} from '../types';
 import {DOMAIN_SCENE_SEQUENCE} from './sourceDomainTimeline';
 import {importSourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
@@ -70,7 +71,7 @@ import {prepareDomainNativeConstant} from './domainNativeConstants';
 import {parseDomainSourceDouble,prepareDomainSourceObjectScalar,prepareDomainSourceScalar} from './domainSourceScalar';
 import {parseSpirographVersion} from './spirographModel';
 import {normalizeFractalDistancePower} from './fractalDistance';
-import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalPrecision';
+import {FRACTAL_SOURCE_NUMERIC_PROFILE,sourceProfileForFormula} from './fractalSourcePrecision';
 import {ROOTS_DENSITY_COLOR_VERSION,ROOTS_SOURCE_TONE_FIELDS,normalizeRootsSourceMetric,normalizeRootsSourceToneField,parseRootsSourcePalette,rootsSourceBackground} from './rootsDensityColor';
 import {parseRootsSourceScalar} from './rootsSourceScalar';
 import {prepareRootsPresentationImport} from './rootsPresentationImport';
@@ -437,6 +438,15 @@ function implicit(r:Reader,s:SceneDocument){
  if(mode){const map:Record<string,string>={SOLID:'mesh',WIREFRAME:'mesh',POINTS:'points',WIREFRAME_FILL:'mesh',PREVIEW:'points'};s.settings.renderMode=map[mode]??mode;if(mode==='WIREFRAME'||mode==='WIREFRAME_FILL')s.settings.meshWireframe=true;}
  booleanTo(r,s,'settings.mesh_fill','meshFill');numberTo(r,s,'settings.mesh_fill_opacity','opacity',{min:0,max:1});geometryMaterial(r,s);
  const backend=r.str('settings.mesh_mode');if(backend!==undefined){const names:Record<string,string>={CPU:'cpu',GPU:'webgl2',AUTO:'auto'};if(!names[backend])fail(`未知隐式曲面后端 ${backend}`);s.settings.computeBackend=names[backend];r.warnings.push('标量场后端已映射；独立 Marching Tetrahedra 与原版 Marching Cubes 的网格拓扑未保证相同。');}
+ if(s.settings.renderMode==='mesh'&&(s.settings.computeBackend??'cpu')==='cpu'){
+  s.settings.implicitPresentationVersion=SOURCE_IMPLICIT_PRESENTATION;
+  // iso_threshold selects particles near zero; native mesh extraction uses
+  // isoLevel=0. The authored particle threshold remains in source provenance.
+  s.settings.isoLevel=0;
+  s.settings.meshFill=s.settings.meshFill??true;s.settings.meshWireframe=s.settings.meshWireframe??false;
+  numberTo(r,s,'settings.line_weight','meshWireframeWidth',{min:.1,max:32});
+ }
+
 }
 function symmetry(r:Reader,s:SceneDocument){
  const glsl=r.use('equation.glsl');if(glsl!==undefined&&glsl!==null){if(typeof glsl!=='string'||glsl.length>MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH)fail('equation.glsl 应为最多 65536 字符的文本');s.equations.glsl=glsl;}
@@ -600,7 +610,7 @@ function sourceFractal(r:Reader,s:SceneDocument):void {
  const parsed=importSourceFractalFormulaConfiguration(r.peek('fractal'));if(!parsed.ok)fail(`fractal.${parsed.error.path.join('.')}: ${parsed.error.reason}`);
  for(const path of parsed.value.consumedPaths)r.use(['fractal',...path]);for(const path of parsed.value.numericPaths)r.retainNumberToken(['fractal',...path]);r.warnings.push(...parsed.value.diagnostics);
  s.fractalSource={model:'mathart-1.7.8-scene-v1',formula:parsed.value.configuration};
- s.settings.formula=parsed.value.configuration.formulaId!;s.settings.fractalNumericProfile=FRACTAL_SOURCE_NUMERIC_PROFILE;
+ s.settings.formula=parsed.value.configuration.formulaId!;s.settings.fractalNumericProfile=sourceProfileForFormula(s.settings.formula);
  const center=r.peek('fractal.center');let x=0,y=0;if(center!==undefined){if(!Array.isArray(center))fail('fractal.center 需要数组');if(center.length>=2){x=sourceZoomScalar(r,'fractal.center.0',0);y=sourceZoomScalar(r,'fractal.center.1',0);}else r.use('fractal.center');}
  const rotation=prepareDomainSourceObjectScalar(r.use('fractal.rotation'),{fallback:0,precision:'float32'});if(!rotation.ok)fail('fractal.rotation 超过解析预算');
  const rawIterations=r.use('fractal.iterations'),integer=prepareRootsSourceJsonInt(rawIterations,200,r.numberToken('fractal.iterations'));if(!integer.ok)fail('fractal.iterations 的原始整数身份无法读取');
@@ -608,7 +618,7 @@ function sourceFractal(r:Reader,s:SceneDocument):void {
  Object.assign(s.settings,{centerX:x,centerY:y,centerXLow:0,centerYLow:0,zoom:Math.max(1e-6,sourceZoomScalar(r,'fractal.zoom',1)),rotation:rotation.facts.value,iterations:Math.max(1,iterations),variant:parsed.value.configuration.fractalType});
  r.retainNumberToken('fractal.iterations');r.retainNumberToken('fractal.rotation');
  const render=r.str('fractal.render_method'),methods:Record<string,string>={ONEPASS:'one-pass',MULTIPASS:'multi-pass',GUESSING:'guessing'};if(render){const method=methods[render.toUpperCase()];if(method)s.settings.renderMethod=method;else r.warnings.push('未识别的 render_method 保留来源，使用既有渲染方法。');}
- const precision=r.use('fractal.perturbation_precision');s.settings.perturbationPrecision=precision==null?'medium':typeof precision==='string'&&['LOW','MEDIUM','HIGH'].includes(precision.toUpperCase())?precision.toLowerCase():String(precision);
+ const precision=r.use('fractal.perturbation_precision');s.settings.perturbationPrecision=precision==null?'medium':typeof precision==='string'&&['LOW','MEDIUM','HIGH','ULTRA'].includes(precision.toUpperCase())?precision.toLowerCase():String(precision);
  const color=prepareFractalSourceColorImport(r.root);s.settings.fractalColorProfile=FRACTAL_SOURCE_COLOR_PROFILE;s.fractalSourceColor=color.configuration;for(const path of color.consumedPaths)r.use(path);r.warnings.push(...color.diagnostics);
  s.timeline={...s.timeline,schedule:FRACTAL_SCENE_SEQUENCE,tracks:[]};
  r.warnings.push('分形采用原版公式参数集合、普通动画和逐帧队列；固定帧回放会在时间 0 执行首个更新。初始中心只读取 center，高低位中心仅支持时间线目标。Nova 阈值使用请求画布尺寸；原版使用逻辑 PGraphics 尺寸，DPI 语义和原版像素一致性未验证。原版整窗口与录像时钟仍待验证。');
@@ -633,7 +643,7 @@ function sourceFractalTimeline(r:Reader,s:SceneDocument):void {
  if(span>0)s.timeline.duration=span;prepareSourceFractalScene(s);
 }
 function fractal(r:Reader,s:SceneDocument){
- const raw=r.peek('fractal'),selected=isObject(raw)?raw.formula_id??raw.formulaId:undefined;if(selected==='newton'||selected==='nova'){sourceFractal(r,s);return;}
+ const raw=r.peek('fractal'),selected=isObject(raw)?raw.formula_id??raw.formulaId:undefined;if(selected==='newton'||selected==='nova'||selected==='mandelbrot'||selected==='julia'){sourceFractal(r,s);return;}
  const f=r.str('fractal.formula_id')??r.str('fractal.type')?.toLowerCase();if(!f)fail('缺少 fractal.formula_id');s.settings.formula=f;
  const supported=definitions.find(d=>d.kind==='fractal')!.controls.find(c=>c.key==='formula')!.options!.map(v=>v.value);if(!supported.includes(f))r.warnings.push(`分形公式 ${f} 尚未实现；保留标识，生成器会明确报错，不替换为其他公式。`);
  const variant=r.str('fractal.type');if(variant)s.settings.variant=variant.toLowerCase();Object.assign(s.settings,legacyZoomTarget(r,'fractal',{centerX:Number(s.settings.centerX),centerY:Number(s.settings.centerY),zoom:Number(s.settings.zoom)}));

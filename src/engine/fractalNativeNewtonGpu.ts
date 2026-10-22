@@ -140,8 +140,8 @@ export class FractalSourceNewtonGpu {
   return this.sampleInternal(offsets,1,1,c,plan,colors,isCancelled,true,reference);
  }
  private sampleInternal(points:Float32Array,width:number,height:number,c:FractalConfig,plan:FractalSourcePlan,colors:FractalColors|undefined,isCancelled:(()=>boolean)|undefined,direct:boolean,override?:FractalSourceReferenceReady,colorPlan?:PreparedFractalSourceColor):GpuOrbitBatch {
-  validateFractalSourcePlan(plan);if(colorPlan)validatePreparedFractalSourceColor(colorPlan);cancel(isCancelled);require(points instanceof Float32Array&&points.length%(direct?4:2)===0&&(direct||points.every(Number.isFinite)),'Source GPU expects pixel/DS-offset records');
-  require(plan.formula===c.formula&&['newton','nova'].includes(plan.formula),'Source GPU requires a matching Newton/Nova plan');
+  validateFractalSourcePlan(plan);require(!direct||plan.formula==='newton'||plan.formula==='nova','The direct-offset diagnostic supports Newton/Nova only');if(colorPlan)validatePreparedFractalSourceColor(colorPlan);cancel(isCancelled);require(points instanceof Float32Array&&points.length%(direct?4:2)===0&&(direct||points.every(Number.isFinite)),'Source GPU expects pixel/DS-offset records');
+  require(plan.formula===c.formula&&['newton','nova','mandelbrot','julia'].includes(plan.formula),'Source GPU requires a matching source formula plan');
   // New CPU outputs exist before a differently sized old target is released.
   // The explicit TF bridge may also retain its previous buffer allocation.
   // Charge those actual held representations, even for a smaller next request.
@@ -202,7 +202,7 @@ export class FractalSourceNewtonGpu {
    gl.uniform2fv(loc('u_resolution'),plan.logicalSize);gl.uniform2fv(loc('u_centerHigh'),[plan.shaderCenter[0],plan.shaderCenter[2]]);gl.uniform2fv(loc('u_centerLow'),[plan.shaderCenter[1],plan.shaderCenter[3]]);gl.uniform2fv(loc('u_zoomDS'),plan.zoom);
    gl.uniform2fv(loc('u_juliaConstantHigh'),[plan.shaderJuliaConstant[0],plan.shaderJuliaConstant[2]]);gl.uniform2fv(loc('u_juliaConstantLow'),[plan.shaderJuliaConstant[1],plan.shaderJuliaConstant[3]]);
    gl.uniform1f(loc('u_rotation'),plan.rotation);gl.uniform1f(loc('u_previewScale'),1);gl.uniform1f(loc('u_bailout'),plan.bailout);gl.uniform1f(loc('u_perturbationThreshold'),plan.perturbation.threshold);gl.uniform1f(loc('u_perturbationAbsFactor'),plan.perturbation.absFactor);gl.uniform1f(loc('u_perturbationRelLimit'),plan.perturbation.relLimit);
-   gl.uniform1i(loc('u_formulaId'),plan.formula==='newton'?2:3);gl.uniform1i(loc('u_type'),plan.isJulia?1:0);gl.uniform1i(loc('u_formulaType'),0);gl.uniform1i(loc('u_power'),plan.uniformPower);gl.uniform1i(loc('u_formulaSupportsPerturbation'),1);gl.uniform1i(loc('u_iterations'),plan.iterations);gl.uniform1i(loc('u_usePerturbation'),reference?1:0);gl.uniform1i(loc('u_refOrbitLen'),reference?.length??0);gl.uniform1i(loc('u_refOrbitTex'),2);if(!colorPlan){gl.uniform1i(loc('u_insideColoringAlgorithm'),1);gl.uniform1i(loc('u_outsideColoringAlgorithm'),1);}
+   gl.uniform1i(loc('u_formulaId'),plan.formula==='newton'?2:plan.formula==='nova'?3:plan.formula==='julia'?1:0);gl.uniform1i(loc('u_type'),plan.isJulia?1:0);gl.uniform1i(loc('u_formulaType'),0);gl.uniform1i(loc('u_power'),plan.uniformPower);gl.uniform1i(loc('u_formulaSupportsPerturbation'),1);gl.uniform1i(loc('u_iterations'),plan.iterations);gl.uniform1i(loc('u_usePerturbation'),reference?1:0);gl.uniform1i(loc('u_refOrbitLen'),reference?.length??0);gl.uniform1i(loc('u_refOrbitTex'),2);if(!colorPlan){gl.uniform1i(loc('u_insideColoringAlgorithm'),1);gl.uniform1i(loc('u_outsideColoringAlgorithm'),1);}
    gl.uniform4fv(loc('u_formulaParams'),plan.formulaParams);gl.uniform1fv(loc('u_dynamicParams[0]'),plan.dynamicParams);
    gl.uniform4f(loc('legacyTrap'),...c.trapCenter,c.trapRadius,c.trapAspect);gl.uniform3f(loc('legacyTrapShape'),Math.cos(c.trapRotation),Math.sin(c.trapRotation),['point','ring','cross'].indexOf(c.trapShape));
    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.referenceTexture!);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,this.referenceTexture!);
@@ -254,10 +254,10 @@ export class FractalSourceNewtonGpu {
     const o=order[j],k=(points[o*2]-x)*4,z=attachments[0],t=attachments[1];
     if(nativeRgba)out.sourceRGBA!.set(nativeRgba.subarray(k,k+4),o*4);const facts=decodeFractalSourceTerminal(t[k],t[k+1],maxIter);
     const derivative=plan.isJulia?1:0,measured=facts.converged?Math.fround(Math.sqrt(t[k+2])):0;
-    out.values.set([z[k],z[k+2],facts.steps,facts.converged?4:1,derivative,0,t[k+3],0],o*8);
+    out.values.set([z[k],z[k+2],facts.steps,facts.converged?4:facts.escaped?2:1,derivative,0,t[k+3],0],o*8);
     out.residual.set([z[k+1],z[k+3],measured,0,measured,0,facts.converged?1:0,facts.iteration],o*8);
     if(out.traps){out.traps.set(attachments[2].subarray(k,k+4),o*8);out.traps.set(attachments[3].subarray(k,k+4),o*8+4);}
-    out.distance?.set([derivative,0,0,0,z[k],z[k+2],facts.iteration,facts.converged?2:0,t[k+2],facts.startedPerturb?1:0,0,0],o*12);
+    out.distance?.set([derivative,0,0,0,z[k],z[k+2],facts.iteration,facts.converged?2:facts.escaped?1:0,t[k+2],facts.startedPerturb?1:0,0,0],o*12);
     out.source.set([facts.startedPerturb?1:0,facts.glitches,facts.ordinarySteps,facts.perturbSteps],o*4);
     this.samples++;if(colorPlan){this.colorSamples++;this.colorPlanKey=colorPlan.key;}else this.colorPlanKey=undefined;this.glitches+=facts.glitches;this.perturbSamples+=facts.startedPerturb?1:0;this.ordinarySteps+=facts.ordinarySteps;this.perturbSteps+=facts.perturbSteps;
    }

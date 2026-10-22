@@ -54,10 +54,11 @@ describe('fractal render strategies',()=>{
   const gpu=new FractalGpu(),config=fractalConfig(scene().settings);expect(gpu.sample(new Float32Array([0,0]),1,1,view,config).warning).toContain('OffscreenCanvas');gpu.dispose();
   for(const settings of [{renderMethod:'bad'},{perturbationPrecision:'bad'},{fractalBackend:'bad'},{zoom:1e29}]){const s=scene();Object.assign(s.settings,settings);expect(()=>definitions[0].generate(s,{time:0,quality:'preview',width:1,height:1})).toThrow();}
  });
- it('imports original rendering names and high/low centers without rounding the low component away',()=>{
+ it('imports native rendering names while preserving ignored initial high/low fields in provenance',()=>{
   const imported=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'FRACTAL',name:'Precise original',fractal:{formula_id:'mandelbrot',render_method:'MULTIPASS',perturbation_precision:'ULTRA',center_hi_lo:[-.743,1e-25,.131,-1e-25],zoom:1e20}}));
-  const restored=parseScene(JSON.stringify(imported.scene));expect(restored.settings).toMatchObject({renderMethod:'multi-pass',perturbationPrecision:'ultra',centerX:-.743,centerY:.131,centerXLow:1e-25,centerYLow:-1e-25,zoom:1e20});
-  expect(imported.warnings.join(' ')).not.toMatch(/尚未映射[^。]*(render_method|center_hi_lo|perturbation_precision)/);
+  const restored=parseScene(JSON.stringify(imported.scene));expect(restored.settings).toMatchObject({renderMethod:'multi-pass',perturbationPrecision:'ultra',centerX:0,centerY:0,centerXLow:0,centerYLow:0,zoom:1e20});
+  expect(imported.source).toMatchObject({fractal:{center_hi_lo:[-.743,1e-25,.131,-1e-25]}});
+  const local=scene();Object.assign(local.settings,{centerX:-.743,centerXLow:1e-25,centerY:.131,centerYLow:-1e-25});expect(parseScene(JSON.stringify(local)).settings).toMatchObject({centerXLow:1e-25,centerYLow:-1e-25});
  });
 });
 describe('fractal equation display contract',()=>{

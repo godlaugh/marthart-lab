@@ -4,7 +4,7 @@ import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument'
 import {prepareSourceFractalScene,type SourceFractalEvaluation} from './sourceFractalTimeline';
 import {SourceFractalSceneRuntime} from './sourceFractalSceneRuntime';
 import {SourceFractalPlaybackSession} from './sourceFractalPlayback';
-import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalSourcePrecision';
+import {sourceProfileForFormula} from './fractalSourcePrecision';
 
 export class SourceFractalRecordingError extends Error {
  constructor(readonly code:'input'|'cancelled'|'state'|'capacity',message:string){super(message);this.name=code==='cancelled'?'AbortError':'SourceFractalRecordingError';}
@@ -92,7 +92,7 @@ export function assertFractalRecordingFrame(output:SceneOutput,clock:SourceQueue
  const input=fractalRecordingFrameInput(clock,displayFrame);
  if(output.type!=='raster')throw new SourceFractalRecordingError('state','分形录制需要实际栅格帧');
  const facts=output.fractalRecording,render=output.fractalRender;
- if(!facts||!render||render.profile!==FRACTAL_SOURCE_NUMERIC_PROFILE||render.execution.backend!=='webgl2'||render.rasterSize[0]!==output.width||render.rasterSize[1]!==output.height||
+ if(!facts||!render||render.profile!==sourceProfileForFormula(render.formula)||render.execution.backend!=='webgl2'||render.rasterSize[0]!==output.width||render.rasterSize[1]!==output.height||
   facts.displayFrame!==input.displayFrame||facts.simulationFps!==input.simulationFps||facts.warmup!==(displayFrame===0)||facts.complete!==(displayFrame===clock.lastDisplayFrame)||
   !Number.isSafeInteger(facts.queueIndex)||facts.queueIndex<0||!Number.isFinite(facts.sceneTime))
   throw new SourceFractalRecordingError('state','分形录制帧与实际队列完成状态或渲染事实不一致');

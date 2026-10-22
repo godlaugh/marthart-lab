@@ -6,6 +6,7 @@ export function outputBuffers(output:SceneOutput):ArrayBuffer[]{
     output.sourceGpuMesh?.seeds,output.sourceGpuMesh?.triangles,output.sourceGpuMesh?.packedColors,output.sourceGpuMesh?.parameters,
     output.sourceGpuPoints?.seeds,output.sourceGpuPoints?.tint,output.sourceGpuPoints?.parameters,
     output.positions,output.indices,output.meshEdges,output.colors,output.pointAlphas,output.particleIds,output.sourceMeshColors,output.sourceMeshWireframe?.positions,
+    output.sourceImplicitPresentation?.fillColors,output.sourceImplicitPresentation?.wire?.positions,output.sourceImplicitPresentation?.wire?.colors,output.sourceImplicitPresentation?.wire?.alphas,
     output.surfaceGrid?.vertexIndices,output.surfaceGrid?.cellTriangles,
     output.surfaceWireframe?.positions,output.surfaceWireframe?.indices,
     ...(output.lineOverlays?.map(line=>line.positions)??[]),

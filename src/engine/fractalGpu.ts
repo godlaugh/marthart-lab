@@ -115,7 +115,7 @@ export class FractalGpu {
   }return this.gl;
  }
  sample(points:Float32Array,width:number,height:number,view:FractalViewport,c:FractalConfig,reference?:ReferenceOrbit,threshold=1e-4,traceColors?:FractalColors,source?:{plan:FractalSourcePlan;colorPlan?:PreparedFractalSourceColor;isCancelled?:()=>boolean}):GpuOrbitBatch {
-  if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceNewtonNova){
+  if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceArithmetic){
    if(!source)throw new FractalSourceGpuError('Explicit source arithmetic requires a prepared source plan','input');
    return(this.source??=new FractalSourceNewtonGpu()).sample(points,width,height,view,c,source.plan,traceColors,source.isCancelled,source.colorPlan);
   }

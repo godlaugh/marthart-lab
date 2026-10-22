@@ -11,7 +11,7 @@ export function precisePixel(x:number,y:number,width:number,height:number,view:F
  return dcAdd(dc(view.centerX,view.centerY,view.centerXLow,view.centerYLow),dc(...offset));
 }
 export function supportsDoubleDouble(c:FractalConfig):boolean {
- if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceNewtonNova)return false;
+ if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceArithmetic)return false;
  return ['mandelbrot','julia','newton','nova'].includes(c.formula)&&c.power[1]===0&&Number.isInteger(c.power[0])&&c.power[0]>=1&&c.power[0]<=32;
 }
 export function supportsPerturbation(c:FractalConfig):boolean {
@@ -25,7 +25,7 @@ function trapAt(z:[number,number],c:FractalConfig):number{
 /** Direct independent DD oracle and repair path; Newton/Nova are evaluated
  * directly, without claiming that their rational perturbation is implemented. */
 export function doubleDoubleOrbit(point:DDComplex,c:FractalConfig,onStep?:(z:[number,number])=>void):FractalOrbit {
- if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceNewtonNova)throw new FractalPrecisionInputError({kind:'input',field:'fractalNumericProfile',reason:'Source Newton/Nova requires its source GPU arithmetic; independent DoubleDouble is not a fallback'});
+ if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceArithmetic)throw new FractalPrecisionInputError({kind:'input',field:'fractalNumericProfile',reason:'Source Newton/Nova requires its source GPU arithmetic; independent DoubleDouble is not a fallback'});
  if(!supportsDoubleDouble(c))throw new Error('此公式/指数不支持 DoubleDouble');
  const julia=c.formula==='julia'||c.variant==='julia',constant=julia?dc(...c.julia):point,p=c.power[0],stepConvergence=usesStepConvergence(c);
  const distance=beginFractalDistance(c.distance);

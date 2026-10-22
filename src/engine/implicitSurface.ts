@@ -1,3 +1,4 @@
+import {bindSourceImplicitPresentation,usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {compileReal,compileRealWithFacts,numberSetting,type Scope} from './expression';
 import {geometryColorModel,paletteDomainColor} from './geometryColor';
 import {vertexColors} from './palette';
@@ -47,7 +48,7 @@ export function prepareImplicitJob(scene:SceneDocument,context:GenerateContext,t
  for(let axis=0;axis<3;axis++){let previous=min[axis];for(let i=1;i<=dimensions[axis];i++){const value=min[axis]+i*spacing[axis];if(!Number.isFinite(value)||value<=previous)throw Error('请求网格的相邻坐标在双精度中不可区分；请增大坐标跨度或降低分辨率');previous=value;}}
  const planeSize=(dimensions[0]+1)*(dimensions[1]+1),latticeSamples=planeSize*(dimensions[2]+1),cells=dimensions[0]*dimensions[1]*dimensions[2];
  const source=scene.equations.f??'x^2+y^2+z^2-1',compiled=compileRealWithFacts(source),mode=option(s,'renderMode','mesh',['mesh','wireframe','points']) as ImplicitJob['mode'];
- return {scene,transform,dimensions,min,max,spacing,planeSize,latticeSamples,cells,source,scope,iso:numberSetting(s,'isoLevel',0),sign:option(s,'inside','below',['below','above'])==='below'?1:-1,mode,overlay:mode==='mesh'&&parseMeshAppearance(s).wireframe,requestedBackend:option(s,'computeBackend','cpu',['cpu','webgl2','auto']) as ImplicitJob['requestedBackend'],domainColors:geometryColorModel(scene).implicit==='z-domain',evaluate:compiled.evaluate,continuity:compileImplicitContinuity(compiled.facts)};
+ return {scene,transform,dimensions,min,max,spacing,planeSize,latticeSamples,cells,source,scope,iso:numberSetting(s,'isoLevel',0),sign:option(s,'inside','below',['below','above'])==='below'?1:-1,mode,overlay:mode==='mesh'&&!usesSourceImplicitCpuMesh(scene)&&parseMeshAppearance(s).wireframe,requestedBackend:option(s,'computeBackend','cpu',['cpu','webgl2','auto']) as ImplicitJob['requestedBackend'],domainColors:!usesSourceImplicitCpuMesh(scene)&&geometryColorModel(scene).implicit==='z-domain',evaluate:compiled.evaluate,continuity:compileImplicitContinuity(compiled.facts)};
 }
 /** Checked upper bound for final deliverable arrays and its compaction map.
  * It excludes extraction chunks/frontier (accounted dynamically) and renderer/
@@ -235,7 +236,7 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
   if(job.overlay)meshEdges=edges;else{outIndices=edges;budget.release(original.byteLength);}
  }
 
- const colors=outColors??vertexColors(outPositions,job.scene.palette,option(job.scene.settings,'colorMetric','height',['height','radius','angle','index']));
+ const colors=usesSourceImplicitCpuMesh(job.scene)?undefined:outColors??vertexColors(outPositions,job.scene.palette,option(job.scene.settings,'colorMetric','height',['height','radius','angle','index']));
  if(invalid)warnings.push(`${invalid} 个场采样不是有限数值；相邻四面体不会跨越已采样的未定义区域。`);
  if(facts.rejectedEdges)warnings.push(`${facts.rejectedEdges} 条候选边在有界根细化中未取得可信零值；相关面片已跳过，可能是不连续区域或未解析的高条件数根。`);
  if(facts.degenerateTriangles)warnings.push(`${facts.degenerateTriangles} 个零面积、未解析或超出表示范围的三角形已排除。`);
@@ -247,5 +248,5 @@ export function generateImplicitSurface(scene:SceneDocument,context:GenerateCont
  const started=performance.now(),job=prepareImplicitJob(scene,context,transform);
  if(context.isCancelled?.())return{type:'geometry',dimension:3,topology:job.mode==='points'?'points':job.mode==='wireframe'?'segments':'mesh',positions:new Float32Array(0),colors:new Float32Array(0),...(job.mode!=='points'?{indices:new Uint32Array(0)}:{}),...(job.overlay?{meshEdges:new Uint32Array(0)}:{}),backend:'cpu',implicit:emptyFacts(job),stats:{samples:0,generated:0,invalid:0},warnings:['场采样已取消，未进行等值面剖分。']};
  const gpu=job.requestedBackend==='webgl2'||job.requestedBackend==='auto'&&job.latticeSamples>=4096;
- let output:SceneOutput;try{output=extract(job,context,gpu,gpu?['GPU 格点逐点以 CPU 双精度核验分类，根细化和网格提取使用 CPU；此质量路径不保证加速。']:[]);}catch(error){if(!(error instanceof GpuRetry))throw error;cancelled(context);output=extract(job,context,false,[`GPU 等值面回退 CPU：${error.message}`,`工作统计包括已完成的 GPU 尝试（${error.work.latticeSamples} 个格点、${error.work.latticeValidationSamples} 次 CPU 分类核验、${error.work.rootEvaluations} 次根求值）和 CPU 重放；实际工作可超过请求网格。`],error);}output.stats.elapsedMs=performance.now()-started;return output;
+ let output:SceneOutput;try{output=extract(job,context,gpu,gpu?['GPU 格点逐点以 CPU 双精度核验分类，根细化和网格提取使用 CPU；此质量路径不保证加速。']:[]);}catch(error){if(!(error instanceof GpuRetry))throw error;cancelled(context);output=extract(job,context,false,[`GPU 等值面回退 CPU：${error.message}`,`工作统计包括已完成的 GPU 尝试（${error.work.latticeSamples} 个格点、${error.work.latticeValidationSamples} 次 CPU 分类核验、${error.work.rootEvaluations} 次根求值）和 CPU 重放；实际工作可超过请求网格。`],error);}if(output.type==='geometry')bindSourceImplicitPresentation(output,job,context);output.stats.elapsedMs=performance.now()-started;return output;
 }

@@ -4,19 +4,23 @@ import type {DD,DDComplex} from './doubleDouble';
 import type {SourceFractalFormulaNativeState} from './sourceFractalFormulaRuntime';
 
 export const FRACTAL_SOURCE_NUMERIC_PROFILE='mathart-1.7.8-newton-nova-v1' as const;
+export const FRACTAL_SOURCE_POWER_PROFILE='mathart-1.7.8-power-v1' as const;
+export type FractalSourceProfile=typeof FRACTAL_SOURCE_NUMERIC_PROFILE|typeof FRACTAL_SOURCE_POWER_PROFILE;
+export type FractalSourceFormula='newton'|'nova'|'mandelbrot'|'julia';
+export function sourceProfileForFormula(formula:string):FractalSourceProfile{return formula==='mandelbrot'||formula==='julia'?FRACTAL_SOURCE_POWER_PROFILE:FRACTAL_SOURCE_NUMERIC_PROFILE;}
 export const FRACTAL_SOURCE_REFERENCE_LIMIT=2048;
 /** Local bounded-work admission, not an original application limit or timing guarantee. */
 export const MAX_FRACTAL_SOURCE_REFERENCE_WORK=24_000_000;
-export type FractalNumericProfile='local-v1'|typeof FRACTAL_SOURCE_NUMERIC_PROFILE;
+export type FractalNumericProfile='local-v1'|FractalSourceProfile;
 /** Omission is the existing independent numerical contract. The authored source
  * marker may remain dormant on another formula; activation belongs to caller. */
 export function parseFractalNumericProfile(raw:unknown):FractalNumericProfile {
  if(raw===undefined||raw==='local-v1')return 'local-v1';
- if(raw===FRACTAL_SOURCE_NUMERIC_PROFILE)return raw;
+ if(raw===FRACTAL_SOURCE_NUMERIC_PROFILE||raw===FRACTAL_SOURCE_POWER_PROFILE)return raw;
  throw new FractalPrecisionInputError({kind:'input',field:'fractalNumericProfile',reason:'Unknown fractal numeric profile'});
 }
 export interface FractalSourcePlanOptions {readonly precision:unknown}
-export type FractalSourcePrecision='low'|'medium'|'high';
+export type FractalSourcePrecision='low'|'medium'|'high'|'ultra';
 const F=Math.fround;
 type Result<T,E>={ok:true;value:T}|{ok:false;error:E};
 export interface FractalLogicalSize {
@@ -24,15 +28,15 @@ export interface FractalLogicalSize {
  readonly provenance:'requested-output-local'|'canvas-logical-local'|'source-logical';
 }
 export type FractalSourcePrecisionInput=Pick<FractalConfig,'formula'|'variant'|'power'|'start'|'julia'|'iterations'|'tolerance'|'relaxation'>;
-export interface FractalSourceNativePrecisionInput {readonly formula:'newton'|'nova';readonly native:SourceFractalFormulaNativeState;readonly iterations:number;}
+export interface FractalSourceNativePrecisionInput {readonly formula:FractalSourceFormula;readonly native:SourceFractalFormulaNativeState;readonly iterations:number;}
 export interface FractalPrecisionError {kind:'input'|'capacity';field:string;reason:string}
 export class FractalPrecisionInputError extends Error {
  constructor(readonly failure:FractalPrecisionError){super(failure.reason);this.name='FractalPrecisionInputError';}
 }
-export type FractalPerturbationReason='NEWTON_ELIGIBLE'|'NOVA_ELIGIBLE'|'NEWTON_POWER_CONDITION'|'NOVA_POWER_CONDITION'|'NEWTON_NON_INTEGER_POWER_UNSUPPORTED'|'NOVA_NON_INTEGER_POWER_UNSUPPORTED'|'ZOOM_BELOW_GATE';
+export type FractalPerturbationReason='ELIGIBLE'|'POWER_FAMILY_CONDITION'|'NON_INTEGER_POWER_UNSUPPORTED'|'NEWTON_ELIGIBLE'|'NOVA_ELIGIBLE'|'NEWTON_POWER_CONDITION'|'NOVA_POWER_CONDITION'|'NEWTON_NON_INTEGER_POWER_UNSUPPORTED'|'NOVA_NON_INTEGER_POWER_UNSUPPORTED'|'ZOOM_BELOW_GATE';
 export interface FractalSourcePlan {
- readonly profile:typeof FRACTAL_SOURCE_NUMERIC_PROFILE;
- readonly formula:'newton'|'nova';readonly authoredVariant:string;readonly isJulia:boolean;
+ readonly profile:FractalSourceProfile;
+ readonly formula:FractalSourceFormula;readonly authoredVariant:string;readonly isJulia:boolean;
  readonly iterations:number;readonly maximumShaderIterations:2048;
  readonly shaderPower:readonly[number,number];readonly shaderIntegerPower:number;
  /** Original uniform payload. Native input keeps all mapped slots; authored input
@@ -49,7 +53,7 @@ export interface FractalSourcePlan {
  readonly ordinary:{readonly enabled:true};
  readonly perturbation:{readonly enabled:boolean;readonly reason:FractalPerturbationReason;readonly precision:FractalSourcePrecision;readonly threshold:number;readonly absFactor:number;readonly relLimit:number};
  readonly reference:{readonly power:number;readonly relaxation:number;readonly initialZ:DDComplex;readonly constant:DDComplex;readonly length:number;readonly nearZeroShift:number;readonly workUnits:number};
- readonly stopRules:{readonly comparison:'strict-high-word-step-squared';readonly ordinaryFinalZ:'next';readonly perturbFinalZ:'current';readonly perturbLastStep:'not-compared';readonly glitch:'continue-ordinary-ds'};
+ readonly stopRules:{readonly comparison:'strict-high-word-step-squared'|'strict-ds-magnitude-squared';readonly ordinaryFinalZ:'next';readonly perturbFinalZ:'current';readonly perturbLastStep:'not-compared'|'current-compared';readonly glitch:'continue-ordinary-ds'};
  /** Includes every reference-producing input, including logical dimensions.
   * Unlike the shipped cache, a changed near-zero-origin size cannot reuse it. */
  readonly key:string;
@@ -98,13 +102,14 @@ export function prepareFractalSourceNativePlan(input:FractalSourceNativePrecisio
  if(!n||!['mandelbrot','julia'].includes(n.fractalType)||!Number.isInteger(n.power)||n.power<-2147483648||n.power>2147483647||!pair(n.julia)||!Number.isFinite(n.bailout))return failed('native','Source native formula state is invalid');
  for(const [key,length]of [['formulaParams',4],['dynamicParams',32]] as const)if(!Array.isArray(n[key])||n[key].length!==length||!n[key].every(v=>typeof v==='number'&&Number.isFinite(v)&&Object.is(v,F(v))))return failed(key,'Source native slots must retain their complete finite Float32 payload');
  if(!Object.is(n.bailout,F(n.bailout)))return failed('bailout','Source native bailout must retain Float32 precision');
- return preparePlan({formula:input.formula,variant:n.fractalType,power:[n.dynamicParams[0],n.dynamicParams[1]],start:[...n.julia],julia:[...n.julia],iterations:input.iterations,tolerance:n.bailout,relaxation:n.dynamicParams[2]},view,size,options,n);
+ return preparePlan({formula:input.formula,variant:n.fractalType,power:input.formula==='mandelbrot'||input.formula==='julia'?[n.formulaParams[0]>0?n.formulaParams[0]:n.power,0]:[n.dynamicParams[0],n.dynamicParams[1]],start:[...n.julia],julia:[...n.julia],iterations:input.iterations,tolerance:n.bailout,relaxation:n.dynamicParams[2]},view,size,options,n);
 }
 function preparePlan(config:FractalSourcePrecisionInput,view:FractalViewport,size:FractalLogicalSize,options:FractalSourcePlanOptions,native?:SourceFractalFormulaNativeState):Result<FractalSourcePlan,FractalPrecisionError> {
  if(!config||!view||!size)return failed('plan','Source fractal precision inputs are required');
  const precision=options?.precision;
- if(precision!=='low'&&precision!=='medium'&&precision!=='high')return failed('precision','Source precision requires low, medium or high');
- if(config.formula!=='newton'&&config.formula!=='nova')return failed('formula','Source numeric profile requires Newton or Nova');
+ if(precision!=='low'&&precision!=='medium'&&precision!=='high'&&precision!=='ultra')return failed('precision','Source precision requires low, medium, high or ultra');
+ if(!['newton','nova','mandelbrot','julia'].includes(config.formula))return failed('formula','Unsupported source numeric formula');
+ const powerFamily=config.formula==='mandelbrot'||config.formula==='julia';
  if(!['mandelbrot','julia'].includes(config.variant))return failed('variant','Unknown fractal variant');
  for(const key of ['power','start','julia'] as const)if(!pair(config[key]))return failed(key,'Source complex parameters require two finite numbers');
  if(!Number.isInteger(config.iterations)||config.iterations<1||config.iterations>4096)return failed('iterations','Fractal request supports 1–4096 iterations','capacity');
@@ -114,21 +119,22 @@ function preparePlan(config:FractalSourcePrecisionInput,view:FractalViewport,siz
  if(!['requested-output-local','canvas-logical-local','source-logical'].includes(size.provenance))return failed('logicalSizeProvenance','Logical size provenance is required');
  if(![size.logicalWidth,size.logicalHeight].every(n=>Number.isFinite(n)&&n>0&&Number.isFinite(F(n))&&F(n)>0))return failed('logicalSize','Logical dimensions must remain finite and positive in float32');
  const shaderPower=[F(config.power[0]),F(config.power[1])] as const,shaderRelaxation=F(config.relaxation),rotation=F(view.rotation);
- const bailout=Math.max(F(1e-12),F(config.tolerance)),zoom=[F(view.zoom),F(view.zoom-F(view.zoom))] as const;
+ const bailout=Math.max(F(powerFamily?1e-6:1e-12),F(config.tolerance)),zoom=[F(view.zoom),F(view.zoom-F(view.zoom))] as const;
  if(![...shaderPower,shaderRelaxation,bailout,...zoom,rotation].every(Number.isFinite))return failed('float32','Source scalar upload exceeds finite float32 representation','capacity');
- const shaderIntegerPower=Math.floor(F(shaderPower[0]+F(.5)));
+ const shaderIntegerPower=Math.max(powerFamily?2:-Infinity,Math.floor(F(shaderPower[0]+F(.5))));
  if(shaderIntegerPower<-2147483648||shaderIntegerPower>2147483647)return failed('power','Source shader int(power) conversion is outside its defined range','capacity');
- const power=native?.power??roundLongToInt(config.power[0]),formula=config.formula,isJulia=formula==='nova'&&config.variant==='julia';
+ const power=native?.power??roundLongToInt(config.power[0]),formula=config.formula as FractalSourceFormula,isJulia=formula==='julia'||formula==='nova'&&config.variant==='julia';
  // Java host Math.round(float) gate and GLSL floor(float+.5) are separate facts.
- const roundedPower=Math.max(0,floatRoundInt(shaderPower[0]));
- const integerPower=Math.abs(shaderPower[1])<F(1e-6)&&Math.abs(F(shaderPower[0]-F(floatRoundInt(shaderPower[0]))))<F(1e-6);
- let reason:FractalPerturbationReason=roundedPower<2?(formula==='nova'?'NOVA_POWER_CONDITION':'NEWTON_POWER_CONDITION'):!integerPower?(formula==='nova'?'NOVA_NON_INTEGER_POWER_UNSUPPORTED':'NEWTON_NON_INTEGER_POWER_UNSUPPORTED'):view.zoom<100?'ZOOM_BELOW_GATE':formula==='nova'?'NOVA_ELIGIBLE':'NEWTON_ELIGIBLE';
- const enabled=reason==='NOVA_ELIGIBLE'||reason==='NEWTON_ELIGIBLE';
+ const gatePower=native?[native.dynamicParams[0],native.dynamicParams[1]]:shaderPower;
+ const roundedPower=Math.max(0,floatRoundInt(gatePower[0]));
+ const integerPower=Math.abs(gatePower[1])<F(1e-6)&&Math.abs(F(gatePower[0]-F(floatRoundInt(gatePower[0]))))<F(1e-6);
+ let reason:FractalPerturbationReason=roundedPower<2?(powerFamily?'POWER_FAMILY_CONDITION':formula==='nova'?'NOVA_POWER_CONDITION':'NEWTON_POWER_CONDITION'):!integerPower?(powerFamily?'NON_INTEGER_POWER_UNSUPPORTED':formula==='nova'?'NOVA_NON_INTEGER_POWER_UNSUPPORTED':'NEWTON_NON_INTEGER_POWER_UNSUPPORTED'):view.zoom<100?'ZOOM_BELOW_GATE':powerFamily?'ELIGIBLE':formula==='nova'?'NOVA_ELIGIBLE':'NEWTON_ELIGIBLE';
+ const enabled=reason==='ELIGIBLE'||reason==='NOVA_ELIGIBLE'||reason==='NEWTON_ELIGIBLE';
  // One unit per complex product or remaining DD operation (division is one
  // operation here), including the last unconsumed next-state calculation. This
  // is a bounded algorithm-work proxy, not a source power limit.
  const referenceLength=Math.min(config.iterations,FRACTAL_SOURCE_REFERENCE_LIMIT);
- const workUnits=referenceLength*(Math.max(1,power-1)+(formula==='nova'?20:18));
+ const workUnits=referenceLength*(Math.max(1,power-1)+(powerFamily?2:formula==='nova'?20:18));
  if(enabled&&(!Number.isSafeInteger(workUnits)||workUnits>MAX_FRACTAL_SOURCE_REFERENCE_WORK))return failed('referenceWork','Source reference exceeds the 24,000,000 operation-proxy work budget','capacity');
  const logicalSize=[F(size.logicalWidth),F(size.logicalHeight)] as const;
  const center:DDComplex=[parts(view.centerX,view.centerXLow),parts(view.centerY,view.centerYLow)];
@@ -137,8 +143,8 @@ function preparePlan(config:FractalSourcePrecisionInput,view:FractalViewport,siz
  const sourceJuliaConstant=[...(formula==='nova'&&!isJulia?config.start:config.julia)] as [number,number];
  const shaderJuliaConstant=[F(sourceJuliaConstant[0]),F(sourceJuliaConstant[0]-F(sourceJuliaConstant[0])),F(sourceJuliaConstant[1]),F(sourceJuliaConstant[1]-F(sourceJuliaConstant[1]))] as const;
  const zoomProgress=Math.min(1,Math.max(0,(Math.log10(Math.max(1,view.zoom))-2)/28));
- const perturbation:FractalSourcePlan['perturbation']={enabled,reason,precision,threshold:F(precision==='low'?.01:precision==='high'?1e-6:1e-4),absFactor:F(4096*(1+zoomProgress*.5)),relLimit:F(1e6*(1+zoomProgress*9))};
- let initialZ=isJulia||formula==='newton'?center:complex(...sourceJuliaConstant);
+ const perturbation:FractalSourcePlan['perturbation']={enabled,reason,precision,threshold:F(precision==='low'?.01:precision==='high'?1e-6:1e-4),absFactor:F(powerFamily?1+zoomProgress*15:4096*(1+zoomProgress*.5)),relLimit:F(powerFamily?.01+zoomProgress*.04:1e6*(1+zoomProgress*9))};
+ let initialZ=isJulia||formula==='newton'?center:powerFamily?complex(0,0):complex(...sourceJuliaConstant);
  const constant=isJulia?complex(...sourceJuliaConstant):center;
  let nearZeroShift=0;
  if(formula==='newton'&&Math.abs(sum(initialZ[0]))+Math.abs(sum(initialZ[1]))<1e-24){nearZeroShift=Math.max(2/Math.max(1,Math.min(...logicalSize))*.5,1e-18);initialZ=[add(initialZ[0],of(nearZeroShift)),initialZ[1]];}
@@ -154,8 +160,9 @@ function preparePlan(config:FractalSourcePrecisionInput,view:FractalViewport,siz
   const threshold=Math.max(Math.min(user,auto),minimum);toleranceSquared=F(threshold*threshold);
  }
  const reference={power,relaxation,initialZ:cloneComplex(initialZ),constant:cloneComplex(constant),length:referenceLength,nearZeroShift,workUnits};
- const key=identity([FRACTAL_SOURCE_NUMERIC_PROFILE,formula,config.variant,isJulia,config.iterations,config.power,config.start,config.julia,config.relaxation,config.tolerance,[view.centerX,view.centerXLow,view.centerY,view.centerYLow,view.zoom,view.rotation],logicalSize,size.provenance,precision,reference,...(native?['native',uniformPower,formulaParams,dynamicParams]:[])]);
- const plan:FractalSourcePlan={profile:FRACTAL_SOURCE_NUMERIC_PROFILE,formula,authoredVariant:config.variant,isJulia,iterations:config.iterations,maximumShaderIterations:2048,shaderPower,shaderIntegerPower,uniformPower,formulaParams,dynamicParams,shaderRelaxation,sourceJuliaConstant,shaderJuliaConstant,bailout,toleranceSquaredReference:toleranceSquared,logicalSize,logicalSizeProvenance:size.provenance,center:cloneComplex(center),shaderCenter,zoom,rotation,ordinary:{enabled:true},perturbation,reference,stopRules:{comparison:'strict-high-word-step-squared',ordinaryFinalZ:'next',perturbFinalZ:'current',perturbLastStep:'not-compared',glitch:'continue-ordinary-ds'},key};
+ const profile=sourceProfileForFormula(formula);
+ const key=identity([profile,formula,config.variant,isJulia,config.iterations,config.power,config.start,config.julia,config.relaxation,config.tolerance,[view.centerX,view.centerXLow,view.centerY,view.centerYLow,view.zoom,view.rotation],logicalSize,size.provenance,precision,reference,...(native?['native',uniformPower,formulaParams,dynamicParams]:[])]);
+ const plan:FractalSourcePlan={profile,formula,authoredVariant:config.variant,isJulia,iterations:config.iterations,maximumShaderIterations:2048,shaderPower,shaderIntegerPower,uniformPower,formulaParams,dynamicParams,shaderRelaxation,sourceJuliaConstant,shaderJuliaConstant,bailout,toleranceSquaredReference:toleranceSquared,logicalSize,logicalSizeProvenance:size.provenance,center:cloneComplex(center),shaderCenter,zoom,rotation,ordinary:{enabled:true},perturbation,reference,stopRules:{comparison:powerFamily?'strict-ds-magnitude-squared':'strict-high-word-step-squared',ordinaryFinalZ:'next',perturbFinalZ:'current',perturbLastStep:powerFamily?'current-compared':'not-compared',glitch:'continue-ordinary-ds'},key};
  // Plans are immutable owned facts; later consumers cannot mutate a cache key's
  // computation by changing a nested tuple after admission.
  freezePlan(plan);preparedPlans.add(plan);return {ok:true,value:plan};
@@ -167,7 +174,7 @@ export function validateFractalSourcePlan(plan:FractalSourcePlan):void {if(!plan
 
 export type FractalSourceReferenceFailure=FractalPerturbationReason|'REF_DERIV_SINGULAR'|'NOVA_REF_DERIV_SINGULAR'|'REF_STEP_INVALID'|'NOVA_REF_STEP_INVALID';
 export interface FractalSourceReferenceReady {
- readonly kind:'ready';readonly profile:typeof FRACTAL_SOURCE_NUMERIC_PROFILE;
+ readonly kind:'ready';readonly profile:FractalSourceProfile;
  readonly layout:'real-hi-low-imag-hi-low';readonly values:Float32Array;readonly length:number;
  readonly key:string;readonly bytes:number;readonly initialZ:DDComplex;readonly constant:DDComplex;
 }
@@ -186,6 +193,14 @@ export function buildFractalSourceReference(plan:FractalSourcePlan,options:Fract
  let z=cloneComplex(r.initialZ);
  for(let i=0;i<r.length;i++){
   aborted(options);const re=sum(z[0]),im=sum(z[1]),rh=F(re),ih=F(im);values.set([rh,F(re-rh),ih,F(im-ih)],i*4);
+  if(plan.formula==='mandelbrot'||plan.formula==='julia'){
+   // Original iteratePower special-cases squaring, then uses left-associated
+   // repeated products. It retains nonfinite reference tails; no early escape.
+   let next:DDComplex;
+   if(r.power===2)next=[sub(mul(z[0],z[0]),mul(z[1],z[1])),mul(mul(z[0],z[1]),of(2))];
+   else{next=z;for(let n=1;n<r.power;n++){if((n&255)===0)aborted(options);next=product(next,z);}}
+   z=[add(next[0],r.constant[0]),add(next[1],r.constant[1])];continue;
+  }
   let pm1:DDComplex=[one,of(0)];
   if(r.power>1){pm1=z;for(let n=1;n<r.power-1;n++){if((n&255)===0)aborted(options);pm1=product(pm1,z);}}
   const zp=product(pm1,z),fr=sub(zp[0],one),fi=zp[1],dr=mul(pm1[0],p),di=mul(pm1[1],p);

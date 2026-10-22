@@ -97,7 +97,7 @@ export class SourceFractalLiveSession {
   try{this.host.setPaused(paused,timestampMs);this.handoff=undefined;}catch(error){this.failed=true;this.completed=undefined;throw error;}
  }
  private admit(scene:SceneDocument,c:GenerateContext){
-  if(!supportsSourceFractalLive(scene))throw Error('分形实时预览需要完整 Newton/Nova 源配置与源队列');
+  if(!supportsSourceFractalLive(scene))throw Error('分形实时预览需要完整受支持分形源配置与源队列');
   const configuration=prepareSourceFractalScene(scene),candidate=new SourceFractalHostSession(configuration,{paused:c.fractalLive!.clock.paused,isCancelled:()=>this.cancel?.()??false});
   prepareFractalRender(display(scene,candidate.snapshot()),c);return{configuration,candidate,formulas:formulaPresentation(scene)};
  }

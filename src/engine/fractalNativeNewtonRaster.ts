@@ -1,3 +1,4 @@
+import {FRACTAL_NATIVE_POWER_GLSL} from './fractalNativePowerGlsl';
 import {FRACTAL_NATIVE_COLOR_GLSL,FRACTAL_NATIVE_COLOR_TAIL} from './fractalNativeColorGlsl';
 import {fractalSourceRequire as require} from './fractalSourceGpuFailure';
 import {FRACTAL_NATIVE_NEWTON_GLSL} from './fractalNativeNewtonGlsl';
@@ -6,10 +7,11 @@ import {fractalTrapGLSL} from './fractalColorGpu';
 /** Sole decoder for the four-MRT protocol. The packed binary32 integer carries
  * actual fragment counters, never inferred CPU orbit/repaired classifications. */
 export function decodeFractalSourceTerminal(iteration:number,packed:number,maxIter:number){
- require(Number.isInteger(iteration)&&iteration>=0&&iteration<maxIter&&Number.isInteger(packed)&&packed>=0&&packed<=16391,'Source fractal returned invalid terminal metadata','device');
- const flags=packed%8,perturbSteps=Math.floor(packed/8),converged=!!(flags&1),startedPerturb=!!(flags&2),glitches=(flags&4)?1:0,steps=iteration+1,ordinarySteps=steps-perturbSteps;
+ require(Number.isInteger(iteration)&&iteration>=0&&iteration<maxIter&&Number.isInteger(packed)&&packed>=0&&packed<=49159,'Source fractal returned invalid terminal metadata','device');
+ const escaped=packed>=32768,payload=packed%32768,flags=payload%8,perturbSteps=Math.floor(payload/8),converged=!!(flags&1),startedPerturb=!!(flags&2),glitches=(flags&4)?1:0,steps=iteration+1,ordinarySteps=steps-perturbSteps;
  require(perturbSteps<=steps&&(!startedPerturb?perturbSteps===0&&glitches===0:perturbSteps>0)&&(!glitches||startedPerturb),'Source fractal returned inconsistent execution facts','device');
- return{iteration,steps,converged,startedPerturb,glitches,perturbSteps,ordinarySteps};
+ require(!(escaped&&converged),'Source fractal terminal cannot both escape and converge','device');
+ return{iteration,steps,escaped,converged,startedPerturb,glitches,perturbSteps,ordinarySteps};
 }
 
 /** Retained source header/router/init/full numerical main. ES300 declarations,
@@ -107,6 +109,7 @@ float directOrbitTrapLayerAlpha(float d,vec4 a){return 0.;}
 float localTrap(vec2 z){vec2 q=z-legacyTrap.xy;float co=legacyTrapShape.x,si=legacyTrapShape.y;q=vec2((q.x*co-q.y*si)/legacyTrap.w,q.x*si+q.y*co);return legacyTrapShape.z>1.5?min(abs(q.x),abs(q.y)):legacyTrapShape.z>.5?abs(length(q)-legacyTrap.z):length(q);}
 
 ${FRACTAL_NATIVE_NEWTON_GLSL}
+${FRACTAL_NATIVE_POWER_GLSL}
 ${sourceColor?'':fractalTrapGLSL}
 #define SLOT_POWER_RE 0
 #define SLOT_POWER_IM 1
@@ -133,9 +136,9 @@ ${sourceColor?'':fractalTrapGLSL}
 #define SLOT_BIN_Z0_IM 22
 #define SLOT_BIN_DENOM 23
 
-void evalFormulaFamilyStep(int fid,vec2 zr,vec2 zi,vec2 cr,vec2 ci,int ft,vec2 pr,vec2 pi,float relax,out vec2 nr,out vec2 ni){if(fid==FID_NEWTON)iterateNewton(zr,zi,pr,pi,relax,nr,ni);else iterateNova(zr,zi,cr,ci,pr,pi,relax,nr,ni);}
+void evalFormulaFamilyStep(int fid,vec2 zr,vec2 zi,vec2 cr,vec2 ci,int ft,vec2 pr,vec2 pi,float relax,out vec2 nr,out vec2 ni){if(fid==FID_NEWTON)iterateNewton(zr,zi,pr,pi,relax,nr,ni);else if(fid==FID_NOVA)iterateNova(zr,zi,cr,ci,pr,pi,relax,nr,ni);else iterateFormula(zr,zi,cr,ci,ft,pr,pi,nr,ni);}
 // Unselected other-family call required by the retained runtime router. The
-// typed profile/plan rejects every family except Newton/Nova before allocation.
+// typed profile/plan rejects every family except Newton/Nova/Mandelbrot/Julia before allocation.
 void iteratePhoenix(vec2 zr,vec2 zi,vec2 hr,vec2 hi,vec2 cr,vec2 ci,int p,int p2,vec2 dr,vec2 di,out vec2 nr,out vec2 ni){nr=zr;ni=zi;}
 bool formulaIsNewton(int fid) {
 #if ENABLE_NEWTON == 1
@@ -830,8 +833,8 @@ void main() {
 
 
     sourceZ=vec4(zr,zi);
-    // All packed integers <= 16391 are exactly representable in binary32.
-    int terminalPacked=8*nativePerturbSteps+4*nativeGlitches+2*(nativeStarted?1:0)+(exitKind==2?1:0);
+    // All packed integers <= 49159 are exactly representable in binary32.
+    int terminalPacked=8*nativePerturbSteps+4*nativeGlitches+2*(nativeStarted?1:0)+(exitKind==2?1:0)+(exitKind==1?32768:0);
     sourceTerminal=vec4(float(iter),float(terminalPacked),finalResidual,nativeNearest);
     ${sourceColor?`vec4 fragColor;
 ${FRACTAL_NATIVE_COLOR_TAIL}

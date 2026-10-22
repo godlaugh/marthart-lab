@@ -19,9 +19,9 @@ describe('explicit source numeric contract',()=>{
   for(const invalid of [null,'',true,{},'mathart-1.7.8','future'])expect(()=>parseFractalNumericProfile(invalid)).toThrow('Unknown');
  });
  it('uses only explicitly supplied supported source precision presets',()=>{
-  for(const [precision,value] of [['low',.01],['medium',1e-4],['high',1e-6]] as const)
+  for(const [precision,value] of [['low',.01],['medium',1e-4],['high',1e-6],['ultra',1e-4]] as const)
    expect(parseFractalSourcePlan(base,view,size,{precision}).perturbation.threshold).toBe(Math.fround(value));
-  for(const precision of [undefined,null,'ultra','HIGH',0])expect(prepareFractalSourcePlan(base,view,size,{precision})).toMatchObject({ok:false,error:{kind:'input',field:'precision'}});
+  for(const precision of [undefined,null,'HIGH',0])expect(prepareFractalSourcePlan(base,view,size,{precision})).toMatchObject({ok:false,error:{kind:'input',field:'precision'}});
  });
  it('keeps authoring values but maps Newton to Mandel and Nova start/Julia separately',()=>{
   const n=plan({variant:'julia',julia:[.25,-.5],start:[3,4]});expect(n.authoredVariant).toBe('julia');expect(n.isJulia).toBe(false);expect(n.reference.initialZ).toEqual([[2,0],[0,0]]);

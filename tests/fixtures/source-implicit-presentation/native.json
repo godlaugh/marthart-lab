@@ -1,0 +1,294 @@
+{
+  "sourceJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "evidence": "Original ImplicitSurface.buildWireframe outputs, normal LicenseManager/SceneAccessPolicy, successful owned offscreen JVM runs; no GUI equivalence claim. Full original outputs retained under .cache/implicit-wireframe-oracle-20261022/native-{implicit,unequal}/implicit-oracle.json. Float arrays hashed after IEEE754 binary32 little-endian encoding.",
+  "cases": [
+    {
+      "name": "implicit",
+      "input": {
+        "settings": {
+          "scale_z": 60,
+          "mesh_fill_opacity": 0.8999999761581421,
+          "scale_y": 60,
+          "x_segments": 60,
+          "scale_x": 60,
+          "z_min": "-2.0",
+          "y_max": "2.0",
+          "x_min": "-2.0",
+          "y_segments": 60,
+          "z_segments": 60,
+          "background_color": "#000000",
+          "render_mode": "WIREFRAME",
+          "y_min": "-2.0",
+          "mesh_mode": "CPU",
+          "line_weight": 0.6800000071525574,
+          "x_max": "2.0",
+          "z_max": "2.0",
+          "offset_x": 0,
+          "mesh_fill": true,
+          "dot_size": 1.2000000476837158,
+          "offset_y": 0,
+          "offset_z": 0
+        },
+        "equation": {
+          "f": "x^2+y^2-z^2-1"
+        },
+        "main_equation": {
+          "color": "#FFFFFF",
+          "scale": 0.25,
+          "position": [
+            0,
+            200
+          ],
+          "enabled": true
+        },
+        "name": "implicit_sphere",
+        "description": "",
+        "timeline": [
+          {
+            "duration": 1,
+            "label": "Wait",
+            "type": "wait",
+            "easing": "SINE_IN_OUT"
+          },
+          {
+            "duration": 0.5,
+            "label": "Animate",
+            "type": "animate",
+            "easing": "SINE_IN_OUT",
+            "actions": [
+              {
+                "args": [
+                  0.25,
+                  0.25,
+                  0.25
+                ],
+                "method": "ambient"
+              }
+            ]
+          },
+          {
+            "duration": 5,
+            "label": "Wait",
+            "type": "wait",
+            "easing": "SINE_IN_OUT"
+          }
+        ],
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00"
+        ],
+        "type": "IMPLICIT",
+        "camera": {
+          "phi": "PI/2",
+          "theta": "0",
+          "gamma": "0"
+        },
+        "parameters": {},
+        "config_version": "1.0.0",
+        "isUserScene": true
+      },
+      "inputSha256": "debeea3f761a907700aa84b4b0fc4bb11e1bf60793388b579f2142c2755b4ccf",
+      "wireFloatCount": 121536,
+      "wireFloat32LittleEndianSha256": "266427e0e26854850682411094607c082aba95b1c6f43038e3f3d1ea5112fca6",
+      "firstPositions": [
+        -120.0,
+        -60.0,
+        -120.0,
+        -120.0,
+        -55.999996,
+        -118.0339,
+        -120.0,
+        -55.999996,
+        118.0339,
+        -120.0,
+        -60.0,
+        120.0,
+        -120.0,
+        -55.999996,
+        -118.0339,
+        -120.0,
+        -51.999992,
+        -116.203384,
+        -120.0,
+        -51.999992,
+        116.203384,
+        -120.0,
+        -55.999996,
+        118.0339,
+        -120.0,
+        -51.999992,
+        -116.203384,
+        -120.0,
+        -51.519993,
+        -116.0,
+        -120.0,
+        -51.519993,
+        -116.0,
+        -120.0,
+        -47.999996,
+        -114.45614,
+        -120.0,
+        -47.999996,
+        114.45614,
+        -120.0,
+        -51.520042,
+        116.000015,
+        -120.0,
+        -51.999992,
+        116.203384,
+        -120.0,
+        -51.520042,
+        116.000015
+      ],
+      "axes": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "unequal",
+      "input": {
+        "settings": {
+          "scale_z": 50,
+          "mesh_fill_opacity": 0.8999999761581421,
+          "scale_y": 30,
+          "x_segments": 8,
+          "scale_x": 60,
+          "z_min": "-3",
+          "y_max": "1",
+          "x_min": "-2",
+          "y_segments": 10,
+          "z_segments": 12,
+          "background_color": "#000000",
+          "render_mode": "WIREFRAME",
+          "y_min": "-1",
+          "mesh_mode": "CPU",
+          "line_weight": 0.6800000071525574,
+          "x_max": "2",
+          "z_max": "3",
+          "offset_x": 0,
+          "mesh_fill": true,
+          "dot_size": 1.2000000476837158,
+          "offset_y": 0,
+          "offset_z": 0
+        },
+        "equation": {
+          "f": "x^2+y^2-z^2-1"
+        },
+        "main_equation": {
+          "color": "#FFFFFF",
+          "scale": 0.25,
+          "position": [
+            0,
+            200
+          ],
+          "enabled": true
+        },
+        "name": "implicit_sphere_unequal_oracle",
+        "description": "",
+        "timeline": [
+          {
+            "duration": 1,
+            "label": "Wait",
+            "type": "wait",
+            "easing": "SINE_IN_OUT"
+          },
+          {
+            "duration": 0.5,
+            "label": "Animate",
+            "type": "animate",
+            "easing": "SINE_IN_OUT",
+            "actions": [
+              {
+                "args": [
+                  0.25,
+                  0.25,
+                  0.25
+                ],
+                "method": "ambient"
+              }
+            ]
+          },
+          {
+            "duration": 5,
+            "label": "Wait",
+            "type": "wait",
+            "easing": "SINE_IN_OUT"
+          }
+        ],
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00"
+        ],
+        "type": "IMPLICIT",
+        "camera": {
+          "phi": "PI/2",
+          "theta": "0",
+          "gamma": "0"
+        },
+        "parameters": {},
+        "config_version": "1.0.0",
+        "isUserScene": true
+      },
+      "inputSha256": "54f1d20775594ec6dab0e33062a99faac627f1493943f8aa4fd562047081626d",
+      "wireFloatCount": 2136,
+      "wireFloat32LittleEndianSha256": "84b0c92aac3329cc5ca69b9b5c780f34829cbf375344b6e0ab03a99f4da79845",
+      "firstPositions": [
+        -120.0,
+        -30.0,
+        -100.0,
+        -120.0,
+        -30.0,
+        -100.0,
+        -120.0,
+        30.0,
+        -100.0,
+        -120.0,
+        30.0,
+        -100.0,
+        120.0,
+        -30.0,
+        -100.0,
+        120.0,
+        -30.0,
+        -100.0,
+        120.0,
+        30.0,
+        -100.0,
+        120.0,
+        30.0,
+        -100.0,
+        -90.0,
+        -30.0,
+        -75.0,
+        -96.171425,
+        -24.0,
+        -75.0,
+        -96.171425,
+        -24.0,
+        -75.0,
+        -100.97143,
+        -18.0,
+        -75.0,
+        -100.97143,
+        -18.0,
+        -75.0,
+        -104.4,
+        -11.999999,
+        -75.0,
+        -104.4,
+        -11.999999,
+        -75.0,
+        -106.45714,
+        -5.9999995,
+        -75.0
+      ],
+      "axes": [
+        2,
+        0
+      ]
+    }
+  ]
+}

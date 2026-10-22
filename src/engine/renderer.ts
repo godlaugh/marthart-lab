@@ -1,3 +1,5 @@
+import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {createSourceImplicitMesh} from './sourceImplicitRenderer';
 import {usesSourceMapPresentation} from './sourceMapPresentation';
 import {usesSourceSymmetryPresentation} from './sourceSymmetryPresentation';
 import {usesSourceBouncing} from './sourceBouncingDocument';
@@ -28,12 +30,12 @@ import {encodeRgbaPng} from './rgbaPng';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {fitGeometryCamera} from './cameraFit';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
-export type ArtRendererPurpose='display'|'local-export'|'source-surface-export';
+export type ArtRendererPurpose='display'|'local-export'|'source-offscreen-export';
 /** Context attributes are fixed at allocation. MathArt.ensureRenderBuffer(F)
  * calls noSmooth before beginDraw; primary display smoothing is separate.
- * Other source families keep their existing targets until independently wired. */
+ * Source Surface and CPU Implicit use this verified offscreen policy. */
 export function artExportPurpose(scene:SceneDocument):ArtRendererPurpose {
-  return usesSourceSurfaceGeometry(scene)?'source-surface-export':'local-export';
+  return usesSourceSurfaceGeometry(scene)||usesSourceImplicitCpuMesh(scene)?'source-offscreen-export':'local-export';
 }
 export class ArtRenderer {
   readonly renderer: THREE.WebGLRenderer;
@@ -63,10 +65,10 @@ export class ArtRenderer {
   private document:SceneDocument|null=null;
   private listeners = new Set<(camera: CameraState) => void>();
   constructor(canvas: HTMLCanvasElement, purpose:ArtRendererPurpose='display') {
-    if(!['display','local-export','source-surface-export'].includes(purpose))throw new Error('未知绘图目标');
+    if(!['display','local-export','source-offscreen-export'].includes(purpose))throw new Error('未知绘图目标');
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: purpose!=='source-surface-export',
+      antialias: purpose!=='source-offscreen-export',
       preserveDrawingBuffer: true,
       alpha: true,
     });
@@ -163,7 +165,7 @@ export class ArtRenderer {
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
     if(output.type==='geometry'&&output.sourcePointAppearance&&output.sourceMeshAppearance)throw new Error('源曲面点与网格外观不能混用');
     if(output.type==='geometry'&&output.sourceMeshWireframe&&!output.sourceMeshAppearance)throw new Error('源曲面线框缺少对应网格外观');
-    if(output.type==='geometry'&&output.sourceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance||output.sourceGpuMesh)||!Number.isInteger(output.sourceBackgroundColor)||output.sourceBackgroundColor<0||output.sourceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
+    if(output.type==='geometry'&&output.sourceBackgroundColor!==undefined&&(!(output.sourceMeshAppearance||output.sourcePointAppearance||output.sourceGpuMesh||output.sourceImplicitPresentation)||!Number.isInteger(output.sourceBackgroundColor)||output.sourceBackgroundColor<0||output.sourceBackgroundColor>0xffffffff))throw new Error('源曲面背景需要对应源几何和 uint32 颜色');
     const overlayAlpha=output.type==='geometry'?output.sourceSurfaceOverlayAlpha:undefined;
     if(overlayAlpha!==undefined&&(output.type!=='geometry'||output.sourceBackgroundColor===undefined||!Number.isInteger(overlayAlpha)||overlayAlpha<0||overlayAlpha>255))throw new Error('源曲面遮罩需要对应背景与 0–255 透明度');
     // A source raster carries its camera as provenance; its producer already
@@ -173,7 +175,7 @@ export class ArtRenderer {
     const wasSource=!!this.sourceCameraPlan;this.sourceCameraPlan=sourcePlan;
     if(wasSource&&!sourcePlan){this.camera.matrixAutoUpdate=true;this.camera.matrixWorldAutoUpdate=true;this.updateCameraAspect();fit=true;}
     this.controls.enabled=this.interactiveRequested&&!sourcePlan;
-    const implicitAppearance=document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
+    const implicitAppearance=!usesSourceImplicitCpuMesh(document)&&document.kind==='implicit'&&output.type==='geometry'&&output.topology==='mesh'?parseMeshAppearance(document.settings):undefined;
     if(implicitAppearance&&output.type==='geometry')implicitMeshPresentation(output,implicitAppearance.wireframe);
     this.document=document;
     this.formulaFrame=output.formulaPresentation;
@@ -213,6 +215,9 @@ export class ArtRenderer {
       );
       this.group.add(plane);
       this.controls.enableRotate = false;
+    } else if(output.sourceImplicitPresentation){
+      if(!sourcePlan||!usesSourceImplicitCpuMesh(document))throw Error('源隐式曲面显示需要匹配的文档与相机帧');
+      const {fill,lines}=createSourceImplicitMesh(output,sourcePlan);this.group.add(fill);if(lines)this.group.add(lines);this.controls.enableRotate=false;
     } else if(output.sourceGpuMesh){
       if(!sourcePlan)throw new Error('源 GPU 网格需要对应相机帧');
       const {fill,wire}=createSourceSurfaceGpuMesh(output.sourceGpuMesh,sourcePlan,Number(document.settings.opacity??1));

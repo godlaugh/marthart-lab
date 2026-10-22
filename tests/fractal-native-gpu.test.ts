@@ -162,11 +162,11 @@ describe('source GPU ingress and ownership',()=>{
 });
 describe('fragment packing and bounded raster submission',()=>{
  it.each([
-  [0,0,{iteration:0,steps:1,converged:false,startedPerturb:false,glitches:0,perturbSteps:0,ordinarySteps:1}],
-  [0,11,{iteration:0,steps:1,converged:true,startedPerturb:true,glitches:0,perturbSteps:1,ordinarySteps:0}],
-  [2047,16386,{iteration:2047,steps:2048,converged:false,startedPerturb:true,glitches:0,perturbSteps:2048,ordinarySteps:0}],
-  [7,31,{iteration:7,steps:8,converged:true,startedPerturb:true,glitches:1,perturbSteps:3,ordinarySteps:5}],
-  [0,14,{iteration:0,steps:1,converged:false,startedPerturb:true,glitches:1,perturbSteps:1,ordinarySteps:0}],
+  [0,0,{iteration:0,steps:1,escaped:false,converged:false,startedPerturb:false,glitches:0,perturbSteps:0,ordinarySteps:1}],
+  [0,11,{iteration:0,steps:1,escaped:false,converged:true,startedPerturb:true,glitches:0,perturbSteps:1,ordinarySteps:0}],
+  [2047,16386,{iteration:2047,steps:2048,escaped:false,converged:false,startedPerturb:true,glitches:0,perturbSteps:2048,ordinarySteps:0}],
+  [7,31,{iteration:7,steps:8,escaped:false,converged:true,startedPerturb:true,glitches:1,perturbSteps:3,ordinarySteps:5}],
+  [0,14,{iteration:0,steps:1,escaped:false,converged:false,startedPerturb:true,glitches:1,perturbSteps:1,ordinarySteps:0}],
  ] as const)('decodes actual terminal %s/%s', (iteration,packed,expected)=>expect(decodeFractalSourceTerminal(iteration,packed,2048)).toEqual(expected));
  it.each([[0,8],[1,26],[2,4],[2048,0],[0,NaN],[0,16392]])('rejects impossible terminal %s/%s',(iteration,packed)=>expect(()=>decodeFractalSourceTerminal(iteration,packed,2048)).toThrow());
  it('coalesces bounded row spans while preserving requested sample counts and duplicates',()=>{

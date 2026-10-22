@@ -21,7 +21,7 @@ import { doubleDoubleOrbit, precisePixel, referenceOrbit, supportsDoubleDouble, 
 import {parseFractalViewport,complexPixel} from '../engine/complexViewport';
 import { fractalGpu, unpackGpuOrbit } from '../engine/fractalGpu';
 import {FractalSourceGpuError,fractalSourceCancel} from '../engine/fractalSourceGpuFailure';
-import {FRACTAL_SOURCE_NUMERIC_PROFILE,parseFractalSourcePlan,parseFractalSourceNativePlan,type FractalSourceNativePrecisionInput} from '../engine/fractalSourcePrecision';
+import {sourceProfileForFormula,parseFractalSourcePlan,parseFractalSourceNativePlan,type FractalSourceNativePrecisionInput} from '../engine/fractalSourcePrecision';
 import {sourceFractalRenderInput} from '../engine/sourceFractalRender';
 import {parseRootParameters,rootParameterBounds,normalizeRootParameter,withRootParameters} from '../engine/rootParameters';
 import {parseFractalColors,shadeFractalOrbit,createFractalTrapState,observeFractalTraps,usesFractalTrap,type FractalTrapState} from '../engine/fractalColor';
@@ -66,7 +66,7 @@ function magnetRatio(numerator:Complex,denominator:Complex):Complex {
  return div(numerator,denominator);
 }
 export function fractalOrbit(point:Complex,c:FractalConfig,onStep?:(z:Complex)=>void):FractalOrbit{
- if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceNewtonNova)throw new FractalSourceGpuError('MathArt Newton/Nova 数值规则需要 WebGL2；如需 CPU，请选择本地数值规则。','input');
+ if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceArithmetic)throw new FractalSourceGpuError('MathArt 源分形数值规则需要 WebGL2；如需 CPU，请选择本地数值规则。','input');
  const f=c.formula,isJulia=f==='julia'||c.variant==='julia',constant=isJulia?c.julia:point,stepConvergence=usesStepConvergence(c),residualConvergence=usesResidualConvergence(c);
  let z:Complex=f==='newton'||f==='binocular'||isJulia?point:c.start;
  const distance=beginFractalDistance(c.distance);
@@ -126,15 +126,15 @@ export function fractalOrbit(point:Complex,c:FractalConfig,onStep?:(z:Complex)=>
 export function fractalConfig(s:Settings,source?:FractalSourceNativePrecisionInput):FractalConfig {
  const native=source?.native;
  const formula=source?.formula??select(s,'formula','mandelbrot',formulaIds),variant=native?.fractalType??select(s,'variant','mandelbrot',['mandelbrot','julia']);
- const numericProfile=source?FRACTAL_SOURCE_NUMERIC_PROFILE:parseFractalNumericProfile(s.fractalNumericProfile),sourceNumerics=fractalViewportRules(numericProfile,formula).sourceNewtonNova,sourceColor=parseFractalSourceColorProfile(s.fractalColorProfile);
- if(sourceColor&&!sourceNumerics)throw new FractalSourceGpuError('原版分形着色需要启用 MathArt Newton/Nova 数值规则并选择 Newton 或 Nova。','input');
+ const numericProfile=source?sourceProfileForFormula(formula):parseFractalNumericProfile(s.fractalNumericProfile),sourceNumerics=fractalViewportRules(numericProfile,formula).sourceArithmetic,sourceColor=parseFractalSourceColorProfile(s.fractalColorProfile);
+ if(sourceColor&&!sourceNumerics)throw new FractalSourceGpuError('原版分形着色需要启用 MathArt 源分形数值规则并选择已支持的源公式。','input');
  // Source numerics owns its stopping rule. The independent authored mode is
  // retained so switching back restores the existing document's behavior.
  const convergenceMode=sourceNumerics?'step':select(s,'convergenceMode','legacy',['legacy','step','residual']) as FractalConfig['convergenceMode'],sourceConvergence=usesConvergenceExit({formula,convergenceMode}),residualMagnet=usesResidualConvergence({formula,convergenceMode})&&formula.startsWith('magnet');
  // The source catalog accepts floating input, while its shader rounds both
  // Phoenix exponents. Missing mode preserves existing independent documents.
  const roundedPhoenix=formula==='phoenix'&&select(s,'phoenixExponentMode','complex',['complex','rounded'])==='rounded';
- const rawPower=native?native.dynamicParams[0]:sourceNumerics?val(s,'power',2):val(s,'power',2,.1,32),rawImag=native?native.dynamicParams[1]:sourceNumerics?val(s,'powerImag',0):val(s,'powerImag',0,-16,16),rawHistory=native?0:val(s,'phoenixPower2',1,0,32);
+ const rawPower=native?(formula==='mandelbrot'||formula==='julia'?native.formulaParams[0]:native.dynamicParams[0]):sourceNumerics?val(s,'power',2):val(s,'power',2,.1,32),rawImag=native?(formula==='mandelbrot'||formula==='julia'?0:native.dynamicParams[1]):sourceNumerics?val(s,'powerImag',0):val(s,'powerImag',0,-16,16),rawHistory=native?0:val(s,'phoenixPower2',1,0,32);
  const shaderRound=(value:number)=>Math.floor(Math.fround(Math.fround(value)+.5));
  const power:Complex=roundedPhoenix?[Math.max(2,shaderRound(rawPower)),0]:[rawPower,rawImag];
  return {formula,variant,...(numericProfile==='local-v1'?{}:{numericProfile}),distance:sourceColor||native?undefined:prepareFractalDistance(s,{formula,variant,power}),
@@ -218,7 +218,7 @@ export function prepareFractalRender(scene:SceneDocument,ctx:GenerateContext){
  const view=parseFractalViewport(s);
  // Prepare the requested-frame convergence threshold once, before probing or
  // selecting a backend. Preview passes and GPU batches consume this same fact.
- const sourceNumerics=fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceNewtonNova;
+ const sourceNumerics=fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceArithmetic;
  const orbitConfig=!sourceNumerics&&usesStepConvergence(c)?{...c,convergenceTolerance:convergenceTolerance(c,view.zoom,ctx.width,ctx.height)}:c;
  const requestedBackend=select(s,'fractalBackend','auto',['auto','cpu','webgl2']),method=select(s,'renderMethod','multi-pass',['guessing','multi-pass','one-pass']);
  const precision=sourceNumerics?undefined:select(s,'perturbationPrecision','high',Object.keys(perturbationThresholds)) as keyof typeof perturbationThresholds|undefined;
@@ -228,7 +228,7 @@ export function prepareFractalRender(scene:SceneDocument,ctx:GenerateContext){
   logicalWidth:ctx.fractalViewport===undefined?ctx.width:ctx.fractalViewport.logicalWidth,logicalHeight:ctx.fractalViewport===undefined?ctx.height:ctx.fractalViewport.logicalHeight,
   provenance:ctx.fractalViewport?.target==='primary'?'canvas-logical-local':'requested-output-local',
  }):undefined;
- if(sourcePlan&&requestedBackend==='cpu')throw new FractalSourceGpuError('MathArt Newton/Nova 数值规则需要 WebGL2；如需 CPU，请选择本地数值规则。','input');
+ if(sourcePlan&&requestedBackend==='cpu')throw new FractalSourceGpuError('MathArt 源分形数值规则需要 WebGL2；如需 CPU，请选择本地数值规则。','input');
  const colorPlan=sourceColorProfile&&sourcePlan?prepareFractalSourceColor({configuration:authoredFractalSourceColor(scene),formulaPower:sourcePlan.reference.power,bailout:sourcePlan.bailout,runtime:scene.evaluatedFractalGradient}):undefined;
  const sourceNavigation=sourcePlan?prepareFractalViewportNavigation({...s,formula:sourcePlan.formula,fractalNumericProfile:sourcePlan.profile},sourcePlan.logicalSize[0],sourcePlan.logicalSize[1]):undefined;
  return{s,source,c,coloring,traceColors,view,orbitConfig,requestedBackend,method,precision,sourcePlan,colorPlan,sourceNavigation};
@@ -243,7 +243,7 @@ export function generateFractal(scene:SceneDocument,ctx:GenerateContext):SceneOu
  const bg=background(scene),warnings:string[]=[];
  let useGpu=!!sourcePlan||requestedBackend!=='cpu'&&(!precise||!!reference)&&!usesStepConvergence(c);
  if(sourcePlan){
-  warnings.push(colorPlan?'MathArt 1.7.8 Newton/Nova 数值与着色规则：轨道与颜色在同一 GPU 片段计算，预览调度沿用本地实现。':'MathArt 1.7.8 Newton/Nova 数值规则：WebGL2 双 float 轨道；异常扰动继续普通 GPU 迭代。着色和预览调度沿用本地实现。');
+  warnings.push(colorPlan?'MathArt 1.7.8 源分形数值与着色规则：轨道与颜色在同一 GPU 片段计算，预览调度沿用本地实现。':'MathArt 1.7.8 源分形数值规则：WebGL2 双 float 轨道；异常扰动继续普通 GPU 迭代。着色和预览调度沿用本地实现。');
   if(colorPlan)warnings.push(...colorPlan.diagnostics);
   if(sourcePlan.perturbation.enabled&&preparedSource?.reference.kind==='unavailable')warnings.push(`参考轨道不可用（${preparedSource.reference.reason}）；使用普通 GPU 迭代。`);
  }else{

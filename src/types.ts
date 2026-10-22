@@ -335,6 +335,7 @@ export interface Preset {
   document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedDomainScene" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
 }
 export interface GeometryOutput {
+  sourceImplicitPresentation?:import('./engine/sourceImplicitPresentation').SourceImplicitPresentation;
   formulaPresentation?:FormulaPresentation;
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
   /** Implicit work counts include confirmed attempts before a CPU replay;

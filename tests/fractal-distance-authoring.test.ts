@@ -1,3 +1,5 @@
+import {prepareFractalSourceColor} from '../src/engine/fractalSourceColor';
+import {sceneAtTime} from '../src/engine/timeline';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,it,expect} from 'vitest';
@@ -46,25 +48,25 @@ describe('explicit distance-estimation authoring and native JSON boundary',()=>{
  });
  it.each([undefined,{}])('imports omitted/empty registered DE parameters as metadata 2, not formula power 7: %j',params=>{
   const raw=source(params),result=importSource(raw),scene=result.scene;
-  expect(scene.settings.fractalDistanceVersion).toBe('mathart-1.7.8-v1');expect(scene.settings.fractalColorVersion).toBe(2);expect(scene.settings.power).toBe(7);expect(scene.settings.outsideDistancePower).toBe(2);expect(scene.provenance?.original).toEqual(raw);expect(importSource(scene).scene).toEqual(scene);
+  expect(sceneAtTime(scene,0).evaluatedFractalScene!.formula.native.power).toBe(7);expect(scene.fractalSourceColor!.outside.parameters.power).toBe(2);expect(prepareFractalSourceColor({configuration:scene.fractalSourceColor!,formulaPower:7,bailout:4}).outside.p0[2]).toBe(2);expect(scene.provenance?.original).toEqual(raw);expect(importSource(scene).scene).toEqual(scene);
  });
  it.each([[null,2],[true,2],[[],2],[{},2],[0,2],[1,2],[3.1,Math.fround(3.1)],[120,120],[1e50,2],['NaN',2],['Infinity',2],['2 + 3',5],['invalid(',2]])('applies source binder scalar conversion %j -> %s without losing provenance',(rawPower,expected)=>{
-  const raw=source({power:rawPower}),scene=importSource(raw).scene;expect(scene.settings.outsideDistancePower).toBe(expected);expect(scene.provenance?.original).toEqual(raw);expect(parseScene(JSON.stringify(scene)).settings.outsideDistancePower).toBe(expected);
+  const raw=source({power:rawPower}),scene=importSource(raw).scene;expect(scene.fractalSourceColor!.outside.parameters.power).toBe(expected);expect(scene.provenance?.original).toEqual(raw);expect(parseScene(JSON.stringify(scene)).fractalSourceColor!.outside.parameters.power).toBe(expected);
  });
  it.each([null,[],4,''])('rejects a present non-object algorithm_params container: %j',params=>{
-  expect(()=>importSource(source(params))).toThrow('color.outside.algorithm_params 应为对象');
+  expect(()=>importSource(source(params))).toThrow(/color.outside.algorithm_params.*object/);
  });
  it.each(['inside','outside'] as const)('validates the native parameter container once for every algorithm: %s',side=>{
   for(const algorithm_id of ['none','basic','smooth_mandelbrot','direct_domain']){
    for(const algorithm_params of [null,[],4,'']){
-    const raw={...source(),color:{[side]:{algorithm_id,algorithm_params}}};expect(()=>importSource(raw)).toThrow(`color.${side}.algorithm_params 应为对象`);
+    const raw={...source(),color:{[side]:{algorithm_id,algorithm_params}}};expect(()=>importSource(raw)).toThrow(new RegExp(`color.${side}.algorithm_params.*object`));
    }
    for(const params of [undefined,{}]){
-    const raw={...source(),color:{[side]:{algorithm_id,...(params===undefined?{}:{algorithm_params:params})}}};expect(importSource(raw).scene.settings[side+'Coloring']).toBe(algorithm_id);
+    const raw={...source(),color:{[side]:{algorithm_id,...(params===undefined?{}:{algorithm_params:params})}}};expect(importSource(raw).scene.fractalSourceColor![side].algorithm).toBe(algorithm_id);
    }
   }
  });
  it('keeps local scalar resource admission explicit rather than silently defaulting',()=>{
-  expect(()=>importSource(source({power:'9'.repeat(65537)}))).toThrow('超出本地标量解析容量');
+  expect(()=>importSource(source({power:'9'.repeat(65537)}))).toThrow(/budget exceeded|容量/);
  });
 });

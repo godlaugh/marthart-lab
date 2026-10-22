@@ -8,7 +8,7 @@ export type FractalSourceDiagnostics=NonNullable<ReturnType<FractalGpu['sourceDi
  * preview passes of this request; they exclude every previous request. No
  * probe draw or independent CPU repair is part of the source execution path. */
 export interface FractalSourceFrameFacts {
- profile:FractalSourcePlan['profile'];formula:'newton'|'nova';authoredVariant:string;effectiveVariant:'mandelbrot'|'julia';
+ profile:FractalSourcePlan['profile'];formula:FractalSourcePlan['formula'];authoredVariant:string;effectiveVariant:'mandelbrot'|'julia';
  view:PreparedFractalViewportNavigation;
  requestedSize:readonly[number,number];rasterSize:readonly[number,number];logicalSize:FractalSourcePlan['logicalSize'];logicalSizeProvenance:FractalSourcePlan['logicalSizeProvenance'];
  precision:FractalSourcePlan['perturbation']['precision'];perturbationCapability:FractalSourcePlan['perturbation'];

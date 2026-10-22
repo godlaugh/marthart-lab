@@ -21,7 +21,7 @@ export function usesSourceFractal(scene:Pick<SceneDocument,'kind'|'fractalSource
 /** Readiness is pure document identity, independent of live/GPU resources. */
 export function supportsSourceFractalLive(scene:SceneDocument):boolean {
  if(!usesSourceFractal(scene)||scene.timeline.schedule!==FRACTAL_SCENE_SEQUENCE)return false;
- const formula=sourceFractalFormulaIdentity(scene.fractalSource!.formula);return formula==='newton'||formula==='nova';
+ const formula=sourceFractalFormulaIdentity(scene.fractalSource!.formula);return formula==='newton'||formula==='nova'||formula==='mandelbrot'||formula==='julia';
 }
 export function parseSourceFractalDocument(raw:unknown):SourceFractalDocumentResult<SourceFractalDocumentPayload>{return attempt(()=>{
  const input=exact(raw,['model','formula'],[]);if(input.model!=='mathart-1.7.8-scene-v1')return fail(['model'],'未知分形场景规则');

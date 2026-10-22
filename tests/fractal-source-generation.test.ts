@@ -18,7 +18,7 @@ describe('source numeric selection across the public generation boundary',()=>{
   expect(()=>def.generate(s,context)).toThrow('需要 WebGL2');expect(sample).not.toHaveBeenCalled();
   expect(()=>fractalOrbit([1,0],fractalConfig(s.settings))).toThrow('需要 WebGL2');
  });
- it.each(['ultra','unknown'])('retains an unsupported authored precision %s and rejects before GL',precision=>{
+ it.each(['unknown'])('retains an unsupported authored precision %s and rejects before GL',precision=>{
   const s=scene({perturbationPrecision:precision}),sample=vi.spyOn(fractalGpu,'sample');
   expect(()=>def.generate(s,context)).toThrow('Source precision requires');expect(s.settings.perturbationPrecision).toBe(precision);expect(sample).not.toHaveBeenCalled();
  });

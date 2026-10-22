@@ -1,5 +1,5 @@
 import {activeFractalFormulaIdentity} from './sourceFractalIdentity';
-import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalSourcePrecision';
+import {sourceProfileForFormula} from './fractalSourcePrecision';
 import {usesCapturedDensityCamera} from './sourceCameraMode';
 import {prepareDomainViewport,panDomainViewport,zoomDomainViewport,parseDomainViewportVersion,type PreparedDomainViewport} from './domainViewport';
 import {samilaCameraEnabled} from './samilaCamera';
@@ -35,9 +35,9 @@ export function planeNavigation(scene:SceneDocument,width:number,height:number,r
     const view=domainView??prepareDomainViewport(scene.settings),spanY=view.version==='local-v1'?4/view.scale:2*view.halfSpan;
     return{kind:'domain',centerX:dd(view.centerX),centerY:dd(view.centerY),width,height,spanX:spanY*width/height,spanY,rotation:view.angle,zoom:view.effectiveScale,domainViewport:view};
   }
-  const facts=fractalView??prepareFractalViewportNavigation(scene.fractalSource?{...scene.settings,formula:activeFractalFormulaIdentity(scene)!,fractalNumericProfile:FRACTAL_SOURCE_NUMERIC_PROFILE}:scene.settings,width,height),view=facts.viewport,spanY=facts.rules.verticalRange/view.zoom;
+  const facts=fractalView??prepareFractalViewportNavigation(scene.fractalSource?{...scene.settings,formula:activeFractalFormulaIdentity(scene)!,fractalNumericProfile:sourceProfileForFormula(activeFractalFormulaIdentity(scene)!)}:scene.settings,width,height),view=facts.viewport,spanY=facts.rules.verticalRange/view.zoom;
   // Keep the old multiplication/division sequence for omitted/local profiles.
-  const spanX=facts.rules.sourceNewtonNova?spanY*facts.aspect:spanY*width/height;
+  const spanX=facts.rules.sourceArithmetic?spanY*facts.aspect:spanY*width/height;
   return{kind:scene.kind,centerX:dd(view.centerX,view.centerXLow),centerY:dd(view.centerY,view.centerYLow),width,height,spanX,spanY,rotation:facts.rotation,zoom:view.zoom,fractalViewport:facts};
 }
 function shifted(view:PlaneNavigation,x:number,y:number,spanX=view.spanX,zoom=view.zoom):Settings{
