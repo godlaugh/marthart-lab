@@ -6,18 +6,19 @@ import {createHash} from 'node:crypto';
 
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const jar='../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar';
-const report={at:new Date().toISOString(),scope:'Actual WebGL2 source Perlin renderer versus freshly extracted original shader on the same browser GPU; original flow producer is separately checked by static Python fixtures.',nativeParity:'0/11; no JVM/JOGL execution',shared:['Source flow texture bytes and runtime palette bytes; independent GPU upload, uniforms, vertex path, framebuffer and readback'],unmeasured:['Original JVM/JOGL whole frames','Public UI importer/editor/export integration','Driver memory and cross-device behavior']};
+const report={at:new Date().toISOString(),scope:'Actual WebGL2 source Perlin renderer versus freshly extracted original shader on the same browser GPU; original flow producer is separately checked by static Python fixtures.',nativeParity:'This script runs no JVM/JOGL. Separate matched native Perlin capture: docs/source-perlin-native-reference-validation.zh-CN.md; family acceptance remains 0/11',shared:['Source flow texture bytes and runtime palette bytes; independent GPU upload, uniforms, vertex path, framebuffer and readback'],unmeasured:['Original JVM/JOGL whole frames','Public UI importer/editor/export integration','Driver memory and cross-device behavior']};
 let browser,server;
 try{
  const bytes=await readFile(jar);if(hash(bytes)!=='a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018')throw Error('Pinned JAR changed');
  const reference=JSON.parse(execFileSync('python3',['-c',"import sys,zipfile,json;z=zipfile.ZipFile(sys.argv[1]);print(json.dumps({n:z.read('data/shader/perlin_noise_'+n+'.glsl').decode() for n in ['vert','frag']}))",jar],{encoding:'utf8'}));
  report.reference={jarSha256:hash(bytes),shaders:Object.fromEntries(Object.entries(reference).map(([k,v])=>[k,hash(v)]))};
- const paths=['src/engine/sourcePerlinCpuTarget.ts','src/engine/sourceProcessingStroke.ts','src/engine/sourceProcessingPoints.ts','src/engine/sourcePerlinGpu.ts','src/engine/sourcePerlinGpuShader.ts','src/engine/sourcePerlinFlowTexture.ts','src/engine/sourcePerlinSeed.ts','src/engine/sourceProcessingNoise.ts','src/engine/sourcePerlinColorRuntime.ts','src/engine/sourcePerlinParameterRuntime.ts','src/engine/ordinarySourceCameraTimeline.ts','scripts/verify-source-perlin-gpu.mjs'];
+ const nativeRaster=JSON.parse(await readFile('tests/fixtures/source-perlin/native-gpu-raster.json','utf8'));
+ const paths=['tests/fixtures/source-perlin/native-gpu-raster.json','src/engine/sourceProcessingTextureSampling.ts','src/engine/sourcePerlinCpuTarget.ts','src/engine/sourceProcessingStroke.ts','src/engine/sourceProcessingPoints.ts','src/engine/sourcePerlinGpu.ts','src/engine/sourcePerlinGpuShader.ts','src/engine/sourcePerlinFlowTexture.ts','src/engine/sourcePerlinSeed.ts','src/engine/sourceProcessingNoise.ts','src/engine/sourcePerlinColorRuntime.ts','src/engine/sourcePerlinParameterRuntime.ts','src/engine/ordinarySourceCameraTimeline.ts','scripts/verify-source-perlin-gpu.mjs'];
  const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,hash(await readFile(p))])));const before=await hashes();
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();
- browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-angle-features=disableProgramCaching']});const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/perlin-source-oracle',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'perlin-source-oracle');
- const result=await page.evaluate(async reference=>{
+ const result=await page.evaluate(async ({reference,nativeRaster})=>{
   const {SourcePerlinGpu}=await import('/src/engine/sourcePerlinGpu.ts');
   const {SourcePerlinCpuTarget}=await import('/src/engine/sourcePerlinCpuTarget.ts');
   const {SourcePerlinFlowTexture}=await import('/src/engine/sourcePerlinFlowTexture.ts');
@@ -43,7 +44,13 @@ try{
   function texture(t,width,height,packed,mipmap){
    gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,mipmap?gl.LINEAR_MIPMAP_LINEAR:gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,mipmap?gl.LINEAR:gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
    let bytes=null;if(packed){bytes=new Uint8Array(packed.length*4);packed.forEach((argb,i)=>bytes.set([(argb>>>16)&255,(argb>>>8)&255,argb&255,argb>>>24],i*4));}
-   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,bytes);if(mipmap)gl.generateMipmap(gl.TEXTURE_2D);
+   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,bytes);if(mipmap){
+    gl.generateMipmap(gl.TEXTURE_2D);
+    // Independent Processing Texture.allocate rule, confirmed by native draw
+    // capture. Do not import the production capability parser into this oracle.
+    const extension=gl.getExtension('EXT_texture_filter_anisotropic');
+    if(extension)gl.texParameterf(gl.TEXTURE_2D,extension.TEXTURE_MAX_ANISOTROPY_EXT,gl.getParameter(extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT));
+   }
   }
   function draw(input,channel){
    const w=input.width,h=input.height;gl.useProgram(program);gl.bindVertexArray(vao);gl.activeTexture(gl.TEXTURE0);
@@ -92,6 +99,27 @@ try{
    const channel={size,pixels:new Uint32Array(size*size).fill(0xff808080)},gpu=new SourcePerlinGpu(channel);
    try{await compare(gpu,{...base,width,height:2,marchSteps:8},channel,`synthetic-channel-threshold${width}`);}finally{gpu.dispose();}
   }
+  const nativeChannel={size:512,pixels:new SourcePerlinFlowTexture({seed:nativeRaster.seed,style:nativeRaster.textureStyle,size:512}).generate()},nativeGpu=new SourcePerlinGpu(nativeChannel);
+  const nativePalette=new SourcePerlinColorRuntime({palette:nativeRaster.palette}).paletteTexture();
+  const {enhanceSourcePausedImage}=await import('/src/engine/sourcePausedImage.ts');
+  const [x0,y0,x1,y1]=nativeRaster.roi;
+  const roi=pixels=>{const out=new Uint8Array((x1-x0)*(y1-y0)*4);for(let y=y0;y<y1;y++)out.set(pixels.subarray((y*nativeRaster.width+x0)*4,(y*nativeRaster.width+x1)*4),(y-y0)*(x1-x0)*4);return out;};
+  try{for(const expected of nativeRaster.cases){
+   const pixels=nativeGpu.render({width:nativeRaster.width,height:nativeRaster.height,...nativeRaster.uniforms,time:expected.time,palette:nativePalette});
+   const rawSha=await digest(roi(pixels)),enhancedSha=await digest(roi(enhanceSourcePausedImage(pixels,nativeRaster.width,nativeRaster.height)));
+   check(rawSha===expected.rawRoiRgbaSha256&&enhancedSha===expected.enhancedRoiRgbaSha256,`Native GPU filament ROI mismatch at ${expected.time}; retain device evidence, do not relax tolerance`);
+   results.push({label:`native-filament-roi-time-${expected.time}`,rawSha,enhancedSha,roi:nativeRaster.roi});
+  }}finally{nativeGpu.dispose();}
+  // Exercise the real renderer on a context without this optional extension.
+  // The independent oracle reuses textures; restore their default before
+  // simulating absence so earlier max-anisotropy runs cannot contaminate it.
+  const resetExtension=gl.getExtension('EXT_texture_filter_anisotropic');
+  if(resetExtension)for(const t of[channelTexture,paletteTexture]){gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameterf(gl.TEXTURE_2D,resetExtension.TEXTURE_MAX_ANISOTROPY_EXT,1);}
+  const getExtension=WebGL2RenderingContext.prototype.getExtension;
+  WebGL2RenderingContext.prototype.getExtension=function(name){return name==='EXT_texture_filter_anisotropic'?null:getExtension.call(this,name);};
+  const fallbackChannel={size:512,pixels:new SourcePerlinFlowTexture({seed:'1771842692935',style:0,size:512}).generate()},fallbackGpu=new SourcePerlinGpu(fallbackChannel);
+  try{await compare(fallbackGpu,base,fallbackChannel,'anisotropy-extension-unavailable');}
+  finally{fallbackGpu.dispose();WebGL2RenderingContext.prototype.getExtension=getExtension;}
   const failureChecks=[];
   function failureCase(label,install,cancelled){
    const baseline=outstanding(),gpu=new SourcePerlinGpu({size:512,pixels:new Uint32Array(512*512)});
@@ -104,6 +132,12 @@ try{
   for(const [name,nth]of[['createProgram',1],['createShader',2],['createVertexArray',1],['createTexture',1],['createTexture',3],['createFramebuffer',1]]){
    failureCase(`${name}-${nth}-allocation-failure`,()=>{const original=WebGL2RenderingContext.prototype[name];let calls=0;WebGL2RenderingContext.prototype[name]=function(...args){return ++calls===nth?null:original.apply(this,args);};return()=>WebGL2RenderingContext.prototype[name]=original;});
   }
+  const anisotropyExtension=gl.getExtension('EXT_texture_filter_anisotropic');
+  if(anisotropyExtension)failureCase('invalid-anisotropy-capability',()=>{
+   const original=WebGL2RenderingContext.prototype.getParameter;
+   WebGL2RenderingContext.prototype.getParameter=function(name){return name===anisotropyExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT?NaN:original.call(this,name);};
+   return()=>WebGL2RenderingContext.prototype.getParameter=original;
+  });
   failureCase('cancel-before-context',undefined,()=>true);
   let cancellationChecks=0;failureCase('cancel-after-allocation',undefined,()=>++cancellationChecks===2);
   failureCase('context-lost-after-draw',()=>{const name='drawArrays',original=WebGL2RenderingContext.prototype[name];WebGL2RenderingContext.prototype[name]=function(...args){original.apply(this,args);const extension=this.getExtension('WEBGL_lose_context');check(extension,'Context loss extension unavailable');extension.loseContext();};return()=>WebGL2RenderingContext.prototype[name]=original;});
@@ -111,7 +145,7 @@ try{
   originals.forEach(([name,fn])=>WebGL2RenderingContext.prototype[name]=fn);
   const previewCanvas=document.createElement('canvas');previewCanvas.width=preview.width;previewCanvas.height=preview.height;previewCanvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(preview.bytes),preview.width,preview.height),0,0);
   return{results,failureChecks,outstanding:outstanding(),preview:previewCanvas.toDataURL('image/png')};
- },reference);
+ },{reference,nativeRaster});
  if(errors.length)throw Error(errors.join('\n'));const after=await hashes();if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Source changed during verification');
  report.sourceHashes=after;report.results=result.results;report.failureChecks=result.failureChecks;report.outstandingGlResources=result.outstanding;
  await writeFile('.cache/source-perlin-gpu-preview.png',Buffer.from(result.preview.split(',')[1],'base64'));report.preview='.cache/source-perlin-gpu-preview.png';report.status='passed';

@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+Perlin GPU 已修正原版各向异性纹理过滤。相同时间和尺寸下，实际 PNG 导出的固定区域由 29,235 个差异像素降至 0；整图和动画仍待验收。见[Perlin 原生参考验证](docs/source-perlin-native-reference-validation.zh-CN.md)。隐式曲面的剩余 28 个原始差异像素已缩小到填充与线条组合时的深度／栅格交互，尚无可集成修复，见[隐式栅格差异定位](docs/source-implicit-raster-residual-validation.zh-CN.md)。
+
 源隐式 CPU 曲面的 PNG 增强及公式帧已修复，固定区域 RGB MAE 从 0.85 经 0.025 降到 0.00264，实际导出通过；旧作品保持已有公式布局。见[公式位置验证](docs/source-implicit-formula-frame-validation.zh-CN.md)。弹跳已确认仅原生首帧 viewport 为零，后续稳定帧有粒子；实测密度与离屏 alpha 修复后，完整 200 万粒子 PNG 的固定区域逐像素一致，整图和动画仍待验收。见[原生参考与导出验证](docs/source-bouncing-native-reference-validation.zh-CN.md)。
 
 Mandelbrot 剩余像素差异的受控实验、执行环境和未解决限制，见[分形数值差异核对](docs/source-fractal-native-residual-validation.zh-CN.md)。该调查尚未形成产品修复。

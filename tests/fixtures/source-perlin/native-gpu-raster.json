@@ -1,0 +1,68 @@
+{
+  "scope": "Native GPU filament on Apple M2 Max OpenGL; two paused times, fixed center ROI only. Other devices or scene families are not established.",
+  "source": "MathArt.app/Contents/app/resources/data/Noise/noise1.json",
+  "sourceSha256": "679aa5d25def6c76577c9f8d21db99acfcb3810c7585f2d0722b6cb490f299f2",
+  "width": 500,
+  "height": 600,
+  "roi": [
+    55,
+    55,
+    445,
+    510
+  ],
+  "seed": "1771842692935",
+  "palette": [
+    4283259750,
+    4284182656,
+    4285501347,
+    4287608008,
+    4290761689,
+    4293385416,
+    4294109144,
+    4294964712
+  ],
+  "textureStyle": 0,
+  "uniforms": {
+    "noiseFrequency": 1.5,
+    "warpAmplitude": 0.10000000149011612,
+    "warpFrequency": 2,
+    "directionOffset": 0,
+    "timeSpeed": 1,
+    "stepSize": 0.00800000037997961,
+    "brightness": 1.7000000476837158,
+    "vignettePower": 0.10000000149011612,
+    "fiberStrength": 0.7799999713897705,
+    "marchSteps": 32,
+    "renderStyle": 0
+  },
+  "sampling": {
+    "minFilter": 9987,
+    "magFilter": 9729,
+    "wrapS": 33071,
+    "wrapT": 33071,
+    "anisotropy": 16,
+    "rule": "Processing Texture.allocate uses the maximum supported anisotropy when available"
+  },
+  "cases": [
+    {
+      "time": 0,
+      "rawPngSha256": "43fe75f05a9352be16e205a61c5fc1793aaf48b23aca165277b3af6321e4bfa3",
+      "enhancedPngSha256": "5791fd1617e17b81826f0518fb389ba683cea40e2efddb3aac99181b81fe4043",
+      "runSha256": "193af775c65ccf41929c0dee08c63927d8fced8254187cd9192ae20c2894657a",
+      "drawUniformsSha256": "8ef7bd466e639227475dc542edf9165e8b1997f2da37fb5386e7c66e566743be",
+      "drawTexturesSha256": "bf5229d2b0afd231db1be887a5432a01adb52d3200cf2c2941404a60f3e5a248",
+      "rawRoiRgbaSha256": "669fda42c6dedef91b9854f4794f90cd2681e5db58abe2161f888a6488f09b73",
+      "enhancedRoiRgbaSha256": "389e3f28c360c41a23e35e529eb4df1e121e84cfc7ae9768f9ec60a04d592c9c"
+    },
+    {
+      "time": 0.03333333507180214,
+      "rawPngSha256": "adfd48ff06793d780a67f71d2e295df5861931bd77aacef8a2b08e0464df57d2",
+      "enhancedPngSha256": "1773d1f5a4e25477065e943c5afeaaf571086c18ef35d7f2ebbb3b55d8ed79a8",
+      "runSha256": "1ff1ef81e12c2f85c133be2d02d9d9199c47fca9681214462e1e3462c0474a78",
+      "drawUniformsSha256": "f02a6248702e18610c7c6b838a8f0f98a3f869900d0b5aaf0030130e8d08ac13",
+      "drawTexturesSha256": "bf5229d2b0afd231db1be887a5432a01adb52d3200cf2c2941404a60f3e5a248",
+      "rawRoiRgbaSha256": "5f09d5c8211081289d6fc1bd580ac31ab656e24aa0692badf2618a825ab4b62f",
+      "enhancedRoiRgbaSha256": "c6589961c02540cfd2610cc04959169ca3182cc8619b76e5065164ae3237b6da"
+    }
+  ]
+}

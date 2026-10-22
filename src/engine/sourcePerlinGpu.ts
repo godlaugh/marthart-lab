@@ -1,4 +1,5 @@
 import {sourcePerlinGpuVertex,sourcePerlinGpuFragment} from './sourcePerlinGpuShader';
+import {sourceTextureAnisotropy,type SourceTextureAnisotropy} from './sourceProcessingTextureSampling';
 
 export interface SourcePerlinGpuUniforms {
  readonly time:number;readonly noiseFrequency:number;readonly warpAmplitude:number;readonly warpFrequency:number;
@@ -64,12 +65,12 @@ function checkCancellation(cancelled?:()=>boolean){
  if(cancelled!==undefined&&typeof cancelled!=='function')throw new SourcePerlinGpuError('input','Perlin GPU 取消检查必须为函数');
  if(cancelled?.())throw new SourcePerlinGpuError('cancelled','Perlin GPU 绘制已取消');
 }
-function texture(g:WebGL2RenderingContext,data:Uint8Array|null,width:number,height:number,mip:boolean){
+function texture(g:WebGL2RenderingContext,data:Uint8Array|null,width:number,height:number,mip:boolean,anisotropy?:SourceTextureAnisotropy){
  const t=g.createTexture();if(!t)throw new SourcePerlinGpuError('render','Perlin GPU 纹理分配失败');
  try{
   g.bindTexture(g.TEXTURE_2D,t);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MIN_FILTER,mip?g.LINEAR_MIPMAP_LINEAR:g.NEAREST);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_MAG_FILTER,mip?g.LINEAR:g.NEAREST);
   g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_S,g.CLAMP_TO_EDGE);g.texParameteri(g.TEXTURE_2D,g.TEXTURE_WRAP_T,g.CLAMP_TO_EDGE);
-  g.texImage2D(g.TEXTURE_2D,0,g.RGBA8,width,height,0,g.RGBA,g.UNSIGNED_BYTE,data);if(mip)g.generateMipmap(g.TEXTURE_2D);return t;
+  g.texImage2D(g.TEXTURE_2D,0,g.RGBA8,width,height,0,g.RGBA,g.UNSIGNED_BYTE,data);if(mip){g.generateMipmap(g.TEXTURE_2D);if(anisotropy)g.texParameterf(g.TEXTURE_2D,anisotropy.parameter,anisotropy.maximum);}return t;
  }catch(error){g.deleteTexture(t);throw error;}
 }
 /** Shared shader/texture owner. It borrows exactly one context and draws into a
@@ -107,8 +108,10 @@ export class SourcePerlinGpuDrawing {
   }finally{for(const shader of shaders)g.deleteShader(shader);}
   this.vao=g.createVertexArray()??undefined;if(!this.vao)throw new SourcePerlinGpuError('render','Perlin VAO 分配失败');
   g.activeTexture(g.TEXTURE0);g.pixelStorei(g.UNPACK_ALIGNMENT,1);g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL,false);g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
-  this.channel=texture(g,this.upload!,this.size,this.size,true);this.upload=undefined;
-  this.palette=texture(g,new Uint8Array(1024),256,1,true);
+  let anisotropy:SourceTextureAnisotropy|undefined;
+  try{anisotropy=sourceTextureAnisotropy(g);}catch{throw new SourcePerlinGpuError('capability','Perlin 源纹理过滤能力无效');}
+  this.channel=texture(g,this.upload!,this.size,this.size,true,anisotropy);this.upload=undefined;
+  this.palette=texture(g,new Uint8Array(1024),256,1,true,anisotropy);
  }
  draw(g:WebGL2RenderingContext,frame:PreparedFrame,framebuffer:WebGLFramebuffer,cancelled?:()=>boolean):void{
   try{

@@ -2,6 +2,7 @@ import type {FormulaPresentation} from '../types';
 import {formulaPlacement} from './formulas';
 import {sourceFormulaGlyph,type SourceFormulaGlyph} from './sourceFormulaGlyphClient';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
+import {sourceTextureAnisotropy,type SourceTextureAnisotropy} from './sourceProcessingTextureSampling';
 export type SourceFormulaPresentation=Extract<FormulaPresentation,{layout:'source-surface-centered-v1'}>;
 export interface PreparedSourceFormula {presentation:SourceFormulaPresentation;glyphs:readonly SourceFormulaGlyph[];}
 /** One immutable presentation owns its glyph snapshot. A recording may retain
@@ -34,15 +35,14 @@ export class SourceFormulaCompositor {
  private rect:WebGLUniformLocation;
  private size:WebGLUniformLocation;
  private disposed=false;
- private anisotropy?:{parameter:number;maximum:number};
+ private anisotropy?:SourceTextureAnisotropy;
  constructor(canvas=document.createElement('canvas')){
   this.canvas=canvas;
   const gl=canvas.getContext('webgl2',{alpha:true,antialias:false,premultipliedAlpha:true,preserveDrawingBuffer:true,depth:false,stencil:false});
   if(!gl)throw new Error('源公式需要 WebGL 2');this.gl=gl;
   const shaders:WebGLShader[]=[];let program:WebGLProgram|null=null,buffer:WebGLBuffer|null=null,texture:WebGLTexture|null=null;
   try{
-   const extension=gl.getExtension('EXT_texture_filter_anisotropic');
-   if(extension){const maximum=gl.getParameter(extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);if(typeof maximum!=='number'||!Number.isFinite(maximum)||maximum<1)throw new Error('公式纹理过滤能力无效');this.anisotropy={parameter:extension.TEXTURE_MAX_ANISOTROPY_EXT,maximum};}
+   this.anisotropy=sourceTextureAnisotropy(gl);
    const shader=(type:number,source:string)=>{const s=gl.createShader(type);if(!s)throw new Error('无法创建公式着色器');shaders.push(s);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error('公式着色器编译失败');return s;};
    program=gl.createProgram();if(!program)throw new Error('无法创建公式绘图程序');
    gl.attachShader(program,shader(gl.VERTEX_SHADER,`#version 300 es
