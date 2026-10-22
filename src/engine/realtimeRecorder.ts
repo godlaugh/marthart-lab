@@ -1,6 +1,7 @@
 import type {FormulaPresentation} from '../types';
 import {formulaPresentation,formulaPlacement} from './formulas';
 import type {PresentedFrame} from './presentedFrame';
+import {prepareSourceFormulas,SourceFormulaCompositor,formulaBasePixels,type PreparedSourceFormula} from './sourceFormulaCompositor';
 import {recordingDurationError} from './recordingContract';
 export interface RecordingFrame extends PresentedFrame {canvas:HTMLCanvasElement;}
 export interface RecordingResult {blob:Blob;extension:string;duration:number;frames:number;frameVersions:number;sceneStart:number;sceneEnd:number;width:number;height:number;}
@@ -15,6 +16,8 @@ export class RealtimeRecorder {
   private encoded:Blob[]=[];
   private bytes=0;
   private frames=0;
+  private formulaAbort=new AbortController();
+  private sourceFormulas:{key:string;prepared:PreparedSourceFormula;renderer:SourceFormulaCompositor}|undefined;
   private images=new Map<string,{image:HTMLImageElement;width:number;height:number}>();
   private finish:((value:RecordingResult)=>void)|null=null;
   private reject:((error:Error)=>void)|null=null;
@@ -70,15 +73,35 @@ export class RealtimeRecorder {
             await this.formulas(context,frame,canvas.width,canvas.height);
             if(this.stopping)return;
             track.requestFrame();this.frames++;if(frame.revision!==lastRevision){frameVersions++;lastRevision=frame.revision;}sceneEnd=frame.sceneTime;onProgress((performance.now()-this.started)/1000,this.frames,frameVersions);
-          }catch(error){this.failure=error instanceof Error?error:new Error(String(error));this.stop();return;}
+          }catch(error){if(this.stopping)return;this.failure=error instanceof Error?error:new Error(String(error));this.stop();return;}
         }
         this.animation=requestAnimationFrame(tick);
       };
       try{recorder.start(1000);onStarted?.(initial,this.started);this.timer=setTimeout(()=>this.stop(),maxDuration*1000);this.animation=requestAnimationFrame(tick);}catch(error){this.cleanup();reject(error);}
     });
   }
-  private async formulas(context:CanvasRenderingContext2D,frame:PresentedFrame,width:number,height:number){
-    const presentation:FormulaPresentation=frame.formulaPresentation??formulaPresentation(frame.scene),labels=presentation.labels;if(!labels.length){this.images.clear();return;}
+  private async formulas(context:CanvasRenderingContext2D,frame:RecordingFrame,width:number,height:number){
+    const presentation:FormulaPresentation=frame.formulaPresentation??formulaPresentation(frame.scene),labels=presentation.labels;
+    if(presentation.layout==='source-surface-centered-v1'&&(frame.canvas.width!==width||frame.canvas.height!==height))throw new Error('录制期间画布尺寸已变化，请重新开始录制。');
+    if(presentation.layout==='source-surface-centered-v1'){
+      // Snapshot before the first await: playback may replace frame.canvas
+      // while an uncached glyph is loading. Keep image/time/revision together.
+      const pixels=formulaBasePixels(frame.canvas);let composed=pixels;this.images.clear();
+      if(labels.length){
+        const key=JSON.stringify(presentation);let retained=this.sourceFormulas;
+        if(!retained||retained.key!==key){
+          const prepared=await prepareSourceFormulas(presentation,this.formulaAbort.signal);if(this.stopping)return;
+          retained?.renderer.dispose();retained={key,prepared,renderer:new SourceFormulaCompositor()};this.sourceFormulas=retained;
+        }
+        retained.renderer.draw(retained.prepared,width,height,pixels);composed=retained.renderer.readPixels();
+      }else{this.sourceFormulas?.renderer.dispose();this.sourceFormulas=undefined;}
+      // Source video consumes raw framebuffer RGB with opaque alpha, whether
+      // labels are enabled or not. Canvas2D must not reinterpret that alpha.
+      for(let i=3;i<composed.length;i+=4)composed[i]=255;
+      context.putImageData(new ImageData(composed,width,height),0,0);return;
+    }
+    this.sourceFormulas?.renderer.dispose();this.sourceFormulas=undefined;
+    if(!labels.length){this.images.clear();return;}
     const {renderFormulaSvg}=await import('./formulaSvg');
     const retained=new Map<string,{image:HTMLImageElement;width:number;height:number}>();let pixels=0;
     for(const label of labels){
@@ -94,11 +117,11 @@ export class RealtimeRecorder {
     if(!this.stopping)this.images=retained;
   }
   stop(){
-    if(this.stopping)return;this.stopping=true;this.endPlayback();cancelAnimationFrame(this.animation);clearTimeout(this.timer);
+    if(this.stopping)return;this.stopping=true;this.formulaAbort.abort();this.endPlayback();cancelAnimationFrame(this.animation);clearTimeout(this.timer);
     try{if(this.recorder?.state!=='inactive')this.recorder?.stop();}
     catch(error){const reject=this.reject;this.cleanup();reject?.(error instanceof Error?error:new Error(String(error)));}
   }
   cancel(){this.cancelled=true;this.stop();}
   private endPlayback(){if(this.stoppedAt===undefined)this.stoppedAt=performance.now();const callback=this.stopPlayback;this.stopPlayback=undefined;try{callback?.();}catch(error){this.failure=error instanceof Error?error:new Error(String(error));}}
-  private cleanup(){if(this.stopPlayback)this.endPlayback();cancelAnimationFrame(this.animation);clearTimeout(this.timer);this.stream?.getTracks().forEach(track=>track.stop());this.stream=null;this.images.clear();this.encoded=[];if(this.recorder){this.recorder.onstop=null;this.recorder.ondataavailable=null;this.recorder.onerror=null;}this.recorder=null;this.finish=null;this.reject=null;}
+  private cleanup(){this.formulaAbort.abort();this.sourceFormulas?.renderer.dispose();this.sourceFormulas=undefined;if(this.stopPlayback)this.endPlayback();cancelAnimationFrame(this.animation);clearTimeout(this.timer);this.stream?.getTracks().forEach(track=>track.stop());this.stream=null;this.images.clear();this.encoded=[];if(this.recorder){this.recorder.onstop=null;this.recorder.ondataavailable=null;this.recorder.onerror=null;}this.recorder=null;this.finish=null;this.reject=null;}
 }

@@ -17,6 +17,10 @@ const check=(name,condition)=>{assert.ok(condition,name);checks.push(name);};
 async function running(owner){const deadline=performance.now()+5000;while(owner.processCount===0){if(performance.now()>deadline)throw new Error('No owned JVM started');await new Promise(resolve=>setTimeout(resolve,5));}}
 try{
  service=await createFormulaGlyphService(backend);
+ const pendingHealth=service.health();
+ check('health does not reserve or spawn',service.activeCount===0&&service.processCount===0);
+ const initialHealth=await pendingHealth;
+ check('fresh health exposes exact identity',initialHealth.available&&initialHealth.rendererIdentity===service.rendererIdentity&&initialHealth.fontSize===50&&initialHealth.format==='straight-rgba8'&&service.activeCount===0&&service.processCount===0);
  for(const input of inputs){
   const actual=await service.render({latex:input.latex,color:input.color});assert.equal(actual.ok,true,JSON.stringify(actual));
   const expected=input;
@@ -36,18 +40,22 @@ try{
  result=await service.render({latex:'x',color:'#ffffff'},{signal:Object.create(AbortSignal.prototype)});check('unbranded cancellation does not reserve',!result.ok&&result.error.kind==='invalid-input'&&service.activeCount===0);
  result=await service.render({latex:'{'.repeat(65)+'x'+'}'.repeat(65),color:'#ffffff'});check('nesting budget',!result.ok&&result.error.kind==='capacity');
  const first=service.render({latex:'x^2+y^2',color:'#ffffff'});
- result=await service.render({latex:'x',color:'#ffffff'});check('concurrency reservation',!result.ok&&result.error.kind==='capacity');assert.equal((await first).ok,true);
+ const busyHealth=service.health();
+ result=await service.render({latex:'x',color:'#ffffff'});check('concurrency reservation',!result.ok&&result.error.kind==='capacity');check('health available while rendering slot occupied',(await busyHealth).available);assert.equal((await first).ok,true);
  const abort=new AbortController(),cancelled=service.render({latex:inputs[0].latex,color:'#ffffff'},{signal:abort.signal});
  await running(service);abort.abort();result=await cancelled;check('running cancellation reaps child',!result.ok&&result.error.kind==='cancelled'&&service.processCount===0&&service.activeCount===0);
  check('usable after cancellation',(await service.render({latex:'x',color:'#ffffff'})).ok);
  const closing=service.render({latex:inputs[0].latex,color:'#ffffff'});await running(service);await service.close();result=await closing;
  check('close cancels and drains',!result.ok&&result.error.kind==='cancelled'&&service.activeCount===0&&service.processCount===0);
  result=await service.render({latex:'x',color:'#ffffff'});check('closed service rejects',!result.ok&&result.error.kind==='closed');
+ const closedHealth=await service.health();check('closed health suppresses identity',!closedHealth.available&&closedHealth.error.kind==='closed'&&!Object.hasOwn(closedHealth,'rendererIdentity'));
+ const healthOwner=await createFormulaGlyphService(backend);
+ try{const pending=healthOwner.health(),stopping=healthOwner.close(),closed=await pending;await stopping;check('close drains in-flight health without false availability',!closed.available&&closed.error.kind==='closed'&&!Object.hasOwn(closed,'rendererIdentity')&&healthOwner.activeCount===0&&healthOwner.processCount===0);}finally{await healthOwner.close();}
  const short=await createFormulaGlyphService({...backend,timeoutMs:1});
  try{result=await short.render({latex:'x',color:'#ffffff'});check('deadline reaps child',!result.ok&&result.error.kind==='timeout'&&short.activeCount===0&&short.processCount===0);}finally{await short.close();}
  const changedHelper=path.join(values.out,'changed-helper.jar');await cp(backend.helperJarPath,changedHelper);
  const stale=await createFormulaGlyphService({...backend,helperJarPath:changedHelper});
- try{await utimes(changedHelper,new Date(),new Date(Date.now()+1000));result=await stale.render({latex:'x',color:'#ffffff'});check('changed backend rejected',!result.ok&&result.error.kind==='unavailable'&&stale.processCount===0);}finally{await stale.close();}
+ try{check('copied backend initially healthy',(await stale.health()).available);await utimes(changedHelper,new Date(),new Date(Date.now()+1000));const state=await stale.health();check('changed health suppresses stale identity',!state.available&&state.error.kind==='unavailable'&&state.error.message.includes('变化')&&!Object.hasOwn(state,'rendererIdentity')&&stale.activeCount===0&&stale.processCount===0);result=await stale.render({latex:'x',color:'#ffffff'});check('changed backend rejected',!result.ok&&result.error.kind==='unavailable'&&stale.processCount===0);}finally{await stale.close();}
  const valid=Buffer.alloc(20);valid.writeUInt32BE(0x4d414731);valid.writeUInt32BE(1,4);valid.writeUInt32BE(1,8);valid.writeUInt32BE(4,12);valid.set([1,2,3,4],16);
  check('protocol preserves straight RGBA',decodeFormulaGlyph(valid).ok&&decodeFormulaGlyph(valid).value.pixels.equals(Buffer.from([1,2,3,4])));
  for(const bytes of [valid.subarray(0,19),Buffer.concat([valid,Buffer.alloc(1)]),Buffer.alloc(16)])check('malformed protocol '+checks.length,!decodeFormulaGlyph(bytes).ok);
@@ -72,8 +80,16 @@ try{
   const shutdown=fetch(url+'/api/formula-glyph',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({latex:inputs[0].latex,color:'#ffffff'})}).then(async r=>({status:r.status,body:await r.text()})).catch(error=>({error:error.name}));
   const stopDeadline=performance.now()+5000;while(!api.ownedProcessCount){assert.ok(performance.now()<stopDeadline);await new Promise(resolve=>setTimeout(resolve,5));}await api.close();await shutdown;check('HTTP close drains glyph ownership',api.ownedProcessCount===0);
  }finally{await api.close();}
+ const httpHelper=path.join(values.out,'http-health-helper.jar');await cp(backend.helperJarPath,httpHelper);
+ const healthApi=await createExportServer({root:path.join(values.out,'http-health-exports'),glyphBackend:{...backend,helperJarPath:httpHelper}});
+ try{
+  const address=await healthApi.listen(0),url=`http://127.0.0.1:${address.port}/api/formula-glyph/health`;
+  const before=await (await fetch(url)).json();check('HTTP freshness starts available',before.available&&typeof before.rendererIdentity==='string'&&healthApi.ownedProcessCount===0);
+  await utimes(httpHelper,new Date(),new Date(Date.now()+1000));
+  const response=await fetch(url),state=await response.json();check('HTTP changed backend cannot advertise cached identity',response.status===200&&!state.available&&state.error.kind==='unavailable'&&state.error.message.includes('变化')&&!Object.hasOwn(state,'rendererIdentity')&&healthApi.ownedProcessCount===0);
+ }finally{await healthApi.close();}
  const unconfigured=await createExportServer({root:path.join(values.out,'http-unconfigured')});
- try{const address=await unconfigured.listen(0),url=`http://127.0.0.1:${address.port}`;check('unconfigured availability explicit',(await (await fetch(url+'/api/formula-glyph/health')).json()).available===false);const response=await fetch(url+'/api/formula-glyph',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});check('unconfigured backend does not fall back',response.status===503);await response.arrayBuffer();}finally{await unconfigured.close();}
+ try{const address=await unconfigured.listen(0),url=`http://127.0.0.1:${address.port}`;const health=await (await fetch(url+'/api/formula-glyph/health')).json();check('unconfigured availability explicit',health.available===false&&health.error.kind==='unavailable'&&typeof health.error.message==='string'&&!Object.hasOwn(health,'rendererIdentity'));const response=await fetch(url+'/api/formula-glyph',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});check('unconfigured backend does not fall back',response.status===503);await response.arrayBuffer();}finally{await unconfigured.close();}
  const report={status:'passed',checks,outputs,elapsedSeconds:(performance.now()-start)/1000,rendererIdentity:service.rendererIdentity,reference:values.reference,referenceSha256:createHash('sha256').update(await readFile(values.reference)).digest('hex'),limits:['Real helper, local HTTP API and process lifecycle; no browser compositor, PNG or recording claims.','Child lifecycle verifies owner completion; no process-family peak-memory or CPU measurements.']};
  await writeFile(path.join(values.out,'report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,checks:checks.length,exactGlyphs:outputs.length,elapsedSeconds:report.elapsedSeconds}));
 }finally{await service?.close();}

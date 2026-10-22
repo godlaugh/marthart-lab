@@ -4,6 +4,7 @@ import {encodeRgbaPng} from './rgbaPng';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {encodeSourcePausedPng} from './sourcePausedPng';
 import {prepareSourcePausedPng} from './sourcePausedPngContract';
+import {compositeSourceFormulaPixels,formulaBasePixels} from './sourceFormulaCompositor';
 export interface FormulaCompositeOptions {signal?:AbortSignal;isCancelled?:()=>boolean;}
 function check(options?:FormulaCompositeOptions){if(options?.signal?.aborted||options?.isCancelled?.())throw new DOMException('公式合成已取消','AbortError');}
 /** Only resolved frame facts enter the compositor. No scene replay, label
@@ -35,10 +36,13 @@ async function drawFormulas(canvas:HTMLCanvasElement,presentation:FormulaPresent
 }
 export async function compositeFormulas(source:HTMLCanvasElement,presentation:FormulaPresentation,options?:FormulaCompositeOptions):Promise<HTMLCanvasElement>{
   check(options);if(!presentation.labels.length)return source;
-  const canvas=document.createElement('canvas');canvas.width=source.width;canvas.height=source.height;
+  const {width,height}=source,canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   try{
     const context=canvas.getContext('2d');if(!context)throw new Error('无法创建公式合成画布');
-    context.drawImage(source,0,0);await drawFormulas(canvas,presentation,options);
+    if(presentation.layout==='source-surface-centered-v1'){
+      const pixels=await compositeSourceFormulaPixels(formulaBasePixels(source),width,height,presentation,options?.signal);check(options);
+      context.putImageData(new ImageData(pixels,width,height),0,0);
+    }else{context.drawImage(source,0,0);await drawFormulas(canvas,presentation,options);}
   }catch(error){canvas.width=canvas.height=0;throw error;}
   return canvas;
 }
@@ -62,6 +66,15 @@ export async function encodeFormulaRaster(output:RasterOutput,type:'image/png'|'
   // Borrowed RGBA backing + canvas + serialization/readback raster + maximum
   // one decoded formula. Browser/GPU implementation workspace is separate.
   if(pixels.buffer.byteLength+bytes*2+16_000_000*4>768*1024**2)throw new Error('公式合成超过 768 MiB 工作预算');
+  if(presentation.layout==='source-surface-centered-v1'&&presentation.labels.length){
+    const composed=await compositeSourceFormulaPixels(pixels,width,height,presentation,options?.signal);check(options);
+    if(current)return encodeSourcePausedPng(composed,width,height,current.scale,options);
+    if(type==='image/png')return encodeRgbaPng(composed,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.());
+    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    try{const context=canvas.getContext('2d');if(!context)throw new Error('无法创建公式合成画布');context.putImageData(new ImageData(composed,width,height),0,0);
+      const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('公式图像导出失败')),type,.95));check(options);return blob;
+    }finally{canvas.width=canvas.height=0;}
+  }
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   let composed:Uint8ClampedArray|undefined;
   try{

@@ -63,7 +63,26 @@ export async function createFormulaGlyphService({javaHome,jarPath,helperJarPath,
  const identities=[];for(const file of files)identities.push(await identity(file));
  if(identities.find(file=>file.path===jarPath)?.sha256!=='6d04c3843fc98d2eea9ba4cff0be7b80540ca75c5a4e0b3463fd1219c48cc65d')throw new Error('字形后端需要未经修改的官方 JLaTeXMath 1.0.7');
  const rendererIdentity=digest(Buffer.from(JSON.stringify({host:[process.platform,process.arch,os.release(),os.version()],layout:runtime.layout,files:identities.map(({path,sha256})=>({path,sha256}))})));
- const active=new Set();let closing=false,closePromise;
+ const active=new Set();let closing=false,closePromise,freshnessPromise;
+ // Share only an in-flight filesystem inspection, never cache a completed
+ // health result. Both consumers validate the same owned backend identity.
+ async function checkFreshness(){
+  if(closing)return failure('closed','字形服务已关闭');
+  freshnessPromise??=(async()=>{
+   try{
+    if((await runtimeFiles(javaHome)).layout!==runtime.layout)return failure('unavailable','字形运行时目录已变化，请重新初始化');
+    for(const old of identities){const current=await stat(old.path);if(!sameFile(old.info,current))return failure('unavailable','字形后端文件已变化，请重新初始化');}
+    return {ok:true};
+   }catch{return failure('unavailable','字形后端文件不可用');}
+  })().finally(()=>{freshnessPromise=undefined;});
+  const result=await freshnessPromise;
+  return closing?failure('closed','字形服务已关闭'):result;
+ }
+ async function health(){
+  let result=await checkFreshness();
+  if(closing)result=failure('closed','字形服务已关闭');
+  return result.ok?{available:true,rendererIdentity,fontSize:50,format:'straight-rgba8'}:{available:false,error:result.error};
+ }
  async function render(input,options={}){
   if(!options||typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(key=>key!=='signal')||(options.signal!==undefined&&!(options.signal instanceof AbortSignal)))return failure('invalid-input','字形取消参数无效');
   const {signal}=options;
@@ -78,9 +97,9 @@ export async function createFormulaGlyphService({javaHome,jarPath,helperJarPath,
   let cancelled=false;job.cancel=()=>{cancelled=true;};const cancel=()=>job.cancel();
   try{
    if(signal)EventTarget.prototype.addEventListener.call(signal,'abort',cancel,{once:true});
-   if((await runtimeFiles(javaHome)).layout!==runtime.layout)return failure('unavailable','字形运行时目录已变化，请重新初始化');
-   for(const old of identities){const current=await stat(old.path);if(!sameFile(old.info,current))return failure('unavailable','字形后端文件已变化，请重新初始化');}
+   const fresh=await checkFreshness();
    if(cancelled||signal?.aborted||closing)return failure('cancelled','字形生成已取消');
+   if(!fresh.ok)return fresh;
    return await new Promise(resolve=>{
     // Keep arbitrary launcher/font/library overrides out of the rendering
     // identity. The private worker needs no inherited application environment.
@@ -102,5 +121,5 @@ export async function createFormulaGlyphService({javaHome,jarPath,helperJarPath,
   }catch{return failure('unavailable','字形后端文件不可用');}
   finally{try{if(signal)EventTarget.prototype.removeEventListener.call(signal,'abort',cancel);}finally{active.delete(job);finish();}}
  }
- return {render,rendererIdentity,get activeCount(){return active.size;},get processCount(){return [...active].filter(job=>job.child).length;},close(){if(closePromise)return closePromise;closing=true;closePromise=(async()=>{for(const job of active)job.cancel();await Promise.all([...active].map(job=>job.done));})();return closePromise;}};
+ return {render,health,rendererIdentity,get activeCount(){return active.size;},get processCount(){return [...active].filter(job=>job.child).length;},close(){if(closePromise)return closePromise;closing=true;closePromise=(async()=>{for(const job of active)job.cancel();await Promise.all([...active].map(job=>job.done).concat(freshnessPromise?[freshnessPromise]:[]));})();return closePromise;}};
 }

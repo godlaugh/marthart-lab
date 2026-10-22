@@ -191,7 +191,7 @@ export async function createExportServer(options={}){
   if(!localOrigin(req,allowed))throw new HttpError(403,'不接受此来源或主机');
   const url=new URL(req.url,'http://127.0.0.1');
   if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,await health());
-  if(req.method==='GET'&&url.pathname==='/api/formula-glyph/health')return json(res,200,{available:!!glyphs,...(glyphs?{rendererIdentity:glyphs.rendererIdentity,fontSize:50,format:'straight-rgba8'}:{})});
+  if(req.method==='GET'&&url.pathname==='/api/formula-glyph/health')return json(res,200,glyphs?await glyphs.health():{available:false,error:{kind:'unavailable',message:'独立公式字形后端尚未配置'}});
   if(req.method==='POST'&&url.pathname==='/api/formula-glyph'){
    if(!glyphs)throw new HttpError(503,'独立公式字形后端尚未配置');
    if(mediaType(req)!=='application/json')throw new HttpError(415,'需要 JSON 请求');

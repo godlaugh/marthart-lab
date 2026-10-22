@@ -41,11 +41,12 @@ export function presentFormulas(content:FormulaContent,viewport?:SourceCameraVie
   return validateFormulaPresentation(content.layout==='source-surface-centered-v1'?{...content,primaryLogicalHeight:sourceFormulaPrimaryHeight(viewport)}:content);
 }
 export function formulaPresentation(scene:SceneDocument,viewport?:SourceCameraViewport):FormulaPresentation {return presentFormulas(resolveFormulaContent(scene),viewport);}
-export function formulaPlacement(config:FormulaPresentation|FormulaConfig,label:FormulaLabel,width:number,height:number,dimensions?:{width:number;height:number}){
+export function formulaPlacement(config:FormulaPresentation|FormulaConfig,label:FormulaLabel,width:number,height:number,dimensions?:{width:number;height:number;fontSize?:number}){
   if(config.layout==='source-surface-centered-v1'){
     if(!('primaryLogicalHeight' in config)||!Number.isFinite(config.primaryLogicalHeight)||config.primaryLogicalHeight<=0)throw new Error('源曲面公式缺少实际主画布尺寸');
-    const ratio=height/config.primaryLogicalHeight,scale=label.scale*2.5*ratio;
-    // JLaTeXMath's 50-unit font versus MathJax's 20-unit SVG. This is a
+    const fontSize=dimensions?.fontSize??20;if(!Number.isFinite(fontSize)||fontSize<=0)throw new Error('公式字号无效');
+    const ratio=height/config.primaryLogicalHeight,scale=label.scale*(50/fontSize)*ratio;
+    // Source glyphs use 50 units; legacy SVG consumers use 20. This is a
     // font-unit conversion, independent of viewport size and aspect ratio.
     return{x:width/2+label.x*ratio-(dimensions?.width??0)*scale/2,y:height/2+label.y*ratio-(dimensions?.height??0)*scale/2,scale};
   }

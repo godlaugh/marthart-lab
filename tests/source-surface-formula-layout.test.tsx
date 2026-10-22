@@ -32,6 +32,16 @@ describe('new source Surface formula layout',()=>{
   expect(formulaPlacement(p,label,600,400,glyph)).toEqual({x:90,y:230,scale:2.5});
   const taller=sourcePresentation(200);expect(formulaPlacement(taller,label,400,200,glyph)).toEqual({x:147.5,y:107.5,scale:.625});
  });
+ it('places native 50-unit glyph dimensions without applying the legacy 20-unit font conversion twice',()=>{
+  const p=sourcePresentation(100),label=p.labels[0],nativeGlyph={width:500,height:100,fontSize:50};
+  // Equal physical glyph extents in native-50 and legacy-SVG-20 units must
+  // produce the same rectangle; only their per-unit scaling differs.
+  const native=formulaPlacement(p,label,400,200,nativeGlyph),legacy=formulaPlacement(p,label,400,200,glyph);
+  expect(native).toEqual({x:95,y:115,scale:.5});expect({x:native.x,y:native.y}).toEqual({x:legacy.x,y:legacy.y});
+  expect([nativeGlyph.width*native.scale,nativeGlyph.height*native.scale]).toEqual([glyph.width*legacy.scale,glyph.height*legacy.scale]);
+  expect(formulaPlacement(p,label,200,100,nativeGlyph)).toEqual({x:47.5,y:57.5,scale:.25});
+  expect(formulaPlacement(p,label,800,400,nativeGlyph)).toEqual({x:190,y:230,scale:1});
+ });
  it('retains legacy local/saved layouts and does not infer a source model for other families',()=>{
   const s=createScene(definition('surface'));s.formulas=defaultFormulas();s.formulas.main={visible:true,x:640,y:520,scale:.625,color:'#ffffff',anchor:'center',latex:'x'};
   const restored=parseScene(JSON.stringify(s)),p=formulaPresentation(restored);expect(p).not.toHaveProperty('layout');expect(formulaPlacement(p,p.labels[0],1280,720,glyph)).toEqual({x:577.5,y:507.5,scale:.625});

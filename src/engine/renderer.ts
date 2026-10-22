@@ -22,6 +22,7 @@ import {createSurfaceWireframe,createThickWireframe} from './thickWireframe';
 import {createThickTrails} from './thickTrails';
 import {parseTrailAppearance} from './trailAppearance';
 import {compositeFormulas} from './formulaCanvas';
+import {compositeSourceFormulaPixels,formulaBasePixels} from './sourceFormulaCompositor';
 import {formulaPresentation} from './formulas';
 import {encodeRgbaPng} from './rgbaPng';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
@@ -463,6 +464,13 @@ export class ArtRenderer {
         const a=y*stride,b=(height-1-y)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);
       }
       return encodeRgbaPng(pixels,width,height,isCancelled);
+    }
+    if(type==='image/png'&&presentation?.layout==='source-surface-centered-v1'&&presentation.labels.length){
+      const canvas=this.renderer.domElement,{width,height}=canvas;
+      if(this.sourceCompositedRaster&&(this.sourceCompositedRaster.width!==width||this.sourceCompositedRaster.height!==height))throw new Error('源合成图像导出尺寸必须与已生成图像一致');
+      const pixels=await compositeSourceFormulaPixels(this.sourceCompositedRaster?.pixels??formulaBasePixels(canvas),width,height,presentation,options?.signal);
+      if(isCancelled())throw new DOMException('图像导出已取消','AbortError');
+      return encodeRgbaPng(pixels,width,height,isCancelled,{alpha:options?.sourcePresentationAlpha??'preserve'});
     }
     const source=this.renderer.domElement;
     const canvas=presentation?await compositeFormulas(source,presentation,options):source;
