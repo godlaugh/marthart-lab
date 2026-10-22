@@ -1,7 +1,7 @@
 import http from 'node:http';
 import {spawn} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
-import {mkdir,open,readdir,lstat,unlink,rename,writeFile} from 'node:fs/promises';
+import {mkdir,open,readdir,lstat,unlink,rename,writeFile,readFile} from 'node:fs/promises';
 import {constants} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
@@ -96,6 +96,7 @@ export async function createExportServer(options={}){
  for(const origin of allowed){const u=new URL(origin);if(u.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(u.hostname)||u.origin!==origin)throw new Error('仅支持本机 HTTP 来源');}
  const sessions=new Map(),children=new Set(),files=new Map(),requests=new Set();let storedBytes=0,reservedBytes=0,reservedFiles=0,uploads=0,closing=false,healthPromise,healthAt=0;
  for(const name of await readdir(root)){const info=await lstat(path.join(root,name));if(!info.isFile())continue;storedBytes+=info.size;if(ownedName.test(name)){if(files.size>=limits.maxFiles)throw new Error('导出目录文件数量超过资源上限');files.set(name,info.size);}}
+ const glyphs=options.glyphBackend?await (await import('./formula-glyph.mjs')).createFormulaGlyphService(options.glyphBackend):undefined;
  function reserve(size){if(files.size+reservedFiles>=limits.maxFiles)throw new HttpError(507,'导出文件数量达到资源上限');if(storedBytes+reservedBytes+size>limits.maxDiskBytes)throw new HttpError(507,'导出目录已达到容量上限，请清理已保存文件');reservedBytes+=size;reservedFiles++;}
  function ownedSpawn(args,stdio=['pipe','ignore','pipe','pipe']){
   const child=spawn(ffmpegPath,args,{stdio});
@@ -190,6 +191,23 @@ export async function createExportServer(options={}){
   if(!localOrigin(req,allowed))throw new HttpError(403,'不接受此来源或主机');
   const url=new URL(req.url,'http://127.0.0.1');
   if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,await health());
+  if(req.method==='GET'&&url.pathname==='/api/formula-glyph/health')return json(res,200,{available:!!glyphs,...(glyphs?{rendererIdentity:glyphs.rendererIdentity,fontSize:50,format:'straight-rgba8'}:{})});
+  if(req.method==='POST'&&url.pathname==='/api/formula-glyph'){
+   if(!glyphs)throw new HttpError(503,'独立公式字形后端尚未配置');
+   if(mediaType(req)!=='application/json')throw new HttpError(415,'需要 JSON 请求');
+   const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};
+   res.once('close',disconnected);req.once('aborted',disconnected);
+   try{
+    return await withUpload(req,64*1024,async bytes=>{
+     let input;try{input=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{throw new HttpError(400,'字形 JSON 无效');}
+     const result=await glyphs.render(input,{signal:controller.signal});
+     if(!result.ok){const status={'invalid-input':400,unsupported:422,capacity:429,cancelled:499,closed:503,unavailable:503,timeout:504,protocol:502,runtime:502}[result.error.kind];return json(res,status,{error:result.error.message,kind:result.error.kind});}
+     if(res.destroyed||controller.signal.aborted)return;
+     const glyph=result.value;
+     res.writeHead(200,{'content-type':'application/octet-stream','content-length':glyph.pixels.length,'cache-control':'no-store','x-content-type-options':'nosniff','x-glyph-width':glyph.width,'x-glyph-height':glyph.height,'x-glyph-font-size':glyph.fontSize,'x-glyph-format':glyph.format,'x-glyph-renderer':glyph.rendererIdentity});res.end(glyph.pixels);
+    });
+   }finally{res.off('close',disconnected);req.off('aborted',disconnected);}
+  }
   if(req.method==='POST'&&url.pathname==='/api/images'){
    const extension=Object.hasOwn(imageFormats,mediaType(req))?imageFormats[mediaType(req)]:undefined;if(!extension)throw new HttpError(415,'需要 image/png 或 image/jpeg');
    return withUpload(req,limits.maxImageBytes,async bytes=>{
@@ -279,11 +297,11 @@ export async function createExportServer(options={}){
  let closePromise;
  return {
   server,root,
-  get ownedProcessCount(){return children.size;},
+  get ownedProcessCount(){return children.size+(glyphs?.processCount??0);},
   async listen(port=5178){await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',()=>{server.off('error',reject);resolve();});});return server.address();},
   close(){if(closePromise)return closePromise;closing=true;closePromise=(async()=>{
    const stopped=new Promise(resolve=>server.close(resolve));
-   const results=await Promise.allSettled([...sessions.values()].filter(s=>s.status!=='complete'&&!s.cleaned).map(s=>abort(s)));
+   const results=await Promise.allSettled([...sessions.values()].filter(s=>s.status!=='complete'&&!s.cleaned).map(s=>abort(s)).concat(glyphs?[glyphs.close()]:[]));
    await Promise.allSettled([...children].map(stop));server.closeAllConnections();await stopped;await Promise.allSettled([...requests]);
    const failure=results.find(r=>r.status==='rejected');if(failure)throw failure.reason;
   })();return closePromise;}
@@ -291,7 +309,8 @@ export async function createExportServer(options={}){
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
- const service=await createExportServer();const address=await service.listen(Number(process.env.MATHART_EXPORT_PORT??5178));
+ const glyphBackend=process.env.MATHART_GLYPH_BACKEND?JSON.parse(await readFile(process.env.MATHART_GLYPH_BACKEND,'utf8')):undefined;
+ const service=await createExportServer({glyphBackend});const address=await service.listen(Number(process.env.MATHART_EXPORT_PORT??5178));
  console.log(`MathArt export service: http://127.0.0.1:${address.port}`);
  let stopping=false;const shutdown=async()=>{if(stopping)return;stopping=true;try{await service.close();}catch(error){console.error(error);process.exitCode=1;}};
  process.once('SIGTERM',shutdown);process.once('SIGINT',shutdown);

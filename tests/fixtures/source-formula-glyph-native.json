@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "format": "straight-rgba8",
+  "fontSize": 50,
+  "provenance": {
+    "referenceProduct": "MathArt 1.7.8",
+    "referenceJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "referenceTexMobjectClassSha256": "67f4ca985b291f21f924515dba9804f8b33779f060b45d7d9080c642bec45864",
+    "referenceJvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "upstreamArtifact": "org.scilab.forge:jlatexmath:1.0.7",
+    "upstreamJarSha256": "6d04c3843fc98d2eea9ba4cff0be7b80540ca75c5a4e0b3463fd1219c48cc65d",
+    "independentRuntime": "Temurin21.0.7+6 macOS aarch64",
+    "originalMatrixReportSha256": "3568a57a057a4a1e6e79806caa827c84033771414b7a5b90e7406e284bb28a1c",
+    "method": "Original TexMobject and independent public JLaTeXMath wrapper each executed twice for all21 inputs; all4 outputs agree per input. Independent Temurin runtime then repeated all21 twice with equal RGBA. Hashes are observed output, not product-generated expectations.",
+    "scope": "Buffered glyph textures only, not native GL or whole scene parity."
+  },
+  "cases": [
+    {
+      "id": "Cornucopia-ffffff",
+      "latex": "\\text{Cornucopia}=\\begin{cases} x = e^{b v} \\cos(v) + e^{a v} \\cos(u) \\cos(v) \\\\ y = e^{b v} \\sin(v) + e^{a v} \\cos(u) \\sin(v) \\\\ z = e^{a v} \\sin(u) \\end{cases}",
+      "color": "#ffffff",
+      "width": 1100,
+      "height": 259,
+      "rgbaSha256": "ee719ab9c0368f5f3b62febc9e509bc11721e0b5ae3c7426a0ea6cc1f99fd825"
+    },
+    {
+      "id": "Cornucopia-4ab37e",
+      "latex": "\\text{Cornucopia}=\\begin{cases} x = e^{b v} \\cos(v) + e^{a v} \\cos(u) \\cos(v) \\\\ y = e^{b v} \\sin(v) + e^{a v} \\cos(u) \\sin(v) \\\\ z = e^{a v} \\sin(u) \\end{cases}",
+      "color": "#4ab37e",
+      "width": 1100,
+      "height": 259,
+      "rgbaSha256": "10daa05f910f828d402ad1e1f2241581e3f45872b6a40d0c2f4f7a8673e27a68"
+    },
+    {
+      "id": "Feder-ffffff",
+      "latex": "\\text{Feder}=\\begin{cases} x = \\left(R + r \\cos(v)\\right) \\sin(u) \\\\ y = \\left(R + r \\cos(v)\\right) \\cos(u) \\\\ z = \\frac{r \\left(\\sin(v) + \\frac{L \\left(\\cos(n u) + \\sin(v)\\right)}{\\pi}\\right)}{5} \\end{cases}",
+      "color": "#ffffff",
+      "width": 952,
+      "height": 323,
+      "rgbaSha256": "b32a7567e004d9ee106dea7b57806a2700d402f4fbff189b1fdf4fb494fd85f8"
+    },
+    {
+      "id": "Feder-4ab37e",
+      "latex": "\\text{Feder}=\\begin{cases} x = \\left(R + r \\cos(v)\\right) \\sin(u) \\\\ y = \\left(R + r \\cos(v)\\right) \\cos(u) \\\\ z = \\frac{r \\left(\\sin(v) + \\frac{L \\left(\\cos(n u) + \\sin(v)\\right)}{\\pi}\\right)}{5} \\end{cases}",
+      "color": "#4ab37e",
+      "width": 952,
+      "height": 323,
+      "rgbaSha256": "3348dced04761c8b67f0261f50575d87399f946dd177d5c737c8bb6ebef8d9f8"
+    },
+    {
+      "id": "MobiusStrip-ffffff",
+      "latex": "\\text{MobiusStrip}=\\begin{cases} x = \\left(R + w v \\cos(\\frac{u}{2})\\right) \\cos(u) \\\\ y = \\left(R + w v \\cos(\\frac{u}{2})\\right) \\sin(u) \\\\ z = w v \\sin(\\frac{u}{2}) \\end{cases}",
+      "color": "#ffffff",
+      "width": 1038,
+      "height": 353,
+      "rgbaSha256": "28a596628f997003baf84973a9229f67bccc9fc2fa893a7acc9d09b3a39dfe5c"
+    },
+    {
+      "id": "MobiusStrip-4ab37e",
+      "latex": "\\text{MobiusStrip}=\\begin{cases} x = \\left(R + w v \\cos(\\frac{u}{2})\\right) \\cos(u) \\\\ y = \\left(R + w v \\cos(\\frac{u}{2})\\right) \\sin(u) \\\\ z = w v \\sin(\\frac{u}{2}) \\end{cases}",
+      "color": "#4ab37e",
+      "width": 1038,
+      "height": 353,
+      "rgbaSha256": "0a8b85e1eae7dff390aea7135d801187e7a7bdd99f3405a6218cda27e891b46a"
+    },
+    {
+      "id": "ParameterSurfaceII-ffffff",
+      "latex": "\\text{ParameterSurfaceII}=\\begin{cases} x = a \\cos(u) \\cos(v) \\cos(v) \\cos(v) \\\\ y = a \\sin(u + v) \\cos(v) \\cos(v) \\cos(v) \\\\ z = b \\sin(v) \\end{cases}",
+      "color": "#ffffff",
+      "width": 1344,
+      "height": 229,
+      "rgbaSha256": "93fdeee143026fccd04a8df5749c7aecc8d5c55652b07f25ff36f09244efbe84"
+    },
+    {
+      "id": "ParameterSurfaceII-4ab37e",
+      "latex": "\\text{ParameterSurfaceII}=\\begin{cases} x = a \\cos(u) \\cos(v) \\cos(v) \\cos(v) \\\\ y = a \\sin(u + v) \\cos(v) \\cos(v) \\cos(v) \\\\ z = b \\sin(v) \\end{cases}",
+      "color": "#4ab37e",
+      "width": 1344,
+      "height": 229,
+      "rgbaSha256": "b658614aa4899aadc9dd79d0a6fb701c5f50b7bde6bfcda1cf04b331754e849a"
+    },
+    {
+      "id": "ParameterSurfaceV-ffffff",
+      "latex": "\\text{ParameterSurfaceV}=\\begin{cases} x = a \\left(1.3 b - {\\cos(u)}^{3}\\right) \\sin(u) \\sin(v) \\\\ y = a \\left(1.3 b - {\\cos(u)}^{3}\\right) \\sin(u) \\cos(v) \\\\ z = 0.7 a \\tanh(u) \\end{cases}",
+      "color": "#ffffff",
+      "width": 1343,
+      "height": 319,
+      "rgbaSha256": "632eaeb68e4342e63953f4f01b70db490045b8524f76c6f6f1ea382ab59346c4"
+    },
+    {
+      "id": "ParameterSurfaceV-4ab37e",
+      "latex": "\\text{ParameterSurfaceV}=\\begin{cases} x = a \\left(1.3 b - {\\cos(u)}^{3}\\right) \\sin(u) \\sin(v) \\\\ y = a \\left(1.3 b - {\\cos(u)}^{3}\\right) \\sin(u) \\cos(v) \\\\ z = 0.7 a \\tanh(u) \\end{cases}",
+      "color": "#4ab37e",
+      "width": 1343,
+      "height": 319,
+      "rgbaSha256": "86484f07482df582eabc90088aa96dd66706b1c834411611ab5e4db09358308e"
+    },
+    {
+      "id": "Sphere-ffffff",
+      "latex": "\\text{Sphere}=\\begin{cases} x = radius \\sin(v) \\cos(u) \\\\ y = radius \\sin(v) \\sin(u) \\\\ z = radius \\cos(v) \\end{cases}",
+      "color": "#ffffff",
+      "width": 820,
+      "height": 229,
+      "rgbaSha256": "f1c052a78e6797b63d174f4f360f64fc541a534c2fa5776a9bf5571429c132cf"
+    },
+    {
+      "id": "Sphere-4ab37e",
+      "latex": "\\text{Sphere}=\\begin{cases} x = radius \\sin(v) \\cos(u) \\\\ y = radius \\sin(v) \\sin(u) \\\\ z = radius \\cos(v) \\end{cases}",
+      "color": "#4ab37e",
+      "width": 820,
+      "height": 229,
+      "rgbaSha256": "be87621344ec497ccc60144de17ee51bec83a3ba01b129445392b4f504e59898"
+    },
+    {
+      "id": "short-ffffff",
+      "latex": "x^2+y^2",
+      "color": "#ffffff",
+      "width": 170,
+      "height": 72,
+      "rgbaSha256": "8c7a85a5962b53f276934e05b96a23da56e5126041cf322dca75d428af69f0bc"
+    },
+    {
+      "id": "short-4ab37e",
+      "latex": "x^2+y^2",
+      "color": "#4ab37e",
+      "width": 170,
+      "height": 72,
+      "rgbaSha256": "8d648d0e5137f4ae4cdb17f7c1dab1decc32b7a51349bfd420ae5d61bde982af"
+    },
+    {
+      "id": "fraction-ffffff",
+      "latex": "\\frac{x^2+1}{1+y^2}",
+      "color": "#ffffff",
+      "width": 163,
+      "height": 138,
+      "rgbaSha256": "51ea67361d4ad011de61467f2622e334f7ea87f4ed16666e03e1b764c1fd1300"
+    },
+    {
+      "id": "fraction-4ab37e",
+      "latex": "\\frac{x^2+1}{1+y^2}",
+      "color": "#4ab37e",
+      "width": 163,
+      "height": 138,
+      "rgbaSha256": "a9e163406416b2c128fb9e88e3a362984626ba920922992cf9d57ee1b3b092a0"
+    },
+    {
+      "id": "root-ffffff",
+      "latex": "\\sqrt{1+x^2}+\\sqrt[3]{y}",
+      "color": "#ffffff",
+      "width": 334,
+      "height": 87,
+      "rgbaSha256": "8b18218f12707efe59ae765d0668c101f0359b39f0bd5d3083ae2d61a15029c8"
+    },
+    {
+      "id": "root-4ab37e",
+      "latex": "\\sqrt{1+x^2}+\\sqrt[3]{y}",
+      "color": "#4ab37e",
+      "width": 334,
+      "height": 87,
+      "rgbaSha256": "4404da618230d0f6d11b5981368c62cd06b97cb964301255ce07cb3113d32241"
+    },
+    {
+      "id": "greek-ffffff",
+      "latex": "\\alpha+\\beta=\\sqrt{\\gamma^2+\\pi}",
+      "color": "#ffffff",
+      "width": 396,
+      "height": 81,
+      "rgbaSha256": "276b630268a3c7a88fcdf8cc833a1b947fe6e0d988b1c5d25683e8c71d74efc2"
+    },
+    {
+      "id": "greek-4ab37e",
+      "latex": "\\alpha+\\beta=\\sqrt{\\gamma^2+\\pi}",
+      "color": "#4ab37e",
+      "width": 396,
+      "height": 81,
+      "rgbaSha256": "b20872bf0eefed86614e70b10c0df9926fa0f940f3934ed40b63daf71cf789aa"
+    },
+    {
+      "id": "short-000000",
+      "latex": "x^2+y^2",
+      "color": "#000000",
+      "width": 170,
+      "height": 72,
+      "rgbaSha256": "e8c158afcbed8b2e76596f33c395a531755dca6c9dca9d3e02b4506dc1c56dba"
+    }
+  ]
+}

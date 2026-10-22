@@ -48,7 +48,7 @@ npm run preview:v2
 
 后续自动方程文本与原版执行样例已一致，曲面导出 MSAA 已修正；固定几何区域最大 RGB 差由 119 降到 3，字形和完整画面仍待对齐。详见[自动方程与导出抗锯齿验收](docs/source-surface-native-text-msaa-validation.zh-CN.md)。
 
-公式字形现已取得独立上游实现的 21 组／84 次字节级验证，尚未接入产品。原版调试叠加开关已验证并恢复；Settings 挂起与 Mandelbrot 空画面仍需处理，整图验收保持 0/11。详见[字形与窗口验证进展](docs/source-formula-glyph-investigation.zh-CN.md)。
+独立运行时上的自有字形 helper 和本机 HTTP 服务已实现，21 组纹理与原版一致，81 项后端检查及原有 38 项导出、桌面回归通过。预览、PNG、录制的共同纹理合成仍待接入，详见[独立字形服务验收](docs/source-formula-glyph-service-validation.zh-CN.md)。原版调试叠加开关已验证并恢复；Settings 挂起与 Mandelbrot 空画面仍需处理，整图验收保持 0/11，详见[字形与窗口调查](docs/source-formula-glyph-investigation.zh-CN.md)。
 
 ## 桌面应用
 
