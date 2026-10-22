@@ -92,7 +92,7 @@ function localOrigin(req,allowed){
 export async function createExportServer(options={}){
  const root=path.resolve(options.root??defaultRoot),limits={...defaults,...options.limits},ffmpegPath=options.ffmpegPath??'ffmpeg';
  await mkdir(root,{recursive:true});
- const allowed=new Set(options.allowedOrigins??['http://127.0.0.1:5177','http://localhost:5177','http://127.0.0.1:4173','http://localhost:4173']);
+ const allowed=new Set(options.allowedOrigins??['http://127.0.0.1:5177','http://localhost:5177','http://127.0.0.1:5179','http://localhost:5179','http://127.0.0.1:4173','http://localhost:4173']);
  for(const origin of allowed){const u=new URL(origin);if(u.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(u.hostname)||u.origin!==origin)throw new Error('仅支持本机 HTTP 来源');}
  const sessions=new Map(),children=new Set(),files=new Map(),requests=new Set();let storedBytes=0,reservedBytes=0,reservedFiles=0,uploads=0,closing=false,healthPromise,healthAt=0;
  for(const name of await readdir(root)){const info=await lstat(path.join(root,name));if(!info.isFile())continue;storedBytes+=info.size;if(ownedName.test(name)){if(files.size>=limits.maxFiles)throw new Error('导出目录文件数量超过资源上限');files.set(name,info.size);}}

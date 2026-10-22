@@ -1,9 +1,13 @@
-import {definition} from './index';
+import {definition,definitions} from './index';
 import type {SceneDefinition,SceneKind} from '../types';
 
-/** Discovery for the 1.0 release. The complete registry remains the owner of
- * document decoding, imported projects, saved works and generation. */
-export const creationDefinitions:readonly SceneDefinition[]=Object.freeze([definition('spirograph')]);
+/** Discovery does not change document/runtime semantics. Only the explicit
+ * preview build exposes the full registry; ordinary builds retain 1.0 scope. */
+export function creationCatalogForMode(mode:string):readonly SceneDefinition[] {
+  return Object.freeze(mode==='preview-v2'?[...definitions]:[definition('spirograph')]);
+}
+export const isCreationPreview=import.meta.env.MODE==='preview-v2';
+export const creationDefinitions=creationCatalogForMode(import.meta.env.MODE);
 
 export function isCreationKind(kind:SceneKind):boolean {
   return creationDefinitions.some(item=>item.kind===kind);

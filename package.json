@@ -12,7 +12,10 @@
     "desktop:dev": "npm run build && node scripts/desktop-start.mjs",
     "desktop:build": "node scripts/desktop-build.mjs",
     "desktop:smoke": "node scripts/desktop-smoke.mjs",
-    "desktop:test": "node --test desktop/desktop.verify.mjs"
+    "desktop:test": "node --test desktop/desktop.verify.mjs",
+    "dev:v2": "vite --host 127.0.0.1 --port 5179 --mode preview-v2",
+    "build:v2": "tsc --noEmit && vite build --mode preview-v2 --outDir dist-v2",
+    "preview:v2": "vite preview --host 127.0.0.1 --port 5179 --outDir dist-v2"
   },
   "dependencies": {
     "@mathjax/mathjax-tex-font": "4.1.3",

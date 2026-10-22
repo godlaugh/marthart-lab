@@ -3,7 +3,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import App from '../src/App';
 import {ArtworkLibrary} from '../src/components/ArtworkLibrary';
 import {definitions,definition} from '../src/scenes';
-import {creationDefinitions,defaultCreationTemplate,isCreationKind} from '../src/scenes/releaseCatalog';
+import {creationDefinitions,defaultCreationTemplate,isCreationKind,creationCatalogForMode} from '../src/scenes/releaseCatalog';
 import {createScene,loadWorkspace,persistentScene,saveWorkspace,serializeScene} from '../src/engine/document';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {emptyLibrary,moveArtwork,trashArtwork} from '../src/engine/library';
@@ -73,5 +73,13 @@ describe('1.0 discovery and compatible documents',()=>{
     const html=renderToStaticMarkup(<ArtworkLibrary library={emptyLibrary()} scenes={scenes} drafts={[]} active={scenes[0].id} search="" onChange={()=>{}} onLoad={()=>{}} onCreate={()=>{}} onRename={()=>{}} onDuplicate={()=>{}} onFavorite={()=>{}}/>);
     for(const scene of scenes)expect(html).toContain(`Existing ${scene.kind}`);
     expect((html.match(/class="artwork-open"/g)??[])).toHaveLength(12);
+  });
+});
+
+describe('2.0 preview discovery',()=>{
+  it('exposes every registered family only in the explicit preview mode, without replacing its definitions or presets',()=>{
+    const preview=creationCatalogForMode('preview-v2');expect(preview).toEqual(definitions);expect(Object.isFrozen(preview)).toBe(true);
+    for(const def of definitions)expect(preview.find(item=>item.kind===def.kind)).toBe(def);
+    for(const mode of ['development','production','test','unknown'])expect(creationCatalogForMode(mode).map(item=>item.kind)).toEqual(['spirograph']);
   });
 });

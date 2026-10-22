@@ -108,6 +108,19 @@ test('conditional dialog cleanup preserves a completed video while explicit defa
  assert.equal(s.app.ownedProcessCount,0);assert.deepEqual(await readdir(s.root),[]);await stop(s.app);
 });
 
+test('preview origin can persist images while unlisted ports and explicit origin overrides remain restricted',async()=>{
+ const s=await service();
+ for(const origin of ['http://127.0.0.1:5179','http://localhost:5179']){
+  const image=await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png',origin},body:red},201);
+  assert.deepEqual(Buffer.from(await (await fetch(s.url+image.url)).arrayBuffer()),red);
+ }
+ await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png',origin:'http://127.0.0.1:5180'},body:red},403);
+ await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png',origin:'http://127.0.0.1:5179','sec-fetch-site':'cross-site'},body:red},403);
+ const restricted=await service({allowedOrigins:[]});
+ await request(restricted,'/api/images',{method:'POST',headers:{'content-type':'image/png',origin:'http://127.0.0.1:5179'},body:red},403);
+ await stop(s.app);await stop(restricted.app);
+});
+
 test('rejects unsafe origins, bad hosts, MIME mismatch, corrupt images and bounded uploads',async()=>{
  const s=await service({limits:{maxImageBytes:Math.max(red.length,jpeg.length)+20}});
  await request(s,'/api/images',{method:'POST',headers:{'content-type':'image/png',origin:'https://example.com'},body:red},403);

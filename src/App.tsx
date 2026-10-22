@@ -104,7 +104,7 @@ import type {
   CameraState,
 } from "./types";
 import { definition } from "./scenes";
-import {creationDefinitions,defaultCreationTemplate,isCreationKind} from './scenes/releaseCatalog';
+import {creationDefinitions,defaultCreationTemplate,isCreationKind,isCreationPreview} from './scenes/releaseCatalog';
 import {
   createScene,
   parseScene,
@@ -983,7 +983,7 @@ export default function App() {
             title={t("使用帮助")}
             onClick={() =>
               notify(
-                t("选择螺旋图模板 → 编辑图层和参数 → 添加动画 → 导出。空格播放；⌘S 保存；⌘Z 撤销；⌘⇧Z 重做；F2 重命名。"),
+                t(isCreationPreview?"选择场景模板 → 编辑方程和参数 → 添加动画 → 导出。空格播放；⌘S 保存；⌘Z 撤销；⌘⇧Z 重做；F2 重命名。":"选择螺旋图模板 → 编辑图层和参数 → 添加动画 → 导出。空格播放；⌘S 保存；⌘Z 撤销；⌘⇧Z 重做；F2 重命名。"),
               )
             }
           >
@@ -1022,6 +1022,7 @@ export default function App() {
                 )}
               </div>
             </div>
+            {isCreationPreview&&<p className="section-body muted" role="note" data-testid="creation-preview-note">{t("2.0 创作预览 · 效果一致性验证中")}</p>}
             <label className="search-field">
               <Search size={14} />
               <input
@@ -1585,7 +1586,7 @@ export default function App() {
           <span>{t("本地计算 · 无需云端")}</span>
         )}
         <span className="status-divider" />
-        <span>MathArt Lab {appVersion}</span>
+        <span>MathArt Lab {isCreationPreview?t("2.0 预览"):appVersion}</span>
       </footer>
       <input
         ref={file}
