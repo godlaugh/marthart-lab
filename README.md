@@ -46,6 +46,8 @@ npm run preview:v2
 
 后续已取得未跨屏的 500 × 600 原版参考图，修正新导入曲面的公式位置、大小及暂停 PNG 合成顺序，横纵画布与保存重开已验证。自动方程文本、字形和部分点像素仍有差异，详见[曲面公式布局验收](docs/source-surface-formula-layout-validation.zh-CN.md)。
 
+后续自动方程文本与原版执行样例已一致，曲面导出 MSAA 已修正；固定几何区域最大 RGB 差由 119 降到 3，字形和完整画面仍待对齐。详见[自动方程与导出抗锯齿验收](docs/source-surface-native-text-msaa-validation.zh-CN.md)。
+
 ## 桌面应用
 
 ```sh

@@ -19,7 +19,7 @@ export class SurfaceRecordingRenderer {
  constructor(private readonly scene:SceneDocument,private readonly size:ReturnType<typeof sourceRecordingSize>){
   retrySurfaceRecordingRendererCleanup();
   const canvas=document.createElement('canvas');this.canvas=canvas;
-  this.renderer=new ArtRenderer(canvas);
+  this.renderer=new ArtRenderer(canvas,'source-surface-export');
  }
  render(output:Extract<SceneOutput,{type:'geometry'}>,isCancelled:()=>boolean):Extract<SceneOutput,{type:'raster'}>{
   if(this.disposed||!this.renderer)throw Error('曲面录制绘图实例已释放');

@@ -1,0 +1,1927 @@
+{
+  "evidence": "Original MathArt 1.7.8 FastExpressionParser.toLatex via bundled JVM JNI, two identical independent runs; 2026-10-22. No UI or image parity claim.",
+  "mathartJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+  "inputSha256": "eedb7259df50de745c53ddc48f73f5c1e8eeeb1311079b0633c8676a9665a3d4",
+  "outputSha256": "a8d840104e13fde99b2faaaa863da66c278a1cb12a65af35ee6059c80c5f1d56",
+  "cases": [
+    {
+      "id": "expr-0",
+      "source": "u",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u"
+    },
+    {
+      "id": "expr-1",
+      "source": "u+v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u + v"
+    },
+    {
+      "id": "expr-2",
+      "source": "u-v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u - v"
+    },
+    {
+      "id": "expr-3",
+      "source": "u*v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u v"
+    },
+    {
+      "id": "expr-4",
+      "source": "u/ v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\frac{u}{v}"
+    },
+    {
+      "id": "expr-5",
+      "source": "u^v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{u}^{v}"
+    },
+    {
+      "id": "expr-6",
+      "source": "-u^2",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "-{u}^{2}"
+    },
+    {
+      "id": "expr-7",
+      "source": "(-u)^2",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{\\left(-u\\right)}^{2}"
+    },
+    {
+      "id": "expr-8",
+      "source": "u^(v^2)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{u}^{{v}^{2}}"
+    },
+    {
+      "id": "expr-9",
+      "source": "(u^v)^2",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{\\left({u}^{v}\\right)}^{2}"
+    },
+    {
+      "id": "expr-10",
+      "source": "u-(v-u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u - \\left(v - u\\right)"
+    },
+    {
+      "id": "expr-11",
+      "source": "u+(v-u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u + v - u"
+    },
+    {
+      "id": "expr-12",
+      "source": "u*(v+u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u \\left(v + u\\right)"
+    },
+    {
+      "id": "expr-13",
+      "source": "u*(2*v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u \\cdot 2 v"
+    },
+    {
+      "id": "expr-14",
+      "source": "u*-2",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u -2"
+    },
+    {
+      "id": "expr-15",
+      "source": "u%v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u % v"
+    },
+    {
+      "id": "expr-16",
+      "source": "alpha+Beta+GAMMA+a_1",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\alpha + \\beta + \\gamma + a_1"
+    },
+    {
+      "id": "expr-17",
+      "source": "PI+TWO_PI+HALF_PI+TAU+E",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\pi + 2\\pi + \\frac{\\pi}{2} + \\tau + e"
+    },
+    {
+      "id": "expr-18",
+      "source": "pi+tau+e",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\pi + \\tau + e"
+    },
+    {
+      "id": "expr-19",
+      "source": "-0",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "-0"
+    },
+    {
+      "id": "expr-20",
+      "source": "0.0001",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "1.0E-4"
+    },
+    {
+      "id": "expr-21",
+      "source": "0.001",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "0.001"
+    },
+    {
+      "id": "expr-22",
+      "source": "1.00000001",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "1.00000001"
+    },
+    {
+      "id": "expr-23",
+      "source": "100000000000000000000000",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "1.0E23"
+    },
+    {
+      "id": "expr-24",
+      "source": "9223372036854775808",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "9223372036854775807"
+    },
+    {
+      "id": "expr-25",
+      "source": "2.5",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "2.5"
+    },
+    {
+      "id": "expr-26",
+      "source": "1e-3",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "1 e - 3"
+    },
+    {
+      "id": "expr-27",
+      "source": "1e-10",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "1 e - 10"
+    },
+    {
+      "id": "expr-28",
+      "source": "1e100",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "error": "java.lang.RuntimeException: Unknown variable: e100"
+    },
+    {
+      "id": "expr-29",
+      "source": "1e309",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "error": "java.lang.RuntimeException: Unknown variable: e309"
+    },
+    {
+      "id": "expr-30",
+      "source": "pow(u+v,2)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{u + v}^{2}"
+    },
+    {
+      "id": "expr-31",
+      "source": "sqrt(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sqrt{u}"
+    },
+    {
+      "id": "expr-32",
+      "source": "sin()",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sin()"
+    },
+    {
+      "id": "expr-33",
+      "source": "pow(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "error": "java.lang.ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 1"
+    },
+    {
+      "id": "expr-34",
+      "source": "u+u*v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u + u v"
+    },
+    {
+      "id": "expr-35",
+      "source": "u/(v/u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\frac{u}{\\frac{v}{u}}"
+    },
+    {
+      "id": "expr-36",
+      "source": "2(u+v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "2 \\left(u + v\\right)"
+    },
+    {
+      "id": "expr-37",
+      "source": "2×u−π＋（v÷2）",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "2 u - \\pi + \\frac{v}{2}"
+    },
+    {
+      "id": "expr-38",
+      "source": "u--v",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u - -v"
+    },
+    {
+      "id": "expr-39",
+      "source": "-(u+v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "-\\left(u + v\\right)"
+    },
+    {
+      "id": "expr-40",
+      "source": "+(u-v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "+\\left(u - v\\right)"
+    },
+    {
+      "id": "expr-41",
+      "source": "u^(-2)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{u}^{-2}"
+    },
+    {
+      "id": "expr-42",
+      "source": "(u+v)^(u-v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{\\left(u + v\\right)}^{u - v}"
+    },
+    {
+      "id": "expr-43",
+      "source": "u*(v%u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u v % u"
+    },
+    {
+      "id": "expr-44",
+      "source": "u%2",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u % 2"
+    },
+    {
+      "id": "expr-45",
+      "source": "u*v*2",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "u v \\cdot 2"
+    },
+    {
+      "id": "expr-46",
+      "source": "sin(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sin(u)"
+    },
+    {
+      "id": "expr-47",
+      "source": "sin(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sin(u, v)"
+    },
+    {
+      "id": "expr-48",
+      "source": "cos(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\cos(u)"
+    },
+    {
+      "id": "expr-49",
+      "source": "cos(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\cos(u, v)"
+    },
+    {
+      "id": "expr-50",
+      "source": "tan(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\tan(u)"
+    },
+    {
+      "id": "expr-51",
+      "source": "tan(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\tan(u, v)"
+    },
+    {
+      "id": "expr-52",
+      "source": "asin(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arcsin(u)"
+    },
+    {
+      "id": "expr-53",
+      "source": "asin(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arcsin(u, v)"
+    },
+    {
+      "id": "expr-54",
+      "source": "acos(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arccos(u)"
+    },
+    {
+      "id": "expr-55",
+      "source": "acos(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arccos(u, v)"
+    },
+    {
+      "id": "expr-56",
+      "source": "atan(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arctan(u)"
+    },
+    {
+      "id": "expr-57",
+      "source": "atan(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arctan(u, v)"
+    },
+    {
+      "id": "expr-58",
+      "source": "atan2(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\operatorname{atan2}(u)"
+    },
+    {
+      "id": "expr-59",
+      "source": "atan2(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\operatorname{atan2}(u, v)"
+    },
+    {
+      "id": "expr-60",
+      "source": "arcsin(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arcsin(u)"
+    },
+    {
+      "id": "expr-61",
+      "source": "arcsin(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arcsin(u, v)"
+    },
+    {
+      "id": "expr-62",
+      "source": "arccos(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arccos(u)"
+    },
+    {
+      "id": "expr-63",
+      "source": "arccos(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arccos(u, v)"
+    },
+    {
+      "id": "expr-64",
+      "source": "arctan(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arctan(u)"
+    },
+    {
+      "id": "expr-65",
+      "source": "arctan(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\arctan(u, v)"
+    },
+    {
+      "id": "expr-66",
+      "source": "sinh(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sinh(u)"
+    },
+    {
+      "id": "expr-67",
+      "source": "sinh(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sinh(u, v)"
+    },
+    {
+      "id": "expr-68",
+      "source": "cosh(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\cosh(u)"
+    },
+    {
+      "id": "expr-69",
+      "source": "cosh(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\cosh(u, v)"
+    },
+    {
+      "id": "expr-70",
+      "source": "tanh(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\tanh(u)"
+    },
+    {
+      "id": "expr-71",
+      "source": "tanh(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\tanh(u, v)"
+    },
+    {
+      "id": "expr-72",
+      "source": "sqrt(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sqrt{u}"
+    },
+    {
+      "id": "expr-73",
+      "source": "sqrt(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\sqrt{u}"
+    },
+    {
+      "id": "expr-74",
+      "source": "abs(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\left|u\\right|"
+    },
+    {
+      "id": "expr-75",
+      "source": "abs(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\left|u\\right|"
+    },
+    {
+      "id": "expr-76",
+      "source": "exp(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "e^{u}"
+    },
+    {
+      "id": "expr-77",
+      "source": "exp(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "e^{u}"
+    },
+    {
+      "id": "expr-78",
+      "source": "ln(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\ln(u)"
+    },
+    {
+      "id": "expr-79",
+      "source": "ln(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\ln(u, v)"
+    },
+    {
+      "id": "expr-80",
+      "source": "log(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\log(u)"
+    },
+    {
+      "id": "expr-81",
+      "source": "log(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\log(u, v)"
+    },
+    {
+      "id": "expr-82",
+      "source": "log10(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\log_{10}(u)"
+    },
+    {
+      "id": "expr-83",
+      "source": "log10(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\log_{10}(u, v)"
+    },
+    {
+      "id": "expr-84",
+      "source": "sign(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\operatorname{sign}(u)"
+    },
+    {
+      "id": "expr-85",
+      "source": "sign(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\operatorname{sign}(u, v)"
+    },
+    {
+      "id": "expr-86",
+      "source": "floor(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\floor(u)"
+    },
+    {
+      "id": "expr-87",
+      "source": "floor(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\floor(u, v)"
+    },
+    {
+      "id": "expr-88",
+      "source": "ceil(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\ceil(u)"
+    },
+    {
+      "id": "expr-89",
+      "source": "ceil(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\ceil(u, v)"
+    },
+    {
+      "id": "expr-90",
+      "source": "round(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\round(u)"
+    },
+    {
+      "id": "expr-91",
+      "source": "round(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\round(u, v)"
+    },
+    {
+      "id": "expr-92",
+      "source": "min(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\min(u)"
+    },
+    {
+      "id": "expr-93",
+      "source": "min(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\min(u, v)"
+    },
+    {
+      "id": "expr-94",
+      "source": "max(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\max(u)"
+    },
+    {
+      "id": "expr-95",
+      "source": "max(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "\\max(u, v)"
+    },
+    {
+      "id": "expr-96",
+      "source": "pow(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "error": "java.lang.ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 1"
+    },
+    {
+      "id": "expr-97",
+      "source": "pow(u,v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "{u}^{v}"
+    },
+    {
+      "id": "expr-98",
+      "source": "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "4.9E-324"
+    },
+    {
+      "id": "expr-99",
+      "source": "0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "9.9E-324"
+    },
+    {
+      "id": "expr-100",
+      "source": "0.0000001",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b",
+        "R",
+        "r",
+        "alpha",
+        "Beta",
+        "GAMMA",
+        "a_1"
+      ],
+      "latex": "1.0E-7"
+    },
+    {
+      "id": "Cornucopia-x",
+      "source": "exp(b*v) * cos(v) + exp(a*v) * cos(u) * cos(v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "e^{b v} \\cos(v) + e^{a v} \\cos(u) \\cos(v)"
+    },
+    {
+      "id": "Cornucopia-y",
+      "source": "exp(b*v) * sin(v) + exp(a*v) * cos(u) * sin(v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "e^{b v} \\sin(v) + e^{a v} \\cos(u) \\sin(v)"
+    },
+    {
+      "id": "Cornucopia-z",
+      "source": "exp(a*v) * sin(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "e^{a v} \\sin(u)"
+    },
+    {
+      "id": "Feder-x",
+      "source": "(R + r*cos(v))*sin(u)",
+      "names": [
+        "u",
+        "v",
+        "R",
+        "r",
+        "L",
+        "n"
+      ],
+      "latex": "\\left(R + r \\cos(v)\\right) \\sin(u)"
+    },
+    {
+      "id": "Feder-y",
+      "source": "(R + r*cos(v))*cos(u)",
+      "names": [
+        "u",
+        "v",
+        "R",
+        "r",
+        "L",
+        "n"
+      ],
+      "latex": "\\left(R + r \\cos(v)\\right) \\cos(u)"
+    },
+    {
+      "id": "Feder-z",
+      "source": "r*(sin(v) + L*(cos(n*u)+sin(v))/PI)/5",
+      "names": [
+        "u",
+        "v",
+        "R",
+        "r",
+        "L",
+        "n"
+      ],
+      "latex": "\\frac{r \\left(\\sin(v) + \\frac{L \\left(\\cos(n u) + \\sin(v)\\right)}{\\pi}\\right)}{5}"
+    },
+    {
+      "id": "MobiusStrip-x",
+      "source": "(R + w * v * cos(u/2)) * cos(u)",
+      "names": [
+        "u",
+        "v",
+        "R",
+        "w"
+      ],
+      "latex": "\\left(R + w v \\cos(\\frac{u}{2})\\right) \\cos(u)"
+    },
+    {
+      "id": "MobiusStrip-y",
+      "source": "(R + w * v * cos(u/2)) * sin(u)",
+      "names": [
+        "u",
+        "v",
+        "R",
+        "w"
+      ],
+      "latex": "\\left(R + w v \\cos(\\frac{u}{2})\\right) \\sin(u)"
+    },
+    {
+      "id": "MobiusStrip-z",
+      "source": "w * v * sin(u/2)",
+      "names": [
+        "u",
+        "v",
+        "R",
+        "w"
+      ],
+      "latex": "w v \\sin(\\frac{u}{2})"
+    },
+    {
+      "id": "ParameterSurfaceII-x",
+      "source": "a*cos(u)*cos(v)*cos(v)*cos(v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "a \\cos(u) \\cos(v) \\cos(v) \\cos(v)"
+    },
+    {
+      "id": "ParameterSurfaceII-y",
+      "source": "a*sin(u+v)*cos(v)*cos(v)*cos(v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "a \\sin(u + v) \\cos(v) \\cos(v) \\cos(v)"
+    },
+    {
+      "id": "ParameterSurfaceII-z",
+      "source": "b*sin(v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "b \\sin(v)"
+    },
+    {
+      "id": "ParameterSurfaceV-x",
+      "source": "a * (1.3*b - cos(u)^3) * sin(u) * sin(v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "a \\left(1.3 b - {\\cos(u)}^{3}\\right) \\sin(u) \\sin(v)"
+    },
+    {
+      "id": "ParameterSurfaceV-y",
+      "source": "a * (1.3*b - cos(u)^3) * sin(u) * cos(v)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "a \\left(1.3 b - {\\cos(u)}^{3}\\right) \\sin(u) \\cos(v)"
+    },
+    {
+      "id": "ParameterSurfaceV-z",
+      "source": "0.7*a * tanh(u)",
+      "names": [
+        "u",
+        "v",
+        "a",
+        "b"
+      ],
+      "latex": "0.7 a \\tanh(u)"
+    },
+    {
+      "id": "Sphere-x",
+      "source": "radius * sin(v) * cos(u)",
+      "names": [
+        "u",
+        "v",
+        "radius"
+      ],
+      "latex": "radius \\sin(v) \\cos(u)"
+    },
+    {
+      "id": "Sphere-y",
+      "source": "radius * sin(v) * sin(u)",
+      "names": [
+        "u",
+        "v",
+        "radius"
+      ],
+      "latex": "radius \\sin(v) \\sin(u)"
+    },
+    {
+      "id": "Sphere-z",
+      "source": "radius * cos(v)",
+      "names": [
+        "u",
+        "v",
+        "radius"
+      ],
+      "latex": "radius \\cos(v)"
+    }
+  ]
+}

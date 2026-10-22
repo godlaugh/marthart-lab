@@ -4,6 +4,7 @@ import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import type {SceneDocument,FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation,FormulaContent} from '../types';
 import {fractalEquationLatex} from '../scenes/complex';
 import {sourceFractalFormulaLatex} from './sourceFractalFormulaLatex';
+import {sourceSurfaceFormulaLatex} from './sourceSurfaceFormulaLatex';
 import {symmetryEquationLatex} from '../scenes/symmetryFormula';
 import {hasSymmetryCustom} from './symmetryCustom';
 export type {FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation,FormulaContent} from '../types';
@@ -11,6 +12,7 @@ export function defaultFormulas():Extract<FormulaConfig,{layout?:undefined}>{ret
 export {validateFormulas,validateFormulaPresentation} from './formulaConfig';
 import {validateFormulas,validateFormulaPresentation,sourceFormulaPrimaryHeight} from './formulaConfig';
 export function mainEquation(scene:SceneDocument):string {
+  if(usesSourceSurfaceGeometry(scene))return sourceSurfaceFormulaLatex(scene);
   if(scene.kind==='fractal')return scene.fractalSource?sourceFractalFormulaLatex(scene.fractalSource.formula):fractalEquationLatex(scene.settings);
   if(scene.kind==='symmetry')return hasSymmetryCustom(scene)?'z_{k+1}=\\operatorname{calculate\\_next}(z_k)':symmetryEquationLatex(scene.settings);
   const symbol=(s:string)=>s.replace(/[^a-zA-Z0-9_]/g,'');

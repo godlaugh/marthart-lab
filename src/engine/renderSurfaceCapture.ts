@@ -9,7 +9,7 @@ export async function renderSurfaceCapture(prepared:SourceSurfaceCapturePreparat
  const geometryBytes=[...new Set([...outputBuffers(prepared.capture),...outputBuffers(prepared.preview)])].reduce((sum,b)=>sum+b.byteLength,0);
  if(geometryBytes+plan.bytes>256*1024*1024)throw Error('曲面截图几何与图像缓冲超过本地 256 MiB 预算');
  check();const {ArtRenderer}=await import('./renderer');check();
- const canvas=document.createElement('canvas'),renderer=new ArtRenderer(canvas);
+ const canvas=document.createElement('canvas'),renderer=new ArtRenderer(canvas,'source-surface-export');
  try{
   const gl=renderer.renderer.getContext(),limits=gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array;
   if(plan.base.width>limits[0]||plan.base.height>limits[1]||Math.max(plan.base.width,plan.base.height)>gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))throw Error('曲面截图尺寸超过当前 GPU 限制');

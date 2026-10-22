@@ -28,7 +28,7 @@ import {MAX_RASTER_PIXELS,validateRasterRequest} from '../engine/rasterDimension
 import {encodeRgbaPng} from '../engine/rgbaPng';
 import {encodeFormulaRaster} from '../engine/formulaCanvas';
 import { Generator } from "../engine/client";
-import { ArtRenderer } from "../engine/renderer";
+import { ArtRenderer,artExportPurpose } from "../engine/renderer";
 import { sceneAtTime, normalizeTimelineTime,resolveTimeline } from "../engine/timeline";
 import {outputCamera} from '../engine/sceneCamera';
 import {useI18n} from '../i18n';
@@ -300,7 +300,7 @@ export function ExportDialog({
       if(usesSourceSymmetryPresentation(exportScene)&&sourceSymmetryToneReference===undefined)throw Error('Symmetry 导出缺少已呈现主画布尺寸，请等待预览完成');
       const exportContext={...(usesSourceMapPresentation(exportScene)?{sourceMapToneReference}:{}),...(usesSourceSymmetryPresentation(exportScene)?{sourceSymmetryToneReference}:{}),quality:'export' as const,width,height,...(usesSourceSamilaSplat(exportScene)?{samilaPrimaryPixelHeight}:{}),...(usesSourcePerlin(exportScene)?{sourcePerlinViewport}:{}),...(exportScene.sourceCamera?{sourceViewport:ordinarySourceViewport(exportScene,width,height,'offscreen',previewLogicalHeight!),sourcePointPixelDensity:previewPointPixelDensity}:{}),...(exportScene.kind==='fractal'?{fractalViewport:{logicalWidth:width,logicalHeight:height,target:'offscreen' as const}}:{}),...(usesRootsNativePresentation(exportScene)?{rootsViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:previewLogicalHeight??height,target:'offscreen' as const}}:{})};
       const fractalContext=fractalVideo?{...exportContext,width:recordingSize.width,height:recordingSize.height,fractalViewport:{logicalWidth:recordingSize.logicalWidth!,logicalHeight:recordingSize.logicalHeight!,target:'offscreen' as const}}:undefined;
-      if(!bouncing&&!sourceFractal&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas);r.setSize(width,height,1);}
+      if(!bouncing&&!sourceFractal&&!(kind==='video'&&perlinFrames)){const canvas = document.createElement('canvas');r=new ArtRenderer(canvas,artExportPurpose(exportScene));r.setSize(width,height,1);}
       if(bouncing?.warmup){
         const warmup=await g.generate(exportScene,sourceBouncingExportContext(bouncing,bouncing.warmup));
         checkCancelled();assertSourceBouncingExportFrame(warmup,bouncing,bouncing.warmup);

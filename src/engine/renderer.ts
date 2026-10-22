@@ -26,6 +26,14 @@ import {formulaPresentation} from './formulas';
 import {encodeRgbaPng} from './rgbaPng';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {fitGeometryCamera} from './cameraFit';
+import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+export type ArtRendererPurpose='display'|'local-export'|'source-surface-export';
+/** Context attributes are fixed at allocation. MathArt.ensureRenderBuffer(F)
+ * calls noSmooth before beginDraw; primary display smoothing is separate.
+ * Other source families keep their existing targets until independently wired. */
+export function artExportPurpose(scene:SceneDocument):ArtRendererPurpose {
+  return usesSourceSurfaceGeometry(scene)?'source-surface-export':'local-export';
+}
 export class ArtRenderer {
   readonly renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -53,10 +61,11 @@ export class ArtRenderer {
   private fitted = false;
   private document:SceneDocument|null=null;
   private listeners = new Set<(camera: CameraState) => void>();
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, purpose:ArtRendererPurpose='display') {
+    if(!['display','local-export','source-surface-export'].includes(purpose))throw new Error('未知绘图目标');
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: purpose!=='source-surface-export',
       preserveDrawingBuffer: true,
       alpha: true,
     });
