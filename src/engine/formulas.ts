@@ -1,3 +1,6 @@
+import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
+import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
+import {sourceImplicitFormulaLatex} from './sourceImplicitFormulaLatex';
 import {parse} from 'mathjs';
 import type {SourceCameraViewport} from './sourceCamera';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -13,6 +16,7 @@ export {validateFormulas,validateFormulaPresentation} from './formulaConfig';
 import {validateFormulas,validateFormulaPresentation,sourceFormulaPrimaryHeight} from './formulaConfig';
 export function mainEquation(scene:SceneDocument):string {
   if(usesSourceSurfaceGeometry(scene))return sourceSurfaceFormulaLatex(scene);
+  if(usesSourceImplicitPresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return sourceImplicitFormulaLatex(scene);
   if(scene.kind==='fractal')return scene.fractalSource?sourceFractalFormulaLatex(scene.fractalSource.formula):fractalEquationLatex(scene.settings);
   if(scene.kind==='symmetry')return hasSymmetryCustom(scene)?'z_{k+1}=\\operatorname{calculate\\_next}(z_k)':symmetryEquationLatex(scene.settings);
   const symbol=(s:string)=>s.replace(/[^a-zA-Z0-9_]/g,'');
@@ -30,7 +34,7 @@ export function resolveFormulaContent(scene:SceneDocument):FormulaContent {
   const config=scene.formulas?validateFormulas(scene.formulas):defaultFormulas(),extra=config.additional.filter(f=>f.visible&&f.latex.trim());
   const labels=config.main.visible?[{...config.main,id:'main-equation',latex:config.main.latex?.trim()?config.main.latex:mainEquation(scene)},...extra]:extra;
   if(config.layout==='source-surface-centered-v1'){
-    if(!usesSourceSurfaceGeometry(scene))throw new Error('源曲面公式布局需要源曲面项目');
+    if(!usesSourceCenteredFormulaLayout(scene))throw new Error('源曲面公式布局需要已确认的源曲面项目');
     return{layout:config.layout,labels};
   }
   return{referenceWidth:config.referenceWidth,referenceHeight:config.referenceHeight,labels};

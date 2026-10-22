@@ -1,3 +1,4 @@
+import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
 import {SourceSurfaceLiveSession} from './sourceSurfaceLiveSession';
 import {SourceDomainLiveSession} from './sourceDomainLiveSession';
@@ -402,7 +403,8 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
     // A fresh source Scene constructs its labels from its input configuration,
     // before any source queue update. Deliver that same text with every pass.
-    const formulas=usesSourceFractal(scene)?formulaPresentation(scene):undefined;
+    const implicitFormulas=usesSourceImplicitPresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1';
+    const formulas=usesSourceFractal(scene)||implicitFormulas?formulaPresentation(scene,context.sourceViewport):undefined;
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or
     // simulation allocation. Progress frames may use an earlier scene time.
@@ -412,7 +414,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     }
     const mode=sourceCameraMode(scene);
     const bind=(output:SceneOutput)=>{
-      if(formulas){if(output.type!=='raster')throw Error('源分形标注需要实际栅格帧');output.formulaPresentation=structuredClone(formulas);}
+      if(formulas){if(implicitFormulas?output.type!=='geometry':output.type!=='raster')throw Error('源标注与实际帧类型不匹配');output.formulaPresentation=structuredClone(formulas);}
       if(mode.kind==='ordinary')return bindOrdinarySourceCamera(output,sceneAtTime(scene,output.temporal?.time??context.time),context);
       if(mode.kind==='captured-density'){
         if(output.type!=='raster'||!output.cameraResolved||!output.sourceCameraFrame)throw new Error('源密度相机需要携带相机帧的已投影像素图像');

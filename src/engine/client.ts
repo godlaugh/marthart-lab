@@ -1,3 +1,4 @@
+import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {SourceSurfaceRecordingLease} from './sourceSurfaceRecordingLease';
 import {validSourceSurfaceOutput} from './sourceSurfaceResponse';
 import {sourceSurfaceCapturePlan,type SourceSurfacePausedCaptureResult} from './sourceSurfaceCapture';
@@ -27,17 +28,17 @@ import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 type FormulaOutputContract =
  |{kind:'optional'}
  |{kind:'raster'}
- |{kind:'surface-geometry';layout:'source-surface-centered-v1'|undefined};
+ |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
 function generationFormulaContract(scene:SceneDocument):FormulaOutputContract {
- if(usesSourceSurfaceGeometry(scene))return{kind:'surface-geometry',layout:scene.formulas?.layout};
+ if(usesSourceSurfaceGeometry(scene)||scene.formulas?.layout==='source-surface-centered-v1'&&usesSourceCenteredFormulaLayout(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
  return{kind:usesSourceFractal(scene)?'raster':'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
  try{
-  if(!output||contract.kind==='raster'&&output.type!=='raster'||contract.kind==='surface-geometry'&&output.type!=='geometry')return false;
+  if(!output||contract.kind==='raster'&&output.type!=='raster'||contract.kind==='source-geometry'&&output.type!=='geometry')return false;
   if(output.formulaPresentation===undefined)return contract.kind==='optional';
   output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,output.sourceCameraFrame?.viewport);
-  return contract.kind!=='surface-geometry'||output.formulaPresentation.layout===contract.layout;
+  return contract.kind!=='source-geometry'||output.formulaPresentation.layout===contract.layout;
  }catch{return false;}
 }
 type RasterRecordingResponse=

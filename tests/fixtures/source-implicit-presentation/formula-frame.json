@@ -1,0 +1,34 @@
+{
+  "provenance": {
+    "kind": "original application log and static classfile evidence",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "classes": {
+      "mathart/implicit/GenericImplicitScene": "0a052add961200e40ba5d951b94db2e05bf0d735288e81e151035f186623431c",
+      "mathart/implicit/config/JsonImplicitSurfaceConfig": "a065b71dde04367f3c792b8469e0f8299c58d0ff2528844dac3bb9c6b807391b",
+      "mathart/mobject/TexMobject": "67f4ca985b291f21f924515dba9804f8b33779f060b45d7d9080c642bec45864",
+      "mathart/scene/Scene": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53"
+    },
+    "capture": "implicit-retained-lines-20261022/native-capture-report.json",
+    "limits": "The original log captures text, offsets, scale and viewport sizes. Placement formula derives from Scene.render and TexMobject.display bytecode; no new original run or formula-only pixel-equivalence claim."
+  },
+  "inputFixture": "native.json cases[0]",
+  "label": {
+    "latex": "{x}^{2} + {y}^{2} - {z}^{2} - 1 = 0",
+    "x": 0,
+    "y": 200,
+    "scale": 0.25
+  },
+  "primaryLogicalSize": [
+    405,
+    486
+  ],
+  "offscreenLogicalSize": [
+    250,
+    300
+  ],
+  "pixelDensity": 2,
+  "physicalSize": [
+    500,
+    600
+  ]
+}
