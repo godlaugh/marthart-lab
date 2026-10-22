@@ -50,6 +50,8 @@ npm run preview:v2
 
 独立运行时上的自有字形 helper 和本机 HTTP 服务已实现，21 组纹理与原版一致，81 项后端检查及原有 38 项导出、桌面回归通过。后端初始验证详见[独立字形服务验收](docs/source-formula-glyph-service-validation.zh-CN.md)。源曲面预览、PNG、录制现已接入共同字形和 GL 合成器，详见[公式合成接入验收](docs/source-formula-compositor-validation.zh-CN.md)。随后修正原版整数居中与各向异性过滤，Cornucopia 公式第三行固定区域平均 RGB 差从 0.92515 降至 0.00606，剩余 6 个差异像素；130 项回归和 10 项真实浏览器检查通过，详见[公式居中与采样验收](docs/source-formula-centering-validation.zh-CN.md)。原版调试叠加开关已验证并恢复；Settings 挂起与 Mandelbrot 空画面仍需处理，整图验收保持 0/11，详见[字形与窗口调查](docs/source-formula-glyph-investigation.zh-CN.md)。
 
+剩余 6 个公式像素现已归因于原版水印阴影及后处理，在相同叠加输入下固定区域 RGBA 全部一致。原版完整 Cornucopia Scene 的离屏绘制已运行成功，固定公式和几何区域与真实窗口 PNG 一致；整图文字叠加仍有差异，尚不能替代完整窗口验收。详见[离屏参考验证](docs/native-offscreen-reference-validation.zh-CN.md)。
+
 ## 桌面应用
 
 ```sh
