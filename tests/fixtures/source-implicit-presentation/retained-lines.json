@@ -1,0 +1,122 @@
+{
+  "evidence": "Original ImplicitSurface retained wireframe PShape after normal paused scene frame. Full arrays .cache/implicit-retained-lines-20261022/native-implicit/retained-lines.json; actual GL uniforms queried without binding/mutating shader. Source JAR/core identities captured separately. Float hashes are IEEE754 F32 little endian. Color is native little-endian ABGR decoded to normalized RGBA. Cache-local ushort indices normalized by captured vertexOffset for comparison with independent instanced quads.",
+  "sourceSceneSha256": "debeea3f761a907700aa84b4b0fc4bb11e1bf60793388b579f2142c2755b4ccf",
+  "renderMode": 1,
+  "shapeMatrix": null,
+  "strokeWeight": 0.68,
+  "vertices": 81024,
+  "indices": 121536,
+  "positionSha256": "126851e8884e9d1599b84f94f16821b93d52ebc1424255a7c1ae4b7007c3f9b4",
+  "directionSha256": "b60d720f83b2ea43d69efde0565c499e96be6f2c6bc556213f382b8f14864860",
+  "colorRgbaSha256": "717e4b6c8f259bf76bf75e56e569620ab80ffce6f7c7da114197f4f23ab11991",
+  "globalIndexSha256": "4e4a01516c2b9ccdec9cce7e995472945c472ca46b2538bf8c5fe6a20e719d0b",
+  "caches": [
+    {
+      "vertexCount": 32764,
+      "vertexOffset": 0,
+      "indexCount": 49146,
+      "indexOffset": 0
+    },
+    {
+      "vertexCount": 32764,
+      "vertexOffset": 32764,
+      "indexCount": 49146,
+      "indexOffset": 49146
+    },
+    {
+      "vertexCount": 15496,
+      "vertexOffset": 65528,
+      "indexCount": 23244,
+      "indexOffset": 98292
+    }
+  ],
+  "uniforms": [
+    {
+      "name": "projectionMatrix",
+      "glType": 35676,
+      "arraySize": 1,
+      "floatQueryValues": [
+        [
+          1.9200003,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.6000001,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0004002,
+          -1.0,
+          0.0,
+          0.0,
+          -4.8009605,
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "perspective",
+      "glType": 5124,
+      "arraySize": 1,
+      "floatQueryValues": [
+        [
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "modelviewMatrix",
+      "glType": 35676,
+      "arraySize": 1,
+      "floatQueryValues": [
+        [
+          0.6172839,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -2.6982338e-08,
+          0.61728394,
+          0.0,
+          0.0,
+          -0.61728394,
+          -2.6982338e-08,
+          0.0,
+          0.0,
+          0.0,
+          -240.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "viewport",
+      "glType": 35666,
+      "arraySize": 1,
+      "floatQueryValues": [
+        [
+          0.0,
+          0.0,
+          250.0,
+          300.0
+        ]
+      ]
+    },
+    {
+      "name": "scale",
+      "glType": 35665,
+      "arraySize": 1,
+      "floatQueryValues": [
+        [
+          0.999,
+          0.999,
+          0.999
+        ]
+      ]
+    }
+  ],
+  "coreJarSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+  "sourceJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+}

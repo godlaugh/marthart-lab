@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-22",
+  "evidenceKind": "Observed original OpenGL draw inputs; not reconstructed Scene output",
+  "source": {
+    "application": "MathArt 1.7.8",
+    "scene": "DomainColoringConfigs/domain_coloring_zero_linear_demo.json",
+    "sceneSha256": "be59259b75f1cfe52709686769db7c1d75fc3ce73c7fbcd9d835a9d09445f344",
+    "applicationJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "domainColoringMobjectClassSha256": "686cb8652a1c2f0e4d696a375ad04285bf24903a0e7c71ef221c14c38a837c38",
+    "originalRawPngSha256": "7c9a176bcaa2760b704203a0710d16ee3b3efc5df718283b86c3b9034ef07fe5",
+    "captureJsonSha256": "ec55dfa3d1f29ffa149b6415f0457820ef3f73d90a01e2789359bbe6f45422f4",
+    "captureObserverSha256": "64d7df0c6de217622a004fec47077f037d709d4a8e719c5846d33c83faa65fca",
+    "probeSha256": "8aed44625d0b46a8c877426db29734a7db317a7c6b542ea09c1363059b3fe556",
+    "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e"
+  },
+  "scope": {
+    "primaryLogical": [
+      405,
+      486
+    ],
+    "targetLogical": [
+      250,
+      300
+    ],
+    "density": 2,
+    "pixels": [
+      500,
+      600
+    ],
+    "pausedFrames": 1,
+    "debug": false,
+    "normalLicenseAndPolicy": true,
+    "watermarkPreserved": true,
+    "nativeExit": 0,
+    "nativeSeconds": 10.530519417021424,
+    "rawPngMatchesUnobservedBaseline": true,
+    "sceneGuiParityVerified": false
+  },
+  "draw": {
+    "mode": 4,
+    "count": 6,
+    "indexType": 5123,
+    "indexByteOffset": 0,
+    "indices": [
+      0,
+      1,
+      2,
+      2,
+      3,
+      0
+    ],
+    "viewport": [
+      0,
+      0,
+      500,
+      600
+    ],
+    "scissor": [
+      0,
+      0,
+      500,
+      600
+    ],
+    "indexBytesSha256": "cdd30f0b81cab4dfa7b9612bc1866099b922c77e381302d6efd3f70ca0a9d0de"
+  },
+  "attributes": [
+    {
+      "name": "vertex",
+      "location": 1,
+      "size": 4,
+      "type": 5126,
+      "normalized": false,
+      "stride": 0,
+      "queriedStride": 16,
+      "pointerByteOffset": 0,
+      "capturedBytes": 64,
+      "littleEndianFloat32Values": [
+        -125.0,
+        -150.0,
+        -259.8076171875,
+        1.0,
+        125.0,
+        -150.0,
+        -259.8076171875,
+        1.0,
+        125.0,
+        150.0,
+        -259.8076171875,
+        1.0,
+        -125.0,
+        150.0,
+        -259.8076171875,
+        1.0
+      ],
+      "rawSha256": "94103df838a41590442f25b607b5cccfa40da1a9568a3c4df8445365799657fd"
+    },
+    {
+      "name": "texCoord",
+      "location": 0,
+      "size": 2,
+      "type": 5126,
+      "normalized": false,
+      "stride": 0,
+      "queriedStride": 8,
+      "pointerByteOffset": 0,
+      "capturedBytes": 32,
+      "littleEndianFloat32Values": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "rawSha256": "eeb394f1726eac2bb9656979b5b3190f0fc2bfc9a3df8e179d13da2ebc8c513a"
+    }
+  ],
+  "uniforms": [
+    {
+      "name": "u_scale",
+      "type": 5126,
+      "values": [
+        [
+          0.8333333
+        ]
+      ]
+    },
+    {
+      "name": "u_center",
+      "type": 35664,
+      "values": [
+        [
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "u_rotation",
+      "type": 5126,
+      "values": [
+        [
+          0.0
+        ]
+      ]
+    },
+    {
+      "name": "transform",
+      "type": 35676,
+      "values": [
+        [
+          0.008,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.006666667,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0007698004,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0,
+          1.0
+        ]
+      ]
+    },
+    {
+      "name": "u_resolution",
+      "type": 35664,
+      "values": [
+        [
+          250.0,
+          300.0
+        ]
+      ]
+    }
+  ],
+  "vertexShader": {
+    "source": "#version 150\n\nuniform mat4 transform;\n\nin vec4 vertex;\nin vec2 texCoord;\n\nout vec2 vUv;\n\nvoid main() {\n    vUv = texCoord;\n    gl_Position = transform * vertex;\n}\n",
+    "sha256": "e29e8be7936dd118de7b764bcb6e0cf47d6c273f0114da8cf3db2afde699818f"
+  },
+  "limitations": [
+    "Contains draw inputs only; no original fragment or color raster.",
+    "Browser coordinate reproduction does not prove native fragment interpolation or color equivalence.",
+    "One scene, size, paused frame and device; not family acceptance."
+  ]
+}

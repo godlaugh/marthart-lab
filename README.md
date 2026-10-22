@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+2026-10-22 后续验证：修正源隐式曲面的 retained 线条变换及导出像素密度传递，实际 PNG 固定区域 RGB MAE 从 1.93 降到 0.85，仍未达到整图一致。域着色已取得原版真实顶点输入，排除了顶点遗漏假设，但残差尚存。见[隐式线条与导出验证](docs/source-implicit-retained-lines-validation.zh-CN.md)、[域着色真实提交验证](docs/source-domain-native-residual-validation.zh-CN.md)。
+
 2026-10-22：原版分形的逐次预览、渐变延迟及暂停导出状态已接通；9 次实际 GPU 显示状态匹配原版，暂停预览稳定后会停止重绘。源隐式曲面的两组完整网格、法向与颜色逐元素一致，实际导出仍有像素差异。整类验收保持 **0/11**。详见[分形显示验证](docs/source-fractal-display-validation.zh-CN.md)和[隐式网格验证](docs/source-implicit-marching-cubes-validation.zh-CN.md)。
 
 当前开发分支提供独立预览入口，开放全部 12 类场景（包含 1.0 螺旋图）及 85 个现有模板：

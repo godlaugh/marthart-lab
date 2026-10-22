@@ -1641,7 +1641,7 @@ export default function App() {
           fractalPixelDensity={presentedSource===scene&&presentedOutput?.type==='raster'&&presentedOutput.fractalRender?viewportMeasurement?.pixelRatio:undefined}
           sourcePerlinViewport={presentedSource===scene?presentedOutput?.sourcePerlinFrame?.sourceViewport:undefined}
           previewLogicalHeight={scene.sourceCamera?(presentedSource===scene?presentedOutput?.sourceCameraFrame?.viewport.logicalHeight:undefined):viewportSize?.[1]}
-          previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?presentedOutput.sourcePointAppearance?.referencePixelDensity:undefined}
+          previewPointPixelDensity={presentedSource===scene&&presentedOutput?.type==='geometry'?(presentedOutput.sourcePointAppearance?.referencePixelDensity??presentedOutput.sourceImplicitPresentation?.referencePixelDensity):undefined}
           sourceMapToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceMapPresentation?.reference:undefined}
           sourceSymmetryToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceSymmetryPresentation?.reference:undefined}
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}

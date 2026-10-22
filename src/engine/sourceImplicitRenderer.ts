@@ -33,7 +33,7 @@ export function createSourceImplicitMesh(output:Extract<SceneOutput,{type:'geome
    blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquationAlpha:THREE.AddEquation,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor,
    uniforms:{projection:{value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)}}});
   const fill=new THREE.Mesh(geometry,material);fill.frustumCulled=false;fill.visible=facts.fill;
-  if(wire)lines=createSourceProcessingLines({positions:wire.positions,lineWidth:Math.fround(facts.lineWeight*(plan.viewport.target==='offscreen'?facts.referencePixelDensity:1)),color:{kind:'vertices',rgb:wire.colors,alphas:wire.alphas}},plan);
+  if(wire)lines=createSourceProcessingLines({mode:'retained',positions:wire.positions,lineWidth:Math.fround(facts.lineWeight*(plan.viewport.target==='offscreen'?facts.referencePixelDensity:1)),color:{kind:'vertices',rgb:wire.colors,alphas:wire.alphas}},plan);
   return{fill,lines};
  }catch(error){geometry.dispose();material?.dispose();lines?.geometry.dispose();lines?.material.dispose();throw error;}
 }

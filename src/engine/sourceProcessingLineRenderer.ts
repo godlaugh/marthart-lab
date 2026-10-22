@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type {SourceCameraPlan} from './sourceCamera';
 import type {SourceParticleTrails} from './sourceParticleTrails';
+import {sourceProcessingRetainedLineInstances} from './sourceProcessingRetainedLine';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
 
 import {sourceProcessingLineInstances,sourceProcessingInstancedLineVertex,sourceProcessingLineFragment,sourceProcessingLineDisplay} from './sourceProcessingStroke';
@@ -9,26 +10,31 @@ export {sourceProcessingLineBuffers} from './sourceProcessingStroke';
 const F=Math.fround;
 export interface SourceProcessingLineInput {
  readonly positions:Float32Array;readonly lineWidth:number;readonly indices?:Uint32Array;
+ /** Retained PShape LINES have a null shape matrix and defer modelview to GPU. */
+ readonly mode?:'immediate'|'retained';readonly isCancelled?:()=>boolean;
  readonly color:{readonly kind:'packed';readonly packed:number}|{readonly kind:'vertices';readonly rgb:Float32Array;readonly alphas:Float32Array};
 }
 /** Owns compact instance CPU and GPU resources for the shared Processing LINES path. */
 export function createSourceProcessingLines(input:SourceProcessingLineInput,plan:SourceCameraPlan,displayOpacity=1,overlay=false):THREE.Mesh<THREE.BufferGeometry,THREE.RawShaderMaterial> {
  if(!Number.isFinite(displayOpacity)||displayOpacity<0||displayOpacity>1)throw new Error('源 Processing 线条显示透明度无效');
- const display=sourceProcessingLineDisplay(plan);
+ if(input.mode!==undefined&&input.mode!=='immediate'&&input.mode!=='retained')throw Error('未知源 Processing 线条模式');
+ const retained=input.mode==='retained',display=sourceProcessingLineDisplay(plan);
+ const check=()=>{if(retained&&input.isCancelled?.())throw new DOMException('源 retained 线条颜色处理已取消','AbortError');};check();
  const color=input.color;
  if(color.kind==='packed'){
   if(!Number.isInteger(color.packed)||color.packed< -2147483648||color.packed>4294967295)throw new Error('源 Processing 线条颜色无效');
  }else if(color.kind==='vertices'){
   if(!(input.positions instanceof Float32Array)||!(color.rgb instanceof Float32Array)||!(color.alphas instanceof Float32Array)||color.rgb.length!==input.positions.length||color.alphas.length!==input.positions.length/3)throw new Error('源 Processing 顶点颜色缓冲无效');
-  for(const values of [color.rgb,color.alphas])for(const value of values)if(!Number.isFinite(value)||value<0||value>1)throw new Error('源 Processing 顶点颜色必须在 0 至 1 范围');
+  for(const values of [color.rgb,color.alphas])for(let i=0;i<values.length;i++){if((i&4095)===0)check();const value=values[i];if(!Number.isFinite(value)||value<0||value>1)throw new Error('源 Processing 顶点颜色必须在 0 至 1 范围');}
  }else throw new Error('未知源 Processing 线条颜色类型');
- const buffers=sourceProcessingLineInstances(input.positions,input.lineWidth,plan,input.indices),count=buffers.count,colors=new Float32Array(count*8);
- if(color.kind==='packed')for(let o=0;o<colors.length;o+=4)writeSourcePackedColor(color.packed,colors,o,displayOpacity);
+ const buffers=retained?sourceProcessingRetainedLineInstances({...input,colorBuffers:color.kind==='vertices'?[color.rgb,color.alphas]:[]}):sourceProcessingLineInstances(input.positions,input.lineWidth,plan,input.indices),count=buffers.count,colors=new Float32Array(count*8);
+ if(color.kind==='packed')for(let o=0;o<colors.length;o+=4){if((o&4095)===0)check();writeSourcePackedColor(color.packed,colors,o,displayOpacity);}
  else for(let pair=0;pair<count;pair++)for(let v=0;v<2;v++){
+  if((pair&1023)===0)check();
   const endpoint=pair*2+v,index=input.indices?input.indices[endpoint]:endpoint,o=pair*8+v*4;
   colors[o]=color.rgb[index*3];colors[o+1]=color.rgb[index*3+1];colors[o+2]=color.rgb[index*3+2];colors[o+3]=F(color.alphas[index]*displayOpacity);
  }
- const geometry=new THREE.InstancedBufferGeometry();let material:THREE.RawShaderMaterial|undefined;
+ check();const geometry=new THREE.InstancedBufferGeometry();let material:THREE.RawShaderMaterial|undefined;
  try{
   geometry.setAttribute('strokeVertex',new THREE.BufferAttribute(new Float32Array([0,1,2,3]),1));
   const endpoints=new THREE.InstancedInterleavedBuffer(buffers.positions,8),directions=new THREE.InstancedInterleavedBuffer(buffers.directions,8),rgba=new THREE.InstancedInterleavedBuffer(colors,8);
@@ -41,7 +47,7 @@ export function createSourceProcessingLines(input:SourceProcessingLineInput,plan
   material=new THREE.RawShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:sourceProcessingInstancedLineVertex,fragmentShader:sourceProcessingLineFragment,
    side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:!overlay,depthWrite:!overlay,depthFunc:THREE.LessEqualDepth,toneMapped:false,
    blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquationAlpha:THREE.AddEquation,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor,
-   uniforms:{lineModelview:{value:new THREE.Matrix4()},projection:{value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)},viewport:{value:new THREE.Vector4(...display.viewport)},perspective:{value:display.perspective},scale:{value:new THREE.Vector3(...display.scale)}}});
+   uniforms:{lineModelview:{value:retained?new THREE.Matrix4().fromArray(plan.modelView.columnMajor):new THREE.Matrix4()},projection:{value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)},viewport:{value:new THREE.Vector4(...display.viewport)},perspective:{value:display.perspective},scale:{value:new THREE.Vector3(...display.scale)}}});
   const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;mesh.renderOrder=1;mesh.userData.sourceProcessingLines=true;return mesh;
  }catch(error){geometry.dispose();material?.dispose();throw error;}
 }

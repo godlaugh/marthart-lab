@@ -16,6 +16,7 @@ import {usesSourcePerlin} from '../engine/sourcePerlinIdentity';
 import {sourceQueuePresentedScene} from '../engine/sourceQueuePresentation';
 import {usesSourceBouncing} from '../engine/sourceBouncingDocument';
 import {prepareSourceBouncingExport,sourceBouncingExportContext,assertSourceBouncingExportFrame,type SourceBouncingPresentedExport} from '../engine/sourceBouncingExport';
+import {usesSourceImplicitCpuMesh} from '../engine/sourceImplicitPresentation';
 import {usesSourceSurfaceParticles} from '../engine/sourceSurfaceIdentity';
 import {ordinarySourceViewport} from '../engine/ordinarySourceCamera';
 import { useEffect, useRef, useState } from "react";
@@ -293,7 +294,7 @@ export function ExportDialog({
       const bouncing=bouncingPlan?.ok?bouncingPlan.value:undefined;
       const timeline=sourceFrames||sourceBouncing||perlinFrames||fractalFrames?exportScene.timeline:resolveTimeline(exportScene);
       if(exportScene.sourceCamera&&previewLogicalHeight===undefined)throw new Error('原版相机导出缺少预览逻辑高度，请等待预览完成');
-      if(usesSourceSurfaceParticles(exportScene)&&previewPointPixelDensity===undefined)throw new Error('源曲面点导出缺少已呈现预览的像素密度，请等待预览完成');
+      if((usesSourceSurfaceParticles(exportScene)||usesSourceImplicitCpuMesh(exportScene))&&previewPointPixelDensity===undefined)throw new Error('源几何导出缺少已呈现预览的像素密度，请等待预览完成');
       if(usesSourcePerlin(exportScene)&&!sourcePerlinViewport)throw new Error('Perlin 导出缺少已呈现的预览尺寸，请等待预览完成');
       if(usesSourceSamilaSplat(exportScene)&&samilaPrimaryPixelHeight===undefined)throw new Error('Samila 导出缺少主画布物理高度，请等待预览完成');
       if(usesSourceMapPresentation(exportScene)&&sourceMapToneReference===undefined)throw Error('Map 导出缺少已呈现主画布尺寸，请等待预览完成');
