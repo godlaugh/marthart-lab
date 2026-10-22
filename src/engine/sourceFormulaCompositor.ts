@@ -34,12 +34,15 @@ export class SourceFormulaCompositor {
  private rect:WebGLUniformLocation;
  private size:WebGLUniformLocation;
  private disposed=false;
+ private anisotropy?:{parameter:number;maximum:number};
  constructor(canvas=document.createElement('canvas')){
   this.canvas=canvas;
   const gl=canvas.getContext('webgl2',{alpha:true,antialias:false,premultipliedAlpha:true,preserveDrawingBuffer:true,depth:false,stencil:false});
   if(!gl)throw new Error('源公式需要 WebGL 2');this.gl=gl;
   const shaders:WebGLShader[]=[];let program:WebGLProgram|null=null,buffer:WebGLBuffer|null=null,texture:WebGLTexture|null=null;
   try{
+   const extension=gl.getExtension('EXT_texture_filter_anisotropic');
+   if(extension){const maximum=gl.getParameter(extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT);if(typeof maximum!=='number'||!Number.isFinite(maximum)||maximum<1)throw new Error('公式纹理过滤能力无效');this.anisotropy={parameter:extension.TEXTURE_MAX_ANISOTROPY_EXT,maximum};}
    const shader=(type:number,source:string)=>{const s=gl.createShader(type);if(!s)throw new Error('无法创建公式着色器');shaders.push(s);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error('公式着色器编译失败');return s;};
    program=gl.createProgram();if(!program)throw new Error('无法创建公式绘图程序');
    gl.attachShader(program,shader(gl.VERTEX_SHADER,`#version 300 es
@@ -60,7 +63,7 @@ precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(
  private upload(texture:WebGLTexture,width:number,height:number,pixels:Uint8Array|Uint8ClampedArray,mipmap:boolean){
   const gl=this.gl;gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,mipmap?gl.LINEAR:gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,mipmap?gl.LINEAR_MIPMAP_LINEAR:gl.NEAREST);if(mipmap)gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,mipmap?gl.LINEAR:gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,mipmap?gl.LINEAR_MIPMAP_LINEAR:gl.NEAREST);if(mipmap){gl.generateMipmap(gl.TEXTURE_2D);if(this.anisotropy)gl.texParameterf(gl.TEXTURE_2D,this.anisotropy.parameter,this.anisotropy.maximum);}
  }
  draw(prepared:PreparedSourceFormula,width:number,height:number,base:Uint8ClampedArray){
   this.check();const gl=this.gl;
@@ -74,7 +77,7 @@ precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(
   gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
   prepared.glyphs.forEach((glyph,index)=>{
    let texture=this.textures.get(glyph);if(!texture){texture=gl.createTexture()??undefined;if(!texture)throw new Error('无法创建公式纹理');this.textures.set(glyph,texture);this.upload(texture,glyph.width,glyph.height,glyph.pixels,true);}else gl.bindTexture(gl.TEXTURE_2D,texture);
-   const p=formulaPlacement(prepared.presentation,prepared.presentation.labels[index],width,height,glyph);gl.uniform4f(this.rect,p.x,p.y,glyph.width*p.scale,glyph.height*p.scale);gl.drawArrays(gl.TRIANGLES,0,6);
+   const p=formulaPlacement(prepared.presentation,prepared.presentation.labels[index],width,height,{width:glyph.width,height:glyph.height,fontSize:glyph.fontSize,centerAnchor:'integer-half-size'});gl.uniform4f(this.rect,p.x,p.y,glyph.width*p.scale,glyph.height*p.scale);gl.drawArrays(gl.TRIANGLES,0,6);
   });
   this.check();if(gl.getError()!==gl.NO_ERROR)throw new Error('源公式 GPU 合成失败');
  }

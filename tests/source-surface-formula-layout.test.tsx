@@ -1,3 +1,4 @@
+import imageCenters from './fixtures/source-formula-image-center/native.json';
 import * as formulas from '../src/engine/formulas';
 import {describe,it,expect,vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
@@ -41,6 +42,15 @@ describe('new source Surface formula layout',()=>{
   expect([nativeGlyph.width*native.scale,nativeGlyph.height*native.scale]).toEqual([glyph.width*legacy.scale,glyph.height*legacy.scale]);
   expect(formulaPlacement(p,label,200,100,nativeGlyph)).toEqual({x:47.5,y:57.5,scale:.25});
   expect(formulaPlacement(p,label,800,400,nativeGlyph)).toEqual({x:190,y:230,scale:1});
+ });
+ it.each(imageCenters.cases)('uses original integer CENTER anchors for native $width × $height textures',({width,height,rect})=>{
+  const p=sourcePresentation(100),label={...p.labels[0],x:0,y:0,scale:1};
+  for(const factor of [.25,1,2]){
+   const placement=formulaPlacement(p,label,200*factor,100*factor,{width,height,fontSize:50,centerAnchor:'integer-half-size'});
+   expect([placement.x-100*factor,placement.y-50*factor,placement.x+width*placement.scale-100*factor,placement.y+height*placement.scale-50*factor]).toEqual(rect.map(n=>n*factor));
+  }
+  // A vector asset with the same font size still uses its geometric center.
+  expect(formulaPlacement(p,label,200,100,{width,height,fontSize:50})).toEqual({x:100-width/2,y:50-height/2,scale:1});
  });
  it('retains legacy local/saved layouts and does not infer a source model for other families',()=>{
   const s=createScene(definition('surface'));s.formulas=defaultFormulas();s.formulas.main={visible:true,x:640,y:520,scale:.625,color:'#ffffff',anchor:'center',latex:'x'};

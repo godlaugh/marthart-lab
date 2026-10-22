@@ -41,14 +41,18 @@ export function presentFormulas(content:FormulaContent,viewport?:SourceCameraVie
   return validateFormulaPresentation(content.layout==='source-surface-centered-v1'?{...content,primaryLogicalHeight:sourceFormulaPrimaryHeight(viewport)}:content);
 }
 export function formulaPresentation(scene:SceneDocument,viewport?:SourceCameraViewport):FormulaPresentation {return presentFormulas(resolveFormulaContent(scene),viewport);}
-export function formulaPlacement(config:FormulaPresentation|FormulaConfig,label:FormulaLabel,width:number,height:number,dimensions?:{width:number;height:number;fontSize?:number}){
+export function formulaPlacement(config:FormulaPresentation|FormulaConfig,label:FormulaLabel,width:number,height:number,dimensions?:{width:number;height:number;fontSize?:number;centerAnchor?:'integer-half-size'}){
   if(config.layout==='source-surface-centered-v1'){
     if(!('primaryLogicalHeight' in config)||!Number.isFinite(config.primaryLogicalHeight)||config.primaryLogicalHeight<=0)throw new Error('源曲面公式缺少实际主画布尺寸');
     const fontSize=dimensions?.fontSize??20;if(!Number.isFinite(fontSize)||fontSize<=0)throw new Error('公式字号无效');
     const ratio=height/config.primaryLogicalHeight,scale=label.scale*(50/fontSize)*ratio;
     // Source glyphs use 50 units; legacy SVG consumers use 20. This is a
     // font-unit conversion, independent of viewport size and aspect ratio.
-    return{x:width/2+label.x*ratio-(dimensions?.width??0)*scale/2,y:height/2+label.y*ratio-(dimensions?.height??0)*scale/2,scale};
+    const halfWidth=(dimensions?.width??0)/2,halfHeight=(dimensions?.height??0)/2;
+    // PGraphics.image(PImage,x,y) in CENTER mode shifts by integer half
+    // dimensions before applying the transform; SVGs use geometric centers.
+    const integerCenter=dimensions?.centerAnchor==='integer-half-size';
+    return{x:width/2+label.x*ratio-(integerCenter?Math.floor(halfWidth):halfWidth)*scale,y:height/2+label.y*ratio-(integerCenter?Math.floor(halfHeight):halfHeight)*scale,scale};
   }
   const scale=label.scale*Math.min(width/config.referenceWidth,height/config.referenceHeight),center=label.anchor==='center';
   return{x:label.x*width/config.referenceWidth-(center?(dimensions?.width??0)*scale/2:0),y:label.y*height/config.referenceHeight-(center?(dimensions?.height??0)*scale/2:0),scale};

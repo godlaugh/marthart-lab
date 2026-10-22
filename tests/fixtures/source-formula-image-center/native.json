@@ -1,0 +1,122 @@
+{
+  "provenance": {
+    "product": "MathArt 1.7.8",
+    "processing": "bundled core 4.5.0",
+    "method": "Original PGraphics.image(PImage,float,float), CENTER, invoked in a subclass that records imageImpl arguments without a window or GL",
+    "classSha256": "d495bc8e9b3f6855759da98715874d9f95aed561664c12edf792a08abcb5e818"
+  },
+  "cases": [
+    {
+      "width": 1100,
+      "height": 259,
+      "rect": [
+        -550.0,
+        -129.0,
+        550.0,
+        130.0
+      ],
+      "uv": [
+        0,
+        0,
+        1100,
+        259
+      ]
+    },
+    {
+      "width": 952,
+      "height": 323,
+      "rect": [
+        -476.0,
+        -161.0,
+        476.0,
+        162.0
+      ],
+      "uv": [
+        0,
+        0,
+        952,
+        323
+      ]
+    },
+    {
+      "width": 1038,
+      "height": 353,
+      "rect": [
+        -519.0,
+        -176.0,
+        519.0,
+        177.0
+      ],
+      "uv": [
+        0,
+        0,
+        1038,
+        353
+      ]
+    },
+    {
+      "width": 1344,
+      "height": 229,
+      "rect": [
+        -672.0,
+        -114.0,
+        672.0,
+        115.0
+      ],
+      "uv": [
+        0,
+        0,
+        1344,
+        229
+      ]
+    },
+    {
+      "width": 1343,
+      "height": 319,
+      "rect": [
+        -671.0,
+        -159.0,
+        672.0,
+        160.0
+      ],
+      "uv": [
+        0,
+        0,
+        1343,
+        319
+      ]
+    },
+    {
+      "width": 820,
+      "height": 229,
+      "rect": [
+        -410.0,
+        -114.0,
+        410.0,
+        115.0
+      ],
+      "uv": [
+        0,
+        0,
+        820,
+        229
+      ]
+    },
+    {
+      "width": 170,
+      "height": 72,
+      "rect": [
+        -85.0,
+        -36.0,
+        85.0,
+        36.0
+      ],
+      "uv": [
+        0,
+        0,
+        170,
+        72
+      ]
+    }
+  ]
+}

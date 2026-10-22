@@ -2,6 +2,8 @@
 
 2026-10-22。本轮已把独立字形服务接到源曲面预览、PNG 和录制。Cornucopia 公式第三行的平均 RGB 差异从 **18.57394 降到 0.92515**，约减少 95%。这仍是局部区域比较，11 类场景的原版整图验收保持 **0/11**。
 
+后续已修正原版整数居中与最大各向异性过滤，同一区域差异降至 6 个像素、平均 RGB 差 0.00606，见[后续验收](source-formula-centering-validation.zh-CN.md)。本文保留初次合成接入时的历史测量。
+
 ## 实际改变
 
 新导入曲面的 `source-surface-centered-v1` 布局使用独立 JLaTeXMath 字形的原始宽高、50 字号和 straight RGBA。纹理生成 mipmap，缩小时采用三线性插值；RGB 混合采用 SRC_ALPHA / ONE_MINUS_SRC_ALPHA，alpha 采用 ONE / ONE。依据是已保留的原版 Texture 与 PGraphicsOpenGL 代码证据。

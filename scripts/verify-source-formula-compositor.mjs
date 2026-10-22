@@ -37,7 +37,9 @@ try{
    const decoded=await createImageBitmap(rawPng);const c=document.createElement('canvas');c.width=width;c.height=height;const ctx=c.getContext('2d');ctx.drawImage(decoded,0,0);decoded.close();check('actual PNG export retains compositor pixels',await hash(ctx.getImageData(0,0,width,height).data)===await hash(pixels));
    const decodedPaused=await createImageBitmap(pausedPng);ctx.clearRect(0,0,width,height);ctx.drawImage(decodedPaused,0,0);decodedPaused.close();check('paused PNG enhances only after formula composition',await hash(ctx.getImageData(0,0,width,height).data)===await hash(enhanceSourcePausedImage(pixels,width,height)));
    const glyph=prepared.glyphs[0],alphaBase=new Uint8ClampedArray(glyph.width*glyph.height*4);for(let i=0;i<alphaBase.length;i+=4)alphaBase.set([20,40,60,70],i);
-   const exact={...prepared,presentation:{...presentation,primaryLogicalHeight:glyph.height,labels:[{...label,x:0,y:0,scale:1}]}};
+   // Native CENTER rounds image half-extents down; offset an odd-sized texture
+   // so this blend-only check still samples its texels at exactly 1:1.
+   const exact={...prepared,presentation:{...presentation,primaryLogicalHeight:glyph.height,labels:[{...label,x:Math.floor(glyph.width/2)-glyph.width/2,y:Math.floor(glyph.height/2)-glyph.height/2,scale:1}]}};
    renderer.draw(exact,glyph.width,glyph.height,alphaBase);const alpha=renderer.readPixels();let maxRgb=0,maxAlpha=0;
    for(let i=0;i<alpha.length;i+=4){const a=glyph.pixels[i+3];for(let k=0;k<3;k++)maxRgb=Math.max(maxRgb,Math.abs(alpha[i+k]-Math.round(glyph.pixels[i+k]*a/255+alphaBase[i+k]*(1-a/255))));maxAlpha=Math.max(maxAlpha,Math.abs(alpha[i+3]-Math.min(255,70+a)));}
    check('translucent base uses source RGB blend and additive alpha',maxRgb<=1&&maxAlpha===0);
