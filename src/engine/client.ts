@@ -25,6 +25,16 @@ function validOutputFormulas(output:SceneOutput,required=false):boolean {
   try{if(output?.type!=='raster')return !required;if(output.formulaPresentation===undefined)return !required;output.formulaPresentation=validateFormulaPresentation(output.formulaPresentation);return true;}
   catch{return false;}
 }
+type RasterRecordingResponse=
+ |(Omit<Extract<GenerationResponse,{operation:'source-recording-begin'}>,'result'>&{result:Omit<SourceRecordingStart,'handle'>})
+ |(Omit<Extract<GenerationResponse,{operation:'source-recording-frame'}>,'output'>&{output:SourceRecordingRaster})
+ |(Omit<Extract<GenerationResponse,{operation:'source-recording-finish'}>,'result'>&{result:SourceRecordingStop});
+/** Wire recording now permits geometry; existing pixel consumers must narrow
+ * before validating their family-specific metadata or granting a capability. */
+function rasterRecordingResponse(value:GenerationResponse):value is RasterRecordingResponse {
+ if('error' in value)return false;
+ return value.operation==='source-recording-begin'?value.result?.warmup?.type==='raster':value.operation==='source-recording-frame'?value.output?.type==='raster':value.operation==='source-recording-finish'&&value.result?.preview?.type==='raster';
+}
 function recordingRaster(value:unknown,family:string):value is SourceRecordingRaster {
   const v=value as SourceRecordingRaster|undefined;return !!v&&v.type==='raster'&&Number.isSafeInteger(v.width)&&v.width>0&&Number.isSafeInteger(v.height)&&v.height>0&&v.pixels instanceof Uint8ClampedArray&&v.pixels.byteLength===v.width*v.height*4&&(family==='domain'?!!v.domainLive&&!!v.domainRender:family==='fractal'?!!v.fractalLive&&!!v.fractalRender:family==='perlin'?!!v.sourcePerlinFrame:family==='map'?!!v.mapLive:family==='symmetry'&&!!v.symmetryLive);
 }
@@ -268,6 +278,7 @@ export class Generator {
         const fractal=this.recording?.fractal,domain=this.recording?.domain;
         const matching=data.operation===p.operation&&('error' in data||('recordingId' in data&&data.recordingId===p.handle.recordingId&&(p.operation!=='source-recording-frame'||('displayFrame' in data&&data.displayFrame===p.displayFrame))));
         if(!matching){this.invalidate(new SourceRecordingOperationError('源场景后台录制响应身份不匹配',false,false));return;}
+        if(!('error' in data)&&!rasterRecordingResponse(data)){this.invalidate(new SourceRecordingOperationError('当前录制客户端需要像素输出',false,false));return;}
         if(!('error' in data)){
           let valid=false;try{valid=family==='domain'?!!domain&&(data.operation==='source-recording-begin'
             ?data.result?.scene?.kind===family&&data.result.scene.id===domain.sceneId&&validDomainRecordingContext(data.result.context,domain)&&data.result.context.time===0&&Object.is(Math.fround(data.result.context.domainLive!.actualFrameRate),Math.fround(domain.options.actualFrameRate!))&&validDomainRecordingOutput(data.result.warmup,domain,data.result.clock,0,domain.options.actualFrameRate!)

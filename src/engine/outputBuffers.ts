@@ -13,3 +13,10 @@ export function outputBuffers(output:SceneOutput):ArrayBuffer[]{
   ];
   return [...new Set(arrays.filter(value=>value!==undefined).map(value=>value!.buffer as ArrayBuffer))];
 }
+
+/** Snapshot storage validity before publication. Zero-length arrays can be
+ * legitimate (GPU geometry), so later byte lengths alone cannot detect detach. */
+export function outputTransferState(output:SceneOutput):{intact:()=>boolean}{
+ const buffers=outputBuffers(output).map(buffer=>({buffer,bytes:buffer.byteLength}));
+ return{intact:()=>{try{return buffers.every(({buffer,bytes})=>{if(buffer.byteLength!==bytes)return false;new Uint8Array(buffer,0,0);return true;});}catch{return false;}}};
+}

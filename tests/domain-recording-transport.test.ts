@@ -105,7 +105,7 @@ describe('Domain recording production transport',()=>{
  it('rejects a stop that invents another numerical update',async()=>{
   const f=await setup(),start=await f.g.beginSourceRecording(f.output,options);
   corrupt=message=>{if(message.operation==='source-recording-finish'&&!('error' in message)){
-   const out=message.result.preview,live=out.domainLive!;live.updateOrdinal++;live.presentation.evaluatedDomainScene!.displayFrame++;out.domainRender={...out.domainRender!,sourceClock:{...out.domainRender!.sourceClock!,displayFrame:out.domainRender!.sourceClock!.displayFrame+1}};
+   const out=message.result.preview;if(out.type!=='raster')throw Error('expected domain raster');const live=out.domainLive!;live.updateOrdinal++;live.presentation.evaluatedDomainScene!.displayFrame++;out.domainRender={...out.domainRender!,sourceClock:{...out.domainRender!.sourceClock!,displayFrame:out.domainRender!.sourceClock!.displayFrame+1}};
   }};
   await expect(f.g.finishSourceRecording(start.handle)).rejects.toMatchObject({recordingRetained:false});expect(port.terminated).toBe(true);f.g.dispose();
  });

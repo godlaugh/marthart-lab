@@ -6,7 +6,7 @@ import { searchStableAttractor } from './stableSearch';
 import { exploreComplex } from './complexExplore';
 import type { GenerationRequest, GenerationPayload } from './generationProtocol';
 import {isPausedCaptureOperation,isSourceRecordingOperation} from './generationProtocol';
-import {outputBuffers} from './outputBuffers';
+import {outputBuffers,outputTransferState} from './outputBuffers';
 import {planRootsFreshRecording} from './rootsRecording';
 import type {GenerationInput,SceneDocument} from '../types';
 import {enhanceSourcePausedImage,sourcePausedImageBytes} from './sourcePausedImage';
@@ -17,11 +17,13 @@ import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-function recordingProducer(scene:SceneDocument){return scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+function recordingProducer(scene:SceneDocument){return scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
 type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
 type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
-type RecordingRaster=RuntimeStart['warmup'];
-let recording:{id:number;producer:RecordingProducer;runtime:RuntimeStart;finish?:ReturnType<RecordingProducer['finishRecording']>;preview?:RecordingRaster;pendingFrame?:{index:number;actualFrameRate?:number;output:RecordingRaster}}|undefined;
+type RecordingOutput=RuntimeStart['warmup'];
+type PublishedOutput={output:RecordingOutput;storage:ReturnType<typeof outputTransferState>};
+const publication=(output:RecordingOutput):PublishedOutput=>({output,storage:outputTransferState(output)});
+let recording:{id:number;producer:RecordingProducer;runtime:RuntimeStart;finish?:ReturnType<RecordingProducer['finishRecording']>;preview?:PublishedOutput;pendingFrame?:PublishedOutput&{index:number;actualFrameRate?:number}}|undefined;
 function retainsRecording(){
  if(!recording)return false;
  return recording.finish?recording.producer.matchesCompletedPrimary(recording.finish.scene,recording.finish.context):recording.producer.ownsRecording(recording.runtime.handle);
@@ -139,31 +141,30 @@ self.onmessage = (
         if(!Number.isSafeInteger(displayFrame)||displayFrame<1)throw new Error('源场景录制帧序号无效');
         const pending=lease.pendingFrame;
         if(pending&&pending.index!==displayFrame)throw new Error('源场景上一录制帧尚未交付，请重试该帧或结束录制');
-        if(pending&&lease.producer===temporalSession.sourceDomain&&!Object.is(pending.actualFrameRate,event.data.actualFrameRate))throw new Error('域着色未交付帧重试不能改变实际帧率');
-        const output=pending?.output??(lease.producer===temporalSession.sourceDomain?lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame,event.data.actualFrameRate):lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame));
-        if(output.pixels.byteLength!==output.width*output.height*4)throw new Error('源场景录制帧传输状态未知，请结束录制');
-        lease.pendingFrame={index:displayFrame,actualFrameRate:event.data.actualFrameRate,output};
+        if(pending&&(lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface)&&!Object.is(pending.actualFrameRate,event.data.actualFrameRate))throw new Error('源场景未交付帧重试不能改变实际帧率');
+        if(pending&&!pending.storage.intact())throw new Error('源场景录制帧传输状态未知，请结束录制');
+        const output=pending?.output??(lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface?lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame,event.data.actualFrameRate):lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame));
+        if(output.type==='raster'&&output.pixels.byteLength!==output.width*output.height*4)throw new Error('源场景录制帧传输状态未知，请结束录制');
+        lease.pendingFrame=pending??{...publication(output),index:displayFrame,actualFrameRate:event.data.actualFrameRate};
         send({operation:event.data.operation,id,recordingId:lease.id,displayFrame,output},outputBuffers(output));lease.pendingFrame=undefined;return;
       }
       // finishRecording mutates runtime ownership exactly once. If publication
       // fails, retain its result and completed preview for an explicit retry.
       lease.finish??=lease.producer.finishRecording(lease.runtime.handle);
-      if('preview' in lease.finish&&lease.finish.preview.pixels.byteLength!==lease.finish.preview.width*lease.finish.preview.height*4){
-        // The owner retains a bounded, same-handle snapshot handoff until the
-        // next live operation. Rebind pixels detached by uncertain publication
-        // without resetting host time or advancing the scene a second time.
+      if(lease.preview&&!lease.preview.storage.intact()&&'preview' in lease.finish){
+        // The retained numerical handoff republishes detached buffers without
+        // another update or host-clock reset, for raster and geometry owners.
         lease.finish=lease.producer.finishRecording(lease.runtime.handle);
       }
       const {scene,context}=lease.finish;
-      if(!lease.preview||lease.preview.pixels.byteLength!==lease.preview.width*lease.preview.height*4){
-        // Fractal stop already restores primary from the final numerical
-        // snapshot. A generic generate here would advance its live queue.
+      if(!lease.preview||!lease.preview.storage.intact()){
         const output='preview' in lease.finish?lease.finish.preview:generateScene(scene,context,temporalSession);
-        if(output.type!=='raster')throw new Error('源场景录制结束没有生成主预览');
-        lease.preview=output;
+        if(output.type!=='raster'&&!(output.type==='geometry'&&output.surfaceLive))throw new Error('源场景录制结束没有生成主预览');
+        lease.preview=publication(output);
       }
-      const resumed={...context,time:lease.preview.domainLive?.sceneTime??lease.preview.fractalLive?.sceneTime??lease.preview.mapLive?.sceneTime??lease.preview.symmetryLive?.sceneTime??context.time};
-      send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview:lease.preview}},outputBuffers(lease.preview));
+      const preview=lease.preview.output;
+      const resumed={...context,time:preview.type==='geometry'?preview.surfaceLive!.frame.sceneTime:preview.domainLive?.sceneTime??preview.fractalLive?.sceneTime??preview.mapLive?.sceneTime??preview.symmetryLive?.sceneTime??context.time};
+      send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview}},outputBuffers(preview));
       completed={id,scene,context:resumed};recording=undefined;return;
     }
     if(event.data.operation==='roots-paused-capture'||event.data.operation==='perlin-paused-capture'||event.data.operation==='samila-paused-capture'||event.data.operation==='symmetry-paused-capture'||event.data.operation==='map-paused-capture'||event.data.operation==='fractal-paused-capture'||event.data.operation==='domain-paused-capture'){

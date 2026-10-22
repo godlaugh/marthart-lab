@@ -47,3 +47,5 @@
 - `.cache/surface-recording-import-ui-final/`：6 组界面操作、截图、PNG 及 Worker 审计。
 
 `.cache` 为本机证据，不进入 Git。可使用 `scripts/source-surface-scene/run.py --cases scripts/source-surface-scene/recording-cases.json` 复现原版数值；浏览器和 App 分别由 `scripts/verify-source-surface-recording.mjs`、`scripts/verify-source-surface-ui.mjs` 复现。
+
+后续进展：后台几何传输与真实 Worker 绘制验证已完成，见[曲面录制后台传输验收](source-surface-recording-transport-validation.zh-CN.md)。生产客户端、界面及编码仍待接入。

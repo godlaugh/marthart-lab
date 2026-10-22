@@ -177,6 +177,9 @@ export class SourceSurfaceLiveSession {
    if(!record.finished){this.owned!.clock.resetTime(timestampMs);record.finished=this.owned!.queue.snapshot();}
    const primary=snapshotGenerationInput(record.primary);primary.time=record.finished.sceneTime;
    primary.surfaceLive!.actualFrameRate=record.pending?.actualFrameRate??record.actualFrameRate;
+   // A prior Worker publication transferred the display buffers. Render the
+   // same numerical state again; snapshot alone can expose detached mesh data.
+   try{this.owned!.queue.display();}catch(error){this.failed=true;throw error;}
    const preview=this.display(this.owned!,record.finished,primary,'snapshot');if(preview.type!=='geometry')throw Error('曲面录制结束缺少主预览');
    this.completed={sceneId:record.author.id,context:snapshotGenerationInput(primary)};this.recording=undefined;this.handoff=record;
    return{scene:structuredClone(record.author),context:primary,preview};
