@@ -1,3 +1,5 @@
+import {generateScene,TemporalGenerationSession} from '../src/engine/temporal';
+import type {GenerateContext} from '../src/types';
 import {describe,it,expect} from 'vitest';
 import {parseLegacyScene,parseProjectFile} from '../src/engine/legacyImport';
 import {sourceLivePreviewKind} from '../src/engine/sourceLivePreview';
@@ -31,6 +33,16 @@ describe('source live preview compatibility and delivered presentation',()=>{
   expect(timelineWarnings(source,'fixed').some(text=>text.includes('固定回放'))).toBe(true);
   expect(timelineWarnings(source,'realtime').some(text=>text.includes('实际经过时间'))).toBe(true);
   expect(timelineWarnings(source,'realtime').some(text=>text.includes('固定回放'))).toBe(false);
+ });
+ it('opts source Surface into live preview and presents its delivered camera without replay',()=>{
+  const source=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'Surface live',equations:{x:'u',y:'v',z:'0'},settings:{surface_mode:'MESH',mesh_u_segments:2,mesh_v_segments:2},timeline:[{type:'animate',duration:1,actions:[{method:'ambient',args:[.1,.2,.3]}]}]})).scene;
+  expect(sourceLivePreviewKind(source)).toBe('surface');
+  const local=structuredClone(source);delete local.settings.surfaceGeometryVersion;expect(sourceLivePreviewKind(local)).toBeUndefined();
+  const context=(timestampMs:number):GenerateContext=>({time:999,quality:'preview',width:64,height:48,sourceViewport:ordinarySourceViewport(source,64,48,'primary',48),surfaceLive:{sessionId:'surface',revision:0,clock:{paused:false,timestampMs},actualFrameRate:37}});
+  const owner=new TemporalGenerationSession();generateScene(source,context(1000),owner);const output=generateScene(source,context(1237),owner);
+  const presented=sourceQueuePresentedScene(source,output)!;
+  expect(presented.evaluatedSourceCamera).toBe(output.sourceCameraFrame);expect(presented.timeline).toBe(source.timeline);
+  expect(presented.evaluatedSourceCamera!.camera).not.toEqual(ordinarySourceCameraInitial(source));expect(source.evaluatedSourceCamera).toBeUndefined();
  });
  it('presents the delivered live camera even at signed time, without fixed reconstruction or authored changes',()=>{
   const source=scene(),before=structuredClone(source);

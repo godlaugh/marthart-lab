@@ -14,7 +14,7 @@ try{
  const page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await page.route('**/surface-live-verifier',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Surface live verification</title>'}));await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/surface-live-verifier`);
  report.rows=await page.evaluate(async()=>{
-  const {Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),THREE=await import('/node_modules/three/build/three.module.js');
+  const {GenerationQueue}=await import('/src/engine/generationQueue.ts'),{Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts'),THREE=await import('/node_modules/three/build/three.module.js');
   const check=(v,m)=>{if(!v)throw Error(m);},digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
   const rows=[];
   for(const backend of ['CPU','GPU'])for(const mode of backend==='CPU'?['POINTS','MESH','SWITCH']:['POINTS','MESH']){
@@ -51,7 +51,32 @@ try{
     const editCurrent=await g.currentSurface(edited);check(await render(editCurrent,s)===editedHash,'unknown parameter changed pixels');
     let failed=false;try{await g.generate(draft,input(0,{revision:1,clock:{paused:true},actualFrameRate:NaN}));}catch{failed=true;}check(failed,'invalid observation accepted');
     const recovered=await g.generate(s,input(20000,{sessionId:backend+mode+'-new'}));check(recovered.surfaceLive.frame.sceneTime===0&&recovered.surfaceLive.constructions===1,'worker did not recover');check(await render(recovered)===firstHash,'recovery pixels differ');
-    rows.push({backend,mode,passed:true,transitions,completedRequestMs:{coldWorker:coldMs,warmRetainedWorker:warmMs},frames:[first,moving,paused,resumed].map(o=>o.surfaceLive),pixels:{initial:firstHash,moving:movedHash,resumed:resumedHash,applied:appliedHash},parameterEdit:{sameQueue:true,pixels:editedHash,deferredCpuPoints,unknownIgnored:true,invalidRejected:true},pauseAndRepeatedCurrentStable:true,staleRejected:true,invalidObservationRejected:true,recovered:true});
+    let delivery,queueError,lastQueueOutput;const queueGenerator=new Generator();
+    const queue=new GenerationQueue(queueGenerator,{
+     output:(output,time,scene)=>{lastQueueOutput={output,time,scene};},
+     error:error=>{queueError=error;},
+     busy:busy=>{if(!busy&&delivery){const {resolve,reject}=delivery;delivery=undefined;queueError?reject(queueError):resolve(lastQueueOutput);}},
+    });
+    const request=(scene,context,intent,writes)=>new Promise((resolve,reject)=>{check(!delivery,'overlapping verifier request');delivery={resolve,reject};queueError=undefined;queue.request(scene,context,0,intent,writes);});
+    let queueFacts;
+    try{
+     const qContext=()=>input(0,{sessionId:'queue-'+backend+mode,clock:{paused:true}});
+     const qFirst=await request(s,qContext());check(qFirst.time===0,'queue published caller time');
+     const editScene={...s,parameters:{...s.parameters,a:.75}},qEdit=await request(editScene,qContext(),undefined,[['a',.75]]);
+     check(qEdit.output.surfaceLive.constructions===1&&qEdit.time===0,'queue edit rebuilt or advanced');
+     const qEditHash=await render(qEdit.output,editScene);
+     const renamed={...editScene,name:'Queue metadata'},qMeta=await request(renamed,qContext(),'metadata');
+     check(qMeta.output===qEdit.output&&qMeta.scene===renamed,'metadata lost completed capability');
+     const appliedScene={...s,parameters:{...s.parameters,a:-.5}},applyContext=qContext();applyContext.surfaceLive={...applyContext.surfaceLive,revision:1,configuration:appliedScene};
+     const qApply=await request(appliedScene,applyContext);check(qApply.output.surfaceLive.constructions===2&&qApply.time===0&&qApply.output.surfaceLive.paused,'Apply did not reset paused owner');
+     const qApplyHash=await render(qApply.output,appliedScene);check(qApplyHash!==qEditHash,'Apply pixels did not change');
+     await queue.setSurfacePaused(false);
+     const running=qContext();running.surfaceLive={...running.surfaceLive,revision:1,clock:{paused:false}};
+     const qResume=await request(appliedScene,running);check(!qResume.output.surfaceLive.paused&&qResume.output.surfaceLive.constructions===2,'queue resume rebuilt');
+     await queue.setSurfacePaused(true);
+     queueFacts={passed:true,parameterEditPixels:qEditHash,applyPixels:qApplyHash,metadataReusedOutput:true,applyKeptPause:true,resumeKeptOwner:true};
+    }finally{queue.dispose();}
+    rows.push({backend,mode,passed:true,queue:queueFacts,transitions,completedRequestMs:{coldWorker:coldMs,warmRetainedWorker:warmMs},frames:[first,moving,paused,resumed].map(o=>o.surfaceLive),pixels:{initial:firstHash,moving:movedHash,resumed:resumedHash,applied:appliedHash},parameterEdit:{sameQueue:true,pixels:editedHash,deferredCpuPoints,unknownIgnored:true,invalidRejected:true},pauseAndRepeatedCurrentStable:true,staleRejected:true,invalidObservationRejected:true,recovered:true});
    }finally{g.dispose();rt.dispose();renderer.dispose();renderer.renderer.forceContextLoss();}
   }
   return rows;

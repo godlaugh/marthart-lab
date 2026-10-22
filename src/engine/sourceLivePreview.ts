@@ -1,3 +1,4 @@
+import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {usesSourceDomain} from './sourceDomainTimeline';
 import {usesSourceMapParameters} from './sourceMapParameterIdentity';
 import {usesSourceMapPresentation} from './sourceMapPresentation';
@@ -7,11 +8,12 @@ import {usesSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {usesSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {usesSourceSymmetryPresentation} from './sourceSymmetryPresentation';
 import {supportsSourceFractalLive} from './sourceFractalDocument';
-/** Only complete live contracts opt in. Older fixed-preview documents retain
+/** Only scenes with a retained live preview contract opt in. Older fixed-preview documents retain
  * their saved models, including legacy parameter/timeline behavior. Local
  * delayed accumulation and disabled recording retain fixed reconstruction; the
  * native live mobject always has a zero origin and draws each normal display. */
-export function sourceLivePreviewKind(scene:SceneDocument):'samila'|'map'|'symmetry'|'fractal'|'domain'|undefined {
+export function sourceLivePreviewKind(scene:SceneDocument):'surface'|'samila'|'map'|'symmetry'|'fractal'|'domain'|undefined {
+ if(usesSourceSurfaceGeometry(scene))return 'surface';
  if(usesSourceDomain(scene))return 'domain';
  if(supportsSourceFractalLive(scene))return 'fractal';
  if(usesSourceSamilaSampling(scene))return 'samila';

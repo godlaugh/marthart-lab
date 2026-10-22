@@ -1,3 +1,5 @@
+import {sourceParameterWriteEvents} from './sourceParameterWriteEvents';
+import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
 import type {SourceDomainNavigationEvent} from './sourceDomainLiveSession';
 import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
@@ -23,6 +25,8 @@ interface GeneratorPort {
   setMapPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSymmetryPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSamilaPaused?(output:SceneOutput,paused:boolean):Promise<void>;
+  updateSurfaceParameter?(output:SceneOutput,name:string,value:number):Promise<void>;
+  setSurfacePaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setDomainPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setFractalPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   cancel():void;
@@ -62,14 +66,15 @@ export interface SourceRecordingConsumer {
 function metadataContext(context:Context):Context {
   // After initialization, realtime time is display feedback, not a seek.
   // A metadata edit queued during that display may still hold its old value.
+  if(context.surfaceLive){const {configuration:_,actualFrameRate:__,...live}=context.surfaceLive;return {...context,time:0,surfaceLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   if(context.domainLive){const {configuration:_,actualFrameRate:__,...live}=context.domainLive;return {...context,time:0,domainLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   if(context.fractalLive){const {configuration:_,actualFrameRate:__,...live}=context.fractalLive;return {...context,time:0,fractalLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   return (context.samilaLive?.clock||context.symmetryLive||context.mapLive)?{...context,time:0}:context;
 }
-type LiveKey='samilaLive'|'symmetryLive'|'mapLive'|'fractalLive'|'domainLive';
-const playbackMethods={samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused',domainLive:'setDomainPaused'} as const;
-const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
-const liveIdentity=(request:Request)=>liveKey(request)==='domainLive'?'domain-retained':liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
+type LiveKey='surfaceLive'|'samilaLive'|'symmetryLive'|'mapLive'|'fractalLive'|'domainLive';
+const playbackMethods={surfaceLive:'setSurfacePaused',samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused',domainLive:'setDomainPaused'} as const;
+const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='surface'&&request.context.surfaceLive?'surfaceLive':request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
+const liveIdentity=(request:Request)=>liveKey(request)==='surfaceLive'?'surface-retained':liveKey(request)==='domainLive'?'domain-retained':liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.
@@ -121,6 +126,8 @@ export class GenerationQueue {
     if(input.fractalLive&&pendingFractal?.configuration&&input.fractalLive.revision===pendingFractal.revision&&input.fractalLive.configuration===undefined)input.fractalLive.configuration=structuredClone(pendingFractal.configuration);
     const pendingDomain=sameLive&&this.latest!==this.completedLive?.request?this.latest?.context.domainLive:undefined;
     if(input.domainLive&&pendingDomain?.configuration&&input.domainLive.revision===pendingDomain.revision&&input.domainLive.configuration===undefined)input.domainLive.configuration=structuredClone(pendingDomain.configuration);
+    const pendingSurface=sameLive&&this.latest!==this.completedLive?.request?this.latest?.context.surfaceLive:undefined;
+    if(input.surfaceLive&&pendingSurface?.configuration&&input.surfaceLive.revision===pendingSurface.revision&&input.surfaceLive.configuration===undefined)input.surfaceLive.configuration=structuredClone(pendingSurface.configuration);
     this.latest={scene,context:input,intent,...(writes.size?{parameterWrites:[...writes].filter(([k,v])=>Object.is(scene.parameters[k],v))}:{})};
     // A recording leases this exact worker, including while begin is pending.
     // Keep only the newest editor request without cancelling that lease.
@@ -153,16 +160,18 @@ export class GenerationQueue {
     // identical. Retain its GPU work, but publish only the latest request.
     const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
+    const surfaceWriteRequest=cached&&this.generator.updateSurfaceParameter&&liveKey(request)==='surfaceLive'&&liveKey(cached.request)==='surfaceLive'&&request.context.surfaceLive!.sessionId===cached.request.context.surfaceLive!.sessionId&&request.context.surfaceLive!.revision===cached.request.context.surfaceLive!.revision&&request.parameterWrites?.length;
+    const surfaceEdit=surfaceWriteRequest&&usesSourceSurfaceGeometry(cached!.request.scene)&&usesSourceSurfaceGeometry(request.scene)&&sourceParameterWriteEvents(cached!.request.scene,request.scene,request.parameterWrites);
     const domainWriteRequest=cached&&this.generator.updateDomainParameters&&liveKey(request)==='domainLive'&&liveKey(cached.request)==='domainLive'&&request.context.domainLive!.sessionId===cached.request.context.domainLive!.sessionId&&request.context.domainLive!.revision===cached.request.context.domainLive!.revision&&request.parameterWrites?.length;
     const domainEdit=domainWriteRequest&&sourceDomainParameterWrites(cached!.request.scene,request.scene,request.parameterWrites);
     const iteratedEdit=cached&&this.generator.updateIteratedParameters&&liveKey(request)===liveKey(cached.request)&&request.context[liveKey(request)!]?.sessionId===cached.request.context[liveKey(cached.request)!]?.sessionId&&sourceIteratedParameterChanges(cached.request.scene,request.scene,request.parameterWrites);
-    const edit=domainEdit?()=>this.generator.updateDomainParameters!(cached!.output,request.scene,domainEdit):iteratedEdit?()=>this.generator.updateIteratedParameters!(cached!.output,request.scene,iteratedEdit):undefined;
+    const edit=surfaceEdit?async()=>{for(const [name,value]of surfaceEdit){if(!current())throw new DOMException('实时参数会话已更换','AbortError');await this.generator.updateSurfaceParameter!(cached!.output,name,value);}}:domainEdit?()=>this.generator.updateDomainParameters!(cached!.output,request.scene,domainEdit):iteratedEdit?()=>this.generator.updateIteratedParameters!(cached!.output,request.scene,iteratedEdit):undefined;
     const generate=()=>this.generator.generate(request.scene,request.context,output=>publish(output,this.outputTime(output,request)));
-    const operation=domainWriteRequest&&!domainEdit?Promise.reject(new Error('域着色参数更新需要明确的有限数值事件')):edit?edit().then(()=>{
+    const operation=surfaceWriteRequest&&!surfaceEdit?Promise.reject(new Error('曲面参数更新需要明确的有限数值事件')):domainWriteRequest&&!domainEdit?Promise.reject(new Error('域着色参数更新需要明确的有限数值事件')):edit?edit().then(()=>{
       if(!current())throw new DOMException('实时参数会话已更换','AbortError');
-      return request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
+      return !surfaceEdit&&request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
-    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
       if(current()&&cached&&liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError&&error.previewRetained){
         // Keep the rejected document as the author's draft, but return this
         // request's applied context to the owner-confirmed completed version.
@@ -217,6 +226,7 @@ export class GenerationQueue {
  }
   /** A transport transition waits for the running display and then owns the
    * completed source. It never renders an extra display or uses an old UI frame. */
+  setSurfacePaused(paused:boolean):Promise<void>{return this.setLivePaused('surfaceLive',paused);}
   setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
   setMapPaused(paused:boolean):Promise<void>{return this.setLivePaused('mapLive',paused);}
   setSymmetryPaused(paused:boolean):Promise<void>{return this.setLivePaused('symmetryLive',paused);}

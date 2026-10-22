@@ -7,6 +7,6 @@ import {usesSourceAttractor} from './sourceAttractorDocument';
 export function sourceQueuePresentedScene(scene:SceneDocument,output:SceneOutput):SceneDocument|undefined {
  if(scene.kind==='domain'&&output.type==='raster'&&output.domainLive)return {...scene,...structuredClone(output.domainLive.presentation)};
  if(scene.kind==='fractal'&&output.type==='raster'&&output.fractalLive)return {...scene,...structuredClone(output.fractalLive.presentation)};
- if(!(usesSourceAttractor(scene)||usesSourcePerlin(scene)||output.type==='raster'&&(scene.kind==='symmetry'&&output.symmetryLive!==undefined||scene.kind==='map'&&output.mapLive!==undefined))||!output.sourceCameraFrame)return undefined;
+ if(!(usesSourceAttractor(scene)||usesSourcePerlin(scene)||scene.kind==='surface'&&output.type==='geometry'&&output.surfaceLive!==undefined||output.type==='raster'&&(scene.kind==='symmetry'&&output.symmetryLive!==undefined||scene.kind==='map'&&output.mapLive!==undefined))||!output.sourceCameraFrame)return undefined;
  return {...scene,evaluatedSourceCamera:output.sourceCameraFrame};
 }
