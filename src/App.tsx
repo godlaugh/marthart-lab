@@ -1631,6 +1631,15 @@ export default function App() {
           samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
           iteratedPixelDensity={iteratedLiveFacts?viewportMeasurement?.pixelRatio:undefined}
           domainPixelDensity={sourceLivePreviewKind(scene)==='domain'?viewportMeasurement?.pixelRatio:undefined}
+          surfacePixelDensity={sourceLivePreviewKind(scene)==='surface'?viewportMeasurement?.pixelRatio:undefined}
+          currentSurfaceCapture={sourceLivePreviewKind(scene)==='surface'?{
+            size:{width:scene.projectResolution?.width??Math.round((viewportSize?.[0]??1920)*(viewportMeasurement?.pixelRatio??1)),height:scene.projectResolution?.height??Math.round((viewportSize?.[1]??1080)*(viewportMeasurement?.pixelRatio??1))},
+            ready:completedFrameReady&&output?.type==='geometry'&&output.surfaceLive?.sessionId===liveSessionId.current,
+            capture:async(size,scale)=>{
+              if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前曲面画面尚未完成或已过期，请等待预览完成后重试');
+              return generationQueue.current.captureSurfacePaused(output,size,scale);
+            },
+          }:undefined}
           currentDomainCapture={sourceLivePreviewKind(scene)==='domain'?{
             size:{width:scene.projectResolution?.width??(output?.type==='raster'?output.width:1920),height:scene.projectResolution?.height??(output?.type==='raster'?output.height:1080)},
             ready:completedFrameReady&&output?.type==='raster'&&output.domainLive?.target==='primary'&&output.domainLive.sessionId===liveSessionId.current,

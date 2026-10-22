@@ -1,4 +1,5 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
+import {SourceSurfaceLiveSession} from '../src/engine/sourceSurfaceLiveSession';
 import {Generator} from '../src/engine/client';
 import {generateScene} from '../src/engine/temporal';
 import {parseProjectFile} from '../src/engine/legacyImport';
@@ -56,6 +57,27 @@ describe('Surface transport capabilities',()=>{
   const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
   const edit=f.g.updateSurfaceParameter(f.output,'a',.75),caught=edit.catch(e=>e),p=w.messages.at(-1)!;
   w.emit({operation:'surface-parameter',sessionId:p.sessionId,id:p.id,sourceId:r.id+1});expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
+ });
+ it('requires exact Surface capture response identity and rejects before rendering on malformed data',async()=>{
+  const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
+  await expect(f.g.captureSurfacePaused({...f.output},{width:64,height:48})).rejects.toThrow();
+  const capture=f.g.captureSurfacePaused(f.output,{width:64,height:48}),caught=capture.catch(e=>e),p=w.messages.at(-1)!;
+  w.emit({operation:'surface-paused-capture',sessionId:p.sessionId,id:p.id,sourceId:r.id+1,result:{scene:f.scene,capture:f.output,preview:f.output}});
+  expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
+ });
+ it('accepts only explicit worker proof when retaining a preview after a rejected capture',async()=>{
+  const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
+  const capture=f.g.captureSurfacePaused(f.output,{width:64,height:48}),caught=capture.catch(e=>e),p=w.messages.at(-1)!;
+  w.emit({operation:'surface-paused-capture',sessionId:p.sessionId,id:p.id,error:'capacity',retainedSourceId:r.id});
+  expect(await caught).toMatchObject({previewRetained:true});expect(w.terminated).toBe(false);
+  const current=f.g.currentSurface(f.output),q=w.messages.at(-1)!,copy=structuredClone(f.output);copy.surfaceLive!.renderKind='snapshot';w.emit({operation:'surface-current',sessionId:q.sessionId,id:q.id,sourceId:r.id,output:copy});expect(await current).toBe(copy);f.g.dispose();
+ });
+ it('cancels capture during asynchronous renderer loading and ignores its late completion',async()=>{
+  const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
+  const owner=new SourceSurfaceLiveSession();owner.generate(f.scene,f.context);const result=owner.capturePaused(f.scene,f.context,{width:16,height:12},1);
+  const capture=f.g.captureSurfacePaused(f.output,{width:16,height:12}),caught=capture.catch(e=>e),p=w.messages.at(-1)!;
+  w.emit({operation:'surface-paused-capture',sessionId:p.sessionId,id:p.id,sourceId:r.id,result});f.g.cancel();expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);
+  const fresh=f.g.generate(f.scene,f.context),next=Transport.instances[1],q=next.messages[0];next.emit({operation:'generate',sessionId:q.sessionId,id:q.id,output:f.output});expect(await fresh).toBe(f.output);f.g.dispose();
  });
  it('rejects a current-frame response which advances the owned queue',async()=>{
   const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;

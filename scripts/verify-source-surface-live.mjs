@@ -4,7 +4,7 @@ import {createServer} from 'vite';
 import {mkdir,readFile,writeFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const directory=process.argv[2]??`.cache/surface-live-${Date.now()}`;await mkdir(directory,{recursive:true});
-const report={at:new Date().toISOString(),status:'running',scope:'Unmodified Generator, Worker and ArtRenderer in headless Chrome; injected timestamps and observed-FPS inputs.',limits:['Local CPU/GPU rendering only; no original JVM/JOGL window or pixel oracle.','App automatic live opt-in and recording remain pending.','Local Apply revision replacement does not prove the native toolbar reload contract.']};
+const report={at:new Date().toISOString(),status:'running',scope:'Unmodified Generator, Worker and ArtRenderer in headless Chrome; injected timestamps and observed-FPS inputs.',limits:['Local CPU/GPU rendering only; no original JVM/JOGL window or pixel oracle.','Surface recording remains pending; this verifier uses the public engine queue, not App controls.','Local Apply revision replacement does not prove the native toolbar reload contract.']};
 async function files(dir){const result=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())result.push(...await files(p));else if(e.isFile())result.push(p);}return result;}
 async function hashes(){return Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-surface-live.mjs'].sort().map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));}
 report.sourceBefore=await hashes();let server,browser;const started=performance.now(),errors=[];
@@ -49,6 +49,15 @@ try{
     await g.updateSurfaceParameter(edited,'undeclared',99);
     let invalidEdit=false;try{await g.updateSurfaceParameter(edited,'a',NaN);}catch{invalidEdit=true;}check(invalidEdit,'nonfinite edit accepted');
     const editCurrent=await g.currentSurface(edited);check(await render(editCurrent,s)===editedHash,'unknown parameter changed pixels');
+    const captureBefore=structuredClone(editCurrent.surfaceLive.frame),capture=await g.captureSurfacePaused(editCurrent,{width:65,height:49},3);
+    check(capture.capture.width===195&&capture.capture.height===147&&capture.capture.pixels.length===195*147*4,'capture dimensions');
+    const rgba=capture.capture.pixels;check(rgba.some((v,i)=>i%4!==3&&v!==rgba[i%4]),'capture contains only a flat background');
+    check(JSON.stringify(capture.preview.surfaceLive.frame)===JSON.stringify(captureBefore),'capture advanced queue');
+    check(await render(capture.preview,s)===editedHash,'capture changed primary pixels');
+    const captureHash=await digest(capture.capture.pixels),captureAgain=await g.captureSurfacePaused(capture.preview,{width:65,height:49},3);
+    check(await digest(captureAgain.capture.pixels)===captureHash,'repeated capture changed pixels');
+    let capacityRejected=false;try{await g.captureSurfacePaused(captureAgain.preview,{width:30000,height:30000},5);}catch{capacityRejected=true;}check(capacityRejected,'oversized capture accepted');
+    const afterCapture=await g.currentSurface(captureAgain.preview);check(await render(afterCapture,s)===editedHash,'capture capacity failure lost preview');
     let failed=false;try{await g.generate(draft,input(0,{revision:1,clock:{paused:true},actualFrameRate:NaN}));}catch{failed=true;}check(failed,'invalid observation accepted');
     const recovered=await g.generate(s,input(20000,{sessionId:backend+mode+'-new'}));check(recovered.surfaceLive.frame.sceneTime===0&&recovered.surfaceLive.constructions===1,'worker did not recover');check(await render(recovered)===firstHash,'recovery pixels differ');
     let delivery,queueError,lastQueueOutput;const queueGenerator=new Generator();
@@ -76,7 +85,7 @@ try{
      await queue.setSurfacePaused(true);
      queueFacts={passed:true,parameterEditPixels:qEditHash,applyPixels:qApplyHash,metadataReusedOutput:true,applyKeptPause:true,resumeKeptOwner:true};
     }finally{queue.dispose();}
-    rows.push({backend,mode,passed:true,queue:queueFacts,transitions,completedRequestMs:{coldWorker:coldMs,warmRetainedWorker:warmMs},frames:[first,moving,paused,resumed].map(o=>o.surfaceLive),pixels:{initial:firstHash,moving:movedHash,resumed:resumedHash,applied:appliedHash},parameterEdit:{sameQueue:true,pixels:editedHash,deferredCpuPoints,unknownIgnored:true,invalidRejected:true},pauseAndRepeatedCurrentStable:true,staleRejected:true,invalidObservationRejected:true,recovered:true});
+    rows.push({backend,mode,passed:true,queue:queueFacts,transitions,completedRequestMs:{coldWorker:coldMs,warmRetainedWorker:warmMs},frames:[first,moving,paused,resumed].map(o=>o.surfaceLive),pixels:{initial:firstHash,moving:movedHash,resumed:resumedHash,applied:appliedHash},currentCapture:{pixels:captureHash,width:195,height:147,repeatedStable:true,primaryStable:true,capacityRetained:true},parameterEdit:{sameQueue:true,pixels:editedHash,deferredCpuPoints,unknownIgnored:true,invalidRejected:true},pauseAndRepeatedCurrentStable:true,staleRejected:true,invalidObservationRejected:true,recovered:true});
    }finally{g.dispose();rt.dispose();renderer.dispose();renderer.renderer.forceContextLoss();}
   }
   return rows;

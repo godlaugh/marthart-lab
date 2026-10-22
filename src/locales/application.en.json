@@ -1250,6 +1250,7 @@
   "当前迭代场景画面尚未完成或已过期，请等待预览完成后重试": "The current iterated scene is unfinished or out of date. Wait for the preview and try again.",
   "Map 按实际经过时间运行。暂停后的变换和颜色设置会按源规则重播；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。": "Map runs in real time. Transform and color edits while paused replay according to the source rules. Particles and active parameter animations keep updating after the queue ends. Seeking rebuilds each frame; video export recalculates at the selected frame rate.",
   "域着色录制": "Domain recording",
+  "曲面图像来源": "Surface image source",
   "域着色图像来源": "Domain image source",
   "域着色视频模式": "Domain video mode",
   "应用场景会重新开始动画；暂停时应用仍保持暂停。": "Applying the scene restarts its animation and preserves the paused state.",

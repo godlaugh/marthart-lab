@@ -3,15 +3,16 @@ import {chromium} from '@playwright/test';
 import {createServer} from 'vite';
 import {mkdir,readFile,readdir,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {decodePng} from './lib/verify-png.mjs';
 const directory=process.argv[2]??`.cache/surface-ui-${Date.now()}`;await mkdir(directory,{recursive:true});
 const sha=value=>createHash('sha256').update(value).digest('hex'),check=(value,message)=>{if(!value)throw Error(message);};
 async function files(dir){const out=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())out.push(...await files(p));else if(e.isFile())out.push(p);}return out;}
-async function hashes(){return Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-surface-ui.mjs'].sort().map(async p=>[p,sha(await readFile(p))])));}
-const report={at:new Date().toISOString(),status:'running',scope:'Actual App import, playback, parameter commit and Apply through the unmodified production queue and worker.',limits:['No original GUI/JOGL or full-window parity.','Surface native current PNG, viewport gestures and recording lifecycle remain pending.'],cases:[],sourceBefore:await hashes()};
+async function hashes(){return Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-surface-ui.mjs','scripts/lib/verify-png.mjs'].sort().map(async p=>[p,sha(await readFile(p))])));}
+const report={at:new Date().toISOString(),status:'running',scope:'Actual App import, playback, parameter commit, current PNG download and Apply through the unmodified production queue and worker.',limits:['No original GUI/JOGL or full-window parity.','Original PNG pixels, viewport gestures and recording lifecycle remain pending.'],cases:[],sourceBefore:await hashes()};
 function audit(){
  const Native=window.Worker,a=window.__surfaceAudit={sequence:0,requests:[],responses:[],errors:[]};
  window.Worker=class extends Native{
-  sent=new Map();constructor(...args){super(...args);this.addEventListener('message',({data})=>{const sent=this.sent.get(data.id);if(!sent||data.operation!==sent.operation)return;const o=data.output,row={...sent,response:{operation:data.operation,error:data.error,paused:data.paused},live:o?.surfaceLive,value:o?.sourceGpuPoints?.parameters[0]??o?.sourceGpuMesh?.parameters[0]??o?.positions?.[0]};if(data.error)a.errors.push(row);a.responses.push(row);this.sent.delete(data.id);});}
+  sent=new Map();constructor(...args){super(...args);this.addEventListener('message',({data})=>{const sent=this.sent.get(data.id);if(!sent||data.operation!==sent.operation)return;const o=data.output,row={...sent,response:{operation:data.operation,error:data.error,paused:data.paused},capture:data.result?.capture?.surfaceLive,preview:data.result?.preview?.surfaceLive,live:o?.surfaceLive,value:o?.sourceGpuPoints?.parameters[0]??o?.sourceGpuMesh?.parameters[0]??o?.positions?.[0]};if(data.error)a.errors.push(row);a.responses.push(row);this.sent.delete(data.id);});}
   postMessage(data,...args){const row={sequence:++a.sequence,operation:data.operation,id:data.id,revision:data.context?.surfaceLive?.revision,actualFrameRate:data.context?.surfaceLive?.actualFrameRate,parameterName:data.name,parameterValue:data.value};a.requests.push(row);this.sent.set(data.id,row);return super.postMessage(data,...args);}
  };
 }
@@ -34,6 +35,21 @@ try{
    let seq=await sequence();await page.getByRole('button',{name:'Pause',exact:true}).click();await page.waitForFunction(seq=>window.__surfaceAudit.responses.some(r=>r.sequence>seq&&r.operation==='surface-playback'&&r.response.paused),seq);await ready();current=await last();const before=current.live,oldPixels=await pixels();row.steps.push({name:'play-pause',frame:current});
    await page.getByRole('button',{name:'Save',exact:true}).click();await ready();row.steps.push({name:'save-before-edit'});
    seq=await sequence();await page.locator('#param-a').fill('-.6');await page.locator('#param-a').press('Enter');current=await next(seq);check(current.live.revision===before.revision&&current.live.constructions===before.constructions&&JSON.stringify(current.live.frame)===JSON.stringify(before.frame),'parameter edit rebuilt or advanced');const editPixels=await pixels();check(backend==='CPU'&&mode==='POINTS'?editPixels===oldPixels:editPixels!==oldPixels,'paused edit pixels wrong');row.steps.push({name:'parameter',frame:current,pixels:editPixels});
+   await page.getByRole('button',{name:'Export artwork',exact:true}).click();
+   check(await page.getByRole('combobox',{name:'Surface image source',exact:true}).inputValue()==='current','capture is not the default');
+   await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');
+   await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('65');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('49');
+   await page.getByRole('combobox',{name:'PNG upscale',exact:true}).selectOption('3');
+   const captures=[];
+   for(let repeat=0;repeat<2;repeat++){
+    const download=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();
+    const png=await download,path=`${directory}/${backend}-${mode}-current-${repeat}.png`;await png.saveAs(path);const decoded=decodePng(await readFile(path));
+    check(decoded.width===195&&decoded.height===147,'PNG dimensions');const capture=await page.evaluate(()=>window.__surfaceAudit.responses.findLast(r=>r.capture));
+    check(capture&&JSON.stringify(capture.capture.frame)===JSON.stringify(current.live.frame)&&JSON.stringify(capture.preview.frame)===JSON.stringify(current.live.frame),'PNG advanced scene');
+    captures.push({width:decoded.width,height:decoded.height,pixels:sha(decoded.rgba),capture});
+   }
+   check(captures[0].pixels===captures[1].pixels,'repeated PNG pixels changed');
+   await page.getByRole('button',{name:'Close export',exact:true}).click();await ready();check(await pixels()===editPixels,'PNG changed the primary preview');row.steps.push({name:'current-png',captures,primaryStable:true});
    seq=await sequence();await page.getByTestId('surface-apply').click();current=await next(seq);check(current.live.paused&&current.live.frame.sceneTime===0&&current.live.revision>before.revision&&current.live.constructions===before.constructions+1,'paused Apply lifecycle');row.steps.push({name:'paused-apply',frame:current,pixels:await pixels()});
    await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(rev=>window.__surfaceAudit.responses.some(r=>r.live?.revision===rev&&r.live.frame.sceneTime>.15),current.live.revision);
    seq=await sequence();await page.getByTestId('surface-apply').click();await page.waitForFunction(seq=>window.__surfaceAudit.responses.some(r=>r.sequence>seq&&r.live&&!r.live.paused&&r.live.frame.sceneTime===0),seq);

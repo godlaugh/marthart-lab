@@ -1,3 +1,4 @@
+import {sourceSurfaceCapturePlan,type SourceSurfaceCapturePreparation} from './sourceSurfaceCapture';
 import type {GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {OrdinarySourceCameraTimelineSession,type OrdinarySourceCameraFrame} from './ordinarySourceCameraTimeline';
@@ -112,6 +113,21 @@ export class SourceSurfaceLiveSession {
    const output=this.display(own,frame,c,snapshot?'snapshot':'update');this.check();
    this.completed={sceneId:scene.id,context:snapshotGenerationInput({...c,surfaceLive:{...v,configuration:undefined}})};return output;
   }catch(error){this.failed=true;throw error;}finally{this.busy=false;this.cancel=undefined;}
+ }
+ /** Native paused capture renders the same scene to an offscreen destination,
+  * then primary; neither display calls Scene.update. Preflight is nonmutating. */
+ capturePaused(scene:SceneDocument,c:GenerateContext,size:{width:number;height:number},scale:1|3|5):SourceSurfaceCapturePreparation {
+  if(!this.matchesCompletedPrimary(scene,c))throw Error('曲面截图需要匹配的已完成主预览');
+  const own=this.owned!;own.clock.assertPaused(true);
+  const plan=sourceSurfaceCapturePlan(snapshotGenerationInput(c),size,scale);
+  validateSourceSurfacePresentation(own.scene,plan.captureContext);
+  this.cancel=c.isCancelled;this.budget=sourceSurfaceWorkBudget();this.busy=true;
+  try{
+   this.check();const capture=this.display(own,own.queue.display(),plan.captureContext,'snapshot');
+   const preview=this.display(own,own.queue.display(),c,'snapshot');this.check();
+   if(capture.type!=='geometry'||preview.type!=='geometry')throw Error('曲面截图缺少几何帧');
+   return{scene:structuredClone(own.scene),capture,preview};
+  }catch(error){this.failed=true;this.completed=undefined;throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  /** Re-display current owned geometry without Scene.update or clock advancement.
   * Rebuild the published buffers, since a prior worker transfer detached them. */

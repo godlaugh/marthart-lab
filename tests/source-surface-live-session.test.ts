@@ -58,6 +58,19 @@ describe('retained Surface generation boundary',()=>{
   const resumed=geometry(owner.generate(s,context(1250)));
   expect(resumed.surfaceLive?.constructions).toBe(1);expect(value(resumed)).not.toBe(value(changed));
  });
+ for(const backend of ['CPU','GPU'])for(const mode of ['POINTS','MESH'])it(`${backend} ${mode} prepares current capture without replay and retains transferable primary buffers`,()=>{
+  const s=scene(backend,mode),owner=new SourceSurfaceLiveSession(),c={...context(0,{clock:{paused:true}}),sourcePointPixelDensity:2};
+  const before=geometry(owner.generate(s,c));owner.updateParameter(s,c,'a',.75);
+  const capture=owner.capturePaused(s,c,{width:127,height:95},3);
+  expect(capture.capture.surfaceLive?.frame).toEqual(before.surfaceLive?.frame);expect(capture.preview.surfaceLive?.frame).toEqual(before.surfaceLive?.frame);
+  expect(capture.capture.sourceCameraFrame?.viewport).toMatchObject({target:'offscreen',logicalWidth:64,logicalHeight:48,referenceLogicalHeight:48});
+  expect(capture.preview.sourceCameraFrame?.viewport.target).toBe('primary');
+  expect(value(capture.capture)).toBe(backend==='CPU'&&mode==='POINTS'?.25:.75);expect(capture.scene.parameters.a).toBe(.25);
+  const saved=structuredClone(comparable(capture.preview));structuredClone(capture,{transfer:[...outputBuffers(capture.capture),...outputBuffers(capture.preview)]});
+  expect(comparable(owner.current(s,c))).toEqual(saved);expect(owner.diagnostics().constructions).toBe(1);
+  expect(()=>owner.capturePaused(s,c,{width:20000,height:20000},1)).toThrow();expect(owner.matchesCompletedPrimary(s,c)).toBe(true);
+  expect(()=>owner.capturePaused(s,c,{width:64,height:48},2 as never)).toThrow('倍率');expect(owner.matchesCompletedPrimary(s,c)).toBe(true);
+ });
  it('captures a full revision, ignores staged edits and replaces it only at an explicit new revision',()=>{
   const s=scene(),captured=structuredClone(s),draft=structuredClone(s);draft.equations.x='(';
   const owner=new SourceSurfaceLiveSession(),c=context(0,{configuration:captured,clock:{paused:true}});

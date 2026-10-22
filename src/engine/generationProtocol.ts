@@ -60,8 +60,12 @@ export class FractalPausedCaptureError extends PausedCaptureError {
 export class DomainPausedCaptureError extends PausedCaptureError {
  constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='DomainPausedCaptureError';}
 }
+export class SurfacePausedCaptureError extends PausedCaptureError {
+ constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='SurfacePausedCaptureError';}
+}
 /** The operation owns its label and error type across client and queue. */
 export const pausedCaptureContracts={
+ 'surface-paused-capture':{label:'曲面',Error:SurfacePausedCaptureError},
  'roots-paused-capture':{label:'复根',Error:RootsPausedCaptureError},
  'perlin-paused-capture':{label:'Perlin',Error:PerlinPausedCaptureError},
  'samila-paused-capture':{label:'Samila',Error:SamilaPausedCaptureError},
@@ -69,7 +73,7 @@ export const pausedCaptureContracts={
  'map-paused-capture':{label:'Map',Error:MapPausedCaptureError},
  'domain-paused-capture':{label:'域着色',Error:DomainPausedCaptureError},
  'fractal-paused-capture':{label:'分形',Error:FractalPausedCaptureError},
-} satisfies Record<PausedCaptureOperation,{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
+} satisfies Record<PausedCaptureOperation|'surface-paused-capture',{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
 
 type IteratedPlaybackOperation='symmetry-playback'|'map-playback';
 type IteratedPlaybackRequest={ [Operation in IteratedPlaybackOperation]:{operation:Operation;id:number;sourceId:number;paused:boolean;timestampMs?:number} }[IteratedPlaybackOperation];
@@ -77,6 +81,7 @@ type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Ope
 export type GenerationRequest = { sessionId: number } & (
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'surface-parameter';id:number;sourceId:number;name:string;value:number}
+  | {operation:'surface-paused-capture';id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5}
   | {operation:'surface-current';id:number;sourceId:number}
   | {operation:'domain-navigation';id:number;sourceId:number;event:import('./sourceDomainLiveSession').SourceDomainNavigationEvent}
   | {operation:'domain-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
@@ -100,6 +105,7 @@ export type GenerationRequest = { sessionId: number } & (
 export type GenerationPayload =
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'surface-parameter';id:number;sourceId:number}
+  | {operation:'surface-paused-capture';id:number;sourceId:number;result:import('./sourceSurfaceCapture').SourceSurfaceCapturePreparation}
   | {operation:'surface-current';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-navigation';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-parameters';id:number;sourceId:number}
