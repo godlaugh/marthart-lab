@@ -288,7 +288,14 @@ export class OrdinarySourceCameraTimelineSession {
  /** Render the current owned state without Scene.update or clock advancement. */
  display():OrdinarySourceCameraFrame {try{const state=this.live();if(state.frameIndex<0)throw new OrdinarySourceCameraTimelineError('input','显示需要已初始化的场景');state.particles?.displayFrame?.(state.frameIndex,true);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
  /** Explicit local seek reconstruction; not a native Scene seek operation. */
- reconstruct(time:number):OrdinarySourceCameraFrame {this.reset();this.evaluate(time);this.mode='live';return this.snapshot();}
+ reconstruct(time:number):OrdinarySourceCameraFrame {this.reset();this.evaluate(time);return this.resumeLive();}
+ /** Explicit fixed-to-live handoff. Retain the exact queue, captured starts,
+  * particles and target history; neither update nor display is performed. */
+ resumeLive():OrdinarySourceCameraFrame {
+  check(this.options);const state=this.cache.get('owned');
+  if(this.mode!=='fixed'||!state)throw new OrdinarySourceCameraTimelineError('input','续接实时队列需要已完成的固定帧实例');
+  this.mode='live';return snapshotReplay(state,state.facts.sceneTime);
+ }
  step(dt:number,options:{paused?:boolean;actualFrameRate?:number}={}):OrdinarySourceCameraFrame {if(options.paused!==undefined&&typeof options.paused!=='boolean')throw new OrdinarySourceCameraTimelineError('input','源队列暂停标记无效');try{const state=this.live();advanceReplay(state,dt,options.paused===true,this.options,true,options.actualFrameRate);return snapshotReplay(state,state.facts.sceneTime);}catch(error){this.reset();throw error;}}
 
  reset():void{this.cache.clear();this.mode=undefined;}

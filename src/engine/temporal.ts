@@ -388,6 +388,10 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
   if(context.fractalRecording!==undefined&&!usesSourceFractal(scene))throw Error('分形录制帧只能用于完整源分形场景');
   if((context.sourceBouncingFrame!==undefined||context.sourceBouncingView!==undefined)&&!usesSourceBouncing(scene))throw new Error('源弹跳检查点只能用于带源弹跳配置的场景');
   if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');
+  if(context.perlinLive!==undefined){
+    if(!scene.perlinSource||scene.kind!=='perlin')throw Error('Perlin 实时上下文需要完整源 Perlin 场景');
+    if([context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.fractalRecording].some(value=>value!==undefined))throw Error('一次生成只能拥有一个 Perlin 实时或录制时钟');
+  }
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
     if(context.surfaceLive!==undefined){owner.select(scene,context);return owner.sourceSurface.generate(scene,context);}

@@ -89,6 +89,14 @@ describe('Perlin recording worker lease ownership',()=>{
   expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();expect(owners.generate).toHaveBeenCalledTimes(3);
   expect(owners.generate).toHaveBeenLastCalledWith(effective,resumed,expect.anything());
  });
+ it('re-reads a detached live finish preview through its retained owner without generation or another update',()=>{
+  begin();const liveContext={...resumed,perlinLive:{sessionId:'retained',clock:{paused:false}}};
+  owners.perlin.finishRecording.mockImplementation(()=>{owners.active=false;owners.primary=true;return{scene:effective,context:liveContext,preview:raster(2)};});
+  worker.postMessage.mockImplementationOnce((data:unknown,options:{transfer:Transferable[]})=>{structuredClone(data,{transfer:options.transfer});throw Error('delivered then send threw');});
+  expect(send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2})).toMatchObject({retainedRecordingId:2});
+  expect(send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2})).not.toHaveProperty('error');
+  expect(owners.perlin.finishRecording).toHaveBeenCalledTimes(2);expect(owners.generate).toHaveBeenCalledTimes(1);
+ });
  it('invalidates the lease if the required primary refresh fails',()=>{
   begin();owners.generate.mockImplementationOnce(()=>{owners.primary=false;throw Error('primary failed');});const response=send({operation:'source-recording-finish',id:3,sessionId:7,recordingId:2});expect(response).toHaveProperty('error','primary failed');expect(response).not.toHaveProperty('retainedRecordingId');
   expect(send({operation:'source-recording-finish',id:4,sessionId:7,recordingId:2})).toHaveProperty('error');expect(owners.perlin.finishRecording).toHaveBeenCalledOnce();

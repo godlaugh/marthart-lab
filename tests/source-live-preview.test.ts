@@ -1,3 +1,4 @@
+import {sourcePerlinCpuConfiguration,sourcePerlinGpuConfiguration} from '../src/engine/sourcePerlinIdentity';
 import {generateScene,TemporalGenerationSession} from '../src/engine/temporal';
 import type {GenerateContext} from '../src/types';
 import {describe,it,expect} from 'vitest';
@@ -10,6 +11,14 @@ import {timelineWarnings} from '../src/engine/timeline';
 import type {SceneOutput} from '../src/types';
 const scene=()=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Live preview',parameters:{lambda:.25},settings:{batch_size:4,burn_in_steps:3},timeline:[]})).scene;
 describe('source live preview compatibility and delivered presentation',()=>{
+ it('preserves saved single-backend Perlin playback without supplying a live protocol',()=>{
+  const canonical=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'Perlin',settings:{render_mode:'GPU'},timeline:[]})).scene;
+  expect(sourceLivePreviewKind(canonical)).toBe('perlin');
+  const cpu={...canonical,perlinSource:undefined,perlinCpuSource:sourcePerlinCpuConfiguration(canonical)};
+  const gpu={...canonical,perlinSource:undefined,perlinGpuSource:sourcePerlinGpuConfiguration(canonical)};
+  expect(sourceLivePreviewKind(cpu)).toBeUndefined();expect(sourceLivePreviewKind(gpu)).toBeUndefined();
+  expect(sourceLivePreviewKind({...canonical,perlinSource:undefined})).toBeUndefined();
+ });
  it('opts complete source documents in without migrating older parameter or gradient models',()=>{
   const source=scene();expect(sourceLivePreviewKind(source)).toBe('symmetry');
   for(const key of ['symmetryParameterModel','symmetryGradientModel','symmetryPresentationModel']){

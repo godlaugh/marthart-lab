@@ -1232,8 +1232,6 @@
   "Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列": "The Perlin queue ended during warmup with no frames to encode; extend the queue.",
   "保留画布录制": "Record with retained canvases",
   "请等待当前预览完成并暂停后再录制": "Wait for the current preview to finish and pause before recording.",
-  "使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。停止后停留在实际末帧，方便检查。": "Restart recording with the last applied configuration, retaining accumulation on the primary canvas and same-size export canvas. Stop at the actual final frame for inspection.",
-  "恢复上次应用的模拟配置和后端，首帧预热后按源队列结束停止。导出尺寸变化会重建导出画布。模拟帧率决定运动步长，编码帧率决定播放速度。": "Restore the last applied simulation configuration and backend. Discard one warmup frame, then stop when the source queue ends. Resizing recreates the export canvas. Simulation FPS controls motion; encoder FPS controls playback speed.",
   "实际视频尺寸：{width} × {height} 像素。": "Actual video size: {width} × {height} pixels.",
   "Samila 图像来源": "Samila image source",
   "截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。": "Capturing adds one sample batch, then redraws the preview with another batch. Animation time stays unchanged. Changing dimensions clears the accumulated image.",
@@ -1265,5 +1263,8 @@
   "应用场景会重新开始动画；暂停时应用仍保持暂停。": "Applying the scene restarts its animation and preserves the paused state.",
   "保存当前暂停的域着色状态，不推进动画；尺寸只改变导出画面。": "Save the current paused domain state without advancing animation; size changes only the exported image.",
   "从上次完整应用的域着色场景开始，预热后录到队列结束，保存后继续播放。要将修改作为录制起点，请先点击“应用场景”。": "Record from the last fully applied domain scene, discard warmup, and continue playback after saving. Click Apply scene first to use edits as the recording start.",
-  "域着色按实际经过时间播放；暂停后可拖拽、缩放和修改参数。应用场景或时间跳转会重新开始。队列结束后，已启动的动画仍可继续。": "Domain coloring plays using elapsed time. While paused, drag, zoom or edit parameters. Apply or seeking rebuilds the scene. Active animations may continue after the queue ends."
+  "域着色按实际经过时间播放；暂停后可拖拽、缩放和修改参数。应用场景或时间跳转会重新开始。队列结束后，已启动的动画仍可继续。": "Domain coloring plays using elapsed time. While paused, drag, zoom or edit parameters. Apply or seeking rebuilds the scene. Active animations may continue after the queue ends.",
+  "使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。保存完成后从录制状态继续播放。": "Restart recording with the last applied configuration, retaining accumulation on the primary canvas and same-size export canvas. Resume playback from the recording state after saving.",
+  "恢复上次应用的模拟配置和后端，首帧预热后录到队列结束，保存后继续播放。导出尺寸变化会重建导出画布。": "Restore the last applied simulation and backend, warm up one frame, record until the queue finishes, then resume playback after saving. Changing output dimensions recreates the export canvas.",
+  "Perlin 录制": "Perlin recording"
 }

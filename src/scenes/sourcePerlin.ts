@@ -13,6 +13,8 @@ import {SourcePerlinFlowResources} from '../engine/sourcePerlinFlowResources';
 import {sourcePerlinGpuLayout,sourcePerlinFlowTextureSize} from '../engine/sourcePerlinGpu';
 import {OrdinarySourceCameraTimelineSession,ORDINARY_CAMERA_SEQUENCE,type OrdinarySourceCameraFrame} from '../engine/ordinarySourceCameraTimeline';
 import {ordinarySourceCameraInitial,ordinarySourceCameraFrame} from '../engine/ordinarySourceCamera';
+import {SourceSceneHostClock,validateSourceSceneClockRequest} from '../engine/sourceSceneHostClock';
+import {validateSourcePerlinLiveContext,type SourcePerlinLiveContext,type SourcePerlinLiveFacts} from '../engine/sourcePerlinLive';
 
 const identity=(value:unknown)=>JSON.stringify(value,(_k,v)=>typeof v==='number'?{number:Object.is(v,-0)?'-0':String(v)}:v);
 type Raster=Extract<SceneOutput,{type:'raster'}>;
@@ -53,7 +55,7 @@ function prepareConfiguration(scene:SceneDocument){
 }
 type Configuration=ReturnType<typeof prepareConfiguration>;
 function ownConfiguration(value:Configuration):Configuration{return {...value,document:structuredClone(value.document)};}
-function copyContext(c:GenerateContext):GenerateContext{return {...c,sourceViewport:c.sourceViewport?{...c.sourceViewport}:undefined,sourcePerlinViewport:c.sourcePerlinViewport?{...c.sourcePerlinViewport}:undefined};}
+function copyContext(c:GenerateContext):GenerateContext{return {...c,sourceViewport:c.sourceViewport?{...c.sourceViewport}:undefined,sourcePerlinViewport:c.sourcePerlinViewport?{...c.sourcePerlinViewport}:undefined,perlinLive:c.perlinLive?{...c.perlinLive,clock:{...c.perlinLive.clock}}:undefined};}
 type Binding={view:View;width:number;height:number;density:number;kind:'primary'|'offscreen'};
 type Recording={handle:object;scene:SceneDocument;context:GenerateContext;clock:SourceQueueRecordingClock;next:number;frame?:OrdinarySourceCameraFrame};
 /** Simulation resources and canvas attachments have separate lifetimes. Local
@@ -68,23 +70,40 @@ export class SourcePerlinSession{
  private exportTarget?:SourcePerlinCpuTarget;private releasingExportTarget?:SourcePerlinCpuTarget;
  private configuration?:Configuration;private applied?:Configuration;private observedDocumentKey='';
  private binding?:Binding;private recording?:Recording;private primaryNeedsDraw=false;
+ private live?:{context:SourcePerlinLiveContext;clock:SourceSceneHostClock};
+ private handoff?:{handle:object;scene:SceneDocument;context:GenerateContext;frame:OrdinarySourceCameraFrame;displayed:boolean};
  private completed?:{identity:string;context:GenerateContext;metadata:Omit<Raster,'pixels'>;background:readonly[number,number,number,number]};
- private requestIdentity(scene:SceneDocument,c:GenerateContext){return identity([scene.id,scene.perlinSource,scene.perlinCpuSource,scene.sourceCamera,scene.settings.sourceCameraProjection,scene.timeline,c.time,c.sourcePerlinViewport,c.sourceViewport?.referenceLogicalHeight,c.sourceViewport?.projectionPass]);}
+ constructor(private readonly options:{now?:()=>number}={}){}
+ private requestIdentity(scene:SceneDocument,c:GenerateContext){return identity([scene.id,scene.perlinSource,scene.perlinCpuSource,scene.sourceCamera,scene.settings.sourceCameraProjection,scene.timeline,c.time,c.sourcePerlinViewport,c.sourceViewport?.referenceLogicalHeight,c.sourceViewport?.projectionPass,c.perlinLive?.sessionId,c.perlinLive?.startAt]);}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean{
   try{return !this.recording&&!!this.completed&&!!this.target?.diagnostics().initialized&&this.completed.identity===this.requestIdentity(scene,c);}catch{return false;}
  }
  private requireIdle(){if(this.recording)throw new Error('Perlin 录制期间不能修改或生成其它场景');}
+ /** Pause changes only the host clock/saved camera angles; no simulation or
+  * display occurs. Invalid input leaves the completed capability available. */
+ setPaused(paused:boolean,timestampMs?:number):void {
+  this.requireIdle();validateSourceSceneClockRequest({paused,timestampMs});
+  if(!this.live||!this.completed||!this.timeline)throw Error('Perlin 播放控制需要已完成的实时主预览');
+  try{
+   const restore=this.live.clock.setPaused(paused,this.timeline.snapshot().camera,timestampMs);
+   if(restore)this.timeline.writeAngles(restore);
+   this.handoff=undefined;
+   this.live.context.clock={paused,...(timestampMs===undefined?{}:{timestampMs})};
+   this.completed.context.perlinLive!.clock={...this.live.context.clock};
+  }catch(error){this.reset([error]);throw error;}
+ }
  /** Explicit apply includes the selected backend. Non-backend document edits
   * in generate use the local auto-apply policy; resize/rewind/hot switching do
   * not overwrite this snapshot. This is not inferred from model construction. */
  applyConfiguration(scene:SceneDocument):void{
   this.requireIdle();this.cleanup.prepare();const prepared=prepareConfiguration(scene);
-  this.applied=ownConfiguration(prepared);this.observedDocumentKey=prepared.key;this.key='';this.completed=undefined;
+  this.applied=ownConfiguration(prepared);this.observedDocumentKey=prepared.key;this.key='';this.completed=undefined;this.handoff=undefined;
  }
  capturePaused(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):{capture:Raster;preview:Raster}{
   this.requireIdle();const last=this.completed,extra=options.additionalBytes??0;
   if(!Number.isSafeInteger(extra)||extra<0)throw new Error('Perlin 暂停截图后处理预留无效');
   if(!last||!this.matchesCompletedPrimary(scene,c)||!this.configuration)throw new Error('Perlin 暂停截图需要同实例最后完成的主预览');
+  if(this.live&&!this.live.clock.diagnostics().paused)throw Error('Perlin 当前截图需要先暂停实时预览');
   if(c.sourceViewport?.target!=='offscreen'||c.sourceViewport.projectionPass!==last.context.sourceViewport?.projectionPass||c.sourceViewport.referenceLogicalHeight!==last.context.sourceViewport.referenceLogicalHeight)throw new Error('Perlin 暂停截图需要原预览的离屏参考尺寸与投影');
   if(c.isCancelled?.())throw new DOMException('Perlin 已取消','AbortError');
   const size=prepareSourcePausedCaptureSize(c,last.metadata.sourcePerlinFrame!.sourceViewport.pixelDensity),primary=this.target!,started=performance.now();
@@ -97,16 +116,18 @@ export class SourcePerlinSession{
     try{this.ensureExportTarget(size,last.background);}finally{changed=this.completed!==last;}
    }
    const target=this.exportTarget!;
-   this.completed=undefined;changed=true;this.cancelled=c.isCancelled;this.work=0;
+   this.completed=undefined;this.handoff=undefined;changed=true;this.cancelled=c.isCancelled;this.work=0;
    this.display(target,'offscreen',true);
-   const capture:Raster={...structuredClone(last.metadata),pixels:target.readPixels(c.isCancelled),width:size.width,height:size.height,
+   const liveFacts=this.live?this.liveFacts(this.timeline!.snapshot(),'snapshot'):undefined;
+   const capture:Raster={...structuredClone(last.metadata),...(liveFacts?{perlinLive:liveFacts}:{}),pixels:target.readPixels(c.isCancelled),width:size.width,height:size.height,
     sourceCameraFrame:{...structuredClone(last.metadata.sourceCameraFrame!),viewport:{...last.metadata.sourceCameraFrame!.viewport,logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,target:'offscreen'}},
     sourcePerlinFrame:{...last.metadata.sourcePerlinFrame!,samples:0},stats:{...last.metadata.stats,samples:this.backend==='gpu'?size.width*size.height:last.metadata.stats.samples,generated:size.width*size.height,elapsedMs:performance.now()-started}};
    // MathArt.draw continues after savePausedFrameInternal: paused update does
    // not advance simulation, but this primary render can rebuild display caches
    // and adds one more accumulation blend on its own history.
    this.display(primary,'primary',true);
-   const preview:Raster={...structuredClone(last.metadata),pixels:samplePixels(primary.readPixels(c.isCancelled),primary.physicalWidth,primary.physicalHeight,last.metadata.width,last.metadata.height,c.isCancelled),stats:{...last.metadata.stats,elapsedMs:performance.now()-started}};
+   const preview:Raster={...structuredClone(last.metadata),...(liveFacts?{perlinLive:structuredClone(liveFacts)}:{}),pixels:samplePixels(primary.readPixels(c.isCancelled),primary.physicalWidth,primary.physicalHeight,last.metadata.width,last.metadata.height,c.isCancelled),stats:{...last.metadata.stats,elapsedMs:performance.now()-started}};
+   if(liveFacts)last.metadata.perlinLive=structuredClone(liveFacts);
    this.completed=last;return{capture,preview};
   });}catch(error){if(changed)this.reset([error]);throw error;}finally{this.cancelled=undefined;}
  }
@@ -122,12 +143,12 @@ export class SourcePerlinSession{
  }
  private releaseRuntime(){
   this.completed=undefined;this.releaseSimulation();this.releaseCanvases();
-  this.timeline?.reset();this.timeline=undefined;this.configuration=undefined;this.binding=undefined;this.key='';this.primaryNeedsDraw=false;this.constructions=0;
+  this.timeline?.reset();this.timeline=undefined;this.configuration=undefined;this.binding=undefined;this.key='';this.primaryNeedsDraw=false;this.constructions=0;this.live=undefined;this.handoff=undefined;
  }
  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{
   this.recording=undefined;this.releaseRuntime();this.applied=undefined;this.observedDocumentKey='';this.cancelled=undefined;
  },failures);}
- diagnostics(){return{constructions:this.constructions,target:this.target?.diagnostics(),exportTarget:this.exportTarget?.diagnostics(),model:this.model?.diagnostics(),flow:this.flow?.diagnostics(),appliedBackend:this.applied?.complete?.backend,recording:this.recording?{nextFrame:this.recording.next,complete:this.recording.frame?.queueComplete}:undefined};}
+ diagnostics(){return{constructions:this.constructions,target:this.target?.diagnostics(),exportTarget:this.exportTarget?.diagnostics(),model:this.model?.diagnostics(),flow:this.flow?.diagnostics(),appliedBackend:this.applied?.complete?.backend,live:this.live?{sessionId:this.live.context.sessionId,...this.live.clock.diagnostics()}:undefined,recording:this.recording?{nextFrame:this.recording.next,complete:this.recording.frame?.queueComplete}:undefined};}
  diagnosticSnapshot(){return this.model?.diagnosticSnapshot();}
  private ensureExportTarget(size:ReturnType<typeof prepareSourcePausedCaptureSize>,background:readonly[number,number,number,number]){
   if(this.exportTarget&&this.exportTarget.width===size.logicalWidth&&this.exportTarget.height===size.logicalHeight)return this.exportTarget;
@@ -171,13 +192,21 @@ export class SourcePerlinSession{
    },
   });
  }
- private renderOutput(scene:SceneDocument,context:GenerateContext,frame:OrdinarySourceCameraFrame,target:SourcePerlinCpuTarget,kind:'primary'|'offscreen',started:number):Raster{
+ private runtimeKey(configuration:Configuration,binding:Binding,live?:SourcePerlinLiveContext){
+  return identity([configuration.key,binding.view,binding.width,binding.height,binding.kind,live?['live',live.sessionId,live.startAt]:['fixed']]);
+ }
+ private liveFacts(frame:OrdinarySourceCameraFrame,renderKind:'update'|'snapshot'):SourcePerlinLiveFacts {
+  const live=this.live!,clock=live.clock.diagnostics();
+  return{sessionId:live.context.sessionId,paused:this.recording?false:clock.paused,clockSource:this.recording?'fixed-step':clock.clockSource,renderKind,sceneTime:frame.sceneTime,constructions:this.constructions,frame:structuredClone(frame)};
+ }
+ private renderOutput(scene:SceneDocument,context:GenerateContext,frame:OrdinarySourceCameraFrame,target:SourcePerlinCpuTarget,kind:'primary'|'offscreen',started:number,renderKind:'update'|'snapshot'='update'):Raster{
   const {config}=this.configuration!,view=this.binding!.view,facts=this.model!.diagnostics();
   const sampleBytes=target.physicalWidth===context.width&&target.physicalHeight===context.height?0:context.width*context.height*4;
   const pixels=target.withWorkingBytes(sampleBytes,()=>samplePixels(target.readPixels(context.isCancelled),target.physicalWidth,target.physicalHeight,context.width,context.height,context.isCancelled));
   return {type:'raster',pixels,width:context.width,height:context.height,dimension:2,cameraResolved:true,backend:this.backend==='cpu'?'cpu':'webgl2',
    sourceCameraFrame:ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:frame},{...context,sourceViewport:{...context.sourceViewport!,logicalWidth:target.width,logicalHeight:target.height,target:kind}}),
    sourcePerlinFrame:{sourceViewport:{...view},samples:target.diagnostics().samples,frameIndex:frame.frameIndex,updates:facts.updates,queueComplete:frame.queueComplete,queueIndex:frame.queueIndex,sceneTime:frame.sceneTime},
+   ...(this.live?{perlinLive:this.liveFacts(frame,renderKind)}:{}),
    stats:{samples:this.backend==='gpu'?context.width*context.height:config.cpuStyle==='particles'?config.particles.count:config.curves.count*config.curves.length,generated:context.width*context.height,invalid:0,elapsedMs:performance.now()-started},
    warnings:['源 Perlin 保留 CPU/GPU 运行状态；倒退或修改配置会按当前后端重放。原版 JVM／JOGL 整图尚未验收。']};
  }
@@ -187,6 +216,8 @@ export class SourcePerlinSession{
  }
  generate(scene:SceneDocument,context:GenerateContext):SceneOutput{
   this.requireIdle();this.cleanup.prepare();const started=performance.now();
+  const live=context.perlinLive===undefined?undefined:validateSourcePerlinLiveContext(context.perlinLive);
+  if(live&&context.sourceViewport?.target!=='primary')throw Error('Perlin 实时预览需要主画布目标');
   try{
    const prepared=prepareConfiguration(scene),view=viewport(context),initial=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera:prepared.camera}},context),kind=initial.viewport.target;
    if(kind!=='primary'&&kind!=='offscreen')throw new Error('源 Perlin CPU 需要明确的显示目标');
@@ -196,15 +227,33 @@ export class SourcePerlinSession{
    // Actual document edits auto-apply locally. Canvas resize, cold replay and
    // hot backend selection are deliberately not application events.
    if(prepared.key!==this.observedDocumentKey){this.applied=ownConfiguration(prepared);this.observedDocumentKey=prepared.key;}
-   const key=identity([prepared.key,view,width,height,kind]);
-   if(key!==this.key){this.releaseRuntime();this.key=key;this.initializeTimeline(ownConfiguration(prepared),{view,width,height,density,kind},false);}
-   this.completed=undefined;this.cancelled=context.isCancelled;this.work=0;
+   const binding={view,width,height,density,kind},key=this.runtimeKey(prepared,binding,live),rebuild=key!==this.key;
+   const seek=live?.startAt!==undefined&&(this.live?.context.sessionId!==live.sessionId||this.live.context.startAt!==live.startAt);
+   if(rebuild){
+    this.releaseRuntime();this.key=key;this.initializeTimeline(ownConfiguration(prepared),binding,false);
+    if(live)this.live={context:live,clock:new SourceSceneHostClock(live.clock.paused,prepared.camera,this.options.now)};
+   }
+   if(live)this.live!.clock.assertPaused(live.clock.paused);
+   this.completed=undefined;this.handoff=undefined;this.cancelled=context.isCancelled;this.work=0;
    const requestedBackend=prepared.complete?.backend??'cpu',switched=this.backend!==requestedBackend;
    if(switched){this.backend=requestedBackend;this.model?.setBackend(requestedBackend);}
-   const previousDraws=this.target?.diagnostics().draws,frame=this.timeline!.evaluate(context.time),target=this.target!;
+   const previousDraws=this.target?.diagnostics().draws;
+   let frame:OrdinarySourceCameraFrame,renderKind:'update'|'snapshot'='update';
+   if(live){
+    const host=this.live!;
+    if(seek){
+     frame=this.timeline!.reconstruct(live.startAt!);
+     // Local seek changes the displayed camera before a native-style pause
+     // anchor exists. Resume must restore this actual reconstructed pose.
+     host.clock=new SourceSceneHostClock(live.clock.paused,frame.camera,this.options.now);host.clock.resetTime(live.clock.timestampMs);renderKind='snapshot';
+    }
+    else if(!rebuild&&live.clock.paused){frame=this.timeline!.display();renderKind='snapshot';}
+    else{frame=this.timeline!.step(host.clock.update(live.clock),{paused:live.clock.paused});if(live.clock.paused)renderKind='snapshot';}
+   }else frame=this.timeline!.evaluate(context.time);
+   const target=this.target!;
    if((switched||this.primaryNeedsDraw)&&target.diagnostics().draws===previousDraws)this.display(target,kind,true);
    this.primaryNeedsDraw=false;
-   const output=this.renderOutput(scene,context,frame,target,kind,started);
+   const output=this.renderOutput(scene,context,frame,target,kind,started,renderKind);
    if(kind==='primary')this.remember(scene,context,output);return output;
   }catch(error){this.reset([error]);throw error;}finally{this.cancelled=undefined;}
  }
@@ -233,9 +282,10 @@ export class SourcePerlinSession{
    const last=this.completed;
    try{this.ensureExportTarget(size,sourcePerlinBackgroundRgba(configuration.config.display.backgroundColor,false,0));}
    finally{changed=this.completed!==last;}
-   this.completed=undefined;changed=true;this.releaseSimulation();this.timeline?.reset();
+   this.completed=undefined;this.handoff=undefined;changed=true;this.releaseSimulation();this.timeline?.reset();
    this.initializeTimeline(configuration,binding,true);
-   this.key=identity([configuration.key,binding.view,binding.width,binding.height,binding.kind]);
+   if(this.live){this.live.clock.forceResume();this.live.context.clock={paused:false};primary.perlinLive={...this.live.context,clock:{paused:false}};}
+   this.key=this.runtimeKey(configuration,binding,this.live?.context);
    this.observedDocumentKey=configuration.key;this.recording=record;
    const warmup=this.advanceRecording(record,0,started);
    return {handle:record.handle,scene:structuredClone(effective),context:copyContext(primary),clock:{...clock},warmup};
@@ -257,13 +307,35 @@ export class SourcePerlinSession{
   this.cancelled=record.context.isCancelled;
   try{return this.advanceRecording(record,displayFrame,performance.now());}catch(error){this.reset([error]);throw error;}finally{this.cancelled=undefined;}
  }
- /** Stop does not draw, update, restore an old model or clear canvases. The
-  * caller chooses when to resume live updates or render a paused primary frame.
-  * Returning explicit state prevents accidental restoration of a hot backend. */
- finishRecording(handle:object):{scene:SceneDocument;context:GenerateContext}{
+ /** Native stop only exits fixed mode. A live-origin local handoff additionally
+  * displays the primary once, without a numerical update. Publication retries
+  * reread that target, never add another accumulation draw or reset the clock. */
+ finishRecording(handle:object):{scene:SceneDocument;context:GenerateContext}|{scene:SceneDocument;context:GenerateContext;preview:Raster}{
+  if(this.handoff?.handle===handle)return this.publishHandoff();
   const record=this.recording;if(!record||record.handle!==handle||!record.frame)throw new Error('Perlin 录制身份无效');
   const context=copyContext({...record.context,time:record.frame.time});
-  this.recording=undefined;this.primaryNeedsDraw=true;
-  return {scene:structuredClone(record.scene),context};
+  try{
+   if(this.live){
+    const frame=this.timeline!.resumeLive();this.live.clock.resetTime();
+    this.live.context={sessionId:this.live.context.sessionId,clock:{paused:false}};
+    context.time=frame.sceneTime;context.perlinLive={...this.live.context,clock:{paused:false}};
+    this.key=this.runtimeKey(this.configuration!,this.binding!,this.live.context);
+    this.recording=undefined;this.primaryNeedsDraw=false;
+    this.handoff={handle,scene:record.scene,context,frame,displayed:false};
+   }else{
+    this.recording=undefined;this.primaryNeedsDraw=true;
+    return {scene:structuredClone(record.scene),context};
+   }
+  }catch(error){this.reset([error]);throw error;}
+  return this.publishHandoff();
+ }
+ private publishHandoff():{scene:SceneDocument;context:GenerateContext;preview:Raster}{
+  const state=this.handoff!;this.cancelled=state.context.isCancelled;this.work=0;
+  try{
+   if(!state.displayed){this.timeline!.display();state.displayed=true;}
+   const preview=this.renderOutput(state.scene,state.context,state.frame,this.target!,'primary',performance.now(),'snapshot');
+   this.remember(state.scene,state.context,preview);
+   return{scene:structuredClone(state.scene),context:copyContext(state.context),preview};
+  }catch(error){this.reset([error]);throw error;}finally{this.cancelled=undefined;}
  }
 }

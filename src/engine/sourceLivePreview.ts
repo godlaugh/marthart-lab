@@ -12,7 +12,8 @@ import {supportsSourceFractalLive} from './sourceFractalDocument';
  * their saved models, including legacy parameter/timeline behavior. Local
  * delayed accumulation and disabled recording retain fixed reconstruction; the
  * native live mobject always has a zero origin and draws each normal display. */
-export function sourceLivePreviewKind(scene:SceneDocument):'surface'|'samila'|'map'|'symmetry'|'fractal'|'domain'|undefined {
+export function sourceLivePreviewKind(scene:SceneDocument):'surface'|'samila'|'map'|'symmetry'|'fractal'|'domain'|'perlin'|undefined {
+ if(scene.kind==='perlin'&&scene.perlinSource!==undefined)return 'perlin';
  if(usesSourceSurfaceGeometry(scene))return 'surface';
  if(usesSourceDomain(scene))return 'domain';
  if(supportsSourceFractalLive(scene))return 'fractal';

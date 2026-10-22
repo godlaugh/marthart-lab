@@ -109,6 +109,13 @@ self.onmessage = (
       completed={...source,context:{...source.context,samilaLive:{...source.context.samilaLive,clock:{...source.context.samilaLive.clock,paused:event.data.paused}}}};
       send({operation:'samila-playback',id,sourceId:source.id,paused:event.data.paused});return;
     }
+    if(event.data.operation==='perlin-playback'){
+      const source=completed,live=source?.context.perlinLive;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='perlin'||!live||typeof event.data.paused!=='boolean'||!temporalSession.sourcePerlin.matchesCompletedPrimary(source.scene,source.context))throw Error('Perlin 播放控制对应的实时主预览已过期');
+      temporalSession.sourcePerlin.setPaused(event.data.paused,event.data.timestampMs);
+      completed={...source,context:{...source.context,perlinLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
+      send({operation:'perlin-playback',id,sourceId:source.id,paused:event.data.paused});return;
+    }
     if(event.data.operation==='domain-playback'){
       const source=completed,live=source?.context.domainLive;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='domain'||!live||typeof event.data.paused!=='boolean'||!temporalSession.sourceDomain.matchesCompletedPrimary(source.scene,source.context))throw Error('域着色播放控制对应的实时主预览已过期');
@@ -163,7 +170,7 @@ self.onmessage = (
         lease.preview=publication(output);
       }
       const preview=lease.preview.output;
-      const resumed={...context,time:preview.type==='geometry'?preview.surfaceLive!.frame.sceneTime:preview.domainLive?.sceneTime??preview.fractalLive?.sceneTime??preview.mapLive?.sceneTime??preview.symmetryLive?.sceneTime??context.time};
+      const resumed={...context,time:preview.type==='geometry'?preview.surfaceLive!.frame.sceneTime:preview.perlinLive?.sceneTime??preview.domainLive?.sceneTime??preview.fractalLive?.sceneTime??preview.mapLive?.sceneTime??preview.symmetryLive?.sceneTime??context.time};
       send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview}},outputBuffers(preview));
       completed={id,scene,context:resumed};recording=undefined;return;
     }

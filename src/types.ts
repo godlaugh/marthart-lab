@@ -419,6 +419,7 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveFacts;
   /** Geometry recording readback retains its producing Surface facts. */
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
   formulaPresentation?:FormulaPresentation;
@@ -521,6 +522,7 @@ export interface GenerateContext {
   sourceMapToneReference?:import('./engine/sourceIteratedPresentation').SourceIteratedToneReference;
   sourceSymmetryToneReference?:import('./engine/sourceIteratedPresentation').SourceIteratedToneReference;
   /** Explicit runtime instance; omitted requests use cold fixed-frame replay. */
+  perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveContext;
   samilaLive?:import('./engine/sourceSamilaSession').SourceSamilaLiveContext;
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveContext;
   domainLive?:import('./engine/sourceDomainLiveSession').SourceDomainLiveContext;
@@ -550,7 +552,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;
