@@ -393,7 +393,7 @@ export function ExportDialog({
         }else{
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
-          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',signal:abort.signal,isCancelled:()=>cancelRef.current});
+          blob=await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',...(kind==='image'&&format==='png'&&usesSourceImplicitCpuMesh(exportScene)?{sourceImageProcessing:'paused-png' as const}:{}),signal:abort.signal,isCancelled:()=>cancelRef.current});
         }
         checkCancelled();
         if (kind === "image") {

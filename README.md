@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+源隐式 CPU 曲面的静态 PNG 已补齐共同增强步骤，固定区域 RGB MAE 从 0.85 降到 0.025，相关 149 项测试及实际导出通过；公式位置和整图仍待验收。见[静态 PNG 增强验证](docs/source-implicit-static-png-validation.zh-CN.md)。弹跳原生初态已取得局部数值证据，但离屏粒子不可见，尚不能用作整图基准，见[原生参考核对](docs/source-bouncing-native-reference-validation.zh-CN.md)。
+
 Mandelbrot 剩余像素差异的受控实验、执行环境和未解决限制，见[分形数值差异核对](docs/source-fractal-native-residual-validation.zh-CN.md)。该调查尚未形成产品修复。
 
 2026-10-22 后续验证：修正源隐式曲面的 retained 线条变换及导出像素密度传递，实际 PNG 固定区域 RGB MAE 从 1.93 降到 0.85，仍未达到整图一致。域着色已取得原版真实顶点输入，排除了顶点遗漏假设，但残差尚存。见[隐式线条与导出验证](docs/source-implicit-retained-lines-validation.zh-CN.md)、[域着色真实提交验证](docs/source-domain-native-residual-validation.zh-CN.md)。

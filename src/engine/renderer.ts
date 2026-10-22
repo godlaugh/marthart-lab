@@ -23,7 +23,7 @@ import {parseMeshAppearance} from './meshAppearance';
 import {createSurfaceWireframe,createThickWireframe} from './thickWireframe';
 import {createThickTrails} from './thickTrails';
 import {parseTrailAppearance} from './trailAppearance';
-import {compositeFormulas} from './formulaCanvas';
+import {compositeFormulas,encodeFormulaRaster,type FormulaCompositeOptions} from './formulaCanvas';
 import {compositeSourceFormulaPixels,formulaBasePixels} from './sourceFormulaCompositor';
 import {formulaPresentation} from './formulas';
 import {encodeRgbaPng} from './rgbaPng';
@@ -440,12 +440,33 @@ export class ArtRenderer {
       try{this.renderer.autoClear=false;this.renderer.render(this.surfaceOverlayScene,this.camera);}finally{this.renderer.autoClear=autoClear;}
     }
   }
-  async blob(type = "image/png", quality = 0.95, options?:{sourcePresentationAlpha:'preserve'|'opaque';signal?:AbortSignal;isCancelled?:()=>boolean}): Promise<Blob> {
+  private sourceFramebufferPixels(isCancelled:()=>boolean){
+    if(isCancelled())throw new DOMException('图像导出已取消','AbortError');
+    const gl=this.renderer.getContext(),width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
+    if(!Number.isSafeInteger(width*height)||width*height>MAX_RASTER_PIXELS)throw new Error('源网格 PNG 超过共享 RGBA 图像容量');
+    const pixels=new Uint8ClampedArray(width*height*4);
+    gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+    if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw new Error('源网格 PNG 像素回读失败');
+    const stride=width*4,row=new Uint8ClampedArray(stride);
+    for(let y=0;y<Math.floor(height/2);y++){
+      if((y&63)===0&&isCancelled())throw new DOMException('图像导出已取消','AbortError');
+      const a=y*stride,b=(height-1-y)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);
+    }
+    return{pixels,width,height};
+  }
+  async blob(type = "image/png", quality = 0.95, options?:FormulaCompositeOptions&{sourcePresentationAlpha:'preserve'|'opaque'}): Promise<Blob> {
     this.render();
     if(options?.signal?.aborted||options?.isCancelled?.())throw new DOMException('图像导出已取消','AbortError');
     if((this.document?.fractalSource||this.document?.formulas?.layout==='source-surface-centered-v1')&&!this.formulaFrame)throw new Error('源图像缺少实际帧的公式标注');
     const presentation=this.formulaFrame??(this.document?formulaPresentation(this.document):undefined);
     const isCancelled=()=>!!options?.signal?.aborted||!!options?.isCancelled?.();
+    if(options?.sourceImageProcessing){
+      if(type!=='image/png'||!this.sourceClear||!presentation)throw new Error('源暂停 PNG 需要源帧、原始像素和已解析公式');
+      const {pixels,width,height}=this.sourceFramebufferPixels(isCancelled);
+      // Fresh geometry is not a retained numerical snapshot. Reuse the shared
+      // formula -> native image processing -> PNG owner without inventing one.
+      return encodeFormulaRaster({type:'raster',width,height,pixels,formulaPresentation:presentation},'image/png',options);
+    }
     if(this.sourceCompositedRaster&&type==='image/png'&&!presentation?.labels.length){
       const frame=this.sourceCompositedRaster,gl=this.renderer.getContext();
       if(frame.width!==gl.drawingBufferWidth||frame.height!==gl.drawingBufferHeight)throw new Error('源合成图像导出尺寸必须与已生成图像一致');
@@ -459,15 +480,7 @@ export class ArtRenderer {
       // Canvas.toBlob would unpremultiply source framebuffer bytes. Reuse the
       // existing lossless encoder for unannotated source PNGs, including hidden
       // RGB at alpha zero. Annotated/non-PNG exports retain their compositor.
-      const gl=this.renderer.getContext(),width=gl.drawingBufferWidth,height=gl.drawingBufferHeight;
-      if(!Number.isSafeInteger(width*height)||width*height>MAX_RASTER_PIXELS)throw new Error('源网格 PNG 超过共享 RGBA 图像容量');
-      const pixels=new Uint8ClampedArray(width*height*4);
-      gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
-      if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw new Error('源网格 PNG 像素回读失败');
-      const stride=width*4,row=new Uint8ClampedArray(stride);
-      for(let y=0;y<Math.floor(height/2);y++){
-        const a=y*stride,b=(height-1-y)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);
-      }
+      const {pixels,width,height}=this.sourceFramebufferPixels(isCancelled);
       return encodeRgbaPng(pixels,width,height,isCancelled);
     }
     if(type==='image/png'&&presentation?.layout==='source-surface-centered-v1'&&presentation.labels.length){
