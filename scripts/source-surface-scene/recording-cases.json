@@ -1,0 +1,1596 @@
+{
+  "cases": [
+    {
+      "name": "empty-mesh",
+      "recording": true,
+      "simulationFps": 4,
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "Recording empty-mesh",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "MESH",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0.25,
+          "theta": -0.3,
+          "gamma": 0.5
+        },
+        "timeline": []
+      },
+      "steps": [
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "short-wait",
+      "recording": true,
+      "simulationFps": 4,
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "Recording short-wait",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "MESH",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0.25,
+          "theta": -0.3,
+          "gamma": 0.5
+        },
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 0.125
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "boundary-wait",
+      "recording": true,
+      "simulationFps": 4,
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "Recording boundary-wait",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0.25,
+          "theta": -0.3,
+          "gamma": 0.5
+        },
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 0.5
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "animated-points",
+      "recording": true,
+      "simulationFps": 4,
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "Recording animated-points",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0.25,
+          "theta": -0.3,
+          "gamma": 0.5
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.5,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "ambient",
+                "args": [
+                  0.1,
+                  0.2,
+                  0.3
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.6
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "animated-mesh",
+      "recording": true,
+      "simulationFps": 4,
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "Recording animated-mesh",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "MESH",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0.25,
+          "theta": -0.3,
+          "gamma": 0.5
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.5,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "ambient",
+                "args": [
+                  0.1,
+                  0.2,
+                  0.3
+                ]
+              }
+            ]
+          },
+          {
+            "type": "wait",
+            "duration": 0.6
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "name": "mode-switch",
+      "recording": true,
+      "simulationFps": 4,
+      "project": {
+        "config_version": "1.0.0",
+        "type": "SURFACE",
+        "name": "Recording mode-switch",
+        "parameters": {
+          "a": 0.25
+        },
+        "equations": {
+          "x": "a+u",
+          "y": "v",
+          "z": "0"
+        },
+        "settings": {
+          "render_mode": "CPU",
+          "surface_mode": "POINTS",
+          "u_segments": 2,
+          "v_segments": 2,
+          "mesh_u_segments": 2,
+          "mesh_v_segments": 2,
+          "u_min": 0,
+          "u_max": 1,
+          "v_min": 0,
+          "v_max": 1,
+          "speed_u": 0,
+          "speed_v": 0,
+          "scale_x": 1,
+          "scale_y": 1,
+          "scale_z": 1,
+          "show_trails": false,
+          "mesh_wireframe": false
+        },
+        "camera": {
+          "phi": 0.25,
+          "theta": -0.3,
+          "gamma": 0.5
+        },
+        "timeline": [
+          {
+            "type": "animate",
+            "duration": 0.5,
+            "easing": "LINEAR",
+            "actions": [
+              {
+                "method": "paramStart",
+                "args": {
+                  "parameters": {
+                    "a": {
+                      "step": 0.1,
+                      "min": -1,
+                      "max": 1
+                    }
+                  }
+                }
+              },
+              {
+                "method": "ambient",
+                "args": [
+                  0.1,
+                  0.2,
+                  0.3
+                ]
+              }
+            ]
+          },
+          {
+            "type": "surface_mode_transition",
+            "duration": 0.5,
+            "to": "MESH",
+            "easing": "LINEAR"
+          },
+          {
+            "type": "wait",
+            "duration": 0.3
+          },
+          {
+            "type": "surface_mode_transition",
+            "duration": 0.5,
+            "to": "POINTS",
+            "easing": "LINEAR"
+          },
+          {
+            "type": "wait",
+            "duration": 0.3
+          }
+        ]
+      },
+      "steps": [
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 0,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": -2,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 37,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 24,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 12,
+          "paused": false
+        },
+        {
+          "dt": 0.25,
+          "actualFrameRate": 1,
+          "paused": false
+        }
+      ]
+    }
+  ]
+}

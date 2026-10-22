@@ -19,8 +19,9 @@ function audit(){
 let server,browser;const started=performance.now();
 try{
  server=await createServer({server:{host:'127.0.0.1',port:0,hmr:false},logLevel:'error'});await server.listen();const origin=`http://127.0.0.1:${server.httpServer.address().port}/`;browser=await chromium.launch({channel:'chrome',headless:true});report.browser=browser.version();
- for(const backend of ['CPU','GPU'])for(const mode of ['POINTS','MESH']){
-  const row={backend,mode,status:'running',steps:[]};report.cases.push(row);const page=await browser.newPage({viewport:{width:1360,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000);await page.addInitScript(audit);
+ const cases=['CPU','GPU'].flatMap(backend=>['POINTS','MESH'].map(mode=>({backend,mode,queue:'animated'}))).concat(['empty','wait'].map(queue=>({backend:'CPU',mode:'POINTS',queue})));
+ for(const {backend,mode,queue}of cases){
+  const row={backend,mode,queue,status:'running',steps:[]};report.cases.push(row);const page=await browser.newPage({viewport:{width:1360,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000);await page.addInitScript(audit);
   const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
   const last=()=>page.evaluate(()=>window.__surfaceAudit.responses.findLast(r=>r.live));
   const sequence=()=>page.evaluate(()=>window.__surfaceAudit.sequence);
@@ -30,6 +31,7 @@ try{
    await page.route('**/surface-fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(origin+'surface-fixture');
    await page.evaluate(async()=>{const {createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const initial=createScene(definition('surface'));Object.assign(initial.settings,{uSegments:3,vSegments:3,showTrails:false});saveWorkspace(localStorage,{scenes:[initial],active:initial.id,theme:'dark',language:'en',render:{quality:'low',frameRate:20}});});
    const project={config_version:'1.0.0',type:'SURFACE',name:`Surface UI ${backend} ${mode}`,parameters:{a:.25},equations:{x:'a+u',y:'v',z:'0'},camera:{phi:0,theta:0,gamma:0},settings:{render_mode:backend,surface_mode:mode,u_segments:10,v_segments:10,mesh_u_segments:10,mesh_v_segments:10,u_min:-1,u_max:1,v_min:-1,v_max:1,scale_x:60,scale_y:60,scale_z:60,speed_u:0,speed_v:0,show_trails:false,mesh_wireframe:false},timeline:[{type:'animate',duration:30,easing:'LINEAR',actions:[{method:'paramStart',args:{parameters:{a:{step:.1,min:-1,max:1}}}},{method:'ambient',args:[.1,.2,.3]}]}]};
+   if(queue==='empty')project.timeline=[];else if(queue==='wait')project.timeline=[{type:'wait',duration:30}];
    await page.goto(origin);await ready();await page.locator('input[type=file]').setInputFiles({name:'surface.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});let current=await next(0);check(current.live.paused&&current.live.frame.sceneTime===0,'import not paused at origin');row.steps.push({name:'import',frame:current});
    await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(()=>window.__surfaceAudit.responses.some(r=>r.live?.frame.sceneTime>.2&&!r.live.paused));
    let seq=await sequence();await page.getByRole('button',{name:'Pause',exact:true}).click();await page.waitForFunction(seq=>window.__surfaceAudit.responses.some(r=>r.sequence>seq&&r.operation==='surface-playback'&&r.response.paused),seq);await ready();current=await last();const before=current.live,oldPixels=await pixels();row.steps.push({name:'play-pause',frame:current});
@@ -50,7 +52,7 @@ try{
    const captures=[];
    for(let repeat=0;repeat<2;repeat++){
     const download=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();
-    const png=await download,path=`${directory}/${backend}-${mode}-current-${repeat}.png`;await png.saveAs(path);const decoded=decodePng(await readFile(path));
+    const png=await download,path=`${directory}/${backend}-${mode}-${queue}-current-${repeat}.png`;await png.saveAs(path);const decoded=decodePng(await readFile(path));
     check(decoded.width===195&&decoded.height===147,'PNG dimensions');const capture=await page.evaluate(()=>window.__surfaceAudit.responses.findLast(r=>r.capture));
     check(capture&&JSON.stringify(capture.capture.frame)===JSON.stringify(current.live.frame)&&JSON.stringify(capture.preview.frame)===JSON.stringify(current.live.frame),'PNG advanced scene');
     captures.push({width:decoded.width,height:decoded.height,pixels:sha(decoded.rgba),capture});
@@ -62,9 +64,9 @@ try{
    seq=await sequence();await page.getByTestId('surface-apply').click();await page.waitForFunction(seq=>window.__surfaceAudit.responses.some(r=>r.sequence>seq&&r.live&&!r.live.paused&&r.live.frame.sceneTime===0),seq);
    const apply=await page.evaluate(seq=>window.__surfaceAudit.responses.find(r=>r.sequence>seq&&r.live&&r.live.frame.sceneTime===0),seq);check(apply.live.constructions===current.live.constructions+1,'running Apply did not replace owner');row.steps.push({name:'running-apply',frame:apply});
    seq=await sequence();await page.getByRole('button',{name:'Pause',exact:true}).click();await page.waitForFunction(seq=>window.__surfaceAudit.responses.some(r=>r.sequence>seq&&r.operation==='surface-playback'&&r.response.paused),seq);await ready();
-   await page.screenshot({path:`${directory}/${backend}-${mode}.png`});row.audit=await page.evaluate(()=>window.__surfaceAudit);check(!errors.length&&!row.audit.errors.length,'runtime errors');row.status='passed';
-  }catch(error){row.status='failed';row.error=String(error.stack??error);row.audit=await page.evaluate(()=>window.__surfaceAudit).catch(()=>undefined);await page.screenshot({path:`${directory}/${backend}-${mode}-failure.png`}).catch(()=>{});}
-  finally{row.pageErrors=errors;await page.close();console.log(`${backend} ${mode}: ${row.status}${row.error?' '+row.error:''}`);}
+   await page.screenshot({path:`${directory}/${backend}-${mode}-${queue}.png`});row.audit=await page.evaluate(()=>window.__surfaceAudit);check(!errors.length&&!row.audit.errors.length,'runtime errors');row.status='passed';
+  }catch(error){row.status='failed';row.error=String(error.stack??error);row.audit=await page.evaluate(()=>window.__surfaceAudit).catch(()=>undefined);await page.screenshot({path:`${directory}/${backend}-${mode}-${queue}-failure.png`}).catch(()=>{});}
+  finally{row.pageErrors=errors;await page.close();console.log(`${backend} ${mode} ${queue}: ${row.status}${row.error?' '+row.error:''}`);}
  }
  report.status=report.cases.every(c=>c.status==='passed')?'passed':'failed';
 }catch(error){report.status='failed';report.error=String(error.stack??error);}

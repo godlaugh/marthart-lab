@@ -1547,7 +1547,9 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  const surfaceMode=kind==='surface'?r.peek(['settings','surface_mode']):undefined;
  const surfaceBackend=kind==='surface'?r.peek(['settings','render_mode']):undefined;
  if(typeof surfaceMode==='string'&&surfaceMode.toUpperCase()==='MESH'||typeof surfaceBackend==='string'&&surfaceBackend.toUpperCase()==='GPU'||ordinaryStructure?.some(clip=>clip.type==='surface_mode_transition'))ordinarySurfaceHostGeometry(r,scene);
- else if(ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length)))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
+ // Full native projects use source points even with no animation. The legacy
+ // runtime-config adapter retains its existing local compatibility semantics.
+ else if(kind==='surface'&&(options.sourceEntry==='project'||ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length))))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
  if(kind==='perlin'){
   const parsed=importSourcePerlinDocument(r.peek(['settings']),r.peek(['palette']),{defaultSeed:String(Date.now()),numberToken:path=>r.numberToken(path)});
   if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);

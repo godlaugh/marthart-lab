@@ -8,11 +8,11 @@ import {SourceSurfaceHost} from '../src/engine/sourceSurfaceHost';
 import {prepareSourceSurfaceParticles} from '../src/engine/sourceSurfaceParticles';
 
 describe('original MathArt.updateParameter on the retained Surface object',()=>{
- it('records that empty CPU point timelines still import through the local geometry path',()=>{
+ it('imports empty CPU point timelines through the native point owner',()=>{
   const trace=native.actual.cases.find(c=>c.input.name==='hot-edit-empty-points')!;
-  expect(usesSourceSurfaceGeometry(parseProjectFile(JSON.stringify(trace.input.project)).scene)).toBe(false);
+  expect(usesSourceSurfaceGeometry(parseProjectFile(JSON.stringify(trace.input.project)).scene)).toBe(true);
  });
- for(const trace of native.actual.cases.filter(c=>c.input.name!=='hot-edit-empty-points'))it(trace.input.name,()=>{
+ for(const trace of native.actual.cases)it(trace.input.name,()=>{
   const scene=parseProjectFile(JSON.stringify(trace.input.project)).scene;scene.timeline.fps=10;
   const initial=ordinarySourceCameraInitial(scene)!;
   const producer=scene.surfaceSource?new SourceSurfaceHost({configuration:scene.surfaceSource,equations:scene.equations,parameters:scene.parameters,palette:scene.surfaceSourcePalette,frameRate:10,coverage:'all'}):prepareSourceSurfaceParticles(scene).create('all');

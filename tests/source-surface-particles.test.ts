@@ -51,9 +51,9 @@ describe('source CPU surface through public import, document and geometry',()=>{
   expect(restored.settings.uSegments).toBe(3); // JSONObject Double.intValue, with original token retained.
   expect(restored.timeline.tracks).toHaveLength(1);
  });
- it('does not upgrade old local/ordinary camera geometry or empty native track calls',()=>{
+ it('keeps native point ownership when track has no particle arguments',()=>{
   const raw=source();raw.timeline[0].actions[0].args=[];
-  const s=scene(raw);expect(usesSourceSurfaceParticles(s)).toBe(false);expect(supportsParticleTracking(s)).toBe(false);
+  const s=scene(raw);expect(usesSourceSurfaceParticles(s)).toBe(true);expect(supportsParticleTracking(s)).toBe(true);
  });
  it.each([{render_mode:'GPU',surface_mode:'MESH',mesh_u_segments:513},{u_segments:513}])('fails explicitly instead of changing requested geometry %j',settings=>{
   expect(()=>scene({...source(),settings:{...source().settings,...settings}})).toThrow(/尚未|待接入|1–512/);

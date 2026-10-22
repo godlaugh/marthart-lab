@@ -55,9 +55,28 @@ MathArt constructor, UI or reload lifecycle. Scene/CPU constructors remain real.
 Two executions match. The original 133-step suite was re-executed unchanged and
 its complete actual payload still equals native.json.
 
-`source-surface-parameter-edit.test.ts` compares five supported projects / 75
-steps through production import and the owned queue. The sixth, empty CPU point
-timeline, currently imports into local geometry: it is retained as an explicitly
-unverified source-session case. CPU point coordinates are direct observations;
+`source-surface-parameter-edit.test.ts` now compares all six projects / 90
+steps through production import and the owned queue. Full native CPU point
+projects select source particles even with an empty timeline; the legacy runtime
+adapter and existing saved local documents retain their compatibility semantics. CPU point coordinates are direct observations;
 mesh first vertices are derived from observed function values for x=a+u,u=0,
 not native framebuffer observations. See the Chinese parameter edit report.
+
+## Retained recording
+
+`recording-native.json` adds six CPU projects / 24 updates per execution using
+`--cases scripts/source-surface-scene/recording-cases.json`: empty/short/exact-step
+queues, animated points/mesh, and point → mesh → point replacement. Two executions
+match. These cases call original `Scene.setRenderMode(4)`, `Scene.update(false)`,
+`isAutoRecordingComplete` and `disableRenderMode`, with independently injected
+PApplet.frameRate values (including finite zero/negative values). Stop snapshots
+match before/after. No original toolbar, GL, video recorder or encoder runs.
+The original 133-update and 90-edit traces were rerun after the harness change;
+both complete actual payloads still match their retained fixtures.
+
+`source-surface-recording.test.ts` compares production import and retained owner
+clock, camera, mode, completion, parameter values and positions. Mesh vertices
+are derived from the observed function for x=a+u at u=0, not native mesh pixels.
+A separate real-browser script draws CPU/GPU geometry, including the fully
+covered native transition frame (overlayAlpha=1, displayed byte 255). This
+establishes local rendering and original CPU numerical agreement only.

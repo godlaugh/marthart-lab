@@ -1,6 +1,7 @@
+import {definition} from '../src/scenes';
 import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
-import {parseScene,serializeScene} from '../src/engine/document';
+import {parseScene,serializeScene,createScene} from '../src/engine/document';
 import {usesSourceSurfaceHost,usesSourceSurfaceParticles} from '../src/engine/sourceSurfaceIdentity';
 import {parseSourceNumberTokens} from '../src/engine/sourceNumberTokens';
 
@@ -80,8 +81,14 @@ describe('public original CPU mesh import and saved document boundary',()=>{
   expect(()=>parseSourceNumberTokens([{path:['settings','unrelated_mesh'],token:'1'}],'surface')).toThrow();
   expect(()=>parseSourceNumberTokens([{path:['settings','mesh_fill_opacity'],token:'1'}],'attractor')).toThrow();
  });
- it('does not upgrade existing point scenes or change their source defaults',()=>{
-  const local=read({surface_mode:'POINTS'});expect(usesSourceSurfaceHost(local)).toBe(false);expect(local.surfaceSource).toBeUndefined();expect(usesSourceSurfaceParticles(local)).toBe(false);
+ it('reopens existing local MathArt Lab surface documents without migrating their producer',()=>{
+  const local=createScene(definition('surface')),saved=serializeScene(local),reopened=parseProjectFile(saved).scene;
+  expect(usesSourceSurfaceHost(reopened)).toBe(false);expect(usesSourceSurfaceParticles(reopened)).toBe(false);
+  expect(reopened.settings.surfaceGeometryVersion).toBe(local.settings.surfaceGeometryVersion);
+  expect(reopened.equations).toEqual(local.equations);
+ });
+ it('imports an empty native point project without selecting the mesh host',()=>{
+  const local=read({surface_mode:'POINTS'});expect(usesSourceSurfaceHost(local)).toBe(false);expect(local.surfaceSource).toBeUndefined();expect(usesSourceSurfaceParticles(local)).toBe(true);expect(parseScene(serializeScene(local)).settings.surfaceGeometryVersion).toBe(local.settings.surfaceGeometryVersion);
   const native=read({surface_mode:'POINTS'},[{type:'animate',duration:.25,actions:[{method:'track',args:[1]}]}]);
   expect(usesSourceSurfaceParticles(native)).toBe(true);expect(native.surfaceSource).toBeUndefined();expect(native.settings.uSegments).toBe(40);
  });

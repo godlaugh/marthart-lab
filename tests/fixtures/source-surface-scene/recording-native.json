@@ -1,0 +1,3282 @@
+{
+  "kind": "original-Surface-scene-update-traces",
+  "actual": {
+    "cases": [
+      {
+        "input": {
+          "name": "empty-mesh",
+          "recording": true,
+          "project": {
+            "equations": {
+              "x": "a+u",
+              "y": "v",
+              "z": "0"
+            },
+            "settings": {
+              "scale_z": 1,
+              "scale_y": 1,
+              "v_min": 0,
+              "mesh_wireframe": false,
+              "scale_x": 1,
+              "v_segments": 2,
+              "u_max": 1,
+              "mesh_u_segments": 2,
+              "u_segments": 2,
+              "show_trails": false,
+              "v_max": 1,
+              "speed_v": 0,
+              "u_min": 0,
+              "render_mode": "CPU",
+              "speed_u": 0,
+              "surface_mode": "MESH",
+              "mesh_v_segments": 2
+            },
+            "name": "Recording empty-mesh",
+            "timeline": [],
+            "type": "SURFACE",
+            "camera": {
+              "phi": 0.25,
+              "theta": -0.3,
+              "gamma": 0.5
+            },
+            "parameters": {
+              "a": 0.25
+            },
+            "config_version": "1.0.0"
+          },
+          "simulationFps": 4,
+          "steps": [
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            }
+          ]
+        },
+        "initial": {
+          "sceneTime": 0,
+          "rawDt": 0,
+          "queueIndex": 0,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "frames": [
+          {
+            "state": {
+              "sceneTime": 0.25,
+              "rawDt": 0.25,
+              "queueIndex": 0,
+              "queueComplete": true,
+              "remaining": 0,
+              "objectTime": 0,
+              "initialObjectTime": 0,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "initialValue": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.25,
+                "theta": -0.30000001192092896,
+                "gamma": 0.5,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0,
+                "thetaRate": 0,
+                "gammaRate": 0
+              },
+              "firstPosition": [
+                0.25,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": true
+          }
+        ],
+        "beforeStop": {
+          "sceneTime": 0.25,
+          "rawDt": 0.25,
+          "queueIndex": 0,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "afterStop": {
+          "sceneTime": 0.25,
+          "rawDt": 0.25,
+          "queueIndex": 0,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        }
+      },
+      {
+        "input": {
+          "name": "short-wait",
+          "recording": true,
+          "project": {
+            "equations": {
+              "x": "a+u",
+              "y": "v",
+              "z": "0"
+            },
+            "settings": {
+              "scale_z": 1,
+              "scale_y": 1,
+              "v_min": 0,
+              "mesh_wireframe": false,
+              "scale_x": 1,
+              "v_segments": 2,
+              "u_max": 1,
+              "mesh_u_segments": 2,
+              "u_segments": 2,
+              "show_trails": false,
+              "v_max": 1,
+              "speed_v": 0,
+              "u_min": 0,
+              "render_mode": "CPU",
+              "speed_u": 0,
+              "surface_mode": "MESH",
+              "mesh_v_segments": 2
+            },
+            "name": "Recording short-wait",
+            "timeline": [
+              {
+                "duration": 0.125,
+                "type": "wait"
+              }
+            ],
+            "type": "SURFACE",
+            "camera": {
+              "phi": 0.25,
+              "theta": -0.3,
+              "gamma": 0.5
+            },
+            "parameters": {
+              "a": 0.25
+            },
+            "config_version": "1.0.0"
+          },
+          "simulationFps": 4,
+          "steps": [
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            }
+          ]
+        },
+        "initial": {
+          "sceneTime": 0,
+          "rawDt": 0,
+          "queueIndex": 0,
+          "queueComplete": false,
+          "remaining": 0.125,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "frames": [
+          {
+            "state": {
+              "sceneTime": 0.125,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": true,
+              "remaining": 0,
+              "objectTime": 0.125,
+              "initialObjectTime": 0.125,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "initialValue": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.25,
+                "theta": -0.30000001192092896,
+                "gamma": 0.5,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0,
+                "thetaRate": 0,
+                "gammaRate": 0
+              },
+              "firstPosition": [
+                0.25,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": true
+          }
+        ],
+        "beforeStop": {
+          "sceneTime": 0.125,
+          "rawDt": 0.25,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 0.125,
+          "initialObjectTime": 0.125,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "afterStop": {
+          "sceneTime": 0.125,
+          "rawDt": 0.25,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 0.125,
+          "initialObjectTime": 0.125,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        }
+      },
+      {
+        "input": {
+          "name": "boundary-wait",
+          "recording": true,
+          "project": {
+            "equations": {
+              "x": "a+u",
+              "y": "v",
+              "z": "0"
+            },
+            "settings": {
+              "scale_z": 1,
+              "scale_y": 1,
+              "v_min": 0,
+              "mesh_wireframe": false,
+              "scale_x": 1,
+              "v_segments": 2,
+              "u_max": 1,
+              "mesh_u_segments": 2,
+              "u_segments": 2,
+              "show_trails": false,
+              "v_max": 1,
+              "speed_v": 0,
+              "u_min": 0,
+              "render_mode": "CPU",
+              "speed_u": 0,
+              "surface_mode": "POINTS",
+              "mesh_v_segments": 2
+            },
+            "name": "Recording boundary-wait",
+            "timeline": [
+              {
+                "duration": 0.5,
+                "type": "wait"
+              }
+            ],
+            "type": "SURFACE",
+            "camera": {
+              "phi": 0.25,
+              "theta": -0.3,
+              "gamma": 0.5
+            },
+            "parameters": {
+              "a": 0.25
+            },
+            "config_version": "1.0.0"
+          },
+          "simulationFps": 4,
+          "steps": [
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            }
+          ]
+        },
+        "initial": {
+          "sceneTime": 0,
+          "rawDt": 0,
+          "queueIndex": 0,
+          "queueComplete": false,
+          "remaining": 0.5,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "frames": [
+          {
+            "state": {
+              "sceneTime": 0.25,
+              "rawDt": 0.25,
+              "queueIndex": 0,
+              "queueComplete": false,
+              "remaining": 0.25,
+              "objectTime": 0.25,
+              "initialObjectTime": 0.25,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "initialValue": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.25,
+                "theta": -0.30000001192092896,
+                "gamma": 0.5,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0,
+                "thetaRate": 0,
+                "gammaRate": 0
+              },
+              "firstPosition": [
+                0.25,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 0.5,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": true,
+              "remaining": 0,
+              "objectTime": 0.5,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "initialValue": {
+                "value": 0.25,
+                "bits": "3fd0000000000000"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.25,
+                "theta": -0.30000001192092896,
+                "gamma": 0.5,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0,
+                "thetaRate": 0,
+                "gammaRate": 0
+              },
+              "firstPosition": [
+                0.25,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": true
+          }
+        ],
+        "beforeStop": {
+          "sceneTime": 0.5,
+          "rawDt": 0.25,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 0.5,
+          "initialObjectTime": 0.5,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "afterStop": {
+          "sceneTime": 0.5,
+          "rawDt": 0.25,
+          "queueIndex": 1,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 0.5,
+          "initialObjectTime": 0.5,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        }
+      },
+      {
+        "input": {
+          "name": "animated-points",
+          "recording": true,
+          "project": {
+            "equations": {
+              "x": "a+u",
+              "y": "v",
+              "z": "0"
+            },
+            "settings": {
+              "scale_z": 1,
+              "scale_y": 1,
+              "v_min": 0,
+              "mesh_wireframe": false,
+              "scale_x": 1,
+              "v_segments": 2,
+              "u_max": 1,
+              "mesh_u_segments": 2,
+              "u_segments": 2,
+              "show_trails": false,
+              "v_max": 1,
+              "speed_v": 0,
+              "u_min": 0,
+              "render_mode": "CPU",
+              "speed_u": 0,
+              "surface_mode": "POINTS",
+              "mesh_v_segments": 2
+            },
+            "name": "Recording animated-points",
+            "timeline": [
+              {
+                "duration": 0.5,
+                "type": "animate",
+                "easing": "LINEAR",
+                "actions": [
+                  {
+                    "args": {
+                      "parameters": {
+                        "a": {
+                          "min": -1,
+                          "max": 1,
+                          "step": 0.1
+                        }
+                      }
+                    },
+                    "method": "paramStart"
+                  },
+                  {
+                    "args": [
+                      0.1,
+                      0.2,
+                      0.3
+                    ],
+                    "method": "ambient"
+                  }
+                ]
+              },
+              {
+                "duration": 0.6,
+                "type": "wait"
+              }
+            ],
+            "type": "SURFACE",
+            "camera": {
+              "phi": 0.25,
+              "theta": -0.3,
+              "gamma": 0.5
+            },
+            "parameters": {
+              "a": 0.25
+            },
+            "config_version": "1.0.0"
+          },
+          "simulationFps": 4,
+          "steps": [
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            }
+          ]
+        },
+        "initial": {
+          "sceneTime": 0,
+          "rawDt": 0,
+          "queueIndex": 0,
+          "queueComplete": false,
+          "remaining": 1.100000023841858,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "frames": [
+          {
+            "state": {
+              "sceneTime": 0.25,
+              "rawDt": 0.25,
+              "queueIndex": 0,
+              "queueComplete": false,
+              "remaining": 0.8500000238418579,
+              "objectTime": 0.25,
+              "initialObjectTime": 0.25,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.6557535206878746,
+                "bits": "3fe4fbeeceb2ebc6"
+              },
+              "initialValue": {
+                "value": 0.6557535206878746,
+                "bits": "3fe4fbeeceb2ebc6"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.26249998807907104,
+                "theta": -0.2750000059604645,
+                "gamma": 0.5375000238418579,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.05000000074505806,
+                "thetaRate": 0.10000000149011612,
+                "gammaRate": 0.15000000596046448
+              },
+              "firstPosition": [
+                0.655753493309021,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 0.5,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 0.6000000238418579,
+              "objectTime": 0.5,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.2874999940395355,
+                "theta": -0.22500000894069672,
+                "gamma": 0.612500011920929,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 0.75,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 0.3500000238418579,
+              "objectTime": 0.75,
+              "initialObjectTime": 0.75,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9998245072478329,
+                "bits": "3feffe8ff70bccdc"
+              },
+              "initialValue": {
+                "value": 0.9998245072478329,
+                "bits": "3feffe8ff70bccdc"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.3125,
+                "theta": -0.17500001192092896,
+                "gamma": 0.6875,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9998245239257812,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 0.10000002384185791,
+              "objectTime": 1,
+              "initialObjectTime": 1,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9120906968296293,
+                "bits": "3fed2fd8d43bcfbd"
+              },
+              "initialValue": {
+                "value": 0.9120906968296293,
+                "bits": "3fed2fd8d43bcfbd"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.3375000059604645,
+                "theta": -0.1250000149011612,
+                "gamma": 0.762499988079071,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9120907187461853,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1.100000023841858,
+              "rawDt": 0.25,
+              "queueIndex": 2,
+              "queueComplete": true,
+              "remaining": 0,
+              "objectTime": 1.100000023841858,
+              "initialObjectTime": 1.100000023841858,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.532580713380937,
+                "bits": "3fe10ae6b54e727a"
+              },
+              "initialValue": {
+                "value": 0.532580713380937,
+                "bits": "3fe10ae6b54e727a"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.36250001192092896,
+                "theta": -0.07500001788139343,
+                "gamma": 0.8374999761581421,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.5325807332992554,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": true
+          }
+        ],
+        "beforeStop": {
+          "sceneTime": 1.100000023841858,
+          "rawDt": 0.25,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 1.100000023841858,
+          "initialObjectTime": 1.100000023841858,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "initialValue": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.36250001192092896,
+            "theta": -0.07500001788139343,
+            "gamma": 0.8374999761581421,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "thetaRate": 0.20000000298023224,
+            "gammaRate": 0.30000001192092896
+          },
+          "firstPosition": [
+            0.5325807332992554,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "afterStop": {
+          "sceneTime": 1.100000023841858,
+          "rawDt": 0.25,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 1.100000023841858,
+          "initialObjectTime": 1.100000023841858,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "initialValue": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.36250001192092896,
+            "theta": -0.07500001788139343,
+            "gamma": 0.8374999761581421,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "thetaRate": 0.20000000298023224,
+            "gammaRate": 0.30000001192092896
+          },
+          "firstPosition": [
+            0.5325807332992554,
+            0,
+            0
+          ],
+          "particleCount": 4
+        }
+      },
+      {
+        "input": {
+          "name": "animated-mesh",
+          "recording": true,
+          "project": {
+            "equations": {
+              "x": "a+u",
+              "y": "v",
+              "z": "0"
+            },
+            "settings": {
+              "scale_z": 1,
+              "scale_y": 1,
+              "v_min": 0,
+              "mesh_wireframe": false,
+              "scale_x": 1,
+              "v_segments": 2,
+              "u_max": 1,
+              "mesh_u_segments": 2,
+              "u_segments": 2,
+              "show_trails": false,
+              "v_max": 1,
+              "speed_v": 0,
+              "u_min": 0,
+              "render_mode": "CPU",
+              "speed_u": 0,
+              "surface_mode": "MESH",
+              "mesh_v_segments": 2
+            },
+            "name": "Recording animated-mesh",
+            "timeline": [
+              {
+                "duration": 0.5,
+                "type": "animate",
+                "easing": "LINEAR",
+                "actions": [
+                  {
+                    "args": {
+                      "parameters": {
+                        "a": {
+                          "min": -1,
+                          "max": 1,
+                          "step": 0.1
+                        }
+                      }
+                    },
+                    "method": "paramStart"
+                  },
+                  {
+                    "args": [
+                      0.1,
+                      0.2,
+                      0.3
+                    ],
+                    "method": "ambient"
+                  }
+                ]
+              },
+              {
+                "duration": 0.6,
+                "type": "wait"
+              }
+            ],
+            "type": "SURFACE",
+            "camera": {
+              "phi": 0.25,
+              "theta": -0.3,
+              "gamma": 0.5
+            },
+            "parameters": {
+              "a": 0.25
+            },
+            "config_version": "1.0.0"
+          },
+          "simulationFps": 4,
+          "steps": [
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            }
+          ]
+        },
+        "initial": {
+          "sceneTime": 0,
+          "rawDt": 0,
+          "queueIndex": 0,
+          "queueComplete": false,
+          "remaining": 1.100000023841858,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "frames": [
+          {
+            "state": {
+              "sceneTime": 0.25,
+              "rawDt": 0.25,
+              "queueIndex": 0,
+              "queueComplete": false,
+              "remaining": 0.8500000238418579,
+              "objectTime": 0.25,
+              "initialObjectTime": 0.25,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.6557535206878746,
+                "bits": "3fe4fbeeceb2ebc6"
+              },
+              "initialValue": {
+                "value": 0.6557535206878746,
+                "bits": "3fe4fbeeceb2ebc6"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.26249998807907104,
+                "theta": -0.2750000059604645,
+                "gamma": 0.5375000238418579,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.05000000074505806,
+                "thetaRate": 0.10000000149011612,
+                "gammaRate": 0.15000000596046448
+              },
+              "firstPosition": [
+                0.655753493309021,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 0.5,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 0.6000000238418579,
+              "objectTime": 0.5,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.2874999940395355,
+                "theta": -0.22500000894069672,
+                "gamma": 0.612500011920929,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 0.75,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 0.3500000238418579,
+              "objectTime": 0.75,
+              "initialObjectTime": 0.75,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9998245072478329,
+                "bits": "3feffe8ff70bccdc"
+              },
+              "initialValue": {
+                "value": 0.9998245072478329,
+                "bits": "3feffe8ff70bccdc"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.3125,
+                "theta": -0.17500001192092896,
+                "gamma": 0.6875,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9998245239257812,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 0.10000002384185791,
+              "objectTime": 1,
+              "initialObjectTime": 1,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9120906968296293,
+                "bits": "3fed2fd8d43bcfbd"
+              },
+              "initialValue": {
+                "value": 0.9120906968296293,
+                "bits": "3fed2fd8d43bcfbd"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.3375000059604645,
+                "theta": -0.1250000149011612,
+                "gamma": 0.762499988079071,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9120907187461853,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1.100000023841858,
+              "rawDt": 0.25,
+              "queueIndex": 2,
+              "queueComplete": true,
+              "remaining": 0,
+              "objectTime": 1.100000023841858,
+              "initialObjectTime": 1.100000023841858,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.532580713380937,
+                "bits": "3fe10ae6b54e727a"
+              },
+              "initialValue": {
+                "value": 0.532580713380937,
+                "bits": "3fe10ae6b54e727a"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.36250001192092896,
+                "theta": -0.07500001788139343,
+                "gamma": 0.8374999761581421,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.5325807332992554,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": true
+          }
+        ],
+        "beforeStop": {
+          "sceneTime": 1.100000023841858,
+          "rawDt": 0.25,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 1.100000023841858,
+          "initialObjectTime": 1.100000023841858,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "initialValue": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.36250001192092896,
+            "theta": -0.07500001788139343,
+            "gamma": 0.8374999761581421,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "thetaRate": 0.20000000298023224,
+            "gammaRate": 0.30000001192092896
+          },
+          "firstPosition": [
+            0.5325807332992554,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "afterStop": {
+          "sceneTime": 1.100000023841858,
+          "rawDt": 0.25,
+          "queueIndex": 2,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 1.100000023841858,
+          "initialObjectTime": 1.100000023841858,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "initialValue": {
+            "value": 0.532580713380937,
+            "bits": "3fe10ae6b54e727a"
+          },
+          "mode": "MESH",
+          "camera": {
+            "phi": 0.36250001192092896,
+            "theta": -0.07500001788139343,
+            "gamma": 0.8374999761581421,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "thetaRate": 0.20000000298023224,
+            "gammaRate": 0.30000001192092896
+          },
+          "firstPosition": [
+            0.5325807332992554,
+            0,
+            0
+          ],
+          "particleCount": 4
+        }
+      },
+      {
+        "input": {
+          "name": "mode-switch",
+          "recording": true,
+          "project": {
+            "equations": {
+              "x": "a+u",
+              "y": "v",
+              "z": "0"
+            },
+            "settings": {
+              "scale_z": 1,
+              "scale_y": 1,
+              "v_min": 0,
+              "mesh_wireframe": false,
+              "scale_x": 1,
+              "v_segments": 2,
+              "u_max": 1,
+              "mesh_u_segments": 2,
+              "u_segments": 2,
+              "show_trails": false,
+              "v_max": 1,
+              "speed_v": 0,
+              "u_min": 0,
+              "render_mode": "CPU",
+              "speed_u": 0,
+              "surface_mode": "POINTS",
+              "mesh_v_segments": 2
+            },
+            "name": "Recording mode-switch",
+            "timeline": [
+              {
+                "duration": 0.5,
+                "type": "animate",
+                "easing": "LINEAR",
+                "actions": [
+                  {
+                    "args": {
+                      "parameters": {
+                        "a": {
+                          "min": -1,
+                          "max": 1,
+                          "step": 0.1
+                        }
+                      }
+                    },
+                    "method": "paramStart"
+                  },
+                  {
+                    "args": [
+                      0.1,
+                      0.2,
+                      0.3
+                    ],
+                    "method": "ambient"
+                  }
+                ]
+              },
+              {
+                "duration": 0.5,
+                "to": "MESH",
+                "type": "surface_mode_transition",
+                "easing": "LINEAR"
+              },
+              {
+                "duration": 0.3,
+                "type": "wait"
+              },
+              {
+                "duration": 0.5,
+                "to": "POINTS",
+                "type": "surface_mode_transition",
+                "easing": "LINEAR"
+              },
+              {
+                "duration": 0.3,
+                "type": "wait"
+              }
+            ],
+            "type": "SURFACE",
+            "camera": {
+              "phi": 0.25,
+              "theta": -0.3,
+              "gamma": 0.5
+            },
+            "parameters": {
+              "a": 0.25
+            },
+            "config_version": "1.0.0"
+          },
+          "simulationFps": 4,
+          "steps": [
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 0
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": -2
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 37
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 24
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 12
+            },
+            {
+              "dt": 0.25,
+              "paused": false,
+              "actualFrameRate": 1
+            }
+          ]
+        },
+        "initial": {
+          "sceneTime": 0,
+          "rawDt": 0,
+          "queueIndex": 0,
+          "queueComplete": false,
+          "remaining": 2.0999999046325684,
+          "objectTime": 0,
+          "initialObjectTime": 0,
+          "initialObjectStillCurrent": true,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "initialValue": {
+            "value": 0.25,
+            "bits": "3fd0000000000000"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.25,
+            "theta": -0.30000001192092896,
+            "gamma": 0.5,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "thetaRate": 0,
+            "gammaRate": 0
+          },
+          "firstPosition": [
+            0.25,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "frames": [
+          {
+            "state": {
+              "sceneTime": 0.25,
+              "rawDt": 0.25,
+              "queueIndex": 0,
+              "queueComplete": false,
+              "remaining": 1.8499999046325684,
+              "objectTime": 0.25,
+              "initialObjectTime": 0.25,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.6557535206878746,
+                "bits": "3fe4fbeeceb2ebc6"
+              },
+              "initialValue": {
+                "value": 0.6557535206878746,
+                "bits": "3fe4fbeeceb2ebc6"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.26249998807907104,
+                "theta": -0.2750000059604645,
+                "gamma": 0.5375000238418579,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.05000000074505806,
+                "thetaRate": 0.10000000149011612,
+                "gammaRate": 0.15000000596046448
+              },
+              "firstPosition": [
+                0.655753493309021,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 0.5,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 1.5999999046325684,
+              "objectTime": 0.5,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": true,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.2874999940395355,
+                "theta": -0.22500000894069672,
+                "gamma": 0.612500011920929,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 0.75,
+              "rawDt": 0.25,
+              "queueIndex": 1,
+              "queueComplete": false,
+              "remaining": 1.3499999046325684,
+              "objectTime": 0.75,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 1,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.3125,
+                "theta": -0.17500001192092896,
+                "gamma": 0.6875,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1,
+              "rawDt": 0.25,
+              "queueIndex": 2,
+              "queueComplete": false,
+              "remaining": 1.100000023841858,
+              "objectTime": 1,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.3375000059604645,
+                "theta": -0.1250000149011612,
+                "gamma": 0.762499988079071,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1.25,
+              "rawDt": 0.25,
+              "queueIndex": 2,
+              "queueComplete": false,
+              "remaining": 0.8500000238418579,
+              "objectTime": 1.25,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.36250001192092896,
+                "theta": -0.07500001788139343,
+                "gamma": 0.8374999761581421,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1.5,
+              "rawDt": 0.25,
+              "queueIndex": 3,
+              "queueComplete": false,
+              "remaining": 0.800000011920929,
+              "objectTime": 1.5,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "MESH",
+              "camera": {
+                "phi": 0.38750001788139343,
+                "theta": -0.025000017136335373,
+                "gamma": 0.9124999642372131,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 1.75,
+              "rawDt": 0.25,
+              "queueIndex": 3,
+              "queueComplete": false,
+              "remaining": 0.550000011920929,
+              "objectTime": 1.75,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 1,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.4125000238418579,
+                "theta": 0.024999983608722687,
+                "gamma": 0.9874999523162842,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 2,
+              "rawDt": 0.25,
+              "queueIndex": 4,
+              "queueComplete": false,
+              "remaining": 0.30000001192092896,
+              "objectTime": 2,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.4375000298023224,
+                "theta": 0.07499998807907104,
+                "gamma": 1.0625,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 2.25,
+              "rawDt": 0.25,
+              "queueIndex": 4,
+              "queueComplete": false,
+              "remaining": 0.050000011920928955,
+              "objectTime": 2.25,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.46250003576278687,
+                "theta": 0.1249999850988388,
+                "gamma": 1.1375000476837158,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": false
+          },
+          {
+            "state": {
+              "sceneTime": 2.299999952316284,
+              "rawDt": 0.25,
+              "queueIndex": 5,
+              "queueComplete": true,
+              "remaining": 0,
+              "objectTime": 2.299999952316284,
+              "initialObjectTime": 0.5,
+              "initialObjectStillCurrent": false,
+              "overlayAlpha": 0,
+              "value": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "initialValue": {
+                "value": 0.9675077148201724,
+                "bits": "3feef5d2bd38f881"
+              },
+              "mode": "POINTS",
+              "camera": {
+                "phi": 0.48750004172325134,
+                "theta": 0.17499998211860657,
+                "gamma": 1.2125000953674316,
+                "zoom": 1,
+                "focalDistance": 20,
+                "phiRate": 0.10000000149011612,
+                "thetaRate": 0.20000000298023224,
+                "gammaRate": 0.30000001192092896
+              },
+              "firstPosition": [
+                0.9675077199935913,
+                0,
+                0
+              ],
+              "particleCount": 4
+            },
+            "autoComplete": true
+          }
+        ],
+        "beforeStop": {
+          "sceneTime": 2.299999952316284,
+          "rawDt": 0.25,
+          "queueIndex": 5,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 2.299999952316284,
+          "initialObjectTime": 0.5,
+          "initialObjectStillCurrent": false,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.9675077148201724,
+            "bits": "3feef5d2bd38f881"
+          },
+          "initialValue": {
+            "value": 0.9675077148201724,
+            "bits": "3feef5d2bd38f881"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.48750004172325134,
+            "theta": 0.17499998211860657,
+            "gamma": 1.2125000953674316,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "thetaRate": 0.20000000298023224,
+            "gammaRate": 0.30000001192092896
+          },
+          "firstPosition": [
+            0.9675077199935913,
+            0,
+            0
+          ],
+          "particleCount": 4
+        },
+        "afterStop": {
+          "sceneTime": 2.299999952316284,
+          "rawDt": 0.25,
+          "queueIndex": 5,
+          "queueComplete": true,
+          "remaining": 0,
+          "objectTime": 2.299999952316284,
+          "initialObjectTime": 0.5,
+          "initialObjectStillCurrent": false,
+          "overlayAlpha": 0,
+          "value": {
+            "value": 0.9675077148201724,
+            "bits": "3feef5d2bd38f881"
+          },
+          "initialValue": {
+            "value": 0.9675077148201724,
+            "bits": "3feef5d2bd38f881"
+          },
+          "mode": "POINTS",
+          "camera": {
+            "phi": 0.48750004172325134,
+            "theta": 0.17499998211860657,
+            "gamma": 1.2125000953674316,
+            "zoom": 1,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "thetaRate": 0.20000000298023224,
+            "gammaRate": 0.30000001192092896
+          },
+          "firstPosition": [
+            0.9675077199935913,
+            0,
+            0
+          ],
+          "particleCount": 4
+        }
+      }
+    ],
+    "capturedLog": {
+      "text": "Creating ParametricSurface with Offset: (0.0, 0.0, 0.0)\nCreating ParametricSurface with Offset: (0.0, 0.0, 0.0)\nCreating ParametricSurface with Offset: (0.0, 0.0, 0.0)\nCreating ParametricSurface with Offset: (0.0, 0.0, 0.0)\nCreating ParametricSurface with Offset: (0.0, 0.0, 0.0)\nCreating ParametricSurface with Offset: (0.0, 0.0, 0.0)\nCreating ParametricSurface with Offset: (0.0, 0.0, 0.0)\nCreating ParametricSurface with Offset: (0.0, 0.0, 0.0)\n"
+    }
+  },
+  "execution": {
+    "originalConfigParserAndSceneConstructors": true,
+    "originalSceneUpdate": true,
+    "originalCpuParticles": true,
+    "recordingNumerics": true,
+    "parameterEditController": null,
+    "GLOrWindow": false,
+    "scope": "Real PApplet/PGraphics and CPU surface constructors; original JSON parse, scene queue, parameter actions, camera and mode replacement. Explicit renderStep and independent PApplet.frameRate. Optional recording cases call original setRenderMode/isAutoRecordingComplete/disableRenderMode. No Scene.render, shaders, native framebuffer, toolbar or encoder. Base PGraphics shader warning is retained."
+  },
+  "compile": {
+    "pid": 40574,
+    "processGroup": 40574,
+    "newSession": true,
+    "timeoutSeconds": 30,
+    "timeoutHit": false,
+    "returnCode": 0,
+    "elapsedSeconds": 0.08563058398431167,
+    "reaped": true
+  },
+  "provenance": {
+    "artifactPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "artifactSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "coreSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+    "jvmPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home/lib/server/libjvm.dylib",
+    "stdoutSha256": [
+      "d275dc106aca630e62851bbad468159b1a1a0e78436f06339d5904d1bf89dce0",
+      "d275dc106aca630e62851bbad468159b1a1a0e78436f06339d5904d1bf89dce0"
+    ],
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "classes": {
+      "mathart/MathArt": "3cf332de2b196ed835006b963b2149553b5a66f17999f6b92dd75ce4cdd56cc0",
+      "mathart/surface/ParametricSurface": "f845653098ac1a4112420b83cf258596be4569da66eabb0feaacc3020d0e5ceb",
+      "mathart/surface/MeshSurface": "95a1c0c80e593ba4de21fcbdfb8bfb24dbd034fbebce95d4aed7d2829a412906",
+      "mathart/surface/SurfaceParameterAnimator": "d83136d45146b9fad86fe0a9fa79390d02d6e8f6020e09b2207d25e41d8705df",
+      "mathart/surface/SurfaceParameterAnimator$ParamConfig": "216e169a1acd872320ebdd2226f76f16ab5c9dbfbc2db65214c8bed817983f27",
+      "mathart/surface/math/JsonSurfaceFunction": "72726216d1767ea4fb6b6b241bf4cbeae9e5af3d5937663af08dd30cef081d69",
+      "mathart/animation/OscillationEdgeEasing": "8504db872f70e6c5c7aa3b1491dc4b02220d9aadbad189c111d957a04bc8fb60",
+      "mathart/scene/Scene": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "mathart/scene/SceneManager": "973ee64fef4c06b615eab028ae0668db1917ac1b7db47a62b0a73fc278b760e7",
+      "mathart/scene/GenericScene": "aa1dc49a5375b773fee7732b77d70c3a7166c0e36ca5477f754567621c8905f0",
+      "mathart/scene/CameraController": "80a478f361fdcbca2d8aeda2cc96f55e500a3527fa889ffd69765d815d0be9dd",
+      "mathart/surface/GenericSurfaceScene": "eddd4a5daa39485a1a105998ed5114ea1e6a1ac55301ed65d786a733b4112158",
+      "mathart/surface/config/JsonSurfaceConfig": "2c96a65550cf5940cb56928534def08f0b4b07c7d36ee82ae17fcb15a4380120"
+    },
+    "harnessSha256": "a0b76110cfa4a5256ecc786fea168b9cd5a01f406d70411a0e8643fd70d9fca2",
+    "runnerSha256": "9e968279b86dbc2232ddf82382e482e2102d62fca712969b0ed0ce067c241c27",
+    "inputPath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/scripts/source-surface-scene/recording-cases.json",
+    "inputSha256": "f4b5d02ab3e950147799a6c478d30da76cc6145a8917e5d6852b7a44d7887e1c"
+  },
+  "processes": [
+    {
+      "pid": 40577,
+      "processGroup": 40577,
+      "newSession": true,
+      "timeoutSeconds": 45,
+      "timeoutHit": false,
+      "returnCode": 0,
+      "elapsedSeconds": 1.9710053749731742,
+      "reaped": true
+    },
+    {
+      "pid": 40692,
+      "processGroup": 40692,
+      "newSession": true,
+      "timeoutSeconds": 45,
+      "timeoutHit": false,
+      "returnCode": 0,
+      "elapsedSeconds": 0.39124633301980793,
+      "reaped": true
+    }
+  ],
+  "identicalRuns": true
+}
