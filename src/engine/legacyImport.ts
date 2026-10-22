@@ -441,8 +441,8 @@ function implicit(r:Reader,s:SceneDocument){
  if(s.settings.renderMode==='mesh'&&(s.settings.computeBackend??'cpu')==='cpu'){
   s.settings.implicitPresentationVersion=SOURCE_IMPLICIT_PRESENTATION;
   // iso_threshold selects particles near zero; native mesh extraction uses
-  // isoLevel=0. The authored particle threshold remains in source provenance.
-  s.settings.isoLevel=0;
+  // isoLevel=0. Threshold also owns the MC nonfinite-field replacement.
+  s.settings.sourceImplicitIsoThreshold=r.has('settings.iso_threshold')?Math.max(Math.fround(1e-5),Math.fround(Number(s.settings.isoLevel))):Math.fround(.06);s.settings.isoLevel=0;
   s.settings.meshFill=s.settings.meshFill??true;s.settings.meshWireframe=s.settings.meshWireframe??false;
   numberTo(r,s,'settings.line_weight','meshWireframeWidth',{min:.1,max:32});
  }

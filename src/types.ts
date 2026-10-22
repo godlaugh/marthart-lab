@@ -335,6 +335,7 @@ export interface Preset {
   document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedDomainScene" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
 }
 export interface GeometryOutput {
+  sourceImplicitMesh?:import('./engine/sourceImplicitMesh').SourceImplicitMesh;
   sourceImplicitPresentation?:import('./engine/sourceImplicitPresentation').SourceImplicitPresentation;
   formulaPresentation?:FormulaPresentation;
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
@@ -524,6 +525,8 @@ export interface GenerateContext {
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveContext;
   domainLive?:import('./engine/sourceDomainLiveSession').SourceDomainLiveContext;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveContext;
+  /** Worker-owned single original display; omitted from serialized generation inputs. */
+  fractalDisplay?:import('./engine/sourceFractalDisplay').SourceFractalDisplayFacts;
   /** Observed parent pixel density, independent of preview raster downscaling. */
   fractalPixelDensity?:number;
   mapLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveContext;

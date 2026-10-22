@@ -250,7 +250,7 @@ describe('native color MRT transport and resource ownership',()=>{
  });
  it('accounts for the source LUT copies and mixed target without claiming driver storage',()=>{
   const old=fractalSourceGpuBytes(100,50,10,2048),native=fractalSourceGpuBytes(100,50,10,2048,false,true);
-  expect(native-old).toBe(-100*50*12+5*1024*3*4+10*4);
+  expect(native-old).toBe(-100*50*12+5*1024*3*4+10*4+12); // Includes the 1×1 RGB32F fallback texture.
  });
  it('charges a still-owned mixed target and LUT before a large legacy batch, retaining the owner on preflight rejection',()=>{
   const d=device(),gpu=new FractalSourceNewtonGpu();gpu.sample(new Float32Array([0,0]),10000,1500,view,config(),plan(),undefined,undefined,colorPlan());const before=gpu.diagnostics();

@@ -1,3 +1,4 @@
+import displayFixture from './fixtures/source-fractal-display/mandelbrot.json';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {SourceFractalLiveSession} from '../src/engine/sourceFractalLiveSession';
 import {SourceFractalSceneRuntime} from '../src/engine/sourceFractalSceneRuntime';
@@ -22,6 +23,18 @@ function setup(){
 function hot(s:SceneDocument){const draft=structuredClone(s);draft.settings.centerX=9;draft.settings.background='#884422';draft.timeline.tracks=[];return draft;}
 afterEach(()=>vi.restoreAllMocks());
 describe('retained Fractal recording owns the full-load anchor and final numerical instance',()=>{
+ it('rebuilds one display owner at recording warmup and retains it across fixed frames and primary handoff',()=>{
+  const s=parseProjectFile(JSON.stringify(displayFixture)).scene,f=setup(),c=input(true);
+  for(let i=0;i<4;i++)f.owner.generate(s,c);
+  expect(f.contexts.at(-1)!.fractalDisplay).toMatchObject({gradientSize:1024,previewScale:1});
+  const start=f.owner.beginRecording(s,c,options);
+  expect(f.contexts.at(-1)!.fractalDisplay).toMatchObject({ordinal:0,gradientSize:0,previewScale:.25});
+  for(let ordinal=1;ordinal<=3;ordinal++)f.owner.nextRecordingFrame(start.handle,ordinal);
+  expect(f.contexts.slice(-4).map(c=>[c.fractalDisplay!.previewScale,c.fractalDisplay!.gradientSize])).toEqual([[.25,0],[.5,0],[1,0],[1,1024]]);
+  const before=f.owner.diagnostics().host!.state;f.owner.finishRecording(start.handle,1000);
+  expect(f.contexts.at(-1)!.fractalDisplay).toMatchObject({ordinal:4,stateReset:true,previewScale:.25,gradientSize:1024,useGradientTexture:false});
+  expect(f.owner.diagnostics().host!.state).toEqual(before);
+ });
  it('discards hot/staged state at begin, renders real warmup/terminal updates and keeps the author draft separate',()=>{
   const s=scene(),f=setup(),initial=input();f.owner.generate(s,initial);
   const draft=hot(s),context={...input(),fractalLive:{...initial.fractalLive!,revision:1,intent:'hot' as const,configuration:draft,clock:{paused:false,timestampMs:100}}};

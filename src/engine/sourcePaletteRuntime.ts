@@ -17,7 +17,14 @@ function rgbToHsv([r,g,b]:readonly number[]):[number,number,number]{
 function hsvToRgb([h,s,v]:readonly number[]):[number,number,number]{
  const q=F(h*6),i=Math.floor(q),f=F(q-F(i)),p=F(v*F(1-s)),a=F(v*F(1-F(s*f))),b=F(v*F(1-F(s*F(1-f))));return([[v,b,p],[a,v,p],[p,v,b],[p,a,v],[b,p,v],[v,p,a]][i%6]??[v,p,a]) as [number,number,number];
 }
-export function sourcePaletteRuntimeLut(p:SourcePaletteRuntimeConfiguration,runtime:SourcePaletteRuntimeState|undefined,diagnostics:string[]):Float32Array {
+export interface SourcePaletteUniforms {
+ readonly packedColors:readonly number[];readonly colors:readonly number[];readonly size:number;
+ readonly offset:number;readonly gamma:number;readonly space:0|1;readonly useCosine:boolean;
+ readonly cosine:{readonly a:readonly number[];readonly b:readonly number[];readonly c:readonly number[];readonly d:readonly number[]};
+}
+/** Parse once for both the original CPU LUT and the shader's first-16 fallback.
+ * The full packed palette remains available for original display-state hashing. */
+export function prepareSourcePaletteRuntime(p:SourcePaletteRuntimeConfiguration,runtime:SourcePaletteRuntimeState|undefined,diagnostics:string[]):{lut:Float32Array;fallback:SourcePaletteUniforms} {
  const offset=f32(p.offset,'palette.offset'),gamma=Math.max(F(.01),f32(p.gamma,'palette.gamma'));
  const cosine=Object.fromEntries(Object.entries(p.cosine).map(([k,v])=>[k,v.map((n,i)=>f32(n,`cosine.${k}[${i}]`))])) as unknown as SourcePaletteRuntimeConfiguration['cosine'];
  const colors=p.colors.map(v=>packed(v,diagnostics)),entries=colors.map(rgb),lut=new Float32Array(1024*3);
@@ -37,5 +44,6 @@ export function sourcePaletteRuntimeLut(p:SourcePaletteRuntimeConfiguration,runt
   }
   if(!color.every(Number.isFinite))return fail('palette','source LUT produced nonfinite colors');lut.set(color,i*3);
  }
- return lut;
+ const fallback:SourcePaletteUniforms=Object.freeze({packedColors:Object.freeze(colors),colors:Object.freeze(entries.slice(0,16).flat()),size:Math.min(colors.length,16),offset,gamma,space:p.space==='hsv'?1:0,useCosine:p.useCosine,cosine:Object.freeze({a:Object.freeze(cosine.a),b:Object.freeze(cosine.b),c:Object.freeze(cosine.c),d:Object.freeze(cosine.d)})});
+ return{lut,fallback};
 }

@@ -1,4 +1,4 @@
-import {sourcePaletteRuntimeLut,type SourcePaletteRuntimeConfiguration,type SourcePaletteRuntimeState} from './sourcePaletteRuntime';
+import {prepareSourcePaletteRuntime,type SourcePaletteUniforms,type SourcePaletteRuntimeConfiguration,type SourcePaletteRuntimeState} from './sourcePaletteRuntime';
 import {sourceConfigPackedColor,SOURCE_COLOR_TEXT_BUDGET,SourceConfigColorError} from './sourceConfigColor';
 import {prepareDomainSourceScalar} from './domainSourceScalar';
 import {javaTrim,isJavaBlank} from './sourceJavaText';
@@ -22,12 +22,12 @@ export type FractalSourceColorVec4=readonly[number,number,number,number];
 export interface PreparedFractalSourceColorSide {
  readonly algorithm:FractalSourceColorAlgorithm;readonly algorithmId:number;
  readonly p0:FractalSourceColorVec4;readonly p1:FractalSourceColorVec4;readonly p2:FractalSourceColorVec4;
- readonly solid:readonly[number,number,number];readonly transferId:number;readonly density:number;readonly offset:number;readonly repeat:boolean;
+ readonly solidArgb:number;readonly solid:readonly[number,number,number];readonly transferId:number;readonly density:number;readonly offset:number;readonly repeat:boolean;
 }
 export interface PreparedFractalSourceColor {
  readonly profile:typeof FRACTAL_SOURCE_COLOR_PROFILE;readonly key:string;readonly lutKey:string;
  /** Owned 1024-entry RGB32F PaletteRuntime LUT. Consumers must not mutate it. */
- readonly lut:Float32Array;readonly lutSize:1024;
+ readonly lut:Float32Array;readonly lutSize:1024;readonly fallback:SourcePaletteUniforms;
  readonly inside:PreparedFractalSourceColorSide;readonly outside:PreparedFractalSourceColorSide;
  readonly diagnostics:readonly string[];
 }
@@ -141,7 +141,8 @@ function prepareSide(s:FractalSourceColorSideConfiguration,power:number,bailout:
   p2[0]=Math.max(F(1e-6),v('threshold',.25));p2[1]=['point','ring','cross'].indexOf(p.trap_shape as string);if(id==='direct_orbit_trap')p2[2]=clamp(v('merge_opacity',.2));
  }
  const transfer=javaTrim(s.transfer).toLowerCase(),transferId=(FRACTAL_SOURCE_COLOR_TRANSFERS as readonly string[]).indexOf(transfer);if(transferId<0)return fail('transfer','unsupported source transfer: '+s.transfer);
- return Object.freeze({algorithm:id,algorithmId:FRACTAL_SOURCE_COLOR_ALGORITHMS.indexOf(id)+1,p0:Object.freeze(p0),p1:Object.freeze(p1),p2:Object.freeze(p2),solid:Object.freeze(rgb(packed(s.solidColor,diagnostics,true))),transferId,density:Math.max(F(1e-6),f32(s.density,'density')),offset:f32(s.offset,'offset'),repeat:s.repeat});
+ const solidArgb=packed(s.solidColor,diagnostics,true);
+ return Object.freeze({solidArgb,algorithm:id,algorithmId:FRACTAL_SOURCE_COLOR_ALGORITHMS.indexOf(id)+1,p0:Object.freeze(p0),p1:Object.freeze(p1),p2:Object.freeze(p2),solid:Object.freeze(rgb(solidArgb)),transferId,density:Math.max(F(1e-6),f32(s.density,'density')),offset:f32(s.offset,'offset'),repeat:s.repeat});
 }
 // Keys retain every authored input and runtime override. This is intentionally
 // stronger than PaletteRuntime's 32-bit hash, so hash collisions cannot reuse a
@@ -151,8 +152,8 @@ const owned=new WeakMap<PreparedFractalSourceColor,{lut:Float32Array;bits:Uint32
 export function prepareFractalSourceColor(input:FractalSourceColorInput):PreparedFractalSourceColor {
  const config=parseFractalSourceColorConfiguration(input.configuration),power=number(input.formulaPower,'formulaPower'),bailout=f32(number(input.bailout,'bailout'),'bailout');
  if(!Number.isInteger(power)||power< -2147483648||power>2147483647)return fail('formulaPower','mapped source signed int required');
- const diagnostics:string[]=[],inside=prepareSide(config.inside,power,bailout,diagnostics),outside=prepareSide(config.outside,power,bailout,diagnostics),lut=sourcePaletteRuntimeLut(config.palette,input.runtime,diagnostics);
- const plan:PreparedFractalSourceColor=Object.freeze({profile:FRACTAL_SOURCE_COLOR_PROFILE,key:keyOf({config,power,bailout,runtime:input.runtime}),lutKey:keyOf({palette:config.palette,runtime:input.runtime}),lut,lutSize:1024,inside,outside,diagnostics:Object.freeze(diagnostics)});owned.set(plan,{lut,bits:new Uint32Array(lut.buffer.slice(0))});return plan;
+ const diagnostics:string[]=[],inside=prepareSide(config.inside,power,bailout,diagnostics),outside=prepareSide(config.outside,power,bailout,diagnostics),palette=prepareSourcePaletteRuntime(config.palette,input.runtime,diagnostics),{lut,fallback}=palette;
+ const plan:PreparedFractalSourceColor=Object.freeze({profile:FRACTAL_SOURCE_COLOR_PROFILE,key:keyOf({config,power,bailout,runtime:input.runtime}),lutKey:keyOf({palette:config.palette,runtime:input.runtime}),lut,lutSize:1024,fallback,inside,outside,diagnostics:Object.freeze(diagnostics)});owned.set(plan,{lut,bits:new Uint32Array(lut.buffer.slice(0))});return plan;
 }
 export function validatePreparedFractalSourceColor(plan:PreparedFractalSourceColor):void {
  const state=plan&&owned.get(plan);

@@ -1,3 +1,4 @@
+import type {prepareFractalRender} from '../src/scenes/complex';
 import {describe,expect,it,vi} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {SourceFractalLiveSession,type SourceFractalLiveContext} from '../src/engine/sourceFractalLiveSession';
@@ -12,7 +13,7 @@ const context=(overrides:Partial<SourceFractalLiveContext>={},time=50):GenerateC
 // The injected renderer observes the exact production-bound document. It does
 // not establish GPU behavior; the real-browser suite owns pixel verification.
 function setup(){
- const scenes:SceneDocument[]=[],render=vi.fn((s:SceneDocument,c:GenerateContext):SceneOutput=>{scenes.push(structuredClone(s));return{type:'raster',width:c.width,height:c.height,pixels:new Uint8ClampedArray(c.width*c.height*4),stats:{samples:1,generated:1,invalid:0},fractalRender:{} as NonNullable<Extract<SceneOutput,{type:'raster'}>['fractalRender']>};});
+ const scenes:SceneDocument[]=[],render=vi.fn((s:SceneDocument,c:GenerateContext,_prepared?:ReturnType<typeof prepareFractalRender>):SceneOutput=>{scenes.push(structuredClone(s));return{type:'raster',width:c.width,height:c.height,pixels:new Uint8ClampedArray(c.width*c.height*4),stats:{samples:1,generated:1,invalid:0},fractalRender:{} as NonNullable<Extract<SceneOutput,{type:'raster'}>['fractalRender']>};});
  return{owner:new SourceFractalLiveSession(render),render,scenes};
 }
 describe('retained Fractal live generation',()=>{
@@ -119,5 +120,44 @@ describe('retained Fractal live generation',()=>{
   f.owner.generate(s,c);const before=f.owner.diagnostics();f.render.mockClear();
   expect(()=>f.owner.capturePaused(s,{...c,width:161,height:121,fractalPixelDensity:1})).toThrow('像素密度');
   expect(f.render).not.toHaveBeenCalled();expect(f.owner.diagnostics()).toEqual(before);expect(f.owner.matchesCompletedPrimary(s,c)).toBe(true);
+ });
+});
+
+describe('retained Fractal display lifecycle',()=>{
+ it('preserves saved source arithmetic with local coloring and consumes the same prepared numerical owner',()=>{
+  const s=scene(),f=setup(),c=context({clock:{paused:true}});delete s.fractalSourceColor;delete s.settings.fractalColorProfile;
+  for(let i=0;i<3;i++)f.owner.generate(s,c);
+  for(const [current,context,prepared] of f.render.mock.calls){
+   expect(context.fractalDisplay).toBeUndefined();expect(prepared!.colorPlan).toBeUndefined();
+   expect(prepared!.sourcePlan!.formula).toBe('newton');
+   expect(prepared!.source!.native).toEqual(current.evaluatedFractalScene!.formula.native);
+  }
+ });
+ it('advances paused displays while leaving the original numerical clock stationary',()=>{
+  const s=scene(),f=setup(),c=context({clock:{paused:true}});s.settings.renderMethod='multi-pass';
+  const outputs=Array.from({length:5},()=>f.owner.generate(s,c));
+  expect(outputs.map(o=>o.fractalLive!.sceneTime)).toEqual([0,0,0,0,0]);
+  expect(outputs.map(o=>o.fractalLive!.objectUpdates)).toEqual([0,0,0,0,0]);
+  expect(f.render.mock.calls.map(([,c])=>[c.fractalDisplay!.previewScale,c.fractalDisplay!.gradientSize,c.fractalDisplay!.needsAnotherDisplay])).toEqual([[.25,0,true],[.5,0,true],[1,0,true],[1,1024,false],[1,1024,false]]);
+ });
+ it('shares the display owner for paused offscreen capture and primary restore, without implicit warmups',()=>{
+  const s=scene(),f=setup(),c=context({clock:{paused:true}});s.settings.renderMethod='multi-pass';
+  for(let i=0;i<4;i++)f.owner.generate(s,c);f.render.mockClear();
+  const result=f.owner.capturePaused(s,{...c,width:32,height:24,quality:'export'});
+  expect(f.render).toHaveBeenCalledTimes(2);
+  expect(f.render.mock.calls.map(([,c])=>c.fractalDisplay)).toEqual([
+   expect.objectContaining({ordinal:4,previewScale:.25,gradientSize:1024,useGradientTexture:false,stateReset:true}),
+   expect.objectContaining({ordinal:5,previewScale:.25,gradientSize:0,useGradientTexture:false,stateReset:true}),
+  ]);
+  expect(result.capture.fractalLive!.sceneTime).toBe(result.preview.fractalLive!.sceneTime);
+  f.owner.generate(s,c);expect(f.render.mock.calls.at(-1)![1].fractalDisplay).toMatchObject({ordinal:6,previewScale:.5,gradientSize:0});
+ });
+ it('hot applies retain the shader queue while a new incarnation starts from a fresh shader',()=>{
+  const s=scene(),f=setup(),c=context({clock:{paused:true}});s.settings.renderMethod='multi-pass';for(let i=0;i<4;i++)f.owner.generate(s,c);
+  const hot=structuredClone(s);hot.settings.centerX=9;
+  f.owner.generate(hot,context({clock:{paused:true},revision:1,intent:'hot',configuration:hot}));
+  expect(f.render.mock.calls.at(-1)![1].fractalDisplay).toMatchObject({previewScale:.25,gradientSize:1024,stateReset:false});
+  f.owner.generate(hot,context({sessionId:'fresh-display',clock:{paused:true}}));
+  expect(f.render.mock.calls.at(-1)![1].fractalDisplay).toMatchObject({ordinal:0,previewScale:.25,gradientSize:0,stateReset:true});
  });
 });

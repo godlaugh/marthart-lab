@@ -28,7 +28,7 @@ describe('native implicit CPU display producer',()=>{
   expect(()=>sourceImplicitSliceLines(job(1),context,IMPLICIT_WORK_BYTES)).toThrow('预算');
  });
  it('uses z,min,span and native quantized RGB',()=>{
-  expect(sourceImplicitHeightColor([0xff000000,0xffffffff],0,-1,2)).toBe(0xff7f7f7f);
+  expect(sourceImplicitHeightColor([0xff000000,0xffffffff],0,-1,2)).toBe(0xff808080);
   expect(sourceImplicitHeightColor([0xff000000,0xffffffff],1,-1,2)).toBe(0xffffffff);
  });
  it('owns fill and slice colors in worker transfer, without triangle edge overlays',()=>{

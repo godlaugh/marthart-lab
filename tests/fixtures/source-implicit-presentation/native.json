@@ -144,7 +144,15 @@
       "axes": [
         0,
         1
-      ]
+      ],
+      "mesh": {
+        "vertices": 90120,
+        "positionsSha256": "22748688212d01bd3c63b4f8c0177a6458e7acc2978c434a8b6688cf5be494d1",
+        "normalsSha256": "e45deb6a349ea4da21fed95c66acc8b7c3b5c7f637359c0fe84b62db1f6d9b1b",
+        "fillRgbaSha256": "f6aacd595b0ecee4a20bb9d83fff9c7fef6bba24e78bc44a8d79ac97f90f510f",
+        "repeatedVertexTriangles": 614,
+        "indices": null
+      }
     },
     {
       "name": "unequal",
@@ -288,7 +296,16 @@
       "axes": [
         2,
         0
-      ]
+      ],
+      "mesh": {
+        "vertices": 1752,
+        "positionsSha256": "fc1c306aa55ade22ed92fb202abfe0127cf9148a4e570606645064fbf2c13398",
+        "normalsSha256": "6ebe47b91e079812ab295ad0a40fab8a16c062e7bc55b3223ab7dbc0961ce795",
+        "fillRgbaSha256": "ccfb87ca4e5dbc6b1b83b8d9f7ad607b9e13c5ddbd46d19f5fba7447ea4c4f69",
+        "repeatedVertexTriangles": 104,
+        "indices": null
+      }
     }
-  ]
+  ],
+  "meshEvidence": "Complete original ImplicitSurface Mesh positions/normals, no indices; original getColorForHeight + applyAlpha called on each mesh vertex (not GPU color capture). Owned normal-license native runs .cache/implicit-marching-cubes-oracle-20261022/native-{implicit,unequal}. SHA256 arrays encoded Float32 little-endian."
 }

@@ -1,3 +1,4 @@
+import type {SourceFractalDisplayFacts} from './sourceFractalDisplay';
 import type {PreparedFractalSourceColor} from './fractalSourceColor';
 import {FractalSourceNewtonGpu} from './fractalNativeNewtonGpu';
 import {FractalSourceGpuError} from './fractalSourceGpuFailure';
@@ -114,10 +115,10 @@ export class FractalGpu {
    catch(e){gl.deleteProgram(p);throw e;}finally{shaders.forEach(s=>gl.deleteShader(s));}
   }return this.gl;
  }
- sample(points:Float32Array,width:number,height:number,view:FractalViewport,c:FractalConfig,reference?:ReferenceOrbit,threshold=1e-4,traceColors?:FractalColors,source?:{plan:FractalSourcePlan;colorPlan?:PreparedFractalSourceColor;isCancelled?:()=>boolean}):GpuOrbitBatch {
+ sample(points:Float32Array,width:number,height:number,view:FractalViewport,c:FractalConfig,reference?:ReferenceOrbit,threshold=1e-4,traceColors?:FractalColors,source?:{plan:FractalSourcePlan;colorPlan?:PreparedFractalSourceColor;display?:SourceFractalDisplayFacts;isCancelled?:()=>boolean}):GpuOrbitBatch {
   if(fractalViewportRules(c.numericProfile??'local-v1',c.formula).sourceArithmetic){
    if(!source)throw new FractalSourceGpuError('Explicit source arithmetic requires a prepared source plan','input');
-   return(this.source??=new FractalSourceNewtonGpu()).sample(points,width,height,view,c,source.plan,traceColors,source.isCancelled,source.colorPlan);
+   return(this.source??=new FractalSourceNewtonGpu()).sample(points,width,height,view,c,source.plan,traceColors,source.isCancelled,source.colorPlan,source.display);
   }
   if(source)throw new FractalSourceGpuError('A source plan cannot be applied to independent arithmetic','input');
   let gl:WebGL2RenderingContext|undefined;let input:WebGLBuffer|null=null,output:WebGLBuffer|null=null,vao:WebGLVertexArrayObject|null=null,feedback:WebGLTransformFeedback|null=null,texture:WebGLTexture|null=null,traceTexture:WebGLTexture|null=null,active=false;

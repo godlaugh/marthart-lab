@@ -403,8 +403,11 @@ export default function App() {
   const [fractalStaged,setFractalStaged]=useState(false),[fractalFullApplyPending,setFractalFullApplyPending]=useState(false);
   const iteratedReplayRevision=useRef(0),iteratedStartAt=useRef<number|undefined>(scene.fractalSource?undefined:0),mapRuntimeRevision=useRef(0);
   const iteratedLiveFacts=output?.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
-  const iteratedReplayPending=!!iteratedLiveFacts&&!error&&!previewCancelled&&outputScene===scene&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true;
-  const replayPendingRef=useRef(false);replayPendingRef.current=iteratedReplayPending;
+  const liveDisplayPending=!error&&!previewCancelled&&outputScene===scene&&(
+    !!iteratedLiveFacts&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true||
+    output?.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalRender?.display?.needsAnotherDisplay===true);
+
+  const replayPendingRef=useRef(false);replayPendingRef.current=liveDisplayPending;
   function replaceLiveSession(startAt:number|undefined){surfaceEdit.current={revision:0};surfaceActualFps.current=undefined;domainEdit.current={revision:0};domainActualFps.current=undefined;fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
     if(!sourceLivePreviewKind(sceneRef.current))return;
@@ -799,16 +802,17 @@ export default function App() {
       prev = now;
       id = requestAnimationFrame(tick);
     }
-    if (playing||iteratedReplayPending) {id = requestAnimationFrame(tick);}
+    if (playing||liveDisplayPending) {id = requestAnimationFrame(tick);}
     return () => cancelAnimationFrame(id);
-  }, [playing,iteratedReplayPending, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
+  }, [playing,liveDisplayPending, scene.timeline.duration, scene.timeline.loop, scene.timeline.playbackMode,scene.timeline.schedule,scene.timeline.schedule?scene:undefined,rootSamplingFps,renderPreferences.frameRate,experience.continuous,sourceBouncing]);
   useEffect(()=>{
     const queue=new GenerationQueue(new Generator(),{
       output:(output,time,source)=>{
         // Retire replay scheduling before the queue clears its busy flag. A RAF
         // can run before React commits the delivered output.
         const live=output.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
-        replayPendingRef.current=source===sceneRef.current&&live?.sessionId===liveSessionId.current&&live.display.replayActive===true;
+        const fractalNeedsDisplay=output.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalRender?.display?.needsAnotherDisplay===true;
+        replayPendingRef.current=source===sceneRef.current&&(live?.sessionId===liveSessionId.current&&live.display.replayActive===true||fractalNeedsDisplay);
         if(output.type==='geometry'&&output.surfaceLive?.sessionId===liveSessionId.current&&output.surfaceLive.revision===surfaceEdit.current.revision){const {configuration,...acknowledged}=surfaceEdit.current;surfaceEdit.current=acknowledged;}
         if(output.type==='raster'&&output.domainLive?.sessionId===liveSessionId.current&&output.domainLive.revision===domainEdit.current.revision){const {configuration,...acknowledged}=domainEdit.current;domainEdit.current=acknowledged;}
         if(output.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalLive.revision===fractalEdit.current.revision){

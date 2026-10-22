@@ -1,3 +1,4 @@
+import type {SourceFractalDisplayFacts} from './sourceFractalDisplay';
 import type {FractalConfig} from '../scenes/complex';
 import type {GpuOrbitBatch} from './fractalGpu';
 import type {FractalColors} from './fractalColor';
@@ -10,6 +11,7 @@ import {FRACTAL_SOURCE_RASTER_FRAGMENT,FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT,deco
 import {validatePreparedFractalSourceColor,type PreparedFractalSourceColor} from './fractalSourceColor';
 
 const SOURCE_COLOR_LUT_BYTES=1024*3*4;
+const FALLBACK_TEXTURE_BYTES=12;
 const MAX_SAMPLES=65536,MAX_BYTES=768*1024*1024,MAX_DRAW_WORK=2_000_000;
 /** Representation preflight, including the rarely needed second readback that
  * distinguishes legitimate NaN payloads from an incomplete GL read.
@@ -24,7 +26,7 @@ export function fractalSourceGpuBytes(width:number,height:number,count:number,re
  require([width,height].every(n=>Number.isSafeInteger(n)&&n>0&&n<=16384),'Source fractal dimensions exceed the image capacity','capacity');
  require(Number.isSafeInteger(count)&&count>=0&&count<=MAX_SAMPLES,'Source fractal batch exceeds 65536 samples','capacity');
  require(Number.isSafeInteger(referenceLength)&&referenceLength>=0&&referenceLength<=2048,'Source reference exceeds 2048 entries','capacity');
- return (direct?0:width*height*(sourceColor?52:64)+count*4)+(sourceColor?5*SOURCE_COLOR_LUT_BYTES+count*4:0)+count*(16+16+STRIDE*4*4)+referenceLength*16*3+2048*16*3+1025*2*4*4*2+6*4*4;
+ return (direct?0:width*height*(sourceColor?52:64)+count*4)+(sourceColor?5*SOURCE_COLOR_LUT_BYTES+FALLBACK_TEXTURE_BYTES+count*4:0)+count*(16+16+STRIDE*4*4)+referenceLength*16*3+2048*16*3+1025*2*4*4*2+6*4*4;
 }
 function bytes(length:number):Uint8Array {try{return new Uint8Array(length);}catch(cause){throw new FractalSourceGpuError('Source fractal byte buffer allocation failed','capacity',{cause});}}
 function floats(length:number):Float32Array {try{return new Float32Array(length);}catch(cause){throw new FractalSourceGpuError('Source fractal typed buffer allocation failed','capacity',{cause});}}
@@ -44,13 +46,13 @@ export class FractalSourceNewtonGpu {
  private input?:WebGLBuffer;private output?:WebGLBuffer;private vao?:WebGLVertexArrayObject;private feedback?:WebGLTransformFeedback;
  private quadVertices?:WebGLBuffer;private quadVao?:WebGLVertexArrayObject;
  private traceTexture?:WebGLTexture|null;private traceColors?:FractalColors;private traceProgram?:WebGLProgram;
- private colorTexture?:WebGLTexture;private colorLutKey?:string;private colorLutCopy?:Float32Array;private colorPlanKey?:string;
+ private fallbackTexture?:WebGLTexture;private colorTexture?:WebGLTexture;private colorLutKey?:string;private colorLutCopy?:Float32Array;private colorPlanKey?:string;
  private colorUploads=0;private colorHits=0;private colorSamples=0;
  private activeFeedback=false;
  private readonly references=new FractalSourceReferenceCache();
  private referenceUploads=0;private referenceHits=0;private rasterDraws=0;private rasterAllocations=0;private draws=0;private samples=0;private glitches=0;private perturbSamples=0;private ordinarySteps=0;private perturbSteps=0;
  private rasterBytes=0;private bufferBytes=0;private peakBytes=0;
- diagnostics(){return{contextOwned:!!this.gl,ownedHandles:this.owned.length,cleanupPending:this.cleanupPending,reference:this.references.diagnostics(),referenceUploads:this.referenceUploads,referenceHits:this.referenceHits,rasterDraws:this.rasterDraws,rasterAllocations:this.rasterAllocations,draws:this.draws,samples:this.samples,glitches:this.glitches,perturbSamples:this.perturbSamples,ordinarySteps:this.ordinarySteps,perturbSteps:this.perturbSteps,colorPlanKey:this.colorPlanKey,colorLutKey:this.colorLutKey,colorUploads:this.colorUploads,colorHits:this.colorHits,colorSamples:this.colorSamples,retainedCpuBytes:(this.references.diagnostics().retainedBytes)+(this.referenceCopy?.byteLength??0)+(this.colorLutCopy?.byteLength??0),retainedGpuBytes:this.rasterBytes+this.bufferBytes+(this.quadVertices?6*4*4:0)+(this.referenceCopy?.byteLength??0)+(this.traceTexture?1025*2*16:0)+(this.colorTexture?SOURCE_COLOR_LUT_BYTES:0),estimatedPeakBytes:this.peakBytes};}
+ diagnostics(){return{contextOwned:!!this.gl,ownedHandles:this.owned.length,cleanupPending:this.cleanupPending,reference:this.references.diagnostics(),referenceUploads:this.referenceUploads,referenceHits:this.referenceHits,rasterDraws:this.rasterDraws,rasterAllocations:this.rasterAllocations,draws:this.draws,samples:this.samples,glitches:this.glitches,perturbSamples:this.perturbSamples,ordinarySteps:this.ordinarySteps,perturbSteps:this.perturbSteps,colorPlanKey:this.colorPlanKey,colorLutKey:this.colorLutKey,colorUploads:this.colorUploads,colorHits:this.colorHits,colorSamples:this.colorSamples,retainedCpuBytes:(this.references.diagnostics().retainedBytes)+(this.referenceCopy?.byteLength??0)+(this.colorLutCopy?.byteLength??0),retainedGpuBytes:this.rasterBytes+this.bufferBytes+(this.quadVertices?6*4*4:0)+(this.referenceCopy?.byteLength??0)+(this.traceTexture?1025*2*16:0)+(this.colorTexture?SOURCE_COLOR_LUT_BYTES:0)+(this.fallbackTexture?FALLBACK_TEXTURE_BYTES:0),estimatedPeakBytes:this.peakBytes};}
  prepareReference(plan:FractalSourcePlan,options:{isCancelled?:()=>boolean;onBytes?:(bytes:number)=>void}={}){return this.references.prepare(plan,options);}
  private own<T extends Handle>(kind:Kind,handle:T|null):T {require(handle,'Source fractal '+kind+' allocation failed','device');this.owned.push({kind,handle});return handle;}
  private release(handle:Handle){const index=this.owned.findIndex(v=>v.handle===handle);if(index<0)return;const gl=this.gl!,v=this.owned[index];
@@ -113,40 +115,46 @@ export class FractalSourceNewtonGpu {
  }
  /** The parsed owner supplies the full LUT. A private copy makes cache reuse
   * depend on its actual bytes as well as its canonical key. */
- private sourceColor(plan:PreparedFractalSourceColor,program:WebGLProgram){
+ private sourceColor(plan:PreparedFractalSourceColor,program:WebGLProgram,display?:SourceFractalDisplayFacts){
   const gl=this.gl!,same=this.colorTexture&&this.colorLutKey===plan.lutKey&&this.colorLutCopy?.length===plan.lut.length&&plan.lut.every((x,i)=>Object.is(x,this.colorLutCopy![i]));
-  if(!same){
+  if((!display||display.useGradientTexture)&&!same){
    require(plan.lutSize<=device(()=>gl.getParameter(gl.MAX_TEXTURE_SIZE)),'Source color LUT exceeds GPU texture capacity','device');
    if(this.colorTexture)this.release(this.colorTexture);this.colorTexture=undefined;this.colorLutKey=undefined;this.colorLutCopy=undefined;
    device(()=>gl.activeTexture(gl.TEXTURE1));this.colorTexture=this.texture();
    device(()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,plan.lutSize,1,0,gl.RGB,gl.FLOAT,plan.lut));this.checkDevice('color LUT upload');
    this.colorLutCopy=floats(plan.lut.length);this.colorLutCopy.set(plan.lut);this.colorLutKey=plan.lutKey;this.colorUploads++;
-  }else this.colorHits++;
+  }else if(!display||display.useGradientTexture)this.colorHits++;
   const loc=(n:string)=>device(()=>gl.getUniformLocation(program,n));
+  if(display&&!display.useGradientTexture&&!this.fallbackTexture){
+   device(()=>gl.activeTexture(gl.TEXTURE1));this.fallbackTexture=this.texture();device(()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,1,1,0,gl.RGB,gl.FLOAT,new Float32Array(3)));this.checkDevice('fallback palette upload');
+  }
   device(()=>{
-   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,this.colorTexture!);gl.uniform1i(loc('u_gradientTex'),1);gl.uniform1i(loc('u_gradientSize'),plan.lutSize);
+   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,display&&!display.useGradientTexture?this.fallbackTexture!:this.colorTexture!);gl.uniform1i(loc('u_gradientTex'),1);gl.uniform1i(loc('u_gradientSize'),display?.gradientSize??plan.lutSize);
+   const p=plan.fallback;gl.uniform1i(loc('u_paletteSize'),p.size);if(p.size)gl.uniform3fv(loc('u_palette[0]'),p.colors);
+   gl.uniform1f(loc('u_paletteOffset'),p.offset);gl.uniform1f(loc('u_paletteGamma'),p.gamma);gl.uniform1i(loc('u_paletteSpace'),p.space);gl.uniform1i(loc('u_useCosinePalette'),p.useCosine?1:0);
+   for(const k of ['a','b','c','d'] as const)gl.uniform3fv(loc('u_cos'+k.toUpperCase()),p.cosine[k]);
    for(const side of ['inside','outside'] as const){const p=plan[side],prefix='u_'+side;
     gl.uniform1i(loc(prefix+'ColoringAlgorithm'),p.algorithmId);gl.uniform4fv(loc(prefix+'ColoringParams0'),p.p0);gl.uniform4fv(loc(prefix+'ColoringParams1'),p.p1);gl.uniform4fv(loc(prefix+'ColoringParams2'),p.p2);
     gl.uniform4f(loc(prefix+'SolidColor'),...p.solid,1);gl.uniform1i(loc(prefix+'TransferFunction'),p.transferId);gl.uniform1f(loc(prefix+'ColorDensity'),p.density);gl.uniform1f(loc(prefix+'GradientOffset'),p.offset);gl.uniform1i(loc(prefix+'RepeatGradient'),p.repeat?1:0);
    }
   });
  }
- sample(points:Float32Array,width:number,height:number,_view:FractalViewport,c:FractalConfig,plan:FractalSourcePlan,colors?:FractalColors,isCancelled?:()=>boolean,colorPlan?:PreparedFractalSourceColor):GpuOrbitBatch {
-  return this.sampleInternal(points,width,height,c,plan,colors,isCancelled,false,undefined,colorPlan);
+ sample(points:Float32Array,width:number,height:number,_view:FractalViewport,c:FractalConfig,plan:FractalSourcePlan,colors?:FractalColors,isCancelled?:()=>boolean,colorPlan?:PreparedFractalSourceColor,display?:SourceFractalDisplayFacts):GpuOrbitBatch {
+  return this.sampleInternal(points,width,height,c,plan,colors,isCancelled,false,undefined,colorPlan,display);
  }
  /** Independent orbit-level test bridge: supplied DS offsets do not assert
   * native fragment interpolation. Production always calls sample(). */
  sampleOffsets(offsets:Float32Array,c:FractalConfig,plan:FractalSourcePlan,reference:FractalSourceReferenceReady|undefined,colors?:FractalColors,isCancelled?:()=>boolean):GpuOrbitBatch {
   return this.sampleInternal(offsets,1,1,c,plan,colors,isCancelled,true,reference);
  }
- private sampleInternal(points:Float32Array,width:number,height:number,c:FractalConfig,plan:FractalSourcePlan,colors:FractalColors|undefined,isCancelled:(()=>boolean)|undefined,direct:boolean,override?:FractalSourceReferenceReady,colorPlan?:PreparedFractalSourceColor):GpuOrbitBatch {
+ private sampleInternal(points:Float32Array,width:number,height:number,c:FractalConfig,plan:FractalSourcePlan,colors:FractalColors|undefined,isCancelled:(()=>boolean)|undefined,direct:boolean,override?:FractalSourceReferenceReady,colorPlan?:PreparedFractalSourceColor,display?:SourceFractalDisplayFacts):GpuOrbitBatch {
   validateFractalSourcePlan(plan);require(!direct||plan.formula==='newton'||plan.formula==='nova','The direct-offset diagnostic supports Newton/Nova only');if(colorPlan)validatePreparedFractalSourceColor(colorPlan);cancel(isCancelled);require(points instanceof Float32Array&&points.length%(direct?4:2)===0&&(direct||points.every(Number.isFinite)),'Source GPU expects pixel/DS-offset records');
   require(plan.formula===c.formula&&['newton','nova','mandelbrot','julia'].includes(plan.formula),'Source GPU requires a matching source formula plan');
   // New CPU outputs exist before a differently sized old target is released.
   // The explicit TF bridge may also retain its previous buffer allocation.
   // Charge those actual held representations, even for a smaller next request.
   const count=points.length/(direct?4:2),newRasterBytes=direct?0:width*height*(colorPlan?52:64);
-  const taskBytes=fractalSourceGpuBytes(width,height,count,plan.reference.length,direct,!!colorPlan)+Math.max(0,this.rasterBytes-newRasterBytes)+this.bufferBytes+(colorPlan?0:(this.colorLutCopy?.byteLength??0)+(this.colorTexture?SOURCE_COLOR_LUT_BYTES:0));
+  const taskBytes=fractalSourceGpuBytes(width,height,count,plan.reference.length,direct,!!colorPlan)+Math.max(0,this.rasterBytes-newRasterBytes)+this.bufferBytes+(colorPlan?0:(this.colorLutCopy?.byteLength??0)+(this.colorTexture?SOURCE_COLOR_LUT_BYTES:0)+(this.fallbackTexture?FALLBACK_TEXTURE_BYTES:0));
   require(taskBytes<=MAX_BYTES,'Source fractal GPU representations exceed 768 MiB','capacity');this.peakBytes=Math.max(this.peakBytes,taskBytes);
   if(!direct)for(let i=0;i<points.length;i+=2)require(Number.isInteger(points[i])&&Number.isInteger(points[i+1])&&points[i]>=0&&points[i]<width&&points[i+1]>=0&&points[i+1]<height,'Source GPU needs actual integer pixels inside this raster');
   if(!count)return{values:new Float32Array(),residual:new Float32Array(),source:new Float32Array(),...(colorPlan?{sourceRGBA:new Uint8Array()}: {})};
@@ -160,7 +168,7 @@ export class FractalSourceNewtonGpu {
   const values=floats(count*8),residual=floats(count*8),traps=colors&&!colorPlan?floats(count*8):undefined,distance=c.distance?.requested?floats(count*12):undefined,source=floats(count*4),sourceRGBA=colorPlan?bytes(count*4):undefined;
   try{
    const gl=this.context();this.ensureReference(reference);
-   if(!direct){this.renderRaster(points,width,height,c,plan,reference,colors,isCancelled,drawCount,maxIter,{values,residual,traps,distance,source,sourceRGBA},colorPlan);cancel(isCancelled);return{values,residual,traps,distance,source,...(sourceRGBA?{sourceRGBA}:{})};}
+   if(!direct){this.renderRaster(points,width,height,c,plan,reference,colors,isCancelled,drawCount,maxIter,{values,residual,traps,distance,source,sourceRGBA},colorPlan,display);cancel(isCancelled);return{values,residual,traps,distance,source,...(sourceRGBA?{sourceRGBA}:{})};}
    device(()=>gl.useProgram(this.orbitProgram!));this.trace(colors,this.orbitProgram!);
    const loc=(n:string)=>device(()=>gl.getUniformLocation(this.orbitProgram!,n));
    device(()=>{
@@ -195,13 +203,13 @@ export class FractalSourceNewtonGpu {
    throw error;
   }
  }
- private renderRaster(points:Float32Array,width:number,height:number,c:FractalConfig,plan:FractalSourcePlan,reference:FractalSourceReferenceReady|undefined,colors:FractalColors|undefined,isCancelled:(()=>boolean)|undefined,drawCount:number,maxIter:number,out:{values:Float32Array;residual:Float32Array;traps?:Float32Array;distance?:Float32Array;source:Float32Array;sourceRGBA?:Uint8Array},colorPlan?:PreparedFractalSourceColor){
+ private renderRaster(points:Float32Array,width:number,height:number,c:FractalConfig,plan:FractalSourcePlan,reference:FractalSourceReferenceReady|undefined,colors:FractalColors|undefined,isCancelled:(()=>boolean)|undefined,drawCount:number,maxIter:number,out:{values:Float32Array;residual:Float32Array;traps?:Float32Array;distance?:Float32Array;source:Float32Array;sourceRGBA?:Uint8Array},colorPlan?:PreparedFractalSourceColor,display?:SourceFractalDisplayFacts){
   const gl=this.gl!,program=colorPlan?(this.colorProgram??=this.program(FRACTAL_SOURCE_RASTER_VERTEX,FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT)):this.rasterProgram!,loc=(n:string)=>device(()=>gl.getUniformLocation(program,n));this.ensureRaster(width,height,!!colorPlan);
-  device(()=>gl.useProgram(program));if(colorPlan)this.sourceColor(colorPlan,program);else this.trace(colors,program);
+  device(()=>gl.useProgram(program));if(colorPlan)this.sourceColor(colorPlan,program,display);else this.trace(colors,program);
   device(()=>{
    gl.uniform2fv(loc('u_resolution'),plan.logicalSize);gl.uniform2fv(loc('u_centerHigh'),[plan.shaderCenter[0],plan.shaderCenter[2]]);gl.uniform2fv(loc('u_centerLow'),[plan.shaderCenter[1],plan.shaderCenter[3]]);gl.uniform2fv(loc('u_zoomDS'),plan.zoom);
    gl.uniform2fv(loc('u_juliaConstantHigh'),[plan.shaderJuliaConstant[0],plan.shaderJuliaConstant[2]]);gl.uniform2fv(loc('u_juliaConstantLow'),[plan.shaderJuliaConstant[1],plan.shaderJuliaConstant[3]]);
-   gl.uniform1f(loc('u_rotation'),plan.rotation);gl.uniform1f(loc('u_previewScale'),1);gl.uniform1f(loc('u_bailout'),plan.bailout);gl.uniform1f(loc('u_perturbationThreshold'),plan.perturbation.threshold);gl.uniform1f(loc('u_perturbationAbsFactor'),plan.perturbation.absFactor);gl.uniform1f(loc('u_perturbationRelLimit'),plan.perturbation.relLimit);
+   gl.uniform1f(loc('u_rotation'),plan.rotation);gl.uniform1f(loc('u_previewScale'),display?.previewScale??1);gl.uniform1f(loc('u_bailout'),plan.bailout);gl.uniform1f(loc('u_perturbationThreshold'),plan.perturbation.threshold);gl.uniform1f(loc('u_perturbationAbsFactor'),plan.perturbation.absFactor);gl.uniform1f(loc('u_perturbationRelLimit'),plan.perturbation.relLimit);
    gl.uniform1i(loc('u_formulaId'),plan.formula==='newton'?2:plan.formula==='nova'?3:plan.formula==='julia'?1:0);gl.uniform1i(loc('u_type'),plan.isJulia?1:0);gl.uniform1i(loc('u_formulaType'),0);gl.uniform1i(loc('u_power'),plan.uniformPower);gl.uniform1i(loc('u_formulaSupportsPerturbation'),1);gl.uniform1i(loc('u_iterations'),plan.iterations);gl.uniform1i(loc('u_usePerturbation'),reference?1:0);gl.uniform1i(loc('u_refOrbitLen'),reference?.length??0);gl.uniform1i(loc('u_refOrbitTex'),2);if(!colorPlan){gl.uniform1i(loc('u_insideColoringAlgorithm'),1);gl.uniform1i(loc('u_outsideColoringAlgorithm'),1);}
    gl.uniform4fv(loc('u_formulaParams'),plan.formulaParams);gl.uniform1fv(loc('u_dynamicParams[0]'),plan.dynamicParams);
    gl.uniform4f(loc('legacyTrap'),...c.trapCenter,c.trapRadius,c.trapAspect);gl.uniform3f(loc('legacyTrapShape'),Math.cos(c.trapRotation),Math.sin(c.trapRotation),['point','ring','cross'].indexOf(c.trapShape));
@@ -266,7 +274,7 @@ export class FractalSourceNewtonGpu {
   device(()=>{gl.disable(gl.SCISSOR_TEST);gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindVertexArray(null);gl.activeTexture(gl.TEXTURE0);});
  }
  private clearLostContext(){this.owned=[];this.clearHandles();this.gl=undefined;this.cleanupPending=false;}
- private clearHandles(){this.orbitProgram=undefined;this.rasterProgram=undefined;this.colorProgram=undefined;this.colorTexture=undefined;this.colorLutKey=undefined;this.colorLutCopy=undefined;this.colorPlanKey=undefined;this.rasterTextures=[];this.rasterFbo=undefined;this.rasterSize=undefined;this.referenceTexture=undefined;this.referenceKey=undefined;this.referenceCopy=undefined;this.input=undefined;this.output=undefined;this.vao=undefined;this.feedback=undefined;this.quadVertices=undefined;this.quadVao=undefined;this.traceTexture=undefined;this.traceColors=undefined;this.traceProgram=undefined;this.activeFeedback=false;this.rasterBytes=0;this.bufferBytes=0;}
+ private clearHandles(){this.orbitProgram=undefined;this.rasterProgram=undefined;this.colorProgram=undefined;this.colorTexture=undefined;this.fallbackTexture=undefined;this.colorLutKey=undefined;this.colorLutCopy=undefined;this.colorPlanKey=undefined;this.rasterTextures=[];this.rasterFbo=undefined;this.rasterSize=undefined;this.referenceTexture=undefined;this.referenceKey=undefined;this.referenceCopy=undefined;this.input=undefined;this.output=undefined;this.vao=undefined;this.feedback=undefined;this.quadVertices=undefined;this.quadVao=undefined;this.traceTexture=undefined;this.traceColors=undefined;this.traceProgram=undefined;this.activeFeedback=false;this.rasterBytes=0;this.bufferBytes=0;}
  reset(){
   if(!this.gl){this.references.dispose();return;}
   if(device(()=>this.gl!.isContextLost())){this.clearLostContext();this.references.dispose();return;}

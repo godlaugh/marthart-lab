@@ -1,7 +1,7 @@
 import type {SourceSymmetryPaletteFrame} from './sourceSymmetryGradient';
 import type {Palette} from '../types';
 import {importSourceConfigPalette} from './sourceConfigPalette';
-import {sourcePaletteRuntimeLut} from './sourcePaletteRuntime';
+import {prepareSourcePaletteRuntime} from './sourcePaletteRuntime';
 import {DEFAULT_COSINE} from './palette';
 
 /** ProjectState reset palette, observed through original fromJson/toJson.
@@ -22,5 +22,5 @@ export function sourceSymmetryPaletteLut(palette:Palette,frame?:SourceSymmetryPa
  if(prepareSourceSymmetryPalette(palette).model!=='source-rgb1024')throw Error('Symmetry 本地扩展色板不能冒充原版 1024 格色板');
  // A local document's omitted coefficients mean the same defaults as its
  // editor/swatches. Native runtime defaults are passed explicitly by callers.
- return sourcePaletteRuntimeLut({colors:palette.stops,offset:frame?.offset??palette.offset,gamma:1,space:'rgb',useCosine:palette.mode==='cosine',cosine:palette.cosine??DEFAULT_COSINE},frame?.runtime,[]);
+ return prepareSourcePaletteRuntime({colors:palette.stops,offset:frame?.offset??palette.offset,gamma:1,space:'rgb',useCosine:palette.mode==='cosine',cosine:palette.cosine??DEFAULT_COSINE},frame?.runtime,[]).lut;
 }

@@ -1,4 +1,4 @@
-import {sourcePaletteRuntimeLut} from './sourcePaletteRuntime';
+import {prepareSourcePaletteRuntime} from './sourcePaletteRuntime';
 import type {Palette,SceneDocument,SceneOutput,Settings} from '../types';
 
 export const SAMILA_SOURCE_SPLAT_MODEL='samila-splat-1.7.8' as const;
@@ -76,7 +76,7 @@ export function sourceSamilaSplatMass(facts:SourceSamilaSplatFacts,x:number,y:nu
  * Local curve/HSV/nonuniform stops have no source counterpart in this profile. */
 export function sourceSamilaPaletteLut(palette:Palette):Float32Array {
  if(!['linear','cosine'].includes(palette.mode)||palette.cycles!==1||palette.mode==='linear'&&(palette.positions!==undefined||palette.interpolation==='hsv'))throw Error('源 Samila 色板仅支持均匀 RGB 色标或余弦，cycles 必须为 1');
- const values=sourcePaletteRuntimeLut({colors:palette.stops,offset:palette.offset,gamma:1,space:'rgb',useCosine:palette.mode==='cosine',cosine:palette.cosine??{a:[.5,.5,.5],b:[.5,.5,.5],c:[1,1,1],d:[0,F(.333),F(.667)]}},undefined,[]);
+ const values=prepareSourcePaletteRuntime({colors:palette.stops,offset:palette.offset,gamma:1,space:'rgb',useCosine:palette.mode==='cosine',cosine:palette.cosine??{a:[.5,.5,.5],b:[.5,.5,.5],c:[1,1,1],d:[0,F(.333),F(.667)]}},undefined,[]).lut;
  const delta=F(F(Math.abs(F(values[0]-values[3069]))+Math.abs(F(values[1]-values[3070])))+Math.abs(F(values[2]-values[3071])));
  if(delta>=F(.02)){for(let i=0;i<85;i++){const at=(1023-i)*3,t=F((i+1)/86),e=F(F(t*t)*F(3-F(2*t)));for(let c=0;c<3;c++)values[at+c]=F(F(values[at+c]*F(1-e))+F(values[c]*e));}values.set(values.subarray(0,3),3069);}
  return values;

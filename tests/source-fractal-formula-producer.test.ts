@@ -1,3 +1,4 @@
+import * as complex from '../src/scenes/complex';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {defaultFormulas,formulaPresentation} from '../src/engine/formulas';
@@ -27,7 +28,9 @@ describe('source Fractal annotation facts belong to the rendered Scene construct
   const s=scene(),expected=formulaPresentation(s),observed:SceneDocument[]=[],progress:Raster[]=[];
   // Exercise the public numerical producer and its progressive binder. Pixels
   // are isolated here; browser export tests own real WebGL/compositor coverage.
-  vi.spyOn(definition('fractal'),'generate').mockImplementation((current,c)=>{observed.push(current);c.onProgress?.(raster(c));return raster(c);});
+  const render=(current:SceneDocument,c:GenerateContext)=>{observed.push(current);c.onProgress?.(raster(c));return raster(c);};
+  if(ordinal)vi.spyOn(complex,'generateFractal').mockImplementation(render);
+  else vi.spyOn(definition('fractal'),'generate').mockImplementation(render);
   const c:GenerateContext={time:.5,quality:'export',width:8,height:6,onProgress:value=>{if(value.type!=='raster')throw Error('raster');progress.push(structuredClone(value));value.formulaPresentation!.labels[0].latex='consumer mutation';}};
   if(ordinal)c.fractalRecording={displayFrame:30,simulationFps:s.timeline.fps};
   const output=generateScene(s,c);if(output.type!=='raster')throw Error('raster');

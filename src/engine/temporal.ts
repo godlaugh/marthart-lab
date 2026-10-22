@@ -1,10 +1,9 @@
+import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
 import {SourceSurfaceLiveSession} from './sourceSurfaceLiveSession';
 import {SourceDomainLiveSession} from './sourceDomainLiveSession';
 import {usesSourceFractal} from './sourceFractalDocument';
 import {SourceFractalLiveSession} from './sourceFractalLiveSession';
 import {formulaPresentation} from './formulas';
-import {fractalRecordingFrameFacts,validateFractalRecordingFrameInput} from './sourceFractalRecording';
-import {sceneAtFractalFrame} from './timeline';
 import {SourceIteratedSession} from './sourceIteratedSession';
 import {SourceSamilaSession} from './sourceSamilaSession';
 import {usesSourcePerlinCpu} from './sourcePerlinIdentity';
@@ -82,6 +81,7 @@ export class TemporalGenerationSession {
   readonly sourceSurface = new SourceSurfaceLiveSession();
   readonly sourceDomain = new SourceDomainLiveSession();
   readonly sourceFractal = new SourceFractalLiveSession();
+  readonly sourceFractalFreshRecording = new SourceFractalFreshRecordingSession();
   readonly iterated = new IteratedDensitySession();
   readonly roots = new RootsDensitySession();
   readonly rootsNative = new RootsNativePresentationSession();
@@ -90,12 +90,13 @@ export class TemporalGenerationSession {
   readonly domain = new DomainRenderSession();
   readonly spirograph = new SpirographFrameSession();
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
-  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSymmetry.reset();this.sourceMap.reset();this.sourceSamila.reset();this.sourceFractal.reset();this.sourceDomain.reset();this.sourceSurface.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
+  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSymmetry.reset();this.sourceMap.reset();this.sourceSamila.reset();this.sourceFractal.reset();this.sourceFractalFreshRecording.reset();this.sourceDomain.reset();this.sourceSurface.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
     this.cleanup.prepare();
     if(context.surfaceLive===undefined)this.sourceSurface.reset();
     if(context.domainLive===undefined)this.sourceDomain.reset();
     if(context.fractalLive===undefined)this.sourceFractal.reset();
+    if(context.fractalRecording===undefined)this.sourceFractalFreshRecording.reset();
     if(context.mapLive===undefined)this.sourceMap.reset();else this.iterated.reset();
     if(context.symmetryLive===undefined)this.sourceSymmetry.reset();else this.iterated.reset();
     if(context.samilaLive===undefined)this.sourceSamila.reset();else this.iterated.reset();
@@ -318,15 +319,7 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
     try{return generateRootsNativePresentation(scene,context,session.rootsNative);}
     catch(error){session.reset([error]);throw error;}
   }
-  if(context.fractalRecording!==undefined){
-    const input=validateFractalRecordingFrameInput(context.fractalRecording);
-    if(input.simulationFps!==scene.timeline.fps)throw Error('分形录制模拟帧率与场景不一致');
-    const current=sceneAtFractalFrame(scene,input.displayFrame,context.isCancelled);
-    const output=definition(scene.kind).generate(current,context);
-    if(output.type!=='raster')throw Error('分形录制没有生成像素画面');
-    output.fractalRecording=fractalRecordingFrameFacts(current.evaluatedFractalScene!,input);
-    return output;
-  }
+  if(context.fractalRecording!==undefined)return session.sourceFractalFreshRecording.generate(scene,context);
   const current = sceneAtTime(scene, context.time,{isCancelled:context.isCancelled}), settings = current.settings;
   if(scene.kind==='domain')return generateDomain(current,context,session.domain);
   const tracking=prepareParticleCamera(scene,context.time);

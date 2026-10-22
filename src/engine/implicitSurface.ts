@@ -1,3 +1,5 @@
+import {prepareSourceImplicitField} from './sourceImplicitField';
+import {generateSourceImplicitMesh} from './sourceImplicitMesh';
 import {bindSourceImplicitPresentation,usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {compileReal,compileRealWithFacts,numberSetting,type Scope} from './expression';
 import {geometryColorModel,paletteDomainColor} from './geometryColor';
@@ -33,7 +35,7 @@ export interface ImplicitJob {
  readonly scene:SceneDocument;readonly transform:Transform;readonly dimensions:Vec3;readonly min:Vec3;readonly max:Vec3;readonly spacing:Vec3;
  readonly planeSize:number;readonly latticeSamples:number;readonly cells:number;readonly source:string;readonly scope:Scope;
  readonly iso:number;readonly sign:number;readonly mode:'mesh'|'wireframe'|'points';readonly overlay:boolean;readonly requestedBackend:'cpu'|'webgl2'|'auto';readonly domainColors:boolean;
- readonly evaluate:(scope:Scope)=>number;readonly continuity:ReturnType<typeof compileImplicitContinuity>;
+ readonly local?:{evaluate:(scope:Scope)=>number;continuity:ReturnType<typeof compileImplicitContinuity>};
 }
 /** Single owning interpretation. Segment counts are cells, not lattice points. */
 export function prepareImplicitJob(scene:SceneDocument,context:GenerateContext,transform:Transform):ImplicitJob {
@@ -47,8 +49,8 @@ export function prepareImplicitJob(scene:SceneDocument,context:GenerateContext,t
  const spacing=max.map((v,i)=>(v-min[i])/dimensions[i]) as Vec3;if(!spacing.every(v=>Number.isFinite(v)&&v>0))throw Error('坐标域跨度不可表示');
  for(let axis=0;axis<3;axis++){let previous=min[axis];for(let i=1;i<=dimensions[axis];i++){const value=min[axis]+i*spacing[axis];if(!Number.isFinite(value)||value<=previous)throw Error('请求网格的相邻坐标在双精度中不可区分；请增大坐标跨度或降低分辨率');previous=value;}}
  const planeSize=(dimensions[0]+1)*(dimensions[1]+1),latticeSamples=planeSize*(dimensions[2]+1),cells=dimensions[0]*dimensions[1]*dimensions[2];
- const source=scene.equations.f??'x^2+y^2+z^2-1',compiled=compileRealWithFacts(source),mode=option(s,'renderMode','mesh',['mesh','wireframe','points']) as ImplicitJob['mode'];
- return {scene,transform,dimensions,min,max,spacing,planeSize,latticeSamples,cells,source,scope,iso:numberSetting(s,'isoLevel',0),sign:option(s,'inside','below',['below','above'])==='below'?1:-1,mode,overlay:mode==='mesh'&&!usesSourceImplicitCpuMesh(scene)&&parseMeshAppearance(s).wireframe,requestedBackend:option(s,'computeBackend','cpu',['cpu','webgl2','auto']) as ImplicitJob['requestedBackend'],domainColors:!usesSourceImplicitCpuMesh(scene)&&geometryColorModel(scene).implicit==='z-domain',evaluate:compiled.evaluate,continuity:compileImplicitContinuity(compiled.facts)};
+ const source=scene.equations.f??'x^2+y^2+z^2-1',compiled=usesSourceImplicitCpuMesh(scene)?undefined:compileRealWithFacts(source),mode=option(s,'renderMode','mesh',['mesh','wireframe','points']) as ImplicitJob['mode'];
+ return {scene,transform,dimensions,min,max,spacing,planeSize,latticeSamples,cells,source,scope,iso:numberSetting(s,'isoLevel',0),sign:option(s,'inside','below',['below','above'])==='below'?1:-1,mode,overlay:mode==='mesh'&&!usesSourceImplicitCpuMesh(scene)&&parseMeshAppearance(s).wireframe,requestedBackend:option(s,'computeBackend','cpu',['cpu','webgl2','auto']) as ImplicitJob['requestedBackend'],domainColors:!usesSourceImplicitCpuMesh(scene)&&geometryColorModel(scene).implicit==='z-domain',local:compiled?{evaluate:compiled.evaluate,continuity:compileImplicitContinuity(compiled.facts)}:undefined};
 }
 /** Checked upper bound for final deliverable arrays and its compaction map.
  * It excludes extraction chunks/frontier (accounted dynamically) and renderer/
@@ -92,6 +94,7 @@ class GpuRetry extends Error {
 const cancelled=(context:GenerateContext)=>{if(context.isCancelled?.())throw Error('等值面计算已取消');};
 const emptyFacts=(job:ImplicitJob):Facts=>({requestedCells:job.cells,examinedCells:0,requestedLatticeSamples:job.latticeSamples,latticeSamples:0,latticeValidationSamples:0,rootEvaluations:0,refinedEdges:0,representedZeroCorners:0,rejectedEdges:0,unresolvedCells:0,degenerateTriangles:0,estimatedPeakWorkingBytes:0});
 function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialWarnings:string[],previous?:GpuRetry):SceneOutput {
+ if(!job.local)throw Error('本地隐式采样器未准备');const {evaluate:evaluateLocal,continuity}=job.local;
  const started=performance.now(),facts=emptyFacts(job),budget=new Budget(),warnings=[...initialWarnings],scope={...job.scope};
  const [nx,ny,nz]=job.dimensions,sx=nx+1,N=job.latticeSamples,planeSize=job.planeSize;
  if(previous)for(const key of ['latticeSamples','latticeValidationSamples','rootEvaluations','examinedCells'] as const)facts[key]=previous.work[key];
@@ -100,7 +103,7 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
  let lower=new Float64Array(0),upper=new Float64Array(0),lowerCorners=new Uint8Array(0),upperCorners=new Uint8Array(0);
  budget.add(planeSize*18);lower=new Float64Array(planeSize);upper=new Float64Array(planeSize);lowerCorners=new Uint8Array(planeSize);upperCorners=new Uint8Array(planeSize);
  function future(){budget.future=implicitOutputAllocation(positions.length/3,triangles.length,job.mode,job.overlay).futureBytes;budget.check();}
- const evaluate=(p:Vec3)=>{scope.x=p[0];scope.y=p[1];scope.z=p[2];return(job.evaluate(scope)-job.iso)*job.sign;};
+ const evaluate=(p:Vec3)=>{scope.x=p[0];scope.y=p[1];scope.z=p[2];return(evaluateLocal(scope)-job.iso)*job.sign;};
  function rootProbe(p:Vec3){if(++facts.rootEvaluations>ROOT_EVALUATION_LIMIT)throw Error('等值面根细化超过 50,000,000 次求值预算；请降低分辨率或简化方程');if((facts.rootEvaluations&1023)===0)cancelled(context);return evaluate(p);}
  function samplePlane(z:number,destination:Float64Array){
   cancelled(context);let gpu:Float32Array|undefined;
@@ -135,7 +138,7 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
    if(a[axis]===p[axis]||b[axis]===p[axis]||a[axis]<job.min[axis]||b[axis]>job.max[axis])continue;
    if(![a,b].every(point=>job.transform.apply(point).every((v,i)=>Math.fround(v)===rounded[i])))continue;
    const va=rootProbe(a),vb=rootProbe(b);
-   if(va!==0&&vb!==0&&Math.sign(va)!==Math.sign(vb)&&job.continuity.crossing(a,b,job.scope,job.iso,job.sign,va,vb)){
+   if(va!==0&&vb!==0&&Math.sign(va)!==Math.sign(vb)&&continuity.crossing(a,b,job.scope,job.iso,job.sign,va,vb)){
     states[index]=2;facts.representedZeroCorners++;return 0;
    }
   }
@@ -173,7 +176,7 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
     // root already at one endpoint's rounding floor, while rejecting observed
     // nonzero plateaus. Arbitrary discontinuities remain undecidable.
     const contracting=Math.max(Math.abs(fl),Math.abs(fh))<=midResidual/8;
-    if((width<=128*Number.EPSILON&&contracting&&Math.max(Math.abs(fl),Math.abs(fh))/scale<=256*Number.EPSILON)||((sameDeliveredPoint||width<=128*Number.EPSILON)&&job.continuity.crossing(loPoint,hiPoint,job.scope,job.iso,job.sign,fl,fh))){raw=Math.abs(fl)<=Math.abs(fh)?loPoint:hiPoint;break;}
+    if((width<=128*Number.EPSILON&&contracting&&Math.max(Math.abs(fl),Math.abs(fh))/scale<=256*Number.EPSILON)||((sameDeliveredPoint||width<=128*Number.EPSILON)&&continuity.crossing(loPoint,hiPoint,job.scope,job.iso,job.sign,fl,fh))){raw=Math.abs(fl)<=Math.abs(fh)?loPoint:hiPoint;break;}
     if(width<=Number.EPSILON*8)break;
     // Bisection after the first linear candidate gives a guaranteed position
     // contraction within the finite 49-probe budget. A tiny residual alone
@@ -236,7 +239,7 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
   if(job.overlay)meshEdges=edges;else{outIndices=edges;budget.release(original.byteLength);}
  }
 
- const colors=usesSourceImplicitCpuMesh(job.scene)?undefined:outColors??vertexColors(outPositions,job.scene.palette,option(job.scene.settings,'colorMetric','height',['height','radius','angle','index']));
+ const colors=outColors??vertexColors(outPositions,job.scene.palette,option(job.scene.settings,'colorMetric','height',['height','radius','angle','index']));
  if(invalid)warnings.push(`${invalid} 个场采样不是有限数值；相邻四面体不会跨越已采样的未定义区域。`);
  if(facts.rejectedEdges)warnings.push(`${facts.rejectedEdges} 条候选边在有界根细化中未取得可信零值；相关面片已跳过，可能是不连续区域或未解析的高条件数根。`);
  if(facts.degenerateTriangles)warnings.push(`${facts.degenerateTriangles} 个零面积、未解析或超出表示范围的三角形已排除。`);
@@ -247,6 +250,7 @@ function extract(job:ImplicitJob,context:GenerateContext,useGpu:boolean,initialW
 export function generateImplicitSurface(scene:SceneDocument,context:GenerateContext,transform:Transform):SceneOutput {
  const started=performance.now(),job=prepareImplicitJob(scene,context,transform);
  if(context.isCancelled?.())return{type:'geometry',dimension:3,topology:job.mode==='points'?'points':job.mode==='wireframe'?'segments':'mesh',positions:new Float32Array(0),colors:new Float32Array(0),...(job.mode!=='points'?{indices:new Uint32Array(0)}:{}),...(job.overlay?{meshEdges:new Uint32Array(0)}:{}),backend:'cpu',implicit:emptyFacts(job),stats:{samples:0,generated:0,invalid:0},warnings:['场采样已取消，未进行等值面剖分。']};
+ if(usesSourceImplicitCpuMesh(scene)){const field=prepareSourceImplicitField(job),output=generateSourceImplicitMesh(job,field,context);bindSourceImplicitPresentation(output,job,context,field);output.stats.elapsedMs=performance.now()-started;return output;}
  const gpu=job.requestedBackend==='webgl2'||job.requestedBackend==='auto'&&job.latticeSamples>=4096;
  let output:SceneOutput;try{output=extract(job,context,gpu,gpu?['GPU 格点逐点以 CPU 双精度核验分类，根细化和网格提取使用 CPU；此质量路径不保证加速。']:[]);}catch(error){if(!(error instanceof GpuRetry))throw error;cancelled(context);output=extract(job,context,false,[`GPU 等值面回退 CPU：${error.message}`,`工作统计包括已完成的 GPU 尝试（${error.work.latticeSamples} 个格点、${error.work.latticeValidationSamples} 次 CPU 分类核验、${error.work.rootEvaluations} 次根求值）和 CPU 重放；实际工作可超过请求网格。`],error);}if(output.type==='geometry')bindSourceImplicitPresentation(output,job,context);output.stats.elapsedMs=performance.now()-started;return output;
 }

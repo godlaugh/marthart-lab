@@ -1,0 +1,107 @@
+{
+  "type": "FRACTAL",
+  "config_version": "1.0.0",
+  "fractal": {
+    "center": [
+      -0.699999988079071,
+      0
+    ],
+    "rotation": 0,
+    "perturbation_precision": "ULTRA",
+    "zoom": 0.5,
+    "type": "MANDELBROT",
+    "iterations": 300,
+    "bailout": 4,
+    "render_method": "MULTIPASS",
+    "formula_id": "mandelbrot",
+    "formula": "z^2 + c",
+    "formula_type": "POWER",
+    "formula_params": {
+      "power": 2
+    },
+    "power": 2,
+    "parameters": {
+      "start_point": [
+        0,
+        0
+      ],
+      "power": 2,
+      "bailout": 4
+    },
+    "julia_constant": [
+      -0.8123120069503784,
+      0.01600000075995922
+    ]
+  },
+  "color": {
+    "use_curve_palette": false,
+    "outside": {
+      "gradient_offset": 0,
+      "color_density": 3,
+      "transfer_function": "LINEAR",
+      "algorithm_params": {
+        "metric": "ITERATION"
+      },
+      "algorithm_id": "basic",
+      "solid_color": "#000000",
+      "repeat_gradient": true
+    },
+    "cosine_a": [
+      0.30733945965766907,
+      0.21559633314609528,
+      0.5183486342430115
+    ],
+    "cosine_b": [
+      0.3637971580028534,
+      0.5512971878051758,
+      0.27771225571632385
+    ],
+    "inside": {
+      "gradient_offset": 0,
+      "color_density": 1,
+      "transfer_function": "NONE",
+      "algorithm_params": {},
+      "algorithm_id": "none",
+      "solid_color": "#000000",
+      "repeat_gradient": true
+    },
+    "cosine_c": [
+      0.7741745114326477,
+      0.5748820900917053,
+      0.9156839847564697
+    ],
+    "use_cosine_palette": false,
+    "cosine_d": [
+      0.2588443458080292,
+      0.5383254885673523,
+      0.4333726465702057
+    ]
+  },
+  "palette": [
+    "#2A2A32",
+    "#304A58",
+    "#376B7E",
+    "#3E8CA4",
+    "#52ACB6",
+    "#8AB5BC",
+    "#C2BEC2",
+    "#CCC79A",
+    "#D4B75B",
+    "#DB8F1C",
+    "#B86707",
+    "#753F0C",
+    "#332211",
+    "#251915",
+    "#17111A",
+    "#10081F"
+  ],
+  "timeline": [
+    {
+      "duration": 5,
+      "label": "Wait",
+      "type": "wait",
+      "easing": "SINE_IN_OUT"
+    }
+  ],
+  "name": "Mandelbrot"
+}
