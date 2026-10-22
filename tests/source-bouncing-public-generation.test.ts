@@ -17,7 +17,7 @@ function source(){
  scene.bouncingSource=imported.value.payload;scene.settings={};scene.equations={};scene.parameters={};
  scene.timeline={duration:10,fps:60,loop:false,tracks:[]};return scene;
 }
-const context:GenerateContext={time:0,width:96,height:64,quality:'preview',sourceViewport:{logicalWidth:96,logicalHeight:64,referenceLogicalHeight:64,target:'primary',projectionPass:'perspective'}};
+const context:GenerateContext={time:0,width:96,height:64,quality:'preview',sourcePointPixelDensity:1,sourceViewport:{logicalWidth:96,logicalHeight:64,referenceLogicalHeight:64,target:'primary',projectionPass:'perspective'}};
 describe('source Bouncing canonical/public boundary',()=>{
  it('saves and reopens authored source values without native provenance reinterpretation',()=>{
   const scene=source();scene.bouncingSource!.visual.dotSize=7;
@@ -52,6 +52,16 @@ describe('source Bouncing canonical/public boundary',()=>{
   expect(()=>generateScene(scene,{...context,width:100000},owner)).toThrow('容量');
   expect(owner.diagnostics().sourceBouncing).toMatchObject({retainedBytes:0,simulationUpdates:0});
   owner.reset();
+ });
+ it('requires measured integer density and matching logical/physical dimensions before GPU allocation',()=>{
+  const owner=new TemporalGenerationSession(),scene=source();
+  for(const sourcePointPixelDensity of [undefined,0,-1,1.5,NaN,Infinity]){
+   expect(()=>generateScene(scene,{...context,sourcePointPixelDensity},owner)).toThrow('像素密度');
+   expect(owner.diagnostics().sourceBouncing).toMatchObject({retainedBytes:0,simulationUpdates:0});
+  }
+  expect(()=>generateScene(scene,{...context,sourcePointPixelDensity:2},owner)).toThrow('物理尺寸');
+  expect(()=>generateScene(scene,{...context,width:97},owner)).toThrow('物理尺寸');
+  expect(owner.diagnostics().sourceBouncing).toMatchObject({retainedBytes:0,simulationUpdates:0});owner.reset();
  });
  it('rejects malformed runtime views before creating GPU state or interpreting them as author values',()=>{
   const owner=new TemporalGenerationSession(),scene=source();

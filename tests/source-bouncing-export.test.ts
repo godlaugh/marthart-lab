@@ -4,6 +4,8 @@ import {importSourceBouncingDocument,sourceBouncingCameraInput} from '../src/eng
 import {planSourceBouncingFixedReplay,type SourceBouncingCheckpoint} from '../src/engine/sourceBouncingReplay';
 import {sourceBouncingViewFromCamera} from '../src/engine/sourceBouncingNavigation';
 import {prepareSourceCamera} from '../src/engine/sourceCamera';
+import {sourceBouncingViewInput} from '../src/engine/sourceBouncingNavigation';
+import {prepareSourceBouncingDisplay} from '../src/engine/sourceBouncingVisualConfig';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import type {SceneDocument,SceneOutput} from '../src/types';
@@ -14,7 +16,7 @@ function fixture(updates=17){
  const viewport={logicalWidth:640,logicalHeight:360,referenceLogicalHeight:360,target:'primary' as const,projectionPass:'perspective' as const};
  const camera=unwrap(prepareSourceCamera(sourceBouncingCameraInput(payload),viewport));if(camera.kind!=='known')throw Error('camera');
  const checkpoint=unwrap(planSourceBouncingFixedReplay({updates,fps:30})).checkpoint;
- const presented:SourceBouncingPresentedExport={ready:true,frame:{checkpoint,camera:camera.plan.camera.value,viewport}};
+ const presented:SourceBouncingPresentedExport={ready:true,frame:{pixelDensity:1,checkpoint,camera:camera.plan.camera.value,viewport}};
  return{scene,presented};
 }
 const options={kind:'video' as const,start:'current' as const,width:320,height:180,fps:30};
@@ -29,6 +31,28 @@ describe('source Bouncing export contract',()=>{
   expect(request.sourceViewport).not.toBe(plan.viewport);expect(plan.viewport.logicalWidth).toBe(320);
   expect(plan.view).toEqual(unwrap(sourceBouncingViewFromCamera(presented.frame.camera)));
   expect(request.sourceBouncingView).toEqual(plan.view);expect(request.sourceBouncingView).not.toBe(plan.view);
+ });
+ it('inherits measured density into logical projection while retaining requested and actual physical sizes',()=>{
+  const {scene,presented}=fixture();
+  presented.frame={...presented.frame,pixelDensity:2,viewport:{...presented.frame.viewport,referenceLogicalHeight:486}};
+  const before=structuredClone(scene);
+  const plan=unwrap(prepareSourceBouncingExport(scene,presented,{...options,kind:'image',width:500,height:600}));
+  expect(plan).toMatchObject({requestedSize:{width:500,height:600},width:500,height:600,pixelDensity:2,viewport:{logicalWidth:250,logicalHeight:300,referenceLogicalHeight:486}});
+  const camera=unwrap(prepareSourceCamera(sourceBouncingViewInput(plan.view),plan.viewport));if(camera.kind!=='known')throw Error('camera');
+  const display=unwrap(prepareSourceBouncingDisplay(scene.bouncingSource!.visual,{initialSpeed:scene.bouncingSource!.configuration.initialSpeed},camera.plan.displayScale));
+  expect(display.radius).toBe(Math.fround(1.25*Math.fround(300/486)));
+  expect(sourceBouncingExportContext(plan,plan.frames[0]).sourcePointPixelDensity).toBe(2);
+  for(const kind of ['image','video'] as const){
+   const rounded=unwrap(prepareSourceBouncingExport(scene,presented,{...options,kind,width:321,height:181}));
+   expect(rounded).toMatchObject({requestedSize:{width:321,height:181},width:322,height:182,viewport:{logicalWidth:161,logicalHeight:91}});
+  }
+  // Density is delivered runtime state, not an authored or migrated scene field.
+  expect(scene).toEqual(before);expect(scene.bouncingSource).not.toHaveProperty('pixelDensity');
+ });
+ it('rejects missing or malformed delivered density instead of assuming a monitor configuration',()=>{
+  const {scene,presented}=fixture();
+  for(const pixelDensity of [undefined,null,0,-1,1.5,NaN,Infinity])expect(prepareSourceBouncingExport(scene,{...presented,frame:{...presented.frame,pixelDensity} as never},options)).toMatchObject({ok:false,error:{path:['frame','pixelDensity']}});
+  expect(prepareSourceBouncingExport(scene,presented,{...options,width:16384,height:16384})).toMatchObject({ok:false,error:{kind:'capacity'}});
  });
  it('starts video from current N, warms up N+1, then encodes N+2 through the Float32 stopping frame',()=>{
   const {scene,presented}=fixture(),plan=unwrap(prepareSourceBouncingExport(scene,presented,options));
@@ -86,9 +110,9 @@ describe('source Bouncing export contract',()=>{
  it('checks warmup and every delivered frame before PNG encoding or upload',()=>{
   const {scene,presented}=fixture(),plan=unwrap(prepareSourceBouncingExport(scene,presented,options));
   const frame=plan.frames[0],camera={phi:plan.view.phi,theta:plan.view.theta,gamma:plan.view.gamma,zoom:plan.view.zoom,center:[0,0,0] as [number,number,number],focalDistance:20};
-  const output:SceneOutput={type:'raster',width:320,height:180,pixels:new Uint8ClampedArray(320*180*4),cameraResolved:true,backend:'webgl2',sourceBouncingFrame:{checkpoint:frame,camera,viewport:plan.viewport},stats:{samples:1,generated:1,invalid:0}};
+  const output:SceneOutput={type:'raster',width:320,height:180,pixels:new Uint8ClampedArray(320*180*4),cameraResolved:true,backend:'webgl2',sourceBouncingFrame:{pixelDensity:plan.pixelDensity,checkpoint:frame,camera,viewport:plan.viewport},stats:{samples:1,generated:1,invalid:0}};
   expect(()=>assertSourceBouncingExportFrame(output,plan,frame)).not.toThrow();
   expect(()=>assertSourceBouncingExportFrame(output,plan,plan.warmup!)).toThrow('不一致');
-  for(const patch of [{backend:'cpu'},{cameraResolved:undefined},{width:100},{pixels:new Uint8ClampedArray(4)},{sourceBouncingFrame:undefined},{sourceBouncingFrame:{...output.sourceBouncingFrame,viewport:{...plan.viewport,target:'primary'}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,zoom:2}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,phi:-0}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,center:[1,0,0]}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,focalDistance:21}}}])expect(()=>assertSourceBouncingExportFrame({...output,...patch} as SceneOutput,plan,frame)).toThrow('不一致');
+  for(const patch of [{sourceBouncingFrame:{...output.sourceBouncingFrame,pixelDensity:2}},{backend:'cpu'},{cameraResolved:undefined},{width:100},{pixels:new Uint8ClampedArray(4)},{sourceBouncingFrame:undefined},{sourceBouncingFrame:{...output.sourceBouncingFrame,viewport:{...plan.viewport,target:'primary'}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,zoom:2}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,phi:-0}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,center:[1,0,0]}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,focalDistance:21}}}])expect(()=>assertSourceBouncingExportFrame({...output,...patch} as SceneOutput,plan,frame)).toThrow('不一致');
  });
 });

@@ -13,7 +13,7 @@ let server,browser;
 try {
  const reservation=tcpServer();await new Promise(resolve=>reservation.listen(0,'127.0.0.1',resolve));const port=reservation.address().port;await new Promise(resolve=>reservation.close(resolve));
  server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false},logLevel:'error'});await server.listen();
- browser=await chromium.launch({channel:'chrome',headless:true});report.browser=await browser.version();
+ browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-angle-features=disableProgramCaching']});report.browser=await browser.version();
  const browserContext=await browser.newContext();const page=await browserContext.newPage();page.setDefaultTimeout(120000);const pageErrors=[];page.on('pageerror',e=>pageErrors.push(String(e)));
  await page.route('**/bouncing-session-verifier',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Bouncing session verifier</title>'}));
  // Observe actual worker transfer detachment without changing its generation code.
@@ -41,7 +41,7 @@ try {
    const payload=unwrap(doc.importSourceBouncingDocument({settings:{particle_count:32,seed:'-9223372036854775808',sub_steps:2,time_step:.02,initial_speed:1.5,scale_x:80,scale_y:80,dot_size:3,record_duration:.1},palette:['#FF2040','#40C0FF'],camera:{phi:0,theta:0,gamma:.12}})).payload;
    const scene={...createScene(definition('bouncing')),id:'source-bouncing-session-fixture',bouncingSource:payload,settings:{},equations:{},parameters:{},timeline:{duration:10,fps:30,loop:false,tracks:[]}};
    const seed=clock.sourceBouncingSeedCheckpoint();
-   const context=(checkpoint,width=240,height=180)=>({time:checkpoint.sceneTime,width,height,quality:'export',sourceBouncingFrame:checkpoint,sourceViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:180,target:'offscreen',projectionPass:'perspective'}});
+   const context=(checkpoint,width=240,height=180)=>({time:checkpoint.sceneTime,width,height,quality:'export',sourcePointPixelDensity:1,sourceBouncingFrame:checkpoint,sourceViewport:{logicalWidth:width,logicalHeight:height,referenceLogicalHeight:180,target:'offscreen',projectionPass:'perspective'}});
    const at=n=>unwrap(clock.planSourceBouncingFixedReplay({updates:n,fps:30})).checkpoint;
    const direct=(s,ctx)=>{
     const p=unwrap(doc.prepareSourceBouncingScene(s)),seeds=unwrap(generateSourceBouncingSeeds(p.configuration)),gpu=new SourceBouncingGpu(seeds.state);
@@ -53,12 +53,17 @@ try {
     check(output.pixels instanceof Uint8ClampedArray&&output.pixels.length===ctx.width*ctx.height*4,name+': pixel transport');
     check(JSON.stringify(output.sourceBouncingFrame.checkpoint)===JSON.stringify(ctx.sourceBouncingFrame),name+': checkpoint binding');
     check(JSON.stringify(output.sourceBouncingFrame.viewport)===JSON.stringify(ctx.sourceViewport),name+': viewport binding');
+    check(output.sourceBouncingFrame.pixelDensity===ctx.sourcePointPixelDensity,name+': measured density binding');
     check(output.sourceBouncingFrame.camera.phi===s.bouncingSource.camera.phi&&output.sourceBouncingFrame.camera.gamma===s.bouncingSource.camera.gamma,name+': camera binding');
     if(mode==='worker'){const deadline=performance.now()+2000;while(result.workerTransfers.length===transferCount&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,10));check(result.workerTransfers.length>transferCount,name+': missing transfer observation');}
     const expected=direct(s,ctx);check(expected.pixels.length===output.pixels.length&&expected.pixels.every((v,i)=>v===output.pixels[i]),name+': direct owner pixel mismatch');
-    const summary={name,mode,checkpoint:ctx.sourceBouncingFrame,size:[ctx.width,ctx.height],pixelSha256:await digest(output.pixels),...(mode==='main'?{session:owner.sourceBouncing.diagnostics()}:{})};result.cases.push(summary);return summary;
+    let minimumAlpha=255,maximumAlpha=0;for(let i=3;i<output.pixels.length;i+=4){minimumAlpha=Math.min(minimumAlpha,output.pixels[i]);maximumAlpha=Math.max(maximumAlpha,output.pixels[i]);}
+    const summary={name,mode,minimumAlpha,maximumAlpha,checkpoint:ctx.sourceBouncingFrame,size:[ctx.width,ctx.height],pixelDensity:output.sourceBouncingFrame.pixelDensity,logicalSize:[output.sourceBouncingFrame.viewport.logicalWidth,output.sourceBouncingFrame.viewport.logicalHeight],pixelSha256:await digest(output.pixels),...(mode==='main'?{session:owner.sourceBouncing.diagnostics()}:{})};result.cases.push(summary);return summary;
    };
    const initial=await compare('paused-seed',scene,context(seed));
+   check(initial.minimumAlpha===255,'Opaque Processing target completion lost alpha');
+   const translucent=structuredClone(scene);translucent.bouncingSource.visual.backgroundColor=0x80112233;
+   const translucentImage=await compare('translucent-target-preserves-alpha',translucent,context(seed));check(translucentImage.minimumAlpha<255,'Target completion forced translucent background opaque');
    const first=unwrap(clock.stepSourceBouncingRealtime(seed,{deltaTime:0,paused:false}));check(first.sceneTime===0&&first.simulationUpdates===1,'First dt0 must integrate');
    const firstImage=await compare('first-realtime-dt-zero',scene,context(first));check(initial.pixelSha256!==firstImage.pixelSha256,'Fixture fails to visibly distinguish dt0 update');
    check(unwrap(clock.stepSourceBouncingRealtime(first,{deltaTime:9,paused:true})).simulationUpdates===1,'Paused clock moved');
@@ -68,6 +73,10 @@ try {
    const resize=context(at(3),300,200),contextsBeforeResize=live.size,renderedBefore=owner.sourceBouncing.diagnostics().gpu.rendered;
    generateScene(scene,resize,owner);check(live.size===contextsBeforeResize&&owner.sourceBouncing.diagnostics().gpu.rendered===renderedBefore+1,'Resize reseeded GPU');
    await compare('resize-preserves-particles',scene,resize);
+   const dense={...resize,sourcePointPixelDensity:2,sourceViewport:{...resize.sourceViewport,logicalWidth:resize.width/2,logicalHeight:resize.height/2}};
+   const densityContexts=live.size,densityPasses=owner.sourceBouncing.diagnostics().gpu.passes;
+   generateScene(scene,dense,owner);check(live.size===densityContexts&&owner.sourceBouncing.diagnostics().gpu.passes===densityPasses,'Density change reseeded or advanced physics');
+   await compare('density-two-preserves-particles',scene,dense);
    const edited=structuredClone(scene);edited.bouncingSource.visual.palette={kind:'colors',colors:['#40FF80']};edited.bouncingSource.visual.dotSize=4;edited.bouncingSource.camera.gamma=Math.fround(.4);
    const contextsBeforeVisual=live.size,passes=owner.sourceBouncing.diagnostics().gpu.passes;
    generateScene(edited,resize,owner);check(live.size===contextsBeforeVisual&&owner.sourceBouncing.diagnostics().gpu.passes===passes,'Visual edit reseeded/advanced');
@@ -95,6 +104,7 @@ try {
    await compare('cleanup-error-recovery',scene,context(at(1)));const handles=outstanding();cleanupError.retryCleanup();check(outstanding()===handles,'Retired cleanup error destroyed newer generation');
    owner.reset();check(outstanding()===0,'Main cleanup leaked');
    await compare('worker-seed',scene,context(seed),'worker');await compare('worker-dt-zero',scene,context(first),'worker');await compare('worker-jump',scene,context(at(12)),'worker');await compare('worker-reverse',scene,context(at(3)),'worker');
+   await compare('worker-density-two',scene,dense,'worker');
    phase='worker-invalid';let workerFailure;try{await generator.generate(scene,{...context(at(3)),time:8});}catch(e){workerFailure=e;}check(workerFailure,'Worker invalid request accepted');result.failures.push({name:'worker-invalid-time',message:workerFailure.message});
    await compare('worker-error-recovery',scene,context(at(2)),'worker');
    phase='worker-cancel';const pending=generator.generate(scene,context(at(100))),rejected=pending.then(()=>null,e=>e);generator.cancel();const abort=await rejected;check(abort?.name==='AbortError','Worker cancel did not reject AbortError');result.failures.push({name:'worker-cancel',message:abort.message});

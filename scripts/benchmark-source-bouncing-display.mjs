@@ -50,13 +50,14 @@ try{
       const payload=take(sessionModules.importSourceBouncingDocument(raw)).payload;
       payload.camera={phi:Math.fround(Math.PI/2),theta:0,gamma:0};
       const scene={...sessionModules.createScene(sessionModules.definition('bouncing')),bouncingSource:payload,settings:{},equations:{},parameters:{},timeline:{duration:10,fps:30,loop:false,tracks:[]}};
+      // Controlled benchmark target: 640×360 logical and physical pixels, density 1.
       const viewport={logicalWidth:640,logicalHeight:360,referenceLogicalHeight:360,target:'offscreen',projectionPass:'perspective'};
       session=new sessionModules.TemporalGenerationSession();let checkpoint=sessionModules.sourceBouncingSeedCheckpoint();
       const preparationElapsedMs=performance.now()-start;
       for(let i=0;i<frameCount;i++){
        const begin=performance.now();checkpoint=take(sessionModules.planSourceBouncingFixedReplay({from:checkpoint,updates:i+1,fps:30})).checkpoint;
-       const output=sessionModules.generateScene(scene,{time:checkpoint.sceneTime,sourceBouncingFrame:checkpoint,sourceViewport:viewport,width:640,height:360,quality:'export'},session);
-       if(output.type!=='raster'||output.backend!=='webgl2'||!output.cameraResolved||JSON.stringify(output.sourceBouncingFrame?.checkpoint)!==JSON.stringify(checkpoint))throw Error('Wrong public frame identity or backend');
+       const output=sessionModules.generateScene(scene,{time:checkpoint.sceneTime,sourceBouncingFrame:checkpoint,sourceViewport:viewport,sourcePointPixelDensity:1,width:640,height:360,quality:'export'},session);
+       if(output.type!=='raster'||output.backend!=='webgl2'||!output.cameraResolved||output.sourceBouncingFrame?.pixelDensity!==1||JSON.stringify(output.sourceBouncingFrame?.checkpoint)!==JSON.stringify(checkpoint))throw Error('Wrong public frame identity or backend');
        const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',output.pixels))).map(v=>v.toString(16).padStart(2,'0')).join('');
        frames.push({index:i,sha256:hash,elapsedMs:performance.now()-begin,checkpoint});
       }

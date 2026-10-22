@@ -1,3 +1,5 @@
+import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
+import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import type {SourceBouncingPresentationFrame} from '../scenes/sourceBouncing';
 import {prepareSourceBouncingScene,sourceBouncingCameraInput} from './sourceBouncingDocument';
@@ -8,7 +10,8 @@ import type {SourceBouncingResult} from './sourceBouncingConfig';
 
 export interface SourceBouncingPresentedExport {ready:boolean;frame:SourceBouncingPresentationFrame;}
 export interface SourceBouncingExportPlan {
- readonly width:number;readonly height:number;
+ readonly requestedSize:{readonly width:number;readonly height:number};
+ readonly width:number;readonly height:number;readonly pixelDensity:number;
  readonly viewport:SourceCameraViewport;readonly view:SourceBouncingView;
  readonly warmup?:SourceBouncingCheckpoint;
  readonly frames:readonly SourceBouncingCheckpoint[];
@@ -21,7 +24,12 @@ export function prepareSourceBouncingExport(scene:SceneDocument,presented:Source
  if(!presented?.ready)return{ok:false,error:{kind:'input',path:['frame'],reason:'请等待源弹跳当前预览完成并暂停后再导出'}};
  const checkpoint=parseSourceBouncingCheckpoint(presented.frame.checkpoint);if(!checkpoint.ok)return checkpoint;
  if(!Number.isSafeInteger(options.width)||!Number.isSafeInteger(options.height)||options.width<16||options.height<16)return{ok:false,error:{kind:'input',path:['size'],reason:'源弹跳导出尺寸必须为至少 16 的整数'}};
- const viewport:SourceCameraViewport={logicalWidth:options.width,logicalHeight:options.height,referenceLogicalHeight:presented.frame.viewport.referenceLogicalHeight,target:'offscreen',projectionPass:'perspective'};
+ const pixelDensity=presented.frame.pixelDensity;
+ if(!Number.isSafeInteger(pixelDensity)||pixelDensity<1)return{ok:false,error:{kind:'input',path:['frame','pixelDensity'],reason:'源弹跳导出缺少已呈现帧的实测正整数像素密度，请重新生成预览'}};
+ let size:ReturnType<typeof prepareSourcePausedCaptureSize>;
+ try{size=prepareSourcePausedCaptureSize(options,pixelDensity,MAX_RASTER_PIXELS);}catch(error){return{ok:false,error:{kind:'capacity',path:['size'],reason:error instanceof Error?error.message:String(error)}};}
+ const target={requestedSize:{width:options.width,height:options.height},width:size.width,height:size.height,pixelDensity};
+ const viewport:SourceCameraViewport={logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,referenceLogicalHeight:presented.frame.viewport.referenceLogicalHeight,target:'offscreen',projectionPass:'perspective'};
  // PNG and the local current-state recording extension retain the delivered
  // view. Native toolbar recording rebuilds its loaded JSON scene and zoom=1;
  // this local seed option applies that rebuild to the current author document.
@@ -31,17 +39,17 @@ export function prepareSourceBouncingExport(scene:SceneDocument,presented:Source
  if(!selected.ok)return selected;
  const view=selected.value,camera=prepareSourceCamera(sourceBouncingViewInput(view),viewport);
  if(!camera.ok||camera.value.kind!=='known')return{ok:false,error:{kind:'input',path:['camera'],reason:'源弹跳导出相机或参考画布无效'}};
- if(options.kind==='image')return{ok:true,value:{width:options.width,height:options.height,viewport,view,frames:[checkpoint.value]}};
+ if(options.kind==='image')return{ok:true,value:{...target,viewport,view,frames:[checkpoint.value]}};
  if(!Number.isSafeInteger(options.fps)||options.fps<1||options.fps>120)return{ok:false,error:{kind:'input',path:['fps'],reason:'源弹跳导出帧率必须为 1–120 的整数'}};
  const recording=planSourceBouncingRecording({from:options.start==='seed'?sourceBouncingSeedCheckpoint():checkpoint.value,fps:options.fps,recordDuration:parsed.value.recordDuration});
  if(!recording.ok)return recording;
- return{ok:true,value:{width:options.width,height:options.height,viewport,view,warmup:recording.value.warmup,frames:recording.value.frames}};
+ return{ok:true,value:{...target,viewport,view,warmup:recording.value.warmup,frames:recording.value.frames}};
 }
 export function sourceBouncingExportContext(plan:SourceBouncingExportPlan,checkpoint:SourceBouncingCheckpoint):GenerationInput{
- return{time:checkpoint.sceneTime,sourceBouncingFrame:checkpoint,sourceBouncingView:{...plan.view},sourceViewport:{...plan.viewport},quality:'export',width:plan.width,height:plan.height};
+ return{sourcePointPixelDensity:plan.pixelDensity,time:checkpoint.sceneTime,sourceBouncingFrame:checkpoint,sourceBouncingView:{...plan.view},sourceViewport:{...plan.viewport},quality:'export',width:plan.width,height:plan.height};
 }
 /** Validate the returned frame before either encoding or accepting warmup. */
 export function assertSourceBouncingExportFrame(output:SceneOutput,plan:SourceBouncingExportPlan,checkpoint:SourceBouncingCheckpoint):asserts output is Extract<SceneOutput,{type:'raster'}> {
  const frame=output.sourceBouncingFrame;
- if(output.type!=='raster'||output.backend!=='webgl2'||!output.cameraResolved||output.width!==plan.width||output.height!==plan.height||output.pixels.length!==plan.width*plan.height*4||!frame||frame.checkpoint.model!==checkpoint.model||frame.checkpoint.simulationUpdates!==checkpoint.simulationUpdates||!Object.is(frame.checkpoint.sceneTime,checkpoint.sceneTime)||!sourceBouncingViewMatches(frame.camera,plan.view)||frame.viewport.logicalWidth!==plan.viewport.logicalWidth||frame.viewport.logicalHeight!==plan.viewport.logicalHeight||frame.viewport.referenceLogicalHeight!==plan.viewport.referenceLogicalHeight||frame.viewport.target!=='offscreen'||frame.viewport.projectionPass!=='perspective')throw new Error('源弹跳导出帧与已呈现检查点、相机或尺寸不一致');
+ if(output.type!=='raster'||output.backend!=='webgl2'||!output.cameraResolved||output.width!==plan.width||output.height!==plan.height||output.pixels.length!==plan.width*plan.height*4||!frame||frame.pixelDensity!==plan.pixelDensity||frame.checkpoint.model!==checkpoint.model||frame.checkpoint.simulationUpdates!==checkpoint.simulationUpdates||!Object.is(frame.checkpoint.sceneTime,checkpoint.sceneTime)||!sourceBouncingViewMatches(frame.camera,plan.view)||frame.viewport.logicalWidth!==plan.viewport.logicalWidth||frame.viewport.logicalHeight!==plan.viewport.logicalHeight||frame.viewport.referenceLogicalHeight!==plan.viewport.referenceLogicalHeight||frame.viewport.target!=='offscreen'||frame.viewport.projectionPass!=='perspective')throw new Error('源弹跳导出帧与已呈现检查点、相机或尺寸不一致');
 }

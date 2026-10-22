@@ -9,6 +9,8 @@ import {prepareSourceCamera,type SourceCameraScalars,type SourceCameraViewport} 
 import {GenerationCleanupState} from '../engine/generationCleanup';
 
 export interface SourceBouncingPresentationFrame {
+ /** Measured renderer density of this delivered frame, never saved author configuration. */
+ readonly pixelDensity:number;
  readonly checkpoint:SourceBouncingCheckpoint;
  readonly camera:SourceCameraScalars;
  readonly viewport:SourceCameraViewport;
@@ -50,6 +52,9 @@ export class SourceBouncingSession {
    if(camera.value.kind!=='known')throw new SourceBouncingGpuError('input','源弹跳相机投影未知');
    const plan=camera.value.plan;
    sourceBouncingGpuFrameLayout(payload.configuration.particleCount,context.width,context.height,true,'transfer');
+   const pixelDensity=context.sourcePointPixelDensity;
+   if(typeof pixelDensity!=='number'||!Number.isSafeInteger(pixelDensity)||pixelDensity<1)throw new SourceBouncingGpuError('input','源弹跳需要已测量的正整数像素密度');
+   if(context.width!==viewport.logicalWidth*pixelDensity||context.height!==viewport.logicalHeight*pixelDensity)throw new SourceBouncingGpuError('input','源弹跳物理尺寸必须等于逻辑尺寸乘以已测量的像素密度');
    // The canonical source owner already interpreted inputs. This key preserves
    // signed zero and omits display, camera and metadata edits deliberately.
    const key=sourceBouncingInitializationKey(payload.configuration);
@@ -70,7 +75,7 @@ export class SourceBouncingSession {
    while(this.updates<checkpoint.simulationUpdates){this.gpu.advance(this.update!);this.updates++;}
    const image=this.gpu.render({width:context.width,height:context.height,cameraPlan:plan,visualConfiguration:payload.visual,initialSpeed:payload.configuration.initialSpeed,boundary:this.update!.boundary});
    return{type:'raster',...image,cameraResolved:true,dimension:2,backend:'webgl2',
-    sourceBouncingFrame:{checkpoint,camera:structuredClone(plan.camera.value),viewport:{...viewport}},
+    sourceBouncingFrame:{pixelDensity,checkpoint,camera:structuredClone(plan.camera.value),viewport:{...viewport}},
     stats:{samples:payload.configuration.particleCount,generated:payload.configuration.particleCount,invalid:0,elapsedMs:performance.now()-started},
     warnings:['源弹跳按显式更新次数回放；原版 JVM/JOGL 完整画面尚未验收。'],
    };

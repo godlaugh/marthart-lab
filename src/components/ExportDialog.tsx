@@ -27,6 +27,7 @@ import type {SourceRecordingConsumer} from '../engine/generationQueue';
 import {prepareSourcePausedUpscale} from '../engine/sourcePausedUpscale';
 import {MAX_RASTER_PIXELS,validateRasterRequest} from '../engine/rasterDimensions';
 import {encodeRgbaPng} from '../engine/rgbaPng';
+import {encodeSourcePausedPng} from '../engine/sourcePausedPng';
 import {encodeFormulaRaster} from '../engine/formulaCanvas';
 import { Generator } from "../engine/client";
 import { ArtRenderer,artExportPurpose } from "../engine/renderer";
@@ -343,7 +344,7 @@ export function ExportDialog({
         const session = await request("/api/exports", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps, frames, format,...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height,...(format==='mp4'?{profile:'mathart',quality:recordingQuality}:{})}:{}) }),
+          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps, frames, format,...(bouncing?{inputWidth:bouncing.width,inputHeight:bouncing.height}:{}),...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height,...(format==='mp4'?{profile:'mathart',quality:recordingQuality}:{})}:{}) }),
         });
         sessionRef.current = exportSessionCleanup.registerCreated(session.id);
         checkCancelled();
@@ -389,7 +390,9 @@ export function ExportDialog({
         }else if(bouncing||perlinRecording){
           if(bouncing)assertSourceBouncingExportFrame(output,bouncing,bouncing.frames[frame]);
           if(output.type!=='raster')throw new Error('录制帧没有生成图像');
-          blob=await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
+          blob=bouncing&&kind==='image'
+            ?await encodeSourcePausedPng(output.pixels,output.width,output.height,1,{signal:abort.signal,isCancelled:()=>cancelRef.current})
+            :await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
         }else{
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);

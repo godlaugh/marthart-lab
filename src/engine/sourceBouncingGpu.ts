@@ -226,6 +226,10 @@ export class SourceBouncingGpu {
   gl.uniformMatrix4fv(this.location(p,'projection'),false,projection);gl.uniformMatrix4fv(this.location(p,'modelview'),false,modelview);
   gl.drawArrays(gl.POINTS,0,this.layout.count);gl.disable(gl.BLEND);this.checkGl();
   if(boundary){this.drawBoundary(boundary,projection);this.checkGl();this.boundaryDraws++;}
+  // Processing 4.5 PGraphicsOpenGL.endOffscreenDraw restores opaque
+  // background alpha after all scene draws. Keep the already blended RGB and
+  // preserve translucent backgrounds; this is target completion, not encoding.
+  if(clear[3]===1){gl.colorMask(false,false,false,true);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);gl.colorMask(true,true,true,true);}
   const pixels=new Uint8ClampedArray(d.width*d.height*4);gl.readPixels(0,0,d.width,d.height,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(pixels.buffer));this.checkGl();
   const stride=d.width*4,row=new Uint8ClampedArray(stride);for(let y=0;y<Math.floor(d.height/2);y++){const top=y*stride,bottom=(d.height-1-y)*stride;row.set(pixels.subarray(top,top+stride));pixels.copyWithin(top,bottom,bottom+stride);pixels.set(row,bottom);}
   this.rendered++;this.readbackBytes+=pixels.byteLength;return{width:d.width,height:d.height,pixels};
