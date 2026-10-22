@@ -42,6 +42,21 @@ describe('retained Surface generation boundary',()=>{
    expect(comparable(actual)).toEqual(comparable(fixed));expect(owner.diagnostics().constructions).toBe(1);
   });
  }
+ for(const backend of ['CPU','GPU'])for(const mode of ['POINTS','MESH'])it(`${backend} ${mode} navigates paused camera without changing particles or queue phase, restores angles and keeps zoom on resume`,()=>{
+  const s=scene(backend,mode),owner=new SourceSurfaceLiveSession();owner.generate(s,context());const moving=geometry(owner.generate(s,context(1250)));owner.setPaused(true);
+  const c=context(9000,{clock:{paused:true}});owner.generate(s,c);const before=structuredClone(moving.surfaceLive!.frame),parameter=value(moving);
+  const rotated=geometry(owner.navigatePaused(s,c,{kind:'drag',dx:37,dy:-33}));expect(rotated.surfaceLive).toMatchObject({constructions:1,renderKind:'update',frame:{frameIndex:before.frameIndex+1,sceneTime:before.sceneTime,queueIndex:before.queueIndex,rawDt:0,activeDt:0}});
+  expect(rotated.surfaceLive!.frame.camera.phi).toBe(Math.fround(-33*Math.fround(.01)));expect(value(rotated)).toBe(parameter);
+  const zoomed=geometry(owner.navigatePaused(s,c,{kind:'wheel',count:-3}));expect(zoomed.surfaceLive!.frame.camera.zoom).toBeGreaterThan(before.camera.zoom);
+  const saved=structuredClone(zoomed.surfaceLive!.frame);structuredClone(zoomed,{transfer:outputBuffers(zoomed)});
+  const capture=owner.capturePaused(s,c,{width:16,height:12},1);expect(capture.capture.surfaceLive!.frame).toEqual(saved);
+  expect(()=>owner.navigatePaused(s,c,{kind:'drag',dx:NaN,dy:1})).toThrow();expect(owner.diagnostics().frame).toEqual(saved);
+  expect(()=>owner.navigatePaused(s,{...c,isCancelled:()=>true},{kind:'wheel',count:1})).toThrow('取消');expect(owner.matchesCompletedPrimary(s,c)).toBe(true);
+  owner.setPaused(false,10000);const restored=geometry(owner.current(s,context(10000))).surfaceLive!.frame;
+  expect(restored.camera).toMatchObject({phi:before.camera.phi,theta:before.camera.theta,gamma:before.camera.gamma,zoom:saved.camera.zoom});
+  expect(()=>owner.navigatePaused(s,context(10000),{kind:'wheel',count:1})).toThrow();
+  const resumed=geometry(owner.generate(s,context(10250)));expect(resumed.surfaceLive!.frame.sceneTime).toBe(.5);expect(resumed.surfaceLive!.constructions).toBe(1);
+ });
  for(const backend of ['CPU','GPU'])for(const mode of ['POINTS','MESH'])it(`${backend} ${mode} edits the current function without rebuilding or advancing a paused session`,()=>{
   const s=scene(backend,mode),owner=new SourceSurfaceLiveSession(),c=context(0,{clock:{paused:true,timestampMs:0}});
   const before=geometry(owner.generate(s,c));

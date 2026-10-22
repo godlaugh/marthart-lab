@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import fixture from './fixtures/source-viewport/navigation-source.json';
-import {navigateSourceIteratedCamera} from '../src/engine/sourceIteratedNavigation';
+import {navigateSourceViewportCamera} from '../src/engine/sourceViewportNavigation';
 import {SourceSceneHostClock} from '../src/engine/sourceSceneHostClock';
 import {OrdinarySourceCameraTimelineSession} from '../src/engine/ordinarySourceCameraTimeline';
 import type {SourceCameraScalars} from '../src/engine/sourceCamera';
@@ -10,7 +10,7 @@ const number=(n:number)=>{const v=new DataView(new ArrayBuffer(4));v.setUint32(0
 const camera=(a:number[]):SourceCameraScalars=>{const [phi,theta,gamma,zoom,x,y,z]=a.map(number);return{phi,theta,gamma,zoom,center:[x,y,z],focalDistance:20};};
 const encoded=(c:SourceCameraScalars)=>[c.phi,c.theta,c.gamma,c.zoom,...c.center].map(bits);
 const initial=camera(fixture.cases[0].initial.floatBits);
-function nav(c:SourceCameraScalars,mode:'rotate'|'map-2d',event:unknown,w=640,h=480){const r=navigateSourceIteratedCamera(c,mode,event,w,h);if(!r.ok)throw r.error;return r.value;}
+function nav(c:SourceCameraScalars,mode:'rotate'|'map-2d',event:unknown,w=640,h=480){const r=navigateSourceViewportCamera(c,mode,event,w,h);if(!r.ok)throw r.error;return r.value;}
 describe('source iterated viewport original JVM fixtures',()=>{
  for(const row of fixture.cases.filter(row=>row.navigated))it(row.id,()=>{
   const c=camera(row.initial.floatBits),host=new SourceSceneHostClock(false,c);host.setPaused(true,c);
@@ -27,7 +27,7 @@ describe('source iterated viewport original JVM fixtures',()=>{
   expect(encoded(nav(camera(row.initial.floatBits),'map-2d',{kind:'drag',dx:37,dy:-33},0,0))).toEqual(row.result!.floatBits);
  });
  it('rejects malformed input before returning a changed view',()=>{
-  for(const event of [null,[],{}, {kind:'pan'}, {kind:'drag',dx:NaN,dy:1}, {kind:'drag',dx:1e300,dy:0}, {kind:'wheel',count:1,extra:1}])expect(navigateSourceIteratedCamera(initial,'rotate',event,1,1).ok).toBe(false);
+  for(const event of [null,[],{}, {kind:'pan'}, {kind:'drag',dx:NaN,dy:1}, {kind:'drag',dx:1e300,dy:0}, {kind:'wheel',count:1,extra:1}])expect(navigateSourceViewportCamera(initial,'rotate',event,1,1).ok).toBe(false);
  });
  it('keeps active zoom captured starts while future zoom captures the live value',()=>{
   const zoom=(value:number):AnimationTrack=>({id:String(value),type:'animate',target:'camera.actions',from:0,to:0,start:0,duration:1,easing:'linear',pingPong:false,enabled:true,actions:[{id:'zoom',method:'zoom',args:{value}}]});

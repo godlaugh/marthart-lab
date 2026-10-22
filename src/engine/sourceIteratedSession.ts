@@ -1,6 +1,6 @@
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
-import {navigateSourceIteratedCamera,type SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
+import {navigateSourceViewportCamera,type SourceViewportNavigationEvent} from './sourceViewportNavigation';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {snapshotGenerationInput} from './generationInput';
 import {planSourceIteratedRecording,assertSourceIteratedRecordingFrame} from './sourceIteratedRecording';
@@ -86,12 +86,12 @@ export class SourceIteratedSession {
  }
  /** Native input changes the live camera, then redraws the paused scene.
   * It never applies the author document or reconstructs the particle owner. */
- navigatePaused(scene:SceneDocument,c:GenerateContext,event:SourceIteratedNavigationEvent):Raster {
+ navigatePaused(scene:SceneDocument,c:GenerateContext,event:SourceViewportNavigationEvent):Raster {
   if(!this.matchesCompletedPrimary(scene,c)||!this.timeline||!this.clock||!this.particleConstruction)throw Error('迭代视口交互需要匹配的已完成主预览');
   this.clock.assertPaused(true);cancel(c);
   const viewport=this.completed!.context.sourceViewport!;
   const mode=this.family==='map'&&this.particleConstruction.mapSource!.construction.dimension<3?'map-2d':'rotate';
-  const next=navigateSourceIteratedCamera(this.timeline.snapshot().frame.camera,mode,event,viewport.logicalWidth,viewport.logicalHeight);
+  const next=navigateSourceViewportCamera(this.timeline.snapshot().frame.camera,mode,event,viewport.logicalWidth,viewport.logicalHeight);
   if(!next.ok)throw next.error;
   this.cleanup.prepare();this.busy=true;
   try{this.timeline.writeViewport(next.value);return this.present(c,this.advance(c,0,true));}

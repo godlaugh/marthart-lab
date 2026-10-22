@@ -1,3 +1,4 @@
+import type {SourceViewportNavigationEvent} from '../src/engine/sourceViewportNavigation';
 import {describe,expect,it} from 'vitest';
 import {SurfacePausedCaptureError} from '../src/engine/generationProtocol';
 import {GenerationQueue} from '../src/engine/generationQueue';
@@ -12,11 +13,14 @@ function fixture(){
  const input=(revision=0):GenerationInput=>({time:999,quality:'preview',width:64,height:48,sourceViewport:ordinarySourceViewport(scene,64,48,'primary',48),surfaceLive:{sessionId:'s',revision,clock:{paused:true,timestampMs:1000},actualFrameRate:37}});
  const owner=new SourceSurfaceLiveSession();let completed:{output:SceneOutput;scene:SceneDocument;context:GenerationInput}|undefined;
  const calls:{scene:SceneDocument;context:GenerationInput}[]=[],writes:[string,number][]=[],outputs:{output:SceneOutput;time:number;scene:SceneDocument}[]=[],errors:Error[]=[],pauses:boolean[]=[];
- let gate:ReturnType<typeof deferred>|undefined,editGate:ReturnType<typeof deferred>|undefined,pauseGate:ReturnType<typeof deferred>|undefined,captureGate:ReturnType<typeof deferred>|undefined;
+ let gate:ReturnType<typeof deferred>|undefined,editGate:ReturnType<typeof deferred>|undefined,pauseGate:ReturnType<typeof deferred>|undefined,captureGate:ReturnType<typeof deferred>|undefined,navigationGate:ReturnType<typeof deferred>|undefined;
  const port={
   async generate(s:SceneDocument,c:GenerationInput){calls.push({scene:s,context:c});const wait=gate;gate=undefined;await wait?.promise;const output=owner.generate(s,c);completed={output,scene:s,context:c};return output;},
   async updateSurfaceParameter(output:SceneOutput,name:string,value:number){if(completed?.output!==output)throw Error('stale');writes.push([name,value]);owner.updateParameter(completed.scene,completed.context,name,value);const wait=editGate;editGate=undefined;await wait?.promise;},
   async setSurfacePaused(output:SceneOutput,paused:boolean){if(completed?.output!==output)throw Error('stale');const wait=pauseGate;pauseGate=undefined;await wait?.promise;owner.setPaused(paused,1000);completed.context={...completed.context,surfaceLive:{...completed.context.surfaceLive!,clock:{paused,timestampMs:1000}}};pauses.push(paused);},
+  async navigateSurfacePaused(output:SceneOutput,event:SourceViewportNavigationEvent){
+   if(completed?.output!==output)throw Error('stale');const source=completed,result=owner.navigatePaused(source.scene,source.context,event),wait=navigationGate;navigationGate=undefined;await wait?.promise;completed={...source,output:result};return result;
+  },
   async captureSurfacePaused(output:SceneOutput,size:{width:number;height:number},scale:1|3|5=1){
    if(completed?.output!==output)throw Error('stale');const source=completed;
    let result;try{result=owner.capturePaused(source.scene,source.context,size,scale);}catch(error){throw new SurfacePausedCaptureError(String(error),owner.matchesCompletedPrimary(source.scene,source.context));}
@@ -27,10 +31,23 @@ function fixture(){
   cancel(){owner.reset();completed=undefined;},dispose(){owner.reset();completed=undefined;},
  };
  const queue=new GenerationQueue(port,{output:(output,time,scene)=>outputs.push({output,time,scene}),error:e=>errors.push(e),busy:()=>{}});
- return{scene,input,owner,calls,writes,outputs,errors,pauses,queue,hold:()=>gate=deferred(),holdEdit:()=>editGate=deferred(),holdPause:()=>pauseGate=deferred(),holdCapture:()=>captureGate=deferred()};
+ return{scene,input,owner,calls,writes,outputs,errors,pauses,queue,hold:()=>gate=deferred(),holdEdit:()=>editGate=deferred(),holdPause:()=>pauseGate=deferred(),holdCapture:()=>captureGate=deferred(),holdNavigation:()=>navigationGate=deferred()};
 }
 function geometry(output:SceneOutput){if(output.type!=='geometry')throw Error('geometry');return output;}
 describe('Surface editor requests use one live queue owner',()=>{
+ it('serializes navigation and waits for its completed output before resume, discarding queued later gestures',async()=>{
+  const f=fixture();f.queue.request(f.scene,f.input());await flush();const gate=f.holdNavigation();
+  expect(f.queue.navigateSurfacePaused(f.scene,'foreign',{kind:'wheel',count:1})).toBe(false);
+  expect(f.queue.navigateSurfacePaused(f.scene,'s',{kind:'drag',dx:37,dy:-33})).toBe(true);
+  expect(f.queue.navigateSurfacePaused(f.scene,'s',{kind:'wheel',count:-3})).toBe(true);
+  const resume=f.queue.setSurfacePaused(false);expect(f.pauses).toEqual([]);
+  expect(f.queue.navigateSurfacePaused(f.scene,'s',{kind:'wheel',count:1})).toBe(false);gate.resolve();await resume;await flush();
+  expect(f.errors).toEqual([]);expect(f.pauses).toEqual([false]);expect(geometry(f.outputs.at(-1)!.output).surfaceLive!.frame).toMatchObject({frameIndex:1,sceneTime:0,camera:{zoom:1}});f.queue.dispose();
+ });
+ it('does not publish navigation completion after cancellation',async()=>{
+  const f=fixture();f.queue.request(f.scene,f.input());await flush();const gate=f.holdNavigation();
+  expect(f.queue.navigateSurfacePaused(f.scene,'s',{kind:'wheel',count:-3})).toBe(true);f.queue.cancel();gate.resolve();await flush();expect(f.outputs).toHaveLength(1);expect(f.errors).toEqual([]);f.queue.dispose();
+ });
  it.each(['replace','cancel','dispose'] as const)('retires a pending Surface capture on %s without stale publication',async action=>{
   const f=fixture();f.queue.request(f.scene,f.input());await flush();const before=f.outputs[0].output,gate=f.holdCapture();
   const pending=f.queue.captureSurfacePaused(before,{width:16,height:12}),caught=pending.catch(e=>e);

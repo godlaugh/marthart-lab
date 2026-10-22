@@ -3,8 +3,8 @@
   "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
   "coreJarSha256": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
   "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
-  "harnessSha256": "b647c149f778b037d6e92a6e9ad054c99c27dc05e44528e439a0b72617f8bd1e",
-  "executableSha256": "fcb739e661025682749b4c5900fc0f2f5a52a38cefb245bf40d3eb715c935f5c",
+  "harnessSha256": "bfc5e196c2d2d37a0a4183f78e8588e1594c3d824983b1df50ccd62a75762b6f",
+  "executableSha256": "f3c92711663bbf77cc4c6888679e1721d6a9ee2d7e5d939a03757e6c13f8406a",
   "floatBitsOrder": [
     "phi",
     "theta",
@@ -22,7 +22,7 @@
     "GenericMapAttractorScene.handlePausedViewportDrag",
     "PApplet.redraw/noLoop/loop"
   ],
-  "scope": "JNI AllocObject and explicit synthetic fields, direct original methods; no constructors, application main, native window, draw or rendering thread. No formula reimplementation used for outputs. lastTime changed using original millis but nondeterministic wall-clock field omitted.",
+  "scope": "Original MathArt mouse and pause methods on synthetic Map, Symmetry and Surface objects. No constructors, Scene.update/render, rendering thread or window; not GPU/whole-window parity.",
   "defaultInputs": {
     "pointerStart": [
       10,
@@ -240,6 +240,66 @@
         "original mouseWheel",
         "original togglePause resumes"
       ]
+    },
+    {
+      "id": "surface-resume",
+      "dimension": 3,
+      "input": {
+        "start": [
+          10,
+          20
+        ],
+        "end": [
+          47,
+          -13
+        ],
+        "width": 640,
+        "height": 480,
+        "wheelCount": -3,
+        "button": 39
+      },
+      "initial": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1067869798,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": false,
+        "looping": false
+      },
+      "navigated": {
+        "floatBits": [
+          3181631240,
+          3213843497,
+          1040187392,
+          1069588727,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": true,
+        "redraw": true,
+        "looping": false
+      },
+      "resumed": {
+        "floatBits": [
+          1048576000,
+          3208642560,
+          1040187392,
+          1069588727,
+          1067450368,
+          3223322624,
+          1081081856
+        ],
+        "paused": false,
+        "redraw": true,
+        "looping": true
+      }
     },
     {
       "id": "wheel-0",
@@ -604,5 +664,7 @@
         "wheelCount": null
       }
     }
-  ]
+  ],
+  "identicalRuns": true,
+  "priorCasesUnchanged": true
 }

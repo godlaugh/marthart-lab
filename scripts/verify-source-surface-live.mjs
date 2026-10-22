@@ -58,6 +58,11 @@ try{
     check(await digest(captureAgain.capture.pixels)===captureHash,'repeated capture changed pixels');
     let capacityRejected=false;try{await g.captureSurfacePaused(captureAgain.preview,{width:30000,height:30000},5);}catch{capacityRejected=true;}check(capacityRejected,'oversized capture accepted');
     const afterCapture=await g.currentSurface(captureAgain.preview);check(await render(afterCapture,s)===editedHash,'capture capacity failure lost preview');
+    const navBefore=structuredClone(afterCapture.surfaceLive.frame),dragged=await g.navigateSurfacePaused(afterCapture,{kind:'drag',dx:37,dy:-33}),zoomed=await g.navigateSurfacePaused(dragged,{kind:'wheel',count:-3});
+    check(zoomed.surfaceLive.frame.sceneTime===navBefore.sceneTime&&zoomed.surfaceLive.frame.queueIndex===navBefore.queueIndex&&zoomed.surfaceLive.frame.frameIndex===navBefore.frameIndex+2,'navigation advanced queue phase');
+    check(zoomed.surfaceLive.frame.rawDt===0&&await render(zoomed,s)!==editedHash,'navigation failed to change visible camera');
+    const navigatedCamera=structuredClone(zoomed.surfaceLive.frame.camera);await g.setSurfacePaused(zoomed,false,10000);const restored=await g.currentSurface(zoomed);
+    check(['phi','theta','gamma'].every(axis=>restored.surfaceLive.frame.camera[axis]===navBefore.camera[axis])&&restored.surfaceLive.frame.camera.zoom===navigatedCamera.zoom,'resume failed to restore angles/preserve zoom');
     let failed=false;try{await g.generate(draft,input(0,{revision:1,clock:{paused:true},actualFrameRate:NaN}));}catch{failed=true;}check(failed,'invalid observation accepted');
     const recovered=await g.generate(s,input(20000,{sessionId:backend+mode+'-new'}));check(recovered.surfaceLive.frame.sceneTime===0&&recovered.surfaceLive.constructions===1,'worker did not recover');check(await render(recovered)===firstHash,'recovery pixels differ');
     let delivery,queueError,lastQueueOutput;const queueGenerator=new Generator();

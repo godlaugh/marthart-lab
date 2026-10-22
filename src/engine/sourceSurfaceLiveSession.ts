@@ -1,3 +1,4 @@
+import {navigateSourceViewportCamera,type SourceViewportNavigationEvent} from './sourceViewportNavigation';
 import {sourceSurfaceCapturePlan,type SourceSurfaceCapturePreparation} from './sourceSurfaceCapture';
 import type {GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
@@ -71,11 +72,11 @@ export class SourceSurfaceLiveSession {
   const own=this.owned,done=this.completed,v=c.surfaceLive,a=c.sourceViewport,b=done?.context.sourceViewport;
   return !this.busy&&!this.failed&&!!own&&!!done&&!!v&&scene.id===done.sceneId&&scene.id===own.scene.id&&v.sessionId===own.sessionId&&v.revision===own.revision&&v.startAt===own.startAt&&c.width===done.context.width&&c.height===done.context.height&&c.sourcePointPixelDensity===done.context.sourcePointPixelDensity&&!!a&&!!b&&a.logicalWidth===b.logicalWidth&&a.logicalHeight===b.logicalHeight&&a.referenceLogicalHeight===b.referenceLogicalHeight&&a.target===b.target&&a.projectionPass===b.projectionPass;
  }
- setPaused(paused:boolean,timestampMs?:number):void {
+ setPaused(paused:boolean,timestampMs?:number):OrdinarySourceCameraFrame {
   if(this.busy||this.failed||!this.owned||!this.completed)throw Error('曲面播放控制需要已完成的实时主预览');
   validateSourceSceneClockRequest({paused,timestampMs});
   const own=this.owned;
-  try{const restore=own.clock.setPaused(paused,own.queue.snapshot().camera,timestampMs);if(restore)own.queue.writeAngles(restore);this.completed.context.surfaceLive!.clock={...this.completed.context.surfaceLive!.clock,paused};}
+  try{const restore=own.clock.setPaused(paused,own.queue.snapshot().camera,timestampMs);if(restore)own.queue.writeAngles(restore);this.completed.context.surfaceLive!.clock={...this.completed.context.surfaceLive!.clock,paused};return own.queue.snapshot();}
   catch(error){this.failed=true;this.completed=undefined;throw error;}
  }
  /** Original MathArt.updateParameter writes the current function only. Staged
@@ -113,6 +114,21 @@ export class SourceSurfaceLiveSession {
    const output=this.display(own,frame,c,snapshot?'snapshot':'update');this.check();
    this.completed={sceneId:scene.id,context:snapshotGenerationInput({...c,surfaceLive:{...v,configuration:undefined}})};return output;
   }catch(error){this.failed=true;throw error;}finally{this.busy=false;this.cancel=undefined;}
+ }
+ /** Original input mutates the current camera and requests draw, whose paused
+  * Scene.update clears raw dt without advancing queue or particle animation. */
+ navigatePaused(scene:SceneDocument,c:GenerateContext,event:SourceViewportNavigationEvent):SceneOutput {
+  if(!this.matchesCompletedPrimary(scene,c))throw Error('曲面视口交互需要匹配的已完成主预览');
+  const own=this.owned!;own.clock.assertPaused(true);
+  const next=navigateSourceViewportCamera(own.queue.snapshot().camera,'rotate',event,c.sourceViewport!.logicalWidth,c.sourceViewport!.logicalHeight);
+  if(!next.ok)throw next.error;
+  if(c.isCancelled?.())throw new DOMException('曲面视口交互已取消','AbortError');
+  this.cancel=c.isCancelled;this.budget=sourceSurfaceWorkBudget();this.busy=true;
+  try{
+   own.queue.writeViewport(next.value);
+   const frame=own.queue.step(0,{paused:true,actualFrameRate:c.surfaceLive!.actualFrameRate});
+   const output=this.display(own,frame,c,'update');this.check();return output;
+  }catch(error){this.failed=true;this.completed=undefined;throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  /** Native paused capture renders the same scene to an offscreen destination,
   * then primary; neither display calls Scene.update. Preflight is nonmutating. */

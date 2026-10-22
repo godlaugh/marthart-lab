@@ -10,7 +10,7 @@ import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {FRACTAL_SOURCE_NUMERIC_PROFILE} from './fractalSourcePrecision';
 import {snapshotGenerationInput} from './generationInput';
-import type {SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
+import type {SourceViewportNavigationEvent} from './sourceViewportNavigation';
 import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
@@ -32,9 +32,12 @@ function validSurfaceOutput(output:SceneOutput,input:GenerationInput):boolean {
  const expected=input.surfaceLive;
  if(!expected||output.type!=='geometry'||!output.surfaceLive)return false;
  const live=output.surfaceLive,frame=live.frame,a=output.sourceCameraFrame?.camera,b=frame?.camera,v=output.sourceCameraFrame?.viewport,w=input.sourceViewport;
- return live.sessionId===expected.sessionId&&live.revision===expected.revision&&live.paused===expected.clock?.paused&&['update','snapshot'].includes(live.renderKind)&&['worker-wall-clock','injected'].includes(live.clockSource)&&Number.isSafeInteger(live.constructions)&&live.constructions>0&&!!frame&&Number.isSafeInteger(frame.frameIndex)&&frame.frameIndex>=0&&Number.isFinite(frame.time)&&Number.isFinite(frame.sceneTime)&&Number.isFinite(frame.rawDt)&&Number.isFinite(frame.activeDt)&&Number.isSafeInteger(frame.queueIndex)&&frame.queueIndex>=0&&typeof frame.queueComplete==='boolean'&&output.temporal?.time===frame.time&&output.sourceCameraFrame?.time===frame.time&&output.sourceCameraFrame?.frameIndex===frame.frameIndex&&!!a&&!!b&&a.phi===b.phi&&a.theta===b.theta&&a.gamma===b.gamma&&a.zoom===b.zoom&&a.focalDistance===b.focalDistance&&Array.isArray(a.center)&&Array.isArray(b.center)&&a.center.length===3&&b.center.length===3&&a.center.every((x,i)=>x===b.center[i])&&!!v&&!!w&&v.logicalWidth===w.logicalWidth&&v.logicalHeight===w.logicalHeight&&v.referenceLogicalHeight===w.referenceLogicalHeight&&v.target===w.target&&v.projectionPass===w.projectionPass;
+ return live.sessionId===expected.sessionId&&live.revision===expected.revision&&live.paused===expected.clock?.paused&&['update','snapshot'].includes(live.renderKind)&&['worker-wall-clock','injected'].includes(live.clockSource)&&Number.isSafeInteger(live.constructions)&&live.constructions>0&&!!frame&&Number.isSafeInteger(frame.frameIndex)&&frame.frameIndex>=0&&Number.isFinite(frame.time)&&Number.isFinite(frame.sceneTime)&&Number.isFinite(frame.rawDt)&&Number.isFinite(frame.activeDt)&&Number.isSafeInteger(frame.queueIndex)&&frame.queueIndex>=0&&typeof frame.queueComplete==='boolean'&&output.temporal?.time===frame.time&&output.sourceCameraFrame?.time===frame.time&&output.sourceCameraFrame?.frameIndex===frame.frameIndex&&!!a&&!!b&&[a.phi,a.theta,a.gamma,a.zoom,a.focalDistance,...(Array.isArray(a.center)?a.center:[])].every(Number.isFinite)&&a.phi===b.phi&&a.theta===b.theta&&a.gamma===b.gamma&&a.zoom===b.zoom&&a.focalDistance===b.focalDistance&&Array.isArray(a.center)&&Array.isArray(b.center)&&a.center.length===3&&b.center.length===3&&a.center.every((x,i)=>x===b.center[i])&&!!v&&!!w&&v.logicalWidth===w.logicalWidth&&v.logicalHeight===w.logicalHeight&&v.referenceLogicalHeight===w.referenceLogicalHeight&&v.target===w.target&&v.projectionPass===w.projectionPass;
 }
-type Completed={id:number;scene:SceneDocument;context:GenerationInput;output:SceneOutput};
+/** Runtime frame can change on a playback acknowledgement before any new image
+ * is displayed. Keep it separate from the caller's completed-image capability. */
+type Completed={id:number;scene:SceneDocument;context:GenerationInput;output:SceneOutput;surfaceFrame?:import('./ordinarySourceCameraTimeline').OrdinarySourceCameraFrame};
+const surfaceFrame=(source:Completed)=>source.surfaceFrame??(source.output.type==='geometry'?source.output.surfaceLive?.frame:undefined);
 type LiveRasterRequest={sessionId:string;revision:number;paused:boolean;actualFrameRate:number};
 function validFractalOutput(output:SceneOutput,request:LiveRasterRequest,target:'primary'|'offscreen'='primary',renderKind:'update'|'snapshot'='update',clock:'realtime-source-queue'|'fixed-source-queue'='realtime-source-queue'):boolean {
   if(!output||output.type!=='raster'||!Number.isSafeInteger(output.width)||output.width<1||!Number.isSafeInteger(output.height)||output.height<1||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.byteLength!==output.width*output.height*4||!output.fractalRender||!validOutputFormulas(output,true))return false;
@@ -146,6 +149,7 @@ type Pending =
   | {operation:'surface-current';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-parameters';source:Completed;scene:SceneDocument;resolve:()=>void;reject:(error:Error)=>void}
+  | {operation:'surface-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'iterated-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'iterated-parameters';source:Completed;scene:SceneDocument;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'samila-playback'|'symmetry-playback'|'map-playback'|'fractal-playback'|'domain-playback'|'surface-playback';source:Completed;paused:boolean;resolve:()=>void;reject:(error:Error)=>void}
@@ -168,7 +172,7 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease};
-  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-paused-capture'||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback');}
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||p.operation==='surface-paused-capture'||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
@@ -187,6 +191,12 @@ export class Generator {
       if (data.sessionId !== this.sessionId) return;
       const p = this.pending.get(data.id);
       if (!p) return;
+      if(p.operation==='surface-navigation'){
+        if(data.operation!=='surface-navigation'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'曲面视口响应身份不匹配'));return;}
+        const output=data.output,before=p.source.output,previous=surfaceFrame(p.source);
+        if(!validSurfaceOutput(output,p.source.context)||output.type!=='geometry'||before.type!=='geometry'||!previous||!output.surfaceLive?.paused||output.surfaceLive.renderKind!=='update'||output.surfaceLive.constructions!==before.surfaceLive?.constructions||JSON.stringify(output.surfaceLive.frame)!==JSON.stringify({...previous,camera:output.surfaceLive.frame.camera,frameIndex:previous.frameIndex+1,rawDt:0,activeDt:0})){this.invalidate(new Error('曲面视口响应状态不匹配'));return;}
+        this.pending.delete(data.id);this.completed={...p.source,id:data.id,output,surfaceFrame:output.type==='geometry'?output.surfaceLive?.frame:undefined};p.resolve(output);return;
+      }
       if(p.operation==='surface-paused-capture'){
         if(data.operation!=='surface-paused-capture'||data.id!==this.currentInputId){this.invalidate(new Error('曲面截图响应身份不匹配'));return;}
         if('error' in data){
@@ -196,14 +206,14 @@ export class Generator {
         }
         const result=data.result;
         try{
-          const plan=sourceSurfaceCapturePlan(p.source.context,p.size,p.scale),frame=p.source.output.type==='geometry'?p.source.output.surfaceLive?.frame:undefined;
+          const plan=sourceSurfaceCapturePlan(p.source.context,p.size,p.scale),frame=surfaceFrame(p.source);
           if(data.sourceId!==p.source.id||!result?.scene||result.scene.id!==p.source.scene.id||result.scene.kind!=='surface'||!validSurfaceOutput(result.capture,plan.captureContext)||!validSurfaceOutput(result.preview,p.source.context)||result.capture.surfaceLive?.renderKind!=='snapshot'||result.preview.surfaceLive?.renderKind!=='snapshot'||JSON.stringify(result.capture.surfaceLive.frame)!==JSON.stringify(frame)||JSON.stringify(result.preview.surfaceLive.frame)!==JSON.stringify(frame))throw Error('曲面截图响应状态不匹配');
         }catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));return;}
         // Keep the operation pending across module loading and readback. A
         // cancelled transport cannot publish the subsequently encoded image.
         const cancelled=()=>this.pending.get(data.id)!==p||this.worker!==worker;
         void import('./renderSurfaceCapture').then(({renderSurfaceCapture})=>renderSurfaceCapture(result,p.source.context,p.size,p.scale,cancelled)).then(value=>{
-          if(cancelled())return;this.pending.delete(data.id);this.completed={...p.source,output:value.preview};p.resolve(value);
+          if(cancelled())return;this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
         }).catch(error=>{if(cancelled())return;this.pending.delete(data.id);this.completed=p.source;p.reject(new SurfacePausedCaptureError(error instanceof Error?error.message:String(error),true));});
         return;
       }
@@ -213,9 +223,9 @@ export class Generator {
       }
       if(p.operation==='surface-current'){
         if(data.operation!=='surface-current'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'曲面当前帧响应身份不匹配'));return;}
-        const output=data.output,before=p.source.output;
-        if(!validSurfaceOutput(output,p.source.context)||output.type!=='geometry'||before.type!=='geometry'||output.surfaceLive?.renderKind!=='snapshot'||JSON.stringify(output.surfaceLive.frame)!==JSON.stringify(before.surfaceLive?.frame)){this.invalidate(new Error('曲面当前帧响应状态不匹配'));return;}
-        this.pending.delete(data.id);this.completed={...p.source,id:data.id,output};p.resolve(output);return;
+        const output=data.output,before=p.source.output,previous=surfaceFrame(p.source);
+        if(!validSurfaceOutput(output,p.source.context)||output.type!=='geometry'||before.type!=='geometry'||output.surfaceLive?.renderKind!=='snapshot'||JSON.stringify(output.surfaceLive.frame)!==JSON.stringify(previous)){this.invalidate(new Error('曲面当前帧响应状态不匹配'));return;}
+        this.pending.delete(data.id);this.completed={...p.source,id:data.id,output,surfaceFrame:output.type==='geometry'?output.surfaceLive?.frame:undefined};p.resolve(output);return;
       }
       if(p.operation==='domain-navigation'){
         if(data.operation!=='domain-navigation'||'error' in data||data.sourceId!==p.source.id||data.id!==this.currentInputId){this.invalidate(new Error('error' in data?data.error:'域着色视口响应身份不匹配'));return;}
@@ -244,7 +254,14 @@ export class Generator {
         if((data.operation!=='samila-playback'&&data.operation!=='symmetry-playback'&&data.operation!=='map-playback'&&data.operation!=='fractal-playback'&&data.operation!=='domain-playback'&&data.operation!=='surface-playback')||data.operation!==p.operation||'error' in data||data.sourceId!==p.source.id||data.paused!==p.paused||data.id!==this.currentInputId){
           this.invalidate(new Error('error' in data?data.error:'实时场景后台播放响应身份不匹配'));return;
         }
-        this.pending.delete(data.id);this.completed=p.operation==='surface-playback'?{...p.source,context:{...p.source.context,surfaceLive:{...p.source.context.surfaceLive!,clock:{...p.source.context.surfaceLive!.clock,paused:p.paused}}}}:p.source;p.resolve();return;
+        if(p.operation==='surface-playback'&&data.operation==='surface-playback'){
+          const previous=surfaceFrame(p.source),frame=data.frame;
+          const angles=frame?.camera&&{phi:frame.camera.phi,theta:frame.camera.theta,gamma:frame.camera.gamma};
+          const expected=previous&&{...previous,camera:{...previous.camera,...(!p.paused?angles:{})}};
+          if(!angles||!Object.values(angles).every(v=>Number.isFinite(v)&&Math.fround(v)===v)||!expected||JSON.stringify(frame)!==JSON.stringify(expected)){this.invalidate(new Error('曲面播放响应相机状态不匹配'));return;}
+          this.completed={...p.source,surfaceFrame:structuredClone(frame),context:{...p.source.context,surfaceLive:{...p.source.context.surfaceLive!,clock:{...p.source.context.surfaceLive!.clock,paused:p.paused}}}};
+        }else this.completed=p.source;
+        this.pending.delete(data.id);p.resolve();return;
       }
       if(isSourceRecordingOperation(p.operation)&&'handle' in p){
         const family=p.operation==='source-recording-begin'?p.source.scene.kind:p.family;
@@ -397,7 +414,13 @@ export class Generator {
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'domain-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'domain-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene,writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
   }
-  navigateIteratedPaused(output:SceneOutput,event:SourceIteratedNavigationEvent):Promise<SceneOutput>{
+  navigateSurfacePaused(output:SceneOutput,event:SourceViewportNavigationEvent):Promise<SceneOutput>{
+    const source=this.completed;
+    if(!source||source.output!==output||source.scene.kind!=='surface'||!source.context.surfaceLive?.clock.paused||this.pending.size||this.recording||!this.worker)return Promise.reject(new Error('曲面视口交互需要已完成且暂停的实时主预览'));
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'surface-navigation',source,resolve,reject});try{this.worker!.postMessage({operation:'surface-navigation',sessionId:this.sessionId,id,sourceId:source.id,event} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+  }
+  navigateIteratedPaused(output:SceneOutput,event:SourceViewportNavigationEvent):Promise<SceneOutput>{
     const source=this.completed;
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代视口交互需要当前已完成的主预览'));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;

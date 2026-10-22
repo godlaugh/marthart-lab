@@ -39,7 +39,7 @@ describe('Surface transport capabilities',()=>{
   await expect(f.g.setSurfacePaused({...f.output},false)).rejects.toThrow();
   const control=f.g.setSurfacePaused(f.output,false,2000),caught=control.catch(e=>e),p=w.messages.at(-1)!;
   expect(p).toMatchObject({operation:'surface-playback',sourceId:r.id,paused:false,timestampMs:2000});
-  w.emit({operation:'surface-playback',sessionId:p.sessionId,id:p.id,sourceId:r.id+1,paused:false});expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
+  w.emit({operation:'surface-playback',sessionId:p.sessionId,id:p.id,sourceId:r.id+1,paused:false,frame:f.output.surfaceLive!.frame});expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
  });
  it('serializes parameter edits and preserves the completed frame capability after acknowledgement',async()=>{
   const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
@@ -78,6 +78,24 @@ describe('Surface transport capabilities',()=>{
   const capture=f.g.captureSurfacePaused(f.output,{width:16,height:12}),caught=capture.catch(e=>e),p=w.messages.at(-1)!;
   w.emit({operation:'surface-paused-capture',sessionId:p.sessionId,id:p.id,sourceId:r.id,result});f.g.cancel();expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);
   const fresh=f.g.generate(f.scene,f.context),next=Transport.instances[1],q=next.messages[0];next.emit({operation:'generate',sessionId:q.sessionId,id:q.id,output:f.output});expect(await fresh).toBe(f.output);f.g.dispose();
+ });
+ it.each(['queue','zoom','angle','missing'] as const)('rejects invalid %s in the Surface playback state acknowledgement',async mutation=>{
+  const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
+  const control=f.g.setSurfacePaused(f.output,false,2000),caught=control.catch(e=>e),p=w.messages.at(-1)!;let frame=structuredClone(f.output.surfaceLive!.frame);
+  if(mutation==='queue')frame={...frame,queueIndex:frame.queueIndex+1};if(mutation==='zoom')frame={...frame,camera:{...frame.camera,zoom:frame.camera.zoom*2}};if(mutation==='angle')frame={...frame,camera:{...frame.camera,phi:Infinity}};
+  w.emit({operation:'surface-playback',sessionId:p.sessionId,id:p.id,sourceId:r.id,paused:false,frame:mutation==='missing'?undefined:frame} as GenerationResponse);
+  expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);f.g.dispose();
+ });
+ it('accepts the owned navigation frame, invalidates the prior capability and rejects queue advancement',async()=>{
+  for(const invalid of [false,true]){
+   const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;
+   const owner=new SourceSurfaceLiveSession();owner.generate(f.scene,f.context);const output=owner.navigatePaused(f.scene,f.context,{kind:'drag',dx:10,dy:20});if(output.type!=='geometry')throw Error('geometry');
+   if(invalid)output.surfaceLive!.frame={...output.surfaceLive!.frame,sceneTime:1};
+   const navigation=f.g.navigateSurfacePaused(f.output,{kind:'drag',dx:10,dy:20}),caught=navigation.catch(e=>e),p=w.messages.at(-1)!;
+   w.emit({operation:'surface-navigation',sessionId:p.sessionId,id:p.id,sourceId:r.id,output});
+   if(invalid){expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);}else{expect(await caught).toBe(output);await expect(f.g.navigateSurfacePaused(f.output,{kind:'wheel',count:1})).rejects.toThrow();}
+   f.g.dispose();
+  }
  });
  it('rejects a current-frame response which advances the owned queue',async()=>{
   const f=fixture(),pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await pending;

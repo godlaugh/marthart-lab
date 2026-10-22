@@ -79,13 +79,14 @@ type IteratedPlaybackOperation='symmetry-playback'|'map-playback';
 type IteratedPlaybackRequest={ [Operation in IteratedPlaybackOperation]:{operation:Operation;id:number;sourceId:number;paused:boolean;timestampMs?:number} }[IteratedPlaybackOperation];
 type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Operation;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5} }[PausedCaptureOperation];
 export type GenerationRequest = { sessionId: number } & (
+  | {operation:'surface-navigation';id:number;sourceId:number;event:import('./sourceViewportNavigation').SourceViewportNavigationEvent}
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'surface-parameter';id:number;sourceId:number;name:string;value:number}
   | {operation:'surface-paused-capture';id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5}
   | {operation:'surface-current';id:number;sourceId:number}
   | {operation:'domain-navigation';id:number;sourceId:number;event:import('./sourceDomainLiveSession').SourceDomainNavigationEvent}
   | {operation:'domain-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
-  | {operation:'iterated-navigation';id:number;sourceId:number;event:import('./sourceIteratedNavigation').SourceIteratedNavigationEvent}
+  | {operation:'iterated-navigation';id:number;sourceId:number;event:import('./sourceViewportNavigation').SourceViewportNavigationEvent}
   | { operation: 'generate'; id: number; scene: SceneDocument; context: GenerationInput; wantsStatus?:true }
   | {operation:'iterated-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
   | IteratedPlaybackRequest
@@ -103,7 +104,8 @@ export type GenerationRequest = { sessionId: number } & (
   | { operation: 'roots-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
 export type GenerationPayload =
-  | {operation:'surface-playback';id:number;sourceId:number;paused:boolean}
+  | {operation:'surface-navigation';id:number;sourceId:number;output:SceneOutput}
+  | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;frame:import('./ordinarySourceCameraTimeline').OrdinarySourceCameraFrame}
   | {operation:'surface-parameter';id:number;sourceId:number}
   | {operation:'surface-paused-capture';id:number;sourceId:number;result:import('./sourceSurfaceCapture').SourceSurfaceCapturePreparation}
   | {operation:'surface-current';id:number;sourceId:number;output:SceneOutput}

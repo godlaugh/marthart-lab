@@ -1182,6 +1182,10 @@ export default function App() {
                 if(playingRef.current||exporting||recording||previewCancelled||error||sceneRef.current!==expected||liveSessionId.current!==sessionId)return false;
                 return generationQueue.current?.navigateDomainPaused(expected,sessionId,event)??false;
               }}
+              onSourceSurfaceNavigate={(expected,sessionId,event)=>{
+                if(playingRef.current||exporting||recording||previewCancelled||error||sceneRef.current!==expected||liveSessionId.current!==sessionId)return false;
+                return generationQueue.current?.navigateSurfacePaused(expected,sessionId,event)??false;
+              }}
               onSourceIteratedNavigate={(expected,sessionId,event)=>{
                 if(playingRef.current||exporting||recording||previewCancelled||error||sceneRef.current!==expected||liveSessionId.current!==sessionId)return false;
                 return generationQueue.current?.navigateIteratedPaused(expected,sessionId,event)??false;

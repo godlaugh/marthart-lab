@@ -8,7 +8,7 @@ const directory=process.argv[2]??`.cache/surface-ui-${Date.now()}`;await mkdir(d
 const sha=value=>createHash('sha256').update(value).digest('hex'),check=(value,message)=>{if(!value)throw Error(message);};
 async function files(dir){const out=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())out.push(...await files(p));else if(e.isFile())out.push(p);}return out;}
 async function hashes(){return Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-surface-ui.mjs','scripts/lib/verify-png.mjs'].sort().map(async p=>[p,sha(await readFile(p))])));}
-const report={at:new Date().toISOString(),status:'running',scope:'Actual App import, playback, parameter commit, current PNG download and Apply through the unmodified production queue and worker.',limits:['No original GUI/JOGL or full-window parity.','Original PNG pixels, viewport gestures and recording lifecycle remain pending.'],cases:[],sourceBefore:await hashes()};
+const report={at:new Date().toISOString(),status:'running',scope:'Actual App import, playback, parameter commit, paused drag/wheel, current PNG download and Apply through the unmodified production queue and worker.',limits:['No original GUI/JOGL or full-window parity.','Original PNG pixels and recording lifecycle remain pending; browser gestures are not native event-rate parity.'],cases:[],sourceBefore:await hashes()};
 function audit(){
  const Native=window.Worker,a=window.__surfaceAudit={sequence:0,requests:[],responses:[],errors:[]};
  window.Worker=class extends Native{
@@ -34,7 +34,14 @@ try{
    await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(()=>window.__surfaceAudit.responses.some(r=>r.live?.frame.sceneTime>.2&&!r.live.paused));
    let seq=await sequence();await page.getByRole('button',{name:'Pause',exact:true}).click();await page.waitForFunction(seq=>window.__surfaceAudit.responses.some(r=>r.sequence>seq&&r.operation==='surface-playback'&&r.response.paused),seq);await ready();current=await last();const before=current.live,oldPixels=await pixels();row.steps.push({name:'play-pause',frame:current});
    await page.getByRole('button',{name:'Save',exact:true}).click();await ready();row.steps.push({name:'save-before-edit'});
-   seq=await sequence();await page.locator('#param-a').fill('-.6');await page.locator('#param-a').press('Enter');current=await next(seq);check(current.live.revision===before.revision&&current.live.constructions===before.constructions&&JSON.stringify(current.live.frame)===JSON.stringify(before.frame),'parameter edit rebuilt or advanced');const editPixels=await pixels();check(backend==='CPU'&&mode==='POINTS'?editPixels===oldPixels:editPixels!==oldPixels,'paused edit pixels wrong');row.steps.push({name:'parameter',frame:current,pixels:editPixels});
+   seq=await sequence();await page.locator('#param-a').fill('-.6');await page.locator('#param-a').press('Enter');current=await next(seq);check(current.live.revision===before.revision&&current.live.constructions===before.constructions&&JSON.stringify(current.live.frame)===JSON.stringify(before.frame),'parameter edit rebuilt or advanced');let editPixels=await pixels();check(backend==='CPU'&&mode==='POINTS'?editPixels===oldPixels:editPixels!==oldPixels,'paused edit pixels wrong');row.steps.push({name:'parameter',frame:current,pixels:editPixels});
+   const navigationBefore=structuredClone(current.live),bounds=await page.getByTestId('art-canvas').boundingBox(),x=bounds.x+bounds.width/2,y=bounds.y+bounds.height/2;
+   seq=await sequence();await page.mouse.move(x,y);await page.mouse.down({button:'right'});await page.mouse.move(x+37,y-33);await page.mouse.up({button:'right'});current=await next(seq);
+   check(current.operation==='surface-navigation'&&current.live.frame.sceneTime===navigationBefore.frame.sceneTime&&current.live.frame.queueIndex===navigationBefore.frame.queueIndex&&current.live.constructions===navigationBefore.constructions,'drag lost paused session');
+   const F=Math.fround;check(current.live.frame.camera.phi===F(navigationBefore.frame.camera.phi+F(-33*F(.01)))&&current.live.frame.camera.theta===F(navigationBefore.frame.camera.theta-F(37*F(.01))),'drag camera arithmetic');
+   const rotated=current;seq=await sequence();await page.mouse.wheel(0,-48);current=await next(seq);
+   check(current.live.frame.camera.zoom===F(navigationBefore.frame.camera.zoom*Math.pow(F(1.05),3)),'wheel arithmetic');
+   editPixels=await pixels();row.steps.push({name:'paused-navigation',drag:rotated,wheel:current,pixels:editPixels});
    await page.getByRole('button',{name:'Export artwork',exact:true}).click();
    check(await page.getByRole('combobox',{name:'Surface image source',exact:true}).inputValue()==='current','capture is not the default');
    await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');

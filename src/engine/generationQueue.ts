@@ -4,7 +4,7 @@ import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
 import type {SourceDomainNavigationEvent} from './sourceDomainLiveSession';
 import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
-import type {SourceIteratedNavigationEvent} from './sourceIteratedNavigation';
+import type {SourceViewportNavigationEvent} from './sourceViewportNavigation';
 import {sourceIteratedSceneIdentity} from './sourceIteratedLiveIdentity';
 import {sourceSamilaSceneIdentity} from './sourceSamilaIdentity';
 import {snapshotGenerationInput} from './generationInput';
@@ -20,7 +20,8 @@ type Context=GenerationInput;
 interface GeneratorPort {
   navigateDomainPaused?(output:SceneOutput,event:SourceDomainNavigationEvent):Promise<SceneOutput>;
   updateDomainParameters?(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>;
-  navigateIteratedPaused?(output:SceneOutput,event:SourceIteratedNavigationEvent):Promise<SceneOutput>;
+  navigateSurfacePaused?(output:SceneOutput,event:SourceViewportNavigationEvent):Promise<SceneOutput>;
+  navigateIteratedPaused?(output:SceneOutput,event:SourceViewportNavigationEvent):Promise<SceneOutput>;
   updateIteratedParameters?(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>;
   generate(scene:SceneDocument,context:Context,onProgress?:(output:SceneOutput)=>void):Promise<SceneOutput>;
   setMapPaused?(output:SceneOutput,paused:boolean):Promise<void>;
@@ -197,13 +198,17 @@ export class GenerationQueue {
   if(!this.generator.navigateDomainPaused)return false;const eventCopy={...event};
   return this.enqueueNavigation(scene,sessionId,'domain',output=>this.generator.navigateDomainPaused!(output,eventCopy));
  }
- navigateIteratedPaused(scene:SceneDocument,sessionId:string,event:SourceIteratedNavigationEvent):boolean {
+ navigateSurfacePaused(scene:SceneDocument,sessionId:string,event:SourceViewportNavigationEvent):boolean {
+  if(!this.generator.navigateSurfacePaused)return false;const eventCopy={...event};
+  return this.enqueueNavigation(scene,sessionId,'surface',output=>this.generator.navigateSurfacePaused!(output,eventCopy));
+ }
+ navigateIteratedPaused(scene:SceneDocument,sessionId:string,event:SourceViewportNavigationEvent):boolean {
   if(!this.generator.navigateIteratedPaused)return false;const eventCopy={...event};
   return this.enqueueNavigation(scene,sessionId,'iterated',output=>this.generator.navigateIteratedPaused!(output,eventCopy));
  }
- private enqueueNavigation(scene:SceneDocument,sessionId:string,family:'domain'|'iterated',operation:(output:SceneOutput)=>Promise<SceneOutput>):boolean {
+ private enqueueNavigation(scene:SceneDocument,sessionId:string,family:'domain'|'iterated'|'surface',operation:(output:SceneOutput)=>Promise<SceneOutput>):boolean {
   const request=this.latest,key=request&&liveKey(request),live=request&&key&&request.context[key];
-  if(this.disposed||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||request.scene!==scene||(family==='domain'?key!=='domainLive':key!=='mapLive'&&key!=='symmetryLive')||!live||live.sessionId!==sessionId||!live.clock?.paused)return false;
+  if(this.disposed||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||request.scene!==scene||(family==='surface'?key!=='surfaceLive':family==='domain'?key!=='domainLive':key!=='mapLive'&&key!=='symmetryLive')||!live||live.sessionId!==sessionId||!live.clock?.paused)return false;
   if(this.navigationOwner?.request===request&&this.running===request){if(this.navigationOwner.events.length>=MAX_PENDING_SOURCE_NAVIGATION)return false;this.navigationOwner.events.push(operation);return true;}
   const cached=this.completedLive;if(this.running||!cached||cached.request!==request)return false;
   const owner={request,events:[operation]};this.navigationOwner=owner;this.running=request;this.completedLive=undefined;this.callbacks.busy(true);

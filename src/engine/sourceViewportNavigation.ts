@@ -1,7 +1,7 @@
 import {CameraBoundaryError,type SourceCameraResult,type SourceCameraScalars} from './sourceCamera';
 import {sourceViewportRotation,sourceViewportZoom} from './sourceViewportArithmetic';
 
-export type SourceIteratedNavigationEvent={readonly kind:'drag';readonly dx:number;readonly dy:number}|{readonly kind:'wheel';readonly count:number};
+export type SourceViewportNavigationEvent={readonly kind:'drag';readonly dx:number;readonly dy:number}|{readonly kind:'wheel';readonly count:number};
 const F=Math.fround;
 function float(value:unknown,path:string):number {
  if(typeof value!=='number')throw new CameraBoundaryError(path,'number-required');
@@ -10,7 +10,7 @@ function float(value:unknown,path:string):number {
 /** Runtime camera only; document identity, saved pause angles and animation
  * child starts belong to their existing owners. Dimensions are logical pixels.
  * Fractional wheel counts are an explicit browser-adapter extension. */
-export function navigateSourceIteratedCamera(camera:SourceCameraScalars,mode:'map-2d'|'rotate',event:unknown,width:number,height:number):SourceCameraResult<SourceCameraScalars>{
+export function navigateSourceViewportCamera(camera:SourceCameraScalars,mode:'map-2d'|'rotate',event:unknown,width:number,height:number):SourceCameraResult<SourceCameraScalars>{
  try{
   if(mode!=='map-2d'&&mode!=='rotate')throw new CameraBoundaryError('navigation.mode','invalid-choice');
   if(!event||typeof event!=='object'||Array.isArray(event))throw new CameraBoundaryError('navigation.event','object-required');
