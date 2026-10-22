@@ -42,6 +42,8 @@ npm run preview:v2
 
 预览开放的是现有本地模板和编辑能力，不会把本地模板自动转换成原版执行模型；导入 MathArt Studio JSON 仍使用各场景已接通的源兼容路径。原版整窗一致性仍待验收。范围与当前验证见[2.0 创作入口验收](docs/v2-creation-preview-validation.zh-CN.md)。
 
+2026-10-22 已取得原版 Cornucopia 的真实窗口与时间 0 PNG，并验证虚拟工作屏上的播放／暂停操作。跨屏像素密度、文字叠加和原版保存后挂起仍待处理，整图验收保持 0/11，详见[原版窗口恢复与首张对照记录](docs/native-window-recovery-validation.zh-CN.md)。
+
 ## 桌面应用
 
 ```sh
