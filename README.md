@@ -48,6 +48,8 @@ npm run preview:v2
 
 后续自动方程文本与原版执行样例已一致，曲面导出 MSAA 已修正；固定几何区域最大 RGB 差由 119 降到 3，字形和完整画面仍待对齐。详见[自动方程与导出抗锯齿验收](docs/source-surface-native-text-msaa-validation.zh-CN.md)。
 
+公式字形现已取得独立上游实现的 21 组／84 次字节级验证，尚未接入产品。原版调试叠加开关已验证并恢复；Settings 挂起与 Mandelbrot 空画面仍需处理，整图验收保持 0/11。详见[字形与窗口验证进展](docs/source-formula-glyph-investigation.zh-CN.md)。
+
 ## 桌面应用
 
 ```sh
