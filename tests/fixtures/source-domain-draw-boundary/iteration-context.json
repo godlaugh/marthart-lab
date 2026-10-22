@@ -1,0 +1,324 @@
+{
+  "scope": "Diagnostic first-iteration and full-loop observation, not whole-family acceptance or production correction",
+  "baselineRawSha256": "7c9a176bcaa2760b704203a0710d16ee3b3efc5df718283b86c3b9034ef07fe5",
+  "nativeDevice": [
+    "Apple",
+    "Apple M2 Max",
+    "4.1 Metal - 90.5"
+  ],
+  "browserDevice": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)",
+  "browserFlag": "--enable-angle-features=disableProgramCaching",
+  "calibratedLoop": {
+    "iterationsZeroBased": [
+      0,
+      1,
+      2,
+      3,
+      7,
+      15,
+      26
+    ],
+    "colorGate": [
+      {
+        "iteration": 0,
+        "changed": 0,
+        "max": 0
+      },
+      {
+        "iteration": 1,
+        "changed": 0,
+        "max": 0
+      },
+      {
+        "iteration": 2,
+        "changed": 0,
+        "max": 0
+      },
+      {
+        "iteration": 3,
+        "changed": 0,
+        "max": 0
+      },
+      {
+        "iteration": 7,
+        "changed": 0,
+        "max": 0
+      },
+      {
+        "iteration": 15,
+        "changed": 0,
+        "max": 0
+      },
+      {
+        "iteration": 26,
+        "changed": 0,
+        "max": 0
+      }
+    ],
+    "comparison": [
+      {
+        "iterationZeroBased": 0,
+        "nativeExecuted": 300000,
+        "browserExecuted": 300000,
+        "executionDisagreement": 0,
+        "beforeWhereBothExecute": {
+          "differentPixels": 0,
+          "differentComponents": 0,
+          "maxFinite": 0.0,
+          "nonfiniteDisagreement": 0
+        },
+        "afterWhereBothExecute": {
+          "differentPixels": 47462,
+          "differentComponents": 66685,
+          "maxFinite": 8.344650268554688e-07,
+          "nonfiniteDisagreement": 0
+        }
+      },
+      {
+        "iterationZeroBased": 1,
+        "nativeExecuted": 300000,
+        "browserExecuted": 300000,
+        "executionDisagreement": 0,
+        "beforeWhereBothExecute": {
+          "differentPixels": 47462,
+          "differentComponents": 66685,
+          "maxFinite": 8.344650268554688e-07,
+          "nonfiniteDisagreement": 0
+        },
+        "afterWhereBothExecute": {
+          "differentPixels": 50900,
+          "differentComponents": 81327,
+          "maxFinite": 8.821487426757812e-06,
+          "nonfiniteDisagreement": 0
+        }
+      },
+      {
+        "iterationZeroBased": 2,
+        "nativeExecuted": 300000,
+        "browserExecuted": 300000,
+        "executionDisagreement": 0,
+        "beforeWhereBothExecute": {
+          "differentPixels": 50900,
+          "differentComponents": 81327,
+          "maxFinite": 8.821487426757812e-06,
+          "nonfiniteDisagreement": 0
+        },
+        "afterWhereBothExecute": {
+          "differentPixels": 51897,
+          "differentComponents": 86970,
+          "maxFinite": 0.002017974853515625,
+          "nonfiniteDisagreement": 0
+        }
+      },
+      {
+        "iterationZeroBased": 3,
+        "nativeExecuted": 300000,
+        "browserExecuted": 300000,
+        "executionDisagreement": 0,
+        "beforeWhereBothExecute": {
+          "differentPixels": 51897,
+          "differentComponents": 86970,
+          "maxFinite": 0.002017974853515625,
+          "nonfiniteDisagreement": 0
+        },
+        "afterWhereBothExecute": {
+          "differentPixels": 52480,
+          "differentComponents": 89547,
+          "maxFinite": 3.5200121867137474e+34,
+          "nonfiniteDisagreement": 0
+        }
+      },
+      {
+        "iterationZeroBased": 7,
+        "nativeExecuted": 247005,
+        "browserExecuted": 247005,
+        "executionDisagreement": 0,
+        "beforeWhereBothExecute": {
+          "differentPixels": 40182,
+          "differentComponents": 65072,
+          "maxFinite": 10.48709774017334,
+          "nonfiniteDisagreement": 0
+        },
+        "afterWhereBothExecute": {
+          "differentPixels": 39190,
+          "differentComponents": 62974,
+          "maxFinite": 1.0812674254164327e+37,
+          "nonfiniteDisagreement": 11
+        }
+      },
+      {
+        "iterationZeroBased": 15,
+        "nativeExecuted": 226851,
+        "browserExecuted": 226851,
+        "executionDisagreement": 2,
+        "beforeWhereBothExecute": {
+          "differentPixels": 32472,
+          "differentComponents": 48709,
+          "maxFinite": 226.78934121131897,
+          "nonfiniteDisagreement": 0
+        },
+        "afterWhereBothExecute": {
+          "differentPixels": 32275,
+          "differentComponents": 48298,
+          "maxFinite": 1.115883670687051e+25,
+          "nonfiniteDisagreement": 3
+        }
+      },
+      {
+        "iterationZeroBased": 26,
+        "nativeExecuted": 223698,
+        "browserExecuted": 223695,
+        "executionDisagreement": 15,
+        "beforeWhereBothExecute": {
+          "differentPixels": 30451,
+          "differentComponents": 44832,
+          "maxFinite": 124.27227783203125,
+          "nonfiniteDisagreement": 0
+        },
+        "afterWhereBothExecute": {
+          "differentPixels": 30526,
+          "differentComponents": 44806,
+          "maxFinite": 262690.76953125,
+          "nonfiniteDisagreement": 1
+        }
+      }
+    ],
+    "nativeFirstVsStandalone": {
+      "differentPixels": 0,
+      "differentComponents": 0,
+      "maxFinite": 0.0,
+      "nonfiniteDisagreement": 0
+    },
+    "browserFirstVsStandalone": {
+      "differentPixels": 0,
+      "differentComponents": 0,
+      "maxFinite": 0.0,
+      "nonfiniteDisagreement": 0
+    },
+    "nativeFirstVsBrowserInjectedNativePow": {
+      "differentPixels": 0,
+      "differentComponents": 0,
+      "maxFinite": 0.0,
+      "nonfiniteDisagreement": 0
+    }
+  },
+  "powComponents": {
+    "pow": {
+      "pow.x": {
+        "differentPixels": 63552,
+        "max": 2.980232238769531e-07
+      },
+      "pow.y": {
+        "differentPixels": 63897,
+        "max": 4.76837158203125e-07
+      }
+    },
+    "inputs": {
+      "length(z)": {
+        "differentPixels": 38684,
+        "max": 1.1920928955078125e-07
+      },
+      "log(length(z)+1e-18)": {
+        "differentPixels": 32651,
+        "max": 4.76837158203125e-07
+      },
+      "atan(z.y,z.x)": {
+        "differentPixels": 0,
+        "max": 0.0
+      }
+    },
+    "log-exp-cos": {
+      "mul.real": {
+        "differentPixels": 32651,
+        "max": 9.5367431640625e-07
+      },
+      "mul.imag": {
+        "differentPixels": 0,
+        "max": 0.0
+      },
+      "exp(mul.real)": {
+        "differentPixels": 64920,
+        "max": 4.76837158203125e-07
+      },
+      "cos(mul.imag)": {
+        "differentPixels": 0,
+        "max": 0.0
+      }
+    },
+    "sin-products": {
+      "sin(mul.imag)": {
+        "differentPixels": 0,
+        "max": 0.0
+      },
+      "exp*cos": {
+        "differentPixels": 63552,
+        "max": 2.980232238769531e-07
+      },
+      "exp*sin": {
+        "differentPixels": 63897,
+        "max": 4.76837158203125e-07
+      }
+    }
+  },
+  "powSameInput": {
+    "logWhenLengthEqual": {
+      "pixels": 261316,
+      "differentPixels": 0,
+      "max": 0.0
+    },
+    "expWhenArgumentEqual": {
+      "pixels": 267349,
+      "differentPixels": 32407,
+      "max": 1.1920928955078125e-07
+    },
+    "cosWhenArgumentEqual": {
+      "pixels": 300000,
+      "differentPixels": 0,
+      "max": 0.0
+    },
+    "sinWhenArgumentEqual": {
+      "pixels": 300000,
+      "differentPixels": 0,
+      "max": 0.0
+    }
+  },
+  "runs": [
+    {
+      "name": "loop",
+      "seconds": 9.363674041000195,
+      "exit": 0,
+      "processGroupExists": false,
+      "settingsUnchanged": true,
+      "licenseUnchanged": true
+    },
+    {
+      "name": "pow-components",
+      "seconds": 6.997166999964975,
+      "exit": 0,
+      "processGroupExists": false,
+      "settingsUnchanged": true,
+      "licenseUnchanged": true
+    }
+  ],
+  "probePerturbation": {
+    "browserFirstIterationUnchanged": true,
+    "browserSecondIterationAfterDifferentPixels": 66867,
+    "browserFinalRgbaDifferentPixels": 3469,
+    "browserFinalRgbaMax": 206,
+    "claim": "Exposing pow/sum changes computation context; FMA or hoisting are hypotheses, not observed machine instructions."
+  },
+  "provenance": {
+    "step-marked.glsl": "8a335e57cf0572196c23b81f0b0952cb052f0e74485ee5969045b08f408f6276",
+    "NativeSceneProbe.java": "66e91794eda3fb9acae5de028b3864d2fd4ed785af912bb9622ad358e7aa46d9",
+    "browser.mjs": "02ae0f76e95783eaaf8559ea95828174fc6de8200ac465f4520511bd5a0e658f",
+    "native-marked-domain/trace-0-step.f32": "2b68bb96bc47d13e814bd7d07952e103d20751ae56d2340de9ea96e63ced11da",
+    "native-marked-domain/trace-0-color.rgba": "c458603efe6ec25009c9bc40d15ccb1f0b188911a7565513667e19812768e597",
+    "pow-components/pow-components.glsl": "a1dc0bfe84e23103fb639b59a61117d5423c151d3f9b71a47363b6e34d981b45",
+    "pow-components/NativeSceneProbe.java": "eb2a160cead7c104f70ff7d00406ec3fe76c1594e8921f768377edf2b37c1a77",
+    "pow-components/browser.mjs": "d5ca8229cac6fdfc7cdeec9586e8fc228fca693ac212e3bdbfb5e713bc35a118",
+    "pow-components/native-domain/trace-0-pow.f32": "9556b2c0484cd66674f6be4a8db6d4d360237fbe54f674540ea7e7f72cf5a0e6",
+    "pow-components/native-domain/trace-0-inputs.f32": "02965a6a1b1bb2cee4a5e69e18070e8c02e5aae7a82a082743287fbf810d5692",
+    "pow-components/native-domain/trace-0-log-exp-cos.f32": "6c8bbd67bc6d75159349d21f9ca5f1c19ebcc86c7c44c199a62efb4ef276347f",
+    "pow-components/native-domain/trace-0-sin-products.f32": "6b73e373aebd40147eadba53173fd80df0e5f9bcddfc6055f9dbccf20696a2e2"
+  }
+}
