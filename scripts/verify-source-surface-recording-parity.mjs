@@ -66,7 +66,7 @@ try{
         overlayCheck=encode(await compositeSourceFormulaPixels(top,frame.width,frame.height,{...presentation,labels:[]}));
        }else if(presentation.finalBlackOverlayAlpha!==undefined)throw Error('Unexpected final overlay');
       }else if(frame.formulaPresentation?.labels.length)throw Error('Unexpected authored formula');
-      rows.push({index,width:frame.width,height:frame.height,facts:frame.surfaceLive,producer:frame.sourcePixelRenderer,pixels:encode(final),artworkPixels:encode(artwork),overlayCheck,png:encode(new Uint8Array(await png.arrayBuffer()))});
+      rows.push({index,width:frame.width,height:frame.height,facts:frame.surfaceLive,camera:frame.sourceCameraFrame?.camera,producer:frame.sourcePixelRenderer,pixels:encode(final),artworkPixels:encode(artwork),overlayCheck,png:encode(new Uint8Array(await png.arrayBuffer()))});
      }
      const stop=await g.finishSourceRecording(start.handle);return{rows,clock:start.clock,stop:stop.preview.surfaceLive};
     }finally{g.dispose();}
@@ -74,6 +74,11 @@ try{
    assert.equal(output.rows.length,frames.length);const rows=[];await mkdir(directory+'/'+name,{recursive:true});
    for(let i=0;i<frames.length;i++){
     const actual=output.rows[i],expected=frames[i];assert.equal(actual.width,expected.width);assert.equal(actual.height,expected.height);assert.equal(actual.facts.frame.sceneTime,expected.sceneTime);assert.equal(actual.facts.frame.rawDt,expected.rawDt);assert.equal(actual.facts.frame.queueComplete,expected.complete);assert.equal(actual.facts.recording.actualFrameRate,expected.actualFrameRate);
+    if(expected.cameraState)for(const key of ['phi','theta','gamma','zoom','focalDistance']){
+     const label=name+' frame '+i+' camera '+key;
+     assert.ok(Number.isFinite(actual.camera?.[key])&&Number.isFinite(expected.cameraState[key]),label+' must have finite observed values');
+     assert.equal(Math.fround(actual.camera[key]),Math.fround(expected.cameraState[key]),label);
+    }
     const opaque=expected.transitionOverlayAlpha===1;
     if(!layered)assert.ok(opaque||expected.transitionOverlayAlpha===0,'Partial transition reference stage is not supported');
     assert.equal(expected.artworkStage,layered?'before-branding-before-transition':opaque?'final-opaque-transition':'before-branding-no-transition');
@@ -94,7 +99,7 @@ try{
     await writeFile(`${directory}/${name}/frame-${i}.png`,Buffer.from(actual.png,'base64'));await writeFile(`${directory}/${name}/frame-${i}.rgba`,Buffer.from(actual.pixels,'base64'));
     if(layered)await writeFile(`${directory}/${name}/frame-${i}-artwork.rgba`,a);
     if(actual.overlayCheck)await writeFile(`${directory}/${name}/frame-${i}-overlay-check.rgba`,Buffer.from(actual.overlayCheck,'base64'));
-    rows.push({index:i,sceneTime:expected.sceneTime,actualFrameRate:expected.actualFrameRate,warmup:i===0,complete:expected.complete,artworkStage:expected.artworkStage,transitionOverlayAlpha:expected.transitionOverlayAlpha,differentPixels:pixels,overlayDifferentPixels,finalDifferentPixels,maxChannelDelta:max,examples,actualSha256:sha(a),referenceSha256:sha(b),producer:actual.producer});
+    rows.push({index:i,sceneTime:expected.sceneTime,actualFrameRate:expected.actualFrameRate,warmup:i===0,complete:expected.complete,artworkStage:expected.artworkStage,transitionOverlayAlpha:expected.transitionOverlayAlpha,...(expected.cameraState?{cameraStateMatched:true,camera:actual.camera}:{}),differentPixels:pixels,overlayDifferentPixels,finalDifferentPixels,maxChannelDelta:max,examples,actualSha256:sha(a),referenceSha256:sha(b),producer:actual.producer});
    }
    assert.deepEqual(output.stop.frame,output.rows.at(-1).facts.frame);const result={name,sourceSha256:run.sourceSha256,clock:output.clock,rows,stoppedWithoutAdvance:true};report.cases.push(result);console.log(JSON.stringify({name,frames:rows.length,differentPixels:rows.map(r=>r.differentPixels)}));
   }return{};

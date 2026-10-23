@@ -10,8 +10,9 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output', type=Path, required=True)
+parser.add_argument('--cases', type=Path, help='Explicit authored case fixture')
 options = parser.parse_args()
-source = Path(__file__).with_name('seams-camera-cases.json')
+source = options.cases or Path(__file__).with_name('seams-camera-cases.json')
 fixture = json.loads(source.read_text())
 names = [case['name'] for case in fixture['cases']]
 if not 0 < len(names) <= 40 or len(set(names)) != len(names):
@@ -29,6 +30,9 @@ for case in fixture['cases']:
     project['equations'] = case['equations']
     project['camera'] = case['camera']
     project['settings'].update(case['settings'])
+    for key in ['parameters', 'timeline']:
+        if key in case:
+            project[key] = case[key]
     (output / 'inputs' / (case['name'] + '.json')).write_text(
         json.dumps(descriptor, indent=2) + '\n')
 (output / 'cases.json').write_text(json.dumps(names) + '\n')

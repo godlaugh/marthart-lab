@@ -1,0 +1,591 @@
+{
+  "description": "Authored nonzero continuous U seam shifts, retained shifts under parameter motion, and source camera expressions/rotation/zoom/focal motion. 4 FPS with independent actual FPS.",
+  "base": {
+    "name": "continuous-seam",
+    "recording": true,
+    "simulationFps": 4,
+    "project": {
+      "config_version": "1.0.0",
+      "type": "SURFACE",
+      "name": "continuous-seam",
+      "parameters": {
+        "a": 0.17
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "settings": {
+        "render_mode": "CPU",
+        "surface_mode": "MESH",
+        "u_segments": 2,
+        "v_segments": 2,
+        "mesh_u_segments": 9,
+        "mesh_v_segments": 7,
+        "u_min": 0,
+        "u_max": 1,
+        "v_min": 0,
+        "v_max": 1,
+        "speed_u": 0,
+        "speed_v": 0,
+        "scale_x": 22,
+        "scale_y": 22,
+        "scale_z": 22,
+        "show_trails": false,
+        "mesh_wireframe": true,
+        "mesh_fill": true,
+        "mesh_fill_opacity": 0.7,
+        "mesh_line_weight": 1.2,
+        "mesh_wrap_threshold": 0.25,
+        "mesh_wrap_u": true,
+        "mesh_wrap_v": false
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      },
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 0.5
+        }
+      ]
+    },
+    "steps": [
+      {
+        "dt": 0.25,
+        "actualFrameRate": 37,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 24,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 12,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 1,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 0,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": -2,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 37,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 24,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 12,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 1,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 37,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 24,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 12,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 1,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 0,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": -2,
+        "paused": false
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "cpu-shift-static",
+      "settings": {
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-shift-vwrap",
+      "settings": {
+        "mesh_wrap_v": true,
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-shift-reversed",
+      "settings": {
+        "v_min": 1,
+        "v_max": 0,
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-shift-offset",
+      "settings": {
+        "offset_x": 10,
+        "offset_y": -17,
+        "offset_z": 4,
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-shift-animated",
+      "settings": {
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "a": {
+                    "step": 0.5,
+                    "min": 0.17,
+                    "max": 0.63
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 0.75
+        }
+      ]
+    },
+    {
+      "name": "cpu-shift-vwrap-animated",
+      "settings": {
+        "mesh_wrap_v": true,
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "a": {
+                    "step": 0.5,
+                    "min": 0.17,
+                    "max": 0.63
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 0.75
+        }
+      ]
+    },
+    {
+      "name": "cpu-camera-expressions",
+      "settings": {
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": "a*PI",
+        "theta": "PI/3",
+        "gamma": "-a"
+      }
+    },
+    {
+      "name": "cpu-camera-movement",
+      "settings": {
+        "render_mode": "CPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": "a*PI",
+        "theta": "PI/3",
+        "gamma": "-a"
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "rotateTo",
+              "args": [
+                "a*PI",
+                "PI/3",
+                "PI/4"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "zoom",
+              "args": [
+                1.4
+              ]
+            },
+            {
+              "method": "focal",
+              "args": [
+                45
+              ]
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 0.5
+        }
+      ]
+    },
+    {
+      "name": "gpu-shift-static",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-shift-vwrap",
+      "settings": {
+        "mesh_wrap_v": true,
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-shift-reversed",
+      "settings": {
+        "v_min": 1,
+        "v_max": 0,
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-shift-offset",
+      "settings": {
+        "offset_x": 10,
+        "offset_y": -17,
+        "offset_z": 4,
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-shift-animated",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "a": {
+                    "step": 0.5,
+                    "min": 0.17,
+                    "max": 0.63
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 0.75
+        }
+      ]
+    },
+    {
+      "name": "gpu-shift-vwrap-animated",
+      "settings": {
+        "mesh_wrap_v": true,
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "paramStart",
+              "args": {
+                "parameters": {
+                  "a": {
+                    "step": 0.5,
+                    "min": 0.17,
+                    "max": 0.63
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 0.75
+        }
+      ]
+    },
+    {
+      "name": "gpu-camera-expressions",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": "a*PI",
+        "theta": "PI/3",
+        "gamma": "-a"
+      }
+    },
+    {
+      "name": "gpu-camera-movement",
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "equations": {
+        "x": "u",
+        "y": "v+a*u",
+        "z": ".17*u*v"
+      },
+      "camera": {
+        "phi": "a*PI",
+        "theta": "PI/3",
+        "gamma": "-a"
+      },
+      "timeline": [
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "rotateTo",
+              "args": [
+                "a*PI",
+                "PI/3",
+                "PI/4"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "animate",
+          "duration": 0.5,
+          "easing": "LINEAR",
+          "actions": [
+            {
+              "method": "zoom",
+              "args": [
+                1.4
+              ]
+            },
+            {
+              "method": "focal",
+              "args": [
+                45
+              ]
+            }
+          ]
+        },
+        {
+          "type": "wait",
+          "duration": 0.5
+        }
+      ]
+    }
+  ]
+}
