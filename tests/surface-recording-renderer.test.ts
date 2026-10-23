@@ -8,11 +8,12 @@ vi.mock('../src/engine/renderer',()=>({ArtRenderer:class{
  renderer={getContext:()=>({MAX_VIEWPORT_DIMS:1,MAX_RENDERBUFFER_SIZE:2,NO_ERROR:0,RGBA:3,UNSIGNED_BYTE:4,get drawingBufferWidth(){return state.width;},get drawingBufferHeight(){return state.height;},getParameter:(p:number)=>p===1?[100,100]:100,isContextLost:()=>state.lost,getError:()=>state.error,readPixels:(_x:number,_y:number,w:number,h:number,_f:number,_t:number,out:Uint8ClampedArray)=>{for(let y=0;y<h;y++)out.fill(y+1,y*w*4,(y+1)*w*4);}}),forceContextLoss:()=>{state.releases++;if(state.failRelease){state.failRelease=false;throw Error('release');}state.lost=true;}};
  constructor(){state.created++;}setSize(w:number,h:number,d:number){state.width=w*d;state.height=h*d;}setOutput(){}render(){state.draws++;}dispose(){state.disposals++;if(state.failDispose){state.failDispose=false;throw Error('dispose');}}
 }}));
-import {SurfaceRecordingRenderer,retrySurfaceRecordingRendererCleanup,surfaceRecordingRendererCleanupCount} from '../src/engine/renderSurfaceRecording';
+import {SurfaceRecordingRenderer} from '../src/engine/renderSurfaceRecording';
+import {retrySourceDrawingCleanup,sourceDrawingCleanupCount} from '../src/engine/sourceDrawingResources';
 const scene=createScene(definition('surface')),size=sourceRecordingSize({width:1,height:1},1);
 const geometry:Extract<SceneOutput,{type:'geometry'}>={type:'geometry',topology:'points',positions:new Float32Array([0,0,0]),formulaPresentation:{referenceWidth:1280,referenceHeight:720,labels:[]},stats:{samples:1,generated:1,invalid:0,elapsedMs:0}};
-beforeEach(()=>{retrySurfaceRecordingRendererCleanup();Object.assign(state,{created:0,draws:0,disposals:0,releases:0,failDispose:false,failRelease:false,lost:false,error:0,width:0,height:0});vi.stubGlobal('document',{createElement:()=>({width:0,height:0})});});
-afterEach(()=>{retrySurfaceRecordingRendererCleanup();vi.unstubAllGlobals();});
+beforeEach(()=>{retrySourceDrawingCleanup();Object.assign(state,{created:0,draws:0,disposals:0,releases:0,failDispose:false,failRelease:false,lost:false,error:0,width:0,height:0});vi.stubGlobal('document',{createElement:()=>({width:0,height:0})});});
+afterEach(()=>{retrySourceDrawingCleanup();vi.unstubAllGlobals();});
 describe('Surface recording GL resource owner',()=>{
  it('reuses one renderer and returns top-down raw pixels with formula metadata',()=>{
   const owner=new SurfaceRecordingRenderer(scene,size),a=owner.render(geometry,()=>false),b=owner.render(geometry,()=>false);
@@ -20,8 +21,8 @@ describe('Surface recording GL resource owner',()=>{
   owner.dispose();owner.dispose();expect(state.disposals).toBe(1);expect(state.releases).toBe(1);
  });
  it.each(['failDispose','failRelease'] as const)('retains the exact failed resource and retries only unfinished release stages: %s',failure=>{
-  const owner=new SurfaceRecordingRenderer(scene,size);state[failure]=true;expect(()=>owner.dispose()).toThrow();expect(surfaceRecordingRendererCleanupCount()).toBe(1);
-  retrySurfaceRecordingRendererCleanup();expect(surfaceRecordingRendererCleanupCount()).toBe(0);
+  const owner=new SurfaceRecordingRenderer(scene,size);state[failure]=true;expect(()=>owner.dispose()).toThrow();expect(sourceDrawingCleanupCount()).toBe(1);
+  retrySourceDrawingCleanup();expect(sourceDrawingCleanupCount()).toBe(0);
   expect(state.disposals).toBe(failure==='failDispose'?2:1);expect(state.releases).toBe(failure==='failRelease'?2:1);expect(()=>owner.render(geometry,()=>false)).toThrow('已释放');
  });
  it('rejects cancellation, a lost context and a failed readback without dropping the renderer owner',()=>{

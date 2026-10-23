@@ -37,7 +37,7 @@ interface GeneratorPort {
   setFractalPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   cancel():void;
   dispose():void;
-  captureSurfacePaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<SourceSurfacePausedCaptureResult>;
+  captureSurfacePaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5,signal?:AbortSignal):Promise<SourceSurfacePausedCaptureResult>;
   captureRootsPaused?(output:SceneOutput,size:RootsPausedCaptureSize,scale?:1|3|5):Promise<RootsPausedCaptureResult>;
   capturePerlinPaused?(output:SceneOutput,size:PerlinPausedCaptureSize,scale?:1|3|5):Promise<PerlinPausedCaptureResult>;
   captureMapPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
@@ -284,7 +284,7 @@ export class GenerationQueue {
       if(acknowledged)owner.resolve();
     });
   }
-  captureSurfacePaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureSurfacePaused',output,size,scale);}
+  captureSurfacePaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1,signal?:AbortSignal):Promise<SceneOutput>{return this.capturePaused('captureSurfacePaused',output,size,scale,signal);}
   captureRootsPaused(output:SceneOutput,size:RootsPausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{
     return this.capturePaused('captureRootsPaused',output,size,scale);
   }
@@ -298,7 +298,8 @@ export class GenerationQueue {
   captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureSymmetryPaused',output,size,scale);}
   captureDomainPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureDomainPaused',output,size,scale);}
   captureFractalPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SceneOutput>{return this.capturePaused('captureFractalPaused',output,size,scale);}
-  private async capturePaused(method:'captureSurfacePaused'|'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused'|'captureFractalPaused'|'captureDomainPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<SceneOutput>{
+  private async capturePaused(method:'captureSurfacePaused'|'captureRootsPaused'|'capturePerlinPaused'|'captureSamilaPaused'|'captureSymmetryPaused'|'captureMapPaused'|'captureFractalPaused'|'captureDomainPaused',output:SceneOutput,size:PausedCaptureSize,scale:1|3|5,signal?:AbortSignal):Promise<SceneOutput>{
+    if(signal?.aborted)throw new DOMException('截图已取消','AbortError');
     if(this.recordingOwner&&!this.recordingOwner.active)await this.retrySourceRecordingCleanup();
     const request=this.latest,capture=this.generator[method],contract=pausedCaptureContracts[method==='captureSurfacePaused'?'surface-paused-capture':method==='captureDomainPaused'?'domain-paused-capture':method==='captureFractalPaused'?'fractal-paused-capture':method==='captureRootsPaused'?'roots-paused-capture':method==='capturePerlinPaused'?'perlin-paused-capture':method==='captureSymmetryPaused'?'symmetry-paused-capture':method==='captureMapPaused'?'map-paused-capture':'samila-paused-capture'];
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!capture)
@@ -307,7 +308,7 @@ export class GenerationQueue {
     const ticket={retire:false};this.captureOwner=ticket;this.callbacks.busy(true);
     const current=()=>!this.disposed&&this.captureOwner===ticket;
     try{
-      const result=await this.generator[method]!(output,size,scale);
+      const result=method==='captureSurfacePaused'?await this.generator.captureSurfacePaused!(output,size,scale,signal):await this.generator[method]!(output,size,scale);
       if(current()&&liveKey(request))this.completedLive={request,output:result.preview};
       if(!current()||this.latest!==request)throw new DOMException('截图期间场景已改变','AbortError');
       // Source capture also redraws the primary destination. Publish that

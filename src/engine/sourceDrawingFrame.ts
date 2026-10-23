@@ -26,10 +26,11 @@ const littleEndian=new Uint8Array(new Uint32Array([1]).buffer)[0]===1;
 /** Two passes admit all bytes before allocating the packet. The native side
  * uses the same conservative packet/copy/GPU + (12 + 8*samples) bytes/pixel rule.
  * This is resource admission, not a claim about driver or JS peak RSS. */
-export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCancelled?:()=>boolean}={}):SourceDrawingResult<Uint8Array> {
+export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCancelled?:()=>boolean;retainedBytes?:number}={}):SourceDrawingResult<Uint8Array> {
   const check=()=>{if(options.isCancelled?.())throw new FrameFailure('cancelled','原生帧编码已取消');};
   try{
     check();
+    const retainedBytes=options.retainedBytes??0;demand(Number.isSafeInteger(retainedBytes)&&retainedBytes>=0,'调用者保留缓冲容量无效');
     demand(uint(frame.generation)&&frame.generation>0&&uint(frame.sequence)&&frame.sequence>0,'帧身份需要非零 uint32 代次和序号');
     demand(uint(frame.width)&&frame.width>0&&frame.width<=16384&&uint(frame.height)&&frame.height>0&&frame.height<=16384&&frame.width*frame.height<=16_000_000,'帧物理尺寸超出容量');
     demand(uint(frame.samples)&&frame.samples<=0x7fffffff,'帧采样数必须为非负 GLsizei');
@@ -84,7 +85,7 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     // validation does not trust the caller's accounting fields.
     const frameStorage=frame.width*frame.height*(12+8*frame.samples);
     demand(Number.isSafeInteger(frame.drawing.admittedBytes)&&frame.drawing.admittedBytes>=0,'快照容量信息无效');
-    if(size*4+frameStorage>SOURCE_FRAME_BUDGET||size+frame.drawing.admittedBytes+frameStorage>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','帧传输、缓冲及读回超过 256 MiB 预算');
+    if(size*4+frameStorage>SOURCE_FRAME_BUDGET||size+frame.drawing.admittedBytes+frameStorage+retainedBytes>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','帧传输、缓冲及读回超过 256 MiB 预算');
     packet=new Uint8Array(size);view=new DataView(packet.buffer);offset=0;emit();
     demand(offset===size,'编码期间帧结构发生变化');check();return{ok:true,value:packet};
   }catch(error){if(error instanceof FrameFailure)return{ok:false,error:{kind:error.kind,path:['frame'],reason:error.message}};throw error;}

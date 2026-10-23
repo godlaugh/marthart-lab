@@ -46,6 +46,10 @@ describe('binary source frame producer',()=>{
     expect(encodeSourceDrawingFrame(f).ok).toBe(true);f.samples=4;
     expect(encodeSourceDrawingFrame(f)).toMatchObject({ok:false,error:{kind:'capacity'}});
   });
+  it('counts caller-retained capture and enhancement buffers in encoder admission',()=>{
+    expect(encodeSourceDrawingFrame(frame(),{retainedBytes:SOURCE_FRAME_BUDGET})).toMatchObject({ok:false,error:{kind:'capacity'}});
+    expect(encodeSourceDrawingFrame(frame(),{retainedBytes:NaN})).toMatchObject({ok:false,error:{kind:'input'}});
+  });
   it('does not deliver a partially encoded cancelled frame',()=>{
     let calls=0;expect(encodeSourceDrawingFrame(frame([triangle()]),{isCancelled:()=>++calls>45})).toMatchObject({ok:false,error:{kind:'cancelled'}});
   });

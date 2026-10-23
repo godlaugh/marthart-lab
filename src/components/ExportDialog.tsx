@@ -71,7 +71,7 @@ export function ExportDialog({
   mode?:'export'|'fractal-recording'|'domain-recording'|'surface-recording'|'perlin-recording'|'roots-recording';
   rootsPixelDensity?:number;
   surfacePixelDensity?:number;
-  currentSurfaceCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
+  currentSurfaceCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5,signal?:AbortSignal)=>Promise<SceneOutput>};
   domainPixelDensity?:number;
   currentDomainCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   scene: SceneDocument;
@@ -242,7 +242,7 @@ export function ExportDialog({
       checkCancelled();
       if(pausedSourceImage){
         if(!currentPausedCapture?.ready)throw new Error(t('请等待当前预览完成并暂停后再保存画面'));
-        const captured=await currentPausedCapture.capture({width,height},pausedImageScale);
+        const captured=sourceSurfaceLive?await currentSurfaceCapture!.capture({width,height},pausedImageScale,abort.signal):await currentPausedCapture.capture({width,height},pausedImageScale);
         checkCancelled();
         if(captured.type!=='raster')throw new Error(t('暂停截图没有生成图像'));
         const blob=sourceSurfaceLive||sourceNumericalLive||captured.sourceCurrentImage?await encodeFormulaRaster(captured,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);

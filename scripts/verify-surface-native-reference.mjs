@@ -18,7 +18,7 @@ report.jarSha256=sha(await reference(jar));assert.equal(report.jarSha256,'a6e1da
 function flip(b){const a=Buffer.alloc(b.length);for(let y=0;y<600;y++)b.copy(a,y*2000,(599-y)*2000,(600-y)*2000);return a;}
 function diff(a,b){assert.equal(a.length,b.length);let pixels=0,max=0,sum=0;const examples=[];for(let i=0;i<a.length;i+=4){let changed=false;for(let k=0;k<4;k++){const d=Math.abs(a[i+k]-b[i+k]);max=Math.max(max,d);sum+=d;changed||=d>0;}if(changed){pixels++;if(examples.length<10)examples.push({x:i/4%500,y:Math.floor(i/4/500),a:[...a.subarray(i,i+4)],b:[...b.subarray(i,i+4)]});}}return{pixels,max,sum,examples};}
 try{
- service=await createExportServer({root:out+'/exports',allowedOrigins:['http://127.0.0.1:5178'],glyphBackend:JSON.parse(await readFile('.cache/source-glyph-service-20261022/build-final/backend.json','utf8'))});const addr=await service.listen(0);
+ service=await createExportServer({sourceRendererBackend:process.env.MATHART_SOURCE_RENDERER_BACKEND?JSON.parse(await reference(process.env.MATHART_SOURCE_RENDERER_BACKEND)):undefined,root:out+'/exports',allowedOrigins:['http://127.0.0.1:5178'],glyphBackend:JSON.parse(await readFile('.cache/source-glyph-service-20261022/build-final/backend.json','utf8'))});const addr=await service.listen(0);
  server=await createServer({mode:'preview-v2',server:{host:'127.0.0.1',port:5178,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${addr.port}`}},logLevel:'error'});await server.listen();
  // Consume the desktop policy owner instead of duplicating its ANGLE switches.
  const switches=new Map();
@@ -36,10 +36,10 @@ try{
     const pair=await g.captureSurfacePaused(geometry,{width:500,height:600},1),r=pair.capture;
     const composed=await compositeSourceFormulaPixels(r.pixels,r.width,r.height,r.formulaPresentation),png=await encodeFormulaRaster(r,'image/png');
     const {positions,colors,pointAlphas,...facts}=geometry;
-    return{width:r.width,height:r.height,geometry:{...facts,positions:Array.from(positions),colors:colors&&Array.from(colors),pointAlphas:pointAlphas&&Array.from(pointAlphas)},captureCamera:r.sourceCameraFrame,formula:r.formulaPresentation,base:Array.from(r.pixels),composed:Array.from(composed),basePng:Array.from(new Uint8Array(await(await encodeRgbaPng(r.pixels,r.width,r.height)).arrayBuffer())),enhancedPng:Array.from(new Uint8Array(await png.arrayBuffer()))};
+    return{width:r.width,height:r.height,pixelRenderer:r.sourcePixelRenderer,geometry:{...facts,positions:Array.from(positions),colors:colors&&Array.from(colors),pointAlphas:pointAlphas&&Array.from(pointAlphas)},captureCamera:r.sourceCameraFrame,formula:r.formulaPresentation,base:Array.from(r.pixels),composed:Array.from(composed),basePng:Array.from(new Uint8Array(await(await encodeRgbaPng(r.pixels,r.width,r.height)).arrayBuffer())),enhancedPng:Array.from(new Uint8Array(await png.arrayBuffer()))};
    }finally{g.dispose();}
   },text);
-  assert.equal(row.width,500);assert.equal(row.height,600);const base=Buffer.from(row.base),composed=Buffer.from(row.composed);delete row.base;delete row.composed;
+  if(process.env.VITE_SOURCE_RENDERER==='native')assert.equal(row.pixelRenderer?.backend,'native','Real paused capture must use native pixels');assert.equal(row.width,500);assert.equal(row.height,600);const base=Buffer.from(row.base),composed=Buffer.from(row.composed);delete row.base;delete row.composed;
   await writeFile(out+'/'+name+'-base.rgba',base);await writeFile(out+'/'+name+'-composed.rgba',composed);
   await writeFile(out+'/'+name+'-base.png',Buffer.from(row.basePng));await writeFile(out+'/'+name+'-enhanced.png',Buffer.from(row.enhancedPng));delete row.basePng;delete row.enhancedPng;
   row.name=name;row.native={path:native,sourceSha256:run.sourceSha256,seconds:run.seconds};assert.equal(row.formula.labels.length,name==='cornucopia'?1:0);row.baseComparison=diff(base,flip(await reference(native+'/before-first-texture.rgba')));

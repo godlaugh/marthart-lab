@@ -170,7 +170,7 @@ function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:
  return preview.width===source.width&&preview.height===source.height&&validCurrentImage(capture,size,scale,base)&&matchesSize(capture.fractalRender?.logicalSize,base.logicalWidth,base.logicalHeight)&&matchesSize(capture.fractalRender?.requestedSize,base.width,base.height)&&matchesSize(capture.fractalRender?.rasterSize,base.width,base.height);
 }
 type Pending =
-  | {operation:'surface-paused-capture';source:Completed;size:PausedCaptureSize;scale:1|3|5;resolve:(result:SourceSurfacePausedCaptureResult)=>void;reject:(error:Error)=>void}
+  | {operation:'surface-paused-capture';source:Completed;size:PausedCaptureSize;scale:1|3|5;controller:AbortController;rendering?:boolean;resolve:(result:SourceSurfacePausedCaptureResult)=>void;reject:(error:Error)=>void}
   | {operation:'surface-parameter';source:Completed;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'surface-current';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
@@ -203,7 +203,7 @@ export class Generator {
   private invalidate(error:Error){
     try{this.recording?.surface?.releaseRenderer();}catch(cleanup){error=new AggregateError([error,cleanup],'曲面录制已失效，绘图清理仍待重试');}
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
-    for(const p of this.pending.values())p.reject(error);this.pending.clear();
+    for(const p of this.pending.values()){if(p.operation==='surface-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
   }
   hasSourceRecording(handle:SourceRecordingHandle):boolean{return !!this.worker&&this.recording?.handle===handle&&this.recording.usable;}
 
@@ -234,6 +234,7 @@ export class Generator {
         this.pending.delete(data.id);this.completed={...p.source,id:data.id,output,surfaceFrame:output.type==='geometry'?output.surfaceLive?.frame:undefined};p.resolve(output);return;
       }
       if(p.operation==='surface-paused-capture'){
+        if(p.rendering){this.invalidate(new Error('曲面截图重复交付准备结果'));return;}
         if(data.operation!=='surface-paused-capture'||data.id!==this.currentInputId){this.invalidate(new Error('曲面截图响应身份不匹配'));return;}
         if('error' in data){
           const retained=data.retainedSourceId===p.source.id;
@@ -248,7 +249,8 @@ export class Generator {
         // Keep the operation pending across module loading and readback. A
         // cancelled transport cannot publish the subsequently encoded image.
         const cancelled=()=>this.pending.get(data.id)!==p||this.worker!==worker;
-        void import('./renderSurfaceCapture').then(({renderSurfaceCapture})=>renderSurfaceCapture(result,p.source.context,p.size,p.scale,cancelled)).then(value=>{
+        p.rendering=true;
+        void import('./renderSurfaceCapture').then(({renderSurfaceCapture})=>renderSurfaceCapture(result,p.source.context,p.size,p.scale,cancelled,{signal:p.controller.signal,generation:this.sessionId,sequence:data.id})).then(value=>{
           if(cancelled())return;const plan=sourceSurfaceCapturePlan(p.source.context,p.size,p.scale);if(!validCurrentImage(value.capture,p.size,p.scale,plan.base)||!validOutputFormulas(value.capture,{kind:'raster'}))throw Error('曲面截图基础图像或公式无效');this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
         }).catch(error=>{if(cancelled())return;this.pending.delete(data.id);this.completed=p.source;p.reject(new SurfacePausedCaptureError(error instanceof Error?error.message:String(error),true));});
         return;
@@ -503,12 +505,18 @@ export class Generator {
   }
   /** The exact completed preview is the capability. A copied, superseded or
    * partially generated frame cannot select a live worker-owned scene. */
-  captureSurfacePaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<SourceSurfacePausedCaptureResult>{
+  captureSurfacePaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1,signal?:AbortSignal):Promise<SourceSurfacePausedCaptureResult>{
+    if(signal?.aborted)return Promise.reject(new DOMException('曲面截图已取消','AbortError'));
     const source=this.completed;
     if(this.recording||this.pending.size||!this.worker||!source||source.output!==output||output.type!=='geometry'||!output.surfaceLive)return Promise.reject(new SurfacePausedCaptureError('曲面截图需要当前已完成的暂停预览',false));
     try{sourceSurfaceCapturePlan(source.context,size,scale);}catch(error){return Promise.reject(new SurfacePausedCaptureError(error instanceof Error?error.message:String(error),true));}
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;const copied={...size};
-    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'surface-paused-capture',source,size:copied,scale,resolve,reject});try{this.worker!.postMessage({operation:'surface-paused-capture',sessionId:this.sessionId,id,sourceId:source.id,size:copied,scale} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+    return new Promise((resolve,reject)=>{
+      const controller=new AbortController(),cancel=()=>controller.abort();signal?.addEventListener('abort',cancel,{once:true});
+      const release=()=>signal?.removeEventListener('abort',cancel);
+      this.pending.set(id,{operation:'surface-paused-capture',source,size:copied,scale,controller,resolve:value=>{release();resolve(value);},reject:error=>{release();reject(error);}});
+      try{this.worker!.postMessage({operation:'surface-paused-capture',sessionId:this.sessionId,id,sourceId:source.id,size:copied,scale} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}
+    });
   }
   captureRootsPaused(output:SceneOutput,size:RootsPausedCaptureSize,scale:1|3|5=1):Promise<RootsPausedCaptureResult>{
     return this.capturePaused('roots-paused-capture',output,size,scale);
@@ -745,8 +753,10 @@ export class Generator {
     this.completed=undefined;this.currentInputId=0;
     this.worker?.terminate();
     this.worker = null;
-    for (const p of this.pending.values())
+    for (const p of this.pending.values()){
+      if(p.operation==='surface-paused-capture')p.controller.abort();
       p.reject(new DOMException("已取消", "AbortError"));
+    }
     this.pending.clear();
   }
   dispose() {

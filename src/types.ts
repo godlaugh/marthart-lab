@@ -419,6 +419,8 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  /** Actual pixel producer for a geometry capture; absent for older outputs. */
+  sourcePixelRenderer?:{backend:'webgl'}|{backend:'native';identity:string;generation:number;sequence:number;samples:number};
   rootsLive?:import('./engine/rootsLive').RootsLiveFacts;
   perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveFacts;
   /** Geometry recording readback retains its producing Surface facts. */

@@ -1680,9 +1680,9 @@ export default function App() {
           currentSurfaceCapture={sourceLivePreviewKind(scene)==='surface'?{
             size:{width:scene.projectResolution?.width??Math.round((viewportSize?.[0]??1920)*(viewportMeasurement?.pixelRatio??1)),height:scene.projectResolution?.height??Math.round((viewportSize?.[1]??1080)*(viewportMeasurement?.pixelRatio??1))},
             ready:completedFrameReady&&output?.type==='geometry'&&output.surfaceLive?.sessionId===liveSessionId.current,
-            capture:async(size,scale)=>{
+            capture:async(size,scale,signal)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前曲面画面尚未完成或已过期，请等待预览完成后重试');
-              return generationQueue.current.captureSurfacePaused(output,size,scale);
+              return generationQueue.current.captureSurfacePaused(output,size,scale,signal);
             },
           }:undefined}
           currentDomainCapture={sourceLivePreviewKind(scene)==='domain'?{

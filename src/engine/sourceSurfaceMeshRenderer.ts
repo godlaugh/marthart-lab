@@ -41,8 +41,9 @@ in vec4 meshColor;
 out vec4 fragmentColor;
 void main(){fragmentColor=meshColor;}`;
 
-/** Borrow immutable index buffers; own CPU eye-space/RGBA buffers and
- * GPU resources. Caller owns disposal through ArtRenderer's ordinary path. */
+/** Own native triangle-corner buffers and GPU resources. The worker's shared
+ * topology remains untouched; Processing submits fresh vertices per triangle.
+ * Reusing grid vertices changes native MSAA interpolation rounding. */
 export function createSourceSurfaceMeshFill(output:GeometryOutput,plan:SourceCameraPlan,displayOpacity=1){
  const appearance=output.sourceMeshAppearance,count=output.positions.length/3,indices=output.indices;
  if(!appearance||appearance.model!==SOURCE_SURFACE_CPU_MESH_MODEL||output.topology!=='mesh'||!Number.isInteger(count)||count>512*512+4*511+4||output.sourceMeshColors?.length!==count||!indices||indices.length%3||indices.length>6*512*512)throw new Error('源曲面网格填充与缓冲不匹配或超过本地容量');
@@ -50,11 +51,14 @@ export function createSourceSurfaceMeshFill(output:GeometryOutput,plan:SourceCam
  for(const i of indices)if(i>=count)throw new Error('源曲面网格索引超出顶点缓冲');
  const geometry=new THREE.BufferGeometry();let material:THREE.RawShaderMaterial|undefined;
  try{
-  geometry.setAttribute('position',new THREE.BufferAttribute(sourceEyePositions(output.positions,plan.modelView.rowMajor),4));
-  geometry.setAttribute('color',new THREE.BufferAttribute(sourceSurfaceMeshFillColors(output.sourceMeshColors,appearance.fillAlphaByte,displayOpacity),4));
-  geometry.setIndex(new THREE.BufferAttribute(indices,1));
-  // Native topology can retain nonfinite unused vertices after skipping their
-  // quads. Culling is disabled; avoid Three deriving an irrelevant NaN sphere.
+  const eye=sourceEyePositions(output.positions,plan.modelView.rowMajor),rgba=sourceSurfaceMeshFillColors(output.sourceMeshColors,appearance.fillAlphaByte,displayOpacity);
+  const positions=new Float32Array(indices.length*4),colors=new Float32Array(positions.length),corners=new Uint32Array(indices.length);
+  for(let i=0;i<indices.length;i++){const from=indices[i]*4,to=i*4;for(let k=0;k<4;k++){positions[to+k]=eye[from+k];colors[to+k]=rgba[from+k];}corners[i]=i;}
+  geometry.setAttribute('position',new THREE.BufferAttribute(positions,4));
+  geometry.setAttribute('color',new THREE.BufferAttribute(colors,4));
+  geometry.setIndex(new THREE.BufferAttribute(corners,1));
+  // Source topology may retain unused nonfinite vertices. Bounds belong to
+  // submitted corners; avoid deriving an irrelevant sphere from source slots.
   geometry.boundingSphere=new THREE.Sphere(new THREE.Vector3(),0);
   material=createSourceShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:true,depthWrite:true,toneMapped:false,
    // PGraphicsOpenGL.BLEND keeps additive destination alpha (ONE, ONE).

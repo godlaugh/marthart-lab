@@ -19,14 +19,23 @@ describe('CPU source mesh fill boundary',()=>{
   const custom={...plan,modelView:{...plan.modelView,rowMajor:[1,1,-1,0,0,1,0,0,0,0,1,0,0,0,0,1]}};
   expect(Array.from(sourceEyePositions(new Float32Array([16777216,1,16777216]),custom.modelView.rowMajor))).toEqual([0,1,16777216,1]);
  });
- it('preserves packed colors for transfer, borrows indices, and owns converted RGBA/positions',()=>{
+ it('preserves worker buffers and submits independent native triangle corners',()=>{
   const data=output(),copy=data.positions.slice(),mesh=createSourceSurfaceMeshFill(data,plan);
   expect(mesh.geometry.getAttribute('color').itemSize).toBe(4);
   expect(outputBuffers({...data,stats:{samples:3,generated:3,invalid:0}})).toContain(data.sourceMeshColors!.buffer);
-  expect(mesh.geometry.getIndex()!.array).toBe(data.indices);
+  expect(mesh.geometry.getIndex()!.array).not.toBe(data.indices);
+  expect(mesh.geometry.getIndex()!.array).toEqual(data.indices);
   expect(mesh.geometry.getAttribute('position').array).not.toBe(data.positions);
   expect(mesh.geometry.getAttribute('position').itemSize).toBe(4);
   mesh.geometry.dispose();mesh.material.dispose();expect(data.positions).toEqual(copy);
+ });
+ it('duplicates shared corners in source triangle order without changing worker topology',()=>{
+  const data=output();data.indices=new Uint32Array([2,1,0,0,1,2]);const before=data.indices.slice(),mesh=createSourceSurfaceMeshFill(data,plan);
+  try{const eye=sourceEyePositions(data.positions,plan.modelView.rowMajor),positions=mesh.geometry.getAttribute('position').array;
+   expect(mesh.geometry.getAttribute('position').count).toBe(6);expect([...mesh.geometry.getIndex()!.array]).toEqual([0,1,2,3,4,5]);
+   for(let i=0;i<6;i++)expect([...positions.slice(i*4,i*4+4)]).toEqual([...eye.slice(before[i]*4,before[i]*4+4)]);
+   expect(data.indices).toEqual(before);
+  }finally{mesh.geometry.dispose();mesh.material.dispose();}
  });
  it('interprets zero-alpha packed blue/black as native fill(int) grayscale for every byte value',()=>{
   const packed=Uint32Array.from({length:256},(_,i)=>i|0x40000000),colors=sourceSurfaceMeshFillColors(packed,0);

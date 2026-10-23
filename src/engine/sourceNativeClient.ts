@@ -23,12 +23,12 @@ async function remoteError(response:Response,signal:AbortSignal):Promise<never>{
  * ownership and must await this frame or explicitly cancel it before replacing
  * it. The loopback gateway separately coordinates other windows/consumers. */
 let active=false;
-export async function renderSourceNativeFrame(frame:SourceDrawingFrame,options:{signal?:AbortSignal}={}):Promise<SourceNativePixels>{
+export async function renderSourceNativeFrame(frame:SourceDrawingFrame,options:{signal?:AbortSignal;retainedBytes?:number}={}):Promise<SourceNativePixels>{
  check(options.signal);if(active)throw new SourceNativeError('capacity','当前页面已有原生帧请求');active=true;
  const controller=new AbortController(),cancel=()=>controller.abort(options.signal?.reason),timer=setTimeout(()=>controller.abort(new SourceNativeError('timeout','原生帧传输超时')),20000);
  options.signal?.addEventListener('abort',cancel,{once:true});
  try{
-  const packet=encodeSourceDrawingFrame(frame,{isCancelled:()=>controller.signal.aborted});if(!packet.ok)throw new SourceNativeError(packet.error.kind,packet.error.reason);
+  const packet=encodeSourceDrawingFrame(frame,{isCancelled:()=>controller.signal.aborted,retainedBytes:options.retainedBytes});if(!packet.ok)throw new SourceNativeError(packet.error.kind,packet.error.reason);
   const expected={generation:frame.generation,sequence:frame.sequence,width:frame.width,height:frame.height};
   const response=await fetch('/api/source-renderer/frames',{method:'POST',headers:{'content-type':'application/octet-stream'},body:packet.value as Uint8Array<ArrayBuffer>,signal:controller.signal,credentials:'same-origin',cache:'no-store',redirect:'error'});
   if(!response.ok)await remoteError(response,controller.signal);

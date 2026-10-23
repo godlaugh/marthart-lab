@@ -65,3 +65,5 @@ node scripts/verify-source-surface-cgl.mjs .cache/source-renderer-msaa-20261023/
 ```
 
 第二条目前应以非零状态返回 45 像素残差。下一步继续定位网格多重采样残差，并将实际截图、录像和预览接到统一的帧交付流程；保持取消、过期帧拒绝和资源清理。原生程序打包、其他场景及连续整图动画验证仍待完成，Goal 保持进行中。
+
+后续已在 CPU 网格生产端展开独立三角形顶点，消除本记录中的 45 像素残差，并接入实际暂停截图，见 [原生暂停截图与网格修复](source-native-capture-validation.zh-CN.md)。本记录保留当时未通过的结果作为定位证据。
