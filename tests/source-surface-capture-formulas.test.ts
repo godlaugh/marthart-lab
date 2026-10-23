@@ -33,9 +33,9 @@ describe('Surface base PNG and formula composition owner',()=>{
   expect(state.compositions[0]).toMatchObject({width:8,height:4,presentation:{layout:'source-surface-centered-v1',labels:[{latex:'x',x:0}]}});expect(state.compositions[0].signal).toBe(controller.signal);
   expect(state.encoded.slice(1)).toEqual([8,4,scale]);expect((state.encoded[0] as Uint8ClampedArray)[0]).toBe(211);expect(result.capture.pixels[0]).toBe(23);
  });
- it('recording carries the producing frame layout rather than parsing a newer document',()=>{
+ it('recording carries the producing frame layout rather than parsing a newer document',async()=>{
   const f=setup(),start=f.owner.beginRecording(f.scene,f.context,{width:8,height:4,simulationFps:10,actualFrameRate:60}),scene=structuredClone(f.scene);scene.formulas!.main.latex='new draft';
   const renderer=new SurfaceRecordingRenderer(scene,{width:8,height:4,logicalWidth:4,logicalHeight:2,density:2});
-  try{if(start.warmup.type!=='geometry')throw Error('geometry');const out=renderer.render(start.warmup,()=>false);expect(out.formulaPresentation).toEqual(start.warmup.formulaPresentation);expect(out.formulaPresentation!.labels[0].latex).toBe('x');expect(out).not.toHaveProperty('sourceCurrentImage');}finally{renderer.dispose();f.owner.finishRecording(start.handle,1000);}
+  try{if(start.warmup.type!=='geometry')throw Error('geometry');const out=await renderer.render(start.warmup,()=>false);expect(out.formulaPresentation).toEqual(start.warmup.formulaPresentation);expect(out.formulaPresentation!.labels[0].latex).toBe('x');expect(out).not.toHaveProperty('sourceCurrentImage');}finally{renderer.dispose();f.owner.finishRecording(start.handle,1000);}
  });
 });

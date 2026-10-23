@@ -6,12 +6,12 @@ import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
 import type {SceneOutput,GenerationInput} from '../src/types';
 import type {GenerationRequest,GenerationResponse} from '../src/engine/generationProtocol';
 import native from './fixtures/source-surface-scene/recording-native.json';
-const draw=vi.hoisted(()=>({created:0,disposed:0,frames:[] as number[],fail:false,failDispose:false}));
+const draw=vi.hoisted(()=>({created:0,disposed:0,frames:[] as number[],fail:false,failDispose:false,gate:undefined as Promise<void>|undefined,signal:undefined as AbortSignal|undefined}));
 // Real client/worker/numerical ownership and real buffer transfer. Drawing is
 // substituted here; the browser verifier exercises the real GL renderer.
 vi.mock('../src/engine/renderSurfaceRecording',()=>({SurfaceRecordingRenderer:class{
  constructor(private scene:unknown,private size:{width:number;height:number}){draw.created++;}
- render(output:Extract<SceneOutput,{type:'geometry'}>,cancelled:()=>boolean){if(cancelled())throw Error('cancelled');if(draw.fail){draw.fail=false;throw Error('draw failed');}draw.frames.push(output.surfaceLive!.frame.frameIndex);return{type:'raster',...this.size,pixels:new Uint8ClampedArray(this.size.width*this.size.height*4),stats:output.stats,surfaceLive:output.surfaceLive,sourceCameraFrame:output.sourceCameraFrame};}
+ render(output:Extract<SceneOutput,{type:'geometry'}>,cancelled:()=>boolean,request?:{signal:AbortSignal}){draw.signal=request?.signal;const finish=()=>{if(cancelled())throw Error('cancelled');if(draw.fail){draw.fail=false;throw Error('draw failed');}return{type:'raster',...this.size,pixels:new Uint8ClampedArray(this.size.width*this.size.height*4),stats:output.stats,surfaceLive:output.surfaceLive,sourceCameraFrame:output.sourceCameraFrame};};draw.frames.push(output.surfaceLive!.frame.frameIndex);return draw.gate?draw.gate.then(finish):finish();}
  dispose(){if(draw.failDispose){draw.failDispose=false;throw Error('dispose failed');}draw.disposed++;}
 }}));
 let worker:{onmessage?:(e:MessageEvent<GenerationRequest>)=>void;postMessage:(r:GenerationResponse,o:{transfer:Transferable[]})=>void};
@@ -23,7 +23,7 @@ class Transport {
  terminate(){this.terminated=true;}
 }
 beforeEach(async()=>{
- vi.resetModules();Object.assign(draw,{created:0,disposed:0,frames:[],fail:false,failDispose:false});fail=undefined;corrupt=undefined;
+ vi.resetModules();Object.assign(draw,{created:0,disposed:0,frames:[],fail:false,failDispose:false,gate:undefined,signal:undefined});fail=undefined;corrupt=undefined;
  worker={postMessage:(data,options)=>{const fault=fail?.operation===data.operation&&!('error' in data)?fail:undefined;if(fault){fail=undefined;if(!fault.detached)throw Error('publication failed');}const message=structuredClone(data,{transfer:options.transfer});if(fault)throw Error('publication failed after transfer');corrupt?.(message);port.onmessage?.({data:message});}};
  vi.stubGlobal('self',worker);vi.stubGlobal('Worker',Transport);await import('../src/engine/generate.worker');
 });
@@ -65,6 +65,19 @@ describe('Surface retained recording client',()=>{
   const retry=await f.generator.nextSourceRecordingFrame(start.handle,1,24);expect(port.sent).toHaveLength(sent);expect(retry.surfaceLive!.frame.frameIndex).toBe(1);expect(draw.created).toBe(1);
   await f.generator.finishSourceRecording(start.handle);f.generator.dispose();
  });
+ it('waits for asynchronous drawing, then retries a failed frame without another numerical update',async()=>{
+  const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options);let release!:()=>void;
+  draw.gate=new Promise<void>(r=>{release=r;});draw.fail=true;
+  const task=f.generator.nextSourceRecordingFrame(start.handle,1,24),caught=task.catch(e=>e);await vi.waitFor(()=>expect(draw.frames).toEqual([0,1]));
+  await expect(f.generator.nextSourceRecordingFrame(start.handle,2,24)).rejects.toThrow('尚未完成');const sent=port.sent.length;release();expect(await caught).toMatchObject({recordingRetained:true});draw.gate=undefined;
+  const frame=await f.generator.nextSourceRecordingFrame(start.handle,1,24);expect(frame.surfaceLive!.frame.frameIndex).toBe(1);expect(port.sent).toHaveLength(sent);
+  await f.generator.finishSourceRecording(start.handle);f.generator.dispose();
+ });
+ it('does not confirm an asynchronously returned frame after cancellation, and can restore the runtime',async()=>{
+  const f=await setup(),abort=new AbortController(),start=await f.generator.beginSourceRecording(f.output,f.options,abort.signal);let release!:()=>void;
+  draw.gate=new Promise<void>(r=>{release=r;});const task=f.generator.nextSourceRecordingFrame(start.handle,1,24),caught=task.catch(e=>e);await vi.waitFor(()=>expect(draw.frames).toEqual([0,1]));abort.abort();release();expect(await caught).toMatchObject({recordingRetained:true});
+  await expect(f.generator.nextSourceRecordingFrame(start.handle,2,24)).rejects.toThrow('连续');const stop=await f.generator.finishSourceRecording(start.handle);expect(stop.preview.surfaceLive!.frame.frameIndex).toBe(1);expect(draw.disposed).toBe(1);f.generator.dispose();
+ });
  it('stops a warmup whose local drawing failed',async()=>{
   const f=await setup();draw.fail=true;const failure=await f.generator.beginSourceRecording(f.output,f.options).catch(e=>e);expect(failure).toMatchObject({recordingRetained:true});
   await expect(f.generator.nextSourceRecordingFrame(failure.handle,1,24)).rejects.toThrow('warmup');const stop=await f.generator.finishSourceRecording(failure.handle);expect(stop.preview.surfaceLive!.frame.frameIndex).toBe(0);expect(draw.disposed).toBe(1);f.generator.dispose();
@@ -105,6 +118,14 @@ describe('Surface retained recording client',()=>{
   let release!:()=>void;const gate=new Promise<void>(resolve=>release=resolve),abort=new AbortController();
   const task=queue.recordSource(callbacks.output.mock.calls.at(-1)![0],f.options,{actualFrameRate:()=>24,frame:()=>gate},abort.signal),caught=task.catch(e=>e);
   await vi.waitFor(()=>expect(draw.frames).toEqual([0,1]));abort.abort();expect(draw.disposed).toBe(0);release();expect((await caught).name).toBe('AbortError');expect(draw.disposed).toBe(1);expect(port.terminated).toBe(false);queue.dispose();
+ });
+ it('aborts pending native work on queue teardown and retains stop ownership until the frame settles',async()=>{
+  const f=await setup(),callbacks={output:vi.fn(),error:vi.fn(),busy:vi.fn()},queue=new GenerationQueue(f.generator,callbacks);
+  queue.request(f.scene,f.context);await vi.waitFor(()=>expect(callbacks.output).toHaveBeenCalled());
+  let release!:()=>void;draw.gate=new Promise<void>(r=>{release=r;});const consumer=vi.fn();
+  const task=queue.recordSource(callbacks.output.mock.calls.at(-1)![0],f.options,{actualFrameRate:()=>24,frame:consumer}),caught=task.catch(e=>e);
+  await vi.waitFor(()=>expect(draw.frames).toEqual([0]));expect(draw.signal?.aborted).toBe(false);queue.dispose();expect(draw.signal?.aborted).toBe(true);expect(port.terminated).toBe(false);release();
+  expect((await caught).name).toBe('AbortError');expect(consumer).not.toHaveBeenCalled();expect(draw.disposed).toBe(1);expect(port.terminated).toBe(true);
  });
  it('normalizes retry observations once and preserves signed zero warmup',async()=>{
   const f=await setup(),start=await f.generator.beginSourceRecording(f.output,{...f.options,actualFrameRate:-0});expect(Object.is(start.warmup.surfaceLive!.recording!.actualFrameRate,-0)).toBe(true);

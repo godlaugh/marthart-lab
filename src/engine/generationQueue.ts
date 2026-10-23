@@ -45,7 +45,7 @@ interface GeneratorPort {
   captureSamilaPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureDomainPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
   captureFractalPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5):Promise<PausedCaptureResult>;
-  beginSourceRecording?(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>;
+  beginSourceRecording?(output:SceneOutput,options:SourceRecordingOptions,signal?:AbortSignal):Promise<SourceRecordingStart>;
   nextSourceRecordingFrame?(handle:SourceRecordingHandle,displayFrame:number,actualFrameRate?:number):Promise<SourceRecordingRaster>;
   finishSourceRecording?(handle:SourceRecordingHandle):Promise<SourceRecordingStop>;
   hasSourceRecording?(handle:SourceRecordingHandle):boolean;
@@ -83,7 +83,7 @@ const playbackMethods={rootsLive:'setRootsPaused',perlinLive:'setPerlinPaused',s
 const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='roots'&&request.context.rootsLive?'rootsLive':request.scene.kind==='perlin'&&request.context.perlinLive?'perlinLive':request.scene.kind==='surface'&&request.context.surfaceLive?'surfaceLive':request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
 const liveIdentity=(request:Request)=>liveKey(request)==='surfaceLive'?'surface-retained':liveKey(request)==='domainLive'?'domain-retained':liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
-interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
+interface RecordingOwner {controller:AbortController;request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
 // Component teardown must not discard the only reference to a failed release.
 // These owners are retried explicitly, or once when another queue is created.
 const retiredQueues=new Set<GenerationQueue>();
@@ -340,12 +340,12 @@ export class GenerationQueue {
     const observedFrames=request.scene.kind==='domain'||request.scene.kind==='surface';
     if(observedFrames&&typeof consumer.actualFrameRate!=='function')throw new Error('源场景录制需要逐帧实际帧率观测');
     if(signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');
-    const owner:RecordingOwner={request,stop:false,active:true};this.recordingOwner=owner;this.callbacks.busy(true);
-    const abort=()=>{owner.stop=true;},check=()=>{if(owner.stop||signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');};
+    const owner:RecordingOwner={controller:new AbortController(),request,stop:false,active:true};this.recordingOwner=owner;this.callbacks.busy(true);
+    const abort=()=>{owner.stop=true;owner.controller.abort();},check=()=>{if(owner.stop||signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');};
     signal?.addEventListener('abort',abort,{once:true});
     let failed=false,failure:unknown;
     try{
-      const start=await this.generator.beginSourceRecording(output,options);owner.handle=start.handle;
+      const start=await (request.scene.kind==='surface'?this.generator.beginSourceRecording(output,options,owner.controller.signal):this.generator.beginSourceRecording(output,options));owner.handle=start.handle;
       const clock=structuredClone(start.clock),handle=start.handle;
       if(clock.completionReason==='animation-queue'&&!validSourceQueueRecordingClock(clock,options.simulationFps))throw Error('录制完成规划无效');
       const complete=(frame:SceneOutput,ordinal:number)=>{
@@ -368,7 +368,7 @@ export class GenerationQueue {
     }catch(error){
       if(error instanceof SourceRecordingOperationError&&error.recordingRetained&&error.handle)owner.handle=error.handle;
       if(error instanceof SourceRecordingOperationError&&!error.previewRetained)owner.invalidPreview=error;
-      failed=true;failure=error;
+      failed=true;failure=owner.stop||signal?.aborted?new DOMException('源场景录制已取消','AbortError'):error;
     }finally{
       signal?.removeEventListener('abort',abort);owner.active=false;
       try{await this.finishRecordingOwner(owner);}catch(error){
@@ -455,14 +455,14 @@ export class GenerationQueue {
   cancel(){
     if(this.disposed)return;
     this.rejectPlayback();this.completedLive=undefined;this.navigationOwner=undefined;
-    if(this.recordingOwner){clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.recordingOwner.stop=true;this.retryRecordingInBackground();return;}
+    if(this.recordingOwner){clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.recordingOwner.stop=true;this.recordingOwner.controller.abort();this.retryRecordingInBackground();return;}
     clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
     this.generator.cancel();this.callbacks.busy(false);
   }
   dispose(){this.rejectPlayback();this.completedLive=undefined;this.navigationOwner=undefined;this.disposed=true;clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
-    if(this.recordingOwner){this.recordingOwner.stop=true;this.retryRecordingInBackground();return;}
+    if(this.recordingOwner){this.recordingOwner.stop=true;this.recordingOwner.controller.abort();this.retryRecordingInBackground();return;}
     this.generator.dispose();
   }
 }

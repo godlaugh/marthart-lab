@@ -8,6 +8,7 @@ import {assertSourceSurfaceRecordingFrame} from './sourceSurfaceRecording';
 import {snapshotGenerationInput} from './generationInput';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import type {SurfaceRecordingRenderer} from './renderSurfaceRecording';
+import type {SourceDrawingRequest} from './sourceDrawingPixels';
 import type {SourceSurfaceLiveFacts} from './sourceSurfaceLiveSession';
 type Geometry=Extract<SceneOutput,{type:'geometry'}>;
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
@@ -20,8 +21,8 @@ export class SourceSurfaceRecordingLease {
  clock?:SourceQueueRecordingClock;scene?:SceneDocument;
  private formulas?:FormulaPresentation;private pending?:Geometry;private last?:SourceSurfaceLiveFacts;
  private attempt?:{index:number;rate:number};private next=1;private warmupDelivered=false;
- private renderer?:SurfaceRecordingRenderer;private stopping=false;
- constructor(scene:SceneDocument,input:GenerationInput,output:Geometry,options:SourceRecordingOptions){
+ private renderer?:SurfaceRecordingRenderer;private stopping=false;private drawing=false;
+ constructor(scene:SceneDocument,input:GenerationInput,output:Geometry,options:SourceRecordingOptions,private readonly signal?:AbortSignal){
   if(!validSourceSurfacePresentation(output,input)||!usesSourceSurfaceGeometry(scene)||output.sourceCameraFrame?.viewport.target!=='primary')throw Error('曲面录制需要已完成的源主预览');
   const actualFrameRate=rate(options.actualFrameRate);
   if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('曲面录制模拟帧率必须为 1–120 的整数');
@@ -41,6 +42,7 @@ export class SourceSurfaceRecordingLease {
   if(live.constructions!==this.constructions||!Object.is(live.recording!.actualFrameRate,actualFrameRate)||live.frame.rawDt!==Math.fround(1/Math.fround(clock.simulationFps)))throw Error('曲面录制响应时钟或对象身份无效');
  }
  acceptStart(start:SourceRecordingWireStart):void {
+  if(this.drawing||this.clock)throw Error('曲面录制重复起始响应');
   if(start?.scene?.formulas?.layout==='source-surface-centered-v1'&&start.warmup?.formulaPresentation?.layout!=='source-surface-centered-v1')throw Error('曲面录制公式布局无效');
   if(!start?.scene||start.scene.id!==this.sceneId||!usesSourceSurfaceGeometry(start.scene)||!this.context(start.context)||start.context.time!==0||!Object.is(rate(start.context.surfaceLive!.actualFrameRate),this.options.actualFrameRate))throw Error('曲面录制起始配置或主预览身份无效');
   if(!validSourceQueueRecordingClock(start.clock,this.options.simulationFps))throw Error('曲面录制完成规划无效');
@@ -54,16 +56,22 @@ export class SourceSurfaceRecordingLease {
   this.attempt={index,rate:observed};return{cached:!!this.pending,actualFrameRate:observed};
  }
  acceptFrame(output:SceneOutput,index:number):void {
+  if(this.drawing||this.pending)throw Error('曲面录制重复帧响应');
   if(!this.attempt||this.attempt.index!==index)throw Error('曲面录制返回了未请求的帧');
   this.frame(output,index,this.attempt.rate);this.pending=output;this.last=structuredClone(output.surfaceLive!);
  }
- render(Renderer:typeof SurfaceRecordingRenderer,isCancelled:()=>boolean){
-  if(!this.pending||!this.scene||this.stopping)throw Error('曲面录制没有待绘制帧');
-  if(isCancelled())throw new DOMException('曲面录制绘图已取消','AbortError');
-  this.renderer??=new Renderer(this.scene,this.size);
-  const output=this.renderer.render(this.pending,isCancelled),index=this.pending.surfaceLive!.frame.frameIndex;
-  this.pending=undefined;this.attempt=undefined;if(index===0)this.warmupDelivered=true;else this.next=index+1;
-  return output;
+ async render(Renderer:typeof SurfaceRecordingRenderer,isCancelled:()=>boolean,identity:Pick<SourceDrawingRequest,'generation'|'sequence'>){
+  if(!this.pending||!this.scene||this.stopping||this.drawing)throw Error('曲面录制没有待绘制帧或前一帧尚未完成');
+  const check=()=>{if(isCancelled()||this.stopping||this.signal?.aborted)throw new DOMException('曲面录制绘图已取消','AbortError');};check();
+  const pending=this.pending;this.drawing=true;
+  try{
+   this.renderer??=new Renderer(this.scene,this.size);
+   const output=await this.renderer.render(pending,isCancelled,{...identity,signal:this.signal??new AbortController().signal});check();
+   if(this.pending!==pending)throw Error('曲面录制待交付帧已改变');
+   const index=pending.surfaceLive!.frame.frameIndex;
+   this.pending=undefined;this.attempt=undefined;if(index===0)this.warmupDelivered=true;else this.next=index+1;
+   return output;
+  }finally{this.drawing=false;}
  }
  prepareStop():void {this.stopping=true;this.releaseRenderer();}
  releaseRenderer():void {this.renderer?.dispose();this.renderer=undefined;}

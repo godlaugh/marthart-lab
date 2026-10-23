@@ -2,20 +2,24 @@
 import {measureFamily} from './browser-process-cost.mjs';
 import {chromium} from '@playwright/test';
 import {createServer} from 'vite';
+import {createExportServer} from '../server/index.mjs';
 import {mkdir,readFile,writeFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+const native=process.env.VITE_SOURCE_RENDERER==='native';
 const workerMode=process.argv[3]==='--worker',clientMode=process.argv[3]==='--client';
+if(native&&!clientMode)throw Error('Native recording verification requires --client');
 const directory=process.argv[2]??`.cache/surface-recording-${Date.now()}`;await mkdir(directory,{recursive:true});
 const sha=v=>createHash('sha256').update(v).digest('hex');
 async function files(dir){const result=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())result.push(...await files(p));else if(e.isFile())result.push(p);}return result;}
 const hashes=async()=>Object.fromEntries(await Promise.all([...(await files('src')),'scripts/verify-source-surface-recording.mjs','tests/fixtures/source-surface-scene/recording-native.json'].sort().map(async p=>[p,sha(await readFile(p))])));
-const report={at:new Date().toISOString(),status:'running',scope:clientMode?'Production Generator + Worker + retained Surface recording renderer.':workerMode?'Real Worker Surface recording → main-thread geometry rendering.':'Retained Surface numerical recording with real browser geometry rendering.',limits:[clientMode?'App controls, queue and video encoder are not exercised by this client verifier.':workerMode?'Production client/App/encoder are not connected; worker buffers are rendered directly by this verifier.':'Worker/client/App recording and video encoding are not connected in this owner verifier.','Original fixture executes CPU numerical scene methods, not original shaders or GUI pixels.','GPU local comparisons reuse CPU numerical oracle; no native GPU parity claim.','Fixture actual FPS is injected, not measured from a native window.','First pass includes module initialization; second pass reuses modules/browser with fresh owners, not a full App cold/warm comparison.','Process-family CPU/RSS are sampled estimates and may miss short-lived children; VRAM and complete token cost are unmeasured. No equivalent pre-change recording path exists.'],sourceBefore:await hashes()};
-let server,browser,page;const started=performance.now(),errors=[];
+const report={at:new Date().toISOString(),status:'running',native,scope:clientMode?'Production Generator + Worker + retained Surface recording renderer.':workerMode?'Real Worker Surface recording → main-thread geometry rendering.':'Retained Surface numerical recording with real browser geometry rendering.',limits:[clientMode?'App controls, queue and video encoder are not exercised by this client verifier.':workerMode?'Production client/App/encoder are not connected; worker buffers are rendered directly by this verifier.':'Worker/client/App recording and video encoding are not connected in this owner verifier.','Original fixture executes CPU numerical scene methods, not original shaders or GUI pixels.','GPU local comparisons reuse CPU numerical oracle; no native GPU parity claim.','Fixture actual FPS is injected, not measured from a native window.','First pass includes module initialization; second pass reuses modules/browser with fresh owners, not a full App cold/warm comparison.','Process-family CPU/RSS are sampled estimates and may miss short-lived children; VRAM and complete token cost are unmeasured. Backend comparisons must use the same cases; these timings are complete verifier tasks, not product FPS.'],sourceBefore:await hashes()};
+let server,browser,page,service,address;const started=performance.now(),errors=[];
 try{
- server=await createServer({server:{host:'127.0.0.1',port:0,strictPort:false,hmr:false},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});report.browser=browser.version();
+ if(native){service=await createExportServer({root:directory+'/service',allowedOrigins:['http://127.0.0.1:5181'],sourceRendererBackend:JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND))});address=await service.listen(0);}
+ server=await createServer({server:{host:'127.0.0.1',port:native?5181:0,strictPort:native,hmr:false,...(native?{proxy:{'/api':`http://127.0.0.1:${address.port}`}}:{})},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});report.browser=browser.version();
  page=await browser.newPage();page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/surface-recording',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Surface recording verification</title>'}));await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/surface-recording`);
- const measured=await measureFamily(process.pid,async()=>({cases:await page.evaluate(async({fixture,workerMode,clientMode})=>{
+ const measured=await measureFamily(process.pid,async()=>({cases:await page.evaluate(async({fixture,workerMode,clientMode,native})=>{
   const transportMode=workerMode||clientMode,{Generator}=await import('/src/engine/client.ts');
   const contexts=new Set(),getContext=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){const result=getContext.call(this,type,...args);if((type==='webgl'||type==='webgl2')&&result)contexts.add(result);return result;};
   const {SourceSurfaceLiveSession}=await import('/src/engine/sourceSurfaceLiveSession.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts');
@@ -52,7 +56,7 @@ try{
    const scene=parseProjectFile(JSON.stringify(project)).scene,owner=clientMode?clientOwner():workerMode?workerOwner():new SourceSurfaceLiveSession(),renderer=new ArtRenderer(document.createElement('canvas'));
    const c={time:0,quality:'preview',width:64*density,height:48*density,sourcePointPixelDensity:density,sourceViewport:ordinarySourceViewport(scene,64,48,'primary',48),surfaceLive:{sessionId:backend+density+trace.input.name,revision:0,clock:{paused:true,timestampMs:1000},actualFrameRate:29}};
    const render=async(output,source)=>{
-    if(output.type==='raster'){const pixels=output.pixels,visible=pixels.some((p,i)=>i%4!==3&&p!==pixels[i%4]),alpha=output.surfaceLive.frame.surfaceTransition?.overlayAlpha??0;check(alpha===255?!visible:visible,'client readback visibility');return{width:output.width,height:output.height,visible,overlayAlpha:alpha,pixels:await digest(pixels)};}
+    if(output.type==='raster'){if(native)check(output.sourcePixelRenderer?.backend==='native','Native recording policy ignored');const pixels=output.pixels,visible=pixels.some((p,i)=>i%4!==3&&p!==pixels[i%4]),alpha=output.surfaceLive.frame.surfaceTransition?.overlayAlpha??0;check(alpha===255?!visible:visible,'client readback visibility');return{width:output.width,height:output.height,visible,overlayAlpha:alpha,pixels:await digest(pixels)};}
     const v=output.sourceCameraFrame.viewport;renderer.setSize(v.logicalWidth,v.logicalHeight,density);renderer.setOutput(output,{...source,evaluatedSourceCamera:output.sourceCameraFrame},false);renderer.render();
     const gl=renderer.renderer.getContext(),width=gl.drawingBufferWidth,height=gl.drawingBufferHeight,pixels=new Uint8Array(width*height*4);gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
     check(!gl.isContextLost()&&gl.getError()===0,'GL failure');const visible=pixels.some((p,i)=>i%4!==3&&p!==pixels[i%4]),covered=output.sourceSurfaceOverlayAlpha===255;
@@ -81,7 +85,7 @@ try{
    }finally{if(transportMode)owner.reset();renderer.dispose();renderer.renderer.forceContextLoss();}
   }
   return rows;
- },{fixture:JSON.parse(await readFile('tests/fixtures/source-surface-scene/recording-native.json','utf8')),workerMode,clientMode})}));report.cases=measured.cases;report.processFamily=measured.processFamily;
+ },{fixture:JSON.parse(await readFile('tests/fixtures/source-surface-scene/recording-native.json','utf8')),workerMode,clientMode,native})}));report.cases=measured.cases;report.processFamily=measured.processFamily;
  if(clientMode)report.contextLossRecovery=await page.evaluate(async project=>{
   const {Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{ordinarySourceViewport}=await import('/src/engine/ordinarySourceCamera.ts');
   const contexts=[],original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){const value=original.call(this,type,...args);if((type==='webgl'||type==='webgl2')&&value&&!contexts.includes(value))contexts.push(value);return value;};
@@ -99,4 +103,4 @@ try{
  },JSON.parse(await readFile('tests/fixtures/source-surface-scene/recording-native.json','utf8')).actual.cases.find(c=>c.input.name==='animated-mesh').input.project);
  if(errors.length)throw Error(errors.join('\n'));report.status='passed';
 }catch(error){report.status='failed';report.error=String(error.stack??error);report.partialCases=await page?.evaluate(()=>window.__surfaceRecordingRows??[]).catch(()=>[]);}
-finally{await browser?.close();await server?.close();report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);report.errors=errors;report.elapsedMs=performance.now()-started;if(!report.sourceStable)report.status='failed';await writeFile(`${directory}/report.json`,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,error:report.error,cases:report.cases?.length,elapsedMs:report.elapsedMs}));if(report.status!=='passed')process.exitCode=1;}
+finally{await browser?.close();await server?.close();await service?.close();report.remainingProcesses=service?.ownedProcessCount??0;report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);report.errors=errors;report.elapsedMs=performance.now()-started;if(!report.sourceStable||report.remainingProcesses!==0)report.status='failed';await writeFile(`${directory}/report.json`,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,error:report.error,cases:report.cases?.length,elapsedMs:report.elapsedMs}));if(report.status!=='passed')process.exitCode=1;}

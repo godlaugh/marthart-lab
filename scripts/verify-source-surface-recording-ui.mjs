@@ -11,9 +11,10 @@ import {createExportServer} from '../server/index.mjs';
 const check=(v,m)=>{if(!v)throw Error(m);},sha=v=>createHash('sha256').update(v).digest('hex');
 
 
+const native=process.env.VITE_SOURCE_RENDERER==='native';
 const directory=process.argv[2]??`.cache/surface-ui-${Date.now()}`,artifact=n=>`${directory}/${n}`;
 await mkdir(directory,{recursive:true});
-const report={at:new Date().toISOString(),status:'running',scope:'Actual Surface recording UI, unmodified Worker/client/renderer, formula composition, local service and FFmpeg. CPU/GPU points and mesh; DPR 1/2.',limits:['No native GUI/JOGL or whole-window parity.','Browser-observed draw intervals are not original PApplet timing.','PNG formula pixels and video decoding are checked; original glyph/whole-image pixels are not an oracle here.','Process-family CPU/RSS are sampled estimates, including browser/server/FFmpeg descendants; short-lived processes may be missed. Token cost and VRAM unmeasured. Fresh page per case; not an equivalent cold/warm performance comparison.'],cases:[]};
+const report={at:new Date().toISOString(),status:'running',native,scope:'Actual Surface recording UI, unmodified Worker/client/renderer, formula composition, local service and FFmpeg. CPU/GPU points and mesh; DPR 1/2.',limits:['No native GUI/JOGL or whole-window parity.','Browser-observed draw intervals are not original PApplet timing.','PNG formula pixels and video decoding are checked; original glyph/whole-image pixels are not an oracle here.','Process-family CPU/RSS are sampled estimates, including browser/server/FFmpeg descendants; short-lived processes may be missed. Token cost and VRAM unmeasured. Fresh page per case; not an equivalent cold/warm performance comparison.'],cases:[]};
 async function files(dir){const out=[];for(const e of await readdir(dir,{withFileTypes:true})){const p=dir+'/'+e.name;if(e.isDirectory())out.push(...await files(p));else if(e.isFile())out.push(p);}return out;}
 const hashes=async()=>Object.fromEntries(await Promise.all([...(await files('src')),...(await files('server')),'scripts/verify-source-surface-recording-ui.mjs','scripts/lib/verify-png.mjs','scripts/browser-process-cost.mjs'].sort().map(async p=>[p,sha(await readFile(p))])));
 report.sourceBefore=await hashes();const started=performance.now();let server,browser,exportServer,page;
@@ -33,6 +34,7 @@ async function run(backend,mode,origin){
  const key=backend+'-'+mode,row={backend,mode,status:'running',steps:[]};report.cases.push(row);const errors=[],uploads=[],http=[];
  try{
   page=await browser.newPage({viewport:{width:1360,height:900},deviceScaleFactor:backend==='gpu'?2:1,acceptDownloads:true});page.setDefaultTimeout(30000);page.on('pageerror',e=>errors.push(e.message));await page.addInitScript(installAudit);
+  if(native)await page.route('**/src/main.tsx',async route=>{const response=await route.fetch(),body=await response.text();await route.fulfill({response,body:`import {Generator as AuditGenerator} from '/src/engine/client.ts';window.__nativeRecordingFrames=[];for(const method of ['beginSourceRecording','nextSourceRecordingFrame']){const original=AuditGenerator.prototype[method];AuditGenerator.prototype[method]=async function(...args){const result=await original.apply(this,args);const frame=method==='beginSourceRecording'?result.warmup:result;window.__nativeRecordingFrames.push(frame.sourcePixelRenderer);return result;};}\n`+body});});
   page.on('request',r=>{const path=new URL(r.url()).pathname;if(r.method()==='POST'&&path==='/api/exports')http.push(JSON.parse(r.postData()));if(r.method()==='POST'&&/^\/api\/exports\/[^/]+\/frames$/.test(path))uploads.push({index:Number(new URL(r.url()).searchParams.get('index')),bytes:r.postDataBuffer()});});
   await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(origin+'fixture');
   const document=await page.evaluate(async ({backend,mode})=>{
@@ -90,6 +92,26 @@ async function run(backend,mode,origin){
    }finally{release();await page.unroute('**/api/exports**',routeHandler);page.off('download',onDownload);}
    await page.getByRole('button',{name:'Close export',exact:true}).click();await pause();
   }
+  if(native){
+   await page.getByRole('button',{name:'Record',exact:true}).click();
+   const sequence=(await audit()).requests.at(-1).sequence,priorCreate=http.length,priorUploads=uploads.length,priorFrames=await page.evaluate(()=>window.__nativeRecordingFrames.length);
+   let arrive,release,held=false;const arrived=new Promise(r=>arrive=r),released=new Promise(r=>release=r);
+   const nativeGate=async route=>{if(held)return route.continue();held=true;arrive();await released;await route.abort('aborted').catch(()=>{});};
+   await page.route('**/api/source-renderer/frames',nativeGate);
+   try{
+    await page.getByRole('button',{name:'Start recording',exact:true}).click();let timer;try{await Promise.race([arrived,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('native frame gate timeout')),25000))]);}finally{clearTimeout(timer);}
+    await page.getByRole('button',{name:'Cancel export',exact:true}).click();
+    // The original fetch must reject on cancellation before this intercepted
+    // network request is released. Otherwise stop cannot complete here.
+    await page.waitForFunction(sequence=>window.__surfaceAudit.completed.some(r=>r.sequence>sequence&&r.request.operation==='source-recording-finish'),sequence);
+    await page.getByRole('button',{name:'Start recording',exact:true}).waitFor();
+    check(http.length===priorCreate&&uploads.length===priorUploads,'cancelled warmup created encoder work');
+    check(await page.evaluate(()=>window.__nativeRecordingFrames.length)===priorFrames,'cancelled native warmup was delivered');
+    const finish=(await audit()).completed.find(r=>r.sequence>sequence&&r.request.operation==='source-recording-finish');check(finish.response.result.preview.surfaceLive.frame.frameIndex===0,'cancelled native warmup advanced frame');
+    row.steps.push({name:'native-warmup-cancel',finish,encoderCreated:false,lateFrameDelivered:false});
+   }finally{release();await page.unroute('**/api/source-renderer/frames',nativeGate);}
+   await page.getByRole('button',{name:'Close export',exact:true}).click();await pause();
+  }
   // Exercise the ordinary Export entry too. Lose successful upload/finalize
   // replies, then one status reply: recovery must retain the same recording.
   await page.getByRole('button',{name:'Export artwork',exact:true}).click();
@@ -134,13 +156,13 @@ async function run(backend,mode,origin){
   const emptyAudit=await audit(),emptyBegin=emptyAudit.completed.find(r=>r.sequence>emptyStart&&r.request.operation==='source-recording-begin');
   check(emptyBegin.response.result.clock.encodedFrames===0&&http.length===priorCreate&&uploads.length===priorUploads,'empty queue fabricated an encoder session/frame');
   row.steps.push({name:'empty-queue',clock:emptyBegin.response.result.clock,encoderCreated:false});
-  check(!emptyAudit.errors.length&&!errors.length,'runtime reported errors');row.status='passed';
+  check(!emptyAudit.errors.length&&!errors.length,'runtime reported errors');if(native){row.nativeFrames=await page.evaluate(()=>window.__nativeRecordingFrames);check(row.nativeFrames.length>0&&row.nativeFrames.every(f=>f?.backend==='native'),'Recording did not deliver native pixels');}row.status='passed';
  }catch(error){row.status='failed';row.error=error.stack??String(error);if(page)await page.screenshot({path:artifact(key+'-failure.png')}).catch(()=>{});}
  finally{if(page){row.audit=await audit().catch(()=>undefined);await page.close();page=undefined;}console.log(key+': '+row.status+(row.error?' '+row.error:''));}
 }
 try{
  const port=await new Promise((resolve,reject)=>{const s=tcp();s.once('error',reject);s.listen(0,'127.0.0.1',()=>{const port=s.address().port;s.close(e=>e?reject(e):resolve(port));});}),origin=`http://127.0.0.1:${port}/`;
- exportServer=await createExportServer({root:artifact('service'),allowedOrigins:[origin.slice(0,-1)]});const address=await exportServer.listen(0);server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});report.browser=browser.version();const measured=await measureFamily(process.pid,async()=>{for(const backend of ['cpu','gpu'])for(const mode of ['POINTS','MESH'])await run(backend,mode,origin);return{};});report.processFamily=measured.processFamily;report.status=report.cases.every(c=>c.status==='passed')?'passed':'failed';
+ exportServer=await createExportServer({root:artifact('service'),allowedOrigins:[origin.slice(0,-1)],sourceRendererBackend:native?JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND)):undefined});const address=await exportServer.listen(0);server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});report.browser=browser.version();const measured=await measureFamily(process.pid,async()=>{for(const backend of ['cpu','gpu'])for(const mode of ['POINTS','MESH'])await run(backend,mode,origin);return{};});report.processFamily=measured.processFamily;report.status=report.cases.every(c=>c.status==='passed')?'passed':'failed';
 }catch(error){report.status='failed';report.error=error.stack??String(error);}
-finally{const cleanup=await Promise.allSettled([browser?.close(),server?.close(),exportServer?.close()]);report.cleanup=cleanup.map(r=>r.status);report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);report.elapsedMs=performance.now()-started;if(!report.sourceStable||cleanup.some(r=>r.status==='rejected'))report.status='failed';await writeFile(artifact('report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,report:artifact('report.json'),elapsedMs:report.elapsedMs}));if(report.status!=='passed')process.exitCode=1;}
+finally{const cleanup=await Promise.allSettled([browser?.close(),server?.close(),exportServer?.close()]);report.cleanup=cleanup.map(r=>r.status);report.remainingProcesses=exportServer?.ownedProcessCount;report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);report.elapsedMs=performance.now()-started;if(report.remainingProcesses!==0||!report.sourceStable||cleanup.some(r=>r.status==='rejected'))report.status='failed';await writeFile(artifact('report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,report:artifact('report.json'),elapsedMs:report.elapsedMs}));if(report.status!=='passed')process.exitCode=1;}
 

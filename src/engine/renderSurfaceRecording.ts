@@ -1,17 +1,23 @@
 import type {SceneDocument,SceneOutput} from '../types';
 import {SourceDrawingResources} from './sourceDrawingResources';
+import {readSourceDrawingPixels,sourceDrawingBackend,type SourceDrawingRequest} from './sourceDrawingPixels';
 import {outputBuffers} from './outputBuffers';
 import {validateFormulaPresentation} from './formulaConfig';
 import type {sourceRecordingSize} from './sourceRecordingSize';
 
 export class SurfaceRecordingRenderer {
  private readonly resources:SourceDrawingResources;
+ private active?:AbortController;
  constructor(private readonly scene:SceneDocument,private readonly size:ReturnType<typeof sourceRecordingSize>){
   this.resources=new SourceDrawingResources();
  }
- render(output:Extract<SceneOutput,{type:'geometry'}>,isCancelled:()=>boolean):Extract<SceneOutput,{type:'raster'}>{
+ async render(output:Extract<SceneOutput,{type:'geometry'}>,isCancelled:()=>boolean,request?:SourceDrawingRequest):Promise<Extract<SceneOutput,{type:'raster'}>>{
+  sourceDrawingBackend(request);
+  if(this.active)throw Error('曲面录制前一帧尚未完成');
+  const controller=new AbortController(),abort=()=>controller.abort();this.active=controller;request?.signal.addEventListener('abort',abort,{once:true});
+  try{
   const renderer=this.resources.renderer;
-  const check=()=>{if(isCancelled())throw new DOMException('曲面录制绘图已取消','AbortError');};check();
+  const check=()=>{if(isCancelled()||controller.signal.aborted||request?.signal.aborted)throw new DOMException('曲面录制绘图已取消','AbortError');};check();
   const {width,height,logicalWidth,logicalHeight,density}=this.size;
   const bytes=outputBuffers(output).reduce((sum,buffer)=>sum+buffer.byteLength,0)+width*height*4+width*4;
   if(bytes>256*1024*1024)throw Error('曲面录制几何与回读缓冲超过本地 256 MiB 预算');
@@ -19,16 +25,13 @@ export class SurfaceRecordingRenderer {
   if(gl.isContextLost())throw Error('曲面录制绘图上下文已丢失');
   if(width>limits[0]||height>limits[1]||Math.max(width,height)>gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))throw Error('曲面录制尺寸超过当前 GPU 限制');
   renderer.setSize(logicalWidth,logicalHeight,density);
-  renderer.setOutput(output,{...this.scene,evaluatedSourceCamera:output.sourceCameraFrame},false);renderer.render();check();
-  if(gl.drawingBufferWidth!==width||gl.drawingBufferHeight!==height)throw Error('曲面录制实际绘制尺寸不匹配');
-  const pixels=new Uint8ClampedArray(width*height*4);gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
-  if(gl.isContextLost()||gl.getError()!==gl.NO_ERROR)throw Error('曲面录制像素回读失败');
-  const stride=width*4,row=new Uint8ClampedArray(stride);
-  for(let y=0;y<Math.floor(height/2);y++){const a=y*stride,b=(height-1-y)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);}
+  renderer.setOutput(output,{...this.scene,evaluatedSourceCamera:output.sourceCameraFrame},false);check();
+  const {pixels,sourcePixelRenderer}=await readSourceDrawingPixels(renderer,width,height,bytes,isCancelled,request?{...request,signal:controller.signal}:undefined);
   check();
   // Video receives raw draw pixels. Paused PNG enhancement/upscale belongs to
   // its separate capture path; formulas are composed by the video consumer.
-  return{type:'raster',width,height,pixels,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
+  return{type:'raster',width,height,pixels,sourcePixelRenderer,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
+  }finally{request?.signal.removeEventListener('abort',abort);if(this.active===controller)this.active=undefined;}
  }
- dispose():void {this.resources.dispose();}
+ dispose():void {this.active?.abort();this.resources.dispose();}
 }

@@ -43,6 +43,8 @@ UI 检查运行实际 App 的导入和导出控件，确认交付预览仍携带
 
 当前结论只覆盖这三个配置的初始暂停帧。连续动画、原生预览／录像接入、其余场景及 Apple Silicon 安装包验收仍待完成，Goal 保持进行中。
 
+后续进展：[曲面原生录像接入验证](source-native-recording-validation.zh-CN.md) 已接通实际录像、取消和恢复流程；连续动画的原版逐帧整图对照及主预览仍待验收。
+
 ## 本地证据
 
 证据根目录：`.cache/source-native-gpu-mesh-20261023/`。

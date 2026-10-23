@@ -209,7 +209,7 @@ export class Generator {
 
   private renderSurfaceFrame(id:number,p:Extract<Pending,{operation:'source-recording-begin'|'source-recording-frame'}>,lease:SourceSurfaceRecordingLease,worker:Worker,start?:import('./generationProtocol').SourceRecordingWireStart){
     const cancelled=()=>this.worker!==worker||this.pending.get(id)!==p||this.recording?.surface!==lease;
-    void import('./renderSurfaceRecording').then(({SurfaceRecordingRenderer})=>{if(cancelled())return;return lease.render(SurfaceRecordingRenderer,cancelled);}).then(output=>{
+    void import('./renderSurfaceRecording').then(({SurfaceRecordingRenderer})=>{if(cancelled())return;return lease.render(SurfaceRecordingRenderer,cancelled,{generation:this.sessionId,sequence:id});}).then(output=>{
       if(!output||cancelled())return;this.pending.delete(id);
       if(p.operation==='source-recording-begin'&&start)p.resolve({...start,warmup:output,handle:p.handle});
       else if(p.operation==='source-recording-frame')p.resolve(output);
@@ -621,7 +621,8 @@ export class Generator {
       }
     });
   }
-  beginSourceRecording(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>{
+  beginSourceRecording(output:SceneOutput,options:SourceRecordingOptions,signal?:AbortSignal):Promise<SourceRecordingStart>{
+    if(signal?.aborted)return Promise.reject(new DOMException('源场景录制已取消','AbortError'));
     const source=this.completed;
     if(this.recording)return Promise.reject(this.recordingError('源场景录制已开始'));
     const eligible=source&&(source.scene.kind==='surface'?output.type==='geometry'&&!!output.surfaceLive&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
@@ -634,7 +635,7 @@ export class Generator {
     let fractal:RetainedRecordingLease|undefined,domain:DomainRecordingLease|undefined,surface:SourceSurfaceRecordingLease|undefined,perlin:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}|undefined;
     if(source.scene.kind==='perlin'&&source.context.perlinLive)try{perlin={sceneId:source.scene.id,primary:snapshotGenerationInput(source.context),size:prepareSourcePausedCaptureSize(options,source.context.sourcePerlinViewport?.pixelDensity??NaN)};}catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     if(source.scene.kind==='surface')try{
-      if(output.type!=='geometry')throw Error('曲面录制需要几何预览');surface=new SourceSurfaceRecordingLease(source.scene,source.context,output,options);
+      if(output.type!=='geometry')throw Error('曲面录制需要几何预览');surface=new SourceSurfaceRecordingLease(source.scene,source.context,output,options,signal);
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     if(source.scene.kind==='fractal')try{
       if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('分形录制模拟帧率必须为 1–120 的整数');
