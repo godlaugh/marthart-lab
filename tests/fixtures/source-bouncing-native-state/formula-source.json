@@ -1,0 +1,1023 @@
+{
+  "at": "2026-10-23T23:45:42.341172+00:00",
+  "status": "passed",
+  "scope": "Two complete original1M FORMULA presets: state/artwork and actual native App export workflows. Full Goal remains active.",
+  "cases": [
+    {
+      "preset": "bouncing1_formula1",
+      "original": {
+        "particleCount": 1000000,
+        "sourceMember": "data/Bouncing/bouncing1_formula1.json",
+        "sourceSha256": "98f9fcfe70fd0e7e3b2030eb30a6ffdc9ab504cfebc3d0501c2f290a8731404f",
+        "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d",
+        "seconds": 15.906693416996859,
+        "exit": 0,
+        "reaped": true,
+        "processGroupExists": false,
+        "timedOut": false,
+        "userFilesBefore": {
+          "scene_access_policies_cache.json": {
+            "exists": true,
+            "sha256": "a7b141c62d56063b95089ac68942c3eaa9d45d41a6ce3bc1eb37893286dd6181"
+          },
+          "license.dat": {
+            "exists": false,
+            "sha256": null
+          },
+          "settings/settings.conf": {
+            "exists": true,
+            "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+          }
+        },
+        "userFilesAfter": {
+          "scene_access_policies_cache.json": {
+            "exists": true,
+            "sha256": "2c67a981007224e24b262ef8c04b181ff88769afbafb833aa5f3bb62cea8a294"
+          },
+          "license.dat": {
+            "exists": false,
+            "sha256": null
+          },
+          "settings/settings.conf": {
+            "exists": true,
+            "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+          }
+        }
+      },
+      "userSettingsAndLicenseUnchanged": true,
+      "policyCacheChangedByNormalOriginalInitialization": true,
+      "product": {
+        "frames": 62,
+        "updates": 60,
+        "differentRgbPixels": 0,
+        "differentFinalAlphaPixels": 0,
+        "cameraMatricesExact": true,
+        "seedRuns": [
+          {
+            "elapsedMs": 4146.800000071526,
+            "ok": true,
+            "diagnostics": {
+              "count": 1000000,
+              "generated": 1000000,
+              "outerAttempts": 1901318,
+              "centerFallbacks": 0,
+              "work": 115954698,
+              "workLimit": 256000000,
+              "randomState48": "32996022181748"
+            }
+          }
+        ],
+        "ownerDiagnostics": {
+          "initializations": 1,
+          "uploadBytes": 16000000,
+          "draws": 62,
+          "recoveries": 0,
+          "active": false,
+          "owned": false,
+          "ready": false,
+          "updates": 0,
+          "uploaded": 0,
+          "cleanupPending": false,
+          "retainedBytes": 0
+        },
+        "generationDiagnostics": {
+          "browserGpuContexts": 0,
+          "particleReadbacks": 0,
+          "particleUploadBytes": 16000000,
+          "updates": 60,
+          "released": true,
+          "retainedSeedBytes": 0
+        },
+        "elapsedMs": 8138.983125,
+        "processFamily": {
+          "rootPid": 70024,
+          "samples": 23,
+          "observedProcesses": 40,
+          "maxConcurrentProcesses": 15,
+          "sampledPeakRssKiB": 2762528,
+          "observedCpuMs": 14619.999999999998,
+          "samplingErrors": []
+        },
+        "pageErrors": [],
+        "remainingNativeProcesses": 0
+      },
+      "component": {
+        "states": [
+          {
+            "stateDifferent": 0,
+            "frame": 1,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 0
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 3,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 1
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 4,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 2
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 7,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 5
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 8,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 6
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 12,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 10
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 23,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 21
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 32,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 30
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 38,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 36
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 53,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 51
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 62,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 60
+          }
+        ],
+        "totalFloat32Components": 44000000,
+        "artworkFrames": 62,
+        "differentRgbPixels": 0,
+        "stateReadbackBytes": 176000000,
+        "rejectedRequests": 16,
+        "disposed": true,
+        "referencesStable": true,
+        "preparationMs": 5376.994957999999,
+        "nativeMs": 1560.9092079999991,
+        "processFamily": {
+          "rootPid": 70419,
+          "samples": 7,
+          "observedProcesses": 10,
+          "maxConcurrentProcesses": 4,
+          "sampledPeakRssKiB": 1099456,
+          "observedCpuMs": 610.0000000000002,
+          "samplingErrors": []
+        }
+      },
+      "publicExport": {
+        "checks": 85,
+        "sourceStable": true,
+        "images": [
+          {
+            "path": ".cache/bouncing-native-formulas-20261024/public-formula1-final/current.png",
+            "width": 258,
+            "height": 194,
+            "rgbaSha": "fe8d869a2f23bee4bde20f991803853c06ea78e70c8156349a3337fd2f739e26",
+            "checkpoint": {
+              "model": "source-bouncing-clock-1.7.8",
+              "simulationUpdates": 3,
+              "sceneTime": 0.10000000894069672
+            },
+            "rawNativeSha": "8eb41c8ec2afa20b2bc4b535c09df921b21c0b1a1aa53efb3b4d27f2bdedc3b9"
+          }
+        ],
+        "videos": [
+          {
+            "start": "current",
+            "path": ".cache/bouncing-native-formulas-20261024/public-formula1-final/current.mp4",
+            "quality": "high",
+            "referencePath": ".cache/bouncing-native-formulas-20261024/public-formula1-final/current-profile-reference.mp4",
+            "referenceMetadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "decodedOriginalProfileExact": true,
+            "metadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "warmup": {
+              "model": "source-bouncing-clock-1.7.8",
+              "simulationUpdates": 4,
+              "sceneTime": 0.0833333358168602
+            },
+            "frames": [
+              {
+                "index": 0,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 5,
+                  "sceneTime": 0.1666666716337204
+                },
+                "rgbaSha": "fe1b785a6092351647b611cc209025ef90af8ecc2f9e2cf92191e08c58428e4f",
+                "meanAbsoluteRgbError": 1.1686604817708333,
+                "maxAbsoluteRgbError": 67
+              },
+              {
+                "index": 1,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 6,
+                  "sceneTime": 0.25
+                },
+                "rgbaSha": "eae0b65edfb4a4338a62f26ac6b4dd569cdd69956c5609f39e083082fbb496d6",
+                "meanAbsoluteRgbError": 1.2485487196180556,
+                "maxAbsoluteRgbError": 58
+              },
+              {
+                "index": 2,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 7,
+                  "sceneTime": 0.3333333432674408
+                },
+                "rgbaSha": "96a0e1554a8702da3f4a0bb75b9e00d090841fda03cbca772dac7bda3e3c9a33",
+                "meanAbsoluteRgbError": 1.2251519097222223,
+                "maxAbsoluteRgbError": 61
+              }
+            ]
+          },
+          {
+            "start": "seed",
+            "path": ".cache/bouncing-native-formulas-20261024/public-formula1-final/seed.mp4",
+            "quality": "production",
+            "referencePath": ".cache/bouncing-native-formulas-20261024/public-formula1-final/seed-profile-reference.mp4",
+            "referenceMetadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "decodedOriginalProfileExact": true,
+            "metadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "warmup": {
+              "model": "source-bouncing-clock-1.7.8",
+              "simulationUpdates": 1,
+              "sceneTime": 0.0833333358168602
+            },
+            "frames": [
+              {
+                "index": 0,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 2,
+                  "sceneTime": 0.1666666716337204
+                },
+                "rgbaSha": "4066dfcf81a0d0cd573d9e7ca0ffe22de22d618d34461be8558a4c75d7d5b452",
+                "meanAbsoluteRgbError": 0.567626953125,
+                "maxAbsoluteRgbError": 52
+              },
+              {
+                "index": 1,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 3,
+                  "sceneTime": 0.25
+                },
+                "rgbaSha": "473153aa0f2a845ed3ccab61756b136b4b33eb1411fbd258a0247b91818136a0",
+                "meanAbsoluteRgbError": 0.6242268880208334,
+                "maxAbsoluteRgbError": 24
+              },
+              {
+                "index": 2,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 4,
+                  "sceneTime": 0.3333333432674408
+                },
+                "rgbaSha": "67165f3c7fd2912bcd742947f7bedf1f740abc7741e9af585db9dab1418b3d7d",
+                "meanAbsoluteRgbError": 0.6306627061631944,
+                "maxAbsoluteRgbError": 22
+              }
+            ]
+          }
+        ],
+        "retainedServiceFiles": [
+          {
+            "name": "01a59c2a-4109-4a72-9da2-4b420ed08096.png",
+            "sha": "47cce502900d9433b556534246865d17396986854f334707f00b0e67608c9092"
+          },
+          {
+            "name": "1c52a223-8633-4f3d-89cc-0e1594f3905b.mp4",
+            "sha": "b900b9d2a38da93990b65aaa7d2f86e2a52cd076d7a0af36b7b65a16a966e23b"
+          },
+          {
+            "name": "5932048e-7d7d-4593-bf67-32db193b2288.mp4",
+            "sha": "ad3aa530d1f3c7d8ab2a4fba97dd39a8114d452207f34d97b9850f6a4cb10289"
+          },
+          {
+            "name": "97d6264a-7d34-483d-8dce-b85fbf83d905.png",
+            "sha": "2e0e9f60aae60e1972bdd695ff51d5df38fc6dd5274f0eef99389b9b8d4b1c33"
+          },
+          {
+            "name": "a48271bc-6e44-4327-a8a2-ef019a15930d.png",
+            "sha": "2e0e9f60aae60e1972bdd695ff51d5df38fc6dd5274f0eef99389b9b8d4b1c33"
+          }
+        ],
+        "cleanupFailure": {
+          "path": ".cache/bouncing-native-formulas-20261024/public-formula1-final/cleanup-failure.png",
+          "diagnostics": {
+            "initializations": 9,
+            "uploadBytes": 128008192,
+            "draws": 30,
+            "recoveries": 0,
+            "active": false,
+            "owned": true,
+            "ready": true,
+            "updates": 3,
+            "uploaded": 1000000,
+            "cleanupPending": true,
+            "retainedBytes": 32004655
+          },
+          "blockedReleases": 2
+        },
+        "cleanupRetry": {
+          "path": ".cache/bouncing-native-formulas-20261024/public-formula1-final/cleanup-retry.png"
+        },
+        "pageErrors": [],
+        "remainingProcesses": 0
+      }
+    },
+    {
+      "preset": "bouncing1_formula2",
+      "original": {
+        "particleCount": 1000000,
+        "sourceMember": "data/Bouncing/bouncing1_formula2.json",
+        "sourceSha256": "b820c544a0186df77a1eadd5117054e965ff8832a9b8f2873bb9aad5eceb191b",
+        "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d",
+        "seconds": 13.983917708043009,
+        "exit": 0,
+        "reaped": true,
+        "processGroupExists": false,
+        "timedOut": false,
+        "userFilesBefore": {
+          "scene_access_policies_cache.json": {
+            "exists": true,
+            "sha256": "2c67a981007224e24b262ef8c04b181ff88769afbafb833aa5f3bb62cea8a294"
+          },
+          "license.dat": {
+            "exists": false,
+            "sha256": null
+          },
+          "settings/settings.conf": {
+            "exists": true,
+            "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+          }
+        },
+        "userFilesAfter": {
+          "scene_access_policies_cache.json": {
+            "exists": true,
+            "sha256": "25b60141dbda2050a029fea581d7c031ca560e6b7214a58825101c84124b221a"
+          },
+          "license.dat": {
+            "exists": false,
+            "sha256": null
+          },
+          "settings/settings.conf": {
+            "exists": true,
+            "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+          }
+        }
+      },
+      "userSettingsAndLicenseUnchanged": true,
+      "policyCacheChangedByNormalOriginalInitialization": true,
+      "product": {
+        "frames": 62,
+        "updates": 60,
+        "differentRgbPixels": 0,
+        "differentFinalAlphaPixels": 0,
+        "cameraMatricesExact": true,
+        "seedRuns": [
+          {
+            "elapsedMs": 3796.100000023842,
+            "ok": true,
+            "diagnostics": {
+              "count": 1000000,
+              "generated": 1000000,
+              "outerAttempts": 1801917,
+              "centerFallbacks": 0,
+              "work": 132118732,
+              "workLimit": 256000000,
+              "randomState48": "233110665673636"
+            }
+          }
+        ],
+        "ownerDiagnostics": {
+          "initializations": 1,
+          "uploadBytes": 16000000,
+          "draws": 62,
+          "recoveries": 0,
+          "active": false,
+          "owned": false,
+          "ready": false,
+          "updates": 0,
+          "uploaded": 0,
+          "cleanupPending": false,
+          "retainedBytes": 0
+        },
+        "generationDiagnostics": {
+          "browserGpuContexts": 0,
+          "particleReadbacks": 0,
+          "particleUploadBytes": 16000000,
+          "updates": 60,
+          "released": true,
+          "retainedSeedBytes": 0
+        },
+        "elapsedMs": 7764.965667,
+        "processFamily": {
+          "rootPid": 70661,
+          "samples": 22,
+          "observedProcesses": 39,
+          "maxConcurrentProcesses": 15,
+          "sampledPeakRssKiB": 2697104,
+          "observedCpuMs": 14040,
+          "samplingErrors": []
+        },
+        "pageErrors": [],
+        "remainingNativeProcesses": 0
+      },
+      "component": {
+        "states": [
+          {
+            "stateDifferent": 0,
+            "frame": 1,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 0
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 3,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 1
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 4,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 2
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 7,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 5
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 8,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 6
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 12,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 10
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 23,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 21
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 32,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 30
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 38,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 36
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 53,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 51
+          },
+          {
+            "stateDifferent": 0,
+            "frame": 62,
+            "opaqueAlphaFailures": 0,
+            "rgbPixels": 0,
+            "stateComponents": 4000000,
+            "updates": 60
+          }
+        ],
+        "totalFloat32Components": 44000000,
+        "artworkFrames": 62,
+        "differentRgbPixels": 0,
+        "stateReadbackBytes": 176000000,
+        "rejectedRequests": 16,
+        "disposed": true,
+        "referencesStable": true,
+        "preparationMs": 5026.228417,
+        "nativeMs": 1136.464583,
+        "processFamily": {
+          "rootPid": 71050,
+          "samples": 5,
+          "observedProcesses": 8,
+          "maxConcurrentProcesses": 4,
+          "sampledPeakRssKiB": 922784,
+          "observedCpuMs": 440.00000000000045,
+          "samplingErrors": []
+        }
+      },
+      "publicExport": {
+        "checks": 85,
+        "sourceStable": true,
+        "images": [
+          {
+            "path": ".cache/bouncing-native-formulas-20261024/public-formula2-final/current.png",
+            "width": 258,
+            "height": 194,
+            "rgbaSha": "35d26566e501456446f35a205e0244cd3fb06e01393fbaedd13875414489c81d",
+            "checkpoint": {
+              "model": "source-bouncing-clock-1.7.8",
+              "simulationUpdates": 3,
+              "sceneTime": 0.10000000894069672
+            },
+            "rawNativeSha": "3e071018c720ea24a500324dbded7abc571c0c7d3c81991cc9cafa68b8013427"
+          }
+        ],
+        "videos": [
+          {
+            "start": "current",
+            "path": ".cache/bouncing-native-formulas-20261024/public-formula2-final/current.mp4",
+            "quality": "high",
+            "referencePath": ".cache/bouncing-native-formulas-20261024/public-formula2-final/current-profile-reference.mp4",
+            "referenceMetadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "decodedOriginalProfileExact": true,
+            "metadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "warmup": {
+              "model": "source-bouncing-clock-1.7.8",
+              "simulationUpdates": 4,
+              "sceneTime": 0.0833333358168602
+            },
+            "frames": [
+              {
+                "index": 0,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 5,
+                  "sceneTime": 0.1666666716337204
+                },
+                "rgbaSha": "2a6019cb8ca34ad90d4e8cbcc3c9d492e3ae9d85d903b40274ac041fb702cc3f",
+                "meanAbsoluteRgbError": 0.7997639973958334,
+                "maxAbsoluteRgbError": 68
+              },
+              {
+                "index": 1,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 6,
+                  "sceneTime": 0.25
+                },
+                "rgbaSha": "63e4a749340daf30772fe6d22adbedb5fa92c6390508ce670b82e9a77f4e0019",
+                "meanAbsoluteRgbError": 1.0487467447916667,
+                "maxAbsoluteRgbError": 70
+              },
+              {
+                "index": 2,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 7,
+                  "sceneTime": 0.3333333432674408
+                },
+                "rgbaSha": "5e751c1f4941126735b68870225da6023e48a8d372a2a2e0b72c1b11982ae856",
+                "meanAbsoluteRgbError": 1.0414021809895833,
+                "maxAbsoluteRgbError": 72
+              }
+            ]
+          },
+          {
+            "start": "seed",
+            "path": ".cache/bouncing-native-formulas-20261024/public-formula2-final/seed.mp4",
+            "quality": "production",
+            "referencePath": ".cache/bouncing-native-formulas-20261024/public-formula2-final/seed-profile-reference.mp4",
+            "referenceMetadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "decodedOriginalProfileExact": true,
+            "metadata": {
+              "width": 256,
+              "height": 192,
+              "pix_fmt": "yuvj444p",
+              "color_range": "pc",
+              "color_space": "bt709",
+              "r_frame_rate": "12/1",
+              "nb_read_frames": "3"
+            },
+            "warmup": {
+              "model": "source-bouncing-clock-1.7.8",
+              "simulationUpdates": 1,
+              "sceneTime": 0.0833333358168602
+            },
+            "frames": [
+              {
+                "index": 0,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 2,
+                  "sceneTime": 0.1666666716337204
+                },
+                "rgbaSha": "a1c569ecc14505fbd5092900c26c1a1e86c539158fda4246e8e544c3c0320e82",
+                "meanAbsoluteRgbError": 0.4162462022569444,
+                "maxAbsoluteRgbError": 76
+              },
+              {
+                "index": 1,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 3,
+                  "sceneTime": 0.25
+                },
+                "rgbaSha": "682f35c3cd998b0807e4d942e99452c1b3586f1803430f020a1cde88c2bc3757",
+                "meanAbsoluteRgbError": 0.5286593967013888,
+                "maxAbsoluteRgbError": 33
+              },
+              {
+                "index": 2,
+                "checkpoint": {
+                  "model": "source-bouncing-clock-1.7.8",
+                  "simulationUpdates": 4,
+                  "sceneTime": 0.3333333432674408
+                },
+                "rgbaSha": "65edd8969b20c9707fcf9a53893e30be0813b98ad8ba457e6ec47724b4b0bc08",
+                "meanAbsoluteRgbError": 0.5122138129340278,
+                "maxAbsoluteRgbError": 27
+              }
+            ]
+          }
+        ],
+        "retainedServiceFiles": [
+          {
+            "name": "5cf16cb2-e1f3-47d3-a4bb-3f616c98a020.png",
+            "sha": "23143930a877659105c134365f3edf791956da80a9702ff5ba2978e2824c1ef7"
+          },
+          {
+            "name": "68f87d2c-2b01-47df-9cc3-5c5b90184dd5.png",
+            "sha": "348f9410789dacafa487773bf16ea60a9956af1051f4cf10a934b5a438d29593"
+          },
+          {
+            "name": "91c5fcda-1c82-41f6-976d-b60dcc08557d.mp4",
+            "sha": "5b7cbf6834681de0e159b2189bcd8367701ff21bbb18d613345a711b1403a66e"
+          },
+          {
+            "name": "df80a844-8e27-46b8-9cae-54c434324152.mp4",
+            "sha": "d2202c21d903412b9db2f05a60f837be2cd484d35a23f0159737465f73299c3e"
+          },
+          {
+            "name": "eef4a1ab-7a93-40e1-95dc-29ac114d39bf.png",
+            "sha": "23143930a877659105c134365f3edf791956da80a9702ff5ba2978e2824c1ef7"
+          }
+        ],
+        "cleanupFailure": {
+          "path": ".cache/bouncing-native-formulas-20261024/public-formula2-final/cleanup-failure.png",
+          "diagnostics": {
+            "initializations": 9,
+            "uploadBytes": 128008192,
+            "draws": 29,
+            "recoveries": 0,
+            "active": false,
+            "owned": true,
+            "ready": true,
+            "updates": 3,
+            "uploaded": 1000000,
+            "cleanupPending": true,
+            "retainedBytes": 32004655
+          },
+          "blockedReleases": 2
+        },
+        "cleanupRetry": {
+          "path": ".cache/bouncing-native-formulas-20261024/public-formula2-final/cleanup-retry.png"
+        },
+        "pageErrors": [],
+        "remainingProcesses": 0
+      }
+    }
+  ],
+  "initializationFix": {
+    "previousWorkLimit": 64000000,
+    "workLimit": 256000000,
+    "arrayBytesLimit": 134217728,
+    "originalAttemptLimitUnchanged": 512,
+    "priorFailureReport": ".cache/bouncing-native-formulas-20261024/product-formula1/report.json"
+  },
+  "encoderFix": {
+    "profile": "mathart",
+    "qualities": [
+      "low",
+      "medium",
+      "high",
+      "production"
+    ],
+    "originalDefault": "high",
+    "publicQualitiesTested": [
+      "high",
+      "production"
+    ],
+    "serverQualitiesTested": [
+      "low",
+      "medium",
+      "high",
+      "production"
+    ],
+    "independentOriginalProfileDecodedRgbExact": true
+  },
+  "seedBenchmark": {
+    "summaries": [
+      {
+        "fixture": "bouncing1_formula1",
+        "temperature": "cold-first-task",
+        "particles": 1000000,
+        "medianElapsedMs": 4904.63625,
+        "medianCpuMs": 4924.856,
+        "maxCumulativePeakRssKiB": 77936,
+        "diagnostics": {
+          "count": 1000000,
+          "generated": 1000000,
+          "outerAttempts": 1901318,
+          "centerFallbacks": 0,
+          "work": 115954698,
+          "workLimit": 256000000,
+          "randomState48": "32996022181748"
+        }
+      },
+      {
+        "fixture": "bouncing1_formula1",
+        "temperature": "warm-fresh-task",
+        "particles": 1000000,
+        "medianElapsedMs": 5027.462667000001,
+        "medianCpuMs": 5040.608,
+        "maxCumulativePeakRssKiB": 94432,
+        "diagnostics": {
+          "count": 1000000,
+          "generated": 1000000,
+          "outerAttempts": 1901318,
+          "centerFallbacks": 0,
+          "work": 115954698,
+          "workLimit": 256000000,
+          "randomState48": "32996022181748"
+        }
+      },
+      {
+        "fixture": "bouncing1_formula2",
+        "temperature": "cold-first-task",
+        "particles": 1000000,
+        "medianElapsedMs": 4445.561875,
+        "medianCpuMs": 4467.547,
+        "maxCumulativePeakRssKiB": 78160,
+        "diagnostics": {
+          "count": 1000000,
+          "generated": 1000000,
+          "outerAttempts": 1801917,
+          "centerFallbacks": 0,
+          "work": 132118732,
+          "workLimit": 256000000,
+          "randomState48": "233110665673636"
+        }
+      },
+      {
+        "fixture": "bouncing1_formula2",
+        "temperature": "warm-fresh-task",
+        "particles": 1000000,
+        "medianElapsedMs": 4532.731166,
+        "medianCpuMs": 4545.97,
+        "maxCumulativePeakRssKiB": 94432,
+        "diagnostics": {
+          "count": 1000000,
+          "generated": 1000000,
+          "outerAttempts": 1801917,
+          "centerFallbacks": 0,
+          "work": 132118732,
+          "workLimit": 256000000,
+          "randomState48": "233110665673636"
+        }
+      }
+    ],
+    "measurement": "Three independent Node processes per fixture, each cold first task and warm new task. Module loading and fixture read excluded from elapsed/CPU; OS cumulative peak RSS includes those and preceding cold task. No children during task, so measured process equals process family. Cold does not mean flushed OS filesystem cache.",
+    "baseline": "Former64M work allowance rejects the full original formula request, so failed versus complete runs are not equivalent throughput baselines.",
+    "unmeasured": [
+      "Original JVM initialization cost",
+      "GPU upload/motion/render",
+      "Public replay and video export",
+      "Browser/driver/VRAM overhead",
+      "Agent token usage"
+    ]
+  },
+  "validation": {
+    "testFiles": 8,
+    "unitIntegrationTests": 182,
+    "serverEncoderProfileTests": 4,
+    "lifecycleChecks": 24,
+    "catalogGuards": {
+      "status": "passed",
+      "cases": [
+        {
+          "name": "bouncing1",
+          "member": "data/Bouncing/bouncing1.json",
+          "particleCount": 2000000,
+          "sourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+          "unchangedAccepted": true,
+          "changedBytesRejected": true,
+          "changedCountRejected": true
+        },
+        {
+          "name": "bouncing2",
+          "member": "data/Bouncing/bouncing2.json",
+          "particleCount": 5000000,
+          "sourceSha256": "9de55d50efb24bab3ced5ca17483256b782e916c9221a219e4df06e82b9e2537",
+          "unchangedAccepted": true,
+          "changedBytesRejected": true,
+          "changedCountRejected": true
+        },
+        {
+          "name": "bouncing1_formula1",
+          "member": "data/Bouncing/bouncing1_formula1.json",
+          "particleCount": 1000000,
+          "sourceSha256": "98f9fcfe70fd0e7e3b2030eb30a6ffdc9ab504cfebc3d0501c2f290a8731404f",
+          "unchangedAccepted": true,
+          "changedBytesRejected": true,
+          "changedCountRejected": true
+        },
+        {
+          "name": "bouncing1_formula2",
+          "member": "data/Bouncing/bouncing1_formula2.json",
+          "particleCount": 1000000,
+          "sourceSha256": "b820c544a0186df77a1eadd5117054e965ff8832a9b8f2873bb9aad5eceb191b",
+          "unchangedAccepted": true,
+          "changedBytesRejected": true,
+          "changedCountRejected": true
+        }
+      ],
+      "unknownRejected": true
+    },
+    "buildV2": "passed; Vite9.90s; existing large-chunk warning"
+  },
+  "artifactHashes": {
+    ".cache/bouncing-native-formulas-20261024/native-formula1/run.json": "a0cb6846677e06eb4f09e556cfcd0652ffb2c400e8a6b4d91996376d63e9c77b",
+    ".cache/bouncing-native-formulas-20261024/native-formula1/compile.json": "943f42fb7353fa1daf0f19eabc960fe8a0e4e95b9b65164e4b69d4c5e96c019b",
+    ".cache/bouncing-native-formulas-20261024/product-formula1-final/report.json": "6f8bfde78bfc07a0c2dfb1a0ca0e7968b845abd9950978f2322e81b280b81c01",
+    ".cache/bouncing-native-formulas-20261024/component-formula1-final/report.json": "0c938f63c5d362a32b70d3020aec918044097d9cd4f985d2ac87d399527368ce",
+    ".cache/bouncing-native-formulas-20261024/public-formula1-final/report.json": "a5005bae20c7a5e531556009bf2ddf482441fd308a1bb8622cff22e425e724c2",
+    ".cache/bouncing-native-formulas-20261024/native-formula2/run.json": "ca6f11ce940b1481944132fd3a8f79a066dd36611ad3872ceb397dccbb5d7f0b",
+    ".cache/bouncing-native-formulas-20261024/native-formula2/compile.json": "9ce867c2ec458b2e83713385621da9d609201c1abda8e39c80a4da7690154a89",
+    ".cache/bouncing-native-formulas-20261024/product-formula2-final/report.json": "e0baf5b9d57b6d8538d35777a94f86db7102237a7d9739441b8872fe697851de",
+    ".cache/bouncing-native-formulas-20261024/component-formula2-final/report.json": "95232ec88f6fcd7d6b9487aeb4fc9e996ab3cd5f6a9fddc16c5f2c5fb7076ae8",
+    ".cache/bouncing-native-formulas-20261024/public-formula2-final/report.json": "5b735c77ae62d227de8284f24c6a11256e1bef5315cdd16b9599169725570ece",
+    ".cache/bouncing-native-formulas-20261024/seed-cost.json": "6e0182f91dd8e1476b9fd91f0c86599f9c0d191aa99cae967150eb4f9899ef87",
+    ".cache/bouncing-native-formulas-20261024/lifecycle-final/report.json": "73c3922afb647d0051a122f2b13631004b85cbb3d6a755967f96cf6ee7933de5",
+    ".cache/bouncing-native-formulas-20261024/catalog-guards.json": "27ef1a4ed159f88b6833e0e516a41fba3d6c2f560eae33a60b0de93c90b032a4",
+    ".cache/bouncing-native-formulas-20261024/encoder-environment.json": "8ff4abcd4c56f67b8c3997eee18f766e77ae053a5a8fc46b0d28bc743cdef39d",
+    ".cache/bouncing-native-formulas-20261024/tests-final.log": "fa98d13f11c5afb55bf5d61af80ecc27cb6183128e2f39ba6a5c23325074a98e",
+    ".cache/bouncing-native-formulas-20261024/build-final.log": "865f355fa913653b1bdc35e3276e202462d9fdc15391fd5d05809723392fa9cc",
+    ".cache/bouncing-native-formulas-20261024/encoder-profile-tests.log": "a58bd6ccf7662f4554a3a4beecb1ba5337cf88107bfbe4c4cac0c711940d336a",
+    ".cache/bouncing-native-formulas-20261024/product-formula1/report.json": "14f37d7c5c74a37f29fff4eb617852486762aa9ae3e4c5f2555db96e3bb94fca",
+    ".cache/bouncing-native-formulas-20261024/public-formula1/report.json": "48ed5cd1d7c9b7add6d2abdb1cdc9aae87ead3773b6110cfc45b5f571cfd33ca",
+    ".cache/bouncing-native-formulas-20261024/public-formula1-profile/report.json": "f7013de874113523d5fe1b553999741d579f2207bf15c444ef9a64219e5656e5",
+    ".cache/bouncing-native-formulas-20261024/VideoRecorder.javap.txt": "52310bafac22c557d016bb3e70da8f243f4fa27593f4cfdd12c333ba2856b44f",
+    ".cache/bouncing-native-formulas-20261024/MathArt.javap.txt": "2bc833d2d377301ff21f99824631900bdb6b96f545bb90642745af28cd84d1b6",
+    ".cache/bouncing-native-formulas-20261024/MathArtConfig.javap.txt": "7e92071c10a9a23036bb2a47c6b064c5ec65028f638dda1e60e7aa8602d1c163"
+  },
+  "sourceHashes": {
+    "src/engine/sourceBouncingSeeds.ts": "c0ebe80129abacac4e714de0c1918b4704b977cf5547122613b33c7fce9770da",
+    "src/components/ExportDialog.tsx": "821828db2eaa49a9eea01bbc708db0c1a1a05ce4e451b7d2806caedbcea58bd6",
+    "scripts/benchmark-source-bouncing-seeds.mjs": "667979085f505af602be2f2e72e5c019245516b6b24bd4d447db8e6ef2754d8a",
+    "scripts/capture-source-bouncing-original.py": "ad6094e7610d4ab497208857f72cedd9a7c1b09ed5ebe4ae1ab7190a85396d2b",
+    "scripts/lib/source-bouncing-original.mjs": "91c2bbd5e52853ee93666029ede6da0cfc35187619bbf4aa97da8319e969916d",
+    "scripts/verify-source-bouncing-native-animation.mjs": "c56b9b3c02f8fea3e625380fb24394a31e6a6285c00ed3e1fe95d9a0121ad959",
+    "scripts/verify-source-bouncing-native-state.mjs": "98d2e5efc46fc1c72eb6ea8d24fa3d16c33307fd6eb4c3686790076fe7f2a21e",
+    "scripts/verify-source-bouncing-native-export.mjs": "04ef05aca2ec34885f6b5f90ba88a2ea071c735d5667e2c27951d20782e5958f",
+    "tests/fixtures/source-bouncing-native-animation/presets.json": "06bc4653f053b5792f7a4b6e450e3121e2d25a13ff886d10c6f5cf55537de8b5",
+    "server/index.mjs": "8b458df625138223865377f6ac44a59a0d1bc933b3c36b0ff559908f8e25186f",
+    "server/render/SourceCglRenderer.m": "cd99d49825227d0225ad2253267650f1f4a643dcc4a9b0512946ba80c2cc0f12",
+    "server/render/SourceCglBouncingState.h": "ca9bc7a476be97198dba40bb3093bb66e9d0c8fb618406f9d4f5cb5095e3ed4f"
+  },
+  "limits": [
+    "Each original preset: 60 fixed updates and 62 paused artwork redraws at 500x600, not original active-window or video equivalence.",
+    "Full artwork RGB is captured before normal branding; completed PNG alpha is checked separately. Normal license, policy and branding execution is unchanged.",
+    "Each public video: original full 1M particle preset, only recordDuration changed to 0.3s; 256x192 at12fps with three encoded frames plus one non-encoded warmup.",
+    "Independent original-profile encode uses the same installed FFmpeg and identical uploaded RGBA. It does not execute the original bundled video encoder. H.264 remains lossy.",
+    "Both independent encode and product omit transfer/primaries probe metadata under this FFmpeg build. Omission is retained; no sRGB transfer or primaries metadata persistence claim.",
+    "CPU/RSS sampling and seed-only cold/warm measurements have different scopes. No paired successful old64M baseline, original initialization CPU/RSS, GPU time, VRAM or token measurement.",
+    "Native mode remains opt-in; installed1.0 and final Apple Silicon package are not updated. Full Goal remains incomplete."
+  ]
+}

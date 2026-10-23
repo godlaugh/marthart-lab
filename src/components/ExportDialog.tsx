@@ -166,6 +166,8 @@ export function ExportDialog({
   const stoppableRecording=retainedRoots||retainedNumerical||retainedPerlin;
   const sharedRecordingFps=fixedRetained||mode==='perlin-recording';
   const fractalVideo=kind==='video'&&fractalFrames;
+  const sourceMp4=(fixedRetained||fractalVideo||sourceBouncing)&&format==='mp4';
+  const videoEncoding=sourceMp4?{profile:'mathart' as const,quality:recordingQuality}:{};
   const sourceQueueVideo=perlinFrames||fractalVideo||liveRecording;
   const assertRecordingOutput=(output:SceneOutput,clock:SourceRecordingClock,index:number)=>{
     if(retainedRoots){assertRootsLiveRecordingFrame(output,clock,index);return;}
@@ -290,7 +292,7 @@ export function ExportDialog({
             const frames=start.clock.completionReason==='animation-queue'?start.clock.encodedFrames:start.warmup.rootsLive!.recording!.complete?0:null;
             setSourceVideoFrames(frames??0);
             if(frames===0){if(stoppableRecording)return;throw new Error(t(fixedRetained?'队列在预热帧内已结束，没有可编码帧；请延长队列':'Perlin 队列在预热帧内已结束，没有可编码帧；请延长队列'));}
-            const session=await request('/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:videoWidth,height:videoHeight,fps,frames,format,...(fixedRetained?{inputWidth:recordingSize.width,inputHeight:recordingSize.height,...(format==='mp4'?{profile:'mathart',quality:recordingQuality}:{})}:{})})});
+            const session=await request('/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:videoWidth,height:videoHeight,fps,frames,format,...videoEncoding,...(fixedRetained?{inputWidth:recordingSize.width,inputHeight:recordingSize.height}:{})})});
             // Register before observing cancellation, including dialog unmount
             // while the server was accepting the create request.
             sessionRef.current=exportSessionCleanup.registerCreated(session.id);
@@ -367,7 +369,7 @@ export function ExportDialog({
         const session = await request("/api/exports", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps, frames, format,...(bouncing?{inputWidth:bouncing.width,inputHeight:bouncing.height}:{}),...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height,...(format==='mp4'?{profile:'mathart',quality:recordingQuality}:{})}:{}) }),
+          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps, frames, format,...videoEncoding,...(bouncing?{inputWidth:bouncing.width,inputHeight:bouncing.height}:{}),...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height}:{}) }),
         });
         sessionRef.current = exportSessionCleanup.registerCreated(session.id);
         checkCancelled();
@@ -601,7 +603,7 @@ export function ExportDialog({
             {sourceFractal&&!recordingMode&&<label className="field"><span>{t('分形视频模式')}</span><select aria-label={t('分形视频模式')} disabled={working} value={fractalVideoMode} onChange={event=>setFractalVideoMode(event.target.value as 'duration'|'source'|'retained')}><option value="source">{t('按源完成条件录制')}</option><option value="duration">{t('按时长导出')}</option>{currentSourceRecording&&<option value="retained">{t('从上次完整应用的场景录制')}</option>}</select></label>}
             {sourcePerlin&&!recordingMode&&<label className="field"><span>{t('Perlin 视频模式')}</span><select aria-label={t('Perlin 视频模式')} disabled={working} value={perlinVideoMode} onChange={event=>setPerlinVideoMode(event.target.value as 'duration'|'source'|'retained')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源队列结束重放')}</option><option value="retained">{t('保留画布录制')}</option></select></label>}
             {sourceIterated&&<label className="field"><span>{t('迭代场景视频模式')}</span><select aria-label={t('迭代场景视频模式')} disabled={working} value={iteratedVideoMode} onChange={event=>setIteratedVideoMode(event.target.value as 'duration'|'source')}><option value="source">{t('按源完成条件录制')}</option><option value="duration">{t('按时长导出')}</option></select></label>}
-            {(fixedRetained||fractalVideo)&&format==='mp4'&&<label className="field"><span>{t('视频质量')}</span><select aria-label={t('视频质量')} disabled={working} value={recordingQuality} onChange={event=>setRecordingQuality(event.target.value as typeof recordingQuality)}><option value="low">{t('低')}</option><option value="medium">{t('中')}</option><option value="high">{t('高')}</option><option value="production">{t('制作级')}</option></select></label>}
+            {sourceMp4&&<label className="field"><span>{t('视频质量')}</span><select aria-label={t('视频质量')} disabled={working} value={recordingQuality} onChange={event=>setRecordingQuality(event.target.value as typeof recordingQuality)}><option value="low">{t('低')}</option><option value="medium">{t('中')}</option><option value="high">{t('高')}</option><option value="production">{t('制作级')}</option></select></label>}
             {sourceBouncing?<>
               <label className="field"><span>{t('弹跳录制起点')}</span><select aria-label={t('弹跳录制起点')} disabled={working} value={bouncingStart} onChange={event=>setBouncingStart(event.target.value as 'current'|'seed')}><option value="seed">{t('重建初始状态')}</option><option value="current">{t('当前状态（本地扩展）')}</option></select></label>
               <p className="muted" data-testid="source-bouncing-export-duration">{t('源录制时长（秒）')}：{scene.bouncingSource!.recordDuration}。{t('修改场景的源录制时长可改变停止条件。')}</p>

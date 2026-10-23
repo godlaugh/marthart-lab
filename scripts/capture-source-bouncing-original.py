@@ -14,10 +14,7 @@ import subprocess
 import time
 import zipfile
 
-PINS = {
-    'bouncing1': ('Bouncing/bouncing1.json', 2000000, '2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480'),
-    'bouncing2': ('Bouncing/bouncing2.json', 5000000, '9de55d50efb24bab3ced5ca17483256b782e916c9221a219e4df06e82b9e2537'),
-}
+PINS = json.loads((Path(__file__).resolve().parents[1] / 'tests/fixtures/source-bouncing-native-animation/presets.json').read_text())
 JAR_SHA = 'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018'
 HOST_SHA = 'c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e'
 PROBE_SHA = '6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d'
@@ -39,15 +36,16 @@ def main():
     args = parser.parse_args()
     app = (args.app_contents / 'app').resolve()
     jdk, host, data, out = [p.resolve() for p in [args.java_home, args.host, args.app_data, args.output]]
-    relative, count, source_sha = PINS[args.preset]
+    preset = PINS[args.preset]
+    member, count, source_sha = [preset[k] for k in ['member', 'particleCount', 'sourceSha256']]
     jar = app / 'MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar'
-    source = app / 'resources/data' / relative
+    source = app / 'resources' / member
     probe = Path(__file__).resolve().parents[1] / 'tests/fixtures/source-bouncing-native-animation/NativeSceneProbe.java'
     require(sha(jar.read_bytes()) == JAR_SHA, 'Original JAR changed')
     require(sha(host.read_bytes()) == HOST_SHA, 'Offscreen host changed; review before running')
     require(sha(probe.read_bytes()) == PROBE_SHA, 'Diagnostic probe changed; review before running')
     with zipfile.ZipFile(jar) as archive:
-        original = archive.read('data/' + relative)
+        original = archive.read(member)
     require(sha(original) == source_sha and original == source.read_bytes(), 'Original preset identity mismatch')
     require(json.loads(original)['settings']['particle_count'] == count, 'Original particle count mismatch')
     # Eleven complete padded states plus ten active/paused pairs, images and
@@ -95,7 +93,7 @@ def main():
         group_exists = True
     except ProcessLookupError:
         group_exists = False
-    report = {'case': args.preset, 'particleCount': count, 'sourceMember': 'data/' + relative,
+    report = {'case': args.preset, 'particleCount': count, 'sourceMember': member,
         'source': str(source), 'sourceSha256': source_sha, 'jarSha256': JAR_SHA, 'hostSha256': HOST_SHA, 'probeSha256': PROBE_SHA,
         'scope': 'Original methods and unmodified preset; three initial paused frames and 60 fixed-60-fps updates, each followed by a paused redraw. Eleven complete state readbacks, full 500x600 artwork before normal branding, normal license/policy initialization, no AWT windows.',
         'command': command, 'exit': process.returncode, 'stdout': stdout, 'stderr': stderr, 'seconds': time.monotonic() - started,

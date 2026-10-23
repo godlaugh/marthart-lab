@@ -1,0 +1,22 @@
+{
+  "bouncing1": {
+    "member": "data/Bouncing/bouncing1.json",
+    "particleCount": 2000000,
+    "sourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480"
+  },
+  "bouncing2": {
+    "member": "data/Bouncing/bouncing2.json",
+    "particleCount": 5000000,
+    "sourceSha256": "9de55d50efb24bab3ced5ca17483256b782e916c9221a219e4df06e82b9e2537"
+  },
+  "bouncing1_formula1": {
+    "member": "data/Bouncing/bouncing1_formula1.json",
+    "particleCount": 1000000,
+    "sourceSha256": "98f9fcfe70fd0e7e3b2030eb30a6ffdc9ab504cfebc3d0501c2f290a8731404f"
+  },
+  "bouncing1_formula2": {
+    "member": "data/Bouncing/bouncing1_formula2.json",
+    "particleCount": 1000000,
+    "sourceSha256": "b820c544a0186df77a1eadd5117054e965ff8832a9b8f2873bb9aad5eceb191b"
+  }
+}

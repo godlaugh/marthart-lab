@@ -4,7 +4,10 @@ import {createSourceBouncingSampler} from './sourceBouncingSamplers';
 import type {SourceBouncingBoundary,SourceBouncingUpdate} from './sourceBouncingGpu';
 
 const F=Math.fround;
-export const SOURCE_BOUNCING_SEED_LIMITS=Object.freeze({bytes:128*1024*1024,work:64_000_000});
+// A complete packaged 1M FORMULA preset exceeds the former 64M work limit.
+// Keep a finite whole-initialization allowance (including predicate AST work),
+// independent of the packed-state byte bound and original 512-attempt rules.
+export const SOURCE_BOUNCING_SEED_LIMITS=Object.freeze({bytes:128*1024*1024,work:256_000_000});
 export interface SourceBouncingSeedOptions {
  readonly isCancelled?:()=>boolean;
  /** Optional smaller execution budget, never a change to source attempt limits. */
