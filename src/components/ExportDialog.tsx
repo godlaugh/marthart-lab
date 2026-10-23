@@ -236,7 +236,7 @@ export function ExportDialog({
         const captured=await currentPausedCapture.capture({width,height},pausedImageScale);
         checkCancelled();
         if(captured.type!=='raster')throw new Error(t('暂停截图没有生成图像'));
-        const blob=sourceSurfaceLive||sourceNumericalLive?await encodeFormulaRaster(captured,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);
+        const blob=sourceSurfaceLive||sourceNumericalLive||captured.sourceCurrentImage?await encodeFormulaRaster(captured,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);
         checkCancelled();
         const url=service?(await request('/api/images',{method:'POST',headers:{'content-type':'image/png'},body:blob})).url:URL.createObjectURL(blob);
         checkCancelled();

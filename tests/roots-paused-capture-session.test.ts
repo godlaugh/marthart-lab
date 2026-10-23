@@ -54,6 +54,13 @@ function scene(mode:'density'|'point-cloud'='density'){
 }
 beforeEach(()=>{vi.restoreAllMocks();seen.ids=seen.points=seen.reads=seen.failDeleteId=seen.deleteFailures=0;seen.live.clear();seen.draws=[];seen.readFailure=undefined;});
 describe('same-instance paused capture',()=>{
+ it('retains the primary formula frame through offscreen capture and rejects stale annotation edits',()=>{
+  const s=scene();s.formulas={layout:'source-surface-centered-v1',main:{visible:true,x:0,y:150,scale:.25,color:'#ffffff',anchor:'center',latex:'x^2'},additional:[]};
+  const owner=new RootsNativePresentationSession(),before=owner.generate(s,primary),expected=structuredClone(before.formulaPresentation);
+  before.formulaPresentation!.labels[0].latex='consumer mutation';const result=owner.capturePaused(s,capture(19,15));
+  expect(result.capture.formulaPresentation).toEqual(expected);expect(result.preview.formulaPresentation).toEqual(expected);expect(result.capture.formulaPresentation).toMatchObject({primaryLogicalHeight:13});
+  s.formulas.main.latex='changed';expect(()=>owner.capturePaused(s,capture())).toThrow(/预览/);owner.reset();
+ });
  it('observes retained completed identity without mutation and treats malformed queries as unknown',()=>{
   const owner=new RootsNativePresentationSession(),s=scene();
   expect(owner.matchesCompletedPrimary(s,primary)).toBe(false);owner.generate(s,primary);const before=owner.diagnostics();

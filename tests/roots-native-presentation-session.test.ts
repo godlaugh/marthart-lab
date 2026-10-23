@@ -49,6 +49,16 @@ function scene(){
 function raster(output:SceneOutput){if(output.type!=='raster')throw Error('Expected raster');return output;}
 beforeEach(()=>{observation.points=[];observation.readbacks=observation.clears=observation.cloudDraws=observation.cloudClear=observation.cloudFade=observation.cloudReadbacks=0;observation.disposeFailures=0;});
 describe('native Roots stream and presentation ownership',()=>{
+ it('binds source formula offsets to the producing viewport and preserves authored legacy layout',()=>{
+  const s=scene();s.formulas={layout:'source-surface-centered-v1',main:{visible:true,x:0,y:150,scale:.25,color:'#ffffff',anchor:'center',latex:'x^2'},additional:[]};
+  const owner=new RootsNativePresentationSession();
+  const output=owner.generate(s,{...ctx,rootsViewport:{logicalWidth:17,logicalHeight:13,referenceLogicalHeight:486,target:'offscreen'}});
+  expect(output.formulaPresentation).toEqual({layout:'source-surface-centered-v1',primaryLogicalHeight:486,labels:[{...s.formulas.main,id:'main-equation'}]});
+  expect(output.rootsColor?.toneBackend).toBe('webgl2');
+  s.formulas={referenceWidth:1280,referenceHeight:720,main:{visible:true,x:640,y:510,scale:.625,color:'#ffffff',latex:'authored'},additional:[]};
+  const legacy=owner.generate(s,ctx);expect(legacy.formulaPresentation).toMatchObject({referenceWidth:1280,referenceHeight:720,labels:[{latex:'authored',scale:.625}]});
+  expect(legacy.formulaPresentation).not.toHaveProperty('layout');owner.reset();
+ });
  it('produces raw source float XYZ/metric without legacy geometry or float-overflow filtering',()=>{
   const arrival=prepareRootsNativeArrival('t2_imag');
   expect(arrival([1,2],{t2:[.2,.3]})).toEqual({kind:'point',values:[1,2,Math.fround(.3),Math.fround(.3)]});

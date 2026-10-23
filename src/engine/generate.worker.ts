@@ -1,3 +1,4 @@
+import {resolveFormulaContent} from './formulas';
 import {planFractalFreshRecording} from './sourceFractalRecording';
 import {planPerlinFreshRecording} from './sourcePerlinRecording';
 import { definition } from "../scenes";
@@ -189,7 +190,8 @@ self.onmessage = (
       if(domain&&(source.scene.kind!=='domain'||!temporalSession.sourceDomain.matchesCompletedPrimary(source.scene,source.context)))throw Error('域着色当前帧截图对应的实时主预览已过期');
       // Source scenes inherit parent density. Native render-buffer rounding can make
       // actual physical base dimensions differ from the user's requested size.
-      const currentBase=fractal||domain?prepareSourcePausedCaptureSize({width,height},domain?source.context.domainLive?.viewport?.pixelDensity??NaN:source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS):undefined;
+      const rootsFormulas=event.data.operation==='roots-paused-capture'&&resolveFormulaContent(source.scene).labels.length>0;
+      const currentBase=rootsFormulas?{width,height,logicalWidth:width,logicalHeight:height,density:1}:fractal||domain?prepareSourcePausedCaptureSize({width,height},domain?source.context.domainLive?.viewport?.pixelDensity??NaN:source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS):undefined;
       const base=currentBase??(perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height});
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
       if(upscale||currentBase)validateRasterRequest({time:0,quality:'export',width:upscale?.width??base.width,height:upscale?.height??base.height});

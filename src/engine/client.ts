@@ -1,3 +1,6 @@
+import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
+import {rootsFormulaViewport} from './rootsFormulaPresentation';
+import type {SourceCameraViewport} from './sourceCamera';
 import {validSourcePerlinLiveOutput} from './sourcePerlinResponse';
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {SourceSurfaceRecordingLease} from './sourceSurfaceRecordingLease';
@@ -29,17 +32,19 @@ import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 type FormulaOutputContract =
  |{kind:'optional'}
  |{kind:'raster'}
+ |{kind:'source-raster';layout:'source-surface-centered-v1';viewport:SourceCameraViewport}
  |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
-function generationFormulaContract(scene:SceneDocument):FormulaOutputContract {
+function generationFormulaContract(scene:SceneDocument,context:GenerationInput):FormulaOutputContract {
+ if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesSourceSurfaceGeometry(scene)||scene.formulas?.layout==='source-surface-centered-v1'&&usesSourceCenteredFormulaLayout(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
  return{kind:usesSourceFractal(scene)?'raster':'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
  try{
-  if(!output||contract.kind==='raster'&&output.type!=='raster'||contract.kind==='source-geometry'&&output.type!=='geometry')return false;
+  if(!output||(contract.kind==='raster'||contract.kind==='source-raster')&&output.type!=='raster'||contract.kind==='source-geometry'&&output.type!=='geometry')return false;
   if(output.formulaPresentation===undefined)return contract.kind==='optional';
-  output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,output.sourceCameraFrame?.viewport);
-  return contract.kind!=='source-geometry'||output.formulaPresentation.layout===contract.layout;
+  output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
+  return contract.kind!=='source-geometry'&&contract.kind!=='source-raster'||output.formulaPresentation.layout===contract.layout;
  }catch{return false;}
 }
 type RasterRecordingResponse=
@@ -369,7 +374,7 @@ export class Generator {
         return;
       }
       if (data.operation === 'generate-progress') {
-        if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
+        if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
         if(p.operation==='generate'&&p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){this.invalidate(new Error('Perlin 实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){this.invalidate(new Error('曲面实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.domain&&!validDomainOutput(data.output,p.domain,p.context)){this.invalidate(new Error('域着色实时进度响应身份或状态不匹配'));return;}
@@ -397,7 +402,7 @@ export class Generator {
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
       else if (p.operation === 'generate' && data.operation === 'generate') {
-        if(!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
+        if(!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
         if(p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){const error=new Error('Perlin 实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){const error=new Error('曲面实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.domain&&!validDomainOutput(data.output,p.domain,p.context)){const error=new Error('域着色实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
@@ -412,6 +417,15 @@ export class Generator {
           if(!paired){const error=new pausedCaptureContracts[p.operation].Error('Perlin 当前帧截图响应身份、状态或尺寸不匹配',false);p.reject(error);this.invalidate(error);return;}
         }
         if(p.operation==='domain-paused-capture'&&(!p.captureSize||!validDomainCapture(data.result,p.source,p.size,p.scale,p.captureSize))){const error=new pausedCaptureContracts[p.operation].Error('域着色当前帧截图响应身份、状态或尺寸不匹配',false);p.reject(error);this.invalidate(error);return;}
+        if(p.operation==='roots-paused-capture'){
+          const before=p.source.output.formulaPresentation,contract=generationFormulaContract(p.source.scene,p.source.context);
+          const {capture,preview}=data.result??{};
+          const image=capture?.type==='raster'?capture.sourceCurrentImage:undefined;
+          const ordered=!before?.labels.length||capture?.type==='raster'&&capture.width===p.size.width&&capture.height===p.size.height&&image?.model==='local-current-numerical-snapshot'&&image.stage==='base-before-formulas'&&image.scale===p.scale&&image.baseSize?.[0]===capture.width&&image.baseSize?.[1]===capture.height&&!capture.rootsPausedImage;
+          if(!ordered||!validOutputFormulas(capture,contract)||!validOutputFormulas(preview,contract)||JSON.stringify(capture.formulaPresentation)!==JSON.stringify(before)||JSON.stringify(preview.formulaPresentation)!==JSON.stringify(before)){
+            const error=new pausedCaptureContracts[p.operation].Error('复根截图公式与已完成的预览帧不匹配',false);p.reject(error);this.invalidate(error);return;
+          }
+        }
         if(p.operation==='fractal-paused-capture'&&(!p.captureSize||!validFractalCapture(data.result,p.source.output,p.size,p.scale,p.captureSize))){const error=new pausedCaptureContracts[p.operation].Error('分形当前帧截图响应身份、状态或尺寸不匹配',false);p.reject(error);this.invalidate(error);return;}
         if(data.id===this.currentInputId)this.completed={...p.source,id:data.id,output:data.result.preview};
         p.resolve(data.result);

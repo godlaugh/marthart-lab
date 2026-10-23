@@ -1,3 +1,5 @@
+import {formulaPresentation} from './formulas';
+import {rootsFormulaViewport} from './rootsFormulaPresentation';
 import type {GenerateContext,RootsProgress,SceneDocument,SceneOutput} from '../types';
 import {GenerationCleanupState,withGenerationCleanup} from './generationCleanup';
 import {RootsMathSession,type RootsMathJob} from './rootsMathJob';
@@ -7,7 +9,7 @@ import {createRootsNativeProgress,RootsNativePointReader} from './rootsNativePoi
 import {prepareRootsDensityColor,rootsDensityScale,type RootsMetricColorPlan} from './rootsDensityColor';
 import {prepareRootsProjection,type PreparedRootsProjection} from './rootsProjection';
 import {RootsNativeDensityDisplay} from './rootsNativeDisplay';
-import {rootsNativeDensityGpuBytes} from './rootsNativeDensityGpu';
+import {rootsNativeDensityGpuBytes,rootsNativeToneGpuBytes} from './rootsNativeDensityGpu';
 import {rootsNativeInkViewBytes} from './rootsNativeInk';
 import {RootsNativePointCloudGpu,rootsNativePointCloudGpuBytes} from './rootsNativePointCloudGpu';
 import {RootsPointCloudRing,ROOTS_POINT_CLOUD_APPEND_LIMIT,ROOTS_POINT_CLOUD_DEFAULT_BYTES} from './rootsPointCloudRing';
@@ -157,7 +159,7 @@ export class RootsNativePresentationSession {
  }
  private displayPeak(plan:PreparedRootsProjection):number {
   return plan.mode==='density'
-   ?rootsNativeDensityGpuBytes(plan.physicalWidth,plan.physicalHeight)+rootsNativeInkViewBytes(plan.physicalWidth,plan.physicalHeight,4)-plan.physicalWidth*plan.physicalHeight*16
+   ?rootsNativeDensityGpuBytes(plan.physicalWidth,plan.physicalHeight)+rootsNativeInkViewBytes(plan.physicalWidth,plan.physicalHeight,4)-plan.physicalWidth*plan.physicalHeight*16+rootsNativeToneGpuBytes(plan.physicalWidth,plan.physicalHeight)
    :rootsNativePointCloudGpuBytes(plan.physicalWidth,plan.physicalHeight);
  }
  private admitMemory(plan:PreparedRootsProjection,mathBytes:number,extraBytes=0,additionalTarget?:PreparedRootsProjection,pendingBytes=this.pending?.retainedBytes??0){
@@ -333,9 +335,9 @@ export class RootsNativePresentationSession {
    ,...(cameraTimeline.model==='roots-scene-sequence-v1'?[pending?'渐变按动作顺序及 active/raw 两次更新执行；点批次只在每帧更新前产生，更新和显示分别排空队列，不模拟原版并发线程时序。初始颜色偏移编辑会重建回放。':'渐变按动作顺序及 active/raw 两次更新执行；到达点仍按本地采样时钟一次提交，没有模拟原版两次并发队列排空。初始颜色偏移编辑会重建回放。']:['仅相机队列保留旧行为；保存的渐变动作尚未启用。']));
   if(pending)warnings.push('批次队列保留未绘制的原始点，密度每次显示按基础预算及积压比例消费；求根完成不代表画面绘制完成。参考堆容量来自显式配置，不是原 JVM 实测值。');
   warnings.push(OPAQUE_FRAME_WARNING);
-  const output:RootsRasterOutput={type:'raster',dimension:2,cameraResolved:true,backend:'webgl2',width:c.width,height:c.height,pixels,rootsPresentation:facts,
+  const output:RootsRasterOutput={formulaPresentation:formulaPresentation(scene,rootsFormulaViewport(plan)),type:'raster',dimension:2,cameraResolved:true,backend:'webgl2',width:c.width,height:c.height,pixels,rootsPresentation:facts,
    roots:{...state,math:{model:'mathart-1.7.8-v1',solver:'aberth-ehrlich-power-substitution',sampling:'java-random48-partitioned',logicalWorkers:math.ensemble!.workers,replayOrder:'global-ordinal',residualMeasured:false,iterationLimitSamples:state.nonconvergentSamples}},
-   ...(densityFacts?{rootsColor:{version:color.version,inkKind:color.kind,metric:color.metric,submittedFinitePointCount:densityFacts.submittedFinitePointCount,exposureScale:rootsDensityScale({submittedFinitePointCount:densityFacts.submittedFinitePointCount,width:c.width,height:c.height}),accumulationPrecision:'float32' as const,toneBackend:'cpu' as const,paletteOffset:color.paletteOffset}}:{}),
+   ...(densityFacts?{rootsColor:{version:color.version,inkKind:color.kind,metric:color.metric,submittedFinitePointCount:densityFacts.submittedFinitePointCount,exposureScale:rootsDensityScale({submittedFinitePointCount:densityFacts.submittedFinitePointCount,width:c.width,height:c.height}),accumulationPrecision:'float32' as const,toneBackend:'webgl2' as const,paletteOffset:color.paletteOffset}}:{}),
    temporal:{time:c.time,windowStart:schedule.start,frames:Math.max(0,targetFrame+1),samplingFps:schedule.fps,recordedPoints:state.rootPoints,cacheHits:state.attemptedSamples===beforeSamples?1:0},stats:{samples:state.attemptedSamples,generated:state.rootPoints,invalid:state.invalidSamples+this.rawInvalid+this.displayInvalid,elapsedMs:performance.now()-started},warnings:[...warnings,...this.counterWarnings()]};
   const {pixels:_,warnings:ignoredOutputWarnings,...metadata}=output;
   const configuration:RootsPresentationConfiguration={...current.rootsPresentation!,camera:{...current.rootsPresentation!.camera,...plan.camera,center:[...plan.camera.center]}};
