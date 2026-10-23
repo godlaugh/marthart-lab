@@ -22,6 +22,16 @@ const rootsOutput:Extract<SceneOutput,{type:'raster'}>={...output,rootsPresentat
 function setup(){FakeWorker.instances=[];vi.stubGlobal('Worker',FakeWorker);return new Generator();}
 afterEach(()=>vi.unstubAllGlobals());
 describe('generation status protocol ownership',()=>{
+ it('retires a live roots worker after missing live facts, a forged progress frame or a producer error',async()=>{
+  for(const kind of ['generate','generate-progress','error'] as const){
+   const g=setup(),input={...ctx,rootsLive:{sessionId:'roots-live',clock:{paused:true},maximumWorkers:4}},promise=g.generate(scene(),input),failure=promise.catch(e=>e),worker=FakeWorker.instances[0],request=worker.messages[0];
+   if(kind==='error')worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,error:'producer crashed'});
+   else if(kind==='generate-progress')worker.emit({operation:'generate-progress',id:request.id,sessionId:request.sessionId,output:rootsOutput});
+   else worker.emit({operation:'generate',id:request.id,sessionId:request.sessionId,output:rootsOutput});
+   expect(await failure).toBeInstanceOf(Error);expect(worker.terminated).toBe(true);g.dispose();
+  }
+ });
+
  it('preserves source Samila primary height through direct Worker requests',async()=>{
   for(const height of [undefined,1080,0,NaN]){
    const g=setup(),s=createScene(definition('samila')),pending=g.generate(s,{...ctx,samilaPrimaryPixelHeight:height}),worker=FakeWorker.instances[0],request=worker.messages[0];

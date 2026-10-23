@@ -110,6 +110,13 @@ self.onmessage = (
       completed={...source,context:{...source.context,samilaLive:{...source.context.samilaLive,clock:{...source.context.samilaLive.clock,paused:event.data.paused}}}};
       send({operation:'samila-playback',id,sourceId:source.id,paused:event.data.paused});return;
     }
+    if(event.data.operation==='roots-playback'){
+      const source=completed,live=source?.context.rootsLive;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='roots'||!live||typeof event.data.paused!=='boolean'||!temporalSession.rootsNative.matchesCompletedPrimary(source.scene,source.context))throw Error('复根 播放控制对应的实时主预览已过期');
+      temporalSession.rootsNative.setPaused(event.data.paused,event.data.timestampMs);
+      completed={...source,context:{...source.context,rootsLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
+      send({operation:'roots-playback',id,sourceId:source.id,paused:event.data.paused});return;
+    }
     if(event.data.operation==='perlin-playback'){
       const source=completed,live=source?.context.perlinLive;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='perlin'||!live||typeof event.data.paused!=='boolean'||!temporalSession.sourcePerlin.matchesCompletedPrimary(source.scene,source.context))throw Error('Perlin 播放控制对应的实时主预览已过期');

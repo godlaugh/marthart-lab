@@ -403,7 +403,7 @@ export interface RootsProgress {
   math?: {
     model:'mathart-1.7.8-v1';solver:'aberth-ehrlich-power-substitution';
     sampling:'java-random48-partitioned';logicalWorkers:number;
-    replayOrder:'global-ordinal';residualMeasured:false;iterationLimitSamples:number;
+    replayOrder:'global-ordinal'|'worker-arrival';residualMeasured:false;iterationLimitSamples:number;
   };
   totalSamples:number;
   attemptedSamples:number;
@@ -419,6 +419,7 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  rootsLive?:import('./engine/rootsLive').RootsLiveFacts;
   perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveFacts;
   /** Geometry recording readback retains its producing Surface facts. */
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
@@ -543,6 +544,7 @@ export interface GenerateContext {
   /** Runtime owner token. Saved document identity can change on Save As without
    * replacing a live Roots instance; explicit Open supplies a fresh token. */
   rootsSessionId?:string;
+  rootsLive?:import('./engine/rootsLive').RootsLiveContext;
   quality: "preview" | "export";
   width: number;
   height: number;
@@ -552,7 +554,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

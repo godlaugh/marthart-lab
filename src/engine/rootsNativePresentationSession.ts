@@ -1,3 +1,7 @@
+import {RootsConcurrentStream} from './rootsConcurrentStream';
+import {validateRootsLiveContext,type RootsLiveContext,type RootsLiveFacts} from './rootsLive';
+import {SourceSceneHostClock} from './sourceSceneHostClock';
+import {isRootsAutoRecordingComplete} from './rootsRecording';
 import {formulaPresentation} from './formulas';
 import {rootsFormulaViewport} from './rootsFormulaPresentation';
 import type {GenerateContext,RootsProgress,SceneDocument,SceneOutput} from '../types';
@@ -58,8 +62,8 @@ interface CompletedFrame {
  configuration:RootsPresentationConfiguration;metadata:Omit<RootsRasterOutput,'pixels'|'warnings'>;baseWarnings:readonly string[];
  mathBytes:number;descriptorBytes:number;
 }
-/** One worker-owned native presentation instance. Sampling uses the existing
- * mathematical job and its Java streams; only scheduling/arrival order is local.
+/** One worker-owned native presentation instance. Explicit live requests own
+ * concurrent producers; saved replay retains the existing ordinal math job.
  * Display edits consume zero historical points. Explicit backseek reconstructs
  * a new local instance, rather than pretending to rewind original native ink. */
 export class RootsNativePresentationSession {
@@ -69,6 +73,10 @@ export class RootsNativePresentationSession {
  private clouds:Partial<Record<'primary'|'offscreen',CloudTarget>>={};
  private completed?:CompletedFrame;
  private pending?:RootsPendingStream;
+ private concurrent?:RootsConcurrentStream;
+ private liveContext?:RootsLiveContext;
+ private hostClock?:SourceSceneHostClock;
+ private liveHasAnimations=false;
  private pendingFrame=-1;
  private pendingAdmission?:(bytes:number)=>void;
  private ring?:RootsPointCloudRing;
@@ -89,6 +97,7 @@ export class RootsNativePresentationSession {
   this.density?.dispose();this.density=undefined;
   for(const target of ['primary','offscreen'] as const){this.clouds[target]?.owner.dispose();delete this.clouds[target];}
   this.ring?.dispose();this.ring=undefined;
+  this.concurrent?.dispose();this.concurrent=undefined;this.liveContext=undefined;this.hostClock=undefined;this.liveHasAnimations=false;
   this.pending?.dispose();this.pending=undefined;this.pendingFrame=-1;this.pendingAdmission=undefined;
   this.cameraClock=undefined;this.cameraFrame=-1;this.displayFrames=0;this.displayKey=undefined;
  }
@@ -98,12 +107,12 @@ export class RootsNativePresentationSession {
  },failures);}
  diagnostics(){const math=this.math.diagnostics(),density=this.density?.diagnostics(),primary=this.clouds.primary?.owner.diagnostics(),offscreen=this.clouds.offscreen?.owner.diagnostics(),cloud=primary??offscreen,ring=this.ring?.facts;return{
   instance:this.instance,attemptedSamples:this.state?.attemptedSamples??0,rawPoints:this.state?.rootPoints??0,math,density,cloud,cloudTargets:{primary,offscreen},ring,displayFrames:this.displayFrames,cameraFrame:this.cameraFrame,completedPrimary:!!this.completed&&this.completed.plan.target==='primary',
-  pending:this.pending?.facts,
-  retainedBytes:math.workspaceBytes+math.keyBytes+(density?.gpu?.retainedBytes??0)+(primary?.retainedBytes??0)+(offscreen?.retainedBytes??0)+(ring?.allocatedBytes??0)+(this.completed?.descriptorBytes??0)+(this.pending?.retainedBytes??0),
+  pending:this.pending?.facts,concurrent:this.concurrent?.facts,
+  retainedBytes:math.workspaceBytes+math.keyBytes+(density?.gpu?.retainedBytes??0)+(primary?.retainedBytes??0)+(offscreen?.retainedBytes??0)+(ring?.allocatedBytes??0)+(this.completed?.descriptorBytes??0)+(this.concurrent?.facts.reservedBytes??this.pending?.retainedBytes??0),
  };}
  generate(scene:SceneDocument,c:GenerateContext):RootsRasterOutput {
   this.cleanup.prepare();
-  try{return this.run(scene,c);}catch(error){this.reset([error]);throw error;}
+  try{if(c.rootsLive!==undefined)return this.runLive(scene,c);if(this.liveContext)this.reset();return this.run(scene,c);}catch(error){this.reset([error]);throw error;}
  }
  /** Identity observation for transport recovery after a rejected capture. This
   * does not admit a new size or authorize a mutation. Unknown input is false. */
@@ -112,7 +121,8 @@ export class RootsNativePresentationSession {
   catch{return false;}
  }
  /** Render the completed live frame into its reusable base-size offscreen target,
-  * then refresh primary, in the source paused-PNG order. No clock/sample advance.
+  * then refresh primary, in the source paused-PNG order. No clock advance or
+  * synchronous sampling; an explicitly live producer continues independently.
   * Stale/input/capacity/pre-cancel rejection precedes mutation and preserves the
   * preview. Once rendering starts, failure revokes the frame and cleans the same
   * owners; a changed density target may already have irreversibly cleared ink. */
@@ -135,6 +145,7 @@ export class RootsNativePresentationSession {
   this.cleanup.prepare();this.completed=undefined;
   const started=performance.now();
   try{
+   if(this.concurrent)this.pendingAdmission=bytes=>this.admitMemory(capturePlan,0,descriptorReserve+additionalBytes,undefined,bytes);
    const captureFacts=this.advanceDisplay(capturePlan,[],last.color,c.isCancelled);
    const capture=this.captureOutput(last,capturePlan,last.color,this.readDisplay(capturePlan,last.color,c.isCancelled),captureFacts,'capture',started,additionalBytes);
    const {pixels:ignoredCapture,...captureMetadata}=capture;
@@ -142,6 +153,7 @@ export class RootsNativePresentationSession {
    rootsGpuCancel(c.isCancelled);
    // The ordinary paused update after savePausedFrameInternal drains once;
    // the primary display below supplies the second drain and one more splat.
+   if(this.concurrent)this.pendingAdmission=bytes=>this.admitMemory(last.plan,0,descriptorReserve+heldCaptureBytes+additionalBytes,capturePlan,bytes);
    this.drainPending(last.plan,c.isCancelled);
    const previewFacts=this.advanceDisplay(last.plan,[],last.color,c.isCancelled);
    const preview=this.captureOutput(last,last.plan,last.color,this.readDisplay(last.plan,last.color,c.isCancelled),previewFacts,'preview-refresh',started,additionalBytes+heldCaptureBytes+captureMetadataBytes);
@@ -155,14 +167,14 @@ export class RootsNativePresentationSession {
   }catch(error){this.reset([error]);throw error;}
  }
  private requestKey(scene:SceneDocument,c:GenerateContext):string {
-  return rootsGpuInput(()=>numericIdentity([rootsPresentationRequestIdentity(scene,c.rootsSessionId),scene]));
+  return rootsGpuInput(()=>numericIdentity(c.rootsLive?[rootsPresentationRequestIdentity(scene,c.rootsLive.sessionId),scene,c.rootsLive.maximumWorkers]:[rootsPresentationRequestIdentity(scene,c.rootsSessionId),scene]));
  }
  private displayPeak(plan:PreparedRootsProjection):number {
   return plan.mode==='density'
    ?rootsNativeDensityGpuBytes(plan.physicalWidth,plan.physicalHeight)+rootsNativeInkViewBytes(plan.physicalWidth,plan.physicalHeight,4)-plan.physicalWidth*plan.physicalHeight*16+rootsNativeToneGpuBytes(plan.physicalWidth,plan.physicalHeight)
    :rootsNativePointCloudGpuBytes(plan.physicalWidth,plan.physicalHeight);
  }
- private admitMemory(plan:PreparedRootsProjection,mathBytes:number,extraBytes=0,additionalTarget?:PreparedRootsProjection,pendingBytes=this.pending?.retainedBytes??0){
+ private admitMemory(plan:PreparedRootsProjection,mathBytes:number,extraBytes=0,additionalTarget?:PreparedRootsProjection,pendingBytes=this.concurrent?.facts.reservedBytes??this.pending?.retainedBytes??0){
   let peak=this.displayPeak(plan);
   if(plan.mode==='point-cloud'){
    peak+=ROOTS_POINT_CLOUD_DEFAULT_BYTES;
@@ -173,9 +185,10 @@ export class RootsNativePresentationSession {
   if(peak+mathBytes+CHUNK*16+pendingBytes+extraBytes>MAX_BYTES)throw new RootsGpuError('源复根工作区、显示与点缓冲超过 768 MiB','capacity');
  }
  private drainPending(plan:PreparedRootsProjection,isCancelled?:()=>boolean){
-  if(!this.pending)return;
+  if(!this.pending&&!this.concurrent)return;
   if(plan.mode==='point-cloud')this.ring??=new RootsPointCloudRing();
-  this.pending.drain(plan.mode,plan.mode==='point-cloud'?slice=>this.ring!.append(slice.points!):undefined,{isCancelled});
+  (this.concurrent??this.pending)!.drain(plan.mode,plan.mode==='point-cloud'?slice=>this.ring!.append(slice.points!):undefined,{isCancelled});
+  if(this.concurrent){this.state=this.concurrent.progress;this.rawInvalid=this.concurrent.facts.invalidRoots;}
  }
  /** Sole display operation for generated and render-only frames. Raw arrivals
   * are consumed before the next borrowed chunk; target histories own no solver. */
@@ -185,7 +198,7 @@ export class RootsNativePresentationSession {
   if(plan.mode==='density'){
    this.density??=new RootsNativeDensityDisplay();
    let facts:ReturnType<RootsNativeDensityDisplay['advanceBatches']>;
-   if(this.pending)this.pending.consumeDensity(slices=>{
+   if(this.concurrent||this.pending)(this.concurrent??this.pending)!.consumeDensity(slices=>{
     function* points(){for(const slice of slices)yield slice.points!;}
     facts=this.density!.advanceBatches(plan,points(),color,{isCancelled});
    },{isCancelled});
@@ -219,18 +232,76 @@ export class RootsNativePresentationSession {
  }
  private captureOutput(last:CompletedFrame,plan:PreparedRootsProjection,color:RootsMetricColorPlan,pixels:Uint8ClampedArray,display:DisplayFacts,role:'capture'|'preview-refresh',started:number,extraBytes:number):RootsRasterOutput {
   const metadata=last.metadata,facts=metadata.rootsPresentation!;
+  const live=this.concurrent?this.liveFacts('snapshot',plan.mode):undefined;
   const pending=this.pending?.facts;
   const autoRecording=pending&&facts.autoRecording?rootsPendingCompletion(pending,{...facts.autoRecording,mode:plan.mode}):facts.autoRecording;
   const cameraTimeline=facts.cameraTimeline?{...facts.cameraTimeline,framesAdvanced:0,readbacks:1,displayFrames:this.displayFrames,inkClears:this.density?.diagnostics().clears??0}:undefined;
-  const output:RootsRasterOutput={...metadata,width:plan.physicalWidth,height:plan.physicalHeight,pixels,
-   rootsPresentation:{...facts,presentationAlpha:role==='capture'?'preserved-framebuffer-rgba':'opaque-framebuffer-rgb',newSamples:0,newRawPoints:0,restartReason:null,physicalSize:[plan.physicalWidth,plan.physicalHeight],logicalSize:[plan.logicalWidth,plan.logicalHeight],referenceLogicalHeight:plan.referenceLogicalHeight,target:plan.target,...display,...(pending?{pending}:{}),...(autoRecording?{autoRecording}:{}),...(cameraTimeline?{cameraTimeline}:{}),pausedCapture:{policy:'same-instance-render-only-v1',role,baseScale:1,clockAdvanced:false,samplesGenerated:0,arrivals:pending?'retained-local-pending':'local-no-pending',primarySize:[last.plan.physicalWidth,last.plan.physicalHeight]}},
+  const output:RootsRasterOutput={...metadata,...(live?{rootsLive:live,roots:{...metadata.roots!,...this.state!,math:{...metadata.roots!.math!,iterationLimitSamples:this.state!.nonconvergentSamples}}}:{}),width:plan.physicalWidth,height:plan.physicalHeight,pixels,
+   rootsPresentation:{...facts,...(live?{attemptedSamples:this.state!.attemptedSamples,totalRawPoints:this.state!.rootPoints}:{}),presentationAlpha:role==='capture'?'preserved-framebuffer-rgba':'opaque-framebuffer-rgb',newSamples:live?this.state!.attemptedSamples-facts.attemptedSamples:0,newRawPoints:live?this.state!.rootPoints-facts.totalRawPoints:0,restartReason:null,physicalSize:[plan.physicalWidth,plan.physicalHeight],logicalSize:[plan.logicalWidth,plan.logicalHeight],referenceLogicalHeight:plan.referenceLogicalHeight,target:plan.target,...display,...(pending?{pending}:{}),...(autoRecording?{autoRecording}:{}),...(cameraTimeline?{cameraTimeline}:{}),pausedCapture:{policy:'same-instance-render-only-v1',role,baseScale:1,clockAdvanced:false,samplesGenerated:live?null:0,arrivals:live?'concurrent-pending':pending?'retained-local-pending':'local-no-pending',primarySize:[last.plan.physicalWidth,last.plan.physicalHeight]}},
    ...(display.density?{rootsColor:{...metadata.rootsColor!,submittedFinitePointCount:display.density.submittedFinitePointCount,exposureScale:rootsDensityScale({submittedFinitePointCount:display.density.submittedFinitePointCount,width:plan.physicalWidth,height:plan.physicalHeight}),paletteOffset:color.paletteOffset}}:{}),
-   temporal:metadata.temporal?{...metadata.temporal,cacheHits:1}:undefined,stats:{...metadata.stats,invalid:this.state!.invalidSamples+this.rawInvalid+this.displayInvalid,elapsedMs:performance.now()-started},
-   warnings:[...last.baseWarnings.filter(w=>w!==COLD_EXPORT_WARNING&&(role!=='capture'||w!==OPAQUE_FRAME_WARNING)),pending?PENDING_CAPTURE_WARNING:PAUSED_CAPTURE_WARNING,...(role==='capture'?[CAPTURE_ALPHA_WARNING]:[]),...this.counterWarnings()],
+   temporal:metadata.temporal?{...metadata.temporal,cacheHits:1}:undefined,stats:{...metadata.stats,...(live?{samples:this.state!.attemptedSamples,generated:this.state!.rootPoints}:{}),invalid:this.state!.invalidSamples+this.rawInvalid+this.displayInvalid,elapsedMs:performance.now()-started},
+   warnings:[...last.baseWarnings.filter(w=>w!==COLD_EXPORT_WARNING&&(role!=='capture'||w!==OPAQUE_FRAME_WARNING)),live?'同实例截图不推进场景时钟；后台求根继续，截图与主预览分别消费可用积压点。':pending?PENDING_CAPTURE_WARNING:PAUSED_CAPTURE_WARNING,...(role==='capture'?[CAPTURE_ALPHA_WARNING]:[]),...this.counterWarnings()],
   };
   const {pixels:_,...outputMetadata}=output;
   this.admitMemory(plan,last.mathBytes,last.descriptorBytes+descriptorRepresentationBytes(outputMetadata)+extraBytes);
   return{...structuredClone(outputMetadata),pixels};
+ }
+ setPaused(paused:boolean,timestampMs?:number):void {
+  if(!this.liveContext||!this.hostClock||!this.cameraClock)throw Error('复根播放控制需要实时实例');
+  const restore=this.hostClock.setPaused(paused,this.cameraClock.snapshot().camera,timestampMs);
+  if(restore)this.cameraClock.writeAngles(restore);
+  this.liveContext={...this.liveContext,clock:{...this.liveContext.clock,paused}};
+ }
+ private liveFacts(renderKind:'update'|'snapshot',mode:'density'|'point-cloud'):RootsLiveFacts {
+  const stream=this.concurrent!.facts,frame=this.cameraClock!.snapshot(),host=this.hostClock!.diagnostics();
+  const inputs={queueComplete:frame.queueComplete,hasAnimations:this.liveHasAnimations,mode,finishedWorkers:stream.pending.finishedWorkers,workerCount:stream.pending.workerCount,queueSize:stream.pool.queuedBatches+stream.pool.waitingBatches+stream.pending.queuedBatches,pendingPoints:stream.pending.pendingPoints};
+  return{sessionId:this.liveContext!.sessionId,paused:host.paused,clockSource:host.clockSource,renderKind,sceneTime:frame.sceneTime,frame,stream,autoRecording:{...inputs,policy:'roots-worker-arrival-v1',complete:isRootsAutoRecordingComplete(inputs)}};
+ }
+ private runLive(scene:SceneDocument,c:GenerateContext):RootsRasterOutput {
+  const started=performance.now();validateRasterRequest(c);rootsGpuCancel(c.isCancelled);
+  const live=validateRootsLiveContext(c.rootsLive);
+  if(!usesRootsNativePresentation(scene)||!usesRootsNativeMath(scene)||scene.settings.rootsMode!=='progressive'||!usesRootsCameraTimeline(scene))throw Error('复根实时预览需要完整源数学、显示和相机队列');
+  if(!Number.isFinite(c.time))throw Error('复根预览请求时间无效');
+  const timeline=prepareRootsCameraTimeline(scene),pending=scene.rootsPresentation!.pending;
+  if(!pending)throw Error('复根实时预览需要显式待绘制预算');
+  let color=prepareRootsDensityColor(scene);
+  if(color.kind!=='metric-sum')throw Error('复根实时预览需要源平均度量配色');
+  const projection=(camera?:RootsSceneFrame['camera'])=>prepareRootsProjection(camera?{...scene.rootsPresentation!,camera:{...scene.rootsPresentation!.camera,...camera}}:scene.rootsPresentation!,{width:c.width,height:c.height,viewport:c.rootsViewport??{logicalWidth:c.width,logicalHeight:c.height,referenceLogicalHeight:c.height,target:'primary'}});
+  let plan=projection();const camera=scene.rootsPresentation!.camera;
+  const identity:Identity={document:rootsPresentationRequestIdentity(scene,live.sessionId),math:numericIdentity([scene.rootsMath,color.metric,live.maximumWorkers]),mode:plan.mode,timeline:numericIdentity(scene.timeline),clock:'source-live-clock-v1',camera:numericIdentity([camera.phi,camera.theta,camera.gamma,camera.zoom]),gradient:numericIdentity(color.paletteOffset),pending:numericIdentity(pending)};
+  const prior=this.identity;
+  const restartReason:RootsPresentationFacts['restartReason']=!prior?'initial':prior.document!==identity.document?'document':prior.mode!==identity.mode?'mode':prior.math!==identity.math||prior.clock!==identity.clock?'math':prior.timeline!==identity.timeline?'timeline':prior.camera!==identity.camera?'camera':prior.gradient!==identity.gradient?'gradient':prior.pending!==identity.pending?'pending-policy':null;
+  const requestKey=this.requestKey(scene,c);this.completed=undefined;
+  if(restartReason){
+   this.reset();this.identity=identity;this.instance++;this.liveContext=live;
+   this.cameraClock=createRootsCameraClock(scene,timeline);this.hostClock=new SourceSceneHostClock(live.clock.paused,this.cameraClock.snapshot().camera);this.liveHasAnimations=timeline.clips.length>0;
+   this.pendingAdmission=bytes=>this.admitMemory(plan,0,requestKey.length*2,undefined,bytes);
+   const maximumBytes=MAX_BYTES-this.displayPeak(plan)-CHUNK*16-requestKey.length*2-(plan.mode==='point-cloud'?ROOTS_POINT_CLOUD_DEFAULT_BYTES:0);
+   this.concurrent=new RootsConcurrentStream(scene.rootsMath,color.metric,pending,{maximumWorkers:live.maximumWorkers,maximumBytes},undefined,bytes=>this.pendingAdmission!(bytes));
+   this.state=this.concurrent.progress;this.concurrent.start();
+  }
+  this.hostClock!.assertPaused(live.clock.paused);
+  const before=this.state!,previous=this.cameraClock!.snapshot(),dt=this.hostClock!.update(live.clock);
+  const frame=this.cameraClock!.step(dt,{paused:live.clock.paused,allowSignedDt:true,isCancelled:c.isCancelled});
+  plan=projection(frame.camera);if(frame.gradient)color={...color,paletteOffset:frame.gradient.offset};
+  this.admitMemory(plan,0,requestKey.length*2);
+  this.pendingAdmission=bytes=>this.admitMemory(plan,0,requestKey.length*2,undefined,bytes);
+  for(let i=0;i<(previous.queueComplete||live.clock.paused?1:2);i++)this.drainPending(plan,c.isCancelled);
+  const display=this.advanceDisplay(plan,[],color,c.isCancelled),pixels=this.readDisplay(plan,color,c.isCancelled);
+  rootsGpuCancel(c.isCancelled);this.lastTime=c.time;this.liveContext=live;
+  const state=this.state!,liveFacts=this.liveFacts('update',plan.mode),density=display.density;
+  const facts:RootsPresentationFacts={model:'mathart-1.7.8-v1',mode:plan.mode,clockPolicy:'source-live-clock-v1',streamPolicy:'worker-arrival',presentationAlpha:'opaque-framebuffer-rgb',instance:this.instance,restartReason,attemptedSamples:state.attemptedSamples,newSamples:state.attemptedSamples-before.attemptedSamples,newRawPoints:state.rootPoints-before.rootPoints,totalRawPoints:state.rootPoints,physicalSize:[c.width,c.height],logicalSize:[plan.logicalWidth,plan.logicalHeight],referenceLogicalHeight:plan.referenceLogicalHeight,target:plan.target,...display};
+  const warnings=[...color.diagnostics,...timeline.warnings,'后台求根按实际线程批次到达；暂停只停止场景时钟，绘制继续消费积压点。未声明与原版墙钟或逐帧到达顺序一致。',OPAQUE_FRAME_WARNING];
+  const output:RootsRasterOutput={type:'raster',dimension:2,cameraResolved:true,backend:'webgl2',width:c.width,height:c.height,pixels,formulaPresentation:formulaPresentation(scene,rootsFormulaViewport(plan)),rootsPresentation:facts,rootsLive:liveFacts,
+   roots:{...state,math:{model:'mathart-1.7.8-v1',solver:'aberth-ehrlich-power-substitution',sampling:'java-random48-partitioned',logicalWorkers:liveFacts.stream.pool.workerCount,replayOrder:'worker-arrival',residualMeasured:false,iterationLimitSamples:state.nonconvergentSamples}},
+   ...(density?{rootsColor:{version:color.version,inkKind:color.kind,metric:color.metric,submittedFinitePointCount:density.submittedFinitePointCount,exposureScale:rootsDensityScale({submittedFinitePointCount:density.submittedFinitePointCount,width:c.width,height:c.height}),accumulationPrecision:'float32' as const,toneBackend:'webgl2' as const,paletteOffset:color.paletteOffset}}:{}),
+   stats:{samples:state.attemptedSamples,generated:state.rootPoints,invalid:state.invalidSamples+this.rawInvalid+this.displayInvalid,elapsedMs:performance.now()-started},warnings:[...warnings,...this.counterWarnings()]};
+  const {pixels:_,warnings:ignored,...metadata}=output;
+  const configuration:RootsPresentationConfiguration={...scene.rootsPresentation!,camera:{...scene.rootsPresentation!.camera,...plan.camera,center:[...plan.camera.center]}};
+  const descriptorBytes=requestKey.length*2+descriptorRepresentationBytes({plan,color,configuration,metadata,baseWarnings:warnings});
+  this.admitMemory(plan,0,descriptorBytes+descriptorRepresentationBytes(metadata));
+  this.completed={requestKey,time:c.time,plan,color:structuredClone(color),configuration:structuredClone(configuration),metadata:structuredClone(metadata),baseWarnings:warnings,mathBytes:0,descriptorBytes};
+  return output;
  }
  private run(scene:SceneDocument,c:GenerateContext):RootsRasterOutput {
   const started=performance.now();validateRasterRequest(c);rootsGpuCancel(c.isCancelled);

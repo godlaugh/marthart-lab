@@ -17,13 +17,13 @@ export class RootsConcurrentStream {
  private delivered=new Map<number,RootsProgress>();private invalidByWorker=new Map<number,number>();
  private mode?:'density'|'point-cloud';
  private cleanup=new GenerationCleanupState();private disposed=false;private failed=false;private closing=false;
- constructor(configuration:unknown,metric:unknown,pending:Pick<RootsPendingConfiguration,'maxSplatPointsPerFrame'|'referenceHeapBytes'>,limits:RootsComputationLimits,factory?:RootsComputationWorkerFactory){
+ constructor(configuration:unknown,metric:unknown,pending:Pick<RootsPendingConfiguration,'maxSplatPointsPerFrame'|'referenceHeapBytes'>,limits:RootsComputationLimits,factory?:RootsComputationWorkerFactory,onBytes?:(bytes:number)=>void){
   this.pool=new RootsComputationPool(configuration,metric,limits,factory);
   const source=this.pool.describe();this.producerReservation=source.reservedBytes;this.sampleCount=source.sampleCount;
   try{
    const remaining=limits.maximumBytes-source.reservedBytes;
    if(remaining<RootsPendingQueue.minimumBytes)throw new RootsComputationError('capacity','No admitted space remains for pending display points');
-   this.pending=new RootsPendingQueue(prepareRootsPendingPlan({...source,...pending}),{storage:'points',ingestion:'batches',maximumBytes:remaining});
+   this.pending=new RootsPendingQueue(prepareRootsPendingPlan({...source,...pending}),{storage:'points',ingestion:'batches',maximumBytes:remaining,onBytes:bytes=>onBytes?.(this.producerReservation+bytes)});
   }catch(error){this.pool.dispose();throw error;}
  }
  private ready(){if(this.disposed||this.failed||this.closing)throw new RootsComputationError('protocol','Concurrent stream is not usable');}

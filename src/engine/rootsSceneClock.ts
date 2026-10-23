@@ -228,6 +228,11 @@ export class RootsSceneClock {
 
   /** CameraController.zoom is also writable between queue updates. Keep the
    * active Zoom animation's captured start and destination intact. */
+  /** Host resume restores saved angles without advancing the animation queue. */
+  writeAngles(value:Pick<RootsCameraState,'phi'|'theta'|'gamma'>):void {
+    const angles={phi:finiteFloat(value.phi,'热 phi'),theta:finiteFloat(value.theta,'热 theta'),gamma:finiteFloat(value.gamma,'热 gamma')};
+    Object.assign(this.state.camera,angles);
+  }
   writeZoom(zoom:number):void {this.state.camera.zoom=finiteFloat(zoom,'热 zoom');}
   reset():void {this.state=fresh(this.initial,this.initialOffset,this.clips.length===0);}
 

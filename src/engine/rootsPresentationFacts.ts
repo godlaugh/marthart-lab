@@ -6,8 +6,8 @@ import type {RootsCameraState,RootsSceneGradientFrame} from './rootsSceneClock';
 export interface RootsPresentationFacts {
  model:'mathart-1.7.8-v1';
  mode:'density'|'point-cloud';
- clockPolicy:'local-fixed-sample-clock-v1';
- streamPolicy:'global-ordinal';
+ clockPolicy:'local-fixed-sample-clock-v1'|'source-live-clock-v1';
+ streamPolicy:'global-ordinal'|'worker-arrival';
  presentationAlpha:'opaque-framebuffer-rgb'|'preserved-framebuffer-rgba';
  instance:number;
  restartReason:'initial'|'document'|'math'|'mode'|'timeline'|'camera'|'gradient'|'pending-policy'|'backward-seek'|null;
@@ -16,7 +16,7 @@ export interface RootsPresentationFacts {
  referenceLogicalHeight:number;target:'primary'|'offscreen';
  /** Present only on the explicit paused capture pair; ordinary generations
   * keep their prior facts. Both frames retain the same math/clock instance. */
- pausedCapture?:{policy:'same-instance-render-only-v1';role:'capture'|'preview-refresh';baseScale:1;clockAdvanced:false;samplesGenerated:0;arrivals:'local-no-pending'|'retained-local-pending';primarySize:readonly[number,number]};
+ pausedCapture?:{policy:'same-instance-render-only-v1';role:'capture'|'preview-refresh';baseScale:1;clockAdvanced:false;samplesGenerated:0|null;arrivals:'local-no-pending'|'retained-local-pending'|'concurrent-pending';primarySize:readonly[number,number]};
  pending?:RootsPendingStreamFacts;
  autoRecording?:RootsOrdinalCompletionFacts|RootsPendingCompletionFacts;
  cameraTimeline?:{

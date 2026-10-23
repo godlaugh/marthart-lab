@@ -29,6 +29,16 @@ describe('concurrent producer to owned frame backlog',()=>{
    expect(consumed).toBe(140);expect(stream.facts.canFinishAfterDisplay).toBe(true);
   }finally{stream.dispose();}
  });
+ it('rechecks the active presentation budget before admitting arrived point buffers',()=>{
+  const c=configuration(),port=new Port();let reject=false,observed=0;
+  const stream=new RootsConcurrentStream(c,'radius',pending,limits,()=>port,bytes=>{observed=bytes;if(reject)throw Error('resized display capacity');});
+  const plan=prepareRootsComputationPlan(c,'radius',limits);if(!plan.ok)throw plan.error;
+  const producer=new RootsComputationProducer(plan.value,0);try{
+   stream.start();const b=producer.step(128);if(b.kind!=='batch')throw Error('batch required');port.emit(b.batch);reject=true;
+   expect(()=>stream.drain('density')).toThrow('resized display capacity');expect(observed).toBeGreaterThan(plan.value.reservedBytes);
+   expect(stream.facts).toMatchObject({disposed:true,failed:true,reservedBytes:0,pool:{ownedWorkers:0}});
+  }finally{producer.dispose();stream.dispose();}
+ });
  it('drains cloud batches in order without applying density throttling',()=>{
   const {stream}=setup();let points=0;try{
    const result=stream.drain('point-cloud',s=>{expect(s.points!.length).toBe(s.pointCount*4);points+=s.pointCount;});
