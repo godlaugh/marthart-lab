@@ -5,6 +5,8 @@ import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const root=process.argv[2]??'.cache/roots-animated-reference-20261023',native=root+'/native-animated';
 const reportPath=process.argv[3]??root+'/comparison.json',backend=process.argv[4]??'default';
+const saveLastFrame=process.argv[5]==='--save-last-frame';
+assert.ok(process.argv[5]===undefined||saveLastFrame,'Unknown artifact option');
 assert.ok(['default','gl'].includes(backend),'Only default and explicit OpenGL diagnostic backends are supported');
 const sha=b=>createHash('sha256').update(b).digest('hex'),json=async p=>JSON.parse(await readFile(p,'utf8'));
 const run=await json(native+'/run.json'),sourceText=await readFile(run.source,'utf8');
@@ -34,7 +36,7 @@ try{
  report.renderer=await page.evaluate(()=>{const gl=document.createElement('canvas').getContext('webgl2');if(!gl)throw Error('WebGL2 unavailable');const e=gl.getExtension('WEBGL_debug_renderer_info'),r={version:gl.getParameter(gl.VERSION),renderer:e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER)};gl.getExtension('WEBGL_lose_context')?.loseContext();return r;});
  await page.route('**/reference/*',async r=>{const n=new URL(r.request().url()).pathname.split('/').at(-1);assert.ok(files.includes(n));await r.fulfill({body:await readFile(native+'/'+n)});});
  await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'fixture');
- report.result=await page.evaluate(async({sourceText,frames,inputHashes})=>{
+ report.result=await page.evaluate(async({sourceText,frames,inputHashes,saveLastFrame})=>{
   const {parseLegacyScene}=await import('/src/engine/legacyImport.ts'),{prepareRootsCameraTimeline,createRootsCameraClock}=await import('/src/engine/rootsCameraTimeline.ts'),{prepareRootsProjection,updateRootsProjectionState}=await import('/src/engine/rootsProjection.ts'),{prepareRootsDensityColor}=await import('/src/engine/rootsDensityColor.ts'),{RootsNativeDensityGpu}=await import('/src/engine/rootsNativeDensityGpu.ts');
   const scene=parseLegacyScene(sourceText).scene,clock=createRootsCameraClock(scene,prepareRootsCameraTimeline(scene)),baseColor=prepareRootsDensityColor(scene),gpu=new RootsNativeDensityGpu(),rows=[];let projection,clearCount=0;
   const digest=async b=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b))).map(x=>x.toString(16).padStart(2,'0')).join('');
@@ -51,8 +53,10 @@ try{
    }
    const color={...baseColor,paletteOffset:frame.gradient.offset},ink=gpu.readback(),expectedInk=flip(new Float32Array(await bytes(`density-frame-${native.frame}.f32`))),pixels=gpu.presentPixels(color,update.displayRotation),expected=flip(new Uint8Array(await bytes(`present-frame-${native.frame}.rgba`))),lut=new Uint8Array(await bytes(`palette-frame-${native.frame}.rgba`));
    rows.push({frame:native.frame,clock:frame,sceneTimeEqual:frame.sceneTime===Math.fround(native.clock.sceneTime),completeEqual:frame.queueComplete===native.completion.sceneComplete,paletteOffsetEqual:Math.fround(color.paletteOffset)===Math.fround(native.present.paletteOffset[0]),rotationEqual:update.displayRotation===Math.fround(native.present.displayRotation[0]),lutEqual:color.lut.every((v,i)=>v===lut[i]),matrix,clearInk:update.clearInk,submittedEqual:gpu.diagnostics().submittedPoints===Number(native.state.densityPointsRendered),density:diff(ink,expectedInk),color:diff(pixels,expected),productSha256:await digest(pixels),nativeSha256:await digest(expected)});
+   if(saveLastFrame&&native.frame===frames.at(-1).frame)result.lastFrame=Array.from(pixels);
   }result.clearCount=clearCount;return result;}finally{gpu.dispose();result.cleanup=gpu.diagnostics().handles===0;}
- },{sourceText,frames,inputHashes});
+ },{sourceText,frames,inputHashes,saveLastFrame});
+ if(saveLastFrame){const bytes=Buffer.from(report.result.lastFrame),path=reportPath.replace(/\.json$/,'')+'-last.rgba';assert.equal(bytes.length,500*600*4);assert.equal(sha(bytes),report.result.rows.at(-1).productSha256);await writeFile(path,bytes);delete report.result.lastFrame;report.lastFrame={path,sha256:sha(bytes),width:500,height:600,orientation:'top-down',format:'RGBA8'};}
  const rows=report.result.rows;report.matched=rows.every(r=>r.sceneTimeEqual&&r.completeEqual&&r.paletteOffsetEqual&&r.rotationEqual&&r.lutEqual&&r.submittedEqual&&r.matrix.every(m=>!m.projection.different&&!m.modelView.different&&m.diameterEqual)&&!r.density.different&&!r.color.different);
  assert.equal(report.result.cleanup,true);report.status=report.matched?'matched':'differences';if(!report.matched)process.exitCode=1;
 }catch(e){report.status='failed';report.error=String(e.stack??e);process.exitCode=1;}
