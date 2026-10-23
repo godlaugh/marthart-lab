@@ -3,10 +3,9 @@
 export const sourcePointVertex=`
 precision highp float;
 uniform mat4 projection;
-uniform mat4 modelview;
 uniform float radius;
 uniform float focalLength;
-in vec3 particlePosition;
+in vec4 particleEyePosition;
 in vec3 particleColor;
 in float particleAlpha;
 in vec2 uv;
@@ -14,7 +13,7 @@ out vec4 vertColor;
 out vec2 vertTexCoord;
 out vec2 vertBillboardCoord;
 void main(){
- vec4 viewPos=modelview*vec4(particlePosition,1.0);
+ vec4 viewPos=particleEyePosition;
  float depth=-viewPos.z;
  if(depth<0.1)depth=0.1;
  float r=radius*(depth/focalLength);

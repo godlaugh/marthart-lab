@@ -48,14 +48,15 @@ describe('source CPU point appearance ownership',()=>{
   s.timeline.duration=1200;
   expect(()=>generateScene(s,{time:1200,width:100,height:100,quality:'preview',sourceViewport:ordinarySourceViewport(s,100,100,'primary',100),sourcePointPixelDensity:0})).toThrow('像素密度');
  });
- it('delivers owned appearance and borrows exact particle buffers into bounded instances with owned texture disposal',()=>{
+ it('owns transformed points and sprite disposal while borrowing source tint buffers',()=>{
   const s=imported({u_segments:2,v_segments:2,show_trails:false}).scene;
   const out=generateScene(s,{time:0,width:100,height:100,quality:'preview',sourceViewport:ordinarySourceViewport(s,100,100,'primary',100),sourcePointPixelDensity:2});
   if(out.type!=='geometry')throw Error('geometry');expect(out.sourcePointAppearance).toMatchObject({referencePixelDensity:2,densityOrigin:'request'});
-  const mesh=createSourceParticlePoints(out,plan(),1),g=mesh.geometry,m=mesh.material;
-  expect(g.instanceCount).toBe(4);expect(g.getAttribute('particlePosition').array).toBe(out.positions);expect(g.getAttribute('particleAlpha').array).toBe(out.pointAlphas);expect(g.index!.count).toBe(6);
+  const mesh=createSourceParticlePoints(out,plan(),1,4),g=mesh.geometry,m=mesh.material;
+  expect(g.instanceCount).toBe(4);expect(g.getAttribute('particleEyePosition').array).not.toBe(out.positions);expect(g.getAttribute('particleEyePosition').itemSize).toBe(4);expect(m.uniforms.sprite.value.anisotropy).toBe(4);expect(g.getAttribute('particleEyePosition').array.length).toBe(out.positions.length/3*4);expect(g.getAttribute('particleAlpha').array).toBe(out.pointAlphas);expect(g.index!.count).toBe(6);
   expect(mesh.frustumCulled).toBe(false);expect(m.uniforms.lightDir.value.toArray()).toEqual([0,0,0]);expect(m.uniforms.materialShininess.value).toBe(0);
   let disposed=0;m.uniforms.sprite.value.addEventListener('dispose',()=>disposed++);m.dispose();g.dispose();expect(disposed).toBe(1);
-  expect(()=>createSourceParticlePoints({...out,pointAlphas:new Float32Array([NaN])},plan(),1)).toThrow('缓冲');
+  for(const invalid of [NaN,Infinity,0,-1])expect(()=>createSourceParticlePoints(out,plan(),1,invalid)).toThrow('过滤');
+  expect(()=>createSourceParticlePoints({...out,pointAlphas:new Float32Array([NaN])},plan(),1,4)).toThrow('缓冲');
  });
 });

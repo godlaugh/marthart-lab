@@ -9,6 +9,15 @@ export function writeSourceEyePosition(m:readonly number[],x:number,y:number,z:n
  }
 }
 
+/** Processing immediate tessellation bakes modelview on the CPU, then flushes
+ * with identity modelview. Preserve its staged Float32 operations and nonfinite
+ * source slots. Callers admit their family's capacity before allocating vec4s. */
+export function sourceEyePositions(positions:Float32Array,rowMajor:readonly number[]):Float32Array {
+ const eye=new Float32Array(positions.length/3*4);
+ for(let i=0;i<positions.length;i+=3)writeSourceEyePosition(rowMajor,positions[i],positions[i+1],positions[i+2],eye,i/3*4);
+ return eye;
+}
+
 /** PGraphics.colorCalc(int), shared by fill(int) and stroke(int). Zero-alpha
  * integers <=255 are opaque grayscale; all other values are packed ARGB.
  * Fill replaces the alpha byte before this boundary; stroke retains it. */

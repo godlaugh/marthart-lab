@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type {GeometryOutput} from '../types';
 import type {SourceCameraPlan} from './sourceCamera';
-import {writeSourceEyePosition,writeSourcePackedColor} from './sourceProcessingGeometry';
+import {sourceEyePositions,writeSourcePackedColor} from './sourceProcessingGeometry';
 
 export const SOURCE_SURFACE_CPU_MESH_MODEL='surface-cpu-mesh-1.7.8' as const;
 export interface SourceSurfaceMeshAppearance {
@@ -27,17 +27,6 @@ export function sourceSurfaceMeshFillColors(packed:Uint32Array,fillAlphaByte:num
  return colors;
 }
 
-/** Immediate Processing tessellation bakes modelview into a vec4 CPU buffer.
- * flush then resets modelview and sends projection alone to ColorVert. Keeping
- * these staged float operations on the CPU is observably different from a
- * combined transform or modelview arithmetic inside a GPU shader. */
-export function sourceMeshEyeVertices(positions:Float32Array,plan:SourceCameraPlan):Float32Array {
- const count=positions.length/3,m=plan.modelView.rowMajor;
- if(!Number.isInteger(count)||count>512*512+4*511+4)throw new Error('源曲面网格顶点超过本地容量或缓冲无效');
- const eye=new Float32Array(count*4);
- for(let i=0;i<count;i++)writeSourceEyePosition(m,positions[i*3],positions[i*3+1],positions[i*3+2],eye,i*4);
- return eye;
-}
 // Unlit ColorVert/ColorFrag behavior; no tone mapping or sRGB conversion. CPU
 // MeshSurface.resetShader does not use the material/texture GPU mesh shader.
 const vertex=`precision highp float;
@@ -60,7 +49,7 @@ export function createSourceSurfaceMeshFill(output:GeometryOutput,plan:SourceCam
  for(const i of indices)if(i>=count)throw new Error('源曲面网格索引超出顶点缓冲');
  const geometry=new THREE.BufferGeometry();let material:THREE.RawShaderMaterial|undefined;
  try{
-  geometry.setAttribute('position',new THREE.BufferAttribute(sourceMeshEyeVertices(output.positions,plan),4));
+  geometry.setAttribute('position',new THREE.BufferAttribute(sourceEyePositions(output.positions,plan.modelView.rowMajor),4));
   geometry.setAttribute('color',new THREE.BufferAttribute(sourceSurfaceMeshFillColors(output.sourceMeshColors,appearance.fillAlphaByte,displayOpacity),4));
   geometry.setIndex(new THREE.BufferAttribute(indices,1));
   // Native topology can retain nonfinite unused vertices after skipping their

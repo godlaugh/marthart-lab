@@ -18,16 +18,16 @@ function boundary(palette=['#6011CC33','#C04020E0'],count=2,dx='1'){
  const camera=take(prepareSourceCamera({model:'mathart-1.7.8-v1',configuration:{kind:'absent'}},{logicalWidth:192,logicalHeight:128,referenceLogicalHeight:128,target:'primary',projectionPass:'perspective'}));
  if(camera.kind!=='known')throw Error('camera unavailable');
  const output:GeometryOutput={type:'geometry',topology:'points',positions:snapshot.positions,colors:snapshot.colors,pointAlphas:snapshot.pointAlphas,sourcePointAppearance:sourceParticlePointAppearance(visualConfiguration.points.dotRadius,camera.plan)};
- return{owner,snapshot,output,mesh:createSourceParticlePoints(output,camera.plan,1)};
+ return{owner,snapshot,output,mesh:createSourceParticlePoints(output,camera.plan,1,4)};
 }
 function dispose(mesh:ReturnType<typeof createSourceParticlePoints>){mesh.geometry.dispose();mesh.material.dispose();}
 describe('source Attractor CPU snapshot → shared billboard boundary',()=>{
- it('passes the motion/color owners buffers unchanged and preserves native material state',()=>{
+ it('preserves motion/color owners while staging eye coordinates and native material state',()=>{
   const {snapshot,mesh}=boundary();try{
-   expect(mesh.geometry.getAttribute('particlePosition').array).toBe(snapshot.positions);
+   expect(mesh.geometry.getAttribute('particleEyePosition').array.length).toBe(snapshot.positions.length/3*4);
    expect(mesh.geometry.getAttribute('particleColor').array).toBe(snapshot.colors);
    expect(mesh.geometry.getAttribute('particleAlpha').array).toBe(snapshot.pointAlphas);
-   expect(mesh.geometry.instanceCount).toBe(2);expect(snapshot.positions[0]).toBe(Math.fround(.1));
+   expect(mesh.geometry.getAttribute('particleEyePosition').array).not.toBe(snapshot.positions);expect(mesh.material.uniforms.sprite.value.anisotropy).toBe(4);expect(mesh.geometry.instanceCount).toBe(2);expect(snapshot.positions[0]).toBe(Math.fround(.1));
    expect(mesh.material.uniforms.radius.value).toBe(Math.fround(-12*Math.fround(.8)));
    expect(mesh.material).toMatchObject({depthTest:true,depthWrite:true,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor});
    expect(mesh.material.uniforms.opacity.value).toBe(1);expect(mesh.userData.sourceSurfaceGpuPoints).toBe(false);
@@ -39,8 +39,8 @@ describe('source Attractor CPU snapshot → shared billboard boundary',()=>{
    expect(mesh.geometry.getAttribute('particleAlpha').getX(0)).toBe(alpha);
   }finally{dispose(mesh);}
  });
- it('preserves nonfinite slots for native shader clipping without reallocating or compacting identities',()=>{
-  const {snapshot,mesh}=boundary(undefined,2,'1/0');try{expect(snapshot.positions[0]).toBe(Infinity);expect(mesh.geometry.instanceCount).toBe(2);expect(mesh.geometry.getAttribute('particlePosition').array).toBe(snapshot.positions);}finally{dispose(mesh);}
+ it('preserves nonfinite slots for native shader clipping without compacting source identities',()=>{
+  const {snapshot,mesh}=boundary(undefined,2,'1/0');try{expect(snapshot.positions[0]).toBe(Infinity);expect(mesh.geometry.instanceCount).toBe(2);expect(mesh.geometry.getAttribute('particleEyePosition').array.length).toBe(snapshot.positions.length/3*4);}finally{dispose(mesh);}
  });
  it('handles empty source arrays and releases its owned sprite with the material',()=>{
   const {mesh}=boundary(undefined,0);let textureDisposals=0;mesh.material.uniforms.sprite.value.addEventListener('dispose',()=>textureDisposals++);

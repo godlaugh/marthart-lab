@@ -1,6 +1,7 @@
+import {sourceEyePositions} from '../src/engine/sourceProcessingGeometry';
 import {describe,it,expect} from 'vitest';
 import {prepareSourceCamera} from '../src/engine/sourceCamera';
-import {createSourceSurfaceMeshFill,sourceSurfaceMeshAppearance,sourceMeshEyeVertices,sourceSurfaceMeshFillColors} from '../src/engine/sourceSurfaceMeshRenderer';
+import {createSourceSurfaceMeshFill,sourceSurfaceMeshAppearance,sourceSurfaceMeshFillColors} from '../src/engine/sourceSurfaceMeshRenderer';
 import {outputBuffers} from '../src/engine/outputBuffers';
 import type {GeometryOutput} from '../src/types';
 const parsed=prepareSourceCamera({model:'mathart-1.7.8-v1',configuration:{kind:'absent'}},{logicalWidth:100,logicalHeight:100,referenceLogicalHeight:100,target:'primary',projectionPass:'perspective'});
@@ -16,7 +17,7 @@ describe('CPU source mesh fill boundary',()=>{
  });
  it('rounds each CPU modelview product and sum before the GPU projection',()=>{
   const custom={...plan,modelView:{...plan.modelView,rowMajor:[1,1,-1,0,0,1,0,0,0,0,1,0,0,0,0,1]}};
-  expect(Array.from(sourceMeshEyeVertices(new Float32Array([16777216,1,16777216]),custom))).toEqual([0,1,16777216,1]);
+  expect(Array.from(sourceEyePositions(new Float32Array([16777216,1,16777216]),custom.modelView.rowMajor))).toEqual([0,1,16777216,1]);
  });
  it('preserves packed colors for transfer, borrows indices, and owns converted RGBA/positions',()=>{
   const data=output(),copy=data.positions.slice(),mesh=createSourceSurfaceMeshFill(data,plan);

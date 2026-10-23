@@ -46,6 +46,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:print(json.dumps(dict(vertex=z.read('data
  await page.route('**/gpu-point-oracle',r=>r.fulfill({contentType:'text/html',body:'<html></html>'}));await page.goto(server.resolvedUrls.local[0]+'gpu-point-oracle');
  report.results=await page.evaluate(async source=>{
   const THREE=await import('/node_modules/three/build/three.module.js');
+  const {sourceTextureAnisotropy}=await import('/src/engine/sourceProcessingTextureSampling.ts');
   const {Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts');
   const {ordinarySourceViewport,prepareOrdinarySourceFrame}=await import('/src/engine/ordinarySourceCamera.ts'),{ArtRenderer}=await import('/src/engine/renderer.ts');
   const check=(v,m)=>{if(!v)throw Error(m);};
@@ -64,7 +65,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:print(json.dumps(dict(vertex=z.read('data
   };
   try{
    texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,64,64,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(source.sprite));
-   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.generateMipmap(gl.TEXTURE_2D);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.generateMipmap(gl.TEXTURE_2D);const filtering=sourceTextureAnisotropy(gl);if(filtering)gl.texParameterf(gl.TEXTURE_2D,filtering.parameter,filtering.maximum);
    const attribute=(program,name,size,data)=>{const b=gl.createBuffer();buffers.push(b);gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);const location=gl.getAttribLocation(program,name);check(location>=0,'missing attribute '+name);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
    const frames=[],cases=[
     {name:'nonperiodic-start',time:0},{name:'nonperiodic-moving',time:1.125},

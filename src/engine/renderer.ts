@@ -232,7 +232,7 @@ export class ArtRenderer {
       this.controls.enableRotate=false;
     } else if(output.sourcePointAppearance){
       if(!sourcePlan)throw new Error('源曲面点外观需要对应的源相机帧');
-      this.group.add(createSourceParticlePoints(output,sourcePlan,Number(document.settings.opacity??1)));
+      this.group.add(createSourceParticlePoints(output,sourcePlan,Number(document.settings.opacity??1),Math.max(1,this.renderer.capabilities.getMaxAnisotropy())));
       this.controls.enableRotate=false;
     } else {
       const colors=output.colors??vertexColors(output.positions,document.palette,String(document.settings.colorMetric??'height'));

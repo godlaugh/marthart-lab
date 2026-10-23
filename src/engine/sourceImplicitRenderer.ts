@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type {SceneOutput} from '../types';
 import type {SourceCameraPlan} from './sourceCamera';
 import {SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
-import {writeSourceEyePosition} from './sourceProcessingGeometry';
+import {sourceEyePositions} from './sourceProcessingGeometry';
 import {createSourceProcessingLines} from './sourceProcessingLineRenderer';
 import {IMPLICIT_WORK_BYTES} from './meshEdges';
 
@@ -24,7 +24,7 @@ export function createSourceImplicitMesh(output:Extract<SceneOutput,{type:'geome
  if(typeof facts.fill!=='boolean'||!Number.isFinite(facts.referencePixelDensity)||facts.referencePixelDensity<=0)throw Error('源隐式曲面显示参数无效');
  const geometry=new THREE.BufferGeometry();let material:THREE.RawShaderMaterial|undefined,lines:ReturnType<typeof createSourceProcessingLines>|undefined;
  try{
-  const eye=new Float32Array(count*4);for(let i=0;i<count;i++)writeSourceEyePosition(plan.modelView.rowMajor,output.positions[i*3],output.positions[i*3+1],output.positions[i*3+2],eye,i*4);
+  const eye=sourceEyePositions(output.positions,plan.modelView.rowMajor);
   geometry.setAttribute('position',new THREE.BufferAttribute(eye,4));geometry.setAttribute('color',new THREE.BufferAttribute(facts.fillColors,4));if(indices)geometry.setIndex(new THREE.BufferAttribute(indices,1));geometry.boundingSphere=new THREE.Sphere(new THREE.Vector3(),0);
   material=new THREE.RawShaderMaterial({glslVersion:THREE.GLSL3,
    vertexShader:'precision highp float; uniform mat4 projection; in vec4 position; in vec4 color; out vec4 fillColor; void main(){gl_Position=projection*position;fillColor=color;}',

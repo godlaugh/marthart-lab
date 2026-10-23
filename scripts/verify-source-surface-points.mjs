@@ -50,6 +50,7 @@ try{
   const {Generator}=await import('/src/engine/client.ts'),{parseProjectFile}=await import('/src/engine/legacyImport.ts');
   const {ordinarySourceViewport,prepareOrdinarySourceFrame}=await import('/src/engine/ordinarySourceCamera.ts');
   const {createSourceParticlePoints}=await import('/src/engine/sourceParticlePointRenderer.ts');
+  const {sourceTextureAnisotropy}=await import('/src/engine/sourceProcessingTextureSampling.ts');
   const check=(v,m)=>{if(!v)throw Error(m);};
   const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
   const canvas=document.createElement('canvas'),gl=canvas.getContext('webgl2',{antialias:false,alpha:true,premultipliedAlpha:false,preserveDrawingBuffer:true});check(gl,'WebGL2 unavailable');
@@ -63,7 +64,7 @@ try{
    gl.linkProgram(program);check(gl.getProgramParameter(program,gl.LINK_STATUS),gl.getProgramInfoLog(program));gl.useProgram(program);
    texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,64,64,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(source.sprite));
    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
-   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.generateMipmap(gl.TEXTURE_2D);
+   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.generateMipmap(gl.TEXTURE_2D);const filtering=sourceTextureAnisotropy(gl);if(filtering)gl.texParameterf(gl.TEXTURE_2D,filtering.parameter,filtering.maximum);
    const attribute=(name,size,data)=>{const b=gl.createBuffer();buffers.push(b);gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);const location=gl.getAttribLocation(program,name);check(location>=0,'missing attribute '+name);gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,size,gl.FLOAT,false,0,0);};
    const frames=[],generationDiagnostics=[],cases=[
     {name:'primary',radius:12},{name:'primary-dpr2',radius:12,dpr:2,density:2},
@@ -89,12 +90,12 @@ try{
     gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.depthMask(true);gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
     gl.clearColor(0,0,0,c.clearAlpha??1);gl.clearDepth(1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     const vertices=[],colors=[],uvs=[],quad=[[0,0],[1,0],[1,1],[0,0],[1,1],[0,1]];
-    for(let i=0;i<output.positions.length/3;i++)for(const uv of quad){vertices.push(...output.positions.slice(i*3,i*3+3),1);colors.push(...output.colors.slice(i*3,i*3+3),output.pointAlphas[i]);uvs.push(...uv);}
+    for(let i=0;i<output.positions.length/3;i++)for(const uv of quad){const m=plan.modelView.rowMajor,F=Math.fround,x=output.positions[i*3],y=output.positions[i*3+1],z=output.positions[i*3+2];for(let k=0;k<4;k++)vertices.push(F(F(F(F(m[k*4]*x)+F(m[k*4+1]*y))+F(m[k*4+2]*z))+m[k*4+3]));colors.push(...output.colors.slice(i*3,i*3+3),output.pointAlphas[i]);uvs.push(...uv);}
     attribute('vertex',4,vertices);attribute('color',4,colors);attribute('texCoord',2,uvs);
-    for(const [name,value] of [['projection',plan.projection.columnMajor],['modelview',plan.modelView.columnMajor],['texMatrix',[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]]])gl.uniformMatrix4fv(gl.getUniformLocation(program,name),false,value);
+    for(const [name,value] of [['projection',plan.projection.columnMajor],['modelview',[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]],['texMatrix',[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]]])gl.uniformMatrix4fv(gl.getUniformLocation(program,name),false,value);
     gl.uniform1f(gl.getUniformLocation(program,'radius'),a.radius);gl.uniform1f(gl.getUniformLocation(program,'focalLength'),a.focalLength);
     gl.drawArrays(gl.TRIANGLES,0,vertices.length/4);const expected=new Uint8Array(canvas.width*canvas.height*4);gl.readPixels(0,0,canvas.width,canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,expected);check(gl.getError()===0,'reference GL error');
-    const mesh=createSourceParticlePoints(output,plan,1),world=new THREE.Scene(),rt=new THREE.WebGLRenderTarget(canvas.width,canvas.height);world.add(mesh);
+    const mesh=createSourceParticlePoints(output,plan,1,Math.max(1,renderer.capabilities.getMaxAnisotropy())),world=new THREE.Scene(),rt=new THREE.WebGLRenderTarget(canvas.width,canvas.height);world.add(mesh);
     const actual=new Uint8Array(expected.length);
     try{renderer.setClearColor(0,c.clearAlpha??1);renderer.setSize(canvas.width,canvas.height,false);renderer.setRenderTarget(rt);renderer.render(world,new THREE.Camera());renderer.readRenderTargetPixels(rt,0,0,canvas.width,canvas.height,actual);check(renderer.getContext().getError()===0,'production GL error');}
     finally{renderer.setRenderTarget(null);rt.dispose();mesh.geometry.dispose();mesh.material.dispose();}
