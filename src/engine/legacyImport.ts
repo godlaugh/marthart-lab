@@ -281,7 +281,7 @@ function commonLocalPalette(r:Reader,s:SceneDocument){
 }
 function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
- const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&!s.mapSource&&!usesSourceSamilaSplat(s)&&s.kind!=='roots'&&!usesSourceSurfaceHost(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
+ const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&!s.mapSource&&!usesSourceSamilaSplat(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(!s.mapSource&&!usesSourceSymmetryProject(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
  if(!s.mapSource&&!usesSourceSymmetryProject(s)&&!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
  if(!usesSourceSymmetryProject(s)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSamilaSourceProjection(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
@@ -1047,10 +1047,13 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  const render=(r.str(['settings','render_mode'])??'CPU').toUpperCase();
  const mode=(r.str(['settings','surface_mode'])??'POINTS').toUpperCase();
  if(render==='GPU'||mode==='MESH')fail('原版曲面粒子动画当前只接入 CPU 点模式；GPU/网格的目标身份和显示仍待接入');
+ const backgroundPath=firstPath(r,['settings.background_color','settings.backgroundColor']);
+ const background=backgroundPath?r.str(backgroundPath)!:'#000000';
+ if(!/^#[0-9a-f]{6}$/i.test(background))fail(`${backgroundPath} 应为 #RRGGBB`);
  const settings=s.settings;
  settings.pointSize=Math.fround(hasSettings?r.domainDouble(['settings','dot_size'],2):1.68);
  if(!Number.isFinite(settings.pointSize))fail('原版曲面点半径转换为非有限数值');
- Object.assign(settings,{surfaceGeometryVersion:SOURCE_SURFACE_PARTICLES,renderMode:'points',computeBackend:'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,flowU:0,flowV:0});
+ Object.assign(settings,{surfaceGeometryVersion:SOURCE_SURFACE_PARTICLES,renderMode:'points',computeBackend:'cpu',background,scale:1,rotateX:0,rotateY:0,rotateZ:0,flowU:0,flowV:0});
  for(const field of SOURCE_SURFACE_NUMBER_FIELDS)r.retainNumberToken(['settings',field]);
  for(const [axis,defaultCount,maxText]of [['u',hasSettings?40:99,'TWO_PI'],['v',hasSettings?20:99,'PI']] as const){
   const upper=axis.toUpperCase();settings[axis+'Segments']=r.sourceInt(['settings',axis+'_segments'],defaultCount);

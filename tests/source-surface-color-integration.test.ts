@@ -15,6 +15,17 @@ function source(palette:unknown=['#80112233'],settings:Record<string,unknown>={}
 const imported=(palette?:unknown,settings?:Record<string,unknown>)=>parseProjectFile(JSON.stringify(source(palette,settings))).scene;
 
 describe('source Surface palette and alpha through authored document and production output',()=>{
+ it.each([
+  {settings:{},expected:'#000000',packed:0xff000000},
+  {settings:{background_color:'#123456'},expected:'#123456',packed:0xff123456},
+ ])('owns the source point background through import, save and generated output: $expected',({settings,expected,packed})=>{
+  const s=parseScene(serializeScene(imported(undefined,settings)));
+  expect(s.settings.background).toBe(expected);
+  const context={time:0,width:32,height:32,quality:'preview' as const,sourceViewport:ordinarySourceViewport(s,32,32,'primary',32)};
+  expect(generateScene(s,context)).toMatchObject({type:'geometry',sourceBackgroundColor:packed});
+  s.settings.background='#234567';
+  expect(generateScene(parseScene(serializeScene(s)),context)).toMatchObject({sourceBackgroundColor:0xff234567});
+ });
  it('keeps ARGB and invalid source strings through import, save and timeline copies',()=>{
   const s=imported(['#80112233','invalid','0x0000FF']);
   const reopened=parseScene(serializeScene(s));expect(reopened.surfaceSourcePalette).toEqual({colors:['#80112233','invalid','0x0000FF']});
