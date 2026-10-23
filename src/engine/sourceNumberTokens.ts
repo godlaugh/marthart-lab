@@ -126,6 +126,7 @@ function perlinParameterPath(path:readonly unknown[]):boolean {
 const mapSettingFields=new Set([...SOURCE_MAP_PRESENTATION_NUMBER_FIELDS,...SOURCE_MAP_SPLAT_NUMBER_FIELDS,'batch_size','iterations_per_frame','burn_in_steps','dimension','x0_min','x0_max','y0_min','y0_max']);
 const symmetrySettingFields=new Set([...SOURCE_SYMMETRY_PROJECT_VISUAL_NUMBER_FIELDS,'batch_size','iterations_per_frame','burn_in_steps','x0_min','x0_max','y0_min','y0_max']);
 function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boolean {
+ if(family==='implicit'){const tail=path[0]==='main_equation'?path.slice(1):path[0]==='formulas'&&index(path[1],32)?path.slice(2):undefined;if(tail&&(tail.length===1&&tail[0]==='scale'||tail.length===2&&tail[0]==='position'&&(tail[1]==='0'||tail[1]==='1')))return true;}
  if(family==='map'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&mapSettingFields.has(path[1]))return true;
  if(family==='symmetry'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&symmetrySettingFields.has(path[1]))return true;
  if(family==='perlin'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&perlinFields.has(path[1])||perlinParameterPath(path)))return true;

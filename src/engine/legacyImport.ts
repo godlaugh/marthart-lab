@@ -1,5 +1,5 @@
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
-import {SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
+import {usesSourceImplicitPresentation,SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
 import type {FormulaConfig} from '../types';
 import {DOMAIN_SCENE_SEQUENCE} from './sourceDomainTimeline';
 import {importSourceFractalFormulaConfiguration} from './sourceFractalFormulaRuntime';
@@ -290,21 +290,33 @@ function common(r:Reader,s:SceneDocument){
 }
 function formulaAnnotations(r:Reader,s:SceneDocument){
  if(!r.has('main_equation')&&!r.has('formulas'))return;
- const sourceCentered=usesSourceCenteredFormulaLayout(s),config:FormulaConfig=sourceCentered?{layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]}:defaultFormulas();
- const latex=(path:string)=>{const value=r.str(path)??'';if(value.length>8192)fail(`${path} 超过 8192 字符`);const trimmed=value.trim();return trimmed.startsWith('\\(')&&trimmed.endsWith('\\)')||trimmed.startsWith('\\[')&&trimmed.endsWith('\\]')?trimmed.slice(2,-2).trim():value;};
- const style=(path:string,visible:boolean)=>{
+ const sourceImplicit=usesSourceImplicitPresentation(s),sourceCentered=usesSourceCenteredFormulaLayout(s),config:FormulaConfig=sourceCentered?{layout:'source-surface-centered-v1',main:{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center'},additional:[]}:defaultFormulas();
+ const latex=(path:string)=>{const value=r.str(path,sourceImplicit)??'';if(value.length>8192)fail(`${path} 超过 8192 字符`);if(sourceImplicit)return value;const trimmed=value.trim();return trimmed.startsWith('\\(')&&trimmed.endsWith('\\)')||trimmed.startsWith('\\[')&&trimmed.endsWith('\\]')?trimmed.slice(2,-2).trim():value;};
+ // JSONObject/JSONArray.getFloat use Double parsing followed by float32,
+ // never the expression parser used by local authoring fields.
+ const sourceFloat=(path:string,fallback:number)=>{const value=Math.fround(r.domainDouble(path,fallback));if(!Number.isFinite(value))fail(`${path} 原版公式数值非有限，不能保存或绘制`);return value;};
+ const style=(path:string,visible:boolean,additional=false)=>{
+  if(sourceImplicit){
+   for(const key of ['scale','position.0','position.1'])r.retainNumberToken(path+'.'+key);
+   const enabled=additional?true:r.domainBoolean(path+'.enabled',false,'default');
+   if(additional&&r.has(path+'.enabled'))r.acknowledge(path+'.enabled','原版隐式曲面附加公式不读取 enabled');
+   if(!enabled){for(const key of ['position','scale','color'])r.acknowledge(path+'.'+key,'原版关闭的主公式不读取此字段');return{visible:false,x:0,y:200,scale:.25,color:'#ffffff',anchor:'center' as const};}
+   const position=r.use(path+'.position');if(position!==undefined&&(!Array.isArray(position)||position.length<2))fail(`${path}.position 需要至少两个源坐标`);
+   const x=position===undefined?0:sourceFloat(path+'.position.0',NaN),y=position===undefined?(additional?0:200):sourceFloat(path+'.position.1',NaN);
+   return{visible:true,x,y,scale:sourceFloat(path+'.scale',additional?1:.25),color:r.str(path+'.color')??'#ffffff',anchor:'center' as const};
+  }
   const position=r.use(path+'.position');if(position!==undefined&&(!Array.isArray(position)||position.length!==2||position.some(v=>typeof v!=='number'||!Number.isFinite(v))))fail(`${path}.position 应为两个有限坐标`);
   const [x,y]=(position??[0,200]) as number[],color=r.str(path+'.color')??'#ffffff',scale=(r.num(path+'.scale')??.25)*(sourceCentered?1:2.5);
   return{visible:r.bool(path+'.enabled')??visible,x:config.layout==='source-surface-centered-v1'?x:config.referenceWidth/2+x,y:config.layout==='source-surface-centered-v1'?y:config.referenceHeight/2+y,scale,color,anchor:'center' as const};
  };
  if(r.has('main_equation')){
   r.object('main_equation');const explicit=r.has('main_equation.latex');
-  // JsonSurfaceConfig generates its main equation from the source expressions;
+  // Source Surface and Implicit configs generate their main equation from expressions;
   // an imported latex member is ignored. Local edits after import remain valid.
-  if(explicit&&usesSourceSurfaceGeometry(s))r.acknowledge('main_equation.latex','原版曲面忽略主方程 latex 字段，按表达式生成主方程；原值保留在来源记录');
-  config.main={...style('main_equation',false),...(explicit&&!usesSourceSurfaceGeometry(s)?{latex:latex('main_equation.latex')}:{})};
+  if(explicit&&(usesSourceSurfaceGeometry(s)||sourceImplicit))r.acknowledge('main_equation.latex','原版曲面忽略主方程 latex 字段，按表达式生成主方程；原值保留在来源记录');
+  config.main={...style('main_equation',false),...(explicit&&!usesSourceSurfaceGeometry(s)&&!sourceImplicit?{latex:latex('main_equation.latex')}:{})};
  }
- if(r.has('formulas')){const formulas=r.peek('formulas');if(!Array.isArray(formulas)||formulas.length>32)fail('formulas 应为最多 32 条公式的数组');config.additional=formulas.map((_,i)=>{const path=`formulas.${i}`;r.object(path);return{...style(path,true),id:`imported-formula-${i+1}`,latex:latex(path+'.latex')};});if(!formulas.length)r.use('formulas');}
+ if(r.has('formulas')){const formulas=r.peek('formulas');if(!Array.isArray(formulas)||formulas.length>32)fail('formulas 应为最多 32 条公式的数组');config.additional=formulas.map((_,i)=>{const path=`formulas.${i}`;r.object(path);return{...style(path,true,true),id:`imported-formula-${i+1}`,latex:latex(path+'.latex')};});if(!formulas.length)r.use('formulas');}
  try{s.formulas=validateFormulas(config);}catch(error){fail(error instanceof Error?error.message:String(error));}
  r.warnings.push(sourceCentered?'源曲面公式保留居中偏移与源缩放，由实际生成帧提供主画布逻辑高度并使用源字形后端；原版整图尚未验收。':'公式内容、居中锚点、颜色和相对缩放已导入；位置转换至 1280×720 参考画布，原版窗口尺寸及 JLaTeXMath 字体度量未逐帧对照，可在公式标注面板调整。');
 }

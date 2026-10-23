@@ -1,0 +1,2943 @@
+{
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "scope": "Original MathArt controlled-clock parameter recording with main/additional formulas. Primary RGB255 defaults explicitly initialized; zero GUI windows, CPU wireframe 24^3, 384x288 pre-branding artwork. Numerical/formula facts retained here; pixels remain local evidence.",
+  "cases": [
+    {
+      "name": "formula-parameters",
+      "input": {
+        "project": {
+          "settings": {
+            "scale_z": 60,
+            "mesh_fill_opacity": 0.8999999761581421,
+            "scale_y": 60,
+            "x_segments": 24,
+            "scale_x": 60,
+            "z_min": "-2.0",
+            "y_max": "2.0",
+            "x_min": "-2.0",
+            "y_segments": 24,
+            "z_segments": 24,
+            "background_color": "#000000",
+            "render_mode": "WIREFRAME",
+            "y_min": "-2.0",
+            "mesh_mode": "CPU",
+            "line_weight": 0.6800000071525574,
+            "x_max": "2.0",
+            "z_max": "2.0",
+            "offset_x": 0,
+            "mesh_fill": true,
+            "dot_size": 1.2000000476837158,
+            "offset_y": 0,
+            "offset_z": 0
+          },
+          "equation": {
+            "f": "a*x*x+y*y-z*z-b"
+          },
+          "main_equation": {
+            "enabled": true,
+            "latex": "IGNORED",
+            "position": [
+              0,
+              150
+            ],
+            "scale": 0.5,
+            "color": "#FFFFFF"
+          },
+          "name": "fps4-varying",
+          "description": "",
+          "timeline": [
+            {
+              "type": "animate",
+              "duration": 0.5,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "paramStart",
+                  "args": {
+                    "parameters": {
+                      "a": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": 0.02
+                      },
+                      "b": {
+                        "min": -0.75,
+                        "max": 0.75,
+                        "step": -0.015
+                      },
+                      "absent": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": 0.02
+                      },
+                      "flat": {
+                        "min": 0.3,
+                        "max": 0.3,
+                        "step": 1
+                      },
+                      "reverse": {
+                        "min": 2,
+                        "max": -1,
+                        "step": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.5
+            },
+            {
+              "type": "animate",
+              "duration": 0.5,
+              "easing": "SINE_IN_OUT",
+              "actions": [
+                {
+                  "method": "paramStop",
+                  "args": {
+                    "parameters": {
+                      "a": {}
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.25
+            },
+            {
+              "type": "animate",
+              "duration": 0.25,
+              "easing": "SINE_IN_OUT",
+              "actions": [
+                {
+                  "method": "paramStop",
+                  "args": {
+                    "parameters": {}
+                  }
+                }
+              ]
+            },
+            {
+              "type": "animate",
+              "duration": 0,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "paramStart",
+                  "args": {
+                    "parameters": {
+                      "a": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": -0.01
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.5
+            }
+          ],
+          "palette": [
+            "#FC6255",
+            "#FF862F",
+            "#FFFF00"
+          ],
+          "type": "IMPLICIT",
+          "camera": {
+            "phi": "PI/2",
+            "theta": "0",
+            "gamma": "0"
+          },
+          "parameters": {
+            "a": 1,
+            "b": 0.25,
+            "flat": 0,
+            "reverse": 0
+          },
+          "config_version": "1.0.0",
+          "isUserScene": true,
+          "formulas": [
+            {
+              "latex": "a+b",
+              "position": [
+                -100,
+                -140
+              ],
+              "scale": 0.4,
+              "color": "#00ffff",
+              "enabled": false
+            }
+          ]
+        },
+        "simulationFps": 4,
+        "steps": [
+          {
+            "action": "record",
+            "timestampMs": 1000,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "record",
+            "timestampMs": 1250,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "record",
+            "timestampMs": 1500,
+            "actualFrameRate": 1
+          },
+          {
+            "action": "record",
+            "timestampMs": 1750,
+            "actualFrameRate": 59.5
+          },
+          {
+            "action": "record",
+            "timestampMs": 2000,
+            "actualFrameRate": 8
+          },
+          {
+            "action": "record",
+            "timestampMs": 2250,
+            "actualFrameRate": 4
+          },
+          {
+            "action": "record",
+            "timestampMs": 2500,
+            "actualFrameRate": 31
+          },
+          {
+            "action": "record",
+            "timestampMs": 2750,
+            "actualFrameRate": 60
+          },
+          {
+            "action": "record",
+            "timestampMs": 3000,
+            "actualFrameRate": 9
+          },
+          {
+            "action": "record",
+            "timestampMs": 3250,
+            "actualFrameRate": 23
+          },
+          {
+            "action": "record",
+            "timestampMs": 3500,
+            "actualFrameRate": 0
+          },
+          {
+            "action": "stop",
+            "timestampMs": 5000,
+            "actualFrameRate": 23
+          },
+          {
+            "action": "live",
+            "timestampMs": 5125,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "live",
+            "timestampMs": 5125,
+            "actualFrameRate": 1
+          },
+          {
+            "action": "live",
+            "timestampMs": 5062,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "pause",
+            "timestampMs": 5500,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "snapshot",
+            "timestampMs": 9000,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "resume",
+            "timestampMs": 10000,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "live",
+            "timestampMs": 10125,
+            "actualFrameRate": 16
+          }
+        ]
+      },
+      "frames": [
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=0.18499999586492777, b=2.894255742068135, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.0919732647317644,
+            "b": 0.18361708912408045,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=0.5, b=0.5, flat=0.5, reverse=0.5}",
+          "frame": 0,
+          "height": 288,
+          "timestampMs": 1000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.30499999318271875, b=2.9542557407270307, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1501465843533092,
+            "b": 0.1396822991430086,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 1,
+          "height": 288,
+          "timestampMs": 1250
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.75,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 1,
+          "parameterPhases": "{a=0.9049999797716737, b=3.254255734021508, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.3932125712289642,
+            "b": -0.08431867010205879,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 2,
+          "height": 288,
+          "timestampMs": 1500
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 59.5,
+          "parameterPhases": "{a=1.4999999664723873, b=3.551755727371865, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4987474921162023,
+            "b": -0.29906916078362467,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 3,
+          "height": 288,
+          "timestampMs": 1750
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 8,
+          "parameterPhases": "{a=1.5166174911718624, b=3.5917557264777953, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4992663429304347,
+            "b": -0.32633427512743846,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=0.5, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 4,
+          "height": 288,
+          "timestampMs": 2000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1.5,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 4,
+          "parameterPhases": "{a=1.5166174911718624, b=3.6117557260307604, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4992663429304347,
+            "b": -0.3397737521803142,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=0.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 5,
+          "height": 288,
+          "timestampMs": 2250
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1.75,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 31,
+          "parameterPhases": "{a=1.5166174911718624, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4992663429304347,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=0.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 6,
+          "height": 288,
+          "timestampMs": 2500
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": false,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 60,
+          "parameterPhases": "{a=1.5166174911718624, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4992663429304347,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=0.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 7,
+          "height": 288,
+          "timestampMs": 2750
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 9,
+          "parameterPhases": "{a=1.641941979250049, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4987351077117568,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 8,
+          "height": 288,
+          "timestampMs": 3000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.5,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 23,
+          "parameterPhases": "{a=1.6898096637737874, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4964631340956502,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 9,
+          "height": 288,
+          "timestampMs": 3250
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.75,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 0,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 10,
+          "height": 288,
+          "timestampMs": 3500
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.75,
+          "rendering": false,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 23,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "stop",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 11,
+          "height": 288,
+          "timestampMs": 5000
+        },
+        {
+          "managerFinishedAtFrameStart": true,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.875,
+          "rendering": false,
+          "rawDt": 0.125,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 12,
+          "height": 288,
+          "timestampMs": 5125
+        },
+        {
+          "managerFinishedAtFrameStart": true,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.875,
+          "rendering": false,
+          "rawDt": 0,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 1,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 13,
+          "height": 288,
+          "timestampMs": 5125
+        },
+        {
+          "managerFinishedAtFrameStart": true,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.811999797821045,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 14,
+          "height": 288,
+          "timestampMs": 5062
+        },
+        {
+          "managerFinishedAtFrameStart": true,
+          "paused": true,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.811999797821045,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "pause",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 15,
+          "height": 288,
+          "timestampMs": 5500
+        },
+        {
+          "managerFinishedAtFrameStart": true,
+          "paused": true,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.811999797821045,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "snapshot",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 16,
+          "height": 288,
+          "timestampMs": 9000
+        },
+        {
+          "managerFinishedAtFrameStart": true,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.811999797821045,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "resume",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 17,
+          "height": 288,
+          "timestampMs": 10000
+        },
+        {
+          "managerFinishedAtFrameStart": true,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 150,
+              "scale": 0.5,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -16711681,
+              "x": -100,
+              "y": -140,
+              "scale": 0.4000000059604645,
+              "latex": "a+b"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 2.936999797821045,
+          "rendering": false,
+          "rawDt": 0.125,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 16,
+          "parameterPhases": "{a=1.8469888363229046, b=3.7667557225662405, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.4810503455365644,
+            "b": -0.4389221310648044,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=0.0, flat=0.0, reverse=0.0}",
+          "frame": 18,
+          "height": 288,
+          "timestampMs": 10125
+        }
+      ],
+      "provenance": {
+        "sourceSha256": "67a0485661d45fa99ab39062508eef5e62a4e14f22b5a17b91f663b291882571",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "3da35016863678c5fa42bd135ae09d78885d74adaf9ebc7b1bd13cd5125cbf31",
+        "exit": 0,
+        "reaped": true,
+        "processGroupExists": false,
+        "timedOut": false
+      }
+    },
+    {
+      "name": "formula-defaults",
+      "input": {
+        "project": {
+          "settings": {
+            "scale_z": 60,
+            "mesh_fill_opacity": 0.8999999761581421,
+            "scale_y": 60,
+            "x_segments": 24,
+            "scale_x": 60,
+            "z_min": "-2.0",
+            "y_max": "2.0",
+            "x_min": "-2.0",
+            "y_segments": 24,
+            "z_segments": 24,
+            "background_color": "#000000",
+            "render_mode": "WIREFRAME",
+            "y_min": "-2.0",
+            "mesh_mode": "CPU",
+            "line_weight": 0.6800000071525574,
+            "x_max": "2.0",
+            "z_max": "2.0",
+            "offset_x": 0,
+            "mesh_fill": true,
+            "dot_size": 1.2000000476837158,
+            "offset_y": 0,
+            "offset_z": 0
+          },
+          "equation": {
+            "f": "a*x*x+y*y-z*z-b"
+          },
+          "main_equation": {
+            "enabled": true
+          },
+          "name": "fps4-varying",
+          "description": "",
+          "timeline": [
+            {
+              "type": "animate",
+              "duration": 0.5,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "paramStart",
+                  "args": {
+                    "parameters": {
+                      "a": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": 0.02
+                      },
+                      "b": {
+                        "min": -0.75,
+                        "max": 0.75,
+                        "step": -0.015
+                      },
+                      "absent": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": 0.02
+                      },
+                      "flat": {
+                        "min": 0.3,
+                        "max": 0.3,
+                        "step": 1
+                      },
+                      "reverse": {
+                        "min": 2,
+                        "max": -1,
+                        "step": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.5
+            },
+            {
+              "type": "animate",
+              "duration": 0.5,
+              "easing": "SINE_IN_OUT",
+              "actions": [
+                {
+                  "method": "paramStop",
+                  "args": {
+                    "parameters": {
+                      "a": {}
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.25
+            },
+            {
+              "type": "animate",
+              "duration": 0.25,
+              "easing": "SINE_IN_OUT",
+              "actions": [
+                {
+                  "method": "paramStop",
+                  "args": {
+                    "parameters": {}
+                  }
+                }
+              ]
+            },
+            {
+              "type": "animate",
+              "duration": 0,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "paramStart",
+                  "args": {
+                    "parameters": {
+                      "a": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": -0.01
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.5
+            }
+          ],
+          "palette": [
+            "#FC6255",
+            "#FF862F",
+            "#FFFF00"
+          ],
+          "type": "IMPLICIT",
+          "camera": {
+            "phi": "PI/2",
+            "theta": "0",
+            "gamma": "0"
+          },
+          "parameters": {
+            "a": 1,
+            "b": 0.25,
+            "flat": 0,
+            "reverse": 0
+          },
+          "config_version": "1.0.0",
+          "isUserScene": true,
+          "formulas": [
+            {
+              "latex": "x"
+            }
+          ]
+        },
+        "simulationFps": 4,
+        "steps": [
+          {
+            "action": "record",
+            "timestampMs": 1000,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "record",
+            "timestampMs": 1250,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "stop",
+            "timestampMs": 5000,
+            "actualFrameRate": 23
+          },
+          {
+            "action": "live",
+            "timestampMs": 5125,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "live",
+            "timestampMs": 5125,
+            "actualFrameRate": 1
+          },
+          {
+            "action": "live",
+            "timestampMs": 5062,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "pause",
+            "timestampMs": 5500,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "snapshot",
+            "timestampMs": 9000,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "resume",
+            "timestampMs": 10000,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "live",
+            "timestampMs": 10125,
+            "actualFrameRate": 16
+          }
+        ]
+      },
+      "frames": [
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=0.18499999586492777, b=2.894255742068135, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.0919732647317644,
+            "b": 0.18361708912408045,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=0.5, b=0.5, flat=0.5, reverse=0.5}",
+          "frame": 0,
+          "height": 288,
+          "timestampMs": 1000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.30499999318271875, b=2.9542557407270307, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1501465843533092,
+            "b": 0.1396822991430086,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 1,
+          "height": 288,
+          "timestampMs": 1250
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5,
+          "rendering": false,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 23,
+          "parameterPhases": "{a=0.30499999318271875, b=2.9542557407270307, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "stop",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1501465843533092,
+            "b": 0.1396822991430086,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 2,
+          "height": 288,
+          "timestampMs": 5000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.625,
+          "rendering": false,
+          "rawDt": 0.125,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 3,
+          "height": 288,
+          "timestampMs": 5125
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.625,
+          "rendering": false,
+          "rawDt": 0,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 1,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 4,
+          "height": 288,
+          "timestampMs": 5125
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 5,
+          "height": 288,
+          "timestampMs": 5062
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": true,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "pause",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 6,
+          "height": 288,
+          "timestampMs": 5500
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": true,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "snapshot",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 7,
+          "height": 288,
+          "timestampMs": 9000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "resume",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 8,
+          "height": 288,
+          "timestampMs": 10000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 200,
+              "scale": 0.25,
+              "latex": "a x x + y y - z z - b = 0"
+            },
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "x"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.6869997978210449,
+          "rendering": false,
+          "rawDt": 0.125,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 4,
+          "actualFrameRate": 16,
+          "parameterPhases": "{a=0.4449999900534749, b=3.0242557391624088, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.2152289356615347,
+            "b": 0.08780088866912282,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 9,
+          "height": 288,
+          "timestampMs": 10125
+        }
+      ],
+      "provenance": {
+        "sourceSha256": "e0edb402248afd1f2917d0e6754b0ec1df19ce3e49083635dfd10618697c89a1",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "3da35016863678c5fa42bd135ae09d78885d74adaf9ebc7b1bd13cd5125cbf31",
+        "exit": 0,
+        "reaped": true,
+        "processGroupExists": false,
+        "timedOut": false
+      }
+    },
+    {
+      "name": "formula-disabled-main",
+      "input": {
+        "project": {
+          "settings": {
+            "scale_z": 60,
+            "mesh_fill_opacity": 0.8999999761581421,
+            "scale_y": 60,
+            "x_segments": 24,
+            "scale_x": 60,
+            "z_min": "-2.0",
+            "y_max": "2.0",
+            "x_min": "-2.0",
+            "y_segments": 24,
+            "z_segments": 24,
+            "background_color": "#000000",
+            "render_mode": "WIREFRAME",
+            "y_min": "-2.0",
+            "mesh_mode": "CPU",
+            "line_weight": 0.6800000071525574,
+            "x_max": "2.0",
+            "z_max": "2.0",
+            "offset_x": 0,
+            "mesh_fill": true,
+            "dot_size": 1.2000000476837158,
+            "offset_y": 0,
+            "offset_z": 0
+          },
+          "equation": {
+            "f": "a*x*x+y*y-z*z-b"
+          },
+          "main_equation": {
+            "enabled": false,
+            "latex": {},
+            "scale": "unused",
+            "position": "unused",
+            "color": 4
+          },
+          "name": "fps4-varying",
+          "description": "",
+          "timeline": [
+            {
+              "type": "animate",
+              "duration": 0.5,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "paramStart",
+                  "args": {
+                    "parameters": {
+                      "a": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": 0.02
+                      },
+                      "b": {
+                        "min": -0.75,
+                        "max": 0.75,
+                        "step": -0.015
+                      },
+                      "absent": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": 0.02
+                      },
+                      "flat": {
+                        "min": 0.3,
+                        "max": 0.3,
+                        "step": 1
+                      },
+                      "reverse": {
+                        "min": 2,
+                        "max": -1,
+                        "step": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.5
+            },
+            {
+              "type": "animate",
+              "duration": 0.5,
+              "easing": "SINE_IN_OUT",
+              "actions": [
+                {
+                  "method": "paramStop",
+                  "args": {
+                    "parameters": {
+                      "a": {}
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.25
+            },
+            {
+              "type": "animate",
+              "duration": 0.25,
+              "easing": "SINE_IN_OUT",
+              "actions": [
+                {
+                  "method": "paramStop",
+                  "args": {
+                    "parameters": {}
+                  }
+                }
+              ]
+            },
+            {
+              "type": "animate",
+              "duration": 0,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "paramStart",
+                  "args": {
+                    "parameters": {
+                      "a": {
+                        "min": 0.5,
+                        "max": 1.5,
+                        "step": -0.01
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.5
+            }
+          ],
+          "palette": [
+            "#FC6255",
+            "#FF862F",
+            "#FFFF00"
+          ],
+          "type": "IMPLICIT",
+          "camera": {
+            "phi": "PI/2",
+            "theta": "0",
+            "gamma": "0"
+          },
+          "parameters": {
+            "a": 1,
+            "b": 0.25,
+            "flat": 0,
+            "reverse": 0
+          },
+          "config_version": "1.0.0",
+          "isUserScene": true,
+          "formulas": [
+            {
+              "latex": "y",
+              "enabled": false
+            }
+          ]
+        },
+        "simulationFps": 4,
+        "steps": [
+          {
+            "action": "record",
+            "timestampMs": 1000,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "record",
+            "timestampMs": 1250,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "stop",
+            "timestampMs": 5000,
+            "actualFrameRate": 23
+          },
+          {
+            "action": "live",
+            "timestampMs": 5125,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "live",
+            "timestampMs": 5125,
+            "actualFrameRate": 1
+          },
+          {
+            "action": "live",
+            "timestampMs": 5062,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "pause",
+            "timestampMs": 5500,
+            "actualFrameRate": 37
+          },
+          {
+            "action": "snapshot",
+            "timestampMs": 9000,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "resume",
+            "timestampMs": 10000,
+            "actualFrameRate": 12
+          },
+          {
+            "action": "live",
+            "timestampMs": 10125,
+            "actualFrameRate": 16
+          }
+        ]
+      },
+      "frames": [
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=0.18499999586492777, b=2.894255742068135, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.0919732647317644,
+            "b": 0.18361708912408045,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=0.5, b=0.5, flat=0.5, reverse=0.5}",
+          "frame": 0,
+          "height": 288,
+          "timestampMs": 1000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.30499999318271875, b=2.9542557407270307, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "record",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1501465843533092,
+            "b": 0.1396822991430086,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 1,
+          "height": 288,
+          "timestampMs": 1250
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5,
+          "rendering": false,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 23,
+          "parameterPhases": "{a=0.30499999318271875, b=2.9542557407270307, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "stop",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1501465843533092,
+            "b": 0.1396822991430086,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 2,
+          "height": 288,
+          "timestampMs": 5000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.625,
+          "rendering": false,
+          "rawDt": 0.125,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 3,
+          "height": 288,
+          "timestampMs": 5125
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.625,
+          "rendering": false,
+          "rawDt": 0,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 1,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 4,
+          "height": 288,
+          "timestampMs": 5125
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 5,
+          "height": 288,
+          "timestampMs": 5062
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": true,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 37,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "pause",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 6,
+          "height": 288,
+          "timestampMs": 5500
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": true,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "snapshot",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 7,
+          "height": 288,
+          "timestampMs": 9000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5619997978210449,
+          "rendering": false,
+          "rawDt": -0.06300020217895508,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 12,
+          "parameterPhases": "{a=0.36499999184161425, b=2.9842557400564784, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "resume",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.1784746434279847,
+            "b": 0.11751642986965605,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 8,
+          "height": 288,
+          "timestampMs": 10000
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "paused": false,
+          "parametersRunning": true,
+          "formulas": [
+            {
+              "color": -1,
+              "x": 0,
+              "y": 0,
+              "scale": 1,
+              "latex": "y"
+            }
+          ],
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.6869997978210449,
+          "rendering": false,
+          "rawDt": 0.125,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 3,
+          "actualFrameRate": 16,
+          "parameterPhases": "{a=0.4449999900534749, b=3.0242557391624088, flat=0.0, reverse=0.0}",
+          "width": 384,
+          "action": "live",
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "parameters": {
+            "a": 1.2152289356615347,
+            "b": 0.08780088866912282,
+            "flat": 0.30000001192092896,
+            "reverse": 2
+          },
+          "parameterScales": "{a=1.0, b=1.0, flat=1.0, reverse=1.0}",
+          "frame": 9,
+          "height": 288,
+          "timestampMs": 10125
+        }
+      ],
+      "provenance": {
+        "sourceSha256": "cfb97fbc47fa4d2d252cf6a21349f8f756a3c28489ee4638d809012a352eacaa",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "3da35016863678c5fa42bd135ae09d78885d74adaf9ebc7b1bd13cd5125cbf31",
+        "exit": 0,
+        "reaped": true,
+        "processGroupExists": false,
+        "timedOut": false
+      }
+    }
+  ]
+}

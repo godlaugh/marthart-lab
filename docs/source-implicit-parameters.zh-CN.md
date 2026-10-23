@@ -59,4 +59,4 @@ Surface 和 Implicit 的相同振荡算法抽为 `sourceOscillatingParameterRunt
 
 ## Goal 中仍待完成
 
-带公式的隐式队列录制与原版对照、更多网格及显示配置、默认 WebGL 的同等完整 UI 验收仍待完成。其他场景的剩余一致性验证、全局翻译缺口、原版主窗口整图和最终 Apple Silicon 发行仍属于未完成的 Goal。
+带公式的隐式队列录制已完成后续[公式录制验收](source-implicit-formula-recording.zh-CN.md)记录的对照。更多网格及显示配置、默认 WebGL 的同等完整 UI 验收仍待完成。其他场景的剩余一致性验证、全局翻译缺口、原版主窗口整图和最终 Apple Silicon 发行仍属于未完成的 Goal。

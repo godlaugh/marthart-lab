@@ -60,4 +60,4 @@
 
 ## 后续范围
 
-原版隐式参数动画已在后续[参数动画验收](source-implicit-parameters.zh-CN.md)中完成本轮范围。带公式的队列录制对照、更多网格/显示配置、默认 WebGL 的同等完整 UI 验收仍待完成。其他场景族、全局翻译缺口、原版主窗口整图对照以及最终 Apple Silicon 应用打包仍属于未完成的 Goal。
+原版隐式参数动画已在后续[参数动画验收](source-implicit-parameters.zh-CN.md)中完成本轮范围。带公式的队列录制也已完成[本轮对照](source-implicit-formula-recording.zh-CN.md)。更多网格/显示配置、默认 WebGL 的同等完整 UI 验收仍待完成。其他场景族、全局翻译缺口、原版主窗口整图对照以及最终 Apple Silicon 应用打包仍属于未完成的 Goal。

@@ -1,3 +1,4 @@
+import formulaNative from './fixtures/source-implicit-presentation/formula-recording.json';
 import parameterNative from './fixtures/source-implicit-presentation/parameters.json';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import native from './fixtures/source-implicit-presentation/recording-clock.json';
@@ -126,7 +127,7 @@ describe('Implicit paused capture production transport',()=>{
 // Persist/reopen the imported authoring model before it crosses the real
 // Worker boundary. Every numerical expectation comes from the pinned JVM.
 describe('Implicit parameter queue through production Worker',()=>{
- for(const row of parameterNative.cases)it('matches original parameter/camera facts: '+row.name,()=>{
+ for(const row of [...parameterNative.cases,...formulaNative.cases])it('matches original parameter/camera facts: '+row.name,()=>{
   const scene=parseProjectFile(serializeScene(parseProjectFile(JSON.stringify(row.input.project)).scene)).scene;
   const context:GenerationInput={time:0,width:810,height:972,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,405,486,'primary',486)};
   const primary=result(send({operation:'generate',scene,context}),'generate');
@@ -144,6 +145,7 @@ describe('Implicit parameter queue through production Worker',()=>{
    if(paused){const pair=result(send({operation:'implicit-paused-capture',sourceId,size:{width:384,height:288},scale:1}),'implicit-paused-capture').result;expect(pair.capture.sourceImplicitParameters).toEqual(pair.preview.sourceImplicitParameters);output=pair.preview;}
    const reference=row.frames[i],{phiRate,thetaRate,gammaRate,...camera}=reference.camera;
    expect(output.sourceCameraFrame).toMatchObject({camera,rates:[phiRate,thetaRate,gammaRate],sceneTime:reference.sceneTime,rawDt:reference.rawDt,queueComplete:reference.complete});
+   if('formulas' in reference)expect(output.formulaPresentation!.labels.map(({latex,x,y,scale,color})=>({latex,x,y,scale,color:parseInt(color.slice(1),16)|0xff000000}))).toEqual(reference.formulas);
    const values=output.sourceImplicitParameters!.values;expect(Object.keys(values).sort()).toEqual(Object.keys(reference.parameters).sort());
    for(const [name,value]of Object.entries(reference.parameters))expect(Math.abs(values[name]-value)).toBeLessThanOrEqual(2e-14);
   }
