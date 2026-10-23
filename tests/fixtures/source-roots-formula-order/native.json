@@ -1,0 +1,97 @@
+{
+  "scope": "Actual original GL texture draw order with all three formulas overlapping, normal FREE license and watermark retained. Only formula content, position, scale and color differ from bundled Degree10 input.",
+  "inputProvenance": {
+    "originalPath": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/resources/data/ComplexRoots/Degree10_UnitCircle_T1T2_Formula06.json",
+    "originalSha256": "a32ca394255b4a9f10c92e88f5aea8b846868923a2d5d9b901904a7a6d9fb7ea",
+    "derivedSha256": "4bfb12165a3a90c7c9df3c1ad07311aadfac414eb9ba6d0ac4d30822b0676817",
+    "changes": "Only the three formula positions, scales, explicit text and colors changed. Math, sampling target, camera, timeline and license policy unchanged."
+  },
+  "probeSha256": "3212d889a2308626e0bf27d0b9538912f6c2f4c15cfd32096199d084235fcfa6",
+  "sourceConfiguration": {
+    "main_equation": {
+      "color": "#FF4040",
+      "scale": 0.75,
+      "position": [
+        0,
+        100
+      ],
+      "latex": "x^{2}",
+      "enabled": true
+    },
+    "formulas": [
+      {
+        "color": "#40FF40",
+        "scale": 0.75,
+        "position": [
+          0,
+          100
+        ],
+        "latex": "x^{2}"
+      },
+      {
+        "color": "#4080FF",
+        "scale": 0.75,
+        "position": [
+          0,
+          100
+        ],
+        "latex": "x^{2}"
+      }
+    ]
+  },
+  "observedDraws": [
+    {
+      "index": 1,
+      "opaqueRgba": [
+        64,
+        255,
+        64,
+        255
+      ],
+      "textureSize": [
+        65,
+        62
+      ],
+      "textureSha256": "f1be0f18734c57517b73d700d2a1cc19d6bf16f146e461d9b00a11bed99d0021",
+      "afterRgbaSha256": "b2103b2aa01962cc7f86b3a7104cf6c3e73b8c967a5a9fe333d524ac9c856e9b"
+    },
+    {
+      "index": 2,
+      "opaqueRgba": [
+        64,
+        128,
+        255,
+        255
+      ],
+      "textureSize": [
+        65,
+        62
+      ],
+      "textureSha256": "29c7bf2c74bd5ab7e9ec6719e35627e9a7f0acb2677747fc36534d8b2a5da6ae",
+      "afterRgbaSha256": "2ad96abc1d64d2b612245b0d1022b7b3d5e56ed305799799b8b33032cc51ab89"
+    },
+    {
+      "index": 3,
+      "opaqueRgba": [
+        255,
+        64,
+        64,
+        255
+      ],
+      "textureSize": [
+        65,
+        62
+      ],
+      "textureSha256": "d2130ef8f50cae9db7698d18694d78522d183da68c798a400c388d8d525c9c53",
+      "afterRgbaSha256": "3cde7cdcf13ceb351ee6c965e8aa9f04310cf9bbfc8a504e2278f2859fc1d72e"
+    }
+  ],
+  "execution": {
+    "exit": 0,
+    "seconds": 9.26728616701439,
+    "reaped": true,
+    "processGroupExists": false,
+    "timedOut": false
+  },
+  "capture": ".cache/roots-formula-order-20261023/native-roots"
+}

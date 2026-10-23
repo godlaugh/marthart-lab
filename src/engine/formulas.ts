@@ -1,3 +1,4 @@
+import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 import {sourceImplicitFormulaLatex} from './sourceImplicitFormulaLatex';
@@ -32,7 +33,11 @@ export function formulaLabels(scene:SceneDocument):FormulaLabel[]{return [...res
 /** Text parsing belongs to Scene construction/Apply, not animation draws. */
 export function resolveFormulaContent(scene:SceneDocument):FormulaContent {
   const config=scene.formulas?validateFormulas(scene.formulas):defaultFormulas(),extra=config.additional.filter(f=>f.visible&&f.latex.trim());
-  const labels=config.main.visible?[{...config.main,id:'main-equation',latex:config.main.latex?.trim()?config.main.latex:mainEquation(scene)},...extra]:extra;
+  const main=config.main.visible?[{...config.main,id:'main-equation',latex:config.main.latex?.trim()?config.main.latex:mainEquation(scene)}]:[];
+  // ComplexRootsConfig appends its main equation after authored extra formulas.
+  // Frame order owns overlap for preview, capture and recording alike. Existing
+  // generic saved layouts keep their original main-first ordering.
+  const labels=config.layout==='source-surface-centered-v1'&&usesRootsNativePresentation(scene)?[...extra,...main]:[...main,...extra];
   if(config.layout==='source-surface-centered-v1'){
     if(!usesSourceCenteredFormulaLayout(scene))throw new Error('源曲面公式布局需要已确认的源曲面项目');
     return{layout:config.layout,labels};

@@ -12,6 +12,9 @@ const frame=Number(process.argv[4]??65),layer=process.argv[5];
 assert.ok(Number.isSafeInteger(frame)&&frame>=0);
 assert.ok(layer===undefined||/^texture-draw-\d+-after\.rgba$/.test(layer));
 const baseName=`present-frame-${frame}.rgba`,referenceName=layer??`raw-frame-${frame}.png`;
+const presentName=`present-frame-${frame}.json`,present=JSON.parse(await readFile(native+'/'+presentName,'utf8'));
+const [width,height]=present.viewport.slice(2);
+assert.ok(Number.isSafeInteger(width)&&Number.isSafeInteger(height)&&width>0&&height>0&&width*height<=4_000_000,'Bounded native framebuffer dimensions required');
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function files(p){const result=[];for(const e of await readdir(p,{withFileTypes:true})){const n=p+'/'+e.name;if(e.isDirectory())result.push(...await files(n));else if(e.isFile())result.push(n);}return result;}
 const hashes=async()=>Object.fromEntries(await Promise.all([...(await files('src')), 'scripts/verify-roots-formulas.mjs'].sort().map(async p=>[p,sha(await readFile(p))])));
@@ -19,8 +22,8 @@ await mkdir(directory,{recursive:true});
 const run=JSON.parse(await readFile(native+'/run.json','utf8')),sourceText=await readFile(run.source,'utf8');
 assert.equal(sha(sourceText),run.sourceSha256);assert.equal(run.reaped,true);assert.equal(run.processGroupExists,false);
 const backend=JSON.parse(await readFile('.cache/source-glyph-service-20261022/build-final/backend.json','utf8'));
-const report={status:'running',at:new Date().toISOString(),sourceBefore:await hashes(),nativeFiles:{},frame,referenceName,scope:'Replay existing original density-color capture through production imported formula layout and real glyph HTTP/GPU composition. Actual local Generator/Worker paused capture and PNG. Does not run the original again or prove whole-scene parity.'};
-for(const name of ['run.json',baseName,referenceName])report.nativeFiles[name]=sha(await readFile(native+'/'+name));
+const report={status:'running',at:new Date().toISOString(),sourceBefore:await hashes(),nativeFiles:{},frame,referenceName,width,height,scope:'Replay existing original density-color capture through production imported formula layout and real glyph HTTP/GPU composition. Actual local Generator/Worker paused capture and PNG. Does not run the original again or prove whole-scene parity.'};
+for(const name of ['run.json',presentName,baseName,referenceName])report.nativeFiles[name]=sha(await readFile(native+'/'+name));
 let api,server,browser;const started=performance.now();
 try{
  api=await createExportServer({root:directory+'/exports',glyphBackend:backend});const address=await api.listen(0);
@@ -29,7 +32,7 @@ try{
  report.pageErrors=[];page.on('pageerror',e=>report.pageErrors.push(e.message));
  await page.route('**/reference/*',async route=>{const n=new URL(route.request().url()).pathname.split('/').at(-1);assert.ok([baseName,referenceName].includes(n));await route.fulfill({body:await readFile(native+'/'+n),contentType:n.endsWith('.png')?'image/png':'application/octet-stream'});});
  await page.route('**/formula-verification',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Roots formulas</title>'}));await page.goto(server.resolvedUrls.local[0]+'formula-verification');
- report.result=await page.evaluate(async ({sourceText,baseName,referenceName})=>{
+ report.result=await page.evaluate(async ({sourceText,baseName,referenceName,width,height})=>{
   const{parseLegacyScene}=await import('/src/engine/legacyImport.ts'),{parseScene}=await import('/src/engine/document.ts');
   const{formulaPresentation,formulaPlacement}=await import('/src/engine/formulas.ts');
   const{rootsFormulaViewport}=await import('/src/engine/rootsFormulaPresentation.ts');
@@ -40,9 +43,9 @@ try{
   const{enhanceSourcePausedImage}=await import('/src/engine/sourcePausedImage.ts');
   const{upscaleSourcePausedImage}=await import('/src/engine/sourcePausedUpscale.ts');
   const check=(v,m)=>{if(!v)throw Error(m);};
-  const scene=parseScene(JSON.stringify(parseLegacyScene(sourceText).scene)),width=500,height=600;
+  const scene=parseScene(JSON.stringify(parseLegacyScene(sourceText).scene));
   check(scene.formulas.layout==='source-surface-centered-v1','imported layout');
-  const viewport=rootsFormulaViewport({logicalWidth:250,logicalHeight:300,referenceLogicalHeight:486,target:'offscreen'}),presentation=formulaPresentation(scene,viewport);
+  const viewport=rootsFormulaViewport({logicalWidth:width/2,logicalHeight:height/2,referenceLogicalHeight:486,target:'offscreen'}),presentation=formulaPresentation(scene,viewport);
   check(presentation.labels.length===3,'three imported labels');
   const raw=new Uint8Array(await(await fetch('/reference/'+baseName)).arrayBuffer()),base=new Uint8ClampedArray(raw.length);
   for(let y=0;y<height;y++)base.set(raw.subarray((height-y-1)*width*4,(height-y)*width*4),y*width*4);
@@ -61,7 +64,7 @@ try{
   try{
    // Bound solver work; retain the imported formula text/positions unchanged.
    Object.assign(scene.settings,{rootsMode:'progressive',rootSamplesPerFrame:3,rootSamplingFps:10,rootStartTime:0});
-   const context={time:0,width:500,height:600,quality:'export',rootsSessionId:'formula-validation',rootsViewport:{logicalWidth:405,logicalHeight:486,referenceLogicalHeight:486,target:'primary'}};
+   const context={time:0,width,height,quality:'export',rootsSessionId:'formula-validation',rootsViewport:{logicalWidth:405,logicalHeight:486,referenceLogicalHeight:486,target:'primary'}};
    let output=await generator.generate(scene,context);
    check(JSON.stringify(output.formulaPresentation)===JSON.stringify(presentation),'Worker frame formula identity');
    for(const scale of [1,3]){
@@ -78,7 +81,7 @@ try{
    }
   }finally{generator.dispose();}
   window.__formulaFixture=scene;return{presentation,labels,wholeImage:compare(pixels,reference),workerCases,artifacts};
- },{sourceText,baseName,referenceName});
+ },{sourceText,baseName,referenceName,width,height});
  if(layer)assert.equal(report.result.wholeImage.differentPixels,0,'Captured native formula-layer RGBA differs');
  // Decode PNG outside Canvas, preserving encoded RGBA exactly.
  for(const a of report.result.artifacts)await writeFile(directory+'/'+a.name,Buffer.from(a.bytes));
@@ -91,8 +94,8 @@ try{
  await page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
  await page.getByRole('button',{name:'Export artwork',exact:true}).click();
  await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');
- await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('500');
- await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('600');
+ await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill(String(width));
+ await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill(String(height));
  const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();const download=await downloading;await download.saveAs(directory+'/app-paused.png');
  report.app=await page.evaluate(async()=>{const pair=window.__rootsCapture;if(!pair)throw Error('App did not use retained Roots capture');const frame=pair.capture;const{compositeSourceFormulaPixels}=await import('/src/engine/sourceFormulaCompositor.ts'),{enhanceSourcePausedImage}=await import('/src/engine/sourcePausedImage.ts');const composed=await compositeSourceFormulaPixels(frame.pixels,frame.width,frame.height,frame.formulaPresentation),expected=enhanceSourcePausedImage(composed,frame.width,frame.height);return{width:frame.width,height:frame.height,sourceCurrentImage:frame.sourceCurrentImage,formulaPresentation:frame.formulaPresentation,expectedSha256:Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',expected))).map(x=>x.toString(16).padStart(2,'0')).join('')};});
  const actual=decodePng(await readFile(directory+'/app-paused.png'));assert.equal(actual.width,report.app.width);assert.equal(actual.height,report.app.height);assert.equal(sha(actual.rgba),report.app.expectedSha256);report.app.pngExact=true;
