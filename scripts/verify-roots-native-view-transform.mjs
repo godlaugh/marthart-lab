@@ -1,0 +1,16 @@
+import{createServer}from'vite';import{readFile,writeFile}from'node:fs/promises';import{createHash}from'node:crypto';import assert from'node:assert/strict';
+const root=process.argv[2]??'.cache/roots-view-transform-20261023',sha=b=>createHash('sha256').update(b).digest('hex');
+const sources=['src/engine/rootsNativeViewTransform.ts','scripts/verify-roots-native-view-transform.mjs'];const hashes=async()=>Object.fromEntries(await Promise.all(sources.map(async p=>[p,sha(await readFile(p))])));
+const report={at:new Date().toISOString(),scope:'Production CPU view-transform owner against original JOGL retained-shader diagnostic outputs; no pixel/whole-App claim.',sourceBefore:await hashes(),cases:[]};let server;
+try{server=await createServer({server:{middlewareMode:true},logLevel:'error'});const{transformRootsNativeViewBatch}=await server.ssrLoadModule('/src/engine/rootsNativeViewTransform.ts');
+for(const [kind,input,native]of[['animated','.cache/roots-animated-reference-20261023/native-animated','.cache/roots-animated-isolation-20261023/native-feedback'],['boundary',root+'/boundary-input',root+'/native-feedback']]){
+ const run=JSON.parse(await readFile(native+'/run.json','utf8'));assert.equal(run.exit,0);assert.equal(run.reaped,true);assert.equal(run.processGroupExists,false);assert.equal(run.timedOut,false);assert.equal(sha(await readFile(native+'/NativeSceneProbe.java')),run.probeSha256);
+ const row={kind,points:0,different:0,maxAbs:0,signedZeroDifferences:0,inputHashes:{},examples:[]};report.cases.push(row);
+ for(let n=1;n<=20;n++){
+  const json=await readFile(input+`/splat-${n}.json`),c=JSON.parse(json),raw=await readFile(input+'/'+c.path),feedback=await readFile(native+`/feedback-${n}.f32`);assert.equal(raw.length,c.count*16);assert.equal(feedback.length,c.count*6*16*4);
+  row.inputHashes[n]={capture:sha(json),points:sha(raw),expected:sha(feedback)};const points=new Float32Array(raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.length)),expected=new Float32Array(feedback.buffer,feedback.byteOffset,feedback.length/4),metrics=Array.from(points.filter((_,i)=>i%4===3));transformRootsNativeViewBatch(points,c.count,new Float32Array(c.modelview));row.points+=c.count;
+  for(let i=0;i<c.count;i++){assert.equal(points[i*4+3],metrics[i]);for(let r=0;r<3;r++){const a=points[i*4+r],b=expected[i*96+r];assert.ok(Number.isFinite(a)&&Number.isFinite(b));if(a!==b){row.different++;row.maxAbs=Math.max(row.maxAbs,Math.abs(a-b));if(row.examples.length<8)row.examples.push({batch:n,point:i,row:r,actual:a,expected:b});}else if(!Object.is(a,b))row.signedZeroDifferences++;}}
+ }
+}
+report.status=report.cases.every(c=>c.different===0&&c.signedZeroDifferences===0)?'matched':'differences';if(report.status!=='matched')process.exitCode=1;
+}catch(e){report.status='failed';report.error=String(e.stack??e);process.exitCode=1;}finally{await server?.close();report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);if(!report.sourceStable){report.status='failed';process.exitCode=1;}await writeFile(root+'/view-boundary-report.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({...report,sourceBefore:undefined,sourceAfter:undefined,cases:report.cases.map(({inputHashes,...c})=>c)}));}

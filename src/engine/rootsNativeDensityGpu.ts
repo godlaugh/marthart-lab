@@ -1,3 +1,4 @@
+import {transformRootsNativeViewBatch} from './rootsNativeViewTransform';
 import {prepareRootsInkView} from './rootsNativeInk';
 import {rootsDensityScale,validateRootsMetricColorPlan,normalizeRootsSourceToneField,ROOTS_SOURCE_TONE_FIELDS,type RootsMetricColorPlan} from './rootsDensityColor';
 import type {PreparedRootsProjection} from './rootsProjection';
@@ -9,8 +10,8 @@ export const ROOTS_NATIVE_DENSITY_CHUNK = 65536;
 const MAX_BYTES = 768 * 1024 * 1024;
 const HEADER = '#version 300 es\nprecision highp float;\nprecision highp int;\n';
 // MathArt 1.7.8 complex_roots_splat{,_quad}.{vert,frag}. Bodies and
-// arithmetic order are retained; only ES declarations and attribute locations
-// differ. The geometry is projected world space, never local axis-bound bins.
+// fragment arithmetic is retained. Quad model-view multiplication is owned
+// by the CPU staging boundary to preserve observed native fused rounding. The geometry is projected world space, never local axis-bound bins.
 const POINT_VERTEX = HEADER + `
 uniform mat4 projection;
 uniform mat4 modelview;
@@ -38,10 +39,9 @@ void main() {
 }`;
 const QUAD_VERTEX = HEADER + `
 uniform mat4 projection;
-uniform mat4 modelview;
 uniform float pointSize;
 uniform vec2 viewportSize;
-layout(location=0) in vec3 positionWorld;
+layout(location=0) in vec3 positionView;
 layout(location=1) in float splatMetric;
 out vec2 localCoord;
 out float pointDiameter;
@@ -55,7 +55,7 @@ const vec2 CORNERS[6] = vec2[](
     vec2( 1.0,  1.0)
 );
 void main() {
-    vec4 viewPos = modelview * vec4(positionWorld, 1.0);
+    vec4 viewPos = vec4(positionView, 1.0);
     vec4 centerClip = projection * viewPos;
     vec2 local = CORNERS[gl_VertexID];
     float diameter = max(pointSize * 0.6, 0.8);
@@ -346,10 +346,15 @@ export class RootsNativeDensityGpu {
       const selected = kernel === 'auto' ? ROOTS_NATIVE_AUTO_KERNEL : kernel;
       const gl = this.gl, program = this.programs.get(selected)!;
       require(Number.isSafeInteger(this.submitted + this.pending), 'Native root submitted count exceeds safe integer', 'capacity');
+      if(selected==='quad'){
+        const m=projection.modelView.columnMajor;
+        require(m[3]===0&&m[7]===0&&m[11]===0&&m[15]===1,'Native root model-view must be affine','input');
+        transformRootsNativeViewBatch(this.upload,this.pending,m,isCancelled);
+      }
       device(() => {
         this.target(); this.blend(); gl.useProgram(program); gl.bindVertexArray(this.vao!);
         gl.uniformMatrix4fv(gl.getUniformLocation(program, 'projection'), false, projection.projection.columnMajor);
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, 'modelview'), false, projection.modelView.columnMajor);
+        if(selected==='points')gl.uniformMatrix4fv(gl.getUniformLocation(program, 'modelview'), false, projection.modelView.columnMajor);
         gl.uniform1f(gl.getUniformLocation(program, 'pointSize'), projection.densityDiameter);
         gl.uniform2f(gl.getUniformLocation(program, 'viewportSize'), this.width, this.height);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer!);

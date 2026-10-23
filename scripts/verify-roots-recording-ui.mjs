@@ -9,7 +9,7 @@ import {decodePng} from './lib/verify-png.mjs';
 const out=process.argv[2]??'.cache/roots-recording-video-20261023/ui';await mkdir(out,{recursive:true});
 const check=(v,m)=>{if(!v)throw Error(m);},sha=v=>createHash('sha256').update(v).digest('hex');
 const raw=JSON.parse(await readFile('.cache/roots-completed-run-20261023/one-input.json','utf8'));raw.sampling.sample_count=128;raw.settings.dot_size=.03;raw.settings.max_splat_points_per_frame=256;
-const paths=['src/engine/rootsNativePresentationSession.ts','src/engine/sourceRootsRecordingLease.ts','src/engine/generationInput.ts','src/types.ts','src/locales/components.en.json','src/App.tsx','src/components/ExportDialog.tsx','src/engine/recordingVideoDelivery.ts','server/index.mjs','scripts/verify-roots-recording-ui.mjs'];
+const paths=['src/engine/rootsNativeViewTransform.ts','src/engine/rootsNativeDensityGpu.ts','src/engine/rootsNativePresentationSession.ts','src/engine/sourceRootsRecordingLease.ts','src/engine/generationInput.ts','src/types.ts','src/locales/components.en.json','src/App.tsx','src/components/ExportDialog.tsx','src/engine/recordingVideoDelivery.ts','server/index.mjs','scripts/verify-roots-recording-ui.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.map(async p=>[p,sha(await readFile(p))])));
 const report={at:new Date().toISOString(),scope:'Actual Roots App/Worker/GPU/glyph service/FFmpeg. Dynamic completion, manual stop, cancel, warmup-only, recovery and real decoded video. No original full-video pixel-parity claim.',sourceBefore:await hashes(),cases:[]};
 let server,service,browser,page;const started=performance.now();
