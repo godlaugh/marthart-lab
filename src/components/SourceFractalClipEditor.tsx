@@ -34,7 +34,7 @@ export function SourceFractalClipEditor({track,onChange,scene}:Props){
   {error&&<p role="alert">{t(error)}</p>}
   <fieldset><legend>{t('普通动画目标')}</legend><p className="muted">{t('只启用需要改变的目标。每段从开始时的画面状态过渡。')}</p>
    {targetKeys.map(key=>{const value=payload.targets[key],label=t(targetLabels[key]);return <div key={key}>
-    {toggle(`改变${targetLabels[key]}`,value!==undefined,enabled=>writeTarget(key,enabled?defaults[key]:undefined))}
+    {toggle(t('改变{0}',{0:label}),value!==undefined,enabled=>writeTarget(key,enabled?defaults[key]:undefined))}
     {value!==undefined&&(Array.isArray(value)?value.map((v,i)=>number(`${key}-${i}`,`${label} · ${key==='ambientRates'?['φ','θ','γ'][i]:i===0?'X':'Y'}`,v,n=>{const next=[...value];next[i]=n;writeTarget(key,next);})):number(key,label,value as number,n=>writeTarget(key,n)))}
    </div>;})}
   </fieldset>
