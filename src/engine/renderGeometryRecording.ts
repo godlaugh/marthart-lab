@@ -1,3 +1,4 @@
+import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import type {SceneDocument,SceneOutput} from '../types';
 import {SourceDrawingResources} from './sourceDrawingResources';
 import {readSourceDrawingPixels,sourceDrawingBackend,type SourceDrawingRequest} from './sourceDrawingPixels';
@@ -5,7 +6,7 @@ import {outputBuffers} from './outputBuffers';
 import {validateFormulaPresentation} from './formulaConfig';
 import type {sourceRecordingSize} from './sourceRecordingSize';
 
-export class SurfaceRecordingRenderer {
+export class GeometryRecordingRenderer {
  private readonly resources:SourceDrawingResources;
  private active?:AbortController;
  constructor(private readonly scene:SceneDocument,private readonly size:ReturnType<typeof sourceRecordingSize>){
@@ -24,14 +25,14 @@ export class SurfaceRecordingRenderer {
   const gl=renderer.renderer.getContext(),limits=gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array;
   if(gl.isContextLost())throw Error('曲面录制绘图上下文已丢失');
   if(width>limits[0]||height>limits[1]||Math.max(width,height)>gl.getParameter(gl.MAX_RENDERBUFFER_SIZE))throw Error('曲面录制尺寸超过当前 GPU 限制');
-  renderer.setSize(logicalWidth,logicalHeight,density);
+  if(usesSourceImplicitCpuMesh(this.scene))renderer.setSize(width,height,1);else renderer.setSize(logicalWidth,logicalHeight,density);
   renderer.setOutput(output,{...this.scene,evaluatedSourceCamera:output.sourceCameraFrame},false);check();
   const {pixels,sourcePixelRenderer}=await readSourceDrawingPixels(renderer,width,height,bytes,isCancelled,request?{...request,signal:controller.signal}:undefined);
   check();
   // Video receives raw draw pixels. Paused PNG enhancement/upscale belongs to
   // its separate capture path; formulas and their final transition are
   // composed by the video consumer from these delivered frame facts.
-  return{type:'raster',width,height,pixels,sourcePixelRenderer,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
+  return{type:'raster',width,height,pixels,sourcePixelRenderer,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,implicitRecording:output.implicitRecording,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
   }finally{request?.signal.removeEventListener('abort',abort);if(this.active===controller)this.active=undefined;}
  }
  dispose():void {this.active?.abort();this.resources.dispose();}

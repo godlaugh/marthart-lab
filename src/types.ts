@@ -429,6 +429,7 @@ export interface RasterOutput {
   sourcePixelRenderer?:{backend:'webgl'}|{backend:'native';identity:string;generation:number;sequence:number;samples:number};
   rootsLive?:import('./engine/rootsLive').RootsLiveFacts;
   perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveFacts;
+  implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
   /** Geometry recording readback retains its producing Surface facts. */
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
   formulaPresentation?:FormulaPresentation;

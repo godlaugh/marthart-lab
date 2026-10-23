@@ -3,7 +3,7 @@ import {parseProjectFile} from '../src/engine/legacyImport';
 import {SourceSurfaceLiveSession} from '../src/engine/sourceSurfaceLiveSession';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
 import {renderSurfaceCapture} from '../src/engine/renderSurfaceCapture';
-import {SurfaceRecordingRenderer} from '../src/engine/renderSurfaceRecording';
+import {GeometryRecordingRenderer} from '../src/engine/renderGeometryRecording';
 import {retrySourceDrawingCleanup,sourceDrawingCleanupCount} from '../src/engine/sourceDrawingResources';
 import type {GenerationInput} from '../src/types';
 const state=vi.hoisted(()=>({width:0,height:0,created:0,disposed:0,released:0,readbacks:0,failDispose:false}));
@@ -51,7 +51,7 @@ describe('native paused capture delivery',()=>{
   const error=await fixture().run().catch(e=>e);expect(error).toBeInstanceOf(AggregateError);expect(error.errors[0]).toMatchObject({kind:'unavailable'});expect(error.errors[1]).toBeInstanceOf(AggregateError);expect(sourceDrawingCleanupCount()).toBe(1);
  });
  it('records consecutive native frames with one context and aborts an in-flight frame on disposal',async()=>{
-  const f=fixture(),owner=new SurfaceRecordingRenderer(f.scene,{width:8,height:4,logicalWidth:4,logicalHeight:2,density:2}),request={signal:f.controller.signal,generation:2,sequence:9};
+  const f=fixture(),owner=new GeometryRecordingRenderer(f.scene,{width:8,height:4,logicalWidth:4,logicalHeight:2,density:2}),request={signal:f.controller.signal,generation:2,sequence:9};
   vi.stubGlobal('fetch',vi.fn(async()=>response()));
   const first=await owner.render(f.prepared.capture,()=>false,request),second=await owner.render(f.prepared.capture,()=>false,request);
   expect(first.sourcePixelRenderer?.backend).toBe('native');expect(second.pixels).toEqual(first.pixels);expect(state.created).toBe(1);expect(state.readbacks).toBe(0);expect(state.released).toBe(0);
@@ -61,7 +61,7 @@ describe('native paused capture delivery',()=>{
   await expect(owner.render(f.prepared.capture,()=>false,request)).rejects.toThrow('前一帧');owner.dispose();await expect(pending).rejects.toMatchObject({name:'AbortError'});expect(aborted).toBe(true);expect(state.released).toBe(1);
  });
  it('keeps a recording renderer retryable after native failure without returning WebGL pixels',async()=>{
-  const f=fixture(),owner=new SurfaceRecordingRenderer(f.scene,{width:8,height:4,logicalWidth:4,logicalHeight:2,density:2}),request={signal:f.controller.signal,generation:2,sequence:9};
+  const f=fixture(),owner=new GeometryRecordingRenderer(f.scene,{width:8,height:4,logicalWidth:4,logicalHeight:2,density:2}),request={signal:f.controller.signal,generation:2,sequence:9};
   vi.stubGlobal('fetch',vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({kind:'unavailable',error:'backend missing'}),{status:503})).mockImplementationOnce(async()=>response()));
   await expect(owner.render(f.prepared.capture,()=>false,request)).rejects.toMatchObject({kind:'unavailable'});
   expect((await owner.render(f.prepared.capture,()=>false,request)).sourcePixelRenderer?.backend).toBe('native');expect(state.created).toBe(1);expect(state.readbacks).toBe(0);owner.dispose();

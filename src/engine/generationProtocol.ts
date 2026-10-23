@@ -9,7 +9,7 @@ import type {RootsFreshRecordingPlan} from './rootsRecording';
 
 export type SourceRecordingRaster=Extract<SceneOutput,{type:'raster'}>;
 export type SourceRecordingWireStart=Omit<SourceRecordingStart,'handle'|'warmup'>&{warmup:SceneOutput};
-export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;/** Domain and Surface require the independently observed FPS for warmup. */actualFrameRate?:number;}
+export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;/** Domain, Surface and Implicit require the independently observed FPS for warmup. */actualFrameRate?:number;}
 export interface SourceRecordingHandle {readonly sessionId:number;readonly recordingId:number;}
 export interface SourceRecordingStart {handle:SourceRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceRecordingClock;warmup:SourceRecordingRaster;}
 export interface SourceRecordingStop {scene:SceneDocument;context:GenerationInput;preview:SceneOutput;}

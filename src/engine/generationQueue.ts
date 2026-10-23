@@ -337,7 +337,7 @@ export class GenerationQueue {
     const request=this.latest;
     if(this.disposed||this.running||this.captureOwner||this.playbackOwner||this.recordingOwner||this.timer!==undefined||!request||!this.generator.beginSourceRecording||!this.generator.nextSourceRecordingFrame||!this.generator.finishSourceRecording||!this.generator.hasSourceRecording)
       throw new Error('请等待当前源场景预览或录制完成');
-    const observedFrames=request.scene.kind==='domain'||request.scene.kind==='surface';
+    const observedFrames=request.scene.kind==='domain'||request.scene.kind==='surface'||request.scene.kind==='implicit';
     if(observedFrames&&typeof consumer.actualFrameRate!=='function')throw new Error('源场景录制需要逐帧实际帧率观测');
     if(signal?.aborted)throw new DOMException('源场景录制已取消','AbortError');
     const owner:RecordingOwner={controller:new AbortController(),request,stop:false,active:true};this.recordingOwner=owner;this.callbacks.busy(true);
@@ -345,7 +345,7 @@ export class GenerationQueue {
     signal?.addEventListener('abort',abort,{once:true});
     let failed=false,failure:unknown;
     try{
-      const start=await (request.scene.kind==='surface'?this.generator.beginSourceRecording(output,options,owner.controller.signal):this.generator.beginSourceRecording(output,options));owner.handle=start.handle;
+      const start=await (request.scene.kind==='surface'||request.scene.kind==='implicit'?this.generator.beginSourceRecording(output,options,owner.controller.signal):this.generator.beginSourceRecording(output,options));owner.handle=start.handle;
       const clock=structuredClone(start.clock),handle=start.handle;
       if(clock.completionReason==='animation-queue'&&!validSourceQueueRecordingClock(clock,options.simulationFps))throw Error('录制完成规划无效');
       const complete=(frame:SceneOutput,ordinal:number)=>{

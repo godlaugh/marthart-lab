@@ -1,10 +1,11 @@
+import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {SourceRootsRecordingLease} from './sourceRootsRecordingLease';
 import {validRootsLiveOutput} from './rootsLive';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsFormulaViewport} from './rootsFormulaPresentation';
 import type {SourceCameraViewport} from './sourceCamera';
 import {validSourcePerlinLiveOutput} from './sourcePerlinResponse';
-import {SourceSurfaceRecordingLease} from './sourceSurfaceRecordingLease';
+import {SourceGeometryRecordingLease} from './sourceGeometryRecordingLease';
 import {validSourceSurfaceOutput} from './sourceSurfaceResponse';
 import {sourceSurfaceCapturePlan,type SourceSurfacePausedCaptureResult} from './sourceSurfaceCapture';
 import {SurfacePausedCaptureError} from './generationProtocol';
@@ -197,19 +198,19 @@ export class Generator {
   private pending = new Map<number, Pending>();
   private currentInputId=0;
   private completed?:Completed;
-  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;surface?:SourceSurfaceRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
+  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
   private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||p.operation==='surface-paused-capture'||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
-    try{this.recording?.surface?.releaseRenderer();}catch(cleanup){error=new AggregateError([error,cleanup],'曲面录制已失效，绘图清理仍待重试');}
+    try{this.recording?.geometry?.releaseRenderer();}catch(cleanup){error=new AggregateError([error,cleanup],'曲面录制已失效，绘图清理仍待重试');}
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
     for(const p of this.pending.values()){if(p.operation==='surface-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
   }
   hasSourceRecording(handle:SourceRecordingHandle):boolean{return !!this.worker&&this.recording?.handle===handle&&this.recording.usable;}
 
-  private renderSurfaceFrame(id:number,p:Extract<Pending,{operation:'source-recording-begin'|'source-recording-frame'}>,lease:SourceSurfaceRecordingLease,worker:Worker,start?:import('./generationProtocol').SourceRecordingWireStart){
-    const cancelled=()=>this.worker!==worker||this.pending.get(id)!==p||this.recording?.surface!==lease;
-    void import('./renderSurfaceRecording').then(({SurfaceRecordingRenderer})=>{if(cancelled())return;return lease.render(SurfaceRecordingRenderer,cancelled,{generation:this.sessionId,sequence:id});}).then(output=>{
+  private renderGeometryFrame(id:number,p:Extract<Pending,{operation:'source-recording-begin'|'source-recording-frame'}>,lease:SourceGeometryRecordingLease,worker:Worker,start?:import('./generationProtocol').SourceRecordingWireStart){
+    const cancelled=()=>this.worker!==worker||this.pending.get(id)!==p||this.recording?.geometry!==lease;
+    void import('./renderGeometryRecording').then(({GeometryRecordingRenderer})=>{if(cancelled())return;return lease.render(GeometryRecordingRenderer,cancelled,{generation:this.sessionId,sequence:id});}).then(output=>{
       if(!output||cancelled())return;this.pending.delete(id);
       if(p.operation==='source-recording-begin'&&start)p.resolve({...start,warmup:output,handle:p.handle});
       else if(p.operation==='source-recording-frame')p.resolve(output);
@@ -336,8 +337,8 @@ export class Generator {
             throw Error('复根录制响应操作无效');
           }catch(error){this.invalidate(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,false));return;}
         }
-        if(family==='surface'){
-          const lease=this.recording?.surface;
+        if(family==='surface'||family==='implicit'){
+          const lease=this.recording?.geometry;
           if(!lease){this.invalidate(new SourceRecordingOperationError('曲面录制客户端会话缺失',false,false));return;}
           if('error' in data){
             if(data.retainedRecordingId!==undefined&&data.retainedRecordingId!==p.handle.recordingId){this.invalidate(new SourceRecordingOperationError('曲面录制保留身份不匹配',false,false));return;}
@@ -350,10 +351,10 @@ export class Generator {
           }
           try{
             if(p.operation==='source-recording-begin'&&data.operation==='source-recording-begin'){
-              lease.acceptStart(data.result);this.recording!.usable=true;this.renderSurfaceFrame(data.id,p,lease,worker,data.result);return;
+              lease.acceptStart(data.result);this.recording!.usable=true;this.renderGeometryFrame(data.id,p,lease,worker,data.result);return;
             }
             if(p.operation==='source-recording-frame'&&data.operation==='source-recording-frame'){
-              lease.acceptFrame(data.output,data.displayFrame);this.renderSurfaceFrame(data.id,p,lease,worker);return;
+              lease.acceptFrame(data.output,data.displayFrame);this.renderGeometryFrame(data.id,p,lease,worker);return;
             }
             if(p.operation==='source-recording-finish'&&data.operation==='source-recording-finish'){
               lease.acceptStop(data.result);this.pending.delete(data.id);this.recording=undefined;this.currentInputId=data.id;
@@ -625,17 +626,17 @@ export class Generator {
     if(signal?.aborted)return Promise.reject(new DOMException('源场景录制已取消','AbortError'));
     const source=this.completed;
     if(this.recording)return Promise.reject(this.recordingError('源场景录制已开始'));
-    const eligible=source&&(source.scene.kind==='surface'?output.type==='geometry'&&!!output.surfaceLive&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
+    const eligible=source&&(source.scene.kind==='surface'||usesSourceImplicitCpuMesh(source.scene)?output.type==='geometry'&&(source.scene.kind==='surface'?!!output.surfaceLive:!!output.sourceImplicitPresentation)&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
     if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
       return Promise.reject(new SourceRecordingOperationError('源场景录制需要当前已完成的主预览',false,false));
     let roots:SourceRootsRecordingLease|undefined;
     if(source.scene.kind==='roots')try{
       if(output.type!=='raster')throw Error('复根录制需要像素预览');roots=new SourceRootsRecordingLease(source.scene,source.context,output,options);
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
-    let fractal:RetainedRecordingLease|undefined,domain:DomainRecordingLease|undefined,surface:SourceSurfaceRecordingLease|undefined,perlin:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}|undefined;
+    let fractal:RetainedRecordingLease|undefined,domain:DomainRecordingLease|undefined,geometry:SourceGeometryRecordingLease|undefined,perlin:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}|undefined;
     if(source.scene.kind==='perlin'&&source.context.perlinLive)try{perlin={sceneId:source.scene.id,primary:snapshotGenerationInput(source.context),size:prepareSourcePausedCaptureSize(options,source.context.sourcePerlinViewport?.pixelDensity??NaN)};}catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
-    if(source.scene.kind==='surface')try{
-      if(output.type!=='geometry')throw Error('曲面录制需要几何预览');surface=new SourceSurfaceRecordingLease(source.scene,source.context,output,options,signal);
+    if(source.scene.kind==='surface'||usesSourceImplicitCpuMesh(source.scene))try{
+      if(output.type!=='geometry')throw Error('曲面录制需要几何预览');geometry=new SourceGeometryRecordingLease(source.scene,source.context,output,options,signal);
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     if(source.scene.kind==='fractal')try{
       if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('分形录制模拟帧率必须为 1–120 的整数');
@@ -647,7 +648,7 @@ export class Generator {
       domain={sceneId:source.scene.id,options:{...options},size:sourceRecordingSize(options,source.context.domainLive?.viewport?.pixelDensity??NaN),primary:snapshotGenerationInput(source.context),nextDisplayFrame:1,formulas:structuredClone(output.type==='raster'?output.formulaPresentation:undefined)};
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     const id=++this.counter,handle=Object.freeze({sessionId:this.sessionId,recordingId:id});
-    this.currentInputId=id;this.completed=undefined;this.recording={handle,family:source.scene.kind,usable:false,roots,fractal,domain,surface,perlin};
+    this.currentInputId=id;this.completed=undefined;this.recording={handle,family:source.scene.kind,usable:false,roots,fractal,domain,geometry,perlin};
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'source-recording-begin',source,handle,resolve,reject});
       try{this.worker!.postMessage({operation:'source-recording-begin',sessionId:this.sessionId,id,sourceId:source.id,options:{...options}} satisfies GenerationRequest);}
@@ -666,19 +667,19 @@ export class Generator {
       if(domain.attempt&&!Object.is(domain.attempt.actualFrameRate,actualFrameRate))return Promise.reject(this.recordingError('域着色重试不能改变未确认帧的实际帧率'));
       domain.attempt={displayFrame,actualFrameRate};
     }
-    const surface=this.recording!.surface;let cached=false;
-    if(surface)try{const admitted=surface.requestFrame(displayFrame,actualFrameRate);cached=admitted.cached;actualFrameRate=admitted.actualFrameRate;}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
+    const geometry=this.recording!.geometry;let cached=false;
+    if(geometry)try{const admitted=geometry.requestFrame(displayFrame,actualFrameRate);cached=admitted.cached;actualFrameRate=admitted.actualFrameRate;}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
     const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'source-recording-frame',handle,family:this.recording!.family,displayFrame,actualFrameRate,resolve,reject});
-      if(cached&&surface){this.renderSurfaceFrame(id,this.pending.get(id)! as Extract<Pending,{operation:'source-recording-frame'}>,surface,this.worker!);return;}
+      if(cached&&geometry){this.renderGeometryFrame(id,this.pending.get(id)! as Extract<Pending,{operation:'source-recording-frame'}>,geometry,this.worker!);return;}
       try{this.worker!.postMessage({operation:'source-recording-frame',sessionId:this.sessionId,id,recordingId:handle.recordingId,displayFrame,actualFrameRate} satisfies GenerationRequest);}
       catch(error){this.invalidate(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,false));}
     });
   }
   finishSourceRecording(handle:SourceRecordingHandle):Promise<SourceRecordingStop>{
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
-    try{this.recording!.surface?.prepareStop();}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
+    try{this.recording!.geometry?.prepareStop();}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
     const id=++this.counter;
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'source-recording-finish',handle,family:this.recording!.family,resolve,reject});

@@ -9,7 +9,7 @@ import native from './fixtures/source-surface-scene/recording-native.json';
 const draw=vi.hoisted(()=>({created:0,disposed:0,frames:[] as number[],fail:false,failDispose:false,gate:undefined as Promise<void>|undefined,signal:undefined as AbortSignal|undefined}));
 // Real client/worker/numerical ownership and real buffer transfer. Drawing is
 // substituted here; the browser verifier exercises the real GL renderer.
-vi.mock('../src/engine/renderSurfaceRecording',()=>({SurfaceRecordingRenderer:class{
+vi.mock('../src/engine/renderGeometryRecording',()=>({GeometryRecordingRenderer:class{
  constructor(private scene:unknown,private size:{width:number;height:number}){draw.created++;}
  render(output:Extract<SceneOutput,{type:'geometry'}>,cancelled:()=>boolean,request?:{signal:AbortSignal}){draw.signal=request?.signal;const finish=()=>{if(cancelled())throw Error('cancelled');if(draw.fail){draw.fail=false;throw Error('draw failed');}return{type:'raster',...this.size,pixels:new Uint8ClampedArray(this.size.width*this.size.height*4),stats:output.stats,surfaceLive:output.surfaceLive,sourceCameraFrame:output.sourceCameraFrame};};draw.frames.push(output.surfaceLive!.frame.frameIndex);return draw.gate?draw.gate.then(finish):finish();}
  dispose(){if(draw.failDispose){draw.failDispose=false;throw Error('dispose failed');}draw.disposed++;}

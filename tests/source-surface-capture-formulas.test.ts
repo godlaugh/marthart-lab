@@ -4,7 +4,7 @@ import {SourceSurfaceLiveSession} from '../src/engine/sourceSurfaceLiveSession';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
 import {renderSurfaceCapture} from '../src/engine/renderSurfaceCapture';
 import {encodeFormulaRaster} from '../src/engine/formulaCanvas';
-import {SurfaceRecordingRenderer} from '../src/engine/renderSurfaceRecording';
+import {GeometryRecordingRenderer} from '../src/engine/renderGeometryRecording';
 import type {GenerationInput,FormulaPresentation} from '../src/types';
 const state=vi.hoisted(()=>({width:0,height:0,events:[] as string[],encoded:[] as unknown[],compositions:[] as {base:Uint8ClampedArray;width:number;height:number;presentation:FormulaPresentation;signal?:AbortSignal}[]}));
 vi.mock('../src/engine/renderer',()=>({ArtRenderer:class{
@@ -36,7 +36,7 @@ describe('Surface base PNG and formula composition owner',()=>{
  });
  it('recording carries the producing frame layout rather than parsing a newer document',async()=>{
   const f=setup(),start=f.owner.beginRecording(f.scene,f.context,{width:8,height:4,simulationFps:10,actualFrameRate:60}),scene=structuredClone(f.scene);scene.formulas!.main.latex='new draft';
-  const renderer=new SurfaceRecordingRenderer(scene,{width:8,height:4,logicalWidth:4,logicalHeight:2,density:2});
+  const renderer=new GeometryRecordingRenderer(scene,{width:8,height:4,logicalWidth:4,logicalHeight:2,density:2});
   try{if(start.warmup.type!=='geometry')throw Error('geometry');const out=await renderer.render(start.warmup,()=>false);expect(out.formulaPresentation).toEqual(start.warmup.formulaPresentation);expect(out.formulaPresentation!.labels[0].latex).toBe('x');expect(out).not.toHaveProperty('sourceCurrentImage');}finally{renderer.dispose();f.owner.finishRecording(start.handle,1000);}
  });
 });
