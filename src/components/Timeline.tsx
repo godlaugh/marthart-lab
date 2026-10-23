@@ -39,7 +39,7 @@ import {usesSpirographFrameClock,spirographSimulationFps} from '../engine/spirog
 import {SOURCE_EASING_NAMES} from '../engine/sourceEasing';
 import { sceneAtTime,timelineWarnings,isCameraAction,ACTIONS, CLIP_TYPES, EASING_NAMES, clipDuration, resolveTimeline, isSpirographEventTarget, isSpirographIgnoredTarget, createAnimationTrack, readAnimationValue } from '../engine/timeline';
 
-type Props = { scene: SceneDocument; time: number; playing: boolean; finalPreview?: boolean; onTime: (t: number) => void; onPlay: (p: boolean) => void; onChange: (s: SceneDocument) => void };
+type Props = { scene: SceneDocument; time: number; playing: boolean; finalPreview?: boolean; implicitContinuation?:boolean; onTime: (t: number) => void; onPlay: (p: boolean) => void; onChange: (s: SceneDocument) => void };
 const ordinaryClipTypes=new Set(['wait','animate','align','param','surface_mode_transition']);
 const perlinClipTypes=new Set(['wait','animate','align','trails']);
 const ordinaryActionLabels:Record<string,string>={rotateTheta:'旋转 theta',rotatePhi:'旋转 phi',rotateGamma:'旋转 gamma',stopTracking:'相机中心回到原点'};
@@ -194,10 +194,10 @@ function ActionEditor({ action, scene, targets, onChange }: { action: AnimationA
   {!samilaSource&&!symmetryGradient&&!perlinGradient&&!surfaceGradient&&!attractorGradient&&!rootsCamera&&action.method === 'gradientStart' && <GradientEditor config={action.gradient} scene={scene} onChange={gradient => patch({ gradient })} />}</div>;
 }
 
-export function Timeline({ scene, time, playing, finalPreview=false, onTime, onPlay, onChange }: Props) {
+export function Timeline({ scene, time, playing, finalPreview=false, implicitContinuation=false, onTime, onPlay, onChange }: Props) {
   const {t}=useI18n();
   const rootsRealtime=sourceLivePreviewKind(scene)==='roots';
-  const domainSource=usesSourceDomain(scene),fractalSource=usesSourceFractal(scene),sourceRealtime=sourceLivePreviewKind(scene)!==undefined,samilaSource=usesSourceSamilaTimeline(scene),experience=bouncingExperience(scene),gradientCapabilities=gradientAnimationCapabilities(scene),frameClock=usesSpirographFrameClock(scene),rootsCamera=usesRootsCameraTimeline(scene),rootsGradient=usesRootsGradientTimeline(scene),ordinaryCamera=usesOrdinarySourceCamera(scene);
+  const domainSource=usesSourceDomain(scene),fractalSource=usesSourceFractal(scene),sourceRealtime=implicitContinuation||sourceLivePreviewKind(scene)!==undefined,samilaSource=usesSourceSamilaTimeline(scene),experience=bouncingExperience(scene),gradientCapabilities=gradientAnimationCapabilities(scene),frameClock=usesSpirographFrameClock(scene),rootsCamera=usesRootsCameraTimeline(scene),rootsGradient=usesRootsGradientTimeline(scene),ordinaryCamera=usesOrdinarySourceCamera(scene);
   const [expanded, setExpanded] = useState(true), [selected, setSelected] = useState<string | null>(null), [newType, setNewType] = useState<AnimationClipType>(experience.continuous||frameClock||rootsCamera||ordinaryCamera||samilaSource||fractalSource||domainSource?'wait':'numeric'), [dropTime, setDropTime] = useState<number | null>(null);
   const [creationError,setCreationError]=useState('');
   const rail = useRef<HTMLDivElement>(null), latest = useRef({ scene, onChange }); latest.current = { scene, onChange };
@@ -266,6 +266,7 @@ export function Timeline({ scene, time, playing, finalPreview=false, onTime, onP
       <button className="text-button" draggable={!sequential} onDragStart={e => { e.dataTransfer.setData('application/x-mathart-clip', newType); e.dataTransfer.effectAllowed = 'copy'; }} onDragEnd={() => setDropTime(null)} onClick={() => add()}><Plus size={14} />{t("添加动画")}</button>
       <button title={t("折叠时间线")} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button></div>
     {sequential&&!domainSource&&!samilaSource&&!rootsCamera&&!ordinaryCamera&&!fractalSource&&<p className="muted">{t('顺序队列按列表顺序执行；前置等待是本地扩展。完成等待变化后，后续片段会重新排定。')} {!frameClock&&<button onClick={()=>{const current=latest.current;try{current.onChange({...current.scene,timeline:resolveTimeline(current.scene)});}catch(error){setCreationError(String(error));}}}>{t('转为绝对时间线')}</button>}</p>}
+    {implicitContinuation&&<p className="muted">{t('录制结束后从当前动画继续运行。暂停保留进度；编辑场景或跳转时间会重新计算预览。')}</p>}
     {domainSource&&!sourceRealtime&&<p className="muted">{t('域着色片段按列表顺序执行；预览与导出使用固定帧率，时间跳转会重建对应画面。队列结束后，已启动的旋转、参数与渐变仍可继续。')}</p>}
     {rootsRealtime&&<p className="muted">{t('复根后台采样与动画时钟独立；暂停后继续画完剩余点。返回起点会重新采样。离线视频按所选帧率顺序回放。')}</p>}
     {sourceLivePreviewKind(scene)==='map'&&<p className="muted">{t('Map 按实际经过时间运行。暂停后的变换和颜色设置会按源规则重播；队列结束后粒子和仍启用的参数动画继续更新。时间跳转会逐帧重建，视频导出按所选帧率重新计算。')}</p>}

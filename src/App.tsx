@@ -1,3 +1,6 @@
+import {usesSourceImplicitCpuMesh} from './engine/sourceImplicitPresentation';
+import {implicitCameraFrame} from './engine/sourceImplicitResponse';
+import type {SourceImplicitLiveContext} from './engine/sourceImplicitLive';
 import {hasFormulaComposition} from './engine/formulaConfig';
 import {nativeGeometryPreviewEnabled,usesNativeGeometryViewport} from './engine/sourceNativeViewport';
 import {activeFractalFormulaIdentity} from './engine/sourceFractalIdentity';
@@ -310,6 +313,10 @@ export default function App() {
   }
   function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:SceneEditIntent) {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
+    if(implicitContinuation.current&&next!==implicitContinuation.current.scene){
+      implicitContinuation.current=undefined;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;
+      playingRef.current=false;setPlaying(false);playbackClock.current=timeRef.current;
+    }
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
     if(nextLive==='roots'){
@@ -411,6 +418,8 @@ export default function App() {
   const rootsSessionId=useRef(crypto.randomUUID());
   const liveSessionId=useRef<string>(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
   const fractalEdit=useRef<{revision:number;intent:'hot'|'apply';configuration?:SceneDocument}>({revision:0,intent:'apply'}),fractalActualFps=useRef<number|undefined>(undefined);
+  const implicitContinuation=useRef<{scene:SceneDocument;context:SourceImplicitLiveContext}|undefined>(undefined),implicitActualFps=useRef<number|undefined>(undefined),implicitRecordingScene=useRef<SceneDocument|undefined>(undefined);
+  function previewLiveKind(document:SceneDocument){return implicitContinuation.current?.scene===document?'implicit':sourceLivePreviewKind(document);}
   const surfaceEdit=useRef<{revision:number;configuration?:SceneDocument}>({revision:0}),surfaceActualFps=useRef<number|undefined>(undefined);
   const domainEdit=useRef<{revision:number;configuration?:SceneDocument}>({revision:0}),domainActualFps=useRef<number|undefined>(undefined);
   const [fractalStaged,setFractalStaged]=useState(false),[fractalFullApplyPending,setFractalFullApplyPending]=useState(false);
@@ -424,9 +433,9 @@ export default function App() {
     output?.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalRender?.display?.needsAnotherDisplay===true);
 
   const replayPendingRef=useRef(false);replayPendingRef.current=liveDisplayPending;
-  function replaceLiveSession(startAt:number|undefined){surfaceEdit.current={revision:0};surfaceActualFps.current=undefined;domainEdit.current={revision:0};domainActualFps.current=undefined;fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
+  function replaceLiveSession(startAt:number|undefined){implicitContinuation.current=undefined;implicitActualFps.current=undefined;surfaceEdit.current={revision:0};surfaceActualFps.current=undefined;domainEdit.current={revision:0};domainActualFps.current=undefined;fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
-    if(!sourceLivePreviewKind(sceneRef.current))return;
+    if(!previewLiveKind(sceneRef.current))return;
     playingRef.current=false;setPlaying(false);replaceLiveSession(Math.max(0,timeRef.current));
     // Retry is an explicit reconstruction, never continuation of failed ink.
     generationQueue.current?.cancel();setPreviewCancelled(true);
@@ -635,7 +644,7 @@ export default function App() {
   }
   function seek(value:number) {
     if(sourceLivePreviewKind(sceneRef.current)==='roots'&&value!==0){setToast(t('后台实时采样请使用返回起点重新开始'));return;}
-    if(sourceLivePreviewKind(sceneRef.current)){playingRef.current=false;setPlaying(false);replaceLiveSession(value);setGenerationRevision(n=>n+1);}
+    if(previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);replaceLiveSession(value);setGenerationRevision(n=>n+1);}
     autoPlayPending.current=false;
     playbackClock.current=value;
     setTime(value);
@@ -643,7 +652,7 @@ export default function App() {
   function play(value:boolean) {
     if(value&&experience.error){setToast(t(experience.error));return;}
     autoPlayPending.current=false;
-    const liveKind=sourceLivePreviewKind(sceneRef.current);
+    const liveKind=previewLiveKind(sceneRef.current);
     if(liveKind){
       if(livePlaybackTransition.current)return;
       const queue=generationQueue.current;if(!queue)return;
@@ -651,9 +660,9 @@ export default function App() {
       // Stop scheduling immediately; a running display completes before the
       // queue acknowledges pause. Resume starts scheduling only after its ack.
       playingRef.current=false;setPlaying(false);
-      void queue[liveKind==='roots'?'setRootsPaused':liveKind==='perlin'?'setPerlinPaused':liveKind==='surface'?'setSurfacePaused':liveKind==='domain'?'setDomainPaused':liveKind==='fractal'?'setFractalPaused':liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
+      void queue[liveKind==='implicit'?'setImplicitPaused':liveKind==='roots'?'setRootsPaused':liveKind==='perlin'?'setPerlinPaused':liveKind==='surface'?'setSurfacePaused':liveKind==='domain'?'setDomainPaused':liveKind==='fractal'?'setFractalPaused':liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
         if(livePlaybackTransition.current!==ticket||liveSessionId.current!==sessionId)return;
-        liveLastFrameAt.current=undefined;surfaceActualFps.current=undefined;fractalActualFps.current=undefined;domainActualFps.current=undefined;playingRef.current=value;setPlaying(value);
+        liveLastFrameAt.current=undefined;implicitActualFps.current=undefined;surfaceActualFps.current=undefined;fractalActualFps.current=undefined;domainActualFps.current=undefined;playingRef.current=value;setPlaying(value);
         if(value)setPickingJulia(false);
       }).catch(error=>{
         if(livePlaybackTransition.current===ticket&&error.name!=='AbortError')setError(error instanceof Error?error.message:String(error));
@@ -787,10 +796,11 @@ export default function App() {
       // Start/resume/recording anchors use performance.now(). RAF's frame
       // timestamp can precede those anchors, so use RAF only for scheduling.
       const now=performance.now();
-      if(sourceLivePreviewKind(sceneRef.current)){
+      if(previewLiveKind(sceneRef.current)){
         const last=liveLastFrameAt.current;
         if(!generationPending.current&&!livePlaybackTransition.current&&(!nativeGeometryPreviewEnabled(sceneRef.current)||nativeGeometryPresented.current)&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
           if(sourceLivePreviewKind(sceneRef.current)==='fractal')fractalActualFps.current=last===undefined?undefined:1000/(now-last);
+          if(previewLiveKind(sceneRef.current)==='implicit')implicitActualFps.current=last===undefined?undefined:1000/(now-last);
           if(sourceLivePreviewKind(sceneRef.current)==='surface')surfaceActualFps.current=last===undefined?undefined:1000/(now-last);
           if(sourceLivePreviewKind(sceneRef.current)==='domain')domainActualFps.current=last===undefined?undefined:1000/(now-last);
           liveLastFrameAt.current=now;generationPending.current=true;setLiveTickRevision(value=>value+1);
@@ -847,7 +857,7 @@ export default function App() {
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
-        if(output.type==='geometry'&&output.surfaceLive||output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.fractalLive||output.domainLive||output.perlinLive||output.rootsLive||live)){
+        if(output.type==='geometry'&&(output.surfaceLive||output.implicitLive)||output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.fractalLive||output.domainLive||output.perlinLive||output.rootsLive||live)){
           timeRef.current=time;playbackClock.current=time;setTime(time);
         }
       },
@@ -866,6 +876,12 @@ export default function App() {
           sceneRef.current=result.scene;generationScene.current=result.scene;camera.current=result.scene.camera;setSceneState(result.scene);
           const live=result.context.perlinLive;liveSessionId.current=live.sessionId;iteratedStartAt.current=live.startAt;
           livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;
+          playingRef.current=!live.clock.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
+          setTime(result.context.time);setPreviewCancelled(false);return;
+        }
+        if(result.context.implicitLive){
+          const live=result.context.implicitLive;implicitContinuation.current={scene:originalScene,context:live};liveSessionId.current=live.sessionId;
+          implicitActualFps.current=undefined;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;
           playingRef.current=!live.clock.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
           setTime(result.context.time);setPreviewCancelled(false);return;
         }
@@ -908,7 +924,7 @@ export default function App() {
   useEffect(()=>{
     // A provisional size would consume progressive samples before the first
     // measured viewport, whose resize then legitimately clears their ink.
-    if(!viewportSize)return;
+    if(!viewportSize||implicitRecordingScene.current===scene)return;
     setPreviewCancelled(false);
     const changed=generationScene.current!==scene;
     if(generationScene.current?.id!==scene.id)setOutput(null);
@@ -916,9 +932,9 @@ export default function App() {
     if(sourceBouncing)bouncingPresented.current=false;
     if(nativeGeometryPreviewEnabled(scene))nativeGeometryPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    generationQueue.current?.request(scene,{time:timeRef.current,...(implicitContinuation.current?.scene===scene?{implicitLive:{...implicitContinuation.current.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
-  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:sourceLivePreviewKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
+  },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:previewLiveKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
     if(autoPlayPending.current&&!generationActive&&output&&outputScene===scene&&presentedSource===scene&&!error&&!recording&&!previewCancelled){autoPlayPending.current=false;play(true);}
   },[output,outputScene,presentedSource,scene,generationActive,error,recording,previewCancelled]);
@@ -984,12 +1000,12 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":sourceLivePreviewKind(scene)==='surface'?'曲面录制':sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':sourceLivePreviewKind(scene)==='perlin'?'Perlin 录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":usesSourceImplicitCpuMesh(scene)?'隐式曲面录制':sourceLivePreviewKind(scene)==='surface'?'曲面录制':sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':sourceLivePreviewKind(scene)==='perlin'?'Perlin 录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
             autoPlayPending.current=false;
-            if(sourceBouncing||sourceLivePreviewKind(sceneRef.current))play(false);else {playingRef.current=false;setPlaying(false);}
+            if(sourceBouncing||previewLiveKind(sceneRef.current))play(false);else {playingRef.current=false;setPlaying(false);}
             setExporting(true);
           }}
         >
@@ -1311,6 +1327,7 @@ export default function App() {
           {sourceBouncing?<SourceBouncingTransport checkpoint={bouncingCheckpoint} playing={playing} ready={completedFrameReady} fps={scene.timeline.fps} onPlay={play} onSeek={seekBouncingUpdates}/>:<Timeline
             scene={scene}
             time={time}
+            implicitContinuation={implicitContinuation.current?.scene===scene}
             finalPreview={finalPreviewTime!==null}
             playing={playing}
             onTime={seek}
@@ -1670,9 +1687,9 @@ export default function App() {
           {toast}
         </div>
       )}
-      {(exporting||recording&&(sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin')) && (
+      {(exporting||recording&&(usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin')) && (
         <ExportDialog
-          mode={recording?(sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':'fractal-recording'):'export'}
+          mode={recording?(usesSourceImplicitCpuMesh(scene)?'implicit-recording':sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':'fractal-recording'):'export'}
           scene={{ ...scene, camera: camera.current }}
           previewReady={nativeGeometryPreviewEnabled(scene)?completedFrameAvailable:undefined}
           time={time}
@@ -1737,14 +1754,15 @@ export default function App() {
               return generationQueue.current.capturePerlinPaused(output,size,scale);
             },
           }:undefined}
-          currentSourceRecording={sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
-            ready:sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'?completedFrameAvailable:completedFrameReady,
+          currentSourceRecording={usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
+            ready:usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'?completedFrameAvailable:completedFrameReady,
             record:async(options,consumer,signal)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前录制画面尚未完成或已过期，请等待预览完成后重试');
-              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=frame.rootsLive?.sceneTime??frame.surfaceLive?.frame.sceneTime??frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.perlinLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
-              const kind=sourceLivePreviewKind(scene),observedFps=kind==='domain'||kind==='surface',initialFps=(kind==='surface'?surfaceActualFps.current:domainActualFps.current)??renderPreferences.frameRate;let lastFrameStart=performance.now();
+              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=(frame.implicitRecording?implicitCameraFrame(frame).sceneTime:undefined)??frame.rootsLive?.sceneTime??frame.surfaceLive?.frame.sceneTime??frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.perlinLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
+              const kind=usesSourceImplicitCpuMesh(scene)?'implicit':sourceLivePreviewKind(scene),observedFps=kind==='implicit'||kind==='domain'||kind==='surface',initialFps=(kind==='implicit'?implicitActualFps.current:kind==='surface'?surfaceActualFps.current:domainActualFps.current)??renderPreferences.frameRate;let lastFrameStart=performance.now();
               const actualFrameRate=observedFps?()=>{const now=performance.now(),delta=now-lastFrameStart;lastFrameStart=now;return delta>0?1000/delta:initialFps;}:consumer.actualFrameRate;
-              return generationQueue.current.recordSource(output,observedFps?{...options,actualFrameRate:initialFps}:options,{actualFrameRate,shouldStop:consumer.shouldStop,complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);
+              if(kind==='implicit')implicitRecordingScene.current=scene;
+              try{return await generationQueue.current.recordSource(output,observedFps?{...options,actualFrameRate:initialFps}:options,{actualFrameRate,shouldStop:consumer.shouldStop,complete:consumer.complete,start:async start=>{present(start.warmup);await consumer.start?.(start);},frame:async(frame,index,start)=>{present(frame);await consumer.frame(frame,index,start);}},signal);}finally{if(implicitRecordingScene.current===scene)implicitRecordingScene.current=undefined;}
             },
           }:undefined}
           rootsPixelDensity={sourceLivePreviewKind(scene)==='roots'?viewportMeasurement?.pixelRatio:undefined}
@@ -1761,7 +1779,7 @@ export default function App() {
         />
       )}
       {inputDialog&&<TextPrompt request={inputDialog} onClose={()=>setInputDialog(null)}/>}
-      {recording&&sourceLivePreviewKind(scene)!=='roots'&&sourceLivePreviewKind(scene)!=='surface'&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&sourceLivePreviewKind(scene)!=='perlin'&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
+      {recording&&!usesSourceImplicitCpuMesh(scene)&&sourceLivePreviewKind(scene)!=='roots'&&sourceLivePreviewKind(scene)!=='surface'&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&sourceLivePreviewKind(scene)!=='perlin'&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
         onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(sourceLivePreviewKind(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}

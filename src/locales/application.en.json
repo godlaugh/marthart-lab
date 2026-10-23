@@ -1266,5 +1266,10 @@
   "域着色按实际经过时间播放；暂停后可拖拽、缩放和修改参数。应用场景或时间跳转会重新开始。队列结束后，已启动的动画仍可继续。": "Domain coloring plays using elapsed time. While paused, drag, zoom or edit parameters. Apply or seeking rebuilds the scene. Active animations may continue after the queue ends.",
   "使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。保存完成后从录制状态继续播放。": "Restart recording with the last applied configuration, retaining accumulation on the primary canvas and same-size export canvas. Resume playback from the recording state after saving.",
   "恢复上次应用的模拟配置和后端，首帧预热后录到队列结束，保存后继续播放。导出尺寸变化会重建导出画布。": "Restore the last applied simulation and backend, warm up one frame, record until the queue finishes, then resume playback after saving. Changing output dimensions recreates the export canvas.",
-  "Perlin 录制": "Perlin recording"
+  "Perlin 录制": "Perlin recording",
+  "隐式曲面录制": "Implicit surface recording",
+  "隐式曲面视频模式": "Implicit surface video mode",
+  "按动画队列录制": "Record animation queue",
+  "从当前场景重新开始，预热后录到动画队列结束，保存后继续播放。帧率同时用于动画和视频编码。": "Restart the current scene, discard warmup, and record until the animation queue ends. Playback continues after saving. Frame rate controls both animation and video encoding.",
+  "录制结束后从当前动画继续运行。暂停保留进度；编辑场景或跳转时间会重新计算预览。": "Playback continues from the recorded animation. Pausing keeps its progress; editing the scene or seeking rebuilds the preview."
 }

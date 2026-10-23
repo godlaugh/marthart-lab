@@ -66,6 +66,10 @@ node scripts/verify-source-implicit-continuation.mjs \
 
 视频回归耗时 21.656 秒，采样 CPU 37.050 秒、峰值 RSS 2285 MiB；无遗留服务进程。上述采样限制同样适用。
 
+## 后续进展
+
+2026-10-24：App 录制入口及六组真实界面流程已完成，见[录制界面验收](source-implicit-recording-ui.zh-CN.md)。下述条目保留本轮结束时的状态，整体 Goal 仍未完成。
+
 ## 尚未完成
 
 下一步连接 App 录制入口和停止回调，在主画布验证自然完成、提前停止、取消重试、暂停恢复和编辑后的会话切换。原版隐式参数动画、带公式录制、更多显示配置及其他场景族仍未完成；本轮也没有进行最终 Apple Silicon 发行。整个 2.0 Goal 保持进行中。

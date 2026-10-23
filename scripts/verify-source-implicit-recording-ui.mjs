@@ -1,0 +1,100 @@
+/** Actual App recording controls, retained Worker lifecycle, native artwork and
+ * video delivery. Original numerical/pixel parity is verified separately by
+ * verify-source-implicit-continuation; this suite does not drive the original GUI. */
+import {chromium} from '@playwright/test';
+import {createServer} from 'vite';
+import {createExportServer} from '../server/index.mjs';
+import {configureDesktopGraphics} from '../desktop/graphics.mjs';
+import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import assert from 'node:assert/strict';
+import {measureFamily} from './browser-process-cost.mjs';
+import {decodePng} from './lib/verify-png.mjs';
+import {verifyRecordingVideo} from './lib/verify-recording-video.mjs';
+const directory=process.argv[2];assert.ok(directory);await mkdir(directory);const origin='http://127.0.0.1:5179';
+const sha=b=>createHash('sha256').update(b).digest('hex');
+const paths=[...(await readdir('src',{recursive:true})).filter(p=>/\.(tsx?|json)$/.test(p)).map(p=>'src/'+p),'scripts/verify-source-implicit-recording-ui.mjs','scripts/lib/verify-recording-video.mjs'];
+const hashes=async()=>Object.fromEntries(await Promise.all(paths.sort().map(async p=>[p,sha(await readFile(p))])));
+const report={scope:'Actual App record/export controls, original-queue local Worker, native rendering, FFmpeg, stop/continue/pause/resize/resume/edit/seek and cancel/retry. No original GUI or original MP4 claim.',cases:[],sourceBefore:await hashes()};
+let browser,vite,service,page;const releases=[],started=performance.now();
+function audit(){const Native=Worker;window.__implicit={rows:[],sequence:0};window.Worker=class extends Native{
+ requests=new Map();constructor(...args){super(...args);this.addEventListener('message',({data})=>{const request=this.requests.get(data.id);if(!request||data.operation!==request.operation)return;this.requests.delete(data.id);const facts=o=>o&&({type:o.type,frame:o.sourceCameraFrame,live:o.implicitLive,recording:o.implicitRecording});const a=window.__implicit;if(a.rows.length>=1000)throw Error('Implicit audit bound');a.rows.push({request,operation:data.operation,error:data.error,output:facts(data.output),result:data.result&&{context:data.result.context,sceneFps:data.result.scene?.timeline.fps,clock:data.result.clock,warmup:facts(data.result.warmup),preview:facts(data.result.preview)}});});}
+ postMessage(m,...args){this.requests.set(m.id,{operation:m.operation,sequence:++window.__implicit.sequence,context:m.context,sceneFps:m.scene?.timeline.fps,options:m.options,displayFrame:m.displayFrame,paused:m.paused});return super.postMessage(m,...args);}
+};}
+async function enabled(label){await page.waitForFunction(label=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===label&&!b.disabled),label);}
+async function run(name){
+ const row={name,errors:[]},uploads=[],creates=[],native=[],downloads=[],deletes=[],finishes=[];report.cases.push(row);
+ page=await browser.newPage({viewport:{width:1360,height:900},deviceScaleFactor:2,acceptDownloads:true});page.setDefaultTimeout(30000);page.on('pageerror',e=>row.errors.push(e.message));await page.addInitScript(audit);
+ let release,arrive,hold=['manual','cancel'].includes(name);const gate=new Promise(r=>release=r),arrived=new Promise(r=>arrive=r);releases.push(release);
+ await page.route('**/api/source-renderer/frames',async route=>{const samples=route.request().postDataBuffer().readUInt32LE(52);if(samples!==0){await route.continue();return;}const response=await route.fetch(),bytes=await response.body();if(response.status()===200)native.push(bytes);else row.errors.push('Native export HTTP '+response.status()+': '+bytes.toString());await route.fulfill({response,body:bytes}).catch(()=>{});});
+ let failUpload=name==='recovery',failFinish=name==='recovery',failStatus=name==='recovery',finishId;
+ await page.route('**/api/exports**',async route=>{const req=route.request(),u=new URL(req.url());
+  if(req.method()==='POST'&&u.pathname.endsWith('/frames')){
+   if(hold){hold=false;arrive();await gate;}
+   if(failUpload){failUpload=false;assert.ok((await route.fetch()).ok());return route.abort('failed');}
+  }
+  if(req.method()==='POST'&&u.pathname.endsWith('/finish')&&failFinish){failFinish=false;const result=await route.fetch();assert.ok(result.ok());finishId=(await result.json()).id;return route.abort('failed');}
+  if(req.method()==='GET'&&finishId&&u.pathname==='/api/exports/'+finishId&&failStatus){failStatus=false;return route.abort('failed');}
+  await route.continue().catch(()=>{});
+ });
+ page.on('download',d=>downloads.push(d));page.on('request',r=>{const u=new URL(r.url());if(r.method()==='POST'&&u.pathname==='/api/exports')creates.push(JSON.parse(r.postData()));if(r.method()==='POST'&&u.pathname.startsWith('/api/exports/')&&u.pathname.endsWith('/frames'))uploads.push({index:Number(u.searchParams.get('index')),bytes:r.postDataBuffer()});if(r.method()==='DELETE'&&u.pathname.startsWith('/api/exports/'))deletes.push(u.pathname);if(r.method()==='POST'&&u.pathname.endsWith('/finish'))finishes.push(JSON.parse(r.postData()));});
+ const fixture=JSON.parse(await readFile('tests/fixtures/source-implicit-presentation/recording-clock.json')),raw=structuredClone(fixture.cases.find(c=>c.name==='fps4-varying').input.project);raw.name='Implicit recording '+name;raw.settings.x_segments=raw.settings.y_segments=raw.settings.z_segments=12;
+ if(name==='warmup')raw.timeline=[];if(['manual','cancel'].includes(name))raw.timeline.push({type:'wait',duration:4});
+ await writeFile(directory+'/'+name+'-input.json',JSON.stringify(raw,null,2));row.inputSha256=sha(JSON.stringify(raw));
+ await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(origin+'/fixture');
+ await page.evaluate(async raw=>{const{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{saveWorkspace}=await import('/src/engine/document.ts');const scene=parseProjectFile(JSON.stringify(raw)).scene;saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'high',frameRate:20}});},raw);
+ await page.goto(origin);await page.waitForFunction(()=>document.querySelector('[data-testid=native-art-canvas]')?.style.display==='block'&&!document.querySelector('.error-card'));
+ const open=async()=>{
+  await page.getByRole('button',{name:name==='export'?'Export artwork':'Record',exact:true}).click();
+  if(name==='export'){await page.getByRole('button',{name:'Animation video',exact:true}).click();await page.getByRole('combobox',{name:'Implicit surface video mode',exact:true}).selectOption('retained');await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');}
+  else await page.getByRole('dialog',{name:'Implicit surface recording',exact:true}).waitFor();
+  for(const [label,value]of[['Export width','128'],['Export height','96'],['Export frame rate','4']])await page.getByRole('spinbutton',{name:label,exact:true}).fill(value);
+  await enabled(name==='export'?'Start export':'Start recording');
+ };
+ await open();if(name==='natural')await page.screenshot({path:directory+'/recording-dialog.png'});const boundary=await page.evaluate(()=>window.__implicit.sequence);await page.getByRole('button',{name:name==='export'?'Start export':'Start recording',exact:true}).click();
+ if(['manual','cancel'].includes(name)){let timer;try{await Promise.race([arrived,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('No in-flight frame')),30000))]);}finally{clearTimeout(timer);}await page.getByRole('button',{name:name==='manual'?'Stop and save':'Cancel export',exact:true}).click();release();}
+ if(name==='recovery'){await page.getByRole('button',{name:'Retry save',exact:true}).waitFor();assert.equal(await page.evaluate(b=>window.__implicit.rows.some(r=>r.request.sequence>b&&r.operation==='source-recording-finish'),boundary),false);await page.getByRole('button',{name:'Retry save',exact:true}).click();}
+ await page.waitForFunction(b=>window.__implicit.rows.some(r=>r.request.sequence>b&&r.operation==='source-recording-finish'),boundary,{timeout:60000});
+ const auditRows=await page.evaluate(b=>window.__implicit.rows.filter(r=>r.request.sequence>b),boundary),begin=auditRows.find(r=>r.operation==='source-recording-begin'),stop=auditRows.find(r=>r.operation==='source-recording-finish'),frames=auditRows.filter(r=>r.operation==='source-recording-frame');
+ assert.ok(!begin.error&&!stop.error);assert.equal(begin.result.sceneFps,30);assert.equal(stop.result.sceneFps,30);assert.equal(stop.result.context.time,stop.result.preview.frame.sceneTime);const last=frames.at(-1)?.output??begin.result.warmup;
+ assert.equal(stop.result.preview.frame.frameIndex,last.frame.frameIndex);assert.deepEqual(stop.result.preview.frame.camera,last.frame.camera);assert.equal(stop.result.preview.live.paused,false);
+ assert.ok(!auditRows.some(r=>r.operation==='generate'&&r.request.sequence>begin.request.sequence&&r.request.sequence<stop.request.sequence),'App replayed preview during recording');
+ row.begin=begin;row.stop=stop;row.recordingUpdates=frames.length+1;row.creates=creates;row.finishes=finishes;
+ if(name==='warmup'){assert.equal(creates.length,0);assert.equal(uploads.length,0);assert.equal(downloads.length,0);await page.locator('.export-error').filter({hasText:'No frames to save'}).waitFor();}
+ else if(name==='cancel'){assert.equal(downloads.length,0);assert.equal(finishes.length,0);assert.equal(deletes.length,1);assert.equal((await page.request.get(origin+deletes[0])).status(),404);row.cancelRemovedEncoder=true;}
+ else{
+  await page.waitForFunction(()=>!!document.querySelector('.export-result'));assert.equal(downloads.length,1);assert.equal(creates.length,1);const settings=creates[0];assert.equal(settings.width,128);assert.equal(settings.height,96);assert.equal(settings.inputWidth,384);assert.equal(settings.inputHeight,288);assert.equal(settings.fps,4);
+  assert.equal(uploads.length,frames.length);assert.equal(uploads.length,name==='manual'?1:4);const expected=[];
+  for(let i=0;i<uploads.length;i++){assert.equal(uploads[i].index,i);const png=decodePng(uploads[i].bytes),bottom=native[i+1];assert.equal(png.width,384);assert.equal(png.height,288);assert.equal(bottom.length,384*288*4);const top=Buffer.alloc(bottom.length);for(let y=0;y<288;y++)bottom.copy(top,y*1536,(287-y)*1536,(288-y)*1536);for(let j=3;j<top.length;j+=4)top[j]=255;assert.deepEqual(png.rgba,top);expected.push(top);}
+  const file=directory+'/'+name+'.mp4';await downloads[0].saveAs(file);row.video=verifyRecordingVideo(file,settings,expected,directory+'/'+name+'-raw-reference.mp4');
+ }
+ // Stop automatically resumes. Verify actual generated contexts, not just the icon.
+ await page.waitForFunction(b=>window.__implicit.rows.filter(r=>r.request.sequence>b&&r.operation==='generate'&&r.output?.live?.renderKind==='update').length>=2,stop.request.sequence);
+ if(name==='natural')await page.screenshot({path:directory+'/recording-saved.png'});
+ const continuation=await page.evaluate(b=>window.__implicit.rows.filter(r=>r.request.sequence>b&&r.operation==='generate'),stop.request.sequence);
+ assert.ok(continuation.every(r=>r.request.context.implicitLive?.sessionId===stop.result.context.implicitLive.sessionId));assert.equal(continuation[0].output.frame.frameIndex,stop.result.preview.frame.frameIndex+1);assert.ok(continuation[0].output.frame.rawDt<5);row.continuation=continuation.slice(0,2);
+ await page.getByRole('button',{name:'Close export',exact:true}).click();await page.getByRole('button',{name:'Pause',exact:true}).click();
+ await page.waitForFunction(()=>window.__implicit.rows.some(r=>r.operation==='implicit-playback'&&r.request.paused===true));
+ const paused=await page.evaluate(()=>window.__implicit.rows.filter(r=>r.operation==='generate').at(-1));
+ await page.setViewportSize({width:1420,height:940});await page.waitForFunction(s=>window.__implicit.rows.some(r=>r.request.sequence>s&&r.output?.live?.renderKind==='snapshot'),paused.request.sequence);
+ const snapshot=await page.evaluate(()=>window.__implicit.rows.filter(r=>r.output?.live?.renderKind==='snapshot').at(-1));assert.equal(snapshot.output.frame.sceneTime,paused.output.frame.sceneTime);assert.deepEqual(snapshot.output.frame.camera,paused.output.frame.camera);
+ await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(s=>window.__implicit.rows.some(r=>r.request.sequence>s&&r.output?.live?.renderKind==='update'),snapshot.request.sequence);row.pauseResizeResume=true;
+ if(name==='cancel'){
+  const count=downloads.length;await open();await page.getByRole('button',{name:'Start recording',exact:true}).click();await page.waitForFunction(()=>!!document.querySelector('.export-result'),undefined,{timeout:90000});assert.equal(downloads.length,count+1);await downloads.at(-1).saveAs(directory+'/cancel-retry.mp4');const metadata=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,duration','-of','json',directory+'/cancel-retry.mp4'],{encoding:'utf8'})).streams[0];assert.equal(Number(metadata.nb_read_frames),creates.at(-1).frames);assert.equal(metadata.width,128);assert.equal(metadata.height,96);assert.equal(metadata.r_frame_rate,'4/1');assert.equal(Number(metadata.duration),creates.at(-1).frames/4);row.retryVideo=metadata;row.retryCompleted=true;await page.getByRole('button',{name:'Close export',exact:true}).click();
+ }
+ if(name==='natural'){
+  await page.getByRole('button',{name:'Pause',exact:true}).click();await page.getByRole('spinbutton',{name:'Export range · seconds',exact:true}).fill('7');
+  await page.waitForFunction(()=>window.__implicit.rows.filter(r=>r.operation==='generate').at(-1)?.request.context.implicitLive===undefined);row.editRetiresContinuation=true;
+ }else{
+  const seq=await page.evaluate(()=>window.__implicit.sequence);await page.getByTitle('Return to start',{exact:true}).click();await page.waitForFunction(s=>window.__implicit.rows.some(r=>r.request.sequence>s&&r.operation==='generate'&&!r.request.context.implicitLive&&r.request.context.time===0),seq);row.seekRetiresContinuation=true;
+ }
+ assert.deepEqual(row.errors,[]);assert.equal(await page.locator('.error-card').count(),0);await page.screenshot({path:directory+'/'+name+'.png'});row.status='passed';await page.close();console.log(JSON.stringify({name,status:row.status}));
+}
+try{
+ service=await createExportServer({root:directory+'/service',allowedOrigins:[origin],sourceRendererBackend:JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND)),glyphBackend:JSON.parse(await readFile('.cache/source-glyph-service-20261022/build-final/backend.json'))});const a=await service.listen(0);
+ vite=await createServer({mode:'preview-v2',define:{'import.meta.env.VITE_SOURCE_RENDERER':'"native"'},server:{host:'127.0.0.1',port:5179,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${a.port}`}},logLevel:'error'});await vite.listen();
+ const switches=new Map();configureDesktopGraphics({getSwitchValue:k=>switches.get(k)??'',appendSwitch:(k,v)=>switches.set(k,v)});browser=await chromium.launch({channel:'chrome',headless:true,args:[...switches].map(([k,v])=>'--'+k+'='+v)});
+ const measured=await measureFamily(process.pid,async()=>{for(const name of ['natural','manual','cancel','warmup','export','recovery'])await run(name);return{};});report.processFamily=measured.processFamily;report.status='passed';
+}catch(error){report.status='failed';report.error=String(error.stack??error);if(page){report.body=await page.locator('body').innerText().catch(()=>null);await page.screenshot({path:directory+'/failure.png'}).catch(()=>{});}}
+finally{for(const release of releases)release();const cleanup=await Promise.allSettled([browser?.close(),vite?.close(),service?.close()]);report.cleanupErrors=cleanup.filter(r=>r.status==='rejected').map(r=>String(r.reason));report.remainingProcesses=service?.ownedProcessCount;report.sourceAfter=await hashes();report.sourceStable=JSON.stringify(report.sourceBefore)===JSON.stringify(report.sourceAfter);report.elapsedMs=performance.now()-started;if(!report.sourceStable||report.cleanupErrors.length||report.remainingProcesses!==0)report.status='failed';await writeFile(directory+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify({status:report.status,error:report.error}));if(report.status!=='passed')process.exitCode=1;}
