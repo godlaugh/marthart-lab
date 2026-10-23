@@ -51,6 +51,7 @@ export function ExportDialog({
   mode='export',
   currentSpirographFrame,
   previewLogicalHeight,
+  previewReady=true,
   sourcePerlinViewport,
   fractalPixelDensity,
   previewPointPixelDensity,
@@ -69,6 +70,9 @@ export function ExportDialog({
   onClose,
   onDone,
 }: {
+  /** Native preview must release the shared drawing slot and deliver its
+   * camera/density facts before a separate export can start. */
+  previewReady?:boolean;
   mode?:'export'|'fractal-recording'|'domain-recording'|'surface-recording'|'perlin-recording'|'roots-recording';
   rootsPixelDensity?:number;
   surfacePixelDensity?:number;
@@ -202,6 +206,7 @@ export function ExportDialog({
     return body;
   }
   async function run() {
+    if(!previewReady)return;
     if(dimensionError||upscaleError){setError(dimensionError||upscaleError);return;}
     setWorking(true);
     setError("");
@@ -492,6 +497,7 @@ export function ExportDialog({
             : t("逐帧渲染，无丢帧编码")}
         </p>
         {domainFrames.length>0&&<details open data-testid="domain-export-rendering"><summary>{t('本次导出的实际执行规则')}</summary>{domainFrames.map(item=><div key={item.key}><p>{t('已完成帧 {first}–{last}',{first:item.first+1,last:item.last+1})}</p><DomainRenderSummary facts={item.facts}/></div>)}{domainFrames.length>1&&<p>{t('本次导出使用了多种执行路径；以下范围记录各路径首次和最后出现的帧，不表示中间所有帧相同。')}</p>}{domainRoutesTruncated&&<p>{t('执行路径详情超过 16 项，后续不同路径未全部列出。')}</p>}</details>}
+        {!previewReady&&<p role="status" className="muted">{t('请等待当前预览完成并暂停后再导出。')}</p>}
         {sourceBouncing&&<p role="status" className="muted">{t(kind==='image'?'PNG 保存当前已呈现检查点，不推进模拟；尺寸变化只改变输出投影。':'源弹跳离线逐帧录制，使用源时钟的预热与停止规则。')}{!currentSourceBouncingFrame?.ready&&t('请等待当前预览完成并暂停后再导出。')}</p>}
         {sourceIterated&&!iteratedRecording&&<p role="status" className="muted">{t(pausedSourceImage?'截图会额外绘制导出图和主预览，动画时间保持不变。同尺寸会继续累积或推进重播；改变尺寸会清空累积画面并取消重播。':'从初始状态按固定时间重放，不复制当前实时累积画面。')}</p>}
         {sourceSamila&&<p role="status" className="muted">{t(pausedSourceImage?'截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。':'从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。')}</p>}
@@ -648,7 +654,7 @@ export function ExportDialog({
           <button
             className="primary-button"
             disabled={
-              working || liveRecording&&!currentSourceRecording?.ready || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedSourceImage&&!currentPausedCapture?.ready ||
+              working || !previewReady || liveRecording&&!currentSourceRecording?.ready || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedSourceImage&&!currentPausedCapture?.ready ||
               (kind === "video" &&
                 (ffmpeg !== true || !Number.isSafeInteger(fps)||fps<1||fps>120||
                   (sourceFrames||rootsFrames||sourceQueueVideo&&!sharedRecordingFps)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&!sourceQueueVideo&&(!Number.isFinite(duration) ||

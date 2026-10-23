@@ -1,5 +1,5 @@
 import {hasFormulaComposition} from './engine/formulaConfig';
-import {nativeSurfacePreviewEnabled,usesNativeSurfaceViewport} from './engine/sourceNativeViewport';
+import {nativeGeometryPreviewEnabled,usesNativeGeometryViewport} from './engine/sourceNativeViewport';
 import {activeFractalFormulaIdentity} from './engine/sourceFractalIdentity';
 import {applyFractalJuliaSeed} from './engine/complexViewport';
 import {sourceQueuePresentedScene} from './engine/sourceQueuePresentation';
@@ -265,7 +265,7 @@ export default function App() {
     bouncingNavigationRef=useRef(bouncingNavigation),
     bouncingLastFrameAt=useRef<number|undefined>(undefined),
     bouncingPresented=useRef(false),
-    nativeSurfacePresented=useRef(false),
+    nativeGeometryPresented=useRef(false),
     file = useRef<HTMLInputElement>(null),
     camera = useRef<CameraState>(scene.camera),
     sceneRef = useRef(scene),
@@ -789,7 +789,7 @@ export default function App() {
       const now=performance.now();
       if(sourceLivePreviewKind(sceneRef.current)){
         const last=liveLastFrameAt.current;
-        if(!generationPending.current&&!livePlaybackTransition.current&&(!nativeSurfacePreviewEnabled(sceneRef.current)||nativeSurfacePresented.current)&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
+        if(!generationPending.current&&!livePlaybackTransition.current&&(!nativeGeometryPreviewEnabled(sceneRef.current)||nativeGeometryPresented.current)&&(last===undefined||now-last>=1000/renderPreferences.frameRate)){
           if(sourceLivePreviewKind(sceneRef.current)==='fractal')fractalActualFps.current=last===undefined?undefined:1000/(now-last);
           if(sourceLivePreviewKind(sceneRef.current)==='surface')surfaceActualFps.current=last===undefined?undefined:1000/(now-last);
           if(sourceLivePreviewKind(sceneRef.current)==='domain')domainActualFps.current=last===undefined?undefined:1000/(now-last);
@@ -805,6 +805,11 @@ export default function App() {
         bouncingLastFrameAt.current=now;generationPending.current=true;showBouncingCheckpoint(next.value);
         id=requestAnimationFrame(tick);return;
       }
+      // Fixed-time source geometry must finish native presentation before
+      // another seek can supersede it. Keep elapsed wall time for the next
+      // ready frame, matching the existing fixed-time preview clock.
+      const nativeGeometry=nativeGeometryPreviewEnabled(sceneRef.current);
+      if(nativeGeometry&&(generationPending.current||!nativeGeometryPresented.current)){id=requestAnimationFrame(tick);return;}
       if(rootSamplingFps!==undefined){
         const step=readyPlaybackStep(playbackClock.current,prev,now,rootSamplingFps,renderPreferences.frameRate,generationPending.current);
         if(!step.advanced){id=requestAnimationFrame(tick);return;}
@@ -813,7 +818,7 @@ export default function App() {
       const next=scenePlaybackTime(scene,playbackClock.current),nextTime=next.time;
       // Reserve the next request before React commits its generation effect;
       // another animation frame must not advance the work clock twice.
-      if(rootSamplingFps!==undefined&&nextTime!==timeRef.current)generationPending.current=true;
+      if((rootSamplingFps!==undefined||nativeGeometry)&&nextTime!==timeRef.current)generationPending.current=true;
       setTime(nextTime);
       if(next.finished){setPlaying(false);if(experience.continuous)setToast(t('连续预览已到达 24 小时上限；可返回起点重新运行。'));}
       prev = now;
@@ -838,7 +843,7 @@ export default function App() {
           // carry only its revision; do not clone a complete queue every RAF.
           const {configuration,...acknowledged}=fractalEdit.current;fractalEdit.current=acknowledged;
         }
-        if(nativeSurfacePreviewEnabled(source))nativeSurfacePresented.current=false;
+        if(nativeGeometryPreviewEnabled(source))nativeGeometryPresented.current=false;
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
@@ -909,7 +914,7 @@ export default function App() {
     if(generationScene.current?.id!==scene.id)setOutput(null);
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
-    if(nativeSurfacePreviewEnabled(scene))nativeSurfacePresented.current=false;
+    if(nativeGeometryPreviewEnabled(scene))nativeGeometryPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
     generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
@@ -1211,7 +1216,7 @@ export default function App() {
               output={output}
               outputScene={outputScene}
               onPresented={frame=>{
-                nativeSurfacePresented.current=!!frame?.composited&&frame.source===sceneRef.current;
+                nativeGeometryPresented.current=!!frame?.composited&&frame.source===sceneRef.current;
                 setPresentedSource(frame?.source??null);setPresentedOutput(frame?output:null);
                 if(usesSourceBouncing(sceneRef.current))bouncingPresented.current=!!frame&&frame.source===sceneRef.current&&outputScene===sceneRef.current&&output?.sourceBouncingFrame?.checkpoint.simulationUpdates===bouncingFrame.current.simulationUpdates&&output?.sourceBouncingFrame?.checkpoint.sceneTime===bouncingFrame.current.sceneTime&&sourceBouncingViewMatches(output.sourceBouncingFrame.camera,bouncingNavigationRef.current.view);
               }}
@@ -1259,7 +1264,7 @@ export default function App() {
               pickingJulia={pickingJulia&&!busy&&!playing&&scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbrot'&&(scene.fractalSource!==undefined||scene.settings.variant!=='julia')}
               onPickJulia={values=>{setPickingJulia(false);edit(applyFractalJuliaSeed(scene,values));notify('已从选中位置打开 Julia 视图；可撤销返回。');}}
             />
-            {!usesNativeSurfaceViewport(displayScene,output)&&<FormulaOverlay scene={displayScene} presentation={displayFormulas} canvas={viewport.current?.frame()?.canvas}/>}
+            {!usesNativeGeometryViewport(displayScene,output)&&<FormulaOverlay scene={displayScene} presentation={displayFormulas} canvas={viewport.current?.frame()?.canvas}/>}
             {!displayHasFormulas&&<div className="viewport-caption">
               <span className="eyebrow">{def.englishName.toUpperCase()}</span>
               <h1>{scene.name}</h1>
@@ -1669,6 +1674,7 @@ export default function App() {
         <ExportDialog
           mode={recording?(sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':'fractal-recording'):'export'}
           scene={{ ...scene, camera: camera.current }}
+          previewReady={nativeGeometryPreviewEnabled(scene)?completedFrameAvailable:undefined}
           time={time}
           currentSourceBouncingFrame={output?.sourceBouncingFrame?{ready:completedFrameReady,frame:output.sourceBouncingFrame}:undefined}
           currentSpirographFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined}

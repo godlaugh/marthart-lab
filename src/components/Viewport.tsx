@@ -27,7 +27,7 @@ import {usesRootsNativePresentation,navigateRootsPresentation,type RootsPresenta
 import type {RootsPresentationConfiguration} from '../engine/rootsPresentationConfig';
 import type {ProjectResolution} from '../engine/projectResolution';
 import {projectViewportFit} from '../engine/projectViewportFit';
-import {SourceNativeViewport,usesNativeSurfaceViewport} from '../engine/sourceNativeViewport';
+import {SourceNativeViewport,usesNativeGeometryViewport} from '../engine/sourceNativeViewport';
 import {outputBuffers} from '../engine/outputBuffers';
 const sourceCameraNavigation=(scene:SceneDocument)=>sourceLivePreviewKind(scene)==='surface'||!!sourceIteratedLiveKind(scene);
 export interface ViewportHandle {
@@ -77,7 +77,7 @@ export const Viewport = forwardRef<
   const renderedScene=useRef<SceneDocument|null>(null),presented=useRef(new PresentedFrameOwner());
   const deliveredOutput=useRef<{source:SceneDocument;output:SceneOutput}|null>(null);
   const source=outputScene??scene;
-  const nativeMode=usesNativeSurfaceViewport(source,output),nativeCanvas=useRef<HTMLCanvasElement>(null),nativeOwner=useRef<SourceNativeViewport|null>(null);
+  const nativeMode=usesNativeGeometryViewport(source,output),nativeCanvas=useRef<HTMLCanvasElement>(null),nativeOwner=useRef<SourceNativeViewport|null>(null);
   const nativeWanted=useRef(nativeMode);nativeWanted.current=nativeMode;
   const presentationCallbacks=useRef({onPresented,onRenderError});presentationCallbacks.current={onPresented,onRenderError};
   function failed(error:unknown){const message=error instanceof Error?error.message:String(error);presented.current.clear();deliveredOutput.current=null;presentationCallbacks.current.onPresented?.(null);presentationCallbacks.current.onRenderError?.(message);setRenderError(message);}

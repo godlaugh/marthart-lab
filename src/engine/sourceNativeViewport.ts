@@ -1,5 +1,6 @@
 import type {FormulaPresentation,SceneDocument,SceneOutput} from '../types';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import type {SourceDrawingFrame} from './sourceDrawingFrame';
 import {renderSourceNativeFrame} from './sourceNativeClient';
@@ -7,10 +8,10 @@ import {prepareSourceFormulas,SourceFormulaCompositor} from './sourceFormulaComp
 import {compositeFormulas} from './formulaCanvas';
 
 type Pixels={width:number;height:number;pixels:Uint8ClampedArray};
-export function usesNativeSurfaceViewport(scene:SceneDocument,output?:SceneOutput|null):boolean {
- return nativeSurfacePreviewEnabled(scene)&&!!output?.sourceCameraFrame;
+export function usesNativeGeometryViewport(scene:SceneDocument,output?:SceneOutput|null):boolean {
+ return nativeGeometryPreviewEnabled(scene)&&!!output?.sourceCameraFrame;
 }
-export const nativeSurfacePreviewEnabled=(scene:SceneDocument)=>sourceDrawingPolicy()==='native'&&usesSourceSurfaceGeometry(scene);
+export const nativeGeometryPreviewEnabled=(scene:SceneDocument)=>sourceDrawingPolicy()==='native'&&(usesSourceSurfaceGeometry(scene)||usesSourceImplicitCpuMesh(scene));
 export interface NativeViewportRequest {
  /** Called only when the previous native operation has settled. The caller
   * owns the immutable output and snapshots the matching renderer here. */

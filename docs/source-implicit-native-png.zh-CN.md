@@ -61,4 +61,4 @@ VITE_SOURCE_RENDERER=native node scripts/verify-source-implicit-export.mjs \
 
 最后一个参数可选；省略时只证明本地工作流。提供时校验原版退出状态、输入、探针、JAR 摘要和品牌边界，并要求完整艺术画面零差异。它不会自动安装原版或创建参考证据。
 
-仍待验证隐式曲面原生预览与视频、更多配置和动态生命周期、其它场景族，以及 Apple Silicon 原生组件打包发行。2.0 Goal 继续进行。
+后续已接通并验证[隐式曲面原生预览](source-implicit-native-viewport.zh-CN.md)。原版主窗口一致性、原生视频、更多配置和动态生命周期、其它场景族，以及 Apple Silicon 原生组件打包发行仍待完成。2.0 Goal 继续进行。
