@@ -161,6 +161,7 @@
   "视频的宽度和高度都必须是偶数。": "Video width and height must both be even numbers.",
   "导出已取消": "Export cancelled",
   "图片已导出": "Image exported",
+  "导出资源清理未完成：{reason}": "Export resource cleanup is incomplete: {reason}",
   "视频已编码并导出": "Video encoded and exported",
   "逐帧渲染，无丢帧编码": "Every frame rendered and encoded",
   "正在完成编码…": "Finishing encoding…",

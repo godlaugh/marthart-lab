@@ -1,0 +1,353 @@
+{
+  "at": "2026-10-23T23:08:50.305155+00:00",
+  "status": "native App export workflows passed; original 5M runtime parity and final release pending",
+  "backend": {
+    "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-state-protocol-20261024/renderer",
+    "executableSha256": "e06587bade3c2c12267a19df0d17bb3b39ae4beb7b2b828b48c84780802551b4"
+  },
+  "runs": [
+    {
+      "name": "final-small",
+      "report": ".cache/bouncing-native-export-20261024/final-small/report.json",
+      "checksPassed": 72,
+      "scope": "Synthetic 512-particle public App PNG, seed/current MP4, preview recovery and export cleanup failures. Exact PNG/HTTP RGBA versus actual native Generator output; H.264 is lossy. No independent original application video oracle.",
+      "original": null,
+      "png": [
+        {
+          "path": ".cache/bouncing-native-export-20261024/final-small/current.png",
+          "width": 258,
+          "height": 194,
+          "rgbaSha": "56cc87e5c58b752a3969323581fc9dd1cfe4e3ff5e02e9e3bf205f47736f09b1",
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.10000000894069672
+          },
+          "rawNativeSha": "dc96998a14d5440587d1c28c449cbc6b4554ee85cad1055f5651d6e7068d6e2c"
+        }
+      ],
+      "videos": [
+        {
+          "start": "current",
+          "path": ".cache/bouncing-native-export-20261024/final-small/current.mp4",
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "warmup": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.0833333358168602
+          },
+          "frames": [
+            {
+              "index": 0,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 5,
+                "sceneTime": 0.1666666716337204
+              },
+              "rgbaSha": "efb012f05c658c9454554e0e8eec79c068f6584a6c20c3296bb9106383443c79",
+              "meanAbsoluteRgbError": 0.4907023111979167,
+              "maxAbsoluteRgbError": 109
+            },
+            {
+              "index": 1,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 6,
+                "sceneTime": 0.25
+              },
+              "rgbaSha": "ea96e3ce422ecb44294728debb7a0ea601fe98b545b6b2f178e782ea2451a243",
+              "meanAbsoluteRgbError": 0.4834865993923611,
+              "maxAbsoluteRgbError": 115
+            },
+            {
+              "index": 2,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 7,
+                "sceneTime": 0.3333333432674408
+              },
+              "rgbaSha": "6ce7a8e1b7ffba6b130165f1895f60cee53a35f700df1f1a53e6b316a37c2f58",
+              "meanAbsoluteRgbError": 0.4801567925347222,
+              "maxAbsoluteRgbError": 117
+            }
+          ]
+        },
+        {
+          "start": "seed",
+          "path": ".cache/bouncing-native-export-20261024/final-small/seed.mp4",
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "warmup": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 1,
+            "sceneTime": 0.0833333358168602
+          },
+          "frames": [
+            {
+              "index": 0,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 2,
+                "sceneTime": 0.1666666716337204
+              },
+              "rgbaSha": "bed8c37677d4262cca9e9bae1d2ef227c063fc24f669753028e0abe393ca7961",
+              "meanAbsoluteRgbError": 0.4909464518229167,
+              "maxAbsoluteRgbError": 105
+            },
+            {
+              "index": 1,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 3,
+                "sceneTime": 0.25
+              },
+              "rgbaSha": "994704e206e35dbb439e5e9f4c70205955b2751aa86cd623807072d3133112b6",
+              "meanAbsoluteRgbError": 0.5042724609375,
+              "maxAbsoluteRgbError": 120
+            },
+            {
+              "index": 2,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 4,
+                "sceneTime": 0.3333333432674408
+              },
+              "rgbaSha": "f79167960321e1a5c2160c51532f1e5c76b40daa232617f7f1ad774c347d8f9b",
+              "meanAbsoluteRgbError": 0.4755791558159722,
+              "maxAbsoluteRgbError": 109
+            }
+          ]
+        }
+      ],
+      "cleanupFailure": {
+        "path": ".cache/bouncing-native-export-20261024/final-small/cleanup-failure.png",
+        "diagnostics": {
+          "initializations": 8,
+          "uploadBytes": 65536,
+          "draws": 30,
+          "recoveries": 0,
+          "active": false,
+          "owned": true,
+          "ready": true,
+          "updates": 3,
+          "uploaded": 512,
+          "cleanupPending": true,
+          "retainedBytes": 21583
+        },
+        "blockedReleases": 2
+      },
+      "cleanupRetry": {
+        "path": ".cache/bouncing-native-export-20261024/final-small/cleanup-retry.png"
+      },
+      "sourceStable": true,
+      "pageErrors": [],
+      "remainingProcesses": 0
+    },
+    {
+      "name": "final-5m",
+      "report": ".cache/bouncing-native-export-20261024/final-5m/report.json",
+      "checksPassed": 75,
+      "scope": "Unmodified original bouncing2.json public import (5M particles), then recordDuration changed to 0.3s for public native App PNG, seed/current MP4, preview recovery and cleanup fault checks. No original application runtime/art comparison. Exact PNG/HTTP RGBA versus delivered native Generator; H.264 is lossy.",
+      "original": {
+        "jar": "../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+        "jarSha": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+        "member": "data/Bouncing/bouncing2.json",
+        "sourceSha": "9de55d50efb24bab3ced5ca17483256b782e916c9221a219e4df06e82b9e2537",
+        "count": 5000000,
+        "recordDuration": 0.30000001192092896
+      },
+      "png": [
+        {
+          "path": ".cache/bouncing-native-export-20261024/final-5m/current.png",
+          "width": 258,
+          "height": 194,
+          "rgbaSha": "46236f098df49b051b53950f4e5ac9cd013855742b12eb1ded80f73e9426d14a",
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.10000000894069672
+          },
+          "rawNativeSha": "286069ef31605fc5a6d66b7f999e4882cf05f016efa346455612c8bdcf352727"
+        }
+      ],
+      "videos": [
+        {
+          "start": "current",
+          "path": ".cache/bouncing-native-export-20261024/final-5m/current.mp4",
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "warmup": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.0833333358168602
+          },
+          "frames": [
+            {
+              "index": 0,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 5,
+                "sceneTime": 0.1666666716337204
+              },
+              "rgbaSha": "3d58dc5752857ae9f9d19376023249c927ed7583cb7bafa49dd6fff7ceea0b60",
+              "meanAbsoluteRgbError": 0.2688802083333333,
+              "maxAbsoluteRgbError": 82
+            },
+            {
+              "index": 1,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 6,
+                "sceneTime": 0.25
+              },
+              "rgbaSha": "b6ffde6f40a13ea955104f135b8394847a7f9d901e7c605d30fd98833572bdd4",
+              "meanAbsoluteRgbError": 0.2701958550347222,
+              "maxAbsoluteRgbError": 82
+            },
+            {
+              "index": 2,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 7,
+                "sceneTime": 0.3333333432674408
+              },
+              "rgbaSha": "99ba3a1ed6101bc566508c5948f4f6d9474e455b32b3185443aea87a5d538264",
+              "meanAbsoluteRgbError": 0.2807820638020833,
+              "maxAbsoluteRgbError": 79
+            }
+          ]
+        },
+        {
+          "start": "seed",
+          "path": ".cache/bouncing-native-export-20261024/final-5m/seed.mp4",
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "warmup": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 1,
+            "sceneTime": 0.0833333358168602
+          },
+          "frames": [
+            {
+              "index": 0,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 2,
+                "sceneTime": 0.1666666716337204
+              },
+              "rgbaSha": "6a20c0e748f8a2cb9c22cc6b1d2890333f01b2a596818e1d3c4055ecb9f69541",
+              "meanAbsoluteRgbError": 0.2374606662326389,
+              "maxAbsoluteRgbError": 93
+            },
+            {
+              "index": 1,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 3,
+                "sceneTime": 0.25
+              },
+              "rgbaSha": "749f60dc291ccc25517fef5e61e688dad0329346e53bd88a9c049daf0bd3894e",
+              "meanAbsoluteRgbError": 0.2540147569444444,
+              "maxAbsoluteRgbError": 76
+            },
+            {
+              "index": 2,
+              "checkpoint": {
+                "model": "source-bouncing-clock-1.7.8",
+                "simulationUpdates": 4,
+                "sceneTime": 0.3333333432674408
+              },
+              "rgbaSha": "0a39a8d61e0eb0dbaac4246e72a45ae75172ba3f4bd59ff80aeb20498b33368c",
+              "meanAbsoluteRgbError": 0.2669677734375,
+              "maxAbsoluteRgbError": 82
+            }
+          ]
+        }
+      ],
+      "cleanupFailure": {
+        "path": ".cache/bouncing-native-export-20261024/final-5m/cleanup-failure.png",
+        "diagnostics": {
+          "initializations": 9,
+          "uploadBytes": 640008192,
+          "draws": 29,
+          "recoveries": 0,
+          "active": false,
+          "owned": true,
+          "ready": true,
+          "updates": 3,
+          "uploaded": 5000000,
+          "cleanupPending": true,
+          "retainedBytes": 160138063
+        },
+        "blockedReleases": 2
+      },
+      "cleanupRetry": {
+        "path": ".cache/bouncing-native-export-20261024/final-5m/cleanup-retry.png"
+      },
+      "sourceStable": true,
+      "pageErrors": [],
+      "remainingProcesses": 0
+    }
+  ],
+  "artifactHashes": {
+    ".cache/bouncing-native-export-20261024/final-small/report.json": "e40b05fd184b83920cc18f592b9d0d2c032e18f74dbf19525cb00dfe1160c661",
+    ".cache/bouncing-native-export-20261024/final-small/restored-preview.png": "36a828c0991bebe3ca5f3393357c62bf2943e9d9610c14a8a28560d5f0e50336",
+    ".cache/bouncing-native-export-20261024/final-small/current.png": "260b0f4b3ebc3bc919e34d9b786a1cac83da0e76d306f49220d59e2e845dfda7",
+    ".cache/bouncing-native-export-20261024/final-small/current.mp4": "c61771aa1a7d1890b8598ef0e9086764aa60557b0cf6bd888c1ddf95cdbfaadb",
+    ".cache/bouncing-native-export-20261024/final-small/seed.mp4": "33084fcc6aa09c56bcbb49b83a321b5e46d59cb2a0747e0ac38db887fd8297e1",
+    ".cache/bouncing-native-export-20261024/final-small/cleanup-failure.png": "58dee7dba6e3e4c9f95ceaa24d413b02708cfedf70b3cd89608b0b96057c4aac",
+    ".cache/bouncing-native-export-20261024/final-small/cleanup-retry.png": "58dee7dba6e3e4c9f95ceaa24d413b02708cfedf70b3cd89608b0b96057c4aac",
+    ".cache/bouncing-native-export-20261024/final-5m/report.json": "31f8e5eff7d2bfc50077251abcb6d0aebf843ee4a25c84fbd4a0ca1b65d5771c",
+    ".cache/bouncing-native-export-20261024/final-5m/restored-preview.png": "8c9be74ab80d712debbeaf93762a95a6527cb5044e2795bda8cdd87f15df31e9",
+    ".cache/bouncing-native-export-20261024/final-5m/current.png": "3bb31d288be311cc01397256a8506c0f5507b2d525a474b063a0225e4f430912",
+    ".cache/bouncing-native-export-20261024/final-5m/current.mp4": "f0435c49a6bde4e8dec38f7bcf195ceb280a1834ff332f24000fc9ef17565531",
+    ".cache/bouncing-native-export-20261024/final-5m/seed.mp4": "5775548cddf35d257d9b0d33c6e78be50d3752ac438c3dd8c93278146eb1a801",
+    ".cache/bouncing-native-export-20261024/final-5m/cleanup-failure.png": "b68f019a39202945e4529244253fc062357c3ffc62d328f2e905dfe64485dec9",
+    ".cache/bouncing-native-export-20261024/final-5m/cleanup-retry.png": "b68f019a39202945e4529244253fc062357c3ffc62d328f2e905dfe64485dec9",
+    ".cache/bouncing-native-export-20261024/tests.log": "f51c8693fced9a4c1f7a7f7db142143607cc02ceaf10694d164655acba61cf3a",
+    ".cache/bouncing-native-export-20261024/build.log": "7308052e3384201e8a250ea325369fe7e10d465460e0e823ce6d28245c03d516"
+  },
+  "sourceHashes": {
+    "src/components/ExportDialog.tsx": "b7adbb5bb9c5a55588c59c6cba2c60163c7acf5f4364067f7ca9c664e98af78c",
+    "src/locales/application.en.json": "0e87d05719fc8795dce77a47cbbe1ed2ee67281cb260eaed77b8a8e1d575b8c9",
+    "src/engine/client.ts": "37b4ab4cbbab97fe8bd4e85ed39d05f2404abf4382a2f83fbe89823d707380e4",
+    "src/engine/sourceBouncingNativeSession.ts": "ddbc001c78dec5ead31594ca7a70746e42cadd4c566e95e04b812d94af8a238b",
+    "src/engine/sourceBouncingExport.ts": "8fb6f9998cda29de3024bfd9c631d4977639adaf38cf1a4818676549a464543c",
+    "scripts/verify-source-bouncing-native-export.mjs": "d16bf902c3449ec8274fdfd8e3853d0f7120e2e1abeb45e8483d5e10fac50727",
+    "scripts/lib/verify-png.mjs": "f9f91d729ed9ef0bdea5be246d87a32c75ca977a50ea9c6d43f4919e3ae02e74",
+    "server/source-renderer.mjs": "7ec03f88d7161bf67c6e7cca7adfb800c38e9d8eb67d72626a3b4e23a67685e3",
+    "server/index.mjs": "8b458df625138223865377f6ac44a59a0d1bc933b3c36b0ff559908f8e25186f"
+  },
+  "validation": {
+    "testFiles": 14,
+    "testsPassed": 277,
+    "testElapsedSeconds": 5.65,
+    "buildV2": "passed; existing large chunk warning",
+    "viteBuildSeconds": 9.93
+  },
+  "limits": [
+    "Observed actual Generator return values and reused existing enhancement algorithm; this is public workflow acceptance, not an independent original renderer or enhancement oracle.",
+    "Each MP4 uses 0.3s requested duration, 12fps, one warmup and three encoded frames. No long video claim.",
+    "H.264 RGB is lossy. Exact RGBA claims apply only to decoded PNG and pre-encode uploaded frames.",
+    "Source 5M JSON imported without modification; only recordDuration changed through UI to 0.3s. No original 5M runtime/movie comparison.",
+    "Cleanup delay and release rejection are explicit transport fault injections; successful generation, native rendering, saving and encoding are real.",
+    "CPU, peak memory, cold/warm performance and token cost unmeasured. Default backend and installed 1.0 app unchanged."
+  ]
+}

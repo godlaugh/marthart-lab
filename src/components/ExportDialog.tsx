@@ -264,7 +264,7 @@ export function ExportDialog({
         setResult({url,format:'png',name:scene.name});
         const a=document.createElement('a');a.href=url;a.download=`${scene.name}.png`;a.click();
         if(!service)setTimeout(()=>URL.revokeObjectURL(url),600000);
-        setProgress(1);setWorking(false);onDone(t('图片已导出'));return;
+        setProgress(1);onDone(t('图片已导出'));return;
       }
       if(liveRecording){
         if(!currentSourceRecording?.ready)throw new Error(t('请等待当前预览完成并暂停后再录制'));
@@ -309,7 +309,7 @@ export function ExportDialog({
         },abort.signal);
         // Finalize encoding before the retained owner resumes its live clock.
         checkCancelled();
-        if(!noFrames)onDone(t('视频已编码并导出'));setWorking(false);return;
+        if(!noFrames)onDone(t('视频已编码并导出'));return;
       }
       g=new Generator();generator.current=g;
       const exportScene=kind==='video'?(fractalFrames?withFractalFreshRecording(scene,recordingFps):rootsFrames?withRootsFreshRecording(scene,recordingFps):perlinFrames?withPerlinFreshRecording(scene,recordingFps):scene):scene;
@@ -451,7 +451,6 @@ export function ExportDialog({
       }
       checkCancelled();
       onDone(kind === "image" ? t("图片已导出") : t("视频已编码并导出"));
-      setWorking(false);
     } catch (e) {
       let message=e instanceof Error&&e.name!=='AbortError'?e.message:'';
       if (sessionRef.current?.pending&&!(e instanceof ExportSessionCleanupError)) {
@@ -463,18 +462,21 @@ export function ExportDialog({
         }
       }
       if(message)setError(message);
-      setWorking(false);
     } finally {
-      try { g?.dispose();await g?.settledNativeCleanup(); }
-      finally {
-        try { r?.dispose(); }
-        finally {
-          generator.current = null;
-          if(recordingAbort.current===abort)recordingAbort.current=null;
-          retrySave.current=null;setRecoveringSave(false);
-          setGenerationStatus(null);
-        }
+      // Every owner gets its cleanup attempt even when another one fails.
+      // Keep the dialog busy until retirement settles; the native session
+      // retains a failed release token for the next acquisition to retry.
+      const failures:string[]=[];
+      for(const cleanup of [()=>g?.dispose(),()=>g?.settledNativeCleanup(),()=>r?.dispose()]){
+        try { await cleanup(); }
+        catch(error){failures.push(error instanceof Error?error.message:String(error));}
       }
+      if(failures.length)setError(previous=>[previous,t('导出资源清理未完成：{reason}',{reason:failures.join('\n')})].filter(Boolean).join('\n'));
+      generator.current = null;
+      if(recordingAbort.current===abort)recordingAbort.current=null;
+      retrySave.current=null;setRecoveringSave(false);
+      setGenerationStatus(null);
+      setWorking(false);
     }
   }
   function cancel() {
