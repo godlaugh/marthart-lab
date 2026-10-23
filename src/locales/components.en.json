@@ -754,8 +754,6 @@
   "V 起点": "V start",
   "V 终点": "V end",
   "允许反向范围；起点与终点按输入顺序保存。": "Reversed ranges are allowed; endpoints retain their entered order.",
-  "闭合 U 接缝": "Close U seam",
-  "闭合 V 接缝": "Close V seam",
   "网格接缝阈值": "Mesh seam threshold",
   "网格外观": "Mesh appearance",
   "显示网格填充": "Show mesh fill",
@@ -909,5 +907,8 @@
   "复根录制": "Roots recording",
   "后台实时计算录制": "Live computation",
   "已录制 {frames} 帧": "Frames recorded: {frames}",
-  "从当前配置重新计算，预热后录制；有动画时录到队列结束，无动画时等待全部点绘制完成。可随时停止并保存，保存后继续播放。": "Recompute the current configuration and record after warmup. Stop when the animation queue finishes, or after all points have been drawn when there is no animation. You can stop and save at any time; playback resumes after saving."
+  "从当前配置重新计算，预热后录制；有动画时录到队列结束，无动画时等待全部点绘制完成。可随时停止并保存，保存后继续播放。": "Recompute the current configuration and record after warmup. Stop when the animation queue finishes, or after all points have been drawn when there is no animation. You can stop and save at any time; playback resumes after saving.",
+  "强制闭合 U 接缝": "Force U seam closure",
+  "强制闭合 V 接缝": "Force V seam closure",
+  "关闭强制闭合后仍会自动判断接缝。阈值按相邻采样点的平均距离计算；增加采样数也可能改变闭合结果。": "Automatic seam detection remains active when forced closure is off. The threshold uses the average distance between adjacent samples; increasing the sample count can also change whether the seam closes."
 }

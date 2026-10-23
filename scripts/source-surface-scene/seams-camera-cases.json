@@ -1,0 +1,402 @@
+{
+  "description": "Authored Surface full-frame seam/camera inputs. Each case runs the original recording clock at 4 FPS through warmup and completion. Force-off is not an explicit no-wrap instruction.",
+  "base": {
+    "name": "cpu-plane-open",
+    "recording": true,
+    "simulationFps": 4,
+    "project": {
+      "config_version": "1.0.0",
+      "type": "SURFACE",
+      "name": "cpu-plane-open",
+      "parameters": {},
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "render_mode": "CPU",
+        "surface_mode": "MESH",
+        "u_segments": 2,
+        "v_segments": 2,
+        "mesh_u_segments": 9,
+        "mesh_v_segments": 7,
+        "u_min": 0,
+        "u_max": 1,
+        "v_min": 0,
+        "v_max": 1,
+        "speed_u": 0,
+        "speed_v": 0,
+        "scale_x": 22,
+        "scale_y": 22,
+        "scale_z": 22,
+        "show_trails": false,
+        "mesh_wireframe": true,
+        "mesh_fill": true,
+        "mesh_fill_opacity": 0.7,
+        "mesh_line_weight": 1.2,
+        "mesh_wrap_threshold": 0.25,
+        "mesh_wrap_u": false,
+        "mesh_wrap_v": false
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      },
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 0.5
+        }
+      ]
+    },
+    "steps": [
+      {
+        "dt": 0.25,
+        "actualFrameRate": 37,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 24,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 12,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 1,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": 0,
+        "paused": false
+      },
+      {
+        "dt": 0.25,
+        "actualFrameRate": -2,
+        "paused": false
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "cpu-plane-open",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {},
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-plane-u",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "mesh_wrap_u": true
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-plane-v",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "mesh_wrap_v": true
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-plane-uv",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "mesh_wrap_u": true,
+        "mesh_wrap_v": true
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-torus-auto",
+      "equations": {
+        "x": "(2+cos(2*PI*v))*cos(2*PI*u)",
+        "y": "(2+cos(2*PI*v))*sin(2*PI*u)",
+        "z": "sin(2*PI*v)"
+      },
+      "settings": {},
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-gap-low",
+      "equations": {
+        "x": "cos(2*PI*u)+.1*u",
+        "y": "sin(2*PI*u)",
+        "z": "v"
+      },
+      "settings": {
+        "mesh_wrap_threshold": 0.1
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-gap-high",
+      "equations": {
+        "x": "cos(2*PI*u)+.1*u",
+        "y": "sin(2*PI*u)",
+        "z": "v"
+      },
+      "settings": {
+        "mesh_wrap_threshold": 0.3
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "cpu-mobius-auto",
+      "equations": {
+        "x": "(2+(v-.5)*cos(PI*u))*cos(2*PI*u)",
+        "y": "(2+(v-.5)*cos(PI*u))*sin(2*PI*u)",
+        "z": "(v-.5)*sin(PI*u)"
+      },
+      "settings": {},
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-plane-open",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-plane-u",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "render_mode": "GPU",
+        "mesh_wrap_u": true
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-plane-v",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "render_mode": "GPU",
+        "mesh_wrap_v": true
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-plane-uv",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {
+        "render_mode": "GPU",
+        "mesh_wrap_u": true,
+        "mesh_wrap_v": true
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-torus-auto",
+      "equations": {
+        "x": "(2+cos(2*PI*v))*cos(2*PI*u)",
+        "y": "(2+cos(2*PI*v))*sin(2*PI*u)",
+        "z": "sin(2*PI*v)"
+      },
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-gap-low",
+      "equations": {
+        "x": "cos(2*PI*u)+.1*u",
+        "y": "sin(2*PI*u)",
+        "z": "v"
+      },
+      "settings": {
+        "render_mode": "GPU",
+        "mesh_wrap_threshold": 0.1
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-gap-high",
+      "equations": {
+        "x": "cos(2*PI*u)+.1*u",
+        "y": "sin(2*PI*u)",
+        "z": "v"
+      },
+      "settings": {
+        "render_mode": "GPU",
+        "mesh_wrap_threshold": 0.3
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "gpu-mobius-auto",
+      "equations": {
+        "x": "(2+(v-.5)*cos(PI*u))*cos(2*PI*u)",
+        "y": "(2+(v-.5)*cos(PI*u))*sin(2*PI*u)",
+        "z": "(v-.5)*sin(PI*u)"
+      },
+      "settings": {
+        "render_mode": "GPU"
+      },
+      "camera": {
+        "phi": 0.25,
+        "theta": -0.3,
+        "gamma": 0.5
+      }
+    },
+    {
+      "name": "camera-front",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {},
+      "camera": {
+        "phi": 0,
+        "theta": 0,
+        "gamma": 0
+      }
+    },
+    {
+      "name": "camera-top",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {},
+      "camera": {
+        "phi": "PI/2",
+        "theta": 0,
+        "gamma": 0
+      }
+    },
+    {
+      "name": "camera-side",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {},
+      "camera": {
+        "phi": 0,
+        "theta": "PI/2",
+        "gamma": 0
+      }
+    },
+    {
+      "name": "camera-isometric",
+      "equations": {
+        "x": "u",
+        "y": "v",
+        "z": "u*v"
+      },
+      "settings": {},
+      "camera": {
+        "phi": "PI/4",
+        "theta": "PI/4",
+        "gamma": "PI/3"
+      }
+    }
+  ]
+}

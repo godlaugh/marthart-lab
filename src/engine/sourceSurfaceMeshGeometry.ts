@@ -169,8 +169,15 @@ export function createSourceSurfaceMeshGeometry(config:SourceSurfaceMeshGeometry
   const best=Math.min(paletteShiftDistance(false),paletteShiftDistance(true));
   return Number.isFinite(best)&&best<=F(spacing*Math.max(threshold,F(.35)));
  }
- function gridVertices(visit:(index:number,u:number,v:number,colorIndex:number)=>void){
-  for(let j=0;j<numV;j++)for(let i=0;i<numU;i++)visit(j*numU+i,atU(i),atV(j),i*numV+j);
+ function gridVertices(sampling:'cpu'|'gpu',visit:(index:number,u:number,v:number,colorIndex:number)=>void){
+  // CPU updateThreejsMeshData divides each index. GPU buildThreejsMeshShape
+  // first rounds the reciprocal, then multiplies the index. The latter owns
+  // both shader seeds and CPU samples used to choose its indexed diagonals.
+  // Parameter seam quads keep their separate direct-division coordinates.
+  const inverseU=F(1/slices),inverseV=F(1/stacks);
+  for(let j=0;j<numV;j++)for(let i=0;i<numU;i++)visit(j*numU+i,
+   sampling==='gpu'?F(uMin+F(uRange*F(i*inverseU))):atU(i),
+   sampling==='gpu'?F(vMin+F(vRange*F(j*inverseV))):atV(j),i*numV+j);
  }
  function diagonal(points:readonly SourceMeshVector[]):boolean {
   // GPU useACDiagonal/Param selects AC for an invalid corner; callers on the
@@ -207,7 +214,7 @@ export function createSourceSurfaceMeshGeometry(config:SourceSurfaceMeshGeometry
   let vertices=grid,indexCount=0,indexedWireCount=0,uWireCount=0;
   const put=(index:number,p:SourceMeshVector,n:SourceMeshVector,color:number)=>{positions.set(p,index*3);normals.set(n,index*3);colors[index]=color;};
   const get=(i:number):SourceMeshVector=>[positions[i*3],positions[i*3+1],positions[i*3+2]];
-  gridVertices((index,u,v,color)=>{const p=position(u,v);put(index,p,normal(u,v,p,false),color);});
+  gridVertices('cpu',(index,u,v,color)=>{const p=position(u,v);put(index,p,normal(u,v,p,false),color);});
   function quad(a:number,b:number,c:number,d:number,indexed=true){
    reserve(1);const pa=get(a),pb=get(b),pc=get(c),pd=get(d);if(![pa,pb,pc,pd].every(finite))return;
    const indices=quadIndices(a,b,c,d,[pa,pb,pc,pd]);
@@ -235,7 +242,7 @@ export function createSourceSurfaceMeshGeometry(config:SourceSurfaceMeshGeometry
   const seeds=new Float32Array(maxVertices*4),colors=new Uint32Array(maxVertices),triangles=new Uint32Array(maxIndices),samples=new Float32Array(grid*3);
   let vertices=grid,indexCount=0;
   const put=(index:number,u:number,v:number,color:number)=>{seeds[index*4]=u;seeds[index*4+1]=v;colors[index]=color;};
-  gridVertices((index,u,v,color)=>{put(index,u,v,color);samples.set(position(u,v),index*3);});
+  gridVertices('gpu',(index,u,v,color)=>{put(index,u,v,color);samples.set(position(u,v),index*3);});
   const get=(index:number):SourceMeshVector=>[samples[index*3],samples[index*3+1],samples[index*3+2]];
   function emit(a:number,b:number,c:number,d:number,points:readonly SourceMeshVector[]){
    reserve(1);triangles.set(quadIndices(a,b,c,d,points),indexCount);indexCount+=6;

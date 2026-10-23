@@ -46,7 +46,7 @@ export function SourceSurfaceControls({scene,onChange}:Props){
    <p className="muted">{t('采样数包含边界端点；任一方向为 1 时没有网格面。超出本机容量会显示错误，原值不会被截断。')}</p></>}
    {number('domain','uMin','U 起点')}{number('domain','uMax','U 终点')}{number('domain','vMin','V 起点')}{number('domain','vMax','V 终点')}
    <p className="muted">{t('允许反向范围；起点与终点按输入顺序保存。')}</p>
-   {!gpuPoints&&<>{toggle('mesh','wrapU','闭合 U 接缝')}{toggle('mesh','wrapV','闭合 V 接缝')}{number('mesh','wrapThreshold','网格接缝阈值')}</>}
+   {!gpuPoints&&<>{toggle('mesh','wrapU','强制闭合 U 接缝')}{toggle('mesh','wrapV','强制闭合 V 接缝')}{number('mesh','wrapThreshold','网格接缝阈值')}<p className="muted">{t('关闭强制闭合后仍会自动判断接缝。阈值按相邻采样点的平均距离计算；增加采样数也可能改变闭合结果。')}</p></>}
   </div></details>
   <details open className="inspector-section"><summary>{t(gpuPoints?'曲面背景':'网格外观')}</summary><div className="section-body">
    {!gpuPoints&&<>{toggle('mesh','fillEnabled','显示网格填充')}{number('mesh','fillOpacity','网格填充透明度')}{toggle('mesh','wireframeEnabled','显示网格线框')}{number('mesh','lineWeight','网格线宽')}

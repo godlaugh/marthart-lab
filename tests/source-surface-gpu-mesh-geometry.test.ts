@@ -1,16 +1,27 @@
 import {describe,expect,it} from 'vitest';
 import {createSourceSurfaceMeshGeometry,type SourceSurfaceMeshGeometryConfiguration,type SourceMeshVector} from '../src/engine/sourceSurfaceMeshGeometry';
 import shiftOracle from './fixtures/source-surface-mesh-shifts.json';
+import nativeGrid from './fixtures/source-surface-gpu-grid-sampling.json';
 
 const F=Math.fround;
 function owner(overrides:Partial<SourceSurfaceMeshGeometryConfiguration>={}){
  return createSourceSurfaceMeshGeometry({numU:3,numV:2,uMin:0,uMax:1,vMin:0,vMax:1,meshWrapU:false,meshWrapV:false,meshWrapThreshold:.25,sample:(u,v)=>[u,v,0],reserve:()=>{},...overrides});
 }
 
-/** Static-source geometry checks, not a native GPU framebuffer oracle.
+/** Static-source and captured native vertex checks, not a framebuffer oracle.
  * MeshSurface 95a1c0c8…: buildThreejsMeshShape, addMeshVertex/Param,
  * useACDiagonal/Param and forEach{MainGrid,USeam,VSeam,UVCorner}*Quad. */
 describe('retained source GPU mesh parameters and shared seam traversal',()=>{
+ it('matches actual native PShape seed coordinates without replacing CPU or parameter-seam sampling',()=>{
+  const mesh=owner({numU:nativeGrid.numU,numV:nativeGrid.numV,meshWrapU:true}),gpu=mesh.renderGpu(),cpu=owner({numU:nativeGrid.numU,numV:nativeGrid.numV}).render();
+  for(let j=0;j<nativeGrid.numV;j++)for(let i=0;i<nativeGrid.numU;i++){
+   const at=(j*nativeGrid.numU+i)*4;expect(Array.from(gpu.seeds.slice(at,at+2))).toEqual([nativeGrid.u[i],nativeGrid.v[j]]);
+  }
+  expect(nativeGrid.v[5]).toBe(0.8333333730697632);
+  expect(cpu.positions[(5*nativeGrid.numU)*3+1]).toBe(0.8333333134651184);
+  const seamStart=nativeGrid.numU*nativeGrid.numV;
+  expect(gpu.seeds[(seamStart+5*4)*4+1]).toBe(0.8333333134651184);
+ });
  it('publishes inclusive UV seeds with zero mesh speeds and U-major palette identities',()=>{
   const frame=owner().renderGpu();
   expect(Array.from(frame.seeds)).toEqual([0,0,0,0,.5,0,0,0,1,0,0,0,0,1,0,0,.5,1,0,0,1,1,0,0]);

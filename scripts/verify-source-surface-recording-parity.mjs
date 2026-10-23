@@ -23,8 +23,10 @@ try{
  server=await createServer({mode:'preview-v2',server:{host:'127.0.0.1',port,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await server.listen();
  const switches=new Map();configureDesktopGraphics({getSwitchValue:k=>switches.get(k)??'',appendSwitch:(k,v)=>switches.set(k,v)});browser=await chromium.launch({channel:'chrome',headless:true,args:[...switches].map(([k,v])=>'--'+k+'='+v)});report.browserVersion=browser.version();const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(`http://127.0.0.1:${port}/fixture`);
- const names=JSON.parse(await read(reference+'/cases.json'));
- assert.ok(Array.isArray(names)&&names.length>0&&names.length<=40&&new Set(names).size===names.length&&names.every(name=>typeof name==='string'&&/^[a-z0-9-]+$/.test(name)),'Expected distinct bounded reference case names');
+ const available=JSON.parse(await read(reference+'/cases.json')),selected=process.argv.slice(4);
+ assert.ok(Array.isArray(available)&&available.length>0&&available.length<=40&&new Set(available).size===available.length&&available.every(name=>typeof name==='string'&&/^[a-z0-9-]+$/.test(name)),'Expected distinct bounded reference case names');
+ assert.ok(new Set(selected).size===selected.length&&selected.every(name=>available.includes(name)),'Selected cases must be distinct manifest entries');
+ const names=selected.length?selected:available;report.availableCases=available;report.selectedCases=names;
  const measured=await measureFamily(process.pid,async()=>{
   for(const name of names){
    const native=reference+'/native-'+name,run=JSON.parse(await read(native+'/run.json')),text=await read(run.source),input=JSON.parse(text),frames=JSON.parse(await read(native+'/frames.json'));
