@@ -13,16 +13,23 @@ export interface RootsNativePointSample {
  /** Borrowed only until the next read/dispose; omitted by the count-only reader. */
  readonly points?:Float32Array;
 }
+export interface RootsNativeSampleRange {readonly start:number;readonly count:number;}
 /** The shared boundary from one mathematical sample to source raw float points.
  * Queue planning executes the same math and finite-double admission; it only
  * omits raw storage. Metrics/float overflow do not change that admission. */
 export class RootsNativePointReader {
+ readonly sampleRange:RootsNativeSampleRange;
  private buffer?:Float32Array;private disposed=false;
  private root:Complex=[0,0];private metric?:RootsMetricKind;
  private arrival?:ReturnType<typeof prepareRootsNativeArrival>;
  get retainedBytes(){return this.buffer?.byteLength??0;}
- constructor(private readonly math:RootsMathJob,private readonly state:RootsProgress,storage:'points'|'count-only',admit:(bytes:number)=>void=()=>{}) {
+ constructor(private readonly math:RootsMathJob,private readonly state:RootsProgress,storage:'points'|'count-only',admit:(bytes:number)=>void=()=>{},sampleStart=0) {
   if(math.model!=='mathart-1.7.8-v1'||!Number.isSafeInteger(math.maxRootCount)||math.maxRootCount<0)throw new RootsGpuError('源复根点读取器需要有效源数学工作区','input');
+  const count=state.totalSamples,total=math.ensemble?.sampleCount;
+  if(!Number.isSafeInteger(sampleStart)||sampleStart<0||!Number.isSafeInteger(count)||count<1||total===undefined||sampleStart>total-count
+   ||!Number.isSafeInteger(state.attemptedSamples)||state.attemptedSamples<0||state.attemptedSamples>count)
+   throw new RootsGpuError('源复根读取区间超出数学样本范围','input');
+  this.sampleRange=Object.freeze({start:sampleStart,count});
   const bytes=storage==='points'?math.maxRootCount*16:0;
   if(!Number.isSafeInteger(bytes))throw new RootsGpuError('源复根单样本点表示容量溢出','capacity');
   admit(bytes);
@@ -32,9 +39,11 @@ export class RootsNativePointReader {
   if(this.disposed)throw new RootsGpuError('源复根点读取器已释放','input');
   rootsGpuCancel(hooks.isCancelled);
   hooks.onWork?.(1);
-  if(this.state.attemptedSamples>=this.state.totalSamples)throw new RootsGpuError('源复根采样已结束','input');
+  if(this.state.totalSamples!==this.sampleRange.count||!Number.isSafeInteger(this.state.attemptedSamples)||this.state.attemptedSamples<0||this.state.attemptedSamples>=this.sampleRange.count)throw new RootsGpuError('源复根采样已结束或计数范围已改变','input');
   if(this.metric!==metric){this.metric=metric;this.arrival=prepareRootsNativeArrival(metric);}
-  const state=this.state,sampled=this.math.sample(state.attemptedSamples,time,noLegacyRandom,hooks);
+  // Each producer owns a local completed-sample count. Its global ordinal is
+  // an address in the original ensemble, never an aggregate progress counter.
+  const state=this.state,sampled=this.math.sample(this.sampleRange.start+state.attemptedSamples,time,noLegacyRandom,hooks);
   state.attemptedSamples++;
   if(sampled.status==='filtered'){state.filteredSamples++;return{filtered:true,pointCount:0,invalidRoots:0,points:this.buffer?.subarray(0,0)};}
   if(sampled.status==='invalid'){state.invalidSamples++;return{filtered:false,pointCount:0,invalidRoots:0,points:this.buffer?.subarray(0,0)};}
