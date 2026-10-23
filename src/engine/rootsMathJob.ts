@@ -1,4 +1,4 @@
-import type {RootParameter,SceneDocument} from '../types';
+import type {RootParameter,RootsMathConfiguration,SceneDocument} from '../types';
 import type {Complex} from './complexMath';
 import {numberSetting} from './expression';
 import {prepareRootSampling} from './rootsParameterSampling';
@@ -34,7 +34,40 @@ const protectedHooks=(hooks:RootsNativeWorkHooks):RootsNativeWorkHooks=>({
  * and caller failures never become an apparently successful empty sample. */
 export function prepareRootsMathJob(scene:SceneDocument,hooks:RootsNativeWorkHooks={}):RootsMathJob {
  if(usesRootsNativeMath(scene)){
-  const config=parseRootsMath(scene.rootsMath);
+  return prepareRootsNativeMathJob(scene.rootsMath!,hooks);
+ }
+ const settings=scene.settings,sampling=prepareRootSampling(settings,Object.keys(scene.parameters));
+ const polynomial=compilePolynomial(scene.equations.polynomial??'z^8+t1*z^3+t2',String(settings.variable??'z'),[...Object.keys(scene.parameters),...sampling.names,'time']);
+ const maxIterations=numberSetting(settings,'rootIterations',150,1,2000),tolerance=numberSetting(settings,'rootTolerance',1e-8,1e-14,.01);
+ if(!Number.isInteger(maxIterations))throw new Error('求根迭代次数须为整数');
+ const filter=String(settings.rootSampleFilter??'all'),filterName=String(settings.rootFilterParameter??'t2');
+ if(!['all','parameter-imag-nonnegative'].includes(filter))throw new Error('rootSampleFilter 不支持 '+filter);
+ if(filter!=='all'&&!sampling.names.includes(filterName))throw new Error('采样过滤参数不存在：'+filterName);
+ const scalar={...scene.parameters};let roots=new Float64Array(96),disposed=false;
+ return{
+  model:'local-v1',maxRootCount:48,workspaceCapacityBytes:96*8,parameters:sampling.parameters,
+  sample(_ordinal,time,random,hooks={}){
+   if(disposed)throw new Error('Root mathematical job was disposed');
+   if(hooks.isCancelled?.())throw new DOMException('复根求解已取消','AbortError');
+   const parameters=sampling.sample(random.sample);
+   if(filter!=='all'&&!(parameters[filterName][1]>=0))return{status:'filtered'};
+   let coefficients:Complex[];try{coefficients=polynomial({...scalar,time,...parameters});}catch{return{status:'invalid'};}
+   const phase=random.phase();
+   let result;
+   try{result=solvePolynomial(coefficients,maxIterations,tolerance,phase,protectedHooks(hooks));}
+   catch(error){if(error instanceof CallbackFailure)throw error.original;if(error instanceof DOMException&&error.name==='AbortError')throw error;return{status:'invalid'};}
+   for(let i=0;i<result.roots.length;i++){roots[i*2]=result.roots[i][0];roots[i*2+1]=result.roots[i][1];}
+   return{status:'solved',admitted:result.converged,roots,rootCount:result.roots.length,parameters,iterations:result.iterations,work:result.work,residual:result.residual,iterationLimit:!result.converged};
+  },
+  reset(){roots.fill(0);},dispose(){disposed=true;roots=new Float64Array();},
+  diagnostics(){return{workspaceBytes:roots.byteLength,disposed};},
+ };
+}
+/** Source-only producer entry. Worker transports carry mathematical inputs,
+ * not whole scene documents or presentation/history state. */
+export function prepareRootsNativeMathJob(configuration:RootsMathConfiguration,hooks:RootsNativeWorkHooks={}):RootsMathJob {
+  const config=parseRootsMath(configuration);
+  if(config.model!=='mathart-1.7.8-v1')throw new RootsNativeError('input','Source mathematical job requires the native model');
   let polynomial:PreparedRootsNativePolynomial|undefined,sampling:PreparedRootsNativeSampling|undefined,solver:RootsNativeSolver|undefined;
   try{
    const p=prepareRootsNativePolynomial(config.polynomial,hooks);if(!p.ok)throw p.error;polynomial=p.value;
@@ -63,33 +96,6 @@ export function prepareRootsMathJob(scene:SceneDocument,hooks:RootsNativeWorkHoo
    dispose(){if(disposed)return;disposed=true;p.dispose();s.dispose();solve.dispose();for(const key of Object.keys(values))delete values[key];},
    diagnostics(){return{workspaceBytes:disposed?0:p.workspaceBytes+solve.diagnostics().workspaceBytes,disposed};},
   };
- }
- const settings=scene.settings,sampling=prepareRootSampling(settings,Object.keys(scene.parameters));
- const polynomial=compilePolynomial(scene.equations.polynomial??'z^8+t1*z^3+t2',String(settings.variable??'z'),[...Object.keys(scene.parameters),...sampling.names,'time']);
- const maxIterations=numberSetting(settings,'rootIterations',150,1,2000),tolerance=numberSetting(settings,'rootTolerance',1e-8,1e-14,.01);
- if(!Number.isInteger(maxIterations))throw new Error('求根迭代次数须为整数');
- const filter=String(settings.rootSampleFilter??'all'),filterName=String(settings.rootFilterParameter??'t2');
- if(!['all','parameter-imag-nonnegative'].includes(filter))throw new Error('rootSampleFilter 不支持 '+filter);
- if(filter!=='all'&&!sampling.names.includes(filterName))throw new Error('采样过滤参数不存在：'+filterName);
- const scalar={...scene.parameters};let roots=new Float64Array(96),disposed=false;
- return{
-  model:'local-v1',maxRootCount:48,workspaceCapacityBytes:96*8,parameters:sampling.parameters,
-  sample(_ordinal,time,random,hooks={}){
-   if(disposed)throw new Error('Root mathematical job was disposed');
-   if(hooks.isCancelled?.())throw new DOMException('复根求解已取消','AbortError');
-   const parameters=sampling.sample(random.sample);
-   if(filter!=='all'&&!(parameters[filterName][1]>=0))return{status:'filtered'};
-   let coefficients:Complex[];try{coefficients=polynomial({...scalar,time,...parameters});}catch{return{status:'invalid'};}
-   const phase=random.phase();
-   let result;
-   try{result=solvePolynomial(coefficients,maxIterations,tolerance,phase,protectedHooks(hooks));}
-   catch(error){if(error instanceof CallbackFailure)throw error.original;if(error instanceof DOMException&&error.name==='AbortError')throw error;return{status:'invalid'};}
-   for(let i=0;i<result.roots.length;i++){roots[i*2]=result.roots[i][0];roots[i*2+1]=result.roots[i][1];}
-   return{status:'solved',admitted:result.converged,roots,rootCount:result.roots.length,parameters,iterations:result.iterations,work:result.work,residual:result.residual,iterationLimit:!result.converged};
-  },
-  reset(){roots.fill(0);},dispose(){disposed=true;roots=new Float64Array();},
-  diagnostics(){return{workspaceBytes:roots.byteLength,disposed};},
- };
 }
 /** One owned prepared job survives frames while its mathematical inputs match.
  * Source presentation edits do not recompile coefficients or reset RNG state. */
