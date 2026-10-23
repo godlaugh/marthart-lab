@@ -66,3 +66,5 @@ HTTP 测试直接执行原生程序，包括未配置、来源／MIME 拒绝、�
 一轮对照不足以宣称产品提速；新路径仍保留 WebGL 准备绘制，用于读取当前已排序列表，尚不是纯原生预览。GPU 时间、显存、agent token 未测。最后的关闭健康查询与清理重试修正另经最终测试和整帧重验；成本记录保留它实际测量时的源码摘要。
 
 基线与候选记录分别为 `.cache/transport-cost-before-8iBBCU/report.json`、`.cache/transport-cost-after-LLmACP/report.json`，均 `matched`、摘要稳定且清理完成。冻结脚本和成本摘要在 `.cache/source-renderer-transport-20261023/`。
+
+后续已补充显式多重采样协议及真实原版对照，详见 [多重采样验证](source-renderer-multisample-validation.zh-CN.md)。此文所述当前帧协议和多重采样拒绝边界以该后续记录为准。

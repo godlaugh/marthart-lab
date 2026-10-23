@@ -9,7 +9,7 @@ import {createSourceRendererService} from '../server/source-renderer.mjs';
 const hash=(b:Uint8Array)=>createHash('sha256').update(b).digest('hex');
 const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 function request(sequence:number,overrides:Partial<SourceDrawingFrame>={}){
- const frame:SourceDrawingFrame={generation:1,sequence,width:7,height:5,clear:[1,0,0.5,1],drawing:{model:'source-drawing-v1',commands:[],textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0},...overrides};
+ const frame:SourceDrawingFrame={generation:1,sequence,width:7,height:5,samples:0,clear:[1,0,0.5,1],drawing:{model:'source-drawing-v1',commands:[],textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0},...overrides};
  const result=encodeSourceDrawingFrame(frame);if(!result.ok)throw Error(result.error.reason);return result.value;
 }
 let root:string,binary:string,executableSha256:string;
@@ -22,7 +22,7 @@ describe.skipIf(process.platform!=='darwin')('real persistent CGL session',()=>{
  const service=(options={})=>createSourceRendererService({executablePath:binary,executableSha256,...options});
  it('reuses one process/context across changing dimensions, colors and clear-only frames',async()=>{
   const s=await service();try{
-   for(let i=1;i<=8;i++){const color=i%2?[1,0,0.5,1] as const:[0,1,0,1] as const;const r=await s.render(request(i,{width:i+4,height:i+2,clear:color}));
+   for(let i=1;i<=8;i++){const color=i%2?[1,0,0.5,1] as const:[0,1,0,1] as const;const r=await s.render(request(i,{width:i+4,height:i+2,clear:color,samples:i%2?4:0}));
     expect(r.ok,JSON.stringify(r.error)).toBe(true);expect(r.value).toMatchObject({sequence:i,width:i+4,height:i+2,sessionSerial:1,contextSerial:1,rowOrder:'bottom-up'});
     const expected=i%2?[255,0,128,255]:[0,255,0,255];for(let k=0;k<r.value.pixels.length;k+=4)expect([...r.value.pixels.subarray(k,k+4)]).toEqual(expected);
    }expect(s.sessionStarts).toBe(1);expect(s.processCount).toBe(1);
@@ -32,6 +32,16 @@ describe.skipIf(process.platform!=='darwin')('real persistent CGL session',()=>{
   const s=await service();try{const b=request(1),pending=s.render(b);b.fill(0);expect((await pending).ok).toBe(true);
    expect(await s.render(request(1))).toMatchObject({ok:false,error:{kind:'input'}});expect((await s.render(request(2))).value.contextSerial).toBe(1);
   }finally{await s.close();}
+ });
+ it('rejects sample storage before launch and recovers after a native sample limit error',async()=>{
+  const s=await service();try{
+   const huge=Buffer.from(request(1));huge.writeUInt32LE(4000,20);huge.writeUInt32LE(4000,24);huge.writeUInt32LE(4,52);
+   expect(await s.render(huge)).toMatchObject({ok:false,error:{kind:'capacity'}});expect(s.processCount).toBe(0);
+   huge.writeUInt32LE(0xffffffff,52);expect(await s.render(huge)).toMatchObject({ok:false,error:{kind:'input'}});expect(s.processCount).toBe(0);
+   expect((await s.render(request(1,{samples:4}))).value.contextSerial).toBe(1);
+   expect(await s.render(request(2,{width:1,height:1,samples:65536}))).toMatchObject({ok:false,error:{kind:'unsupported'}});
+   expect((await s.render(request(3))).value).toMatchObject({sessionSerial:1,contextSerial:1});
+  }finally{expect(await s.close()).toEqual({ok:true});}
  });
  it('keeps a good context after invalid input and recreates it after a shader error',async()=>{
   const s=await service();try{

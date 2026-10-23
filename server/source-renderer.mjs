@@ -11,10 +11,14 @@ const sameFile=(a,b)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeMs==
 export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
- if(b.readUInt32LE(0)!==0x31464c4d||b.readUInt32LE(4)!==1||b.readUInt32LE(8)!==b.length)return failure('input','原生帧头部无效');
+ const version=b.readUInt32LE(4);
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2].includes(version)||b.readUInt32LE(8)!==b.length||(version===2&&b.length<56))return failure('input','原生帧头部无效');
+ // v1 is retained for saved diagnostic evidence; it always means no MSAA.
+ const samples=version===2?b.readUInt32LE(52):0;
+ if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
- if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*12>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
- return {ok:true,value:{generation,sequence,width,height}};
+ if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
+ return {ok:true,value:{generation,sequence,width,height,samples}};
 }
 function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');

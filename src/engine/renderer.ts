@@ -447,7 +447,7 @@ export class ArtRenderer {
   sourceDrawingFrame(generation:number,sequence:number):SourceDrawingResult<SourceDrawingFrame>{
     if(!this.sourceCameraPlan||this.raster)return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'当前画面不是可提交原生绘制的源几何帧'}};
     this.render();const gl=this.renderer.getContext();
-    if(gl.isContextLost()||gl.getParameter(gl.SAMPLES)!==0||gl.isEnabled(gl.SCISSOR_TEST))return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧暂不支持丢失的上下文、多重采样或裁剪视口'}};
+    if(gl.isContextLost()||gl.isEnabled(gl.SCISSOR_TEST))return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧暂不支持丢失的上下文或裁剪视口'}};
     const viewport=gl.getParameter(gl.VIEWPORT) as Int32Array;if(viewport[0]!==0||viewport[1]!==0||viewport[2]!==gl.drawingBufferWidth||viewport[3]!==gl.drawingBufferHeight)return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧需要完整物理视口'}};
     const meshes:THREE.Mesh[]=[];
     const scenes=[this.scene,...(this.surfaceOverlay?.visible?[this.surfaceOverlayScene]:[])];
@@ -463,7 +463,7 @@ export class ArtRenderer {
     // Read the actual clear state. Source packed colors and legacy Three
     // backgrounds have different conversion/alpha rules, already applied here.
     const clear=Array.from(gl.getParameter(gl.COLOR_CLEAR_VALUE) as Float32Array) as [number,number,number,number];
-    return{ok:true,value:{generation,sequence,width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,clear,drawing:drawing.value}};
+    return{ok:true,value:{generation,sequence,width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,samples:gl.getParameter(gl.SAMPLES) as number,clear,drawing:drawing.value}};
   }
   private sourceFramebufferPixels(isCancelled:()=>boolean){
     if(isCancelled())throw new DOMException('图像导出已取消','AbortError');

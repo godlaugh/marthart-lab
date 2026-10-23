@@ -10,7 +10,7 @@ import {createExportServer} from '../server/index.mjs';
 // @ts-expect-error Node desktop host module is separate from browser types.
 import {createDesktopHost} from '../desktop/host.mjs';
 let root:string,backend:{executablePath:string;executableSha256:string},serial=0;
-const packet=(sequence=1)=>{const r=encodeSourceDrawingFrame({generation:3,sequence,width:7,height:5,clear:[1,0,0.5,1],drawing:{model:'source-drawing-v1',commands:[],textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0}});if(!r.ok)throw Error(r.error.reason);return Buffer.from(r.value);};
+const packet=(sequence=1)=>{const r=encodeSourceDrawingFrame({generation:3,sequence,width:7,height:5,samples:0,clear:[1,0,0.5,1],drawing:{model:'source-drawing-v1',commands:[],textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0}});if(!r.ok)throw Error(r.error.reason);return Buffer.from(r.value);};
 const delay=(n:number)=>new Promise(resolve=>setTimeout(resolve,n));
 const post=(url:string,body=packet(),headers={})=>fetch(url+'/api/source-renderer/frames',{method:'POST',headers:{'content-type':'application/octet-stream',...headers},body});
 describe.skipIf(process.platform!=='darwin')('loopback native frame transport',()=>{

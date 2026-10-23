@@ -7,6 +7,8 @@ import type {SourceDrawingSnapshot,SourceDrawingResult,SourceDrawingUniform} fro
  * the caller's responsibility until represented as draws. */
 export interface SourceDrawingFrame {
   generation:number;sequence:number;width:number;height:number;
+  /** Actual GL_SAMPLES; zero is single-sample. Never silently round a request. */
+  samples:number;
   clear:readonly [number,number,number,number];
   drawing:SourceDrawingSnapshot;
 }
@@ -22,7 +24,7 @@ const uint=(value:number)=>Number.isInteger(value)&&value>=0&&value<=0xffffffff;
 const littleEndian=new Uint8Array(new Uint32Array([1]).buffer)[0]===1;
 
 /** Two passes admit all bytes before allocating the packet. The native side
- * uses the same conservative packet/copy/GPU + 12 bytes/pixel capacity rule.
+ * uses the same conservative packet/copy/GPU + (12 + 8*samples) bytes/pixel rule.
  * This is resource admission, not a claim about driver or JS peak RSS. */
 export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCancelled?:()=>boolean}={}):SourceDrawingResult<Uint8Array> {
   const check=()=>{if(options.isCancelled?.())throw new FrameFailure('cancelled','原生帧编码已取消');};
@@ -30,6 +32,7 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     check();
     demand(uint(frame.generation)&&frame.generation>0&&uint(frame.sequence)&&frame.sequence>0,'帧身份需要非零 uint32 代次和序号');
     demand(uint(frame.width)&&frame.width>0&&frame.width<=16384&&uint(frame.height)&&frame.height>0&&frame.height<=16384&&frame.width*frame.height<=16_000_000,'帧物理尺寸超出容量');
+    demand(uint(frame.samples)&&frame.samples<=0x7fffffff,'帧采样数必须为非负 GLsizei');
     demand(frame.clear.length===4&&frame.clear.every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1),'帧背景必须为四个有限的 0 至 1 分量');
     demand(frame.drawing.model==='source-drawing-v1','未知绘制快照版本');
     let offset=0,packet:Uint8Array|undefined,view:DataView|undefined;
@@ -57,8 +60,8 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
       let bytes=strings.get(s);if(!bytes){bytes=encoder.encode(s);demand(new TextDecoder('utf-8',{fatal:true}).decode(bytes)===s,'帧字符串不是有效 Unicode');strings.set(s,bytes);}raw(bytes);
     };
     const emit=()=>{
-      u32(SOURCE_FRAME_MAGIC);u32(1);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
-      frame.clear.forEach(f32);u32(frame.drawing.textures.length);u32(frame.drawing.commands.length);
+      u32(SOURCE_FRAME_MAGIC);u32(2);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
+      frame.clear.forEach(f32);u32(frame.drawing.textures.length);u32(frame.drawing.commands.length);u32(frame.samples);
       for(const t of frame.drawing.textures){
         demand(t.magFilter==='linear'&&t.minFilter==='linear-mipmap-linear'&&t.wrap==='clamp'&&t.generateMipmaps===true,'不支持的帧纹理采样');
         u32(t.width);u32(t.height);f32(t.anisotropy);raw(t.pixels);
@@ -79,7 +82,7 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     emit();const size=offset;
     // Also account for the retained input snapshot while emitting. Driver-side
     // validation does not trust the caller's accounting fields.
-    const frameStorage=frame.width*frame.height*12;
+    const frameStorage=frame.width*frame.height*(12+8*frame.samples);
     demand(Number.isSafeInteger(frame.drawing.admittedBytes)&&frame.drawing.admittedBytes>=0,'快照容量信息无效');
     if(size*4+frameStorage>SOURCE_FRAME_BUDGET||size+frame.drawing.admittedBytes+frameStorage>SOURCE_FRAME_BUDGET)throw new FrameFailure('capacity','帧传输、缓冲及读回超过 256 MiB 预算');
     packet=new Uint8Array(size);view=new DataView(packet.buffer);offset=0;emit();

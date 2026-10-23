@@ -30,12 +30,13 @@ static NSUInteger count(FrameReader *r,NSUInteger minimum){NSUInteger n=[r word]
 static uint32_t indexAt(NSData *b,NSUInteger i,NSUInteger width){if(width==2){uint16_t n;memcpy(&n,(const uint8_t*)b.bytes+i*2,2);return CFSwapInt16LittleToHost(n);}uint32_t n;memcpy(&n,(const uint8_t*)b.bytes+i*4,4);return CFSwapInt32LittleToHost(n);}
 static NSDictionary *parse(NSData *packet,BOOL trace){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d&&[r word]==1,@"Unknown frame magic/version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version==1||version==2,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
- ensure(packet.length*4+(uint64_t)width*height*12<=Budget,@"capacity",@"Packet, copies, GPU and frame buffers exceed budget");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
- NSUInteger nt=count(r,16),nd=count(r,40);ensure(!trace||((uint64_t)nd+1)*width*height*4<=Budget,@"capacity",@"Diagnostic draw readbacks exceed budget");
+ NSUInteger nt=count(r,16),nd=count(r,40);uint32_t samples=version==2?[r word]:0;INPUT(samples<=INT_MAX,@"Invalid sample count");
+ ensure(packet.length*4+(uint64_t)width*height*(12+(uint64_t)8*samples)<=Budget,@"capacity",@"Packet, copies, multisample GPU and frame buffers exceed budget");
+ ensure(!trace||((uint64_t)nd+1)*width*height*4<=Budget,@"capacity",@"Diagnostic draw readbacks exceed budget");
  NSMutableArray *textures=[NSMutableArray new],*draws=[NSMutableArray new];
  for(NSUInteger i=0;i<nt;i++){
   uint32_t w=[r word],h=[r word];float anisotropy=[r number];NSData *pixels=[r block];
@@ -69,7 +70,7 @@ static NSDictionary *parse(NSData *packet,BOOL trace){
   }
   [draws addObject:@{@"vertex":vertex,@"fragment":fragment,@"first":@(first),@"count":@(n),@"instances":@(instances),@"flags":@(flags),@"passes":passes,@"attributes":attributes,@"indexType":@(indexType),@"indices":indices,@"uniforms":uniforms}];
  }
- INPUT(r.offset==packet.length,@"Trailing frame bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"clear":clear,@"textures":textures,@"draws":draws};
+ INPUT(r.offset==packet.length,@"Trailing frame bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@(samples),@"clear":clear,@"textures":textures,@"draws":draws};
 }
 // EOF is valid only between frames. Partial headers/bodies terminate the
 // session: no attempt to scan arbitrary bytes for another magic marker.
@@ -82,7 +83,7 @@ static NSData *readPacket(FILE *f,BOOL stream){
 static void writeFile(NSString *root,NSString *name,NSData *data){NSError *e=nil;RUNTIME([data writeToFile:[root stringByAppendingPathComponent:name] options:NSDataWritingAtomic error:&e],e.description?:@"Output write failed");}
 static GLuint compile(GLenum kind,NSString *source){GLuint shader=glCreateShader(kind);NSString *text=[@"#version 410\n" stringByAppendingString:source];const char *p=text.UTF8String;glShaderSource(shader,1,&p,NULL);glCompileShader(shader);GLint ok=0;glGetShaderiv(shader,GL_COMPILE_STATUS,&ok);if(!ok){char log[8192]={0};glGetShaderInfoLog(shader,sizeof(log),NULL,log);glDeleteShader(shader);RUNTIME(NO,[NSString stringWithUTF8String:log]?:@"Shader compile failed");}return shader;}
 static GLenum uniformType(uint32_t kind){switch(kind){case 1:case 8:return GL_FLOAT;case 2:return GL_INT;case 3:return GL_FLOAT_VEC2;case 4:return GL_INT_VEC2;case 5:return GL_FLOAT_VEC3;case 6:return GL_FLOAT_VEC4;case 7:return GL_FLOAT_MAT4;case 9:return GL_SAMPLER_2D;}return 0;}
-static void draw(NSDictionary *d,NSArray *textures,NSString *out,NSUInteger number,GLsizei width,GLsizei height){
+static void draw(NSDictionary *d,NSArray *textures){
  NSArray *attributes=d[@"attributes"],*uniforms=d[@"uniforms"];GLint maxAttributes=0,maxTextures=0;glGetIntegerv(GL_MAX_VERTEX_ATTRIBS,&maxAttributes);glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&maxTextures);
  ensure(attributes.count<=(NSUInteger)maxAttributes&&textures.count<=(NSUInteger)maxTextures,@"unsupported",@"Draw exceeds native attribute/texture limits");
  GLuint vao=0,vs=0,fs=0,program=0;NSMutableData *bufferIds=[NSMutableData dataWithLength:(attributes.count+1)*sizeof(GLuint)],*textureIds=[NSMutableData dataWithLength:textures.count*sizeof(GLuint)];GLuint *buffers=bufferIds.mutableBytes,*tex=textureIds.mutableBytes;
@@ -101,7 +102,6 @@ static void draw(NSDictionary *d,NSArray *textures,NSString *out,NSUInteger numb
   glGetProgramiv(program,GL_ACTIVE_ATTRIBUTES,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveAttrib(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active attribute name capacity");NSDictionary *found=nil;for(NSDictionary *a in attributes)if([a[@"name"]isEqual:@(name)])found=a;GLenum expected=[found[@"size"]intValue]==1?GL_FLOAT:[found[@"size"]intValue]==2?GL_FLOAT_VEC2:[found[@"size"]intValue]==3?GL_FLOAT_VEC3:GL_FLOAT_VEC4;RUNTIME(found&&size==1&&type==expected,@"Active attribute lacks matching packed data");}
   uint32_t flags=[d[@"flags"]unsignedIntValue];if(flags&1)glEnable(GL_DEPTH_TEST);else glDisable(GL_DEPTH_TEST);glDepthMask((flags&2)?GL_TRUE:GL_FALSE);glDepthFunc(GL_LEQUAL);glFrontFace((flags&4)?GL_CW:GL_CCW);glEnable(GL_BLEND);glDisable(GL_DITHER);glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE);glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);
   for(NSNumber *pass in d[@"passes"]){int p=pass.intValue;if(p==0)glDisable(GL_CULL_FACE);else{glEnable(GL_CULL_FACE);glCullFace(p==1?GL_BACK:GL_FRONT);}GLsizei n=[d[@"count"]intValue],instances=[d[@"instances"]intValue];GLint first=[d[@"first"]intValue];if([d[@"indexType"]intValue])glDrawElementsInstanced(GL_TRIANGLES,n,indexType,(void*)(uintptr_t)((NSUInteger)first*([d[@"indexType"]intValue]/8)),instances);else glDrawArraysInstanced(GL_TRIANGLES,first,n,instances);}
-  if(out){NSMutableData *rgba=[NSMutableData dataWithLength:(NSUInteger)width*height*4];glReadPixels(0,0,width,height,GL_RGBA,GL_UNSIGNED_BYTE,rgba.mutableBytes);RUNTIME(glGetError()==GL_NO_ERROR,@"OpenGL draw/readback failed");writeFile(out,[NSString stringWithFormat:@"draw-%lu-after.rgba",(unsigned long)number],rgba);}
   RUNTIME(glGetError()==GL_NO_ERROR,@"OpenGL draw failed");
  }@finally{glUseProgram(0);glBindVertexArray(0);glDeleteBuffers((GLsizei)attributes.count+1,buffers);glDeleteTextures((GLsizei)textures.count,tex);if(vao)glDeleteVertexArrays(1,&vao);if(program)glDeleteProgram(program);if(vs)glDeleteShader(vs);if(fs)glDeleteShader(fs);}
 }
@@ -112,16 +112,38 @@ static void createContext(CGLContextObj *context){
  }@finally{if(format)CGLDestroyPixelFormat(format);}
 }
 static void destroyContext(CGLContextObj *context){if(*context){CGLSetCurrentContext(NULL);CGLDestroyContext(*context);*context=NULL;}}
+// Readbacks belong to the frame target, not individual draws. MSAA color is
+// resolved into an owned single-sample attachment before every requested read.
+static NSData *readFrame(GLuint fb,GLuint resolved,GLsizei w,GLsizei h){
+ if(resolved){glBindFramebuffer(GL_READ_FRAMEBUFFER,fb);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,resolved);glBlitFramebuffer(0,0,w,h,0,0,w,h,GL_COLOR_BUFFER_BIT,GL_NEAREST);glBindFramebuffer(GL_READ_FRAMEBUFFER,resolved);}
+ NSMutableData *rgba=[NSMutableData dataWithLength:(NSUInteger)w*h*4];glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,rgba.mutableBytes);
+ RUNTIME(glGetError()==GL_NO_ERROR,@"Frame resolve/readback failed");glBindFramebuffer(GL_FRAMEBUFFER,fb);return rgba;
+}
 static NSData *renderFrame(NSDictionary *frame,NSString *out){
- GLuint fb=0,color=0,depth=0;
+ GLuint fb=0,resolved=0,color=0,multiColor=0,depth=0;
  @try{
-  GLsizei w=[frame[@"width"]intValue],h=[frame[@"height"]intValue];GLint maxTexture=0,maxRender=0,maxViewport[2]={0};glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTexture);glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE,&maxRender);glGetIntegerv(GL_MAX_VIEWPORT_DIMS,maxViewport);ensure(w<=MIN(maxTexture,maxRender)&&h<=MIN(maxTexture,maxRender)&&w<=maxViewport[0]&&h<=maxViewport[1],@"unsupported",@"Frame exceeds native dimensions");
-  glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenTextures(1,&color);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,color);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,color,0);glGenRenderbuffers(1,&depth);glBindRenderbuffer(GL_RENDERBUFFER,depth);glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT24,w,h);glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depth);RUNTIME(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE,@"Incomplete framebuffer");glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,w,h);
+  GLsizei w=[frame[@"width"]intValue],h=[frame[@"height"]intValue],samples=[frame[@"samples"]intValue];GLint maxTexture=0,maxRender=0,maxViewport[2]={0},maxSamples=0;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTexture);glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE,&maxRender);glGetIntegerv(GL_MAX_VIEWPORT_DIMS,maxViewport);glGetIntegerv(GL_MAX_SAMPLES,&maxSamples);
+  ensure(w<=MIN(maxTexture,maxRender)&&h<=MIN(maxTexture,maxRender)&&w<=maxViewport[0]&&h<=maxViewport[1],@"unsupported",@"Frame exceeds native dimensions");ensure(samples<=maxSamples,@"unsupported",@"Requested sample count exceeds native limit");
+  // This texture is the draw target for samples=0 and the resolve target otherwise.
+  glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenTextures(1,&color);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,color);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,color,0);
+  if(samples){
+   resolved=fb;glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenRenderbuffers(1,&multiColor);glBindRenderbuffer(GL_RENDERBUFFER,multiColor);glRenderbufferStorageMultisample(GL_RENDERBUFFER,samples,GL_RGBA8,w,h);glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,multiColor);
+   GLint actual=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actual);RUNTIME(glGetError()==GL_NO_ERROR,@"Multisample color allocation failed");ensure(actual==samples,@"unsupported",@"Driver rounded the requested color sample count");
+  }
+  glGenRenderbuffers(1,&depth);glBindRenderbuffer(GL_RENDERBUFFER,depth);
+  if(samples)glRenderbufferStorageMultisample(GL_RENDERBUFFER,samples,GL_DEPTH_COMPONENT24,w,h);else glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_COMPONENT24,w,h);
+  GLint actualDepth=0;glGetRenderbufferParameteriv(GL_RENDERBUFFER,GL_RENDERBUFFER_SAMPLES,&actualDepth);RUNTIME(glGetError()==GL_NO_ERROR,@"Depth allocation failed");ensure(actualDepth==samples,@"unsupported",@"Driver rounded the requested depth sample count");
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_RENDERBUFFER,depth);RUNTIME(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE,@"Incomplete framebuffer");glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,w,h);
+  if(samples)glEnable(GL_MULTISAMPLE);else glDisable(GL_MULTISAMPLE);
+  glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);glDisable(GL_SAMPLE_ALPHA_TO_ONE);glDisable(GL_SAMPLE_COVERAGE);glDisable(GL_SAMPLE_MASK);
   glDisable(GL_SCISSOR_TEST);glDisable(GL_DITHER);glDisable(GL_FRAMEBUFFER_SRGB);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glDepthMask(GL_TRUE);
   NSArray *clear=frame[@"clear"];glClearColor([clear[0]floatValue],[clear[1]floatValue],[clear[2]floatValue],[clear[3]floatValue]);glClearDepth(1);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-  NSArray *draws=frame[@"draws"];for(NSUInteger i=0;i<draws.count;i++)@autoreleasepool{draw(draws[i],frame[@"textures"],out,i+1,w,h);}
-  NSMutableData *rgba=[NSMutableData dataWithLength:(NSUInteger)w*h*4];glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,rgba.mutableBytes);RUNTIME(glGetError()==GL_NO_ERROR,@"Final readback failed");return rgba;
- }@finally{glBindFramebuffer(GL_FRAMEBUFFER,0);glBindRenderbuffer(GL_RENDERBUFFER,0);if(fb)glDeleteFramebuffers(1,&fb);if(color)glDeleteTextures(1,&color);if(depth)glDeleteRenderbuffers(1,&depth);}
+  NSArray *draws=frame[@"draws"];for(NSUInteger i=0;i<draws.count;i++)@autoreleasepool{
+   draw(draws[i],frame[@"textures"]);if(out)writeFile(out,[NSString stringWithFormat:@"draw-%lu-after.rgba",(unsigned long)i+1],readFrame(fb,resolved,w,h));
+  }
+  return readFrame(fb,resolved,w,h);
+ }@finally{glBindFramebuffer(GL_FRAMEBUFFER,0);glBindRenderbuffer(GL_RENDERBUFFER,0);if(fb)glDeleteFramebuffers(1,&fb);if(resolved)glDeleteFramebuffers(1,&resolved);if(color)glDeleteTextures(1,&color);if(multiColor)glDeleteRenderbuffers(1,&multiColor);if(depth)glDeleteRenderbuffers(1,&depth);}
 }
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
@@ -141,7 +163,7 @@ int main(int argc,const char **argv){@autoreleasepool{
    @try{
     NSDictionary *frame=parse(packet,!stream);if(!ctx){createContext(&ctx);serial++;}NSData *rgba=renderFrame(frame,out);
     if(stream)reply(packet,0,serial,rgba);
-    else{writeFile(out,@"frame.rgba",rgba);NSDictionary *meta=@{@"generation":frame[@"generation"],@"sequence":frame[@"sequence"],@"renderer":@((const char*)glGetString(GL_RENDERER)),@"version":@((const char*)glGetString(GL_VERSION)),@"vendor":@((const char*)glGetString(GL_VENDOR)),@"windowCreated":@NO,@"width":frame[@"width"],@"height":frame[@"height"],@"draws":@([frame[@"draws"]count]),@"rowOrder":@"bottom-up",@"format":@"rgba8"};writeFile(out,@"renderer.json",[NSJSONSerialization dataWithJSONObject:meta options:NSJSONWritingPrettyPrinted error:NULL]);}
+    else{writeFile(out,@"frame.rgba",rgba);NSDictionary *meta=@{@"generation":frame[@"generation"],@"sequence":frame[@"sequence"],@"renderer":@((const char*)glGetString(GL_RENDERER)),@"version":@((const char*)glGetString(GL_VERSION)),@"vendor":@((const char*)glGetString(GL_VENDOR)),@"windowCreated":@NO,@"width":frame[@"width"],@"height":frame[@"height"],@"samples":frame[@"samples"],@"draws":@([frame[@"draws"]count]),@"rowOrder":@"bottom-up",@"format":@"rgba8"};writeFile(out,@"renderer.json",[NSJSONSerialization dataWithJSONObject:meta options:NSJSONWritingPrettyPrinted error:NULL]);}
    }@catch(NSException *e){
     if(!stream)@throw;
     // A failed GL operation can poison context state. Recreate it before the

@@ -7,7 +7,7 @@ import type {SourceDrawingCommand,SourceDrawingSnapshot} from '../src/engine/sou
 
 function frame(commands:SourceDrawingCommand[]=[]):SourceDrawingFrame {
   const drawing:SourceDrawingSnapshot={model:'source-drawing-v1',commands,textures:[],copiedBufferBytes:0,retainedBufferBytes:0,admittedBytes:0};
-  return{generation:7,sequence:11,width:16,height:12,clear:[1,0,0.5,1],drawing};
+  return{generation:7,sequence:11,width:16,height:12,samples:0,clear:[1,0,0.5,1],drawing};
 }
 function triangle():SourceDrawingCommand {
   return{vertexShader:'in vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}',
@@ -31,14 +31,20 @@ describe('binary source frame producer',()=>{
     expect(b.includes(Buffer.from(words.buffer))).toBe(true);expect(b.subarray(-4).readUInt32LE()).toBe(0x80000000);
     d.attributes[0].values[0]=99;expect(Buffer.from(encode(f)).equals(b)).toBe(false);
   });
-  it.each(['identity','dimensions','background','unicode','capacity'] as const)('rejects invalid %s before native delivery',kind=>{
+  it.each(['identity','dimensions','samples','background','unicode','capacity'] as const)('rejects invalid %s before native delivery',kind=>{
     const f=frame([triangle()]);
     if(kind==='identity')f.sequence=0;
     if(kind==='dimensions')f.width=16385;
+    if(kind==='samples')f.samples=-1;
     if(kind==='background')f.clear=[NaN,0,0,1];
     if(kind==='unicode')f.drawing.commands[0].vertexShader='\ud800';
     if(kind==='capacity')f.drawing.admittedBytes=SOURCE_FRAME_BUDGET;
     expect(encodeSourceDrawingFrame(f)).toMatchObject({ok:false,error:{kind:kind==='capacity'?'capacity':'input'}});
+  });
+  it('admits multisample color/depth storage before allocating the packet',()=>{
+    const f=frame();f.width=4000;f.height=4000;
+    expect(encodeSourceDrawingFrame(f).ok).toBe(true);f.samples=4;
+    expect(encodeSourceDrawingFrame(f)).toMatchObject({ok:false,error:{kind:'capacity'}});
   });
   it('does not deliver a partially encoded cancelled frame',()=>{
     let calls=0;expect(encodeSourceDrawingFrame(frame([triangle()]),{isCancelled:()=>++calls>45})).toMatchObject({ok:false,error:{kind:'cancelled'}});
@@ -67,6 +73,32 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
     for(let i=0;i<rgba.length;i+=4)expect([...rgba.subarray(i,i+4)]).toEqual(expected);
   }
   it('renders caller dimensions and background for an empty frame',()=>{const f=frame();f.width=7;f.height=5;success(f,[255,0,128,255]);});
+  it('resolves a four-sample frame and preserves depth across diagnostic readbacks',()=>{
+    const near=triangle();near.attributes[0].values=new Float32Array([-1,-1,1,-1,-1,1]);near.uniforms=[];
+    near.fragmentShader='out vec4 color;void main(){color=vec4(1,0,0,1);}';near.depthTest=true;near.depthWrite=true;
+    const far={...near,vertexShader:near.vertexShader.replace('0.0,1.0','0.5,1.0'),fragmentShader:'out vec4 color;void main(){color=vec4(0,0,1,1);}'};
+    const f=frame([near,far]);f.width=f.height=16;f.clear=[0,0,0,1];f.samples=4;
+    const r=run(encode(f));expect(r.status,r.stderr).toBe(0);
+    const first=readFileSync(join(r.folder,'draw-1-after.rgba')),last=readFileSync(join(r.folder,'frame.rgba'));
+    expect(readFileSync(join(r.folder,'draw-2-after.rgba')).equals(first)).toBe(true);expect(last.equals(first)).toBe(true);
+    expect(JSON.parse(readFileSync(join(r.folder,'renderer.json'),'utf8')).samples).toBe(4);
+    expect([...last].some((v,i)=>i%4===0&&v>0&&v<255)).toBe(true);
+    expect([...last].every((v,i)=>i%4===0||v===(i%4===3?255:0))).toBe(true);
+    f.samples=0;const single=run(encode(f));expect(single.status,single.stderr).toBe(0);
+    expect([...readFileSync(join(single.folder,'frame.rgba'))].every(v=>v===0||v===255)).toBe(true);
+  });
+  it('continues to read retained v1 packets as single-sample evidence',()=>{
+    const current=Buffer.from(encode(frame([triangle()]))),legacy=Buffer.concat([current.subarray(0,52),current.subarray(56)]);
+    legacy.writeUInt32LE(1,4);legacy.writeUInt32LE(legacy.length,8);const r=run(legacy);expect(r.status,r.stderr).toBe(0);
+    expect(JSON.parse(readFileSync(join(r.folder,'renderer.json'),'utf8')).samples).toBe(0);
+  });
+  it.each(['invalid','capacity','unsupported'] as const)('rejects %s sample counts without a partial frame',kind=>{
+    const bytes=Buffer.from(encode(frame()));bytes.writeUInt32LE(kind==='invalid'?0xffffffff:kind==='capacity'?0x7fffffff:65536,52);
+    // Keep the hardware-limit case within the allocation budget.
+    if(kind==='unsupported'){bytes.writeUInt32LE(1,20);bytes.writeUInt32LE(1,24);}
+    const r=run(bytes);expect(r.status).toBe(1);expect(JSON.parse(r.stderr).kind).toBe(kind==='invalid'?'input':kind);
+    expect(()=>readFileSync(join(r.folder,'frame.rgba'))).toThrow();
+  });
   it.each(['arrays','uint16','uint32','nonindexed-range'] as const)('renders %s with typed arrays, integer vectors and negative zero',kind=>{
     const d=triangle();if(kind==='uint16'||kind==='uint32'){d.index=kind==='uint16'?new Uint16Array([99,99,99,0,1,2]):new Uint32Array([99,99,99,0,1,2]);d.first=3;}
     if(kind==='nonindexed-range'){d.attributes[0].values=new Float32Array([99,99,99,99,99,99,-1,-1,3,-1,-1,3]);d.first=3;}
@@ -85,7 +117,7 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
     if(kind==='uniform-type')f.drawing.commands[0].uniforms=f.drawing.commands[0].uniforms.map((u,i)=>i===1?{name:'mode',kind:'float',count:1,values:new Float32Array([2])}:u);
     if(kind==='shader')f.drawing.commands[0].fragmentShader='this is not GLSL';
     let bytes=Buffer.from(encode(f));
-    if(kind==='magic')bytes.writeUInt32LE(0,0);if(kind==='version')bytes.writeUInt32LE(2,4);if(kind==='length')bytes.writeUInt32LE(bytes.length+1,8);
+    if(kind==='magic')bytes.writeUInt32LE(0,0);if(kind==='version')bytes.writeUInt32LE(3,4);if(kind==='length')bytes.writeUInt32LE(bytes.length+1,8);
     if(kind==='identity')bytes.writeUInt32LE(0,12);if(kind==='viewport')bytes.writeUInt32LE(0,20);if(kind==='clear')bytes.writeFloatLE(NaN,28);
     if(kind==='truncated')bytes=bytes.subarray(0,-7);
     if(kind==='trailing'){bytes=Buffer.concat([bytes,Buffer.alloc(4)]);bytes.writeUInt32LE(bytes.length,8);}
