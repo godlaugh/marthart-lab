@@ -103,17 +103,18 @@ const ordinaryStaticMaximum=Math.max(attractorStaticMaximum,3+ORDINARY_SOURCE_CA
 // action bounds also constrain slots; taking the smaller bound does not grant
 // extra source capacity merely because paths repeat in persisted provenance.
 const ordinaryMaximum=Math.min(SOURCE_JSON_LIMITS.nodes,projectFields.size+ordinaryStaticMaximum+maxTimelineClips*(4+maxTimelineActions*(maxCameraArgs+SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS.length)));
-const surfaceParameterField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_REGISTRY_PARAMETER_FIELDS as readonly string[]).includes(raw);
-const surfaceEdgeField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_REGISTRY_PARAMETER_EDGE_FIELDS as readonly string[]).includes(raw);
-const surfaceParameterName=(raw:unknown)=>typeof raw==='string'&&raw.length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
-function surfaceParameterPath(path:readonly unknown[]):boolean {
- if(path.length===3&&path[0]==='settings'&&path[1]==='param_edge_easing'&&surfaceEdgeField(path[2]))return true;
+const registryParameterField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_REGISTRY_PARAMETER_FIELDS as readonly string[]).includes(raw);
+const registryEdgeField=(raw:unknown)=>typeof raw==='string'&&(SOURCE_REGISTRY_PARAMETER_EDGE_FIELDS as readonly string[]).includes(raw);
+const registryParameterName=(raw:unknown)=>typeof raw==='string'&&raw.length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
+function registryParameterPath(path:readonly unknown[]):boolean {
+ if(path.length===3&&path[0]==='settings'&&path[1]==='param_edge_easing'&&registryEdgeField(path[2]))return true;
  if(path[0]!=='timeline'||!index(path[1],maxTimelineClips))return false;
- if(path[2]==='parameters')return surfaceParameterName(path[3])&&(path.length===4||path.length===5&&surfaceParameterField(path[4]));
+ if(path[2]==='parameters')return registryParameterName(path[3])&&(path.length===4||path.length===5&&registryParameterField(path[4]));
  if(path[2]!=='actions'||!index(path[3],maxTimelineActions)||path[4]!=='args')return false;
  const tail=path.slice(path[5]==='0'?6:5);
- if(tail.length===2&&tail[0]==='edgeEasing'&&surfaceEdgeField(tail[1]))return true;
- return tail[0]==='parameters'&&surfaceParameterName(tail[1])&&(tail.length===2||tail.length===3&&surfaceParameterField(tail[2])||tail.length===4&&tail[2]==='edgeEasing'&&surfaceEdgeField(tail[3]));
+ if(tail.length===1&&tail[0]==='targetDomain')return true;
+ if(tail.length===2&&tail[0]==='edgeEasing'&&registryEdgeField(tail[1]))return true;
+ return tail[0]==='parameters'&&registryParameterName(tail[1])&&(tail.length===2||tail.length===3&&registryParameterField(tail[2])||tail.length===4&&tail[2]==='edgeEasing'&&registryEdgeField(tail[3]));
 }
 const perlinFields=new Set<string>(SOURCE_PERLIN_NUMBER_FIELDS);
 const perlinStaticMaximum=3+ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.parameters+perlinFields.size;
@@ -129,7 +130,7 @@ function ordinaryField(path:readonly unknown[],family:SceneDocument['kind']):boo
  if(family==='symmetry'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&symmetrySettingFields.has(path[1]))return true;
  if(family==='perlin'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&perlinFields.has(path[1])||perlinParameterPath(path)))return true;
  if(family==='attractor'&&(path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&attractorSettingFields.has(path[1])||path.length===2&&path[0]==='initialization'&&typeof path[1]==='string'&&attractorWarmupFields.has(path[1])||path.length===3&&path[0]==='initialization'&&path[1]==='bounds'&&typeof path[2]==='string'&&attractorBoundsFields.has(path[2])))return true;
- if((family==='surface'||(family==='symmetry'||family==='map')&&path[0]==='timeline'&&path[2]==='actions')&&surfaceParameterPath(path))return true;
+ if((family==='surface'||family==='implicit'&&path[2]!=='parameters'||(family==='symmetry'||family==='map')&&path[0]==='timeline'&&path[2]==='actions')&&registryParameterPath(path))return true;
  if(family==='surface'&&path.length===2&&path[0]==='settings'&&typeof path[1]==='string'&&surfaceStaticFields.has(path[1]))return true;
  if(path.length===2)return path[0]==='camera'&&typeof path[1]==='string'&&['phi','theta','gamma'].includes(path[1])||path[0]==='parameters'&&typeof path[1]==='string'&&path[1].length<=ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS.scopeCharacters;
  if((family==='surface'||family==='attractor'||family==='perlin'||family==='symmetry')&&path[0]==='timeline'&&index(path[1],maxTimelineClips)&&path[2]==='actions'&&index(path[3],maxTimelineActions)&&path[4]==='args'&&(path.length===5||path.length===6&&gradientField(path[5],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)||path.length===7&&path[5]==='0'&&gradientField(path[6],SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS)))return true;

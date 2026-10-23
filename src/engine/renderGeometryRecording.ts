@@ -32,7 +32,7 @@ export class GeometryRecordingRenderer {
   // Video receives raw draw pixels. Paused PNG enhancement/upscale belongs to
   // its separate capture path; formulas and their final transition are
   // composed by the video consumer from these delivered frame facts.
-  return{type:'raster',width,height,pixels,sourcePixelRenderer,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,implicitRecording:output.implicitRecording,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
+  return{type:'raster',width,height,pixels,sourcePixelRenderer,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,implicitRecording:output.implicitRecording,sourceImplicitParameters:output.sourceImplicitParameters,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
   }finally{request?.signal.removeEventListener('abort',abort);if(this.active===controller)this.active=undefined;}
  }
  dispose():void {this.active?.abort();this.resources.dispose();}

@@ -2,15 +2,18 @@ import type {OscillationEdgeEasing} from '../types';
 import {sourceEase} from './sourceEasing';
 import {sourceOscillationEdgeScale} from './sourceOscillationEdge';
 
-export interface SourceSurfaceParameterConfiguration {
+export interface SourceOscillatingParameterConfiguration {
  readonly min:number;readonly max:number;readonly step:number;
  readonly enabled?:boolean;readonly edgeEasing?:OscillationEdgeEasing;
 }
-export type SourceSurfaceParameterScope={readonly kind:'all'}|{readonly kind:'named';readonly name:string};
-export type SourceSurfaceParameterAction=
- |{readonly kind:'start';readonly scope:SourceSurfaceParameterScope;readonly configuration?:SourceSurfaceParameterConfiguration}
- |{readonly kind:'stop';readonly scope:SourceSurfaceParameterScope};
-export interface SourceSurfaceParameterRuntimeOptions {
+export type SourceOscillatingParameterScope={readonly kind:'all'}|{readonly kind:'named';readonly name:string};
+export type SourceOscillatingParameterAction=
+ |{readonly kind:'start';readonly scope:SourceOscillatingParameterScope;readonly configuration?:SourceOscillatingParameterConfiguration}
+ |{readonly kind:'stop';readonly scope:SourceOscillatingParameterScope};
+export interface SourceOscillatingParameterRuntimeOptions {
+ /** Implicit rejects unknown registrations and skips nonpositive updates.
+  * Surface keeps its original unknown-name and signed-dt behavior. */
+ readonly implicit?:{hasParameter:(name:string)=>boolean};
  readonly read:(name:string)=>number;
  readonly write:(name:string,value:number)=>void;
  /** Shared replay work/cancellation owner. Every loop iteration is charged. */
@@ -18,12 +21,12 @@ export interface SourceSurfaceParameterRuntimeOptions {
 }
 interface Configuration {readonly min:number;readonly max:number;readonly step:number;readonly enabled:boolean;readonly edge:Readonly<OscillationEdgeEasing>;readonly span:number;readonly middle:number;readonly half:number;}
 interface Entry {name:string;configuration:Configuration;phase?:number;scale:number;}
-interface Child {action:SourceSurfaceParameterAction;finished:boolean;captured?:ReadonlyMap<string,number>;}
+interface Child {action:SourceOscillatingParameterAction;finished:boolean;captured?:ReadonlyMap<string,number>;}
 const TAU=6.283185307179586,F=Math.fround;
 const finite=(value:number,label:string)=>{if(!Number.isFinite(value))throw new Error(`原版曲面参数${label}必须有限`);return value;};
 const clamp=(value:number)=>value<0?0:value>1?1:value;
 const DEFAULT_EDGE=Object.freeze({window:.4,floor:.5,easing:'sine-out'});
-function configuration(input:SourceSurfaceParameterConfiguration,enabled:boolean,edge=input.edgeEasing):Configuration {
+function configuration(input:SourceOscillatingParameterConfiguration,enabled:boolean,edge=input.edgeEasing):Configuration {
  const min=finite(input.min,'下界'),max=finite(input.max,'上界'),step=finite(input.step,'步进');
  const span=finite(max-min,'范围'),middle=finite((min+max)/2,'中值'),half=span/2;
  const e=edge??DEFAULT_EDGE;
@@ -32,14 +35,14 @@ function configuration(input:SourceSurfaceParameterConfiguration,enabled:boolean
  return Object.freeze({min,max,step,enabled,edge:prepared,span,middle,half});
 }
 
-/** SurfaceParameterAnimator owns one registry. The scene owns scheduling and
+/** Shared Surface/Implicit phase oscillator owns one registry. The scene owns scheduling and
  * known variable slots; unknown-name getters return0 and setters do nothing.
  * This runtime never substitutes the Domain/local oscillator or a 60Hz clock. */
-export class SourceSurfaceParameterRuntime {
+export class SourceOscillatingParameterRuntime {
  private readonly entries=new Map<string,Entry>();
  private children:Child[]=[];
  private active=false;
- constructor(private readonly options:SourceSurfaceParameterRuntimeOptions){}
+ constructor(private readonly options:SourceOscillatingParameterRuntimeOptions){}
  get running(){return this.active;}
  snapshot(){return Object.freeze({running:this.active,entries:Object.freeze([...this.entries.values()].map(entry=>Object.freeze({...entry}))) });}
  private spend(units=1){this.options.reserve(units);}
@@ -50,6 +53,7 @@ export class SourceSurfaceParameterRuntime {
   const phase=Math.asin(normalized);entry.phase=c.step<0?Math.PI-phase:phase;
  }
  private add(name:string,c:Configuration):void {
+  if(this.options.implicit&&(!name||!this.options.implicit.hasParameter(name)))return;
   this.spend(8+name.length);const old=this.entries.get(name),entry={name,configuration:c,phase:old?.phase,scale:1};
   this.entries.set(name,entry);if(this.active&&c.enabled)this.sync(entry);
  }
@@ -57,6 +61,7 @@ export class SourceSurfaceParameterRuntime {
   if(this.active)return;
   for(const entry of this.entries.values()){
    this.spend();entry.phase=undefined;
+   if(this.options.implicit&&!entry.configuration.enabled)continue;
    // Native start reads every entry, even disabled ordinary-range entries.
    // Narrow/reversed entries still receive phase0 independently of enable.
    if(entry.configuration.enabled||entry.configuration.span<=1e-6)this.sync(entry);
@@ -68,9 +73,9 @@ export class SourceSurfaceParameterRuntime {
   this.spend();const entry=this.entries.get(name);if(entry)entry.scale=Math.max(0,scale);
  }
  private setAll(scale:number):void {for(const name of this.entries.keys())this.setScale(name,scale);}
- private scopedScale(scope:SourceSurfaceParameterScope,scale:number):void {if(scope.kind==='all')this.setAll(scale);else this.setScale(scope.name,scale);}
+ private scopedScale(scope:SourceOscillatingParameterScope,scale:number):void {if(scope.kind==='all')this.setAll(scale);else this.setScale(scope.name,scale);}
  /** All child starts precede all child updates, including overwritten names. */
- begin(actions:readonly SourceSurfaceParameterAction[]):void {
+ begin(actions:readonly SourceOscillatingParameterAction[]):void {
   const prepared=actions.map(action=>{
    this.spend();
    if(!action.scope||!['all','named'].includes(action.scope.kind)||action.scope.kind==='named'&&typeof action.scope.name!=='string')throw new Error('原版曲面参数作用域无效');
@@ -110,7 +115,7 @@ export class SourceSurfaceParameterRuntime {
  }
  /** AnimateSurfaceParam: clear maps without changing running, add with gain1
   * and null edge, then start. Its onUpdate does nothing; caller stops onFinish. */
- replace(configs:readonly (SourceSurfaceParameterConfiguration&{readonly name:string})[]):void {
+ replace(configs:readonly (SourceOscillatingParameterConfiguration&{readonly name:string})[]):void {
   const prepared=configs.map(input=>{
    this.spend();if(typeof input.name!=='string'||input.enabled!==undefined&&typeof input.enabled!=='boolean')throw new Error('原版曲面参数替换配置无效');
    return{name:input.name,configuration:configuration({...input,edgeEasing:undefined},input.enabled!==false)};
@@ -122,7 +127,7 @@ export class SourceSurfaceParameterRuntime {
  stop():void {this.spend();this.active=false;}
 
  update(dt:number,frameRate:number):void {
-  if(!this.active)return;
+  if(!this.active||this.options.implicit&&Math.fround(dt)<=0)return;
   dt=finite(F(dt),'帧间隔');frameRate=finite(F(frameRate),'帧率');const rate=frameRate>1?frameRate:60;
   for(const entry of this.entries.values()){
    this.spend();const c=entry.configuration;if(!c.enabled)continue;

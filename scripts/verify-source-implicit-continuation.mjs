@@ -53,7 +53,7 @@ try{
      const renderer=resources.renderer;renderer.setSize(384,288,1);renderer.setOutput(diagnostic,{...scene,evaluatedSourceCamera:diagnostic.sourceCameraFrame},false);
      const drawing=renderer.sourceDrawingFrame(1,i+1);if(!drawing.ok)throw Error(JSON.stringify(drawing.error));raster=await renderSourceNativeFrame(drawing.value);
     }
-    rows.push({frame:output.sourceCameraFrame,action:step.action,paused,live:output.implicitLive,capture:raster.sourceCurrentImage,pixels:encode(raster.pixels)});
+    rows.push({frame:output.sourceCameraFrame,action:step.action,paused,live:output.implicitLive,parameters:output.sourceImplicitParameters?.values,capture:raster.sourceCurrentImage,pixels:encode(raster.pixels)});
    }return rows;}finally{g.dispose();resources.dispose();}
   },input);
   const result={name,frames:[]};report.cases.push(result);
@@ -61,9 +61,10 @@ try{
    const ref=reference[i],local=rows[i],frame=local.frame,step=input.steps[i];assert.equal(ref.action,step.action);assert.equal(ref.timestampMs,step.timestampMs);assert.equal(ref.frame,i);assert.equal(ref.width,384);assert.equal(ref.height,288);assert.equal(ref.rowOrder,'bottom-up');assert.equal(ref.artworkReference,'before-branding.rgba');
    const camera={...ref.camera};delete camera.phiRate;delete camera.thetaRate;delete camera.gammaRate;
    assert.deepEqual(frame.camera,camera);assert.equal(frame.sceneTime,ref.sceneTime);assert.equal(frame.rawDt,ref.rawDt);assert.equal(frame.queueComplete,ref.complete);assert.equal(local.paused,ref.paused);assert.equal(ref.rendering,step.action==='record');assert.deepEqual(frame.rates,[ref.camera.phiRate,ref.camera.thetaRate,ref.camera.gammaRate]);
+   if(ref.parameters){assert.ok(local.parameters);assert.deepEqual(Object.keys(local.parameters).sort(),Object.keys(ref.parameters).sort());for(const key of Object.keys(ref.parameters))assert.ok(Math.abs(local.parameters[key]-ref.parameters[key])<=2e-14,`Original parameter ${key}: ${local.parameters[key]} != ${ref.parameters[key]}`);}
    const bytes=await read(native+'/frame-'+i+'/'+ref.artworkReference),pixels=Buffer.from(local.pixels,'base64');assert.equal(bytes.length,384*288*4);assert.equal(pixels.length,bytes.length);let differingPixels=0,maxDelta=0;
    for(let y=0;y<288;y++)for(let x=0;x<384;x++){let changed=false;for(let c=0;c<4;c++){const d=Math.abs(bytes[((287-y)*384+x)*4+c]-pixels[(y*384+x)*4+c]);changed ||=d!==0;maxDelta=Math.max(maxDelta,d);}if(changed)differingPixels++;}
-   result.frames.push({index:i,action:step.action,differingPixels,maxDelta,reference:ref,candidate:frame,live:local.live,capture:local.capture});assert.equal(differingPixels,0,'Original offscreen artwork differs');
+   result.frames.push({index:i,action:step.action,differingPixels,maxDelta,reference:ref,candidate:frame,live:local.live,capture:local.capture,parameters:local.parameters});assert.equal(differingPixels,0,'Original offscreen artwork differs');
    await writeFile(directory+'/'+name+'-'+i+'.rgba',pixels);
   }
   console.log(JSON.stringify({name,frames:rows.length,diffs:result.frames.map(f=>f.differingPixels)}));

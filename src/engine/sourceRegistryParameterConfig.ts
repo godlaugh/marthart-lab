@@ -1,4 +1,4 @@
-import type {OscillationEdgeEasing,SourceSurfaceParameterAction,SourceSurfaceParameterClip,SourceRegistryParameterConfiguration,SourceRegistryParameterModel,SourceRegistryParameterAction,SourceSymmetryParameterOperation,SourceMapParameterOperation} from '../types';
+import type {SourceImplicitParameterAction,OscillationEdgeEasing,SourceSurfaceParameterAction,SourceSurfaceParameterClip,SourceRegistryParameterConfiguration,SourceRegistryParameterModel,SourceRegistryParameterAction,SourceSymmetryParameterOperation,SourceMapParameterOperation} from '../types';
 import type {OrdinarySourceScalarScope} from './ordinarySourceCameraImport';
 import {ORDINARY_SOURCE_CAMERA_IMPORT_LIMITS} from './ordinarySourceCameraImport';
 import {parseDomainSourceDouble,parseDomainSourceFloat} from './domainSourceScalar';
@@ -6,6 +6,7 @@ import {lookupSourceEasing,SOURCE_EASING_NAMES} from './sourceEasing';
 import {javaTrim} from './sourceJavaText';
 import {sourceSurfaceGradientPayload} from './sourceSurfaceGradientConfig';
 
+export const SOURCE_IMPLICIT_PARAMETER_MODEL='implicit-registry-1.7.8' as const;
 export const SOURCE_SURFACE_PARAMETER_MODEL='surface-registry-1.7.8' as const;
 export const SOURCE_SYMMETRY_PARAMETER_MODEL='symmetry-registry-1.7.8' as const;
 export const SOURCE_MAP_PARAMETER_MODEL='map-registry-1.7.8' as const;
@@ -44,6 +45,7 @@ export function parseSourceRegistryParameterActions<Model extends SourceRegistry
   return{model,scope:scope.kind==='all'?{kind:'all'}:{kind:'named',name:name(scope.name,[...path,'scope','name'])}};
  });
 }
+export const parseSourceImplicitParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceImplicitParameterAction[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_IMPLICIT_PARAMETER_MODEL);
 export const parseSourceSurfaceParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSurfaceParameterAction[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_SURFACE_PARAMETER_MODEL);
 export const parseSourceSymmetryParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceSymmetryParameterOperation[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_SYMMETRY_PARAMETER_MODEL);
 export const parseSourceMapParameterActions=(raw:unknown,method:'paramStart'|'paramStop'):SourceMapParameterOperation[]=>parseSourceRegistryParameterActions(raw,method,SOURCE_MAP_PARAMETER_MODEL);
@@ -110,7 +112,7 @@ function ordered(raw:Record<string,unknown>,path:readonly string[],options:Impor
  * target cannot equal a recognized domain, so no Java display formatter is
  * needed. Surface excludes only FRACTAL; Map/Symmetry admit their family and SURFACE. */
 function acceptsDomain(raw:unknown,model:SourceRegistryParameterModel):boolean {
- if(model===SOURCE_SURFACE_PARAMETER_MODEL)return typeof raw!=='string'||raw.toUpperCase()!=='FRACTAL';
+ if((model===SOURCE_SURFACE_PARAMETER_MODEL||model===SOURCE_IMPLICIT_PARAMETER_MODEL))return typeof raw!=='string'||raw.toUpperCase()!=='FRACTAL';
  if(raw==null)return true;
  if(typeof raw!=='string')return false;
  const domain=javaTrim(raw).toUpperCase();
@@ -120,7 +122,7 @@ function importParameterAction<Model extends SourceRegistryParameterModel>(metho
  return attempt(()=>{
   const consumedPaths:string[][]=[],numericPaths:string[][]=[],diagnostics:string[]=[],configuration:SourceRegistryParameterAction<Model>[]=[];
   const facts={configuration,consumedPaths,numericPaths,diagnostics};
-  if(model===SOURCE_SURFACE_PARAMETER_MODEL&&!object(args)&&!Array.isArray(args)){diagnostics.push('原版曲面跳过无数组或对象参数的动作。');return uniqueFacts(facts);}
+  if((model===SOURCE_SURFACE_PARAMETER_MODEL||model===SOURCE_IMPLICIT_PARAMETER_MODEL)&&!object(args)&&!Array.isArray(args)){diagnostics.push('原版曲面跳过无数组或对象参数的动作。');return uniqueFacts(facts);}
   const payload=sourceSurfaceGradientPayload(args),raw=payload?.value??{},base=[...(payload?.path??[])];
   for(const path of retainedNumbers(raw,base,false))numericPaths.push(path);
   if(payload){
@@ -130,8 +132,8 @@ function importParameterAction<Model extends SourceRegistryParameterModel>(metho
   }
   let parameters:Record<string,unknown>|undefined;
   if(Object.hasOwn(raw,'parameters')){if(!object(raw.parameters))return fail('input',[...base,'parameters'],'源 parameters 必须为对象');parameters=raw.parameters;}
-  const inherited={...(model===SOURCE_SURFACE_PARAMETER_MODEL?options.edgeDefaults??SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT:SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT)};
-  const defaultsForModel=model===SOURCE_SURFACE_PARAMETER_MODEL?SOURCE_SURFACE_PARAMETER_DEFAULT:SOURCE_SYMMETRY_PARAMETER_DEFAULT;
+  const inherited={...((model===SOURCE_SURFACE_PARAMETER_MODEL||model===SOURCE_IMPLICIT_PARAMETER_MODEL)?options.edgeDefaults??SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT:SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT)};
+  const defaultsForModel=(model===SOURCE_SURFACE_PARAMETER_MODEL||model===SOURCE_IMPLICIT_PARAMETER_MODEL)?SOURCE_SURFACE_PARAMETER_DEFAULT:SOURCE_SYMMETRY_PARAMETER_DEFAULT;
   const defaults=Object.hasOwn(raw,'edgeEasing')?edge(raw.edgeEasing,inherited,[...base,'edgeEasing'],consumedPaths,numericPaths,diagnostics):inherited;
   if(!parameters||Object.keys(parameters).length===0){if(parameters)consumedPaths.push([...base,'parameters']);configuration.push({model,scope:{kind:'all'}});return uniqueFacts(facts);}
   const path=[...base,'parameters'];for(const key of ordered(parameters,path,options)){
@@ -156,6 +158,9 @@ export function importSourceSymmetryParameterAction(method:'paramStart'|'paramSt
  * Its outer source Scene likewise skips non-array/non-object args. */
 export function importSourceMapParameterAction(method:'paramStart'|'paramStop',args:unknown,options:Omit<ImportOptions,'edgeDefaults'>):SourceRegistryParameterResult<ImportFacts<SourceMapParameterOperation[]>> {
  return importParameterAction(method,args,options,SOURCE_MAP_PARAMETER_MODEL);
+}
+export function importSourceImplicitParameterAction(method:'paramStart'|'paramStop',args:unknown,options:ImportOptions):SourceRegistryParameterResult<ImportFacts<SourceImplicitParameterAction[]>> {
+ return importParameterAction(method,args,options,SOURCE_IMPLICIT_PARAMETER_MODEL);
 }
 export function importSourceSurfaceParameterAction(method:'paramStart'|'paramStop',args:unknown,options:ImportOptions):SourceRegistryParameterResult<ImportFacts<SourceSurfaceParameterAction[]>> {
  return importParameterAction(method,args,options,SOURCE_SURFACE_PARAMETER_MODEL);

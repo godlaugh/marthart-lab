@@ -8,7 +8,7 @@ import {createSourceSurfacePointRuntime,type SourceSurfaceParticles} from './sou
 import {createSourceSurfaceMeshRuntime,type SourceSurfaceMeshRuntime} from './sourceSurfaceMeshRuntime';
 import type {SourceSurfacePalette} from './sourceSurfaceColor';
 import type {SourceGradientAction} from './sourceGradientRuntime';
-import type {SourceSurfaceParameterAction,SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
+import type {SourceOscillatingParameterAction,SourceOscillatingParameterConfiguration} from './sourceOscillatingParameterRuntime';
 import type {SourceSurfaceMode} from './sourceSurfaceTransition';
 
 export interface SourceSurfaceHostOptions {
@@ -83,9 +83,9 @@ export class SourceSurfaceHost implements OrdinarySourceCameraParticles {
  setRecordingTrails(enabled:boolean){this.guarded(()=>this.initial.runtime.setRecordingTrails(enabled));}
  beginGradientActions(actions:readonly SourceGradientAction[]){this.guarded(()=>this.initial.runtime.beginGradientActions(actions));}
  interpolateGradientActions(eased:number,finished:boolean){this.guarded(()=>this.initial.runtime.interpolateGradientActions(eased,finished));}
- beginParameterActions(actions:readonly SourceSurfaceParameterAction[]){this.guarded(()=>this.initial.runtime.beginParameterActions(actions));}
+ beginParameterActions(actions:readonly SourceOscillatingParameterAction[]){this.guarded(()=>this.initial.runtime.beginParameterActions(actions));}
  interpolateParameterActions(eased:number,finished:boolean){this.guarded(()=>this.initial.runtime.interpolateParameterActions(eased,finished));}
- beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]){this.guarded(()=>this.initial.runtime.beginParameterClip(parameters));}
+ beginParameterClip(parameters:readonly ({name:string}&SourceOscillatingParameterConfiguration)[]){this.guarded(()=>this.initial.runtime.beginParameterClip(parameters));}
  finishParameterClip(){this.guarded(()=>this.initial.runtime.finishParameterClip());}
  update(frame:OrdinaryCameraParticleFrame){this.guarded(()=>{
   if(!Number.isInteger(frame.frameIndex)||frame.frameIndex!==this.lastDisplay+1||frame.frameIndex<=this.lastUpdate)fail('input','曲面宿主帧更新顺序无效');

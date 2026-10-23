@@ -42,8 +42,8 @@ import {importSourceAttractorConfig} from './sourceAttractorConfig';
 import {importSourceAttractorVisualConfig} from './sourceAttractorVisualConfig';
 import {importSourceParticleGradient} from './sourceParticleGradientImport';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
-import {SOURCE_MAP_PARAMETER_MODEL,importSourceMapParameterAction,SOURCE_SYMMETRY_PARAMETER_MODEL,importSourceSymmetryParameterAction,importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT,type SourceRegistryParameterResult} from './sourceRegistryParameterConfig';
-import type {SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
+import {SOURCE_MAP_PARAMETER_MODEL,importSourceMapParameterAction,SOURCE_SYMMETRY_PARAMETER_MODEL,importSourceSymmetryParameterAction,importSourceImplicitParameterAction,importSourceSurfaceParameterAction,importSourceSurfaceParameterClip,importSourceRegistryParameterEdge,SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT,type SourceRegistryParameterResult} from './sourceRegistryParameterConfig';
+import type {SourceImplicitParameterAction,SourceSurfaceParameterAction,SourceSurfaceParameterClip} from '../types';
 import {importSourceSurfaceGradient,SOURCE_SURFACE_GRADIENT_SOURCE_FIELDS,type SourceSurfaceGradientImportFacts} from './sourceSurfaceGradientConfig';
 import {parseSourceSurfacePalette,DEFAULT_SOURCE_SURFACE_COLORS} from './sourceSurfaceColor';
 import {FRACTAL_SOURCE_COLOR_PROFILE,prepareFractalSourceColorImport} from './fractalSourceColor';
@@ -1085,7 +1085,7 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  * known but unimplemented animation children fail rather than become local
  * mathjs actions or silently disappear. Unknown native actions make Wait via
  * CameraAnimator.build when no camera child was constructed. */
-interface OrdinaryTimelineAction {path:string[];method:string;raw:unknown;surfaceGradient?:SourceSurfaceGradientImportFacts;surfaceParameters?:SourceSurfaceParameterAction[];}
+interface OrdinaryTimelineAction {path:string[];method:string;raw:unknown;implicitParameters?:SourceImplicitParameterAction[];surfaceGradient?:SourceSurfaceGradientImportFacts;surfaceParameters?:SourceSurfaceParameterAction[];}
 interface OrdinaryTimelineClip {path:string[];originalType:string;type:string;actions:OrdinaryTimelineAction[];surfaceParameterClip?:SourceSurfaceParameterClip;}
 /** Parse structural dispatch once. Geometry selection and queue compilation use
  * the same enabled clips/actions; disabled source clips are never inspected. */
@@ -1096,9 +1096,9 @@ function sourceParameterImport<T>(r:Reader,prefix:readonly string[],result:Sourc
  for(const diagnostic of result.value.diagnostics)r.warnings.push(`${pathLabel(prefix)}: ${diagnostic}`);
  return result.value.configuration;
 }
-function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:OrdinarySourceScalarScope,capturedDensity=false):OrdinaryTimelineClip[] {
+function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:OrdinarySourceScalarScope,capturedDensity=false,implicit=false):OrdinaryTimelineClip[] {
  let edgeDefaults:OscillationEdgeEasing={...SOURCE_REGISTRY_PARAMETER_EDGE_DEFAULT};
- if(surface&&r.has(['settings','param_edge_easing']))edgeDefaults=sourceParameterImport(r,['settings','param_edge_easing'],importSourceRegistryParameterEdge(r.peek(['settings','param_edge_easing'])));
+ if((surface||implicit)&&r.has(['settings','param_edge_easing']))edgeDefaults=sourceParameterImport(r,['settings','param_edge_easing'],importSourceRegistryParameterEdge(r.peek(['settings','param_edge_easing'])));
  const clips=r.peek(['timeline']);if(clips===undefined)return[];
  if(!Array.isArray(clips)||clips.length>1000)fail('timeline 应为最多 1000 段的数组');
  if(!clips.length)r.use(['timeline']);
@@ -1122,14 +1122,15 @@ function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:Ordina
      const method=capturedDensity?(typeof rawMethod==='string'?rawMethod:''):r.str([...actionPath,'method'],true)!,args=r.peek([...actionPath,'args']);
      // JsonSurfaceConfig.setupTimeline first obtains an array/object argument.
      // Its null guard skips the whole action before any child builder runs.
-     if((surface||capturedDensity)&&!Array.isArray(args)&&!isObject(args)){
+     if((surface||implicit||capturedDensity)&&!Array.isArray(args)&&!isObject(args)){
       r.retainNumberToken([...actionPath,'args']);
       if(r.has([...actionPath,'args']))r.acknowledge([...actionPath,'args'],'原版此场景仅分派数组或对象参数，跳过此动作');
       r.warnings.push(`${pathLabel(actionPath)} ${method}：原版此场景未取得数组或对象参数，跳过此动作；片段时长和原值保留。`);
       continue;
      }
+     const implicitParameters=implicit&&(method==='paramStart'||method==='paramStop')?sourceParameterImport(r,[...actionPath,'args'],importSourceImplicitParameterAction(method,args,{scope:parameterScope!,memberOrder:path=>r.sourceKeys([...actionPath,'args',...path]),edgeDefaults})):undefined;
      const surfaceParameters=surface&&(method==='paramStart'||method==='paramStop')?sourceParameterImport(r,[...actionPath,'args'],importSourceSurfaceParameterAction(method,args,{scope:parameterScope!,memberOrder:path=>r.sourceKeys([...actionPath,'args',...path]),edgeDefaults})):undefined;
-     actions.push({path:actionPath,method,raw:args,...(surface&&method==='gradientStart'?{surfaceGradient:importSourceSurfaceGradient(args)}:{}),...(surfaceParameters?{surfaceParameters}:{})});
+     actions.push({path:actionPath,method,raw:args,...(implicitParameters?{implicitParameters}:{}),...(surface&&method==='gradientStart'?{surfaceGradient:importSourceSurfaceGradient(args)}:{}),...(surfaceParameters?{surfaceParameters}:{})});
     }
    }
   }
@@ -1138,7 +1139,7 @@ function ordinaryTimelineStructure(r:Reader,surface=false,parameterScope?:Ordina
  }
  return result;
 }
-function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope,structure=ordinaryTimelineStructure(r,s.kind==='surface',scope,usesCapturedDensityCamera(s))):void {
+function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceScalarScope,structure=ordinaryTimelineStructure(r,s.kind==='surface',scope,usesCapturedDensityCamera(s),s.kind==='implicit')):void {
  s.timeline={...s.timeline,schedule:ORDINARY_CAMERA_SEQUENCE,tracks:[]};let total=0;
  const field=(path:readonly string[],fallback:number)=>{
   r.retainNumberToken(path);const parsed=ordinaryResult(scope.field(r.use(path),pathLabel(path),fallback,r.has(path)));r.warnings.push(...parsed.diagnostics);return parsed.value;
@@ -1194,7 +1195,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
    track.actions=[];track.target='camera.actions';
    const perlinGradients=usesSourcePerlin(s)?importSourcePerlinGradientGroup(sourceActions.map(a=>({method:a.method,args:a.raw}))):undefined;
    if(perlinGradients){for(const relative of perlinGradients.consumedPaths){r.use([...path,'actions',...relative]);r.retainNumberToken([...path,'actions',...relative]);}r.warnings.push(...perlinGradients.diagnostics);}
-   for(const [actionIndex,{path:actionPath,method,raw,surfaceGradient,surfaceParameters}] of sourceActions.entries()){
+   for(const [actionIndex,{path:actionPath,method,raw,surfaceGradient,surfaceParameters,implicitParameters}] of sourceActions.entries()){
     if(usesSourcePerlin(s)){
      if(method==='gradientStart'||method==='gradientStop'){
       if(perlinGradients!.selectedIndex===actionIndex){const action=perlinGradients!.action!;track.actions.push({id:crypto.randomUUID(),method:action.kind==='start'?'gradientStart':'gradientStop',enabled:true,...(action.kind==='start'?{gradient:action.config}:{})});}continue;
@@ -1218,6 +1219,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
      const symmetryParameters=sourceParameterImport(r,[...actionPath,'args'],importSourceSymmetryParameterAction(method,raw,{scope,memberOrder:relative=>r.sourceKeys([...actionPath,'args',...relative])}));
      if(symmetryParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,symmetryParameters});continue;
     }
+    if(implicitParameters){if(implicitParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,implicitParameters});continue;}
     if(surfaceParameters){if(surfaceParameters.length)track.actions.push({id:crypto.randomUUID(),method,enabled:true,surfaceParameters});continue;}
     if((s.kind==='surface'||usesSourceAttractor(s)||usesSourceSymmetryGradient(s))&&(method==='gradientStart'||method==='gradientStop')){
      if(usesSourceAttractor(s)&&(s.attractorSource!.configuration.nativeBackend==='gpu'||!s.attractorSource!.visual.trails.show)){r.acknowledge(actionPath,'原版吸引子仅在 CPU 且显示拖尾时构造渐变；未解析动作参数');continue;}

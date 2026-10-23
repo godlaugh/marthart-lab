@@ -16,6 +16,7 @@ export function implicitCameraFrame(output:SceneOutput):ImplicitCameraFrame {
 export function validSourceImplicitOutput(output:SceneOutput,input:GenerationInput,presentationOnly=false):output is Geometry {
  try{
   if(output?.type!=='geometry'||output.sourceImplicitPresentation?.model!==SOURCE_IMPLICIT_PRESENTATION||output.sourceImplicitPresentation.referencePixelDensity!==input.sourcePointPixelDensity)return false;
+  const parameters=output.sourceImplicitParameters;if(!parameters||parameters.model!=='implicit-registry-1.7.8'||!parameters.values||typeof parameters.values!=='object'||Array.isArray(parameters.values)||Object.values(parameters.values).some(value=>typeof value!=='number'||!Number.isFinite(value)))return false;
   const frame=implicitCameraFrame(output),v=frame.viewport,w=input.sourceViewport;
   if(!w||v.logicalWidth!==w.logicalWidth||v.logicalHeight!==w.logicalHeight||v.referenceLogicalHeight!==w.referenceLogicalHeight||v.target!==w.target||v.projectionPass!==w.projectionPass)return false;
   if(input.implicitLive&&output.implicitRecording===undefined){

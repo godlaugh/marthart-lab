@@ -1,19 +1,19 @@
 import {describe,expect,it} from 'vitest';
-import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction,type SourceSurfaceParameterConfiguration} from '../src/engine/sourceSurfaceParameterRuntime';
+import {SourceOscillatingParameterRuntime,type SourceOscillatingParameterAction,type SourceOscillatingParameterConfiguration} from '../src/engine/sourceOscillatingParameterRuntime';
 import golden from './fixtures/source-surface-parameters/numerics.json';
 
-const config:SourceSurfaceParameterConfiguration={min:-1,max:1,step:.1};
-const start=(name:string,overrides:Partial<SourceSurfaceParameterConfiguration>={}):SourceSurfaceParameterAction=>({kind:'start',scope:{kind:'named',name},configuration:{...config,...overrides}});
-const startAll:SourceSurfaceParameterAction={kind:'start',scope:{kind:'all'}};
-const stopAll:SourceSurfaceParameterAction={kind:'stop',scope:{kind:'all'}};
-const stop=(name:string):SourceSurfaceParameterAction=>({kind:'stop',scope:{kind:'named',name}});
+const config:SourceOscillatingParameterConfiguration={min:-1,max:1,step:.1};
+const start=(name:string,overrides:Partial<SourceOscillatingParameterConfiguration>={}):SourceOscillatingParameterAction=>({kind:'start',scope:{kind:'named',name},configuration:{...config,...overrides}});
+const startAll:SourceOscillatingParameterAction={kind:'start',scope:{kind:'all'}};
+const stopAll:SourceOscillatingParameterAction={kind:'stop',scope:{kind:'all'}};
+const stop=(name:string):SourceOscillatingParameterAction=>({kind:'stop',scope:{kind:'named',name}});
 function fixture(initial:Record<string,number>={a:.25,b:-.25}){
  const values=new Map(Object.entries(initial)),reads:string[]=[],writes:[string,number][]=[];
  let work=0,limit=Infinity;
- const runtime=new SourceSurfaceParameterRuntime({read:name=>{reads.push(name);return values.get(name)??0;},write:(name,value)=>{writes.push([name,value]);if(values.has(name))values.set(name,value);},reserve:n=>{work+=n;if(work>limit)throw new Error('work budget');}});
+ const runtime=new SourceOscillatingParameterRuntime({read:name=>{reads.push(name);return values.get(name)??0;},write:(name,value)=>{writes.push([name,value]);if(values.has(name))values.set(name,value);},reserve:n=>{work+=n;if(work>limit)throw new Error('work budget');}});
  return{runtime,values,reads,writes,get work(){return work;},limitAfter(units:number){limit=work+units;}};
 }
-function entry(runtime:SourceSurfaceParameterRuntime,name='a'){const found=runtime.snapshot().entries.find(e=>e.name===name);if(!found)throw Error('Missing entry');return found;}
+function entry(runtime:SourceOscillatingParameterRuntime,name='a'){const found=runtime.snapshot().entries.find(e=>e.name===name);if(!found)throw Error('Missing entry');return found;}
 
 describe('Surface parameter recurrence against independent bytecode witnesses',()=>{
  it.each(golden.witnesses)('$name',row=>{

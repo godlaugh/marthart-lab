@@ -181,7 +181,7 @@ function validGeometryCapture(result:import('./sourceGeometryCapture').SourceGeo
   for(const [output,input] of [[result.capture,target],[result.preview,source.context]] as const){
    if(!validSourceImplicitOutput(output,input)||output.implicitLive?.renderKind!=='snapshot'||!output.implicitLive.paused)return false;
    const {viewport,...frame}=implicitCameraFrame(output);void viewport;
-   if(!sameSourceRecordingValue(frame,before))return false;
+   if(!sameSourceRecordingValue(output.sourceImplicitParameters,source.output.sourceImplicitParameters)||!sameSourceRecordingValue(frame,before))return false;
   }
  }else{
   const frame=surfaceFrame(source);

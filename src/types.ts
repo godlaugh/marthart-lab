@@ -152,12 +152,13 @@ export type DomainParameterAction = {
 };
 /** Source registry identities are names, never dotted local animation targets. */
 export interface SourceRegistryParameterConfiguration {min:number;max:number;step:number;edgeEasing:OscillationEdgeEasing;}
-export type SourceRegistryParameterModel='surface-registry-1.7.8'|'symmetry-registry-1.7.8'|'map-registry-1.7.8';
+export type SourceRegistryParameterModel='implicit-registry-1.7.8'|'surface-registry-1.7.8'|'symmetry-registry-1.7.8'|'map-registry-1.7.8';
 export type SourceRegistryParameterAction<Model extends SourceRegistryParameterModel> = {
   model:Model;
   scope:{kind:'all'}|{kind:'named';name:string};
   configuration?:SourceRegistryParameterConfiguration;
 };
+export type SourceImplicitParameterAction=SourceRegistryParameterAction<'implicit-registry-1.7.8'>;
 export type SourceSurfaceParameterAction=SourceRegistryParameterAction<'surface-registry-1.7.8'>;
 export type SourceSymmetryParameterOperation=SourceRegistryParameterAction<'symmetry-registry-1.7.8'>;
 export type SourceMapParameterOperation=SourceRegistryParameterAction<'map-registry-1.7.8'>;
@@ -175,6 +176,7 @@ export interface AnimationAction {
   parameters?: ParameterAnimation[]; gradient?: GradientAnimation;
   /** Ordered source operations within this action; All is one registry operation. */
   domainParameters?:DomainParameterAction[];
+  implicitParameters?:SourceImplicitParameterAction[];
   surfaceParameters?:SourceSurfaceParameterAction[];
   symmetryParameters?:SourceSymmetryParameterOperation[];
   mapParameters?:SourceMapParameterOperation[];
@@ -341,6 +343,7 @@ export interface Preset {
 }
 export interface GeometryOutput {
   implicitLive?:import('./engine/sourceImplicitLive').SourceImplicitLiveFacts;
+  sourceImplicitParameters?:{model:'implicit-registry-1.7.8';values:Record<string,number>};
   implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
   sourceImplicitMesh?:import('./engine/sourceImplicitMesh').SourceImplicitMesh;
   sourceImplicitPresentation?:import('./engine/sourceImplicitPresentation').SourceImplicitPresentation;
@@ -431,6 +434,7 @@ export interface RasterOutput {
   rootsLive?:import('./engine/rootsLive').RootsLiveFacts;
   perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveFacts;
   implicitLive?:import('./engine/sourceImplicitLive').SourceImplicitLiveFacts;
+  sourceImplicitParameters?:{model:'implicit-registry-1.7.8';values:Record<string,number>};
   implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
   /** Geometry recording readback retains its producing Surface facts. */
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;

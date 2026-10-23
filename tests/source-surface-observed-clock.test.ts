@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import native from './fixtures/source-surface-clock/native.json';
 import {importSourceSurfaceMeshConfig} from '../src/engine/sourceSurfaceMeshConfig';
 import {SourceSurfaceHost} from '../src/engine/sourceSurfaceHost';
-import {SourceSurfaceParameterRuntime} from '../src/engine/sourceSurfaceParameterRuntime';
+import {SourceOscillatingParameterRuntime} from '../src/engine/sourceOscillatingParameterRuntime';
 
 const F=Math.fround;
 function host(kind:string,backend:'CPU'|'GPU',initial:number){
@@ -24,7 +24,7 @@ describe('original JVM Surface observations through production geometry/uniform 
   }
  });
  for(const trace of traces.filter(c=>c.kind==='points'))it(`original double phases and setters case ${trace.case}`,()=>{
-  let current=trace.initial;const runtime=new SourceSurfaceParameterRuntime({read:()=>current,write:(_,v)=>current=v,reserve:()=>{}});
+  let current=trace.initial;const runtime=new SourceOscillatingParameterRuntime({read:()=>current,write:(_,v)=>current=v,reserve:()=>{}});
   runtime.begin([{kind:'start',scope:{kind:'named',name:'a'},configuration:{step:trace.step,min:trace.min,max:trace.max}}]);runtime.interpolate(1,true);
   expect(runtime.snapshot().entries[0].phase).toBeCloseTo(trace.initialPhase.value,13);
   for(const f of trace.frames){if(f.dt>0)runtime.update(f.dt,f.actualFrameRate);expect(current).toBeCloseTo(f.value.value,13);expect(runtime.snapshot().entries[0].phase).toBeCloseTo(f.phase.value,13);}

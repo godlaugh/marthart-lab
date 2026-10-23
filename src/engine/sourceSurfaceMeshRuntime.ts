@@ -10,7 +10,7 @@ import {createSourceSurfaceMeshWireframe,type SourceSurfaceMeshWireframeFrame} f
 import {prepareSourceSurfaceColors,refreshSourceSurfaceColors,type PreparedSourceSurfaceColors,type SourceSurfacePalette} from './sourceSurfaceColor';
 import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,smoothSourceSurfacePalette,sourceSurfacePaletteTarget,type SourceSurfacePaletteState} from './sourceSurfaceGradient';
 import {SourceGradientRuntime,type SourceGradientAction,type SourceGradientSnapshot} from './sourceGradientRuntime';
-import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction,type SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
+import {SourceOscillatingParameterRuntime,type SourceOscillatingParameterAction,type SourceOscillatingParameterConfiguration} from './sourceOscillatingParameterRuntime';
 
 const F=Math.fround;
 export class SourceSurfaceMeshRuntimeError extends Error {
@@ -57,7 +57,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  private readonly wireframe?:ReturnType<typeof createSourceSurfaceMeshWireframe>;
  private color?:PreparedSourceSurfaceColors;
  private readonly gradient:SourceGradientRuntime;
- private readonly parameters:SourceSurfaceParameterRuntime;
+ private readonly parameters:SourceOscillatingParameterRuntime;
  private paletteState:SourceSurfacePaletteState=INITIAL_SOURCE_SURFACE_PALETTE_STATE;
  private readonly ignoredNames=new Set<string>();
  private readonly trackingPosition=new Float32Array(3);
@@ -116,7 +116,7 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
    refreshSourceSurfaceColors(this.color!,this.numU,this.numV,this.paletteState,configuration.mode,configuration.interpolation,cyclic,()=>this.check(),3);
    this.colorRevision++;
   });
-  this.parameters=new SourceSurfaceParameterRuntime({read:name=>this.options.surfaceFunction.read(name),write:(name,value)=>{if(!this.options.surfaceFunction.write(name,value))this.ignoredNames.add(name);},reserve:n=>this.reserve(n)});
+  this.parameters=new SourceOscillatingParameterRuntime({read:name=>this.options.surfaceFunction.read(name),write:(name,value)=>{if(!this.options.surfaceFunction.write(name,value))this.ignoredNames.add(name);},reserve:n=>this.reserve(n)});
  }
  private check(){if(this.failed)throw this.failure;if(this.options.isCancelled?.())fail('cancelled','原版曲面网格回放已取消');}
  private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;this.rendered=undefined;this.geometryCache=undefined;this.wireCache=undefined;this.mappedColorCache=undefined;this.gpuShape=undefined;this.gpuShapeColors=undefined;this.gpuSeamsCache=undefined;throw error;}}
@@ -141,9 +141,9 @@ export class SourceSurfaceMeshRuntime implements OrdinarySourceCameraParticles {
  setRecordingTrails(enabled:boolean):void{this.guarded(()=>{if(typeof enabled!=='boolean')fail('input','原版网格拖尾开关需要布尔值');});}
  beginGradientActions(actions:readonly SourceGradientAction[]):void{this.guarded(()=>this.gradient.begin(actions));}
  interpolateGradientActions(eased:number,finished:boolean):void{this.guarded(()=>this.gradient.interpolate(eased,finished));}
- beginParameterActions(actions:readonly SourceSurfaceParameterAction[]):void{this.guarded(()=>this.parameters.begin(actions));}
+ beginParameterActions(actions:readonly SourceOscillatingParameterAction[]):void{this.guarded(()=>this.parameters.begin(actions));}
  interpolateParameterActions(eased:number,finished:boolean):void{this.guarded(()=>this.parameters.interpolate(eased,finished));}
- beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]):void{this.guarded(()=>this.parameters.replace(parameters));}
+ beginParameterClip(parameters:readonly ({name:string}&SourceOscillatingParameterConfiguration)[]):void{this.guarded(()=>this.parameters.replace(parameters));}
  finishParameterClip():void{this.guarded(()=>this.parameters.stop());}
  update(frame:OrdinaryCameraParticleFrame):void{this.guarded(()=>{
   if(this.retired)fail('input','已移出的网格不再执行更新');

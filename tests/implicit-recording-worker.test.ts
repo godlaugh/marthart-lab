@@ -1,3 +1,4 @@
+import parameterNative from './fixtures/source-implicit-presentation/parameters.json';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import native from './fixtures/source-implicit-presentation/recording-clock.json';
 import {serializeScene} from '../src/engine/document';
@@ -82,7 +83,9 @@ describe('Implicit recording production Worker transport',()=>{
   const raw=JSON.parse(JSON.stringify(native.cases[0].input.project));raw.settings.x_segments=raw.settings.y_segments=raw.settings.z_segments=4;
   raw.timeline[1].actions.push({method:'paramStart',args:{a:{step:.1,min:0,max:1}}});
   const imported=parseProjectFile(JSON.stringify(raw));
-  expect(imported.warnings.some(w=>w.includes('尚未映射'))).toBe(true);
+  // Existing saved unmapped actions remain explicit, never silently migrated
+  // to the newly supported source registry without rereading source args.
+  imported.scene.timeline.tracks[1].actions![imported.scene.timeline.tracks[1].actions!.length-1]={id:'old-unmapped',method:'paramStart',enabled:true,sourceEffect:'unmapped'};
   const scene=parseProjectFile(serializeScene(imported.scene)).scene,action=scene.timeline.tracks[1].actions!.at(-1)!;
   expect(action).toMatchObject({method:'paramStart',enabled:true,sourceEffect:'unmapped'});
   const context:GenerationInput={time:0,width:810,height:972,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,405,486,'primary',486)};
@@ -117,5 +120,40 @@ describe('Implicit paused capture production transport',()=>{
   result(send({operation:'implicit-playback',sourceId,paused:false,timestampMs:10000}),'implicit-playback');
   const continued=result(send({operation:'generate',scene:stop.result.scene,context:{...stop.result.context,implicitLive:{...stop.result.context.implicitLive!,clock:{paused:false,timestampMs:10125}}}}),'generate');
   expect(continued.output.sourceCameraFrame).toMatchObject({sceneTime:.625,frameIndex:2,rawDt:.125});
+ });
+});
+
+// Persist/reopen the imported authoring model before it crosses the real
+// Worker boundary. Every numerical expectation comes from the pinned JVM.
+describe('Implicit parameter queue through production Worker',()=>{
+ for(const row of parameterNative.cases)it('matches original parameter/camera facts: '+row.name,()=>{
+  const scene=parseProjectFile(serializeScene(parseProjectFile(JSON.stringify(row.input.project)).scene)).scene;
+  const context:GenerationInput={time:0,width:810,height:972,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,405,486,'primary',486)};
+  const primary=result(send({operation:'generate',scene,context}),'generate');
+  let output=primary.output,sourceId=primary.id,recordingId:number|undefined,index=0,paused=false,stop:ReturnType<typeof finished>|undefined;
+  function finished(timestampMs=1000){return result(send({operation:'source-recording-finish',recordingId,timestampMs}),'source-recording-finish');}
+  for(const [i,step]of row.input.steps.entries()){
+   if(step.action==='record'){
+    if(recordingId===undefined){const begin=result(send({operation:'source-recording-begin',sourceId,options:{width:128,height:96,simulationFps:row.input.simulationFps,actualFrameRate:step.actualFrameRate}}),'source-recording-begin');recordingId=begin.recordingId;output=begin.result.warmup;}
+    else output=result(send({operation:'source-recording-frame',recordingId,displayFrame:++index,actualFrameRate:step.actualFrameRate}),'source-recording-frame').output;
+   }else if(step.action==='stop'){stop=finished(step.timestampMs);sourceId=stop.id;output=stop.result.preview;}
+   else if(step.action==='pause'||step.action==='resume'){paused=step.action==='pause';result(send({operation:'implicit-playback',sourceId,paused,timestampMs:step.timestampMs}),'implicit-playback');}
+   else{
+    const next=result(send({operation:'generate',scene:stop!.result.scene,context:{...stop!.result.context,implicitLive:{...stop!.result.context.implicitLive!,actualFrameRate:step.actualFrameRate,clock:{paused,timestampMs:step.timestampMs}}}}),'generate');output=next.output;sourceId=next.id;
+   }
+   if(paused){const pair=result(send({operation:'implicit-paused-capture',sourceId,size:{width:384,height:288},scale:1}),'implicit-paused-capture').result;expect(pair.capture.sourceImplicitParameters).toEqual(pair.preview.sourceImplicitParameters);output=pair.preview;}
+   const reference=row.frames[i],{phiRate,thetaRate,gammaRate,...camera}=reference.camera;
+   expect(output.sourceCameraFrame).toMatchObject({camera,rates:[phiRate,thetaRate,gammaRate],sceneTime:reference.sceneTime,rawDt:reference.rawDt,queueComplete:reference.complete});
+   const values=output.sourceImplicitParameters!.values;expect(Object.keys(values).sort()).toEqual(Object.keys(reference.parameters).sort());
+   for(const [name,value]of Object.entries(reference.parameters))expect(Math.abs(values[name]-value)).toBeLessThanOrEqual(2e-14);
+  }
+ });
+ it('ordinary fixed preview uses the same parameter owner, including seeks and replay',()=>{
+  const row=parameterNative.cases.find(c=>c.name==='fixed-parameters')!,scene=parseProjectFile(serializeScene(parseProjectFile(JSON.stringify(row.input.project)).scene)).scene;scene.timeline.fps=row.input.simulationFps;
+  for(const i of [0,3,10,2,10]){
+   const output=result(send({operation:'generate',scene,context:{time:i/scene.timeline.fps,width:384,height:288,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,384,288,'offscreen',486)}}),'generate').output;
+   const reference=row.frames[i];expect(output.sourceCameraFrame).toMatchObject({sceneTime:reference.sceneTime,queueComplete:reference.complete});
+   for(const [name,value]of Object.entries(reference.parameters))expect(Math.abs(output.sourceImplicitParameters!.values[name]-value)).toBeLessThanOrEqual(2e-14);
+  }
  });
 });

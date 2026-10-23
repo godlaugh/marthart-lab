@@ -1,7 +1,7 @@
 import {sourceSurfaceWorkBudget} from './sourceSurfaceWork';
 import {sourceSurfaceParameterFrameRate} from './sourceSurfaceFrame';
 import {SourceParticleTrailHistory,type SourceParticleTrails} from './sourceParticleTrails';
-import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction,type SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
+import {SourceOscillatingParameterRuntime,type SourceOscillatingParameterAction,type SourceOscillatingParameterConfiguration} from './sourceOscillatingParameterRuntime';
 import {SourceGradientRuntime,type SourceGradientAction} from './sourceGradientRuntime';
 import {INITIAL_SOURCE_SURFACE_PALETTE_STATE,sourceSurfacePaletteTarget,smoothSourceSurfacePalette,type SourceSurfacePaletteState} from './sourceSurfaceGradient';
 import {createSourceSurfaceTrailGradient} from './sourceSurfaceTrailGradient';
@@ -107,7 +107,7 @@ function edgeFade(factor:number,axis:Axis,value:number):number {
  * All buffers are owned by this replay and snapshots are copied before transfer. */
 export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  private readonly gradient:SourceGradientRuntime;
- private readonly parameters:SourceSurfaceParameterRuntime;
+ private readonly parameters:SourceOscillatingParameterRuntime;
  private readonly ignoredParameterNames=new Set<string>();
  private paletteState:SourceSurfacePaletteState=INITIAL_SOURCE_SURFACE_PALETTE_STATE;
  private animationTime=0;
@@ -149,7 +149,7 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
     for(let id=0;id<config.count;id++){if((id&1023)===0)this.check();this.pointAlphas![id]=(this.color.packed[id]>>>24)/255;}
    }
   });
-  this.parameters=new SourceSurfaceParameterRuntime({
+  this.parameters=new SourceOscillatingParameterRuntime({
    read:name=>this.surfaceFunction.read(name),
    write:(name,value)=>{if(!this.surfaceFunction.write(name,value))this.ignoredParameterNames.add(name);},
    reserve:units=>this.reserveWork(units),
@@ -210,9 +210,9 @@ export class SourceSurfaceParticles implements OrdinarySourceCameraParticles {
  });}
  beginGradientActions(actions:readonly SourceGradientAction[]):void {this.guarded(()=>this.gradient.begin(actions));}
  interpolateGradientActions(eased:number,finished:boolean):void {this.guarded(()=>this.gradient.interpolate(eased,finished));}
- beginParameterActions(actions:readonly SourceSurfaceParameterAction[]):void {this.guarded(()=>this.parameters.begin(actions));}
+ beginParameterActions(actions:readonly SourceOscillatingParameterAction[]):void {this.guarded(()=>this.parameters.begin(actions));}
  interpolateParameterActions(eased:number,finished:boolean):void {this.guarded(()=>this.parameters.interpolate(eased,finished));}
- beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]):void {this.guarded(()=>this.parameters.replace(parameters));}
+ beginParameterClip(parameters:readonly ({name:string}&SourceOscillatingParameterConfiguration)[]):void {this.guarded(()=>this.parameters.replace(parameters));}
  finishParameterClip():void {this.guarded(()=>this.parameters.stop());}
  update(frame:OrdinaryCameraParticleFrame):void {this.guarded(()=>{
   this.check();if(this.retired)fail('input','已移出的曲面不再执行粒子更新');if(!Number.isInteger(frame.frameIndex)||frame.frameIndex<0||frame.frameIndex<=this.lastFrame||typeof frame.time!=='number'||!Number.isFinite(F(frame.time))||typeof frame.deltaTime!=='number'||!Number.isFinite(F(frame.deltaTime)))fail('input','原版曲面粒子帧顺序或时间无效');

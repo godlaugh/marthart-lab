@@ -1,4 +1,5 @@
-import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
+import {replaySourceImplicitTimeline} from './sourceImplicitTimeline';
+import {usesSourceImplicitCpuMesh,usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
 import {SourceImplicitRecordingSession} from './sourceImplicitRecording';
 import {SourceSurfaceLiveSession} from './sourceSurfaceLiveSession';
@@ -414,6 +415,21 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(usesSourceBouncing(scene)){owner.select(scene,context);return owner.sourceBouncing.generate(scene,context);}
     if(usesSourceSurfaceGeometry(scene)){owner.select(scene,context);return generateSourceSurface(scene,context);}
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
+    if(usesSourceImplicitCpuMesh(scene)){
+      owner.select(scene,context);
+      const formulas=formulaPresentation(scene,context.sourceViewport);
+      const evaluated=replaySourceImplicitTimeline(scene,context.time,context.isCancelled),current={...scene,parameters:evaluated.parameters,evaluatedSourceCamera:evaluated.frame};
+      const camera=ordinarySourceCameraFrame(current,context);
+      const bind=(output:SceneOutput)=>{
+        if(output.type!=='geometry')throw Error('源标注与实际帧类型不匹配');
+        output.sourceCameraFrame=structuredClone(camera);
+        output.sourceImplicitParameters={model:'implicit-registry-1.7.8',values:{...evaluated.parameters}};
+        output.formulaPresentation=structuredClone(formulas);
+        if(evaluated.frame.diagnostics.length)output.warnings=[...(output.warnings??[]),...evaluated.frame.diagnostics.map(d=>d.message)];
+        return output;
+      };
+      return bind(definition(scene.kind).generate(current,{...context,onProgress:context.onProgress?output=>context.onProgress!(bind(output)):undefined}));
+    }
     // A fresh source Scene constructs its labels from its input configuration,
     // before any source queue update. Deliver that same text with every pass.
     const implicitFormulas=usesSourceImplicitPresentation(scene);

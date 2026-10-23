@@ -1,3 +1,5 @@
+import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
+import {replaySourceImplicitTimeline} from './sourceImplicitTimeline';
 import {DOMAIN_SCENE_SEQUENCE,usesSourceDomain,validateSourceDomainTrack,resolveSourceDomainTimeline,replaySourceDomain,replaySourceDomainFrame,bindSourceDomainFrame} from './sourceDomainTimeline';
 import {FRACTAL_SCENE_SEQUENCE,usesSourceFractal} from './sourceFractalDocument';
 import {bindSourceFractalFrame,replaySourceFractal,replaySourceFractalFrame,resolveSourceFractalTimeline,validateSourceFractalTrack} from './sourceFractalTimeline';
@@ -16,7 +18,7 @@ import {parseSourcePerlinParameterAction} from './sourcePerlinParameterConfig';
 import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
 import {usesSourceAttractor} from './sourceAttractorDocument';
 import {replaySourceAttractorCamera} from './sourceAttractorReplay';
-import {parseSourceMapParameterActions,parseSourceSymmetryParameterActions,parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceRegistryParameterConfig';
+import {parseSourceImplicitParameterActions,parseSourceMapParameterActions,parseSourceSymmetryParameterActions,parseSourceSurfaceParameterActions,parseSourceSurfaceParameterClip} from './sourceRegistryParameterConfig';
 import {parseSourceParticleGradientConfiguration} from './sourceParticleGradientConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {replaySourceSurfaceCamera} from './sourceSurfaceReplay';
@@ -112,7 +114,7 @@ export function timelineWarnings(scene:SceneDocument,clock:'fixed'|'realtime'='f
  if(usesCapturedDensityCamera(scene))validateTimelineSchedule(scene);
  if(usesRootsCameraTimeline(scene))return [...prepareRootsCameraTimeline(scene).warnings,...(clock==='fixed'?['复根相机动画按本地固定帧率逐帧回放；循环和跳转重建实例，不代表原版实时线程时钟。']:[])];
  const genericWarning=genericParameterTimelineWarning(scene),messages:string[]=[...(genericWarning?[genericWarning]:[]),...parseSamilaCamera(scene).warnings];
- if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!,frame=(usesSourceSymmetryGradient(scene)||usesSourceMapParameters(scene))?replaySourceIteratedTimeline(scene,0).frame:usesSourcePerlin(scene)?replaySourcePerlinCamera(scene,0):usesSourceSurfaceGeometry(scene)?replaySourceSurfaceCamera(scene,0):usesSourceAttractor(scene)?replaySourceAttractorCamera(scene,0):evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0);messages.push(...frame.diagnostics.map(d=>d.message));if(clock==='fixed')messages.push('原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
+ if(scene.sourceCamera){const initial=ordinarySourceCameraInitial(scene)!,frame=usesSourceImplicitCpuMesh(scene)?replaySourceImplicitTimeline(scene,0).frame:(usesSourceSymmetryGradient(scene)||usesSourceMapParameters(scene))?replaySourceIteratedTimeline(scene,0).frame:usesSourcePerlin(scene)?replaySourcePerlinCamera(scene,0):usesSourceSurfaceGeometry(scene)?replaySourceSurfaceCamera(scene,0):usesSourceAttractor(scene)?replaySourceAttractorCamera(scene,0):evaluateOrdinarySourceCameraTimeline(initial,scene.timeline.tracks,scene.timeline.fps,0);messages.push(...frame.diagnostics.map(d=>d.message));if(clock==='fixed')messages.push('原版相机按本地固定帧率回放；原版实时线程时钟和非相机效果仍待完整对照。');}
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&!rootMathAnimationTargetEnabled(scene,track.target)||track.type==='param'&&track.parameterAnimations?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&action.parameters?.some(p=>p.enabled&&!rootMathAnimationTargetEnabled(scene,p.target))))))messages.push('源复根数学不使用通用参数或旧采样与求解字段；相关轨道保留时长但未执行。');
  const inactiveSourceParameters=(parameters:readonly ParameterAnimation[]|undefined)=>parameters?.some(p=>p.enabled&&inactiveFractalSourceColorTarget(scene,p.target));
  if(scene.timeline.tracks.some(track=>track.enabled&&((track.type??'numeric')==='numeric'&&inactiveFractalSourceColorTarget(scene,track.target)||track.type==='param'&&inactiveSourceParameters(track.parameterAnimations)||track.actions?.some(action=>action.enabled!==false&&action.method==='paramStart'&&inactiveSourceParameters(action.parameters)))))messages.push('原版分形着色已停用；其偏移动画保留但不执行。');
@@ -264,7 +266,7 @@ function copyState(scene: SceneDocument, time?:number): SceneDocument {
   delete copied.evaluatedSpirographFrame;
   delete copied.evaluatedRootsCamera;
   delete copied.evaluatedSourceCamera;
-  if(scene.sourceCamera){copied.sourceCamera=structuredClone(scene.sourceCamera);if(time!==undefined&&(usesSourceSymmetryGradient(copied)||usesSourceMapParameters(copied))){const evaluated=replaySourceIteratedTimeline(copied,time);copied.evaluatedSourceCamera=evaluated.frame;bindSourceIterationFrame(copied,evaluated.palette,evaluated.update,evaluated.parameters);if(evaluated.parameters)copied.parameters={...evaluated.parameters.values};if(evaluated.mapColors)Object.assign(copied.settings,evaluated.mapColors);}else if(time!==undefined)copied.evaluatedSourceCamera=usesSourcePerlin(copied)?replaySourcePerlinCamera(copied,time):usesSourceSurfaceGeometry(copied)?replaySourceSurfaceCamera(copied,time):usesSourceAttractor(copied)?replaySourceAttractorCamera(copied,time):evaluateOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(copied)!,scene.timeline.tracks,scene.timeline.fps,time);}
+  if(scene.sourceCamera){copied.sourceCamera=structuredClone(scene.sourceCamera);if(time!==undefined&&(usesSourceSymmetryGradient(copied)||usesSourceMapParameters(copied))){const evaluated=replaySourceIteratedTimeline(copied,time);copied.evaluatedSourceCamera=evaluated.frame;bindSourceIterationFrame(copied,evaluated.palette,evaluated.update,evaluated.parameters);if(evaluated.parameters)copied.parameters={...evaluated.parameters.values};if(evaluated.mapColors)Object.assign(copied.settings,evaluated.mapColors);}else if(time!==undefined&&usesSourceImplicitCpuMesh(copied)){const evaluated=replaySourceImplicitTimeline(copied,time);copied.evaluatedSourceCamera=evaluated.frame;copied.parameters=evaluated.parameters;}else if(time!==undefined)copied.evaluatedSourceCamera=usesSourcePerlin(copied)?replaySourcePerlinCamera(copied,time):usesSourceSurfaceGeometry(copied)?replaySourceSurfaceCamera(copied,time):usesSourceAttractor(copied)?replaySourceAttractorCamera(copied,time):evaluateOrdinarySourceCameraTimeline(ordinarySourceCameraInitial(copied)!,scene.timeline.tracks,scene.timeline.fps,time);}
   if(time!==undefined&&scene.kind==='spirograph'&&parseSpirographVersion(scene.settings.spirographVersion)==='mathart-1.7.8-v1'){
     copied.evaluatedSpirographRotationRadians=finite(spirographSourceRotationRate(scene.settings.rotationSpeed)*time,'旋轮运行时旋转');
   }
@@ -445,9 +447,13 @@ export function validateParameterAnimations(value:unknown,sceneKind?:SceneDocume
   return{...p,...(edge?{edgeEasing:edge}:{})};
  });
 }
-export type SourceParticleActionFamily='surface'|'attractor'|'perlin'|'symmetry'|'symmetry-parameters'|'map-parameters';
-export function sourceParticleActionFamily(scene:SceneDocument):SourceParticleActionFamily|undefined{return usesSourceMapParameters(scene)?'map-parameters':usesSourceSymmetryParameters(scene)?'symmetry-parameters':usesSourcePerlin(scene)?'perlin':usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':usesSourceSymmetryGradient(scene)?'symmetry':undefined;}
+export type SourceParticleActionFamily='implicit'|'surface'|'attractor'|'perlin'|'symmetry'|'symmetry-parameters'|'map-parameters';
+export function sourceParticleActionFamily(scene:SceneDocument):SourceParticleActionFamily|undefined{return usesSourceImplicitCpuMesh(scene)?'implicit':usesSourceMapParameters(scene)?'map-parameters':usesSourceSymmetryParameters(scene)?'symmetry-parameters':usesSourcePerlin(scene)?'perlin':usesSourceSurfaceGeometry(scene)?'surface':usesSourceAttractor(scene)?'attractor':usesSourceSymmetryGradient(scene)?'symmetry':undefined;}
 export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:SceneDocument['kind'],schedule?:SceneDocument['timeline']['schedule'],sourceFamily?:SourceParticleActionFamily):void{
+ if(Array.isArray(track.actions))for(const action of track.actions){if(action?.implicitParameters!==undefined){
+  if(sourceFamily!=='implicit'||schedule!=='ordinary-camera-sequence-v1'||track.type!=='animate'||!['paramStart','paramStop'].includes(action.method)||['parameters','domainParameters','surfaceParameters','perlinParameters','samilaParameters','mapParameters','symmetryParameters','sourceEffect'].some(key=>action[key as keyof AnimationAction]!==undefined))throw Error('隐式源参数不能混用其他参数模型');
+  parseSourceImplicitParameterActions(action.implicitParameters,action.method as 'paramStart'|'paramStop');
+ }}
  if(schedule===DOMAIN_SCENE_SEQUENCE){if(sceneKind!=='domain')throw Error('域着色源队列仅用于域着色作品');validateSourceDomainTrack(track);return;}
  if(schedule===FRACTAL_SCENE_SEQUENCE){if(sceneKind!=='fractal')throw Error('源分形队列仅用于分形作品');validateSourceFractalTrack(track);return;}
  if(track.fractalSource!==undefined)throw Error('源分形动作缺少对应队列');
@@ -471,6 +477,7 @@ export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:Scene
  if(track.orientation!==undefined){if(!track.orientation||typeof track.orientation!=='object'||Array.isArray(track.orientation)||Object.keys(track.orientation).some(key=>!['theta','phi','gamma'].includes(key))||Object.values(track.orientation).some(value=>typeof value!=='number'||!Number.isFinite(value)))throw new Error('相机对齐目标无效');}
  if(track.parameterClock!==undefined&&!['elapsed','eased'].includes(track.parameterClock)||track.replaceParameters!==undefined&&typeof track.replaceParameters!=='boolean')throw new Error('参数时钟配置无效');
  if(track.parameterAnimations!==undefined)track.parameterAnimations=validateParameterAnimations(track.parameterAnimations,sceneKind);
+
  if(track.actions!==undefined){if(!Array.isArray(track.actions)||track.actions.length>64)throw new Error('片段动作无效');for(const action of track.actions){if(!action||typeof action!=='object')throw new Error('动画动作无效');if(action.mapParameters!==undefined||sourceFamily==='map-parameters'&&['paramStart','paramStop'].includes(action.method)){if(sourceFamily!=='map-parameters'||!['paramStart','paramStop'].includes(action.method)||action.parameters!==undefined||action.symmetryParameters!==undefined||action.domainParameters!==undefined||action.surfaceParameters!==undefined||action.perlinParameters!==undefined||action.samilaParameters!==undefined)throw Error('Map 源参数不能混用其他参数模型');parseSourceMapParameterActions(action.mapParameters,action.method as 'paramStart'|'paramStop');}if(action.symmetryParameters!==undefined||sourceFamily==='symmetry-parameters'&&['paramStart','paramStop'].includes(action.method)){if(sourceFamily!=='symmetry-parameters'||!['paramStart','paramStop'].includes(action.method)||action.parameters!==undefined||action.domainParameters!==undefined||action.surfaceParameters!==undefined||action.perlinParameters!==undefined||action.samilaParameters!==undefined)throw Error('Symmetry 源参数不能混用其他参数模型');parseSourceSymmetryParameterActions(action.symmetryParameters,action.method as 'paramStart'|'paramStop');}if(action.surfaceParameters!==undefined||sourceSurface&&['paramStart','paramStop'].includes(action.method)){if(!sourceSurface||!['paramStart','paramStop'].includes(action.method)||action.parameters!==undefined||action.domainParameters!==undefined)throw new Error('曲面源参数动作不能混用其他参数模型');parseSourceSurfaceParameterActions(action.surfaceParameters,action.method as 'paramStart'|'paramStop');}if(action.parameters!==undefined)action.parameters=validateParameterAnimations(action.parameters,sceneKind);if(action.domainParameters!==undefined){if(action.parameters!==undefined)throw new Error('域参数注册表不能同时声明旧参数振荡');action.domainParameters=validateDomainParameterActions(action.domainParameters,action.method,sceneKind,easingCurve);}if(action.gradient!==undefined){
   // Authored full-scene configuration has one contract even while its clip is
   // disabled. Camera-only markers retain the older generic validation rules.
@@ -715,7 +722,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
     if(scene.sourceCamera&&isCameraAction(item.method))return;
     if (item.enabled === false || !supportsCameraAction(scene,item.method)&&isCameraAction(item.method)) return;
     if (!ACTIONS.some(([name]) => name === item.method)) throw new Error(`未知动画动作 ${item.method}`);
-    if((usesSourceSymmetryParameters(scene)||usesSourceMapParameters(scene))&&(item.method==='paramStart'||item.method==='paramStop'))return;
+    if((usesSourceImplicitCpuMesh(scene)||usesSourceSymmetryParameters(scene)||usesSourceMapParameters(scene))&&(item.method==='paramStart'||item.method==='paramStop'))return;
     if(item.domainParameters)return; // The group registry owner handles these together.
     if(usesSourceSymmetryGradient(scene)&&(item.method==='gradientStart'||item.method==='gradientStop'))return;
     const baseline = evaluate(track.start), initial = angles(baseline), method = item.method;
@@ -869,6 +876,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
 }
 
 export function createAnimationTrack(scene: SceneDocument, type: AnimationClipType = 'numeric', start = 0): AnimationTrack {
+  if(usesSourceImplicitCpuMesh(scene)&&!['wait','animate','align'].includes(type))throw Error('隐式源队列只支持等待、动作组合和对齐');
   if(usesSourceDomain(scene)){if(!['wait','animate'].includes(type))throw Error('域着色源队列只支持等待和动作组合');return{id:crypto.randomUUID(),type,target:type==='wait'?'timeline.wait':'camera.actions',from:0,to:0,start:0,duration:1,easing:'sine-in-out',pingPong:false,enabled:true,...(type==='animate'?{actions:[{id:crypto.randomUUID(),method:'domainRotate',enabled:true,args:{speed:.2}}]}:{})};}
   if(usesSourceFractal(scene)){
     if(!['wait','animate','fractal_zoom'].includes(type))throw Error('源分形只支持等待、动画和目标缩放');

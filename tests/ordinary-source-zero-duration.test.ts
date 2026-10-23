@@ -3,7 +3,7 @@ import type {AnimationAction,AnimationTrack} from '../src/types';
 import {RootsSceneClock,type RootsSceneClip} from '../src/engine/rootsSceneClock';
 import {evaluateOrdinarySourceCameraTimeline as evaluate,resolveOrdinarySourceCameraTimeline as layout} from '../src/engine/ordinarySourceCameraTimeline';
 import {SourceGradientRuntime,type SourceGradientAction,type SourceGradientConfiguration} from '../src/engine/sourceGradientRuntime';
-import {SourceSurfaceParameterRuntime,type SourceSurfaceParameterAction} from '../src/engine/sourceSurfaceParameterRuntime';
+import {SourceOscillatingParameterRuntime,type SourceOscillatingParameterAction} from '../src/engine/sourceOscillatingParameterRuntime';
 import {sourceEase} from '../src/engine/sourceEasing';
 import type {SourceCameraScalars} from '../src/engine/sourceCamera';
 import {parseProjectFile} from '../src/engine/legacyImport';
@@ -159,10 +159,10 @@ describe('source gradient and parameter callbacks admit recoverable NaN',()=>{
   runtime.begin([{kind:'start',config}]);runtime.interpolate(NaN,false);
   expect(()=>runtime.update(.25)).toThrow('非有限');
  });
- const start:SourceSurfaceParameterAction={kind:'start',scope:{kind:'named',name:'a'},configuration:{min:-1,max:1,step:.1}};
- const stop:SourceSurfaceParameterAction={kind:'stop',scope:{kind:'all'}};
+ const start:SourceOscillatingParameterAction={kind:'start',scope:{kind:'named',name:'a'},configuration:{min:-1,max:1,step:.1}};
+ const stop:SourceOscillatingParameterAction={kind:'stop',scope:{kind:'all'}};
  function parameters(){
-  const writes:number[]=[],runtime=new SourceSurfaceParameterRuntime({read:()=>0,write:(_name,value)=>writes.push(value),reserve:()=>{}});
+  const writes:number[]=[],runtime=new SourceOscillatingParameterRuntime({read:()=>0,write:(_name,value)=>writes.push(value),reserve:()=>{}});
   return{runtime,writes,scale:()=>runtime.snapshot().entries[0]?.scale};
  }
  it.each(golden.surfaceParameterScales)('restores parameter scales duration=$duration dt=$activeDt',row=>{

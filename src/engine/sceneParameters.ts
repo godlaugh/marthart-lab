@@ -26,8 +26,9 @@ export function parameterTimelineReferences(scene:Pick<SceneDocument,'timeline'>
     }
     continue; // Reserved color targets do not depend on same-named formula uniforms.
    }
-   if(action.symmetryParameters){
-    for(const operation of action.symmetryParameters)if(operation.scope.kind==='named')add('parameters.'+operation.scope.name,track.enabled,action.method==='paramStop'?'stop':'value');
+   const registry=action.implicitParameters??action.symmetryParameters;
+   if(registry){
+    for(const operation of registry)if(operation.scope.kind==='named')add('parameters.'+operation.scope.name,track.enabled,action.method==='paramStop'?'stop':'value');
     continue; // Native ignores action-level enabled and keeps exact source names.
    }
    const enabled=track.enabled&&action.enabled!==false;if(action.method==='paramStart')ranges(action.parameters,enabled);if(action.method==='paramStop')add(action.args?.target,enabled,'stop');

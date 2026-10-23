@@ -5,7 +5,7 @@ import {prepareSourceSurfaceColors} from './sourceSurfaceColor';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
 import type {OrdinaryCameraParticleFrame,OrdinaryCameraTargetRequest} from './ordinarySourceCameraTimeline';
 import type {SourceGradientAction} from './sourceGradientRuntime';
-import type {SourceSurfaceParameterAction,SourceSurfaceParameterConfiguration} from './sourceSurfaceParameterRuntime';
+import type {SourceOscillatingParameterAction,SourceOscillatingParameterConfiguration} from './sourceOscillatingParameterRuntime';
 
 export interface SourceSurfaceGpuPointFrame {
  readonly model:'surface-gpu-points-1.7.8';
@@ -53,9 +53,9 @@ export class SourceSurfaceGpuPoints {
  setRecordingTrails(enabled:boolean){this.tracking.setRecordingTrails(enabled);}
  beginGradientActions(actions:readonly SourceGradientAction[]){this.tracking.beginGradientActions(actions);}
  interpolateGradientActions(eased:number,finished:boolean){this.tracking.interpolateGradientActions(eased,finished);}
- beginParameterActions(actions:readonly SourceSurfaceParameterAction[]){this.tracking.beginParameterActions(actions);}
+ beginParameterActions(actions:readonly SourceOscillatingParameterAction[]){this.tracking.beginParameterActions(actions);}
  interpolateParameterActions(eased:number,finished:boolean){this.tracking.interpolateParameterActions(eased,finished);}
- beginParameterClip(parameters:readonly ({name:string}&SourceSurfaceParameterConfiguration)[]){this.tracking.beginParameterClip(parameters);}
+ beginParameterClip(parameters:readonly ({name:string}&SourceOscillatingParameterConfiguration)[]){this.tracking.beginParameterClip(parameters);}
  finishParameterClip(){this.tracking.finishParameterClip();}
  retire(){this.tracking.retire();}
  snapshot():{frame:SourceSurfaceGpuPointFrame;diagnostics:string[]}{

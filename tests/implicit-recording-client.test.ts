@@ -11,7 +11,7 @@ const draw=vi.hoisted(()=>({created:0,disposed:0,fail:false,frames:[] as number[
 // Numerical production Worker and real transfers; browser verification covers native drawing.
 vi.mock('../src/engine/renderGeometryRecording',()=>({GeometryRecordingRenderer:class{
  constructor(private scene:unknown,private size:{width:number;height:number}){draw.created++;}
- async render(output:Extract<SceneOutput,{type:'geometry'}>,cancelled:()=>boolean){draw.frames.push(output.implicitRecording!.displayFrame);await draw.gate;if(cancelled())throw Error('cancelled');if(draw.fail){draw.fail=false;throw Error('draw failed');}return{type:'raster',width:this.size.width,height:this.size.height,pixels:new Uint8ClampedArray(this.size.width*this.size.height*4),stats:output.stats,implicitRecording:output.implicitRecording,sourceCameraFrame:output.sourceCameraFrame,formulaPresentation:output.formulaPresentation};}
+ async render(output:Extract<SceneOutput,{type:'geometry'}>,cancelled:()=>boolean){draw.frames.push(output.implicitRecording!.displayFrame);await draw.gate;if(cancelled())throw Error('cancelled');if(draw.fail){draw.fail=false;throw Error('draw failed');}return{type:'raster',width:this.size.width,height:this.size.height,pixels:new Uint8ClampedArray(this.size.width*this.size.height*4),stats:output.stats,implicitRecording:output.implicitRecording,sourceImplicitParameters:output.sourceImplicitParameters,sourceCameraFrame:output.sourceCameraFrame,formulaPresentation:output.formulaPresentation};}
  dispose(){draw.disposed++;}
 }}));
 let worker:{onmessage?:(e:MessageEvent<GenerationRequest>)=>void;postMessage:(r:GenerationResponse,o:{transfer:Transferable[]})=>void},port:Transport,corrupt:((r:GenerationResponse)=>void)|undefined;
@@ -132,7 +132,7 @@ describe('Implicit queue handoff',()=>{
 });
 
 describe('Implicit capture identity admission',()=>{
- it.each(['scene','frame','viewport','live','formula'] as const)('rejects corrupt capture %s before drawing',async kind=>{
+ it.each(['scene','frame','viewport','live','formula','parameters'] as const)('rejects corrupt capture %s before drawing',async kind=>{
   const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options),stop=await f.generator.finishSourceRecording(start.handle,1000);
   await f.generator.setImplicitPaused(stop.preview,true,2000);
   await expect(f.generator.captureImplicitPaused({...stop.preview},{width:65,height:49})).rejects.toMatchObject({previewRetained:false});
@@ -140,6 +140,7 @@ describe('Implicit capture identity admission',()=>{
   corrupt=r=>{
    if(r.operation!=='implicit-paused-capture'||'error' in r)return;
    if(kind==='scene')r.result.scene.timeline.fps=4;
+   if(kind==='parameters')r.result.capture.sourceImplicitParameters={model:'implicit-registry-1.7.8',values:{unexpected:1}};
    if(kind==='frame')r.result.capture.sourceCameraFrame={...r.result.capture.sourceCameraFrame!,camera:{...r.result.capture.sourceCameraFrame!.camera,phi:r.result.capture.sourceCameraFrame!.camera.phi+1}};
    if(kind==='viewport')r.result.capture.sourceCameraFrame={...r.result.capture.sourceCameraFrame!,viewport:{...r.result.capture.sourceCameraFrame!.viewport,logicalWidth:33}};
    if(kind==='live')r.result.capture.implicitLive!.sessionId='foreign';
