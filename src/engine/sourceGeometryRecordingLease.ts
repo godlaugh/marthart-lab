@@ -1,3 +1,5 @@
+import {sameSourceRecordingValue as same} from './sourceRecordingValue';
+import {validateSourceImplicitLiveContext} from './sourceImplicitLive';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {validSourceImplicitOutput,implicitCameraFrame,assertSourceImplicitRecordingFrame,type ImplicitCameraFrame} from './sourceImplicitResponse';
 import type {GenerationInput,SceneDocument,SceneOutput,FormulaPresentation} from '../types';
@@ -13,12 +15,6 @@ import type {GeometryRecordingRenderer} from './renderGeometryRecording';
 import type {SourceDrawingRequest} from './sourceDrawingPixels';
 import type {SourceSurfaceLiveFacts} from './sourceSurfaceLiveSession';
 type Geometry=Extract<SceneOutput,{type:'geometry'}>;
-function same(a:unknown,b:unknown):boolean {
- if(Object.is(a,b))return true;
- if(!a||!b||typeof a!=='object'||typeof b!=='object'||Array.isArray(a)!==Array.isArray(b))return false;
- const left=a as Record<string,unknown>,right=b as Record<string,unknown>,keys=Object.keys(left);
- return keys.length===Object.keys(right).length&&keys.every(key=>Object.hasOwn(right,key)&&same(left[key],right[key]));
-}
 /** Labels/layout stay fixed during this recording; the final transition is a
  * delivered frame fact validated against the numerical producer separately. */
 function annotations(value:FormulaPresentation|undefined):FormulaPresentation|undefined {
@@ -32,20 +28,20 @@ export class SourceGeometryRecordingLease {
  readonly size:ReturnType<typeof sourceRecordingSize>;readonly options:SourceRecordingOptions;
  readonly primary:GenerationInput;readonly sceneId:string;readonly constructions:number;
  clock?:SourceQueueRecordingClock;scene?:SceneDocument;
- private readonly implicit:boolean;private readonly anchor?:SceneDocument;private lastImplicit?:ImplicitCameraFrame;
+ private readonly implicit:boolean;private readonly anchor?:SceneDocument;private lastImplicit?:ImplicitCameraFrame;private implicitSessionId?:string;
  private formulas?:FormulaPresentation;private pending?:Geometry;private last?:SourceSurfaceLiveFacts;
  private attempt?:{index:number;rate:number};private next=1;private warmupDelivered=false;
  private renderer?:GeometryRecordingRenderer;private stopping=false;private drawing=false;
  constructor(scene:SceneDocument,input:GenerationInput,output:Geometry,options:SourceRecordingOptions,private readonly signal?:AbortSignal){
   this.implicit=usesSourceImplicitCpuMesh(scene);this.anchor=this.implicit?structuredClone(scene):undefined;
-  if((this.implicit?!validSourceImplicitOutput(output,input):!validSourceSurfacePresentation(output,input)||!usesSourceSurfaceGeometry(scene))||output.sourceCameraFrame?.viewport.target!=='primary')throw Error('几何录制需要已完成的源主预览');
+  if((this.implicit?!validSourceImplicitOutput(output,input,true):!validSourceSurfacePresentation(output,input)||!usesSourceSurfaceGeometry(scene))||output.sourceCameraFrame?.viewport.target!=='primary')throw Error('几何录制需要已完成的源主预览');
   const actualFrameRate=rate(options.actualFrameRate);
   if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('曲面录制模拟帧率必须为 1–120 的整数');
   this.options={...options,actualFrameRate};this.size=sourceRecordingSize(options,input.sourcePointPixelDensity??1);
   this.primary=snapshotGenerationInput(input);this.sceneId=scene.id;this.constructions=this.implicit?0:output.surfaceLive!.constructions+1;
  }
  private context(input:GenerationInput):boolean {
-  if(this.implicit){if(!input)return false;const {time:_,...a}=input,{time:__,...b}=this.primary;return same(a,b);}
+  if(this.implicit){if(!input)return false;const {time:_,implicitLive:__,...a}=input,{time:___,implicitLive:____,...b}=this.primary;return same(a,b);}
   const a=input?.surfaceLive,b=this.primary.surfaceLive;
   return !!a&&!!b&&a.sessionId===b.sessionId&&a.revision===b.revision&&a.clock?.paused===false&&a.startAt===undefined&&a.configuration===undefined&&input.width===this.primary.width&&input.height===this.primary.height&&input.quality===this.primary.quality&&input.sourcePointPixelDensity===this.primary.sourcePointPixelDensity&&same(input.sourceViewport,this.primary.sourceViewport);
  }
@@ -68,7 +64,7 @@ export class SourceGeometryRecordingLease {
  acceptStart(start:SourceRecordingWireStart):void {
   if(this.drawing||this.clock)throw Error('曲面录制重复起始响应');
   if(start?.scene?.formulas?.layout==='source-surface-centered-v1'&&start.warmup?.formulaPresentation?.layout!=='source-surface-centered-v1')throw Error('曲面录制公式布局无效');
-  if(this.implicit){if(!same(start?.scene,this.anchor)||!same(start.context,this.primary))throw Error('隐式录制起始配置或主预览身份无效');}
+  if(this.implicit){if(!same(start?.scene,this.anchor)||!this.context(start.context)||start.context.time!==this.primary.time)throw Error('隐式录制起始配置或主预览身份无效');validateSourceImplicitLiveContext(start.context.implicitLive!);if(start.context.implicitLive!.clock.paused||!Object.is(start.context.implicitLive!.actualFrameRate,this.options.actualFrameRate))throw Error('隐式录制继续播放状态无效');this.implicitSessionId=start.context.implicitLive!.sessionId;}
   else if(!start?.scene||start.scene.id!==this.sceneId||!usesSourceSurfaceGeometry(start.scene)||!this.context(start.context)||start.context.time!==0||!Object.is(rate(start.context.surfaceLive!.actualFrameRate),this.options.actualFrameRate))throw Error('曲面录制起始配置或主预览身份无效');
   if(!validSourceQueueRecordingClock(start.clock,this.options.simulationFps))throw Error('曲面录制完成规划无效');
   this.frame(start.warmup,0,this.options.actualFrameRate!,start.clock);
@@ -104,6 +100,8 @@ export class SourceGeometryRecordingLease {
   const output=stop?.preview;
   if(this.implicit){
    if(!same(stop?.scene,this.anchor)||!this.context(stop.context)||!validSourceImplicitOutput(output,stop.context)||output.implicitRecording!==undefined)throw Error('隐式录制停止响应身份无效');
+   validateSourceImplicitLiveContext(stop.context.implicitLive!);
+   if(stop.context.implicitLive!.clock.paused||this.implicitSessionId&&stop.context.implicitLive!.sessionId!==this.implicitSessionId)throw Error('隐式录制停止继续播放身份无效');
    const frame=implicitCameraFrame(output),confirmed=this.lastImplicit?.frameIndex??0,possible=this.attempt?.index??confirmed;
    if(stop.context.time!==frame.sceneTime||(frame.frameIndex!==confirmed&&frame.frameIndex!==possible)||frame.rawDt!==Math.fround(1/Math.fround(this.options.simulationFps)))throw Error('隐式录制停止响应增加了未知更新');
    if(this.lastImplicit&&frame.frameIndex===confirmed){const {viewport:_,...a}=frame,{viewport:__,...b}=this.lastImplicit;if(!same(a,b))throw Error('隐式录制停止改变了已确认数值帧');}

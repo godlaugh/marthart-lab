@@ -393,15 +393,16 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
   if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');
   if(context.rootsLive!==undefined){
     if(!usesRootsNativePresentation(scene))throw Error('复根实时上下文需要完整源复根场景');
-    if([context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.perlinLive,context.fractalRecording].some(v=>v!==undefined))throw Error('一次生成只能拥有一个实时或录制时钟');
+    if([context.implicitLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.perlinLive,context.fractalRecording].some(v=>v!==undefined))throw Error('一次生成只能拥有一个实时或录制时钟');
   }
   if(context.perlinLive!==undefined){
     if(!scene.perlinSource||scene.kind!=='perlin')throw Error('Perlin 实时上下文需要完整源 Perlin 场景');
-    if([context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.fractalRecording].some(value=>value!==undefined))throw Error('一次生成只能拥有一个 Perlin 实时或录制时钟');
+    if([context.implicitLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.fractalRecording].some(value=>value!==undefined))throw Error('一次生成只能拥有一个 Perlin 实时或录制时钟');
   }
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
     if(context.rootsLive!==undefined){owner.select(scene,context);return owner.rootsNative.generate(scene,context);}
+    if(context.implicitLive!==undefined){owner.select(scene,context);return owner.sourceImplicit.generateContinuation(scene,context);}
     if(context.surfaceLive!==undefined){owner.select(scene,context);return owner.sourceSurface.generate(scene,context);}
     if(context.domainLive!==undefined){owner.select(scene,context);return owner.sourceDomain.generate(scene,context);}
     if(context.fractalLive!==undefined){owner.select(scene,context);return owner.sourceFractal.generate(scene,context);}

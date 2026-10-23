@@ -1,3 +1,4 @@
+import {implicitCameraFrame} from './sourceImplicitResponse';
 import {validSourceQueueRecordingClock} from './sourceRecordingClock';
 import {assertRootsLiveRecordingFrame} from './sourceRootsRecordingLease';
 import type {SourceSurfacePausedCaptureResult} from './sourceSurfaceCapture';
@@ -30,6 +31,7 @@ interface GeneratorPort {
   setSymmetryPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSamilaPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   updateSurfaceParameter?(output:SceneOutput,name:string,value:number):Promise<void>;
+  setImplicitPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setSurfacePaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setRootsPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setPerlinPaused?(output:SceneOutput,paused:boolean):Promise<void>;
@@ -78,9 +80,9 @@ function metadataContext(context:Context):Context {
   if(context.fractalLive){const {configuration:_,actualFrameRate:__,...live}=context.fractalLive;return {...context,time:0,fractalLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   return (context.samilaLive?.clock||context.symmetryLive||context.mapLive)?{...context,time:0}:context;
 }
-type LiveKey='rootsLive'|'perlinLive'|'surfaceLive'|'samilaLive'|'symmetryLive'|'mapLive'|'fractalLive'|'domainLive';
-const playbackMethods={rootsLive:'setRootsPaused',perlinLive:'setPerlinPaused',surfaceLive:'setSurfacePaused',samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused',domainLive:'setDomainPaused'} as const;
-const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='roots'&&request.context.rootsLive?'rootsLive':request.scene.kind==='perlin'&&request.context.perlinLive?'perlinLive':request.scene.kind==='surface'&&request.context.surfaceLive?'surfaceLive':request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
+type LiveKey='implicitLive'|'rootsLive'|'perlinLive'|'surfaceLive'|'samilaLive'|'symmetryLive'|'mapLive'|'fractalLive'|'domainLive';
+const playbackMethods={implicitLive:'setImplicitPaused',rootsLive:'setRootsPaused',perlinLive:'setPerlinPaused',surfaceLive:'setSurfacePaused',samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused',domainLive:'setDomainPaused'} as const;
+const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='implicit'&&request.context.implicitLive?'implicitLive':request.scene.kind==='roots'&&request.context.rootsLive?'rootsLive':request.scene.kind==='perlin'&&request.context.perlinLive?'perlinLive':request.scene.kind==='surface'&&request.context.surfaceLive?'surfaceLive':request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
 const liveIdentity=(request:Request)=>liveKey(request)==='surfaceLive'?'surface-retained':liveKey(request)==='domainLive'?'domain-retained':liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {controller:AbortController;request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
@@ -157,7 +159,7 @@ export class GenerationQueue {
     const request=this.latest,cached=this.completedLive;
     // Metadata edits rebind the exact completed capability, without a draw.
     // The owner supplies the render identity; transport facts must also match.
-    if(cached&&liveKey(request)!=='rootsLive'&&liveKey(request)!=='perlinLive'&&!request.parameterWrites?.length&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
+    if(cached&&liveKey(request)!=='implicitLive'&&liveKey(request)!=='rootsLive'&&liveKey(request)!=='perlinLive'&&!request.parameterWrites?.length&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
       this.completedLive={request,output:cached.output};
       this.callbacks.output(cached.output,this.outputTime(cached.output,request),request.scene);this.callbacks.busy(false);return;
     }
@@ -178,7 +180,7 @@ export class GenerationQueue {
       if(!current())throw new DOMException('实时参数会话已更换','AbortError');
       return !surfaceEdit&&request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
-    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.implicitLive||request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
       if(current()&&cached&&liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError&&error.previewRetained){
         // Keep the rejected document as the author's draft, but return this
         // request's applied context to the owner-confirmed completed version.
@@ -193,7 +195,7 @@ export class GenerationQueue {
     });
   }
   private outputTime(output:SceneOutput,request:Request):number{
-    const fallback=output.temporal?.time??request.context.time;
+    const fallback=output.implicitLive?implicitCameraFrame(output).sceneTime:output.temporal?.time??request.context.time;
     return output.type==='raster'?(output.rootsLive?.sceneTime??output.perlinLive?.sceneTime??output.domainLive?.sceneTime??output.fractalLive?.sceneTime??output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:fallback)):fallback;
   }
  /** Ordered input events lease the completed live owner. A document edit or
@@ -237,6 +239,7 @@ export class GenerationQueue {
  }
   /** A transport transition waits for the running display and then owns the
    * completed source. It never renders an extra display or uses an old UI frame. */
+  setImplicitPaused(paused:boolean):Promise<void>{return this.setLivePaused('implicitLive',paused);}
   setSurfacePaused(paused:boolean):Promise<void>{return this.setLivePaused('surfaceLive',paused);}
   setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
   setMapPaused(paused:boolean):Promise<void>{return this.setLivePaused('mapLive',paused);}
@@ -420,7 +423,7 @@ export class GenerationQueue {
           // live session or seek time after the runtime has been rebuilt.
           // Fractal author identity remains in the UI. Runtime/presentation
           // comes from the retained owner, including after an unsubmitted edit.
-          if(fractal||domain||surface||sameRoots)stop={...stop,scene:latest?.scene??owner.request.scene};
+          if(fractal||domain||surface||sameRoots||stop.context.implicitLive&&latest?.scene===owner.request.scene)stop={...stop,scene:latest?.scene??owner.request.scene};
           if(samePerlin&&latest&&latest.scene!==owner.request.scene){
             // Perlin auto-applies new edits. Recording resets a hot backend to
             // the applied constructor and changes FPS; an unchanged queued
@@ -434,7 +437,7 @@ export class GenerationQueue {
           const nextFractal=fractal&&queued&&queued.revision>fractal.revision?{...fractal,revision:queued.revision,intent:queued.intent,configuration:queued.configuration}:fractal;
           const nextDomain=domain&&queuedDomain?{...domain,viewport:queuedDomain.viewport,actualFrameRate:queuedDomain.actualFrameRate,...(queuedDomain.revision>domain.revision?{revision:queuedDomain.revision,configuration:queuedDomain.configuration}:{})}:domain;
           const nextSurface=surface&&queuedSurface?{...surface,actualFrameRate:queuedSurface.actualFrameRate,...(queuedSurface.revision>surface.revision?{revision:queuedSurface.revision,configuration:queuedSurface.configuration,startAt:queuedSurface.startAt}:{})}:surface;
-          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:perlin}:stop.context);
+          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,implicitLive:latest?.scene===owner.request.scene?stop.context.implicitLive:latest?.context.implicitLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:perlin}:stop.context);
           this.latest=expected={scene:stop.scene,context};
           if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);

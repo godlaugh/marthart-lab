@@ -81,6 +81,7 @@ type IteratedPlaybackRequest={ [Operation in IteratedPlaybackOperation]:{operati
 type PausedCaptureRequest={ [Operation in PausedCaptureOperation]:{operation:Operation;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5} }[PausedCaptureOperation];
 export type GenerationRequest = { sessionId: number } & (
   | {operation:'surface-navigation';id:number;sourceId:number;event:import('./sourceViewportNavigation').SourceViewportNavigationEvent}
+  | {operation:'implicit-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'surface-parameter';id:number;sourceId:number;name:string;value:number}
   | {operation:'surface-paused-capture';id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5}
@@ -99,7 +100,7 @@ export type GenerationRequest = { sessionId: number } & (
   | PausedCaptureRequest
   | {operation:'source-recording-begin';id:number;sourceId:number;options:SourceRecordingOptions}
   | {operation:'source-recording-frame';id:number;recordingId:number;displayFrame:number;actualFrameRate?:number}
-  | {operation:'source-recording-finish';id:number;recordingId:number}
+  | {operation:'source-recording-finish';id:number;recordingId:number;timestampMs?:number}
   | { operation: 'search-stable'; id: number; scene: SceneDocument; options: StableSearchOptions }
   | { operation: 'spirograph-recording-plan'; id:number; scene:SceneDocument; startFrame:number; fps:number }
   | { operation: 'fractal-recording-plan'; id:number; scene:SceneDocument; simulationFps:number; encoderFps:number }
@@ -108,6 +109,7 @@ export type GenerationRequest = { sessionId: number } & (
   | { operation: 'explore-complex'; id: number; scene: SceneDocument; options: ComplexExploreOptions });
 export type GenerationPayload =
   | {operation:'surface-navigation';id:number;sourceId:number;output:SceneOutput}
+  | {operation:'implicit-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;frame:import('./ordinarySourceCameraTimeline').OrdinarySourceCameraFrame}
   | {operation:'surface-parameter';id:number;sourceId:number}
   | {operation:'surface-paused-capture';id:number;sourceId:number;result:import('./sourceSurfaceCapture').SourceSurfaceCapturePreparation}

@@ -1,4 +1,5 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
+import {implicitCameraFrame} from '../src/engine/sourceImplicitResponse';
 import {Generator} from '../src/engine/client';
 import {GenerationQueue} from '../src/engine/generationQueue';
 import {parseProjectFile} from '../src/engine/legacyImport';
@@ -64,5 +65,68 @@ describe('Implicit public recording client',()=>{
   queue.request(f.scene,f.context,0);await vi.waitFor(()=>expect(outputs).toHaveLength(1));let completion:unknown;const frames:number[]=[];
   await queue.recordSource(outputs[0],f.options,{actualFrameRate:()=>12,frame:async(o,index)=>{expect(o.implicitRecording?.displayFrame).toBe(index+1);frames.push(index);},shouldStop:()=>frames.length===1,complete:async(_s,c)=>{completion=c;}});
   expect(frames).toEqual([0]);expect(completion).toEqual({reason:'manual-stop',encodedFrames:1,lastDisplayFrame:1});expect(restored).toMatchObject({context:{time:.5},preview:{type:'geometry'}});expect(draw.disposed).toBe(1);queue.dispose();
+ });
+});
+
+
+describe('Implicit owned continuation through public client',()=>{
+ it('continues at wall-clock deltas, pauses without updating, then resumes from the new baseline',async()=>{
+  const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options);
+  await f.generator.nextSourceRecordingFrame(start.handle,1,12);
+  const stop=await f.generator.finishSourceRecording(start.handle,1000);
+  const live=(paused:boolean,timestampMs:number)=>({...stop.context,time:99,implicitLive:{...stop.context.implicitLive!,actualFrameRate:23,clock:{paused,timestampMs}}});
+  const next=await f.generator.generate(stop.scene,live(false,1125));
+  expect(next.sourceCameraFrame).toMatchObject({frameIndex:2,sceneTime:.625,rawDt:.125});
+  expect(next.implicitLive).toMatchObject({paused:false,renderKind:'update',clockSource:'injected',actualFrameRate:23});
+  expect(stop.scene.timeline.fps).toBe(30);
+  await f.generator.setImplicitPaused(next,true,5000);
+  const paused=await f.generator.generate(stop.scene,live(true,9000));
+  expect(paused.sourceCameraFrame).toMatchObject({frameIndex:2,sceneTime:.625});
+  expect(paused.sourceCameraFrame?.camera).toEqual(next.sourceCameraFrame?.camera);
+  expect(paused.implicitLive?.renderKind).toBe('snapshot');
+  await f.generator.setImplicitPaused(paused,false,10000);
+  const resumed=await f.generator.generate(stop.scene,live(false,10125));
+  expect(resumed.sourceCameraFrame).toMatchObject({frameIndex:3,sceneTime:.75,rawDt:.125});
+  const again=await f.generator.beginSourceRecording(resumed,f.options);
+  expect(again.warmup.implicitRecording?.displayFrame).toBe(0);
+  await f.generator.finishSourceRecording(again.handle);f.generator.dispose();
+ });
+ it.each(['session','scene','pause'] as const)('rejects an unowned continuation: %s',async kind=>{
+  const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options),stop=await f.generator.finishSourceRecording(start.handle,1000);
+  const scene=structuredClone(stop.scene),context=structuredClone(stop.context);
+  if(kind==='session')context.implicitLive!.sessionId='foreign';
+  else if(kind==='scene')scene.timeline.fps=17;
+  else context.implicitLive!.clock.paused=true;
+  await expect(f.generator.generate(scene,context)).rejects.toThrow();expect(port.terminated).toBe(true);f.generator.dispose();
+ });
+ it('retires continuation when returning to an ordinary authored preview',async()=>{
+  const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options),stop=await f.generator.finishSourceRecording(start.handle,1000);
+  await f.generator.generate(f.scene,f.context);
+  await expect(f.generator.generate(stop.scene,stop.context)).rejects.toThrow('继续播放');f.generator.dispose();
+ });
+ it('continues after a cancelled drawing without inheriting its cancellation',async()=>{
+  const f=await setup(),abort=new AbortController(),start=await f.generator.beginSourceRecording(f.output,f.options,abort.signal);
+  abort.abort();const stop=await f.generator.finishSourceRecording(start.handle,1000);
+  const output=await f.generator.generate(stop.scene,{...stop.context,implicitLive:{...stop.context.implicitLive!,clock:{paused:false,timestampMs:1125}}});
+  expect(output.sourceCameraFrame).toMatchObject({frameIndex:1,sceneTime:.375});f.generator.dispose();
+ });
+});
+
+
+describe('Implicit queue handoff',()=>{
+ it.each([false,true])('preserves author identity and resumes a deferred viewport, deferred=%s',async deferred=>{
+  const f=await setup(),outputs:{output:SceneOutput;time:number;scene:typeof f.scene}[]=[],errors:Error[]=[];let stopped:import('../src/engine/generationProtocol').SourceRecordingStop|undefined;
+  const queue=new GenerationQueue(f.generator,{busy:()=>{},error:e=>errors.push(e),output:(output,time,scene)=>outputs.push({output,time,scene}),recordingStopped:s=>{stopped=s;}});
+  queue.request(f.scene,f.context);await vi.waitFor(()=>expect(outputs).toHaveLength(1));
+  let delivered=0;await queue.recordSource(outputs[0].output,f.options,{actualFrameRate:()=>12,frame:async()=>{delivered++;if(deferred)queue.request(f.scene,{...f.context,width:600,height:600,sourceViewport:ordinarySourceViewport(f.scene,300,300,'primary',486)});},shouldStop:()=>delivered===1});
+  if(deferred)await vi.waitFor(()=>expect(outputs.at(-1)?.output.sourceCameraFrame?.viewport.logicalWidth).toBe(300));
+  expect(stopped?.scene).toBe(f.scene);
+  if(!stopped)throw Error('missing stop');
+  const context={...stopped.context,implicitLive:{...stopped.context.implicitLive!,clock:{paused:false,timestampMs:2000}}};
+  queue.request(f.scene,context);await vi.waitFor(()=>expect(outputs.at(-1)?.output.implicitLive?.renderKind).toBe('update'));
+  const rendered=outputs.at(-1)!;expect(rendered.time).toBe(implicitCameraFrame(rendered.output).sceneTime);expect(rendered.scene).toBe(f.scene);
+  await queue.setImplicitPaused(true);
+  queue.request(f.scene,{...context,implicitLive:{...context.implicitLive,clock:{paused:true,timestampMs:9000}}});await vi.waitFor(()=>expect(outputs.at(-1)?.output.implicitLive?.renderKind).toBe('snapshot'));
+  expect(outputs.at(-1)?.time).toBe(rendered.time);expect(errors).toEqual([]);queue.dispose();
  });
 });

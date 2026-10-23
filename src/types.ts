@@ -340,6 +340,7 @@ export interface Preset {
   document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedDomainScene" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
 }
 export interface GeometryOutput {
+  implicitLive?:import('./engine/sourceImplicitLive').SourceImplicitLiveFacts;
   implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
   sourceImplicitMesh?:import('./engine/sourceImplicitMesh').SourceImplicitMesh;
   sourceImplicitPresentation?:import('./engine/sourceImplicitPresentation').SourceImplicitPresentation;
@@ -429,6 +430,7 @@ export interface RasterOutput {
   sourcePixelRenderer?:{backend:'webgl'}|{backend:'native';identity:string;generation:number;sequence:number;samples:number};
   rootsLive?:import('./engine/rootsLive').RootsLiveFacts;
   perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveFacts;
+  implicitLive?:import('./engine/sourceImplicitLive').SourceImplicitLiveFacts;
   implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
   /** Geometry recording readback retains its producing Surface facts. */
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveFacts;
@@ -536,6 +538,7 @@ export interface GenerateContext {
   /** Explicit runtime instance; omitted requests use cold fixed-frame replay. */
   perlinLive?:import('./engine/sourcePerlinLive').SourcePerlinLiveContext;
   samilaLive?:import('./engine/sourceSamilaSession').SourceSamilaLiveContext;
+  implicitLive?:import('./engine/sourceImplicitLive').SourceImplicitLiveContext;
   surfaceLive?:import('./engine/sourceSurfaceLiveSession').SourceSurfaceLiveContext;
   domainLive?:import('./engine/sourceDomainLiveSession').SourceDomainLiveContext;
   fractalLive?:import('./engine/sourceFractalLiveSession').SourceFractalLiveContext;
@@ -565,7 +568,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'|'rootsPixelDensity'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'implicitLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'|'rootsPixelDensity'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

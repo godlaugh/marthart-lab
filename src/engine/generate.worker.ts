@@ -1,3 +1,4 @@
+import type {GenerateContext} from '../types';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {resolveFormulaContent} from './formulas';
 import {planFractalFreshRecording} from './sourceFractalRecording';
@@ -118,6 +119,12 @@ self.onmessage = (
       completed={...source,context:{...source.context,rootsLive:{...live,clock:{...live.clock,paused:event.data.paused}}}};
       send({operation:'roots-playback',id,sourceId:source.id,paused:event.data.paused});return;
     }
+    if(event.data.operation==='implicit-playback'){
+      const source=completed;
+      if(!source||source.id!==event.data.sourceId||!source.context.implicitLive)throw Error('隐式播放控制对应的主预览已过期');
+      const context=temporalSession.sourceImplicit.setPaused(source.scene,source.context,event.data.paused,event.data.timestampMs);
+      completed={...source,context};send({operation:'implicit-playback',id,sourceId:source.id,paused:event.data.paused});return;
+    }
     if(event.data.operation==='perlin-playback'){
       const source=completed,live=source?.context.perlinLive;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='perlin'||!live||typeof event.data.paused!=='boolean'||!temporalSession.sourcePerlin.matchesCompletedPrimary(source.scene,source.context))throw Error('Perlin 播放控制对应的实时主预览已过期');
@@ -166,7 +173,8 @@ self.onmessage = (
       }
       // finishRecording mutates runtime ownership exactly once. If publication
       // fails, retain its result and completed preview for an explicit retry.
-      lease.finish??=lease.producer.finishRecording(lease.runtime.handle);
+      if(event.data.timestampMs!==undefined&&lease.producer!==temporalSession.sourceImplicit)throw Error('注入停止时钟仅支持隐式录制');
+      lease.finish??=lease.producer===temporalSession.sourceImplicit?lease.producer.finishRecording(lease.runtime.handle,event.data.timestampMs):lease.producer.finishRecording(lease.runtime.handle);
       if(lease.preview&&!lease.preview.storage.intact()&&'preview' in lease.finish){
         // The retained numerical handoff republishes detached buffers without
         // another update or host-clock reset, for raster and geometry owners.
@@ -266,14 +274,15 @@ self.onmessage = (
     const { context } = event.data;
     generationSource=context.fractalLive||context.surfaceLive?completed:undefined;
     completed=undefined;
-    const output = generateScene(scene, { ...context, onStatus: event.data.wantsStatus ? status => send({operation:'generate-status',id,status}) : undefined, onProgress: output => {
+    const executionContext = { ...context, onStatus: event.data.wantsStatus ? status => send({operation:'generate-status',id,status}) : undefined, onProgress: output => {
       output.dimension ??= definition(scene.kind).dimension;
       send({ operation: 'generate-progress', id, output }, outputBuffers(output));
-    } }, temporalSession);
+    } } satisfies GenerateContext;
+    const output = generateScene(scene, executionContext, temporalSession);
     output.dimension ??= definition(scene.kind).dimension;
     output.stats.elapsedMs = performance.now() - start;
-    if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary')temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
-    completed={id,scene,context};
+    if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary'&&!context.implicitLive)temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
+    completed={id,scene,context:context.implicitLive?executionContext:context};
     send({ operation: 'generate', id, output }, outputBuffers(output));
   } catch (error) {
     const message=error instanceof Error?error.message:String(error);

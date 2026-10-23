@@ -35,3 +35,30 @@ describe('Implicit numerical recording ownership',()=>{
   const replay=f.owner.finishRecording(start.handle);expect(replay.preview.positions).toEqual(stop.preview.positions);expect(replay.preview.sourceCameraFrame).toEqual(stop.preview.sourceCameraFrame);f.owner.reset();expect(()=>f.owner.finishRecording(start.handle)).toThrow('身份');
  });
 });
+
+
+describe('Implicit continuation failure ownership',()=>{
+ it('does not reset the stop baseline when re-materializing after a failed stop',()=>{
+  const f=setup(),start=f.owner.beginRecording(f.scene,f.context,f.options);
+  vi.spyOn(geometry,'generateImplicit').mockImplementationOnce(()=>{throw Error('stop readback');});
+  expect(()=>f.owner.finishRecording(start.handle,1000)).toThrow('stop readback');
+  const stop=f.owner.finishRecording(start.handle,2000);
+  const output=f.owner.generateContinuation(stop.scene,{...stop.context,implicitLive:{...stop.context.implicitLive!,clock:{paused:false,timestampMs:1125}}});
+  expect(output.sourceCameraFrame).toMatchObject({frameIndex:1,rawDt:.125,sceneTime:.375});
+  expect(()=>f.owner.finishRecording(start.handle)).toThrow('身份');f.owner.reset();
+ });
+ it('rejects a second clock before consuming a live update',()=>{
+  const f=setup(),start=f.owner.beginRecording(f.scene,f.context,f.options),stop=f.owner.finishRecording(start.handle,1000);
+  const context={...stop.context,implicitLive:{...stop.context.implicitLive!,clock:{paused:false,timestampMs:1125}}};
+  expect(()=>f.owner.generateContinuation(stop.scene,{...context,fractalRecording:{} as NonNullable<GenerateContext['fractalRecording']>})).toThrow('自身主视口');
+  expect(f.owner.generateContinuation(stop.scene,context).sourceCameraFrame).toMatchObject({frameIndex:1,sceneTime:.375});f.owner.reset();
+ });
+ it('invalidates continuation after an update whose geometry could not be delivered',()=>{
+  const f=setup(),start=f.owner.beginRecording(f.scene,f.context,f.options),stop=f.owner.finishRecording(start.handle,1000);
+  const context={...stop.context,implicitLive:{...stop.context.implicitLive!,clock:{paused:false,timestampMs:1125}}};
+  vi.spyOn(geometry,'generateImplicit').mockImplementationOnce(()=>{throw Error('live geometry');});
+  expect(()=>f.owner.generateContinuation(stop.scene,context)).toThrow('live geometry');
+  expect(f.owner.matchesCompletedPrimary(stop.scene,stop.context)).toBe(false);
+  expect(()=>f.owner.generateContinuation(stop.scene,context)).toThrow('原录制');f.owner.reset();
+ });
+});

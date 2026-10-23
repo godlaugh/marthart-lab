@@ -1,3 +1,6 @@
+import {SourceSceneHostClock} from './sourceSceneHostClock';
+import {sameSourceRecordingValue} from './sourceRecordingValue';
+import {validateSourceImplicitLiveContext,implicitObservedFrameRate} from './sourceImplicitLive';
 import type {GenerateContext,GenerationInput,SceneOutput,SceneDocument} from '../types';
 import type {SourceRecordingOptions} from './generationProtocol';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
@@ -16,27 +19,28 @@ export interface SourceImplicitRecordingFrame {
 }
 type GeometryOutput=Extract<SceneOutput,{type:'geometry'}>;
 type Primary={scene:SceneDocument;context:GenerationInput;anchor:SceneDocument;input:GenerationInput};
-type Recording={handle:object;author:SceneDocument;primary:GenerationInput;target:GenerationInput;clock:SourceQueueRecordingClock;queue:OrdinarySourceCameraTimelineSession;formulas:ReturnType<typeof resolveFormulaContent>;frame:OrdinarySourceCameraFrame;next:number;actualFrameRate:number;pending?:{frame:OrdinarySourceCameraFrame;actualFrameRate:number};finished?:{context:GenerationInput;frame:OrdinarySourceCameraFrame};cancel?:()=>boolean};
-const rate=(value:unknown)=>{if(typeof value!=='number'||!Number.isFinite(Math.fround(value)))throw Error('隐式录制需要独立观察的有限实际帧率');return Math.fround(value);};
+type Recording={handle:object;author:SceneDocument;primary:GenerationInput;target:GenerationInput;clock:SourceQueueRecordingClock;queue:OrdinarySourceCameraTimelineSession;formulas:ReturnType<typeof resolveFormulaContent>;frame:OrdinarySourceCameraFrame;next:number;actualFrameRate:number;pending?:{frame:OrdinarySourceCameraFrame;actualFrameRate:number};finished?:{context:GenerationInput;frame:OrdinarySourceCameraFrame};cancel?:()=>boolean;liveClock?:SourceSceneHostClock;liveFailed?:boolean};
+const rate=implicitObservedFrameRate;
 const check=(cancel?:()=>boolean)=>{if(cancel?.())throw new DOMException('隐式录制已取消','AbortError');};
 
-/** Owns only the numerical recording lifecycle. The Worker admits the exact
+/** Owns the numerical recording and its subsequent live continuation.
+ * The Worker admits the exact
  * completed primary request; no renderer or client can synthesize this lease.
  * Native drawing and encoded video delivery remain separate consumers. */
 export class SourceImplicitRecordingSession {
- private primary?:Primary;private recording?:Recording;private handoff?:Recording;private busy=false;
+ private primary?:Primary;private recording?:Recording;private handoff?:Recording;private continuation?:Recording;private busy=false;private cancel?:()=>boolean;
  admitPrimary(scene:SceneDocument,context:GenerationInput,output:GeometryOutput):void {
   if(this.recording||this.busy)throw Error('隐式录制期间不能替换主预览');
   if(!usesSourceImplicitCpuMesh(scene)||!output.sourceImplicitPresentation||!output.sourceCameraFrame||context.sourceViewport?.target!=='primary'||output.sourceCameraFrame.viewport.target!=='primary')throw Error('隐式录制需要已完成的 CPU 网格主预览');
   validateFrameFormulas(output.formulaPresentation,context.sourceViewport);
-  this.handoff?.queue.reset();this.handoff=undefined;
+  this.handoff?.queue.reset();this.continuation?.queue.reset();this.handoff=undefined;this.continuation=undefined;
   this.primary={scene,context,anchor:structuredClone(scene),input:snapshotGenerationInput(context)};
  }
  // These are Worker-owned object identities, not caller-provided IDs or JSON
  // equality; the anchor is copied before later requests can mutate its state.
  matchesCompletedPrimary(scene:SceneDocument,context:GenerationInput):boolean{return !this.recording&&this.primary?.scene===scene&&this.primary.context===context;}
  ownsRecording(handle:object):boolean{return this.recording?.handle===handle;}
- reset():void {this.recording?.queue.reset();this.handoff?.queue.reset();this.recording=undefined;this.handoff=undefined;this.primary=undefined;}
+ reset():void {this.recording?.queue.reset();this.handoff?.queue.reset();this.continuation?.queue.reset();this.recording=undefined;this.handoff=undefined;this.continuation=undefined;this.primary=undefined;}
  private display(record:Recording,frame:OrdinarySourceCameraFrame,context:GenerationInput,recording:boolean,actualFrameRate:number,cancel?:()=>boolean):GeometryOutput {
   check(cancel);const scene={...record.author,evaluatedSourceCamera:frame};
   const output=generateImplicit(scene,{...context,time:frame.sceneTime,isCancelled:cancel});check(cancel);
@@ -47,6 +51,7 @@ export class SourceImplicitRecordingSession {
    if(frame.frameIndex<0||frame.frameIndex>record.clock.lastDisplayFrame||frame.queueComplete!==(frame.frameIndex===record.clock.lastDisplayFrame)||frame.rawDt!==Math.fround(1/Math.fround(record.clock.simulationFps)))throw Error('隐式录制实际帧与队列完成规划不一致');
    output.implicitRecording={displayFrame:frame.frameIndex,simulationFps:record.clock.simulationFps,actualFrameRate,warmup:frame.frameIndex===0,complete:frame.queueComplete};
   }
+  if(!recording&&context.implicitLive){const live=record.liveClock!;output.implicitLive={sessionId:context.implicitLive.sessionId,paused:live.diagnostics().paused,clockSource:live.diagnostics().clockSource,actualFrameRate,renderKind:'snapshot'};}
   return output;
  }
  beginRecording(scene:SceneDocument,context:GenerateContext,options:SourceRecordingOptions){
@@ -62,25 +67,26 @@ export class SourceImplicitRecordingSession {
   const clock:SourceQueueRecordingClock={simulationFps:fps,warmupUpdates:1,updates,encodedFrames:updates-1,firstEncodedUpdate:updates>1?2:null,lastDisplayFrame:updates-1,completionReason:'animation-queue'};
   const primary=snapshotGenerationInput(this.primary!.input),density=primary.sourcePointPixelDensity;
   if(density===undefined||!Number.isFinite(density)||density<=0)throw Error('隐式录制缺少主预览像素密度');
+  primary.implicitLive={sessionId:crypto.randomUUID(),clock:{paused:false},actualFrameRate:observed};
   const size=sourceRecordingSize(options,density);
   // Implicit retained line width already incorporates the reference density.
   // Its offscreen camera/renderer contract uses physical pixels exactly once.
   const target:GenerationInput={...primary,time:0,quality:'export',width:size.width,height:size.height,sourceViewport:ordinarySourceViewport(author,size.width,size.height,'offscreen',primary.sourceViewport!.logicalHeight)};
-  const queue=new OrdinarySourceCameraTimelineSession(camera,author.timeline.tracks,fps,{isCancelled:context.isCancelled});this.busy=true;
+  const queue=new OrdinarySourceCameraTimelineSession(camera,author.timeline.tracks,fps,{isCancelled:()=>this.cancel?.()??false});this.busy=true;this.cancel=context.isCancelled;
   try{
    const frame=queue.step(Math.fround(1/Math.fround(fps)),{actualFrameRate:observed});
    const record:Recording={handle:Object.freeze({}),author,primary,target,clock,queue,formulas:resolveFormulaContent(author),frame,next:1,actualFrameRate:observed,cancel:context.isCancelled};
    const warmup=this.display(record,frame,target,true,observed,context.isCancelled);check(context.isCancelled);
-   this.handoff?.queue.reset();this.handoff=undefined;this.primary=undefined;this.recording=record;
+   this.handoff?.queue.reset();this.continuation?.queue.reset();this.continuation=undefined;this.handoff=undefined;this.primary=undefined;this.recording=record;
    return{handle:record.handle,scene:structuredClone(author),context:snapshotGenerationInput(primary),clock:{...clock},warmup};
-  }catch(error){queue.reset();throw error;}finally{this.busy=false;}
+  }catch(error){queue.reset();throw error;}finally{this.busy=false;this.cancel=undefined;}
  }
  nextRecordingFrame(handle:object,index:number,actualFrameRate?:number){
   const record=this.recording;
   if(this.busy||!record||record.handle!==handle||record.finished||index!==record.next||index>record.clock.lastDisplayFrame)throw Error('隐式录制身份或连续帧序号无效');
   const observed=rate(actualFrameRate);
   if(record.pending&&!Object.is(record.pending.actualFrameRate,observed))throw Error('隐式录制重试不能改变已消费的实际帧率');
-  this.busy=true;
+  this.busy=true;this.cancel=record.cancel;
   try{
    check(record.cancel);
    if(!record.pending){
@@ -89,19 +95,49 @@ export class SourceImplicitRecordingSession {
    }
    const output=this.display(record,record.pending.frame,record.target,true,observed,record.cancel);check(record.cancel);
    record.frame=record.pending.frame;record.actualFrameRate=observed;record.next++;record.pending=undefined;return output;
-  }finally{this.busy=false;}
+  }finally{this.busy=false;this.cancel=undefined;}
  }
- finishRecording(handle:object){
+ finishRecording(handle:object,timestampMs?:number){
   const record=this.recording??this.handoff;
   if(this.busy||!record||record.handle!==handle)throw Error('隐式录制结束身份无效');
   this.busy=true;
   try{
    // Stop does not update or inherit cancellation. A failed/detached
    // publication re-materializes the same numerical frame and fresh buffers.
-   record.finished??={frame:record.pending?.frame??record.frame,context:{...snapshotGenerationInput(record.primary),time:(record.pending?.frame??record.frame).sceneTime}};
+   if(!record.finished){
+    const frame=record.pending?.frame??record.frame,context={...snapshotGenerationInput(record.primary),time:frame.sceneTime};
+    const observed=record.pending?.actualFrameRate??record.actualFrameRate;context.implicitLive={...context.implicitLive!,actualFrameRate:observed};
+    record.liveClock=new SourceSceneHostClock(false,frame.camera);record.liveClock.resetTime(timestampMs);record.finished={frame,context};record.frame=frame;record.actualFrameRate=observed;
+   }
    const {frame,context}=record.finished,preview=this.display(record,frame,context,false,record.pending?.actualFrameRate??record.actualFrameRate);
-   this.primary={scene:record.author,context,anchor:structuredClone(record.author),input:snapshotGenerationInput(context)};this.recording=undefined;this.handoff=record;
+   this.primary={scene:record.author,context,anchor:structuredClone(record.author),input:snapshotGenerationInput(context)};this.recording=undefined;this.handoff=record;this.continuation=record;
    return{scene:record.author,context,preview};
-  }finally{this.busy=false;}
+  }finally{this.busy=false;this.cancel=undefined;}
  }
+ private continued(scene:SceneDocument,context:GenerationInput):Recording {
+  const record=this.continuation,live=context.implicitLive;validateSourceImplicitLiveContext(live!);
+  if(this.recording||this.busy||!record||record.liveFailed||record.primary.implicitLive?.sessionId!==live!.sessionId||!sameSourceRecordingValue(scene,record.author))throw Error('隐式继续播放需要原录制持有的场景，不能重建或套用到其它配置');
+  if(context.sourceViewport?.target!=='primary'||context.domainLive||context.surfaceLive||context.fractalLive||context.perlinLive||context.rootsLive||context.samilaLive||context.mapLive||context.symmetryLive||context.fractalRecording)throw Error('隐式继续播放只接受自身主视口');
+  record.liveClock!.assertPaused(live!.clock.paused);return record;
+ }
+ generateContinuation(scene:SceneDocument,context:GenerateContext):GeometryOutput {
+  const record=this.continued(scene,context),live=context.implicitLive!,observed=rate(live.actualFrameRate);check(context.isCancelled);this.busy=true;this.cancel=context.isCancelled;this.primary=undefined;this.handoff=undefined;
+  try{
+   const snapshot=live.clock.paused;
+   const frame=snapshot?record.queue.display():record.queue.step(record.liveClock!.update(live.clock),{actualFrameRate:observed});
+   record.frame=frame;record.actualFrameRate=observed;
+   const output=this.display(record,frame,context,false,observed,context.isCancelled);output.implicitLive!.renderKind=snapshot?'snapshot':'update';
+   this.primary={scene,context,anchor:structuredClone(record.author),input:snapshotGenerationInput(context)};return output;
+  }catch(error){record.liveFailed=true;throw error;}finally{this.busy=false;this.cancel=undefined;}
+ }
+ setPaused(scene:SceneDocument,context:GenerationInput,paused:boolean,timestampMs?:number){
+  if(!this.matchesCompletedPrimary(scene,context))throw Error('隐式暂停控制需要当前已完成的主预览');
+  const record=this.continued(scene,context),clock=record.liveClock!;
+  const restore=clock.setPaused(paused,record.frame.camera,timestampMs);if(restore)record.queue.writeAngles(restore);
+  record.frame=record.queue.snapshot();this.handoff=undefined;
+  const next={...context,implicitLive:{...context.implicitLive!,clock:{...context.implicitLive!.clock,paused}}};
+  this.primary={scene,context:next,anchor:structuredClone(record.author),input:snapshotGenerationInput(next)};
+  return next;
+ }
+
 }
