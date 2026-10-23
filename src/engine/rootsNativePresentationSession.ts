@@ -179,7 +179,7 @@ export class RootsNativePresentationSession {
   }catch(error){this.reset([error]);throw error;}
  }
  private requestKey(scene:SceneDocument,c:GenerateContext):string {
-  return rootsGpuInput(()=>numericIdentity(c.rootsLive?[rootsPresentationRequestIdentity(scene,c.rootsLive.sessionId),scene,c.rootsLive.maximumWorkers]:[rootsPresentationRequestIdentity(scene,c.rootsSessionId),scene]));
+  return rootsGpuInput(()=>numericIdentity(c.rootsLive?[rootsPresentationRequestIdentity(scene,c.rootsLive.sessionId),scene,c.rootsLive.maximumWorkers,c.rootsPixelDensity]:[rootsPresentationRequestIdentity(scene,c.rootsSessionId),scene]));
  }
  private displayPeak(plan:PreparedRootsProjection):number {
   return plan.mode==='density'
@@ -266,7 +266,7 @@ export class RootsNativePresentationSession {
   if(!c.rootsLive||!this.matchesCompletedPrimary(scene,c))throw Error('复根录制需要最后成功的实时主预览');
   rootsGpuCancel(c.isCancelled);
   if(!options||!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('复根录制帧率必须为 1–120 的整数');
-  const last=this.completed!,size=sourceRecordingSize(options,last.plan.pixelRatio);
+  const last=this.completed!,size=sourceRecordingSize(options,c.rootsPixelDensity??NaN);
   if(c.width!==last.plan.physicalWidth||c.height!==last.plan.physicalHeight||c.rootsViewport?.target==='offscreen')throw Error('复根录制主视口与最后成功预览不一致');
   const input=snapshotGenerationInput(c);
   const descriptorBytes=2*descriptorRepresentationBytes(scene)+4*descriptorRepresentationBytes(input);
@@ -327,6 +327,7 @@ export class RootsNativePresentationSession {
  private runLive(scene:SceneDocument,c:GenerateContext,operation?:{kind:'recording';simulationFps:number;displayFrame:number;descriptorBytes:number}|{kind:'snapshot'}):RootsRasterOutput {
   const started=performance.now();validateRasterRequest(c);rootsGpuCancel(c.isCancelled);
   const live=validateRootsLiveContext(c.rootsLive);
+  if(c.rootsPixelDensity!==undefined&&(!Number.isSafeInteger(c.rootsPixelDensity)||c.rootsPixelDensity<1))throw Error('复根显示像素密度必须为正整数');
   if(!usesRootsNativePresentation(scene)||!usesRootsNativeMath(scene)||scene.settings.rootsMode!=='progressive'||!usesRootsCameraTimeline(scene))throw Error('复根实时预览需要完整源数学、显示和相机队列');
   if(!Number.isFinite(c.time))throw Error('复根预览请求时间无效');
   const timeline=prepareRootsCameraTimeline(scene),pending=scene.rootsPresentation!.pending;

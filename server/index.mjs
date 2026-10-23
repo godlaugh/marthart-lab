@@ -137,7 +137,8 @@ export async function createExportServer(options={}){
   return ()=>{req.off('aborted',cancelled);res.off('close',cancelled);};
  }
  function finish(s,finalFrames){
-  // expected remains the admitted planned maximum. Once sealed, the exact
+  // expected is the planned maximum or explicit null for observed completion.
+  // frameLimit always enforces admitted resource capacity. Once sealed, the exact
   // accepted PNG prefix owns the encoder and every retry of its finalization.
   if(s.finalFrames!==undefined&&s.finalFrames!==finalFrames)throw new HttpError(409,'导出已封定其它完成帧数');
   if(s.status==='complete')return Promise.resolve(s.result);
@@ -227,8 +228,10 @@ export async function createExportServer(options={}){
    if((input.inputWidth===undefined)!==(input.inputHeight===undefined)||![inputWidth,inputHeight].every(Number.isSafeInteger)||inputWidth<1||inputHeight<1||inputWidth>16384||inputHeight>16384)throw new HttpError(400,'输入帧尺寸无效');
    if(input.quality!==undefined&&(input.profile!=='mathart'||!Object.hasOwn(mathartQuality,input.quality)))throw new HttpError(400,'视频质量无效');
    if(input.profile!==undefined&&(input.profile!=='mathart'||format!=='mp4'))throw new HttpError(400,'视频编码配置无效');
-   if(!Object.hasOwn(formats,format)||![width,height,fps,frames].every(Number.isSafeInteger)||width<16||height<16||width>7680||height>4320||width%2||height%2||fps<1||fps>120||frames<1||frames>limits.maxFrames)throw new HttpError(400,'导出参数无效');
-   if(Math.max(width*height,inputWidth*inputHeight)>limits.maxPixels||Math.max(width*height,inputWidth*inputHeight)*frames>limits.maxFramePixels)throw new HttpError(413,'导出总像素数超过资源上限');
+   if(!Object.hasOwn(formats,format)||![width,height,fps].every(Number.isSafeInteger)||width<16||height<16||width>7680||height>4320||width%2||height%2||fps<1||fps>120||frames!==null&&(!Number.isSafeInteger(frames)||frames<1||frames>limits.maxFrames))throw new HttpError(400,'导出参数无效');
+   const framePixels=Math.max(width*height,inputWidth*inputHeight),capacity=Math.min(limits.maxFrames,Math.floor(limits.maxFramePixels/framePixels));
+   if(framePixels>limits.maxPixels||capacity<1||frames!==null&&frames>capacity)throw new HttpError(413,'导出总像素数超过资源上限');
+   const frameLimit=frames??capacity;
    if([...sessions.values()].filter(s=>['encoding','finishing'].includes(s.status)).length>=limits.maxActive)throw new HttpError(409,'已有两个导出任务，请先完成或取消');
    for(const [id,s] of sessions){if(sessions.size<limits.maxRecords)break;if(s.status==='complete'||s.cleaned)sessions.delete(id);}
    if(sessions.size>=limits.maxRecords)throw new HttpError(429,'导出任务记录达到上限');
@@ -238,12 +241,12 @@ export async function createExportServer(options={}){
    const codecArgs=encoderArguments(format,input.profile,scale,input.quality);
    let p;
    try{p=ownedSpawn(['-hide_banner','-loglevel','error','-nostdin','-y','-f','image2pipe','-vcodec','png','-framerate',String(fps),'-threads','2','-i','pipe:0','-an','-filter_threads','2','-filter_complex_threads','2',...codecArgs,'-threads','2','-fs',String(limits.maxOutputBytes),'-progress','pipe:3','-nostats',partial]);}catch(error){reservedBytes-=limits.maxOutputBytes;reservedFiles--;throw error;}
-   const s={id,file,partial,process:p,status:'encoding',format,width,height,inputWidth,inputHeight,fps,expected:frames,frames:0,encodedFrames:0,inputBytes:0,error:'',locked:false,reserved:limits.maxOutputBytes};sessions.set(id,s);
+   const s={id,file,partial,process:p,status:'encoding',format,width,height,inputWidth,inputHeight,fps,expected:frames,frameLimit,frames:0,encodedFrames:0,inputBytes:0,error:'',locked:false,reserved:limits.maxOutputBytes};sessions.set(id,s);
    const unwatch=disconnect(req,res,s);let progress='';
    p.child.stderr.on('data',chunk=>{s.error=(s.error+chunk.toString()).slice(-8000);});
    p.child.stdio[3].on('data',chunk=>{progress+=chunk.toString();let end;while((end=progress.indexOf('\n'))>=0){const line=progress.slice(0,end);progress=progress.slice(end+1);if(/^frame=\d+$/.test(line))s.encodedFrames=Number(line.slice(6));}progress=progress.slice(-4096);});
    p.exited.then(({code})=>{if(s.status==='encoding')void abort(s,'failed',s.error||`编码进程提前退出 (${code})`).catch(()=>{});});
-   try{await p.spawned;if(s.status!=='encoding'||res.destroyed)throw new HttpError(499,'客户端已断开');touch(s);json(res,201,{id});}catch(error){await abort(s,'failed',error.message);throw new HttpError(503,'无法启动 FFmpeg: '+error.message);}finally{unwatch();}
+   try{await p.spawned;if(s.status!=='encoding'||res.destroyed)throw new HttpError(499,'客户端已断开');touch(s);json(res,201,{id,...(frames===null?{expected:null,frameLimit}:{})});}catch(error){await abort(s,'failed',error.message);throw new HttpError(503,'无法启动 FFmpeg: '+error.message);}finally{unwatch();}
    return;
   }
   const match=url.pathname.match(new RegExp(`^/api/exports/(${uuidPattern})(?:/(frames|finish|file))?$`));
@@ -255,7 +258,7 @@ export async function createExportServer(options={}){
    return download(req,res,`${id}.${extension}`,formats[extension].mime);
   }
   if(!s)throw new HttpError(404,'导出任务不存在');
-  if(req.method==='GET'&&!action)return json(res,200,{id,status:s.status,frames:s.frames,expected:s.expected,locked:s.locked,finalFrames:s.finalFrames,...(s.status==='complete'?{url:s.result.url,bytes:s.result.bytes}:{}),error:s.status==='failed'?s.error:undefined});
+  if(req.method==='GET'&&!action)return json(res,200,{id,status:s.status,frames:s.frames,expected:s.expected,...(s.expected===null?{frameLimit:s.frameLimit}:{}),locked:s.locked,finalFrames:s.finalFrames,...(s.status==='complete'?{url:s.result.url,bytes:s.result.bytes}:{}),error:s.status==='failed'?s.error:undefined});
   if(req.method==='DELETE'&&!action){
    // A dialog can be cancelled/unmounted while the successful finish response
    // is still in flight. Conditional cleanup must not remove its completed file.
@@ -267,7 +270,8 @@ export async function createExportServer(options={}){
   if(req.method==='POST'&&action==='frames'){
    if(s.status!=='encoding')throw new HttpError(409,s.error||'任务已结束');
    if(mediaType(req)!=='image/png')throw new HttpError(415,'视频帧需要 image/png');
-   const index=url.searchParams.get('index');if(index===null||!/^\d+$/.test(index)||!Number.isSafeInteger(Number(index))||Number(index)!==s.frames||s.frames>=s.expected||s.locked)throw new HttpError(409,'帧顺序不匹配');
+   const index=url.searchParams.get('index');if(index===null||!/^\d+$/.test(index)||!Number.isSafeInteger(Number(index))||Number(index)!==s.frames||s.expected!==null&&s.frames>=s.expected||s.locked)throw new HttpError(409,'帧顺序不匹配');
+   if(s.frames>=s.frameLimit)throw new HttpError(413,'录制帧数达到资源上限，请停止并保存已接收帧');
    s.locked=true;clearIdle(s);const unwatch=disconnect(req,res,s);
    try{return await withUpload(req,limits.maxFrameBytes,async bytes=>{
     const size=pngSize(bytes);if(size.width!==s.inputWidth||size.height!==s.inputHeight)throw new HttpError(400,'PNG 帧尺寸不匹配');
@@ -285,7 +289,7 @@ export async function createExportServer(options={}){
     if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>key!=='finalFrames'))throw new HttpError(400,'完成参数无效');
    }
    const finalFrames=input.finalFrames===undefined?s.expected:input.finalFrames;
-   if(!Number.isSafeInteger(finalFrames)||finalFrames<1||finalFrames>s.expected)throw new HttpError(400,'完成帧数必须在计划帧数范围内');
+   if(!Number.isSafeInteger(finalFrames)||finalFrames<1||finalFrames>s.frameLimit)throw new HttpError(400,'完成帧数必须明确给出并在容量范围内');
    // Upload, cancellation and another finish may have changed the session
    // while this body was arriving. Recheck and seal at the owning boundary.
    return json(res,200,await finish(s,finalFrames));

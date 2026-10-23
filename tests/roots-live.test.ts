@@ -12,8 +12,8 @@ const live={sessionId:'source-roots',maximumWorkers:4,clock:{paused:true,timesta
 describe('explicit live roots boundary',()=>{
  it('rejects invalid authority, capacity and clock inputs before starting workers',()=>{
   for(const value of [null,{}, {...live,sessionId:' '},{...live,maximumWorkers:0},{...live,maximumWorkers:Infinity},{...live,clock:{paused:1}},{...live,clock:{paused:true,timestampMs:NaN}}])expect(()=>validateRootsLiveContext(value)).toThrow();
-  const copy=snapshotGenerationInput({time:0,width:10,height:10,quality:'preview',rootsLive:structuredClone(live)});
-  expect(copy.rootsLive).toEqual(live);expect(copy.rootsLive?.clock).not.toBe(live.clock);
+  const copy=snapshotGenerationInput({time:0,width:10,height:10,quality:'preview',rootsPixelDensity:2,rootsLive:structuredClone(live)});
+  expect(copy.rootsPixelDensity).toBe(2);expect(copy.rootsLive).toEqual(live);expect(copy.rootsLive?.clock).not.toBe(live.clock);
  });
  it('rejects conflicting scene clocks before worker or GPU ownership',()=>{
   const scene=createScene(definitions.find(d=>d.kind==='roots')!);scene.rootsMath=createRootsNativeMath();scene.rootsPresentation=defaultRootsPresentationConfiguration();

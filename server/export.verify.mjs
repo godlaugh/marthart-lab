@@ -321,3 +321,17 @@ for(const [quality,preset,crf,tune] of [['low','veryfast','28'],['medium','mediu
  const actual=path.join(s.root,`${id}.mp4`),probe=async file=>JSON.parse((await exec('ffprobe',['-v','error','-count_frames','-show_entries','stream=width,height,nb_read_frames,pix_fmt,color_range,color_space,color_transfer,color_primaries','-of','json',file])).stdout).streams[0],a=await probe(actual),r=await probe(reference);assert.deepEqual(a,r);
  const decode=async file=>(await exec('ffmpeg',['-v','error','-i',file,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{encoding:'buffer',maxBuffer:2*1024**2})).stdout;assert.deepEqual(await decode(actual),await decode(reference));evidence.push({quality,decodedRawReferenceEqual:true,...a});await stop(s.app);
 });
+
+for(const format of ['mp4','webm','gif'])test(`observed ${format} requires an explicit final count and preserves every actual frame`,async()=>{
+ const s=await service(),created=await create(s,{frames:null,format});assert.equal(created.expected,null);assert.ok(created.frameLimit>=3);const {id}=created;
+ await finish(s,id,undefined,400);await finish(s,id,0,400);
+ for(const [i,bytes]of[red,blue,red].entries())await frame(s,id,i,bytes);
+ await finish(s,id,2,409);const result=await finish(s,id,3),state=await request(s,`/api/exports/${id}`);assert.equal(state.expected,null);assert.equal(state.frameLimit,created.frameLimit);assert.equal(state.finalFrames,3);assert.deepEqual(await finish(s,id,3),result);
+ const {stdout}=await exec('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames','-of','json',path.join(s.root,`${id}.${format}`)]);const video=JSON.parse(stdout).streams[0];assert.equal(Number(video.nb_read_frames),3);assert.equal(video.width,64);assert.equal(video.height,48);evidence.push({observed:true,format,...video});await stop(s.app);
+});
+test('observed recording enforces pixel capacity independently from unknown completion',async()=>{
+ const s=await service({limits:{maxFrames:10,maxFramePixels:64*48*2}}),{id,frameLimit}=await create(s,{frames:null});assert.equal(frameLimit,2);
+ await frame(s,id,0);await frame(s,id,1,blue);await frame(s,id,2,red,413);assert.equal((await request(s,`/api/exports/${id}`)).frames,2);
+ assert.equal((await finish(s,id,2)).frames,2);
+ await request(s,'/api/exports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({width:64,height:48,inputWidth:128,inputHeight:96,fps:6,frames:null,format:'mp4'})},413);await stop(s.app);
+});

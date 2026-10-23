@@ -5,7 +5,7 @@ import type {GenerationInput} from '../types';
 const fields:{[K in keyof GenerationInput]-?:true}={
  time:true,quality:true,width:true,height:true,
  sourceBouncingFrame:true,sourceBouncingView:true,spirographFrame:true,
- rootsViewport:true,sourceViewport:true,sourcePointPixelDensity:true,
+ rootsPixelDensity:true,rootsViewport:true,sourceViewport:true,sourcePointPixelDensity:true,
  samilaPrimaryPixelHeight:true,sourceMapToneReference:true,sourceSymmetryToneReference:true,perlinLive:true,samilaLive:true,mapLive:true,symmetryLive:true,fractalLive:true,domainLive:true,surfaceLive:true,domainTarget:true,fractalPixelDensity:true,sourcePerlinViewport:true,fractalViewport:true,fractalRecording:true,rootsSessionId:true,rootsLive:true,
 };
 export function snapshotGenerationInput(context:GenerationInput):GenerationInput {

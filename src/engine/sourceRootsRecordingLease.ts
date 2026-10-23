@@ -30,17 +30,21 @@ export class SourceRootsRecordingLease {
  private clock?:SourceObservedRecordingClock;
  private readonly recordingFormulas:ReturnType<typeof presentFormulas>;private readonly primaryFormulas:ReturnType<typeof presentFormulas>;
  constructor(scene:SceneDocument,input:GenerationInput,output:Raster,options:SourceRecordingOptions){
-  if(!validRootsLiveOutput(output,input)||output.rootsPresentation?.target!=='primary')throw Error('复根录制需要实时主预览');
+  // A playback acknowledgement updates the current control state without
+  // repainting the completed-image capability. Validate that image against
+  // its observed pause state, while retaining the acknowledged input below.
+  const displayed=input.rootsLive&&output.rootsLive?{...input,rootsLive:{...input.rootsLive,clock:{...input.rootsLive.clock,paused:output.rootsLive.paused}}}:input;
+  if(!validRootsLiveOutput(output,displayed)||output.rootsPresentation?.target!=='primary')throw Error('复根录制需要实时主预览');
   if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('复根录制帧率必须为 1–120 的整数');
   this.primary={...snapshotGenerationInput(input),rootsViewport:{logicalWidth:output.rootsPresentation.logicalSize[0],logicalHeight:output.rootsPresentation.logicalSize[1],referenceLogicalHeight:output.rootsPresentation.referenceLogicalHeight,target:'primary'}};this.scene=structuredClone(scene);this.options={...options};this.hasAnimations=prepareRootsCameraTimeline(scene).clips.length>0;this.priorInstance=output.rootsPresentation.instance;
-  this.size=sourceRecordingSize(options,output.width/output.rootsPresentation.logicalSize[0]);
+  this.size=sourceRecordingSize(options,input.rootsPixelDensity??NaN);
   const content=resolveFormulaContent(this.scene),viewport=this.primary.rootsViewport!;
   this.primaryFormulas=presentFormulas(content,rootsFormulaViewport(viewport));
   this.recordingFormulas=presentFormulas(content,rootsFormulaViewport({...viewport,logicalWidth:this.size.logicalWidth,logicalHeight:this.size.logicalHeight,target:'offscreen'}));
  }
  private context(input:GenerationInput):boolean {
   const a=input?.rootsLive,b=this.primary.rootsLive;
-  return !!a&&!!b&&a.sessionId===b.sessionId&&a.maximumWorkers===b.maximumWorkers&&a.clock?.paused===false&&input.width===this.primary.width&&input.height===this.primary.height&&input.quality===this.primary.quality&&same(input.rootsViewport,this.primary.rootsViewport);
+  return !!a&&!!b&&a.sessionId===b.sessionId&&a.maximumWorkers===b.maximumWorkers&&a.clock?.paused===false&&input.width===this.primary.width&&input.height===this.primary.height&&input.quality===this.primary.quality&&input.rootsPixelDensity===this.primary.rootsPixelDensity&&same(input.rootsViewport,this.primary.rootsViewport);
  }
  private frame(output:SceneOutput,index:number,clock:SourceRecordingClock):asserts output is Raster {
   assertRootsLiveRecordingFrame(output,clock,index);

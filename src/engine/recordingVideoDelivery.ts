@@ -3,7 +3,7 @@ import type {ExportSessionTicket} from './exportSessionCleanup';
 interface VideoResult {url:string;frames:number;}
 interface VideoState {
  id:string;status:'encoding'|'finishing'|'complete'|'failed'|'cancelled';
- frames:number;expected:number;locked:boolean;finalFrames?:number;url?:string;error?:string;
+ frames:number;expected:number|null;frameLimit?:number;locked:boolean;finalFrames?:number;url?:string;error?:string;
 }
 type ResponseData=Pick<Response,'ok'|'status'|'json'>;
 type Fetcher=(url:string,init:RequestInit)=>Promise<ResponseData>;
@@ -21,9 +21,12 @@ export class RecordingVideoDelivery {
  private acknowledged=0;
  private finalFrames?:number;
  private busy=false;
- constructor(private readonly ticket:ExportSessionTicket,private readonly expected:number,private readonly signal:AbortSignal,
+ private readonly expected:number|null;private readonly frameLimit:number;
+ constructor(private readonly ticket:ExportSessionTicket,expected:number|{expected:null;frameLimit:number},private readonly signal:AbortSignal,
   private readonly recover:(error:Error)=>Promise<void>,private readonly fetcher:Fetcher=(url,init)=>fetch(url,init),private readonly timeoutMs=60000){
-  if(!Number.isSafeInteger(expected)||expected<1)throw Error('录制计划需要至少一个编码帧');
+  const dynamic=typeof expected==='object'&&expected!==null;
+  this.expected=dynamic?expected.expected:expected;this.frameLimit=dynamic?expected.frameLimit:expected;
+  if(dynamic&&expected.expected!==null||!Number.isSafeInteger(this.frameLimit)||this.frameLimit<1)throw Error('录制需要有效的计划帧数或明确容量');
  }
  private check(){if(this.signal.aborted)throw new DOMException('导出已取消','AbortError');}
  private async request(suffix:string,init:RequestInit):Promise<unknown>{
@@ -44,7 +47,7 @@ export class RecordingVideoDelivery {
  private async state():Promise<VideoState>{
   let raw:unknown;try{raw=await this.request('',{method:'GET'});}catch(error){if(error instanceof HttpFailure&&error.status===404)throw new TerminalFailure(error.message);throw error;}
   const v=record(raw);
-  if(v.id!==this.ticket.id||v.expected!==this.expected||!Number.isSafeInteger(v.frames)||Number(v.frames)<0||Number(v.frames)>this.expected||typeof v.locked!=='boolean'||typeof v.status!=='string'||!['encoding','finishing','complete','failed','cancelled'].includes(v.status)||v.finalFrames!==undefined&&(!Number.isSafeInteger(v.finalFrames)||Number(v.finalFrames)<1||Number(v.finalFrames)>this.expected))throw Error('录制任务状态无效');
+  if(v.id!==this.ticket.id||v.expected!==this.expected||this.expected===null&&v.frameLimit!==this.frameLimit||!Number.isSafeInteger(v.frames)||Number(v.frames)<0||Number(v.frames)>this.frameLimit||typeof v.locked!=='boolean'||typeof v.status!=='string'||!['encoding','finishing','complete','failed','cancelled'].includes(v.status)||v.finalFrames!==undefined&&(!Number.isSafeInteger(v.finalFrames)||Number(v.finalFrames)<1||Number(v.finalFrames)>this.frameLimit))throw Error('录制任务状态无效');
   const state=v as unknown as VideoState;
   if(state.status==='failed'||state.status==='cancelled')throw new TerminalFailure(typeof state.error==='string'?state.error:'录制任务已失败或取消');
   return state;
@@ -80,7 +83,8 @@ export class RecordingVideoDelivery {
   }finally{this.busy=false;}
  }
  upload(blob:Blob,index:number):Promise<void>{return this.owned(async()=>{
-  if(this.finalFrames!==undefined||index!==this.acknowledged||index>=this.expected)throw Error('录制上传序号或完成状态无效');
+  if(this.finalFrames!==undefined||index!==this.acknowledged||this.expected!==null&&index>=this.expected)throw Error('录制上传序号或完成状态无效');
+  if(index>=this.frameLimit)throw new TerminalFailure('录制帧数达到资源上限，导出已取消');
   await this.perform(async()=>{
    const v=record(await this.request(`/frames?index=${index}`,{method:'POST',headers:{'content-type':'image/png'},body:blob}));
    if(v.frames!==index+1)throw Error('录制上传确认帧数不匹配');

@@ -514,6 +514,8 @@ export interface GenerateContext {
   sourceBouncingView?:SourceBouncingView;
   spirographFrame?:SpirographFrameRequest;
   rootsViewport?:RootsViewportRequest;
+  /** Measured primary display density; independent of downsampled Roots preview pixels. */
+  rootsPixelDensity?:number;
   sourceViewport?:SourceCameraViewport;
   /** Measured local primary renderer density; separate from source-app DPI evidence. */
   sourcePointPixelDensity?:number;
@@ -554,7 +556,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'|'rootsPixelDensity'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

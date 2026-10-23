@@ -24,11 +24,15 @@ try{
    const scene=parseLegacyScene(input).scene;scene.rootsMath.sampling.workerCount=kind.includes('four')?4:1;scene.rootsPresentation.pending={model:'roots-pending-ordinal-v1',maxSplatPointsPerFrame:7,referenceHeapBytes:0};
    if(kind==='cloud-four')scene.rootsPresentation.mode='point-cloud';
    if(['warmup','manual','abort','deferred'].includes(kind)){scene.rootsMath.sampling.sampleCount=1000000;scene.timeline.tracks=[{id:'wait',type:'wait',target:'timeline.wait',from:0,to:0,start:0,duration:kind==='warmup'?.001:60,easing:'linear',enabled:true,pingPong:false}];}
-   const ctx={time:0,width:96,height:72,quality:'preview',rootsViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:kind,maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
+   const ctx={time:0,width:96,height:72,quality:'preview',rootsPixelDensity:2,rootsViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:kind,maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
    const g=new Generator();let firstResolve,firstReject,latest,stop,callbackError,handle,count=0,last,warmup,completion,shouldStop=false,deferredOutput;
    const first=new Promise((r,j)=>{firstResolve=r;firstReject=j;}),queue=new GenerationQueue(g,{output:o=>{latest=o;firstResolve(o);if(o.type==='raster'&&o.width===100)deferredOutput=o;},error:e=>{callbackError=e;firstReject(e);},busy:()=>{},recordingStopped:s=>{stop=s;}});
    const signal=new AbortController();
    try{
+    // Preview without a measured display density remains valid; recording
+    // must reject it rather than infer DPI from preview downsampling.
+    const missing={...ctx};delete missing.rootsPixelDensity;
+    const unknown=await g.generate(scene,missing);let unknownRejected=false;try{await g.beginSourceRecording(unknown,{width:32,height:24,simulationFps:30});}catch(e){unknownRejected=e.previewRetained===true;}check(unknownRejected,'recording guessed unknown density');
     queue.request(scene,ctx);const initial=await first;await sleep();
     let invalid=false;try{await g.beginSourceRecording(initial,{width:32,height:24,simulationFps:0});}catch(e){invalid=e.previewRetained===true;}check(invalid,'invalid options did not retain preview');
     let failed;
@@ -82,7 +86,7 @@ try{
     };}
    };
    const g=new Generator(),scene=parseLegacyScene(input).scene;let start,failed;
-   const ctx={time:0,width:96,height:72,quality:'preview',rootsViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:'fault-'+fault,maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
+   const ctx={time:0,width:96,height:72,quality:'preview',rootsPixelDensity:2,rootsViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:'fault-'+fault,maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
    try{
     const before=await g.generate(scene,ctx);
     try{

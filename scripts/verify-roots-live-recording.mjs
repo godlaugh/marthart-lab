@@ -22,7 +22,7 @@ try{
   const results=[];
   for(const mode of ['density','point-cloud']){
    const scene=parseLegacyScene(input).scene;scene.rootsPresentation.mode=mode;scene.rootsPresentation.pending={model:'roots-pending-ordinal-v1',maxSplatPointsPerFrame:7,referenceHeapBytes:0};
-   const ctx={time:0,width:192,height:144,quality:'preview',rootsViewport:{logicalWidth:96,logicalHeight:72,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:'record-'+mode,maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
+   const ctx={time:0,width:192,height:144,quality:'preview',rootsPixelDensity:2,rootsViewport:{logicalWidth:96,logicalHeight:72,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:'record-'+mode,maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
    const owner=new RootsNativePresentationSession();
    try{
     let before;for(let i=0;i<2000;i++){before=owner.generate(scene,ctx);if(before.rootsLive.autoRecording.complete)break;await sleep();}
@@ -68,7 +68,7 @@ try{
   // A short animation owns completion even while a large sampling run remains.
   const scene=parseLegacyScene(input).scene;scene.rootsMath.sampling.sampleCount=1_000_000;scene.rootsPresentation.pending={model:'roots-pending-ordinal-v1',maxSplatPointsPerFrame:7,referenceHeapBytes:0};
   scene.timeline.tracks=[{id:'wait',type:'wait',target:'timeline.wait',from:0,to:0,start:0,duration:.001,easing:'linear',enabled:true,pingPong:false}];
-  const ctx={time:0,width:96,height:72,quality:'preview',rootsViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:'short-animation',maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
+  const ctx={time:0,width:96,height:72,quality:'preview',rootsPixelDensity:2,rootsViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:486,target:'primary'},rootsLive:{sessionId:'short-animation',maximumWorkers:4,clock:{paused:true,timestampMs:1000}}};
   const owner=new RootsNativePresentationSession();
   try{
    owner.generate(scene,ctx);const start=owner.beginRecording(scene,ctx,{width:32,height:24,simulationFps:30});

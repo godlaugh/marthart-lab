@@ -5,9 +5,9 @@ const id='11111111-1111-4111-8111-111111111111',url=`/api/exports/${id}/file`;
 const response=(v:unknown,status=200)=>new Response(JSON.stringify(v),{status});
 const state=(v:Record<string,unknown>={})=>({id,status:'encoding',expected:5,frames:0,locked:false,...v});
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
-function setup(fetcher:(url:string,init:RequestInit)=>Promise<Response>,recover=vi.fn(async()=>{})){
+function setup(fetcher:(url:string,init:RequestInit)=>Promise<Response>,recover=vi.fn(async()=>{}),expected:number|{expected:null;frameLimit:number}=5){
  const cleanup=vi.fn(async()=>new Response(null,{status:204})),owner=new ExportSessionCleanup(cleanup),ticket=owner.registerCreated(id),abort=new AbortController();
- return{delivery:new RecordingVideoDelivery(ticket,5,abort.signal,recover,fetcher),ticket,abort,cleanup,owner};
+ return{delivery:new RecordingVideoDelivery(ticket,expected,abort.signal,recover,fetcher),ticket,abort,cleanup,owner};
 }
 describe('retained recording delivery owns acknowledged frames across uncertain responses',()=>{
  it('reconciles an accepted upload without resending or regenerating it, then seals only the confirmed prefix',async()=>{
@@ -64,5 +64,24 @@ describe('retained recording delivery owns acknowledged frames across uncertain 
   const s=setup(fetcher,recover),upload=s.delivery.upload(new Blob(),0).catch(e=>e);await ready.promise;
   expect(s.ticket.pending).toBe(true);expect(s.cleanup).not.toHaveBeenCalled();expect(recover.mock.calls[0][0]).toMatchObject({message:'录制任务状态无效'});
   s.abort.abort();retry.resolve();expect(await upload).toMatchObject({name:'AbortError'});
+ });
+});
+
+describe('observed recording delivery',()=>{
+ it('requires an explicit unknown-total acknowledgement and finite resource capacity',()=>{
+  for(const expected of [{frameLimit:10},{expected:10,frameLimit:10},{expected:null,frameLimit:0},{expected:null,frameLimit:Infinity}])expect(()=>setup(vi.fn(),vi.fn(),expected as never)).toThrow('明确容量');
+ });
+ it('reconciles unknown-length uploads and seals an actual count below capacity',async()=>{
+  const fetcher=vi.fn().mockRejectedValueOnce(Error('lost upload')).mockResolvedValueOnce(response(state({expected:null,frameLimit:100,frames:1}))).mockRejectedValueOnce(Error('lost finish')).mockResolvedValueOnce(response(state({expected:null,frameLimit:100,frames:1,status:'complete',finalFrames:1,url})));
+  const recover=vi.fn(async()=>{}),s=setup(fetcher,recover,{expected:null,frameLimit:100});
+  await s.delivery.upload(new Blob(),0);expect(await s.delivery.finish(1)).toEqual({url,frames:1});expect(recover).not.toHaveBeenCalled();expect(s.ticket.pending).toBe(false);
+ });
+ it('does not turn a reached resource capacity into natural completion',async()=>{
+  const fetcher=vi.fn().mockResolvedValue(response({frames:1})),s=setup(fetcher,vi.fn(),{expected:null,frameLimit:1});
+  await s.delivery.upload(new Blob(),0);await expect(s.delivery.upload(new Blob(),1)).rejects.toThrow('资源上限');expect(fetcher).toHaveBeenCalledTimes(1);expect(s.cleanup).toHaveBeenCalledOnce();
+ });
+ it('rejects changed capacity during uncertain-response recovery',async()=>{
+  const recover=vi.fn(async()=>{throw Error('stop recovery');}),fetcher=vi.fn().mockRejectedValueOnce(Error('lost')).mockResolvedValueOnce(response(state({expected:null,frameLimit:99,frames:1}))),s=setup(fetcher,recover,{expected:null,frameLimit:100});
+  await expect(s.delivery.upload(new Blob(),0)).rejects.toThrow('stop recovery');expect(recover).toHaveBeenCalledWith(expect.objectContaining({message:'录制任务状态无效'}));expect(s.ticket.pending).toBe(true);await s.ticket.cleanup();
  });
 });

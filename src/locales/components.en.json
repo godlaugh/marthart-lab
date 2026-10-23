@@ -905,5 +905,9 @@
   "暂停动画后仍继续计算并画完剩余点；重新开始会清除当前画面。": "Pausing animation keeps computing and drawing remaining points. Restart clears the current image.",
   "此作品保留按时间顺序回放；启用后台实时采样会重新开始。": "This artwork uses sequential replay. Enabling background sampling starts a new run.",
   "复根后台采样与动画时钟独立；暂停后继续画完剩余点。返回起点会重新采样。离线视频按所选帧率顺序回放。": "Root sampling runs independently of animation. Pausing finishes the remaining points; returning to the start begins a new run. Offline video uses sequential replay at the selected frame rate.",
-  "后台实时采样请使用返回起点重新开始": "Use Return to start to restart background sampling."
+  "后台实时采样请使用返回起点重新开始": "Use Return to start to restart background sampling.",
+  "复根录制": "Roots recording",
+  "后台实时计算录制": "Live computation",
+  "已录制 {frames} 帧": "Frames recorded: {frames}",
+  "从当前配置重新计算，预热后录制；有动画时录到队列结束，无动画时等待全部点绘制完成。可随时停止并保存，保存后继续播放。": "Recompute the current configuration and record after warmup. Stop when the animation queue finishes, or after all points have been drawn when there is no animation. You can stop and save at any time; playback resumes after saving."
 }
