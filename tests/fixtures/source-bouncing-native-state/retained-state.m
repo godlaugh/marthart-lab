@@ -16,13 +16,18 @@ int main(int argc,const char **argv){@autoreleasepool{
   NSDictionary *config=[NSJSONSerialization JSONObjectWithData:file([prepared stringByAppendingPathComponent:@"prepared.json"]) options:0 error:NULL];INPUT(config!=nil,@"Invalid prepared config");NSDictionary *shaders=config[@"shaders"];SourceBouncingUpdate update=updateValues(config[@"update"]);
   createContext(&context);GLuint initialContextReferences=CGLGetContextRetainCount(context);NSMutableDictionary *frame;
   @autoreleasepool{
-   NSDictionary *parsed=parse(file([prepared stringByAppendingPathComponent:@"initial-frame.bin"]),NO);NSArray *commands=parsed[@"draws"];INPUT(commands.count>=1,@"Missing point command");NSDictionary *point=commands[0];INPUT([point[@"count"]unsignedIntValue]==[config[@"count"]unsignedIntValue]&&[point[@"flags"]unsignedIntValue]==24,@"Unexpected point command");
-   NSData *seed=point[@"attributes"][0][@"bytes"];state=[[SourceCglBouncingState alloc]initWithCount:[config[@"count"]unsignedIntValue]];[state prepareQuad:shaders[@"quad"] update:shaders[@"update"] vertex:shaders[@"vertex"] fragment:shaders[@"fragment"]];RUNTIME(CGLGetContextRetainCount(context)==initialContextReferences+1,@"State did not retain its context identity");
+   NSDictionary *parsed=parse(file([prepared stringByAppendingPathComponent:@"initial-frame.bin"]),NO);NSArray *commands=parsed[@"draws"];INPUT(commands.count>=1,@"Missing point command");NSDictionary *point=commands[0];INPUT([point[@"count"]unsignedIntValue]==[config[@"count"]unsignedIntValue]&&[point[@"flags"]unsignedIntValue]==56&&[point[@"attributes"]count]==0,@"Unexpected retained point command");
+   state=[[SourceCglBouncingState alloc]initWithCount:[config[@"count"]unsignedIntValue]];[state prepareQuad:shaders[@"quad"] update:shaders[@"update"] vertex:shaders[@"vertex"] fragment:shaders[@"fragment"]];RUNTIME(CGLGetContextRetainCount(context)==initialContextReferences+1,@"State did not retain its context identity");
    rejected(@"input",^{[state upload:[NSData data] atParticle:0];});
-   rejected(@"input",^{[state advanceFrom:0 to:1 update:update];});rejected(@"input",^{[state upload:[seed subdataWithRange:NSMakeRange(0,16)] atParticle:1];});
-   for(NSUInteger offset=0;offset<seed.length;offset+=16*1024*1024)@autoreleasepool{NSUInteger length=MIN(16*1024*1024,seed.length-offset);[state upload:[seed subdataWithRange:NSMakeRange(offset,length)] atParticle:(uint32_t)(offset/16)];}
-   rejected(@"input",^{[state upload:[seed subdataWithRange:NSMakeRange(0,16)] atParticle:0];});
-   NSMutableDictionary *pointMetadata=[point mutableCopy];pointMetadata[@"attributes"]=@[];NSMutableArray *metadata=[commands mutableCopy];metadata[0]=pointMetadata;frame=[parsed mutableCopy];frame[@"draws"]=metadata;
+   rejected(@"input",^{[state advanceFrom:0 to:1 update:update];});
+   NSFileHandle *seeds=[NSFileHandle fileHandleForReadingAtPath:[prepared stringByAppendingPathComponent:@"seeds.f32"]];INPUT(seeds!=nil,@"Missing seed file");
+   @try{
+    uint64_t size=[seeds seekToEndOfFile];INPUT(size==[config[@"count"]unsignedLongLongValue]*16,@"Seed file dimensions");[seeds seekToFileOffset:0];NSData *firstSeed=[seeds readDataOfLength:16];[seeds seekToFileOffset:0];
+    rejected(@"input",^{[state upload:firstSeed atParticle:1];});
+    for(uint64_t offset=0;offset<size;offset+=16*1024*1024)@autoreleasepool{NSUInteger length=(NSUInteger)MIN(16*1024*1024,size-offset);NSData *chunk=[seeds readDataOfLength:length];INPUT(chunk.length==length,@"Truncated seed file");[state upload:chunk atParticle:(uint32_t)(offset/16)];}
+    rejected(@"input",^{[state upload:firstSeed atParticle:0];});
+   }@finally{[seeds closeFile];}
+   frame=[parsed mutableCopy];
   }
   rejected(@"input",^{[state advanceFrom:1 to:2 update:update];});rejected(@"capacity",^{[state advanceFrom:0 to:10001 update:update];});
   SourceBouncingUpdate bad=update;bad.timeStep=NAN;rejected(@"input",^{[state advanceFrom:0 to:1 update:bad];});

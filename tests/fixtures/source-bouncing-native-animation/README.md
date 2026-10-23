@@ -76,3 +76,25 @@ This establishes the drawing path, not integration into Bouncing App preview,
 capture, recording or final packaging. See the
 [readable report](../../../docs/source-bouncing-native-rendering.zh-CN.md) for cost
 and larger-state limits. Historical `source.json` is intentionally unchanged.
+
+## Retained product and original 5M follow-up
+
+Later [product integration](../../../docs/source-bouncing-native-product.zh-CN.md)
+and [actual export workflows](../../../docs/source-bouncing-native-export.zh-CN.md)
+have separate evidence. `MATHART_BOUNCING_STATE=product` selects the actual
+Generator/seed Worker/native path in the animation verifier.
+
+The same unchanged probe also captured the original `bouncing2.json` with all
+5,000,000 particles. Both presets now pass the complete 62-frame native product
+comparison and independent 11-state component comparison. See the
+[5M reference report](../../../docs/source-bouncing-five-million-parity.zh-CN.md).
+The two additional packaged formula presets are not covered by that run.
+
+`scripts/capture-source-bouncing-original.py` accepts `bouncing1` or `bouncing2`,
+a new output directory, and explicit `--app-contents`, `--java-home`, `--host`,
+`--app-data` paths. It pins the original JAR/preset, this diagnostic probe and
+the existing staged-loader host; it compiles first, preserves policy backup and
+settings/license hashes, enforces a 60-second owned-process deadline, and writes
+`run.json`. The required app/JDK/macOS host are operator-provided; the script
+does not install or bundle them. Do not substitute a different host or patch
+the original authorization path to make capture succeed.
