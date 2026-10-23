@@ -2,7 +2,7 @@ import {usesSourceImplicitCpuMesh} from './engine/sourceImplicitPresentation';
 import {implicitCameraFrame} from './engine/sourceImplicitResponse';
 import type {SourceImplicitLiveContext} from './engine/sourceImplicitLive';
 import {hasFormulaComposition} from './engine/formulaConfig';
-import {nativeGeometryPreviewEnabled,usesNativeGeometryViewport} from './engine/sourceNativeViewport';
+import {nativeGeometryPreviewEnabled,usesNativeSourceViewport} from './engine/sourceNativeViewport';
 import {activeFractalFormulaIdentity} from './engine/sourceFractalIdentity';
 import {applyFractalJuliaSeed} from './engine/complexViewport';
 import {sourceQueuePresentedScene} from './engine/sourceQueuePresentation';
@@ -1204,7 +1204,7 @@ export default function App() {
             <div className="spacer" />
             <span className="render-label">
               <span />
-              {output?.backend==='webgl2'?'GPU · WebGL 2':output?.backend==='cpu'?'CPU':t('WebGL 2 画布')}
+              {output?.backend==='native'?'GPU · Native':output?.backend==='webgl2'?'GPU · WebGL 2':output?.backend==='cpu'?'CPU':t('WebGL 2 画布')}
             </span>
             {scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbrot'&&(scene.fractalSource!==undefined||scene.settings.variant!=='julia')&&<button disabled={busy||playing} aria-pressed={pickingJulia} onClick={()=>setPickingJulia(v=>!v)}>{t(pickingJulia?'取消点选':'点选 Julia 种子')}</button>}
             <button title={t("适合画布")} disabled={samilaNavigationLocked||sourceBouncing} onClick={() => viewport.current?.fit()}>
@@ -1280,7 +1280,7 @@ export default function App() {
               pickingJulia={pickingJulia&&!busy&&!playing&&scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbrot'&&(scene.fractalSource!==undefined||scene.settings.variant!=='julia')}
               onPickJulia={values=>{setPickingJulia(false);edit(applyFractalJuliaSeed(scene,values));notify('已从选中位置打开 Julia 视图；可撤销返回。');}}
             />
-            {!usesNativeGeometryViewport(displayScene,output)&&<FormulaOverlay scene={displayScene} presentation={displayFormulas} canvas={viewport.current?.frame()?.canvas}/>}
+            {!usesNativeSourceViewport(displayScene,output)&&<FormulaOverlay scene={displayScene} presentation={displayFormulas} canvas={viewport.current?.frame()?.canvas}/>}
             {!displayHasFormulas&&<div className="viewport-caption">
               <span className="eyebrow">{def.englishName.toUpperCase()}</span>
               <h1>{scene.name}</h1>

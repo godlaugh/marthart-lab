@@ -1,3 +1,4 @@
+import {usesSourceBouncing} from './sourceBouncingDocument';
 import type {FormulaPresentation,SceneDocument,SceneOutput} from '../types';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
@@ -8,8 +9,8 @@ import {prepareSourceFormulas,SourceFormulaCompositor} from './sourceFormulaComp
 import {compositeFormulas} from './formulaCanvas';
 
 type Pixels={width:number;height:number;pixels:Uint8ClampedArray};
-export function usesNativeGeometryViewport(scene:SceneDocument,output?:SceneOutput|null):boolean {
- return nativeGeometryPreviewEnabled(scene)&&!!output?.sourceCameraFrame;
+export function usesNativeSourceViewport(scene:SceneDocument,output?:SceneOutput|null):boolean {
+ return sourceDrawingPolicy()==='native'&&((usesSourceBouncing(scene)&&!!output?.sourceBouncingFrame)||nativeGeometryPreviewEnabled(scene)&&!!output?.sourceCameraFrame);
 }
 export const nativeGeometryPreviewEnabled=(scene:SceneDocument)=>sourceDrawingPolicy()==='native'&&(usesSourceSurfaceGeometry(scene)||usesSourceImplicitCpuMesh(scene));
 export interface NativeViewportRequest {

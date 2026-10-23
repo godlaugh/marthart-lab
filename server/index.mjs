@@ -99,7 +99,7 @@ export async function createExportServer(options={}){
  for(const name of await readdir(root)){const info=await lstat(path.join(root,name));if(!info.isFile())continue;storedBytes+=info.size;if(ownedName.test(name)){if(files.size>=limits.maxFiles)throw new Error('导出目录文件数量超过资源上限');files.set(name,info.size);}}
  const glyphs=options.glyphBackend?await (await import('./formula-glyph.mjs')).createFormulaGlyphService(options.glyphBackend):undefined;
  const native=options.sourceRendererBackend?await createSourceRendererService(options.sourceRendererBackend):undefined;
- const nativeControllers=new Set();let nativeBusy=false,nativeGeneration=1,nativeSequence=0;
+ const nativeControllers=new Set();let nativeBusy=false,nativeGeneration=1,nativeSequence=0,nativeLease;
  function reserve(size){if(files.size+reservedFiles>=limits.maxFiles)throw new HttpError(507,'导出文件数量达到资源上限');if(storedBytes+reservedBytes+size>limits.maxDiskBytes)throw new HttpError(507,'导出目录已达到容量上限，请清理已保存文件');reservedBytes+=size;reservedFiles++;}
  function ownedSpawn(args,stdio=['pipe','ignore','pipe','pipe']){
   const child=spawn(ffmpegPath,args,{stdio});
@@ -196,13 +196,27 @@ export async function createExportServer(options={}){
   const url=new URL(req.url,'http://127.0.0.1');
   if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,await health());
   if(req.method==='GET'&&url.pathname==='/api/source-renderer/health')return json(res,200,native?await native.health():{available:false,error:{kind:'unavailable',message:'原生渲染后端尚未配置'}});
+  if(req.method==='GET'&&url.pathname.startsWith('/api/source-renderer/lease/')){
+   if(!native)throw new HttpError(503,'原生渲染后端尚未配置');
+   const token=url.pathname.slice('/api/source-renderer/lease/'.length);if(!/^[a-f0-9]{32}$/.test(token))throw new HttpError(400,'原生页面身份无效');
+   if(nativeLease?.closed){const old=nativeLease;await old.cleanup;if(nativeLease===old){const retried=await native.reset();if(retried.ok&&nativeLease===old)nativeLease=undefined;}}
+   // Never acquire or retire a legacy caller's already-owned state.
+   if(nativeLease||nativeBusy||native.retainedResource)return json(res,429,{kind:'capacity',retryable:!!nativeLease?.closed,error:'原生页面连接正在使用或清理'});
+   if(req.aborted||res.destroyed||closing)throw new HttpError(499,'原生页面连接已取消');
+   const lease={token,res,closed:false};nativeLease=lease;
+   const heartbeat=setInterval(()=>{if(!res.destroyed&&!res.write('.\n'))res.destroy();},15000);heartbeat.unref();
+   res.once('close',()=>{clearInterval(heartbeat);lease.closed=true;lease.cleanup=native.reset().then(result=>{if(result.ok&&nativeLease===lease)nativeLease=undefined;return result;});});
+   res.writeHead(200,{'content-type':'application/octet-stream','cache-control':'no-store','x-content-type-options':'nosniff','x-accel-buffering':'no'});res.write('READY\n');return;
+  }
   if(req.method==='POST'&&url.pathname==='/api/source-renderer/frames'){
    if(!native)throw new HttpError(503,'原生渲染后端尚未配置');
+   const lease=nativeLease;if(lease&&(lease.closed||req.headers['x-source-lease']!==lease.token)||!lease&&req.headers['x-source-lease'])return json(res,409,{kind:'state-lost',error:'原生请求不属于当前页面连接'});
    if(mediaType(req)!=='application/octet-stream')throw new HttpError(415,'需要二进制帧请求');
    if(nativeBusy)throw new HttpError(429,'原生帧通道正在处理请求');
    nativeBusy=true;const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};nativeControllers.add(controller);req.once('aborted',disconnected);res.once('close',disconnected);
    try{return await withUpload(req,64*1024*1024,async bytes=>{
     if(controller.signal.aborted||closing)throw new HttpError(499,'原生帧请求已取消');
+    if(lease&&(lease.closed||nativeLease!==lease))return json(res,409,{kind:'state-lost',error:'原生页面连接已失效'});
     const parsed=inspectSourceFrameHeader(bytes);if(!parsed.ok)return json(res,400,{error:parsed.error.message,kind:parsed.error.kind});
     // The gateway owns transport ordering across windows. Preserve the caller's
     // identity in the response; rewrite only an owned wire copy for the child.
@@ -332,7 +346,7 @@ export async function createExportServer(options={}){
   get ownedProcessCount(){return children.size+(glyphs?.processCount??0)+(native?.processCount??0);},
   async listen(port=5178){await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',()=>{server.off('error',reject);resolve();});});return server.address();},
   close(){if(closePromise)return closePromise;closing=true;closePromise=(async()=>{
-   const stopped=new Promise(resolve=>server.close(resolve));for(const controller of nativeControllers)controller.abort();
+   const stopped=new Promise(resolve=>server.close(resolve));nativeLease?.res.destroy();for(const controller of nativeControllers)controller.abort();
    const results=await Promise.allSettled([...sessions.values()].filter(s=>s.status!=='complete'&&!s.cleaned).map(s=>abort(s)).concat(glyphs?[glyphs.close()]:[],native?[native.close().then(result=>{if(!result.ok)throw new Error(result.error.message);})]:[]));
    await Promise.allSettled([...children].map(stop));server.closeAllConnections();await stopped;await Promise.allSettled([...requests]);
    const failure=results.find(r=>r.status==='rejected');if(failure)throw failure.reason;

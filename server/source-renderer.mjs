@@ -20,7 +20,8 @@ export function inspectSourceFrameHeader(packet){
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
  const operation=version===4?b.readUInt32LE(60):undefined;if(operation!==undefined&&(operation<1||operation>4))return failure('input','原生状态操作无效');
  const control=operation!==undefined&&operation!==3;if(control&&(width!==1||height!==1))return failure('input','原生状态确认尺寸无效');
- return {ok:true,value:{generation,sequence,width,height,samples,control}};
+ const resource=operation===undefined?undefined:b.subarray(68,84).toString('hex');if(operation!==undefined&&(b.readUInt32LE(64)!==16||resource==='0'.repeat(32)))return failure('input','原生状态资源身份无效');
+ return {ok:true,value:{generation,sequence,width,height,samples,control,operation,resource}};
 }
 function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
@@ -42,7 +43,7 @@ export async function createSourceRendererService({executablePath,executableSha2
  const bytes=await readFile(executable),identity=await stat(executable);
  if(!sameFile(before,identity)||sha(bytes)!==executableSha256)throw Error('原生渲染程序身份不符');
  const rendererIdentity=sha(JSON.stringify({executable,executableSha256,host:[process.platform,process.arch,os.release(),os.version()]}));
- let owner,job,closing=false,closePromise,sessionStarts=0;
+ let owner,job,closing=false,closePromise,resetPromise,retainedResource,sessionStarts=0;
  const finish=(j,result)=>{
   if(j.finished)return;j.finished=true;clearTimeout(j.timer);j.signal?.removeEventListener('abort',j.cancel);
   if(job===j)job=undefined;j.resolve(result);
@@ -78,12 +79,14 @@ export async function createSourceRendererService({executablePath,executableSha2
      const meta=o.response,pixels=o.payload;o.headerUsed=0;o.payload=undefined;o.response=undefined;
      let result;if(meta.status){let message;try{message=new TextDecoder('utf-8',{fatal:true}).decode(pixels);}catch{retire(o,failure('protocol','原生错误消息不是 UTF-8'));return;}result=failure({1:'input',2:'unsupported',3:'capacity',4:'runtime',5:'state-lost',6:'ownership'}[meta.status],message);}
      else result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:meta.format===2?'u32le':'rgba8',rowOrder:meta.format===2?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};
+     if(meta.status===4||result.ok&&j.expected.operation===4)retainedResource=undefined;
+     if(result.ok&&j.expected.operation===1)retainedResource=j.expected.resource;
      finish(j,result);return;
     }
    }
   });
   child.once('close',()=>{
-   o.closed=true;clearTimeout(o.force);clearTimeout(o.cleanup);if(owner===o)owner=undefined;
+   o.closed=true;clearTimeout(o.force);clearTimeout(o.cleanup);if(owner===o){owner=undefined;retainedResource=undefined;}
    if(job?.owner===o)finish(job,o.reason??failure('runtime','原生进程在交付完整帧前退出'));done();
   });
   return o;
@@ -93,7 +96,7 @@ export async function createSourceRendererService({executablePath,executableSha2
   const signal=options.signal;
   if(closing)return Promise.resolve(failure('closed','原生渲染服务已关闭'));
   if(signal?.aborted)return Promise.resolve(failure('cancelled','原生渲染已取消'));
-  if(job||owner?.reason)return Promise.resolve(failure('capacity','原生渲染已有请求或正在清理'));
+  if(job||owner?.reason||resetPromise)return Promise.resolve(failure('capacity','原生渲染已有请求或正在清理'));
   const header=inspectSourceFrameHeader(packet);if(!header.ok)return Promise.resolve(header);
   // Own the bytes before any await, so later caller edits cannot change a frame.
   const input=Buffer.from(packet),expected=header.value;
@@ -120,13 +123,18 @@ export async function createSourceRendererService({executablePath,executableSha2
   try{const current=await stat(executable);if(closing)return{available:false,error:{kind:'closed',message:'原生渲染服务已关闭'}};if(sameFile(identity,current))return{available:!owner?.reason,rendererIdentity,...(owner?.reason?{error:owner.reason.error}:{})};}catch{}
   const reason=failure('unavailable','原生程序已变化或不可用，请重新初始化');if(owner)retire(owner,reason);return{available:false,error:reason.error};
  }
- return{render,health,rendererIdentity,get processCount(){return owner?1:0;},get processObservation(){return owner?{pid:owner.child.pid,sessionSerial:owner.serial,retiring:!!owner.reason}:null;},get activeCount(){return job?1:0;},get sessionStarts(){return sessionStarts;},
+ async function retireAndWait(reason){
+  const o=owner;if(job&&!job.owner)finish(job,reason);if(o){retire(o,reason);if(o.cleanupExpired)kill(o,'SIGKILL');}
+  if(!o)return{ok:true};let timer;const result=await Promise.race([o.done.then(()=>({ok:true})),new Promise(resolve=>{timer=setTimeout(()=>resolve(failure('cleanup','原生进程未确认退出，仍由服务持有')),cleanupMs);})]);clearTimeout(timer);return result;
+ }
+ return{render,health,rendererIdentity,get retainedResource(){return retainedResource;},get processCount(){return owner?1:0;},get processObservation(){return owner?{pid:owner.child.pid,sessionSerial:owner.serial,retiring:!!owner.reason}:null;},get activeCount(){return job?1:0;},get sessionStarts(){return sessionStarts;},
+  reset(){
+   if(closing)return Promise.resolve(failure('closed','原生渲染服务已关闭'));
+   if(!resetPromise)resetPromise=retireAndWait(failure('state-lost','原生页面连接已关闭')).finally(()=>{resetPromise=undefined;});return resetPromise;
+  },
   close(){
    if(closePromise)return closePromise;closing=true;
-   closePromise=(async()=>{
-    const o=owner;if(job&&!job.owner)finish(job,failure('closed','原生渲染服务已关闭'));if(o){retire(o,failure('closed','原生渲染服务已关闭'));if(o.cleanupExpired)kill(o,'SIGKILL');}
-    if(!o)return{ok:true};let timer;const result=await Promise.race([o.done.then(()=>({ok:true})),new Promise(resolve=>{timer=setTimeout(()=>resolve(failure('cleanup','原生进程未确认退出，仍由服务持有')),cleanupMs);})]);clearTimeout(timer);return result;
-   })().then(result=>{if(!result.ok)closePromise=undefined;return result;});return closePromise;
+   closePromise=retireAndWait(failure('closed','原生渲染服务已关闭')).then(result=>{if(!result.ok)closePromise=undefined;return result;});return closePromise;
   }
  };
 }

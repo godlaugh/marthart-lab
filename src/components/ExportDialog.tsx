@@ -465,7 +465,7 @@ export function ExportDialog({
       if(message)setError(message);
       setWorking(false);
     } finally {
-      try { g?.dispose(); }
+      try { g?.dispose();await g?.settledNativeCleanup(); }
       finally {
         try { r?.dispose(); }
         finally {

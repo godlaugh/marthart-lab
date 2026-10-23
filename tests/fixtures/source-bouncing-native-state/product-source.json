@@ -1,0 +1,171 @@
+{
+  "at": "2026-10-23T22:54:36.886104+00:00",
+  "status": "native Generator and App integration passed; full export/original configuration/release acceptance pending",
+  "scope": "Actual Generator, CPU seed Worker and retained native state: 62 complete original artwork frames and 60 native updates; no diagnostic state readback.",
+  "originalRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8",
+  "originalSourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+  "backend": {
+    "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-state-protocol-20261024/renderer",
+    "executableSha256": "e06587bade3c2c12267a19df0d17bb3b39ae4beb7b2b828b48c84780802551b4"
+  },
+  "artifactHashes": {
+    ".cache/bouncing-native-product-20261024/product-final/report.json": "e2ebec6f2463adc8f709bcb09703c267cb79a46f52763a46a96f0c98acd5d904",
+    ".cache/bouncing-native-product-20261024/lifecycle-accepted/report.json": "206eb0913a494af29c2acd847649d44f6ee8701794fd07b33c395964b14924e7",
+    ".cache/bouncing-native-product-20261024/surface-regression/report.json": "f27ca798776b89b0cc6fa58ac39c9a929744ba0035c26ec3c0efd5ced6c43b5b",
+    ".cache/bouncing-native-product-20261024/tests-final.log": "4bc177449ac7e5afc260c519c0bef696df1a77797f4e2f6ad5ca75379435a5f5",
+    ".cache/bouncing-native-product-20261024/build-final.log": "e157ececf09f8cfb3beecd59a0e056838a23be7cee5482864541a0006cdd9df5"
+  },
+  "sourceHashes": {
+    "scripts/verify-source-bouncing-native-animation.mjs": "6527c0e7e3697ed68a43ccbd8453c83fcf1e19d83012f2da9a97dd16917d5698",
+    "server/index.mjs": "8b458df625138223865377f6ac44a59a0d1bc933b3c36b0ff559908f8e25186f",
+    "server/source-renderer.mjs": "7ec03f88d7161bf67c6e7cca7adfb800c38e9d8eb67d72626a3b4e23a67685e3",
+    "src/App.tsx": "cd4f53a9a835bf70f0010e17cc43f5c7a8f9b3d6f770ae2e77886e248839e16e",
+    "src/components/ExportDialog.tsx": "a334a238f679578da5a8054e766190c2b5a3607823e253ebac611707c34829a4",
+    "src/components/Viewport.tsx": "4d07e445266a53514a2c2a87fc63568e4687279b78102d0dd950562396cf0d5a",
+    "src/engine/client.ts": "37b4ab4cbbab97fe8bd4e85ed39d05f2404abf4382a2f83fbe89823d707380e4",
+    "src/engine/domain.ts": "c688cb1e9952686443e6d3d8a83b83327a9de9439f1d33f70197a0c154d2851a",
+    "src/engine/sourceBouncingExport.ts": "8fb6f9998cda29de3024bfd9c631d4977639adaf38cf1a4818676549a464543c",
+    "src/engine/sourceBouncingLimits.ts": "307412e3cd13eafd22c7512dd206ca11c866de64704e071a4dd41f676398a0d6",
+    "src/engine/sourceNativeClient.ts": "208cd8efa3bd15c6fef98a908e91a3f10b597dff7a1f874284ad91b1475dfa48",
+    "src/engine/sourceNativeViewport.ts": "70221a951967a56fc898083872924b5914d5a5490a4cfb22aae2b1aaff379ca6",
+    "src/scenes/sourceBouncing.ts": "d9e8388bfd59df3ab923c5a300f2f1eddbf5708fddc1d1f127c7ee47a493bef0",
+    "src/types.ts": "c96c50f379780fc8b65609a2659b667069177069dc760ea99c4e2fe4af784310",
+    "tests/source-bouncing-export.test.ts": "27247d77671419c1ee5a47223d540480a49ce7193c4a343407a4fbf774dc7832",
+    "tests/source-bouncing-native-protocol.test.ts": "6e01e4d978444198454d328d127601034472b4b8db9e5b0a45f50f21258224ed",
+    "tests/source-bouncing-public-generation.test.ts": "14a7e7d04c427c56b575ad95334183728d7f76b148a066035cc07c642710b357",
+    "tests/source-renderer-http.test.ts": "410580623384bde3d0e4041470ca823777591659a255bef432666991769aaa0a",
+    "scripts/verify-source-bouncing-native-lifecycle.mjs": "95eb17b95933a25a446b15ccc09be5324e8c32ec1dd28a106eea465c3da0064d",
+    "src/engine/sourceBouncingFramePlan.ts": "de2269862b2cc97c10bc234fb832f6fb6beaa0b96851bcb31d9333072858df0b",
+    "src/engine/sourceBouncingNativeSession.ts": "ddbc001c78dec5ead31594ca7a70746e42cadd4c566e95e04b812d94af8a238b",
+    "src/engine/sourceBouncingSeedWorker.ts": "dd1254a7fe0d0c45e2bcaf5334b81832743ad0b97173bd1674df1ca1398a122e",
+    "src/engine/sourceBouncingSeeds.worker.ts": "2046bf255e110abfab80651874628ec59d473c33b7bea4b90647aa5fd99ebb5c",
+    "src/engine/sourceNativeError.ts": "f8510d13877a2308c38b60d3b0c5861f9ff92031f52b8f5bbe1250072a36004d",
+    "src/engine/sourceNativeLease.ts": "caed3b547e5c9fa3f245e3c657f5e0679d7a78e3cc028e02d5a6bdaf042cee60"
+  },
+  "validation": {
+    "originalProductFrames": 62,
+    "rgbPixelsDifferent": 0,
+    "completedAlphaPixelsDifferent": 0,
+    "productDiagnostics": {
+      "initializations": 1,
+      "uploadBytes": 32000000,
+      "draws": 62,
+      "recoveries": 0,
+      "active": false,
+      "owned": false,
+      "ready": false,
+      "updates": 0,
+      "uploaded": 0,
+      "cleanupPending": false,
+      "retainedBytes": 0
+    },
+    "generationDiagnostics": {
+      "browserGpuContexts": 0,
+      "particleReadbacks": 0,
+      "particleUploadBytes": 32000000,
+      "updates": 60,
+      "released": true,
+      "retainedSeedBytes": 0
+    },
+    "lifecycleChecks": [
+      "preview retains one initialized native state",
+      "paused redraw preserves exact pixels",
+      "display edit does not regenerate seeds",
+      "backward checkpoint explicitly reconstructs original seed state",
+      "export caller borrows identical paused state without reseeding",
+      "old preview disposal cannot release state transferred to export",
+      "real recording frame plan preserves explicit update checkpoints",
+      "export cleanup releases remote state",
+      "preview re-entry reconstructs same checkpoint",
+      "real native shader failure resets context",
+      "lost native context rebuilds and replays exact checkpoint once",
+      "cancelled committed draw settles cleanup before immediate replacement",
+      "failed release retains resource identity and cleanup obligation",
+      "next acquisition retires failed cleanup before replacement",
+      "native Bouncing selects native viewport",
+      "native preview compositor preserves every delivered pixel",
+      "switching to another scene releases native state before Worker generation",
+      "CPU seed Worker is cancellable without remote ownership",
+      "seed cancellation leaves no native resource",
+      "page reload reaps native process while server remains running",
+      "fresh page reacquires state and reconstructs identical pixels",
+      "second page cannot steal the live page lease",
+      "actual App displays native canvas, plays, pauses and resets with correct state reuse",
+      "browser exit without dispose reaps native process while server remains running"
+    ],
+    "app": {
+      "nativeCanvasVisible": true,
+      "width": 288,
+      "height": 239,
+      "playedUpdates": 3,
+      "playbackReusedState": true,
+      "resetReconstructedSeeds": true,
+      "backend": "native"
+    },
+    "remainingNativeProcesses": 0,
+    "remainingLifecycleProcesses": 0,
+    "surface": [
+      {
+        "name": "cornucopia",
+        "artworkComparison": {
+          "pixels": 0,
+          "max": 0,
+          "sum": 0,
+          "examples": []
+        },
+        "status": "matched"
+      },
+      {
+        "name": "sphere",
+        "artworkComparison": {
+          "pixels": 0,
+          "max": 0,
+          "sum": 0,
+          "examples": []
+        },
+        "status": "matched"
+      },
+      {
+        "name": "mobius",
+        "artworkComparison": {
+          "pixels": 0,
+          "max": 0,
+          "sum": 0,
+          "examples": []
+        },
+        "status": "matched"
+      }
+    ],
+    "tests": {
+      "files": 13,
+      "passed": 254
+    },
+    "buildV2": "passed; existing large chunk warning"
+  },
+  "cost": {
+    "elapsedMs": 5419.024041000001,
+    "processFamily": {
+      "rootPid": 11473,
+      "samples": 13,
+      "observedProcesses": 31,
+      "maxConcurrentProcesses": 17,
+      "sampledPeakRssKiB": 2866480,
+      "observedCpuMs": 10530.000000000002,
+      "samplingErrors": []
+    },
+    "limits": [
+      "Actual Generator/seed Worker workflow, no subsequent state texture diagnostics; not equivalent to prior full-state verifiers.",
+      "Not product FPS. Strict cold/warm, independent GPU timing, token cost and full process peak unmeasured; sampled RSS/CPU can miss short-lived peaks."
+    ]
+  },
+  "limits": [
+    "Offscreen original active draws have a zero viewport; paused redraws of the same simulation state are the accepted artwork reference. Not an active-window or native-video acceptance.",
+    "Artwork RGB is captured before normal branding; completed native PNG alpha is checked separately. No claim that the intermediate pre-branding RGBA equals completed pixels.",
+    "One original preset and 60 updates; no all-parameter, long-run or cross-device claim.",
+    "Actual Generator and seed Worker tested; GUI presentation, video encoding and package validation not established.",
+    "Small synthetic App/lifecycle/recording-plan workflow does not establish original video encoding, full PNG/MP4 dialog delivery or 5M artwork parity.",
+    "Recovery remains within existing replay budget; no all-checkpoint recovery claim.",
+    "One active native page lease per service. Browser normal exit/navigation tested; forced crashes and all restored BFCache interactions not proven.",
+    "Default build backend and installed 1.0 application unchanged."
+  ]
+}

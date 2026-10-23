@@ -38,6 +38,19 @@ describe.skipIf(process.platform!=='darwin')('loopback native frame transport',(
   const dist=join(root,'retry-dist');mkdirSync(dist,{recursive:true});writeFileSync(join(dist,'index.html'),'<!doctype html>');const host=await createDesktopHost({dist,exportRoot:join(root,'retry-exports'),sourceRendererBackend:{...backend,killGraceMs:5,cleanupMs:100}});let spy;
   try{const r=await post(host.origin);expect(r.status).toBe(200);await r.arrayBuffer();spy=vi.spyOn(ChildProcess.prototype,'kill').mockReturnValue(false);await expect(host.close()).rejects.toThrow('退出');expect(host.api.ownedProcessCount).toBe(1);spy.mockRestore();spy=undefined;await host.close();expect(host.api.ownedProcessCount).toBe(0);}finally{spy?.mockRestore();await host.api.close();await host.close();}
  });
+ it('binds native frames to a live page connection and reaps on disconnect before reacquisition',async()=>{
+  const s=await service(),controller=new AbortController(),token='12'.repeat(16);let reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
+  try{
+   const response=await fetch(s.url+'/api/source-renderer/lease/'+token,{signal:controller.signal});expect(response.status).toBe(200);reader=response.body!.getReader();expect(new TextDecoder().decode((await reader.read()).value)).toBe('READY\n');
+   expect((await post(s.url)).status).toBe(409);expect((await post(s.url,packet(),{'x-source-lease':'34'.repeat(16)})).status).toBe(409);
+   const accepted=await post(s.url,packet(),{'x-source-lease':token});expect(accepted.status).toBe(200);await accepted.arrayBuffer();expect(s.app.ownedProcessCount).toBe(1);
+   expect((await fetch(s.url+'/api/source-renderer/lease/'+'56'.repeat(16))).status).toBe(429);
+   controller.abort();await reader.cancel().catch(()=>{});reader.releaseLock();reader=undefined;
+   for(let i=0;i<200&&s.app.ownedProcessCount;i++)await delay(10);expect(s.app.ownedProcessCount).toBe(0);
+   expect((await post(s.url,packet(),{'x-source-lease':token})).status).toBe(409);
+   const renewed=new AbortController();try{const fresh=await fetch(s.url+'/api/source-renderer/lease/'+'78'.repeat(16),{signal:renewed.signal});expect(fresh.status).toBe(200);await fresh.body!.cancel();}finally{renewed.abort();}
+  }finally{controller.abort();await reader?.cancel().catch(()=>{});await s.app.close();}
+ });
  it('passes the same native route through the actual desktop host',async()=>{
   const dist=join(root,'dist');mkdirSync(dist,{recursive:true});writeFileSync(join(dist,'index.html'),'<!doctype html>');
   const host=await createDesktopHost({dist,exportRoot:join(root,'desktop'),ffmpegPath:'ffmpeg',sourceRendererBackend:backend});

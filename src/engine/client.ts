@@ -1,3 +1,6 @@
+import {usesSourceBouncing} from './sourceBouncingDocument';
+import {sourceDrawingPolicy} from './sourceDrawingPixels';
+import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {validSourceImplicitOutput} from './sourceImplicitResponse';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {SourceRootsRecordingLease} from './sourceRootsRecordingLease';
@@ -213,6 +216,9 @@ type Pending =
 export class Generator {
   private worker: Worker | null = null;
   private counter = 0;
+  private nativeTransition=0;
+  private nativeCleanup?:Promise<void>;
+  private releaseNative(){this.nativeCleanup=sourceBouncingNativeSession.release(this);void this.nativeCleanup.catch(()=>{});}
   private sessionId = 0;
   private pending = new Map<number, Pending>();
   private currentInputId=0;
@@ -221,6 +227,7 @@ export class Generator {
   private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='implicit-playback'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
+    this.nativeTransition++;this.releaseNative();
     try{this.recording?.geometry?.releaseRenderer();}catch(cleanup){error=new AggregateError([error,cleanup],'曲面录制已失效，绘图清理仍待重试');}
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
     for(const p of this.pending.values()){if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
@@ -515,6 +522,32 @@ export class Generator {
   ): Promise<SceneOutput> {
     if(this.recording)return Promise.reject(this.recordingError('源场景录制期间不能生成其它场景'));
     if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
+    if(usesSourceBouncing(scene)&&sourceDrawingPolicy()==='native'){
+      if(this.pending.size)return Promise.reject(new Error('当前生成任务尚未结束'));
+      this.worker?.terminate();this.worker=null;
+      const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+      return new Promise((resolve,reject)=>{
+        try{
+          const input=snapshotGenerationInput(context),snapshot=structuredClone(scene);
+          const pending:Pending={operation:'generate',scene,context:input,resolve,reject};this.pending.set(id,pending);
+          void (async()=>{
+            // cancel() remains synchronous for UI callers; remote retirement
+            // must settle before a replacement can acquire the native slot.
+            if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});
+            await sourceBouncingNativeSession.settleCancellation();
+            if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
+            return sourceBouncingNativeSession.generate(this,snapshot,input);
+          })().then(output=>{
+            if(this.pending.get(id)!==pending)return;
+            this.pending.delete(id);if(this.currentInputId===id)this.completed={id,scene,context:input,output};resolve(output);
+          },error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);reject(error);});
+        }catch(error){this.pending.delete(id);reject(error);}
+      });
+    }
+    if(sourceBouncingNativeSession.owns(this)){
+      const transition=this.nativeTransition;
+      return sourceBouncingNativeSession.release(this).then(()=>{if(this.nativeTransition!==transition)throw new DOMException('已取消','AbortError');return this.generate(scene,context,onProgress,onStatus);});
+    }
     this.ensure();
     const id = ++this.counter;
     const source=this.completed;this.currentInputId=id;this.completed=undefined;
@@ -780,6 +813,7 @@ export class Generator {
   cancel() {
     // A recording cancellation is an orderly finish owned by the queue.
     if(this.recording)return;
+    this.nativeTransition++;this.releaseNative();
     this.completed=undefined;this.currentInputId=0;
     this.worker?.terminate();
     this.worker = null;
@@ -789,6 +823,7 @@ export class Generator {
     }
     this.pending.clear();
   }
+  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);}
   dispose() {
     this.invalidate(this.recording?new SourceRecordingOperationError('源场景录制后台已释放',false,false):new DOMException('已取消','AbortError'));
   }

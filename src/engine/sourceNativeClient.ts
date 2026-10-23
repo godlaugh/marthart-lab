@@ -1,8 +1,8 @@
 import {encodeSourceDrawingFrame,type SourceDrawingFrame} from './sourceDrawingFrame';
 
-export class SourceNativeError extends Error {
- constructor(readonly kind:string,message:string){super(message);this.name='SourceNativeError';}
-}
+import {SourceNativeError} from './sourceNativeError';
+export {SourceNativeError} from './sourceNativeError';
+import {sourceNativeLeaseToken} from './sourceNativeLease';
 export interface SourceNativePixels {width:number;height:number;pixels:Uint8ClampedArray;rendererIdentity:string;generation:number;sequence:number;requestBytes:number}
 const check=(signal?:AbortSignal)=>{if(signal?.aborted)throw signal.reason instanceof SourceNativeError?signal.reason:new DOMException('原生帧已取消','AbortError');};
 async function bytes(response:Response,limit:number,signal:AbortSignal){
@@ -34,7 +34,7 @@ async function exchange(frame:SourceDrawingFrame,options:NativeOptions):Promise<
  try{
   const packet=encodeSourceDrawingFrame(frame,{isCancelled:()=>controller.signal.aborted,retainedBytes:options.retainedBytes});if(!packet.ok)throw new SourceNativeError(packet.error.kind,packet.error.reason);
   const expected={generation:frame.generation,sequence:frame.sequence,width:frame.width,height:frame.height};
-  const response=await fetch('/api/source-renderer/frames',{method:'POST',headers:{'content-type':'application/octet-stream'},body:packet.value as Uint8Array<ArrayBuffer>,signal:controller.signal,credentials:'same-origin',cache:'no-store',redirect:'error'});
+  const response=await fetch('/api/source-renderer/frames',{method:'POST',headers:{'content-type':'application/octet-stream',...(sourceNativeLeaseToken()?{'x-source-lease':sourceNativeLeaseToken()!}:{})},body:packet.value as Uint8Array<ArrayBuffer>,signal:controller.signal,credentials:'same-origin',cache:'no-store',redirect:'error'});
   if(!response.ok)await remoteError(response,controller.signal);
   const identity=response.headers.get('x-source-renderer');
   if(response.headers.get('content-type')!=='application/octet-stream'||response.headers.get('x-source-format')!==(control?'u32le':'rgba8')||response.headers.get('x-source-row-order')!==(control?'none':'bottom-up')||!identity||!/^[a-f0-9]{64}$/.test(identity))throw new SourceNativeError('protocol','原生响应格式或后端身份无效');

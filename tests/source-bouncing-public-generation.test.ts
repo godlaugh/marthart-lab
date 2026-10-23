@@ -1,3 +1,4 @@
+import {prepareSourceBouncingFrame} from '../src/engine/sourceBouncingFramePlan';
 import {initialSourceBouncingNavigation} from '../src/engine/sourceBouncingNavigation';
 import {describe,it,expect,vi} from 'vitest';
 import {createScene,serializeScene,parseScene} from '../src/engine/document';
@@ -44,6 +45,9 @@ describe('source Bouncing canonical/public boundary',()=>{
   const wrong=source();wrong.kind='surface';expect(()=>generateScene(wrong,context)).toThrow('配置只能');
   const corrupt=source();corrupt.bouncingSource=null as never;
   expect(()=>generateScene(corrupt,context)).toThrow('文档必须');
+ });
+ it('rejects foreign live clocks before preparing native or browser state',()=>{
+  for(const field of ['surfaceLive','fractalLive','rootsLive','perlinLive','implicitLive','domainLive','mapLive','symmetryLive','samilaLive','fractalRecording','spirographFrame'])expect(()=>prepareSourceBouncingFrame(source(),{...context,[field]:{}})).toThrow('其它场景时钟');
  });
  it('requires explicit matching checkpoint and viewport facts before allocating GPU state',()=>{
   const owner=new TemporalGenerationSession(),scene=source();

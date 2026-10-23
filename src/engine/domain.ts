@@ -13,7 +13,7 @@ const aborted=(error:unknown)=>error instanceof DOMException&&error.name==='Abor
 const message=(error:unknown)=>error instanceof Error?error.message:String(error);
 const pixelWork=(model:DomainModel)=>(model.iteration?model.steps:1)*model.supersampling**2*5*(model.execution.arithmetic==='local'?1:model.expressionCost);
 const sourceCpuLattice=(m:DomainModel)=>m.execution.arithmetic==='native-cpu'&&m.colorVersion==='mathart-1.7.8-cpu'&&m.view.version==='mathart-1.7.8-cpu';
-type DomainOutput=Extract<SceneOutput,{type:'raster'}>;
+type DomainOutput=Extract<SceneOutput,{type:'raster'}>&{backend?:'cpu'|'webgl2'};
 type RenderedDomain=DomainOutput & {domainPresentation?:'webgl-linear'|'software-linear'|'direct'};
 
 export function generateDomain(scene:SceneDocument,context:GenerateContext,session?:DomainRenderSession):DomainOutput{

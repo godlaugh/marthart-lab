@@ -113,6 +113,8 @@ describe('source Bouncing export contract',()=>{
   const output:SceneOutput={type:'raster',width:320,height:180,pixels:new Uint8ClampedArray(320*180*4),cameraResolved:true,backend:'webgl2',sourceBouncingFrame:{pixelDensity:plan.pixelDensity,checkpoint:frame,camera,viewport:plan.viewport},stats:{samples:1,generated:1,invalid:0}};
   expect(()=>assertSourceBouncingExportFrame(output,plan,frame)).not.toThrow();
   expect(()=>assertSourceBouncingExportFrame(output,plan,plan.warmup!)).toThrow('不一致');
+  expect(()=>assertSourceBouncingExportFrame({...output,backend:'native'},plan,frame)).toThrow('来源');
+  expect(()=>assertSourceBouncingExportFrame({...output,backend:'native',sourcePixelRenderer:{backend:'native',identity:'a'.repeat(64),generation:1,sequence:1,samples:0}},plan,frame)).not.toThrow();
   for(const patch of [{sourceBouncingFrame:{...output.sourceBouncingFrame,pixelDensity:2}},{backend:'cpu'},{cameraResolved:undefined},{width:100},{pixels:new Uint8ClampedArray(4)},{sourceBouncingFrame:undefined},{sourceBouncingFrame:{...output.sourceBouncingFrame,viewport:{...plan.viewport,target:'primary'}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,zoom:2}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,phi:-0}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,center:[1,0,0]}}},{sourceBouncingFrame:{...output.sourceBouncingFrame,camera:{...camera,focalDistance:21}}}])expect(()=>assertSourceBouncingExportFrame({...output,...patch} as SceneOutput,plan,frame)).toThrow('不一致');
  });
 });

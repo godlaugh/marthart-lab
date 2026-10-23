@@ -509,7 +509,7 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
   sourceCameraFrame?:OrdinarySourceCameraFrame;
   sourcePerlinFrame?:{sourceViewport:{width:number;height:number;pixelDensity:number};samples:number;frameIndex:number;updates:number;queueComplete:boolean;queueIndex:number;sceneTime:number};
   dimension?: 2 | 3;
-  backend?: 'cpu' | 'webgl2';
+  backend?: 'cpu' | 'webgl2' | 'native';
   density?: DensityStats;
   temporal?: { time: number; windowStart: number; frames: number; samplingFps: number; recordedPoints: number; cacheHits: number };
   stats: {
