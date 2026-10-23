@@ -45,6 +45,8 @@ export function rootsPendingSplatBudget(pending:number,base:number,capacity:numb
 export interface RootsPendingHooks {isCancelled?:()=>boolean;}
 export interface RootsPendingOptions {
  readonly storage:'points'|'count-only';readonly maximumBytes?:number;
+ /** Independent worker batches already own their sample boundaries. */
+ readonly ingestion?:'samples'|'batches';
  /** Before owned allocation, including simultaneous old/new buffers and batch
   * copy. Caller adds math, borrowed input, rings, display, output and transport. */
  readonly onBytes?:(ownerRetainedPlusTransient:number)=>void;
@@ -74,7 +76,9 @@ const check=(h:RootsPendingHooks)=>{if(h.isCancelled?.())throw new DOMException(
  * finished. publishWorker is called explicitly after a caller-chosen drain;
  * draining never pumps producers or fabricates concurrent arrival order. */
 export class RootsPendingQueue {
+ static readonly minimumBytes=BASE_BYTES;
  readonly plan:RootsPendingPlan;readonly storage:RootsPendingOptions['storage'];
+ private readonly ingestion:'samples'|'batches';
  private maximumBytes:number;private onBytes?:RootsPendingOptions['onBytes'];
  private workers=new Map<number,Worker>();private queueHead?:Batch;private queueTail?:Batch;private pendingHead?:Batch;private pendingTail?:Batch;private pendingOffset=0;
  private queuedBatches=0;private queuedPoints=0;private pendingBatches=0;private pendingPoints=0;private finishedWorkers=0;
@@ -83,6 +87,8 @@ export class RootsPendingQueue {
  private retainedBytes=BASE_BYTES;private peakBytes=BASE_BYTES;private failed=false;private disposed=false;private busy=false;
  constructor(plan:RootsPendingPlan,options:RootsPendingOptions){
   if(!options||!['points','count-only'].includes(options.storage))throw new RootsPendingError('input','storage must be points or count-only');
+  this.ingestion=options.ingestion??'samples';
+  if(!['samples','batches'].includes(this.ingestion)||this.ingestion==='batches'&&options.storage!=='points')throw new RootsPendingError('input','batch ingestion requires point storage');
   // Revalidate the public prepared boundary once; consumers use this frozen plan.
   const checked=prepareRootsPendingPlan({...plan,referenceHeapBytes:typeof plan?.referenceHeapBytes==='string'&&/^(?:0|[1-9][0-9]{0,18})$/.test(plan.referenceHeapBytes)?BigInt(plan.referenceHeapBytes):NaN});
   if(plan.queueCapacity!==checked.queueCapacity||plan.maximumPendingPoints!==checked.maximumPendingPoints||plan.heapPolicy!==checked.heapPolicy||plan.nativeHeapObserved!==false)throw new RootsPendingError('input','unprepared queue plan');
@@ -102,6 +108,32 @@ export class RootsPendingQueue {
   return Object.freeze({workerIndex:index,builderPoints:w?.count??0,blockedBatchPoints:w?.blocked?.count??0,finishRequested:w?.finish??false,terminal:w?.terminal??'none',blocked,canProduce:!w||!w.finish&&!w.blocked});
  }
  canProduce(index:number){return this.workerState(index).canProduce;}
+ canAcceptBatch(mode:'density'|'point-cloud'):boolean {
+  this.ready();if(this.ingestion!=='batches')throw new RootsPendingError('state','queue owns sample builders');
+  if(mode!=='density'&&mode!=='point-cloud')throw new RootsPendingError('input','unknown drain mode');
+  return this.queuedBatches===0&&(mode==='point-cloud'||this.pendingPoints<this.plan.maximumPendingPoints);
+ }
+ /** On success takes exclusive ownership of an arrived whole buffer. The
+  * caller must not retain/mutate it. Admission precedes mutation; no copy,
+  * root filtering, transform or rebatching occurs here. A final batch's
+  * terminal remains a separate FIFO node and obeys the same drain predicate. */
+ acceptBatch(index:number,points:Float32Array,terminal:boolean,mode:'density'|'point-cloud',h:RootsPendingHooks={}):void {return this.operation(()=>{
+  check(h);if(!this.canAcceptBatch(mode))throw new RootsPendingError('state','pending drain must release arrival capacity first');
+  const existing=this.worker(index);
+  if(existing?.finish)throw new RootsPendingError('state','worker already terminated');
+  if(typeof terminal!=='boolean'||!(points instanceof Float32Array)||!(points.buffer instanceof ArrayBuffer)||points.byteOffset!==0||points.byteLength!==points.buffer.byteLength||points.length%STRIDE)throw new RootsPendingError('input','arrivals require an owned whole Float32 point buffer');
+  try{points.subarray(0,0);}catch{throw new RootsPendingError('input','detached arrived point storage');}
+  const count=points.length/STRIDE,maximum=this.plan.maxPointsPerSample===0?0:this.plan.batchSize-1+this.plan.maxPointsPerSample;
+  if(count>INT_MAX||count>maximum||!terminal&&count<this.plan.batchSize)throw new RootsPendingError('input','arrived batch violates prepared whole-sample bounds');
+  if(!Number.isSafeInteger(this.producedPoints+count))failCapacity('cumulative arrived point count exceeds exact integer representation');
+  const bytes=points.byteLength+(count?BATCH_BYTES:0)+(terminal?BATCH_BYTES:0)+(!existing?WORKER_BYTES:0);
+  this.admit(this.retainedBytes+bytes);check(h);
+  const worker=existing??{index,count:0,finish:false,terminal:'none' as const};
+  if(!existing)this.workers.set(index,worker);
+  this.retainedBytes+=bytes;this.producedPoints+=count;
+  if(count)this.enqueue({workerIndex:index,count,data:points,terminal:false});
+  if(terminal){worker.finish=true;worker.terminal='queued';this.enqueue({workerIndex:index,count:0,terminal:true});}
+ });}
  private enqueue(batch:Batch){
   if(this.queueTail)this.queueTail.next=batch;else this.queueHead=batch;this.queueTail=batch;this.queuedBatches++;this.queuedPoints+=batch.count;
   this.publishedPoints+=batch.count;
@@ -120,6 +152,7 @@ export class RootsPendingQueue {
   * admission. Filtered samples must supply zero points and skip threshold check.
   * No scalar/metric/transform interpretation is duplicated here. */
  appendSample(index:number,input:Float32Array|number,options:RootsPendingHooks&{filtered?:boolean}={}):{blocked:boolean}{return this.operation(()=>{
+  if(this.ingestion!=='samples')throw new RootsPendingError('state','queue accepts completed batches');
   check(options);let w=this.worker(index);if(w&&(w.finish||w.blocked))throw new RootsPendingError('state','worker cannot accept another sample before publication');
   if(options.filtered!==undefined&&typeof options.filtered!=='boolean')throw new RootsPendingError('input','filtered must be boolean');
   let n:number,values:Float32Array|undefined;
@@ -152,6 +185,7 @@ export class RootsPendingQueue {
  /** End of an uncancelled partition. A final partial batch precedes its terminal
   * and both may wait for queue space. Cancel never fabricates this call. */
  finishWorker(index:number,h:RootsPendingHooks={}):{blocked:boolean}{return this.operation(()=>{
+  if(this.ingestion!=='samples')throw new RootsPendingError('state','arrival terminal belongs to its batch');
   check(h);let w=this.worker(index);if(w?.finish)return this.publish(w);
   const count=w?.count??0,makeBatch=count>0&&!w?.blocked,bytes=(makeBatch?BATCH_BYTES+(this.storage==='points'?count*POINT_BYTES:0):0)+BATCH_BYTES;
   this.admit(this.retainedBytes+(!w?WORKER_BYTES:0)+bytes);
@@ -161,7 +195,7 @@ export class RootsPendingQueue {
   if(batch){w.blocked=batch;this.blockedWorkers++;this.blockedPoints+=count;}
   this.retainedBytes+=bytes;w.finish=true;w.terminal='waiting';this.finishWaitingWorkers++;return this.publish(w);
  });}
- publishWorker(index:number,h:RootsPendingHooks={}):{blocked:boolean}{return this.operation(()=>{check(h);const w=this.worker(index);return w?this.publish(w):{blocked:false};});}
+ publishWorker(index:number,h:RootsPendingHooks={}):{blocked:boolean}{return this.operation(()=>{if(this.ingestion!=='samples')throw new RootsPendingError('state','arrival publication is owned externally');check(h);const w=this.worker(index);return w?this.publish(w):{blocked:false};});}
  private shiftQueue():Batch {const b=this.queueHead!;this.queueHead=b.next;if(!this.queueHead)this.queueTail=undefined;b.next=undefined;this.queuedBatches--;this.queuedPoints-=b.count;return b;}
  /** A source drain polls whole batches until its pre-poll predicate fails. Cloud
   * borrows each bounded slice synchronously; the PShape fallback list is not

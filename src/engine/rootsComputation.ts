@@ -15,7 +15,7 @@ export interface RootsComputationLimits {readonly maximumWorkers:number;readonly
 export interface RootsComputationPlan {
  readonly configuration:RootsMathConfiguration;readonly metric:RootsMetricKind;
  readonly partitions:RootsWorkerPartitionPlan;readonly queueCapacity:number;
- readonly maximumBatchPoints:number;readonly producerBytes:number;readonly reservedBytes:number;
+ readonly maxPointsPerSample:number;readonly maximumBatchPoints:number;readonly producerBytes:number;readonly reservedBytes:number;
 }
 const preparedPlans=new WeakSet<RootsComputationPlan>();
 function freezeOwned<T>(value:T):T {if(value&&typeof value==='object'){for(const child of Object.values(value))freezeOwned(child);Object.freeze(value);}return value;}
@@ -42,7 +42,7 @@ export function prepareRootsComputationPlan(raw:unknown,metric:unknown,limits:Ro
   const configBytes=JSON.stringify(configuration).length*2,producerBytes=math.workspaceCapacityBytes+math.maxRootCount*16+Math.max(16,maximumBatchPoints)*16*5+configBytes*2+4096;
   const queueCapacity=w*2,reservedBytes=w*(producerBytes+1024)+(queueCapacity+w)*maximumBatchPoints*16+configBytes;
   if(!Number.isSafeInteger(reservedBytes)||reservedBytes>limits.maximumBytes)throw new RootsComputationError('capacity',`Roots producer representations require ${reservedBytes} bytes, caller budget ${limits.maximumBytes}`);
-  const value=Object.freeze({configuration:freezeOwned(configuration),metric,partitions,queueCapacity,maximumBatchPoints,producerBytes,reservedBytes});preparedPlans.add(value);return{ok:true,value};
+  const value=Object.freeze({configuration:freezeOwned(configuration),metric,partitions,queueCapacity,maxPointsPerSample:math.maxRootCount,maximumBatchPoints,producerBytes,reservedBytes});preparedPlans.add(value);return{ok:true,value};
  }catch(error){return{ok:false,error:error instanceof RootsComputationError?error:new RootsComputationError(error instanceof RootsNativeError&&error.kind==='capacity'?'capacity':'input',error instanceof Error?error.message:String(error),{cause:error})};}
  finally{math?.dispose();}
 }

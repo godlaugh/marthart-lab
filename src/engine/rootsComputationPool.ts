@@ -25,6 +25,7 @@ export class RootsComputationPool {
  constructor(configuration:unknown,metric:unknown,limits:RootsComputationLimits,private readonly factory:RootsComputationWorkerFactory=makeWorker){
   const result=prepareRootsComputationPlan(configuration,metric,limits);if(!result.ok)throw result.error;this.plan=result.value;this.limits={...limits};
  }
+ describe(){return Object.freeze({sampleCount:this.plan.configuration.sampling.sampleCount,workerCount:this.plan.partitions.workerCount,batchSize:this.plan.configuration.sampling.batchSize,maxPointsPerSample:this.plan.maxPointsPerSample,reservedBytes:this.plan.reservedBytes});}
  start(){
   this.cleanup.prepare();if(this.state!=='idle')throw new RootsComputationError('protocol','Pool can start only once');this.state='running';
   try{for(let index=0;index<this.plan.partitions.workerCount;index++){
@@ -45,7 +46,7 @@ export class RootsComputationPool {
   for(const [index,peer] of this.peers){try{peer.port.terminate();this.peers.delete(index);}catch(error){errors.push(error);}}
   if(errors.length)throw new AggregateError(errors,'Roots worker termination failed');
  },this.failure?[this.failure]:[]);}
- private assertHealthy(){if(this.failure)throw this.failure;if(this.state==='disposed')throw new RootsComputationError('protocol','Pool disposed');}
+ assertHealthy(){if(this.failure)throw this.failure;if(this.state==='disposed')throw new RootsComputationError('protocol','Pool disposed');}
  private decode(index:number,raw:unknown):RootsComputedBatch {
   const peer=this.peers.get(index)!;
   if(!object(raw))throw new RootsComputationError('protocol','Invalid worker response');
