@@ -1,4 +1,5 @@
 import {chromium} from '@playwright/test';
+import {configureDesktopGraphics} from '../desktop/graphics.mjs';
 import {createServer} from 'vite';
 import {createExportServer} from '../server/index.mjs';
 import {readFile,writeFile,mkdir,readdir} from 'node:fs/promises';
@@ -8,7 +9,7 @@ import {decodePng} from './lib/verify-png.mjs';
 const root=process.argv[2]??'.cache/surface-native-reference-20261023',out=process.argv[3]??root+'/verified';await mkdir(out,{recursive:true});
 const sha=b=>createHash('sha256').update(b).digest('hex'),report={at:new Date().toISOString(),scope:'Original full paused Surface frame versus real imported Generator/Worker, paused capture and formula compositor. Complete artistic stage and unchanged vendor-overlay PNGs compared separately; no mask, no tolerance relaxation.',cases:[]};let server,browser,service;const started=performance.now();
 async function files(p){const out=[];for(const e of await readdir(p,{withFileTypes:true})){const q=p+'/'+e.name;if(e.isDirectory())out.push(...await files(q));else if(e.isFile())out.push(q);}return out;}
-const sourcePaths=[...await files('src'),...await files('server'),'scripts/verify-surface-native-reference.mjs','scripts/lib/verify-png.mjs'];
+const sourcePaths=[...await files('src'),...await files('server'),'scripts/verify-surface-native-reference.mjs','scripts/lib/verify-png.mjs','desktop/graphics.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(sourcePaths.sort().map(async p=>[p,sha(await readFile(p))])));
 report.sourceBefore=await hashes();report.referenceHashes={};
 const reference=async p=>{const b=await readFile(p);report.referenceHashes[p]=sha(b);return b;};
@@ -18,7 +19,13 @@ function flip(b){const a=Buffer.alloc(b.length);for(let y=0;y<600;y++)b.copy(a,y
 function diff(a,b){assert.equal(a.length,b.length);let pixels=0,max=0,sum=0;const examples=[];for(let i=0;i<a.length;i+=4){let changed=false;for(let k=0;k<4;k++){const d=Math.abs(a[i+k]-b[i+k]);max=Math.max(max,d);sum+=d;changed||=d>0;}if(changed){pixels++;if(examples.length<10)examples.push({x:i/4%500,y:Math.floor(i/4/500),a:[...a.subarray(i,i+4)],b:[...b.subarray(i,i+4)]});}}return{pixels,max,sum,examples};}
 try{
  service=await createExportServer({root:out+'/exports',allowedOrigins:['http://127.0.0.1:5178'],glyphBackend:JSON.parse(await readFile('.cache/source-glyph-service-20261022/build-final/backend.json','utf8'))});const addr=await service.listen(0);
- server=await createServer({mode:'preview-v2',server:{host:'127.0.0.1',port:5178,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${addr.port}`}},logLevel:'error'});await server.listen();browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage();
+ server=await createServer({mode:'preview-v2',server:{host:'127.0.0.1',port:5178,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${addr.port}`}},logLevel:'error'});await server.listen();
+ // Consume the desktop policy owner instead of duplicating its ANGLE switches.
+ const switches=new Map();
+ configureDesktopGraphics({getSwitchValue:key=>switches.get(key)??'',appendSwitch:(key,value)=>switches.set(key,value)});
+ report.browserArgs=[...switches].map(([key,value])=>'--'+key+'='+value);
+ browser=await chromium.launch({channel:'chrome',headless:true,args:report.browserArgs});
+ report.browserVersion=await browser.version();const page=await browser.newPage();
  await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(server.resolvedUrls.local[0]+'fixture');
  for(const name of ['cornucopia','sphere','mobius']){
   const native=root+(name==='mobius'?'/mesh':'')+'/native-'+name,run=JSON.parse(await reference(native+'/run.json')),text=(await reference(run.source)).toString();assert.equal(sha(await reference(native+'/NativeSceneProbe.java')),run.probeSha256);assert.equal(run.timedOut,false);assert.equal(sha(text),run.sourceSha256);assert.equal(run.exit,0);assert.equal(run.reaped,true);assert.equal(run.processGroupExists,false);
