@@ -7,6 +7,8 @@ import {SourceSurfaceHost} from '../src/engine/sourceSurfaceHost';
 import {replaySourceSurfaceHost} from '../src/engine/sourceSurfaceScene';
 import {outputBuffers} from '../src/engine/outputBuffers';
 import {createSourceSurfaceGpuMesh} from '../src/engine/sourceSurfaceGpuMeshRenderer';
+import {snapshotSourceDrawings} from '../src/engine/sourceDrawingSnapshot';
+import {encodeSourceDrawingFrame} from '../src/engine/sourceDrawingFrame';
 
 function source(settings:Record<string,unknown>={},timeline:unknown[]=[{type:'wait',duration:2}]){return{config_version:'1.0.0',type:'SURFACE',name:'GPU mesh',parameters:{a:0},equations:{x:'u',y:'v',z:'a*u*v'},palette:['#80FF0000','#4000FF00'],camera:{phi:0,theta:0,gamma:0},settings:{render_mode:'GPU',surface_mode:'MESH',mesh_u_segments:2,mesh_v_segments:2,u_min:0,u_max:1,v_min:0,v_max:1,speed_u:1,speed_v:0,scale_x:1,scale_y:1,scale_z:1,show_trails:true,...settings},timeline};}
 function read(raw=source()){const s=parseProjectFile(JSON.stringify(raw)).scene;s.timeline.fps=4;return s;}
@@ -17,6 +19,24 @@ function mesh(h:SourceSurfaceHost){const s=h.snapshot();if(s.mode!=='mesh'||!s.m
 const request=(index:number)=>({trackId:'track',actionIndex:0,action:{id:'target',method:'track',args:{index}}});
 
 describe('native GPU Mesh public lifetime',()=>{
+ it('exports owned GPU fill/wire snapshots with integer flags, parameters and explicit empty samplers',()=>{
+  const out=output(read()),objects=createSourceSurfaceGpuMesh(out.sourceGpuMesh!,prepareOrdinarySourceFrame(out.sourceCameraFrame!)),meshes=[objects.fill!,objects.wire!];
+  try{
+   const snapshot=snapshotSourceDrawings(meshes);expect(snapshot.ok).toBe(true);if(!snapshot.ok)throw Error(snapshot.error.reason);
+   expect(snapshot.value.commands).toHaveLength(2);expect(snapshot.value.textures).toHaveLength(2);
+   for(const texture of snapshot.value.textures){expect([texture.width,texture.height]).toEqual([1,1]);expect(Array.from(texture.pixels)).toEqual([0,0,0,0]);}
+   const flags=snapshot.value.commands[0].uniforms.find(u=>u.name==='isPeriodic')!;expect(flags.kind).toBe('ivec2');if(flags.kind==='sampler2d')throw Error('numeric flags');expect(flags.values).toBeInstanceOf(Int32Array);
+   const parameters=snapshot.value.commands[0].uniforms.find(u=>u.name==='params')!;if(parameters.kind==='sampler2d')throw Error('numeric params');expect(parameters.count).toBe(32);
+   const captured=parameters.values.slice();out.sourceGpuMesh!.parameters.fill(99);expect(parameters.values).toEqual(captured);
+   const packet=encodeSourceDrawingFrame({generation:1,sequence:1,width:96,height:64,samples:0,clear:[0,0,0,1],drawing:snapshot.value});expect(packet.ok).toBe(true);
+  }finally{for(const mesh of meshes){mesh.geometry.dispose();mesh.material.dispose();}}
+  expect(snapshotSourceDrawings(meshes).ok).toBe(false);
+ });
+ it('releases each owned empty sampler with its material',()=>{
+  const out=output(read()),objects=createSourceSurfaceGpuMesh(out.sourceGpuMesh!,prepareOrdinarySourceFrame(out.sourceCameraFrame!));let released=0;
+  for(const mesh of [objects.fill!,objects.wire!]){mesh.material.uniforms.texMap.value.addEventListener('dispose',()=>released++);mesh.geometry.dispose();mesh.material.dispose();}
+  expect(released).toBe(2);
+ });
  it('imports and saves one canonical GPU mesh with inclusive zero-speed seeds, not CPU positions',()=>{
   const s=read(),out=output(parseScene(serializeScene(s)));expect(s.settings.computeBackend).toBe('webgl2');expect(out.backend).toBe('webgl2');expect(out.positions).toHaveLength(0);expect(out.indices).toBeUndefined();expect(out.trails).toBeUndefined();expect(out.sourceMeshAppearance).toBeUndefined();
   expect(Array.from(out.sourceGpuMesh!.seeds)).toEqual([0,0,0,0,1,0,0,0,0,1,0,0,1,1,0,0]);expect(Array.from(out.sourceGpuMesh!.triangles)).toEqual([0,1,3,0,3,2]);

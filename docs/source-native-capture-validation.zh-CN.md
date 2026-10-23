@@ -85,3 +85,5 @@ Node 根进程家族包含浏览器及可观察的字形/原生进程。250ms �
 - `.cache/source-native-capture-20261023/`：测试、构建、成本对比与历史失败日志。
 
 下一步接通录像和实际预览，补齐其余材质，再完成其他场景、连续动画及 Apple Silicon 发行验收。Goal 继续保持进行中。
+
+后续进展：[GPU 曲面的原生截图验证](source-native-gpu-surface-validation.zh-CN.md) 已补齐 GPU 网格材质快照，并验证三个 GPU 配置的实际截图和 4 倍采样结果；预览、录像和发行范围仍待完成。

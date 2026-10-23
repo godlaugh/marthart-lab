@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createSourceShaderMaterial} from './sourceShaderMaterial';
 import type {SourceSurfaceGpuMeshFrame} from './sourceSurfaceGpuMesh';
 import type {SourceCameraPlan} from './sourceCamera';
 import {SOURCE_SURFACE_MESH_MATERIAL_DEFAULTS as defaults} from './sourceSurfaceMeshConfig';
@@ -34,6 +35,11 @@ export function createSourceSurfaceGpuMesh(frame:SourceSurfaceGpuMeshFrame,plan:
  const wireColor=uniformRgba(frame.wireframeColor,displayOpacity),ambient=uniformRgba(defaults.materialAmbientColor),specular=uniformRgba(defaults.materialSpecularColor);
  const make=(wire:boolean):SourceGpuMesh=>{
   const geometry=new THREE.BufferGeometry();let material:THREE.RawShaderMaterial|undefined;
+  // Three binds a 1x1 transparent-black texture for a null sampler. Own the
+  // same texel explicitly so both adapters receive defined sampler content.
+  // Filtering is immaterial for a constant 1x1 image; use the shared contract.
+  const texture=new THREE.DataTexture(new Uint8Array(4),1,1,THREE.RGBAFormat);
+  texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;
   try{
    // MeshSurface emits fresh PShape.vertex entries for every triangle corner.
    // Sharing a grid vertex changes raster interpolation/derivative rounding on
@@ -45,11 +51,12 @@ export function createSourceSurfaceGpuMesh(frame:SourceSurfaceGpuMeshFrame,plan:
    }
    geometry.setAttribute('position',new THREE.BufferAttribute(seeds,4));geometry.setAttribute('color',new THREE.BufferAttribute(colors,4));geometry.setIndex(new THREE.BufferAttribute(indices,1));
    geometry.boundingSphere=new THREE.Sphere(new THREE.Vector3(),0);
-   material=new THREE.RawShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:sourceSurfaceGpuMeshVertex(frame.functionBody),fragmentShader:sourceSurfaceGpuMeshFragment,side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:true,depthWrite:true,toneMapped:false,
+   material=createSourceShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:sourceSurfaceGpuMeshVertex(frame.functionBody),fragmentShader:sourceSurfaceGpuMeshFragment,side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:true,depthWrite:true,toneMapped:false,
     blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquationAlpha:THREE.AddEquation,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor,
-    uniforms:{transform:{value:new THREE.Matrix4().fromArray(plan.transform.columnMajor)},modelview:{value:new THREE.Matrix4().fromArray(plan.modelView.columnMajor)},time:{value:frame.time},surfaceScale:{value:frame.scale},surfaceOffset:{value:frame.offset},uLimits:{value:frame.uLimits},vLimits:{value:frame.vLimits},isPeriodic:{value:frame.periodic},isFlowing:{value:frame.flowing},isTwistedU:{value:frame.twistedU?1:0},isTwistedV:{value:frame.twistedV?1:0},params:{value:frame.parameters},useWireframe:{value:wire?1:0},meshFillColor:{value:[1,1,1,1]},meshFillOpacity:{value:F(F(frame.fillOpacity)*F(displayOpacity))},meshWireframeColor:{value:wireColor},wireframeThickness:{value:thickness},wireframeFeather:{value:defaults.wireframeFeather},wireframeDepthBias:{value:defaults.wireframeDepthBias},wireframeDistanceScale:{value:defaults.wireframeDistanceScale},wireframeDistanceMin:{value:defaults.wireframeDistanceMin},wireframeDistanceMax:{value:defaults.wireframeDistanceMax},wireframeFresnelPower:{value:defaults.wireframeFresnelPower},wireframeFresnelStrength:{value:defaults.wireframeFresnelStrength},enableLighting:{value:wire?0:1},lightDir:{value:[.5,.5,1]},materialShininess:{value:defaults.materialShininess},materialAmbient:{value:ambient.slice(0,3)},materialSpecular:{value:specular.slice(0,3)},proceduralTextureType:{value:0},useTexture:{value:0},texMap:{value:null}}});
+    uniforms:{transform:{kind:'mat4',value:new THREE.Matrix4().fromArray(plan.transform.columnMajor)},modelview:{kind:'mat4',value:new THREE.Matrix4().fromArray(plan.modelView.columnMajor)},time:{kind:'float',value:frame.time},surfaceScale:{kind:'vec3',value:frame.scale},surfaceOffset:{kind:'vec3',value:frame.offset},uLimits:{kind:'vec2',value:frame.uLimits},vLimits:{kind:'vec2',value:frame.vLimits},isPeriodic:{kind:'ivec2',value:frame.periodic},isFlowing:{kind:'ivec2',value:frame.flowing},isTwistedU:{kind:'int',value:frame.twistedU?1:0},isTwistedV:{kind:'int',value:frame.twistedV?1:0},params:{kind:'float-array',count:32,value:frame.parameters},useWireframe:{kind:'int',value:wire?1:0},meshFillColor:{kind:'vec4',value:[1,1,1,1]},meshFillOpacity:{kind:'float',value:F(F(frame.fillOpacity)*F(displayOpacity))},meshWireframeColor:{kind:'vec4',value:wireColor},wireframeThickness:{kind:'float',value:thickness},wireframeFeather:{kind:'float',value:defaults.wireframeFeather},wireframeDepthBias:{kind:'float',value:defaults.wireframeDepthBias},wireframeDistanceScale:{kind:'float',value:defaults.wireframeDistanceScale},wireframeDistanceMin:{kind:'float',value:defaults.wireframeDistanceMin},wireframeDistanceMax:{kind:'float',value:defaults.wireframeDistanceMax},wireframeFresnelPower:{kind:'float',value:defaults.wireframeFresnelPower},wireframeFresnelStrength:{kind:'float',value:defaults.wireframeFresnelStrength},enableLighting:{kind:'int',value:wire?0:1},lightDir:{kind:'vec3',value:[.5,.5,1]},materialShininess:{kind:'float',value:defaults.materialShininess},materialAmbient:{kind:'vec3',value:ambient.slice(0,3)},materialSpecular:{kind:'vec3',value:specular.slice(0,3)},proceduralTextureType:{kind:'int',value:0},useTexture:{kind:'int',value:0},texMap:{kind:'sampler2d',value:texture}}});
+   material.addEventListener('dispose',()=>texture.dispose());
    const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;mesh.renderOrder=wire?1:0;mesh.userData.sourceSurfaceGpuMesh=true;mesh.userData.sourceSurfaceGpuWire=wire;return mesh;
-  }catch(error){geometry.dispose();material?.dispose();throw error;}
+  }catch(error){geometry.dispose();if(material)material.dispose();else texture.dispose();throw error;}
  };
  try{
   if(frame.fillEnabled)objects.fill=make(false);
