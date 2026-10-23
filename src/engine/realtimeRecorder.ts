@@ -1,3 +1,4 @@
+import {hasFormulaComposition} from './formulaConfig';
 import type {FormulaPresentation} from '../types';
 import {formulaPresentation,formulaPlacement} from './formulas';
 import type {PresentedFrame} from './presentedFrame';
@@ -87,7 +88,7 @@ export class RealtimeRecorder {
       // Snapshot before the first await: playback may replace frame.canvas
       // while an uncached glyph is loading. Keep image/time/revision together.
       const pixels=formulaBasePixels(frame.canvas);let composed=pixels;this.images.clear();
-      if(labels.length){
+      if(hasFormulaComposition(presentation)){
         const key=JSON.stringify(presentation);let retained=this.sourceFormulas;
         if(!retained||retained.key!==key){
           const prepared=await prepareSourceFormulas(presentation,this.formulaAbort.signal);if(this.stopping)return;

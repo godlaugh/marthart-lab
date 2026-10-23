@@ -29,7 +29,8 @@ export class SurfaceRecordingRenderer {
   const {pixels,sourcePixelRenderer}=await readSourceDrawingPixels(renderer,width,height,bytes,isCancelled,request?{...request,signal:controller.signal}:undefined);
   check();
   // Video receives raw draw pixels. Paused PNG enhancement/upscale belongs to
-  // its separate capture path; formulas are composed by the video consumer.
+  // its separate capture path; formulas and their final transition are
+  // composed by the video consumer from these delivered frame facts.
   return{type:'raster',width,height,pixels,sourcePixelRenderer,cameraResolved:true,stats:output.stats,sourceCameraFrame:output.sourceCameraFrame,surfaceLive:output.surfaceLive,formulaPresentation:validateFormulaPresentation(output.formulaPresentation)};
   }finally{request?.signal.removeEventListener('abort',abort);if(this.active===controller)this.active=undefined;}
  }

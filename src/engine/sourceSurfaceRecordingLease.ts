@@ -12,6 +12,12 @@ import type {SourceDrawingRequest} from './sourceDrawingPixels';
 import type {SourceSurfaceLiveFacts} from './sourceSurfaceLiveSession';
 type Geometry=Extract<SceneOutput,{type:'geometry'}>;
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
+/** Labels/layout stay fixed during this recording; the final transition is a
+ * delivered frame fact validated against the numerical producer separately. */
+function annotations(value:FormulaPresentation|undefined):FormulaPresentation|undefined {
+ if(value?.layout!=='source-surface-centered-v1')return value;
+ const {finalBlackOverlayAlpha:_,...stable}=value;return stable;
+}
 const rate=(value:number|undefined)=>sourceSurfaceParameterFrameRate({frameIndex:0,time:0,deltaTime:0,actualFrameRate:value},NaN);
 /** Numerical facts belong to the Worker. This client lease validates transport,
  * retains an unpainted geometry frame, and owns one main-thread GL renderer. */
@@ -37,7 +43,7 @@ export class SourceSurfaceRecordingLease {
   const size=this.size,input:GenerationInput={...this.primary,width:size.width,height:size.height,quality:'export',surfaceLive:{...this.primary.surfaceLive!,clock:{paused:false}},sourceViewport:{...this.primary.sourceViewport!,logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,referenceLogicalHeight:this.primary.sourceViewport!.logicalHeight,target:'offscreen'}};
   if(!clock||!validSourceQueueRecordingClock(clock,this.options.simulationFps)||!validSourceSurfaceOutput(output,input,true))throw Error('曲面录制响应身份或尺寸无效');
   assertSourceSurfaceRecordingFrame(output,clock,index);
-  if(this.formulas&&!same(output.formulaPresentation,this.formulas))throw Error('曲面录制公式改变了已确认的场景标注');
+  if(this.formulas&&!same(annotations(output.formulaPresentation),this.formulas))throw Error('曲面录制公式改变了已确认的场景标注');
   const live=output.surfaceLive!;
   if(live.constructions!==this.constructions||!Object.is(live.recording!.actualFrameRate,actualFrameRate)||live.frame.rawDt!==Math.fround(1/Math.fround(clock.simulationFps)))throw Error('曲面录制响应时钟或对象身份无效');
  }
@@ -47,7 +53,7 @@ export class SourceSurfaceRecordingLease {
   if(!start?.scene||start.scene.id!==this.sceneId||!usesSourceSurfaceGeometry(start.scene)||!this.context(start.context)||start.context.time!==0||!Object.is(rate(start.context.surfaceLive!.actualFrameRate),this.options.actualFrameRate))throw Error('曲面录制起始配置或主预览身份无效');
   if(!validSourceQueueRecordingClock(start.clock,this.options.simulationFps))throw Error('曲面录制完成规划无效');
   this.frame(start.warmup,0,this.options.actualFrameRate!,start.clock);
-  this.clock=structuredClone(start.clock);this.scene=structuredClone(start.scene);this.pending=start.warmup;this.formulas=structuredClone(start.warmup.formulaPresentation);this.last=structuredClone(start.warmup.surfaceLive!);
+  this.clock=structuredClone(start.clock);this.scene=structuredClone(start.scene);this.pending=start.warmup;this.formulas=structuredClone(annotations(start.warmup.formulaPresentation));this.last=structuredClone(start.warmup.surfaceLive!);
  }
  requestFrame(index:number,actualFrameRate:number|undefined):{cached:boolean;actualFrameRate:number} {
   if(this.stopping||!this.warmupDelivered||!this.clock||index!==this.next||index>this.clock.lastDisplayFrame)throw Error('曲面录制必须连续请求，未交付 warmup 的会话只能停止');
@@ -78,7 +84,7 @@ export class SourceSurfaceRecordingLease {
  acceptStop(stop:SourceRecordingStop):void {
   const output=stop?.preview;
   if(stop?.scene?.id!==this.sceneId||stop.scene.kind!=='surface'||!this.context(stop.context)||!validSourceSurfaceOutput(output,stop.context)||output.surfaceLive!.renderKind!=='snapshot'||output.surfaceLive!.recording!==undefined||output.surfaceLive!.constructions!==this.constructions||stop.context.time!==output.surfaceLive!.frame.sceneTime)throw Error('曲面录制停止响应身份无效');
-  if(this.formulas&&!same(output.formulaPresentation,this.formulas))throw Error('曲面录制停止改变了场景标注');
+  if(this.formulas&&!same(annotations(output.formulaPresentation),this.formulas))throw Error('曲面录制停止改变了场景标注');
   const frame=output.surfaceLive!.frame,confirmed=this.last?.frame.frameIndex??0,possible=this.attempt?.index??confirmed;
   if(frame.frameIndex!==confirmed&&frame.frameIndex!==possible)throw Error('曲面录制停止响应增加了未知更新');
   if(this.last&&frame.frameIndex===confirmed&&!same(frame,this.last.frame))throw Error('曲面录制停止改变了已确认的数值状态');

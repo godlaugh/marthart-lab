@@ -1,3 +1,4 @@
+import {hasFormulaComposition} from './formulaConfig';
 import {snapshotSourceDrawings,type SourceDrawingResult} from './sourceDrawingSnapshot';
 import type {SourceDrawingFrame} from './sourceDrawingFrame';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
@@ -492,7 +493,7 @@ export class ArtRenderer {
       // formula -> native image processing -> PNG owner without inventing one.
       return encodeFormulaRaster({type:'raster',width,height,pixels,formulaPresentation:presentation},'image/png',options);
     }
-    if(this.sourceCompositedRaster&&type==='image/png'&&!presentation?.labels.length){
+    if(this.sourceCompositedRaster&&type==='image/png'&&!hasFormulaComposition(presentation)){
       const frame=this.sourceCompositedRaster,gl=this.renderer.getContext();
       if(frame.width!==gl.drawingBufferWidth||frame.height!==gl.drawingBufferHeight)throw new Error('源合成图像导出尺寸必须与已生成图像一致');
       if(!Number.isSafeInteger(frame.width*frame.height)||frame.width*frame.height>MAX_RASTER_PIXELS||frame.pixels.length!==frame.width*frame.height*4)throw new Error('源合成图像导出超过共享 RGBA 图像容量或像素不完整');
@@ -501,14 +502,14 @@ export class ArtRenderer {
       // alpha opaque before PNG transport; no additional background mix.
       return encodeRgbaPng(frame.pixels,frame.width,frame.height,isCancelled,{alpha:options?.sourcePresentationAlpha??'preserve'});
     }
-    if(this.sourceClear&&type==='image/png'&&!presentation?.labels.length){
+    if(this.sourceClear&&type==='image/png'&&!hasFormulaComposition(presentation)){
       // Canvas.toBlob would unpremultiply source framebuffer bytes. Reuse the
       // existing lossless encoder for unannotated source PNGs, including hidden
       // RGB at alpha zero. Annotated/non-PNG exports retain their compositor.
       const {pixels,width,height}=this.sourceFramebufferPixels(isCancelled);
       return encodeRgbaPng(pixels,width,height,isCancelled);
     }
-    if(type==='image/png'&&presentation?.layout==='source-surface-centered-v1'&&presentation.labels.length){
+    if(type==='image/png'&&presentation?.layout==='source-surface-centered-v1'&&hasFormulaComposition(presentation)){
       const canvas=this.renderer.domElement,{width,height}=canvas;
       if(this.sourceCompositedRaster&&(this.sourceCompositedRaster.width!==width||this.sourceCompositedRaster.height!==height))throw new Error('源合成图像导出尺寸必须与已生成图像一致');
       const pixels=await compositeSourceFormulaPixels(this.sourceCompositedRaster?.pixels??formulaBasePixels(canvas),width,height,presentation,options?.signal);

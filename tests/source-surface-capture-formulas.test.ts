@@ -18,6 +18,7 @@ vi.mock('../src/engine/sourceFormulaCompositor',()=>({compositeSourceFormulaPixe
 vi.mock('../src/engine/sourcePausedPng',()=>({encodeSourcePausedPng:async(p:Uint8ClampedArray,w:number,h:number,s:number)=>{state.events.push('enhance-upscale');state.encoded=[p.slice(),w,h,s];return new Blob(['png']);}}));
 function setup(){
  const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'capture',equations:{x:'u',y:'v',z:'0'},settings:{render_mode:'CPU',surface_mode:'POINTS',u_segments:2,v_segments:2},timeline:[{type:'wait',duration:1}],main_equation:{enabled:true,position:[0,0],scale:.25,color:'#ffffff',latex:'x'}})).scene;
+ scene.formulas!.main.latex='x'; // Explicit local edit after source import.
  const context:GenerationInput={time:0,width:16,height:8,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,8,4,'primary',4),surfaceLive:{sessionId:'capture',revision:0,clock:{paused:true,timestampMs:0},actualFrameRate:60}},owner=new SourceSurfaceLiveSession();owner.generate(scene,context);return{scene,context,owner};
 }
 beforeEach(()=>{state.events=[];state.encoded=[];state.compositions=[];vi.stubGlobal('document',{createElement:()=>({width:0,height:0})});});

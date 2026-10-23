@@ -3,6 +3,7 @@ import * as THREE from 'three';
 
 /** GenericSurfaceScene draws a final full-canvas black rectangle with depth
  * disabled. Keep it in a separate render pass, after every scene primitive.
+ * Frames with formulas defer this pass to their FormulaPresentation instead.
  * Processing BLEND uses additive destination alpha, including this rectangle. */
 export function createSourceSurfaceOverlay(){
  const geometry=new THREE.BufferGeometry();

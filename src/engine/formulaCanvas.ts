@@ -1,3 +1,4 @@
+import {hasFormulaComposition} from './formulaConfig';
 import type {FormulaPresentation,RasterOutput} from '../types';
 import {formulaPlacement} from './formulas';
 import {encodeRgbaPng} from './rgbaPng';
@@ -37,7 +38,7 @@ async function drawFormulas(canvas:HTMLCanvasElement,presentation:FormulaPresent
   check(options);
 }
 export async function compositeFormulas(source:HTMLCanvasElement,presentation:FormulaPresentation,options?:FormulaCompositeOptions):Promise<HTMLCanvasElement>{
-  check(options);if(!presentation.labels.length)return source;
+  check(options);if(!hasFormulaComposition(presentation))return source;
   const {width,height}=source,canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   try{
     const context=canvas.getContext('2d');if(!context)throw new Error('无法创建公式合成画布');
@@ -60,19 +61,19 @@ export async function encodeFormulaRaster(output:RasterOutput,type:'image/png'|'
   const imageScale=current?current.scale:(options?.sourceImageProcessing==='paused-png'?1:undefined);
   if(imageScale!==undefined&&type!=='image/png')throw new Error('源暂停图像后处理仅支持 PNG');
   if(current&&(current.model!=='local-current-numerical-snapshot'||current.stage!=='base-before-formulas'||current.baseSize?.[0]!==width||current.baseSize?.[1]!==height||'resampling' in current||type!=='image/png'))throw new Error('当前帧 PNG 缺少未合成的基础图像');
-  if(imageScale===undefined&&!presentation.labels.length&&type==='image/png')return encodeRgbaPng(pixels,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.());
+  if(imageScale===undefined&&!hasFormulaComposition(presentation)&&type==='image/png')return encodeRgbaPng(pixels,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.());
   const bytes=width*height*4;
   if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||!Number.isSafeInteger(bytes)||bytes>MAX_RASTER_PIXELS*4||!(pixels instanceof Uint8ClampedArray)||!(pixels.buffer instanceof ArrayBuffer)||pixels.length!==bytes)throw new Error('公式合成需要完整且有界的 RGBA 图像');
   // Include both the caller's base frame and the composed readback retained
   // while the separate worker borrows it. Admit before allocating a Canvas.
   if(imageScale!==undefined){
-    prepareSourcePausedPng(width,height,imageScale,pixels.buffer.byteLength+(presentation.labels.length?bytes:0));
-    if(!presentation.labels.length)return encodeSourcePausedPng(pixels,width,height,imageScale,options);
+    prepareSourcePausedPng(width,height,imageScale,pixels.buffer.byteLength+(hasFormulaComposition(presentation)?bytes:0));
+    if(!hasFormulaComposition(presentation))return encodeSourcePausedPng(pixels,width,height,imageScale,options);
   }
   // Borrowed RGBA backing + canvas + serialization/readback raster + maximum
   // one decoded formula. Browser/GPU implementation workspace is separate.
   if(pixels.buffer.byteLength+bytes*2+16_000_000*4>768*1024**2)throw new Error('公式合成超过 768 MiB 工作预算');
-  if(presentation.layout==='source-surface-centered-v1'&&presentation.labels.length){
+  if(presentation.layout==='source-surface-centered-v1'&&hasFormulaComposition(presentation)){
     const composed=await compositeSourceFormulaPixels(pixels,width,height,presentation,options?.signal);check(options);
     if(imageScale!==undefined)return encodeSourcePausedPng(composed,width,height,imageScale,options);
     if(type==='image/png')return encodeRgbaPng(composed,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.());

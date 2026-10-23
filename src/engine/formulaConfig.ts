@@ -3,6 +3,11 @@ import type {FormulaStyle,FormulaLabel,FormulaConfig,FormulaPresentation} from '
 
 const object=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const finite=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
+function finalOverlay(value:object,source:boolean):number|undefined {
+ const alpha='finalBlackOverlayAlpha' in value?value.finalBlackOverlayAlpha:undefined;
+ if(alpha!==undefined&&(!source||!Number.isInteger(alpha)||!finite(alpha,0,255)))throw new Error('实际帧的最终遮罩需要源布局与 0–255 整数透明度');
+ return alpha as number|undefined;
+}
 function formulaStyle(v:Record<string,unknown>,source=false):FormulaStyle {
   if(typeof v.visible!=='boolean'||!finite(v.x,-32768,32768)||!finite(v.y,-32768,32768)||!finite(v.scale,source?.02:.05,20)||typeof v.color!=='string'||!/^#[0-9a-f]{6}$/i.test(v.color))throw new Error('公式位置、缩放或颜色无效');
   if(source&&v.anchor!=='center')throw new Error('源曲面公式必须使用居中锚点');
@@ -26,11 +31,16 @@ export function validateFormulas(value:unknown):FormulaConfig {
 export function validateFormulaPresentation(value:unknown):FormulaPresentation {
   if(!object(value)||!Array.isArray(value.labels)||value.labels.length>33)throw new Error('实际帧的公式标注无效');
   const source=value.layout==='source-surface-centered-v1';
+  const overlay=finalOverlay(value,source);
   if(value.layout!==undefined&&!source)throw new Error('公式布局版本无效');
   if(source?(!Number.isSafeInteger(value.primaryLogicalHeight)||!finite(value.primaryLogicalHeight,1,16384)||value.referenceWidth!==undefined||value.referenceHeight!==undefined):(value.primaryLogicalHeight!==undefined||!finite(value.referenceWidth,1,16384)||!finite(value.referenceHeight,1,16384)))throw new Error('实际帧的公式参考尺寸无效');
   const ids=new Set<string>(),labels=value.labels.map(v=>formulaLabel(v,ids,source));
   if(labels.some(label=>!label.visible||!label.latex.trim()))throw new Error('实际帧包含未启用或空的公式标注');
-  return source?{layout:'source-surface-centered-v1',primaryLogicalHeight:value.primaryLogicalHeight as number,labels}:{referenceWidth:value.referenceWidth as number,referenceHeight:value.referenceHeight as number,labels};
+  return source?{layout:'source-surface-centered-v1',primaryLogicalHeight:value.primaryLogicalHeight as number,labels,...(overlay!==undefined?{finalBlackOverlayAlpha:overlay as number}:{})}:{referenceWidth:value.referenceWidth as number,referenceHeight:value.referenceHeight as number,labels};
+}
+export function hasFormulaComposition(value:FormulaPresentation|undefined):boolean {
+ if(!value)return false;const alpha=finalOverlay(value,value.layout==='source-surface-centered-v1');
+ return value.labels.length>0||(alpha??0)>0;
 }
 
 /** Shared interpretation of the source camera's primary logical reference. */

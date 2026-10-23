@@ -17,6 +17,14 @@ describe('original Surface automatic equation labels',()=>{
   const input=fixture.cases.find(c=>c.input.name==='Cornucopia')!.input;
   return parseProjectFile(JSON.stringify({...input,config_version:'1.0.0',type:'SURFACE',settings:{render_mode:'CPU',surface_mode:'POINTS',u_segments:3,v_segments:3,u_min:0,u_max:1,v_min:0,v_max:1,scale_x:1,scale_y:1,scale_z:1,speed_u:0,speed_v:0,show_trails:false},camera:{phi:0,theta:0,gamma:0},timeline:[{type:'wait',duration:1}]})).scene;
  }
+ it('keeps the ignored source main latex in provenance without replacing the executed original automatic label',()=>{
+  const row=fixture.cases.find(c=>c.input.name==='Explicit')!;
+  const result=parseProjectFile(JSON.stringify({...row.input,config_version:'1.0.0',type:'SURFACE'}));
+  expect(formulaLabels(result.scene)[0].latex).toBe(row.output.latex);
+  expect(result.scene.formulas!.main.latex).toBeUndefined();
+  expect(result.scene.provenance!.original).toMatchObject({main_equation:{latex:'SHOULD_BE_IGNORED'}});
+  expect(result.warnings.some(w=>w.includes('忽略主方程 latex'))).toBe(true);
+ });
  it('carries the source label through import, save/reopen, applied preview, capture and retained recording',()=>{
   const scene=parseScene(JSON.stringify(imported())),expected=fixture.cases.find(c=>c.input.name==='Cornucopia')!.output.latex;
   expect(formulaLabels(scene)[0].latex).toBe(expected);expect(renderFormulaSvg(expected,'#ffffff').source).toContain('<path');

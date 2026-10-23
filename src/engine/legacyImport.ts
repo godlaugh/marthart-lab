@@ -297,7 +297,13 @@ function formulaAnnotations(r:Reader,s:SceneDocument){
   const [x,y]=(position??[0,200]) as number[],color=r.str(path+'.color')??'#ffffff',scale=(r.num(path+'.scale')??.25)*(sourceCentered?1:2.5);
   return{visible:r.bool(path+'.enabled')??visible,x:config.layout==='source-surface-centered-v1'?x:config.referenceWidth/2+x,y:config.layout==='source-surface-centered-v1'?y:config.referenceHeight/2+y,scale,color,anchor:'center' as const};
  };
- if(r.has('main_equation')){r.object('main_equation');config.main={...style('main_equation',false),...(r.has('main_equation.latex')?{latex:latex('main_equation.latex')}:{})};}
+ if(r.has('main_equation')){
+  r.object('main_equation');const explicit=r.has('main_equation.latex');
+  // JsonSurfaceConfig generates its main equation from the source expressions;
+  // an imported latex member is ignored. Local edits after import remain valid.
+  if(explicit&&usesSourceSurfaceGeometry(s))r.acknowledge('main_equation.latex','原版曲面忽略主方程 latex 字段，按表达式生成主方程；原值保留在来源记录');
+  config.main={...style('main_equation',false),...(explicit&&!usesSourceSurfaceGeometry(s)?{latex:latex('main_equation.latex')}:{})};
+ }
  if(r.has('formulas')){const formulas=r.peek('formulas');if(!Array.isArray(formulas)||formulas.length>32)fail('formulas 应为最多 32 条公式的数组');config.additional=formulas.map((_,i)=>{const path=`formulas.${i}`;r.object(path);return{...style(path,true),id:`imported-formula-${i+1}`,latex:latex(path+'.latex')};});if(!formulas.length)r.use('formulas');}
  try{s.formulas=validateFormulas(config);}catch(error){fail(error instanceof Error?error.message:String(error));}
  r.warnings.push(sourceCentered?'源曲面公式保留居中偏移与源缩放，由实际生成帧提供主画布逻辑高度并使用源字形后端；原版整图尚未验收。':'公式内容、居中锚点、颜色和相对缩放已导入；位置转换至 1280×720 参考画布，原版窗口尺寸及 JLaTeXMath 字体度量未逐帧对照，可在公式标注面板调整。');

@@ -120,7 +120,10 @@ export type FormulaConfig=(LegacyFormulaLayout|SourceSurfaceFormulaLayout)&{main
 /** Resolved labels owned by the delivered frame. Empty labels are explicit;
  * consumers must not replace them with a newer authoring draft. */
 export type FormulaContent=(LegacyFormulaLayout|SourceSurfaceFormulaLayout)&{labels:readonly FormulaLabel[];};
-export type FormulaPresentation=(LegacyFormulaLayout|(SourceSurfaceFormulaLayout&{primaryLogicalHeight:number}))&{labels:readonly FormulaLabel[];};
+export type FormulaPresentation=(LegacyFormulaLayout|(SourceSurfaceFormulaLayout&{primaryLogicalHeight:number;
+  /** Delivered source transition, after formulas; integer Processing alpha. */
+  finalBlackOverlayAlpha?:number;
+}))&{labels:readonly FormulaLabel[];};
 export type AnimationClipType = "numeric" | "wait" | "animate" | "align" | "trails" | "param" | "fractal_zoom" | "surface_mode_transition" | "spirograph_finish_wait";
 export interface OscillationEdgeEasing {window:number;floor:number;easing:string;}
 export interface ParameterAnimation {

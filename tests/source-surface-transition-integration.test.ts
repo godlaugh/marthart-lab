@@ -5,6 +5,7 @@ import {generateScene} from '../src/engine/temporal';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
 import {sceneAtTime,resolveTimeline} from '../src/engine/timeline';
 import {outputBuffers} from '../src/engine/outputBuffers';
+import {validateFormulaPresentation,hasFormulaComposition} from '../src/engine/formulaConfig';
 
 function source(mode='POINTS'){
  return{config_version:'1.0.0',type:'SURFACE',name:'Public mode transition',parameters:{a:0},equations:{x:'u+a',y:'v',z:'0'},settings:{surface_mode:mode,render_mode:'CPU',u_segments:2,v_segments:2,mesh_u_segments:3,mesh_v_segments:2,u_min:0,u_max:2,v_min:0,v_max:2,scale_x:1,scale_y:1,scale_z:1,speed_u:1,speed_v:0,show_trails:true,background_color:'#804080C0'},timeline:[{type:'surface_mode_transition',to:'MESH',duration:1,easing:'LINEAR'},{type:'surface_mode_transition',to:'POINTS',duration:.5,easing:'LINEAR'}]};
@@ -12,6 +13,26 @@ function source(mode='POINTS'){
 const scene=(raw=source())=>{const s=parseProjectFile(JSON.stringify(raw)).scene;s.timeline.fps=4;return s;};
 function output(s:ReturnType<typeof scene>,time:number){const out=generateScene(s,{time,width:96,height:64,quality:'preview',sourceViewport:ordinarySourceViewport(s,96,64,'primary',64)});if(out.type!=='geometry')throw Error('geometry');return out;}
 describe('public CPU surface mode transition workflow',()=>{
+ it('delivers the final transition after enabled formulas through import, save and replay',()=>{
+  const s=scene({...source(),main_equation:{enabled:true,latex:'x',position:[0,0],scale:.5,color:'#FFFFFF'}} as ReturnType<typeof source>);
+  const saved=parseScene(serializeScene(s));
+  for(const [time,alpha]of [[0,128],[.25,255],[.5,128],[.75,0],[0,128]]){
+   const frame=output(saved,time);expect(frame.formulaPresentation!.labels[0].latex).toContain('x = ');
+   expect(frame.sourceSurfaceOverlayAlpha).toBe(alpha?undefined:0);
+   expect(validateFormulaPresentation(structuredClone(frame.formulaPresentation))).toMatchObject(alpha?{finalBlackOverlayAlpha:alpha}:{});
+   expect(hasFormulaComposition(frame.formulaPresentation)).toBe(true);
+  }
+  saved.formulas!.main.visible=false;
+  expect(output(saved,0)).toMatchObject({sourceSurfaceOverlayAlpha:128,formulaPresentation:{labels:[]}});
+ });
+ it('rejects malformed final overlays and preserves an explicit empty-label overlay',()=>{
+  const base={layout:'source-surface-centered-v1',primaryLogicalHeight:64,labels:[]};
+  for(const alpha of [-1,256,.5,NaN,'128'])expect(()=>validateFormulaPresentation({...base,finalBlackOverlayAlpha:alpha})).toThrow('遮罩');
+  expect(()=>validateFormulaPresentation({referenceWidth:64,referenceHeight:64,labels:[],finalBlackOverlayAlpha:128})).toThrow('遮罩');
+  expect(hasFormulaComposition(validateFormulaPresentation({...base,finalBlackOverlayAlpha:128}))).toBe(true);
+  expect(hasFormulaComposition(validateFormulaPresentation(base))).toBe(false);
+  expect(()=>hasFormulaComposition({...base,layout:'source-surface-centered-v1',finalBlackOverlayAlpha:-1})).toThrow('遮罩');
+ });
  it('imports both modes into one configuration and replays matching camera/geometry/overlay through save and backward seek',()=>{
   const original=scene(),saved=serializeScene(original),s=parseScene(saved);
   expect(s.surfaceSource).toMatchObject({mode:'points',points:{uSegments:2},mesh:{uSegments:3}});

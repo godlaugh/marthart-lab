@@ -1,3 +1,4 @@
+import {hasFormulaComposition} from '../engine/formulaConfig';
 import {useI18n} from '../i18n';
 import {useEffect,useRef,useState} from 'react';
 import type {FormulaPresentation,SceneDocument} from '../types';
@@ -33,7 +34,7 @@ function SourceFormulaLayer({presentation,canvas,width,height,onError}:{presenta
  useEffect(()=>()=>{renderer.current?.dispose();renderer.current=undefined;},[]);
  useEffect(()=>{
   const host=element.current!;host.dataset.ready='false';
-  if(!canvas||!width||!height||prepared?.key!==key||!presentation.labels.length)return;
+  if(!canvas||!width||!height||prepared?.key!==key||!hasFormulaComposition(presentation))return;
   let restore:(()=>void)|undefined;
   try{
    const base=formulaBasePixels(canvas);

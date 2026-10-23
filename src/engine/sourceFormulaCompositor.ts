@@ -2,6 +2,7 @@ import type {FormulaPresentation} from '../types';
 import {sourceFormulaQuad} from './formulas';
 import {sourceFormulaGlyph,type SourceFormulaGlyph} from './sourceFormulaGlyphClient';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
+import {validateFormulaPresentation} from './formulaConfig';
 import {sourceTextureAnisotropy,type SourceTextureAnisotropy} from './sourceProcessingTextureSampling';
 const QUAD_ORDER=[0,1,2,0,2,3],QUAD_UV=[0,0,0,1,1,1,1,0];
 export type SourceFormulaPresentation=Extract<FormulaPresentation,{layout:'source-surface-centered-v1'}>;
@@ -9,7 +10,7 @@ export interface PreparedSourceFormula {presentation:SourceFormulaPresentation;g
 /** One immutable presentation owns its glyph snapshot. A recording may retain
  * this snapshot across frames; a new preparation validates the backend anew. */
 export async function prepareSourceFormulas(presentation:SourceFormulaPresentation,signal?:AbortSignal):Promise<PreparedSourceFormula>{
- if(presentation.labels.length>33)throw new Error('源公式超过单帧标注预算');
+ const validated=validateFormulaPresentation(presentation);if(validated.layout!=='source-surface-centered-v1')throw new Error('源公式需要源布局');presentation=validated;
  const glyphs:SourceFormulaGlyph[]=[];let bytes=0;
  // The next response is individually bounded at 64 MB. Sequential admission
  // keeps retained frame glyphs <=64 MiB and transient preparation <=128 MiB;
@@ -84,6 +85,13 @@ precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(
    let texture=this.textures.get(glyph);if(!texture){texture=gl.createTexture()??undefined;if(!texture)throw new Error('无法创建公式纹理');this.textures.set(glyph,texture);this.upload(texture,glyph.width,glyph.height,glyph.pixels,true);}else gl.bindTexture(gl.TEXTURE_2D,texture);
    this.quad(sourceFormulaQuad(prepared.presentation,prepared.presentation.labels[index],width,height,glyph));
   });
+  const overlay=prepared.presentation.finalBlackOverlayAlpha??0;
+  if(overlay){
+   // The source's final black rectangle uses the same straight-RGB/additive-
+   // alpha blend as glyphs. Reuse the owned base texture after its copy pass.
+   this.upload(this.texture,1,1,new Uint8Array([0,0,0,overlay]),false);
+   this.quad([-width/2,-height/2,-width/2,height/2,width/2,height/2,width/2,-height/2]);
+  }
   this.check();if(gl.getError()!==gl.NO_ERROR)throw new Error('源公式 GPU 合成失败');
  }
  readPixels(){

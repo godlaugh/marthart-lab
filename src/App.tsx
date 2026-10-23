@@ -1,3 +1,4 @@
+import {hasFormulaComposition} from './engine/formulaConfig';
 import {activeFractalFormulaIdentity} from './engine/sourceFractalIdentity';
 import {applyFractalJuliaSeed} from './engine/complexViewport';
 import {sourceQueuePresentedScene} from './engine/sourceQueuePresentation';
@@ -388,7 +389,7 @@ export default function App() {
   const libraryDrafts=useMemo(()=>Object.values({...drafts.current,[scene.id]:withSourceIteratedDraft(scene,iteratedDraft)}),[scene,saved,iteratedDraft]);
   const displayScene=useMemo(()=>output?sourceQueuePresentedScene(outputScene??scene,output)??outputScene??scene:scene,[output,outputScene,scene]);
   const displayFormulas=output?.formulaPresentation;
-  const displayHasFormulas=displayFormulas?displayFormulas.labels.length>0:!displayScene.fractalSource&&displayScene.formulas?.layout!=='source-surface-centered-v1'&&!!(displayScene.formulas?.main.visible||displayScene.formulas?.additional.some(label=>label.visible));
+  const displayHasFormulas=displayFormulas?hasFormulaComposition(displayFormulas):!displayScene.fractalSource&&displayScene.formulas?.layout!=='source-surface-centered-v1'&&!!(displayScene.formulas?.main.visible||displayScene.formulas?.additional.some(label=>label.visible));
   const def = definition(scene.kind),
     Icon = icons[scene.kind];
   const experience=bouncingExperience(scene),sourceBouncing=usesSourceBouncing(scene);

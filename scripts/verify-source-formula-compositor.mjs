@@ -21,7 +21,7 @@ try{
   const {enhanceSourcePausedImage}=await import('/src/engine/sourcePausedImage.ts');
   const check=(name,value)=>{if(!value)throw Error(name);checks.push(name);},checks=[];
   const hash=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(v=>v.toString(16).padStart(2,'0')).join('');
-  const label={id:'main-equation',latex:fixture.latex,color:fixture.color,x:0,y:200,scale:.25,visible:true};
+  const label={id:'main-equation',latex:fixture.latex,color:fixture.color,x:0,y:200,scale:.25,visible:true,anchor:'center'};
   const presentation={layout:'source-surface-centered-v1',primaryLogicalHeight:486,labels:[label]};
   let t=performance.now();const prepared=await prepareSourceFormulas(presentation);const coldMs=performance.now()-t;
   check('independent HTTP glyph matches native dimensions and RGBA hash',prepared.glyphs[0].width===fixture.width&&prepared.glyphs[0].height===fixture.height&&await hash(prepared.glyphs[0].pixels)===fixture.rgbaSha256);

@@ -35,6 +35,13 @@ export function generateSourceSurface(scene:SceneDocument,context:GenerateContex
 export function presentSourceSurfaceFrame(scene:SceneDocument,context:GenerateContext,state:SourceSurfaceDisplayState,started=performance.now(),formulas?:FormulaContent):SceneOutput {
  const output=surfaceGeometry(scene,context,state,started);
  output.formulaPresentation=presentFormulas(formulas??resolveFormulaContent(scene),output.sourceCameraFrame?.viewport);
+ // GenericSurfaceScene covers formulas as well as geometry. When labels are
+ // present, transfer the one final pass to their compositor; never darken the
+ // geometry twice or let a later consumer reconstruct transition state.
+ if(output.sourceSurfaceOverlayAlpha&&output.formulaPresentation.layout==='source-surface-centered-v1'&&output.formulaPresentation.labels.length){
+  output.formulaPresentation.finalBlackOverlayAlpha=output.sourceSurfaceOverlayAlpha;
+  delete output.sourceSurfaceOverlayAlpha;
+ }
  return output;
 }
 function surfaceGeometry(scene:SceneDocument,context:GenerateContext,state:SourceSurfaceDisplayState,started:number):Extract<SceneOutput,{type:'geometry'}> {

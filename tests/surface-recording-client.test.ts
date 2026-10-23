@@ -28,12 +28,26 @@ beforeEach(async()=>{
  vi.stubGlobal('self',worker);vi.stubGlobal('Worker',Transport);await import('../src/engine/generate.worker');
 });
 afterEach(()=>vi.unstubAllGlobals());
-async function setup(name='animated-mesh'){
- const trace=native.actual.cases.find(c=>c.input.name===name)!,scene=parseProjectFile(JSON.stringify(trace.input.project)).scene;
+async function setup(name='animated-mesh',formulas=false){
+ const trace=native.actual.cases.find(c=>c.input.name===name)!,scene=parseProjectFile(JSON.stringify({...trace.input.project,...(formulas?{main_equation:{enabled:true,latex:'x',position:[0,0],scale:.5,color:'#FFFFFF'}}:{})})).scene;
  const context:GenerationInput={time:0,width:64,height:48,quality:'preview',sourcePointPixelDensity:1,sourceViewport:ordinarySourceViewport(scene,64,48,'primary',48),surfaceLive:{sessionId:'client-surface',revision:0,clock:{paused:true,timestampMs:1000},actualFrameRate:29}};
  const generator=new Generator(),output=await generator.generate(scene,context);return{generator,output,scene,context,trace,options:{width:17,height:13,simulationFps:4,actualFrameRate:37}};
 }
 describe('Surface retained recording client',()=>{
+ it.each([false,true])('keeps labels stable while delivered transition metadata changes, early stop=%s',async early=>{
+  const f=await setup('mode-switch',true),start=await f.generator.beginSourceRecording(f.output,{...f.options,simulationFps:8});let partial=false;
+  if(start.clock.completionReason!=='animation-queue')throw Error('expected planned clock');
+  try{
+   for(let i=1;i<=start.clock.lastDisplayFrame;i++){
+    const frame=await f.generator.nextSourceRecordingFrame(start.handle,i,24),alpha=frame.surfaceLive!.frame.surfaceTransition!.overlayAlpha;
+    if(alpha>0&&alpha<255){partial=true;if(early)break;}
+   }
+   expect(partial).toBe(true);
+   const stop=await f.generator.finishSourceRecording(start.handle);
+   expect(stop.preview.formulaPresentation!.labels[0].latex).toContain('x = ');
+   if(early)expect(stop.preview.formulaPresentation).toMatchObject({finalBlackOverlayAlpha:128});
+  }finally{f.generator.dispose();}
+ });
  it('uses one renderer, delivers observed frame facts, and restores a usable geometry preview',async()=>{
   const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options);expect(start.warmup).toMatchObject({type:'raster',width:51,height:39,surfaceLive:{recording:{warmup:true,actualFrameRate:37}}});
   if(start.clock.completionReason!=='animation-queue')throw Error('expected planned clock');
@@ -138,6 +152,8 @@ describe('Surface retained recording client',()=>{
   await expect(f.generator.finishSourceRecording(start.handle)).rejects.toMatchObject({recordingRetained:false});expect(port.terminated).toBe(true);f.generator.dispose();
  });
  const mutations={
+  finalOverlay:(r:any)=>{r.result.warmup.formulaPresentation.finalBlackOverlayAlpha=128;},
+  doubleOverlay:(r:any)=>{r.result.warmup.sourceSurfaceOverlayAlpha=255;},
   camera:(r:any)=>{r.result.warmup.sourceCameraFrame.camera.phi+=.2;},
   ordinal:(r:any)=>{r.result.warmup.surfaceLive.recording.displayFrame++;},
   rate:(r:any)=>{r.result.warmup.surfaceLive.recording.actualFrameRate=4;},
