@@ -1247,6 +1247,7 @@ function ordinaryCameraTimeline(r:Reader,s:SceneDocument,scope:OrdinarySourceSca
      // Keep the existing local noncamera effect explicitly outside parity.
      const local=Array.isArray(raw)||raw===undefined?legacyAction(r,s,actionPath.join('.'),s,true):undefined;
      if(local)track.actions.push({...local,enabled:true});
+     else if(s.kind==='implicit')track.actions.push({id:crypto.randomUUID(),method,enabled:true,sourceEffect:'unmapped'});
      r.warnings.push(`${pathLabel(actionPath)} ${method}：源子动画使用同一片段时长，队列时长已保留；${local?'非相机效果仍采用既有本地解析与动画，不声明原版标量或帧时钟一致':'此原版非相机参数形式尚未映射，效果未执行，完整字段保留在 source'}。`);continue;
     }
     const ignored=(reason:string)=>r.warnings.push(`${pathLabel(actionPath)} ${method}：${reason}；片段时长保留，原动作保留在 source。`);

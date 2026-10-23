@@ -452,6 +452,10 @@ export function validateTimelineExtensions(track:AnimationTrack,sceneKind?:Scene
  if(schedule===FRACTAL_SCENE_SEQUENCE){if(sceneKind!=='fractal')throw Error('源分形队列仅用于分形作品');validateSourceFractalTrack(track);return;}
  if(track.fractalSource!==undefined)throw Error('源分形动作缺少对应队列');
  const sourceSurface=sourceFamily==='surface',sourcePerlin=sourceFamily==='perlin';
+ if(Array.isArray(track.actions))for(const action of track.actions){
+  if(action?.sourceEffect===undefined)continue;
+  if(action.sourceEffect!=='unmapped'||sceneKind!=='implicit'||schedule!=='ordinary-camera-sequence-v1'||track.type!=='animate'||!['paramStart','paramStop'].includes(action.method)||Object.keys(action).some(key=>!['id','method','enabled','sourceEffect'].includes(key)))throw Error('未映射源效果必须保留为无执行参数的隐式动作');
+ }
  if(track.sourceFractalZoom!==undefined){
   if(track.type!=='fractal_zoom'||sceneKind!=='fractal'||track.keyframes!==undefined||track.interpolation!==undefined||track.pingPong||(track.repeat??1)!==1)throw Error('原版分形目标缩放不能混用关键帧、往返或重复');
   const parsed=parseSourceFractalZoomTarget(track.sourceFractalZoom);if(!parsed.ok)throw Error(parsed.error.reason);
@@ -707,6 +711,7 @@ function compileTimeline(scene: SceneDocument, particlePosition?: (request:Parti
     } });
   }
   function action(track: AnimationTrack, item: AnimationAction, sourceStartup:SceneDocument) {
+    if(item.sourceEffect==='unmapped')return; // Retained eligibility fact, never a local no-op/stop command.
     if(scene.sourceCamera&&isCameraAction(item.method))return;
     if (item.enabled === false || !supportsCameraAction(scene,item.method)&&isCameraAction(item.method)) return;
     if (!ACTIONS.some(([name]) => name === item.method)) throw new Error(`未知动画动作 ${item.method}`);

@@ -1,3 +1,4 @@
+import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {resolveFormulaContent} from './formulas';
 import {planFractalFreshRecording} from './sourceFractalRecording';
 import {planPerlinFreshRecording} from './sourcePerlinRecording';
@@ -18,7 +19,7 @@ import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-function recordingProducer(scene:SceneDocument){return scene.kind==='roots'?temporalSession.rootsNative:scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+function recordingProducer(scene:SceneDocument){return scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)?temporalSession.sourceImplicit:scene.kind==='roots'?temporalSession.rootsNative:scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
 type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
 type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
 type RecordingOutput=RuntimeStart['warmup'];
@@ -156,9 +157,9 @@ self.onmessage = (
         if(!Number.isSafeInteger(displayFrame)||displayFrame<1)throw new Error('源场景录制帧序号无效');
         const pending=lease.pendingFrame;
         if(pending&&pending.index!==displayFrame)throw new Error('源场景上一录制帧尚未交付，请重试该帧或结束录制');
-        if(pending&&(lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface)&&!Object.is(pending.actualFrameRate,event.data.actualFrameRate))throw new Error('源场景未交付帧重试不能改变实际帧率');
+        if(pending&&(lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface||lease.producer===temporalSession.sourceImplicit)&&!Object.is(pending.actualFrameRate,event.data.actualFrameRate))throw new Error('源场景未交付帧重试不能改变实际帧率');
         if(pending&&!pending.storage.intact())throw new Error('源场景录制帧传输状态未知，请结束录制');
-        const output=pending?.output??(lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface?lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame,event.data.actualFrameRate):lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame));
+        const output=pending?.output??(lease.producer===temporalSession.sourceDomain||lease.producer===temporalSession.sourceSurface||lease.producer===temporalSession.sourceImplicit?lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame,event.data.actualFrameRate):lease.producer.nextRecordingFrame(lease.runtime.handle,displayFrame));
         if(output.type==='raster'&&output.pixels.byteLength!==output.width*output.height*4)throw new Error('源场景录制帧传输状态未知，请结束录制');
         lease.pendingFrame=pending??{...publication(output),index:displayFrame,actualFrameRate:event.data.actualFrameRate};
         send({operation:event.data.operation,id,recordingId:lease.id,displayFrame,output},outputBuffers(output));lease.pendingFrame=undefined;return;
@@ -174,11 +175,11 @@ self.onmessage = (
       const {scene,context}=lease.finish;
       if(!lease.preview||!lease.preview.storage.intact()){
         const output='preview' in lease.finish?lease.finish.preview:generateScene(scene,context,temporalSession);
-        if(output.type!=='raster'&&!(output.type==='geometry'&&output.surfaceLive))throw new Error('源场景录制结束没有生成主预览');
+        if(output.type!=='raster'&&!(output.type==='geometry'&&(output.surfaceLive||lease.producer===temporalSession.sourceImplicit)))throw new Error('源场景录制结束没有生成主预览');
         lease.preview=publication(output);
       }
       const preview=lease.preview.output;
-      const resumed={...context,time:preview.type==='geometry'?preview.surfaceLive!.frame.sceneTime:preview.rootsLive?.sceneTime??preview.perlinLive?.sceneTime??preview.domainLive?.sceneTime??preview.fractalLive?.sceneTime??preview.mapLive?.sceneTime??preview.symmetryLive?.sceneTime??context.time};
+      const resumed=lease.producer===temporalSession.sourceImplicit?context:{...context,time:preview.type==='geometry'?preview.surfaceLive!.frame.sceneTime:preview.rootsLive?.sceneTime??preview.perlinLive?.sceneTime??preview.domainLive?.sceneTime??preview.fractalLive?.sceneTime??preview.mapLive?.sceneTime??preview.symmetryLive?.sceneTime??context.time};
       send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview}},outputBuffers(preview));
       completed={id,scene,context:resumed};recording=undefined;return;
     }
@@ -271,6 +272,7 @@ self.onmessage = (
     } }, temporalSession);
     output.dimension ??= definition(scene.kind).dimension;
     output.stats.elapsedMs = performance.now() - start;
+    if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary')temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
     completed={id,scene,context};
     send({ operation: 'generate', id, output }, outputBuffers(output));
   } catch (error) {

@@ -1,0 +1,1292 @@
+{
+  "scope": "Original unmodified Implicit Scene.setRenderMode/runFrame and full-artwork capture. Recording encoder warmup exclusion is separately source-derived, not an observed native MP4.",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "cases": [
+    {
+      "name": "fps4-varying",
+      "input": {
+        "project": {
+          "settings": {
+            "scale_z": 60,
+            "mesh_fill_opacity": 0.8999999761581421,
+            "scale_y": 60,
+            "x_segments": 60,
+            "scale_x": 60,
+            "z_min": "-2.0",
+            "y_max": "2.0",
+            "x_min": "-2.0",
+            "y_segments": 60,
+            "z_segments": 60,
+            "background_color": "#000000",
+            "render_mode": "WIREFRAME",
+            "y_min": "-2.0",
+            "mesh_mode": "CPU",
+            "line_weight": 0.6800000071525574,
+            "x_max": "2.0",
+            "z_max": "2.0",
+            "offset_x": 0,
+            "mesh_fill": true,
+            "dot_size": 1.2000000476837158,
+            "offset_y": 0,
+            "offset_z": 0
+          },
+          "equation": {
+            "f": "x^2+y^2-z^2-1"
+          },
+          "main_equation": {
+            "color": "#FFFFFF",
+            "scale": 0.25,
+            "position": [
+              0,
+              200
+            ],
+            "enabled": false
+          },
+          "name": "fps4-varying",
+          "description": "",
+          "timeline": [
+            {
+              "type": "wait",
+              "duration": 0.2
+            },
+            {
+              "type": "animate",
+              "duration": 0.35,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "ambient",
+                  "args": [
+                    0.1,
+                    0.2,
+                    0.3
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.31
+            }
+          ],
+          "palette": [
+            "#FC6255",
+            "#FF862F",
+            "#FFFF00"
+          ],
+          "type": "IMPLICIT",
+          "camera": {
+            "phi": "PI/2",
+            "theta": "0",
+            "gamma": "0"
+          },
+          "parameters": {},
+          "config_version": "1.0.0",
+          "isUserScene": true
+        },
+        "simulationFps": 4,
+        "steps": [
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          }
+        ]
+      },
+      "frames": [
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 37,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "frame": 0,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 12,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.588653564453125,
+            "focalDistance": 20,
+            "phiRate": 0.0714285746216774,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.2142857313156128,
+            "zoom": 1,
+            "theta": 0.0357142873108387,
+            "gamma": 0.0535714328289032,
+            "thetaRate": 0.1428571492433548
+          },
+          "frame": 1,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.75,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 1,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.613653540611267,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.08571428805589676,
+            "gamma": 0.12857143580913544,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 2,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 0,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.6386535167694092,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.13571429252624512,
+            "gamma": 0.20357143878936768,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 3,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1.059999942779541,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": -2,
+          "width": 384,
+          "complete": true,
+          "camera": {
+            "phi": 1.6636534929275513,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.18571428954601288,
+            "gamma": 0.2785714268684387,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 4,
+          "height": 288
+        }
+      ],
+      "provenance": {
+        "sourceSha256": "ffee7628090431e682aa9d39e82441e91d639e176de72c1f208492499546b0c4",
+        "probeSha256": "3fba4f4d1e045268b1ee7ff8e78d050c4772f556f55892e58d70d517b7f4cbe9",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "runtimeExit": 0
+      }
+    },
+    {
+      "name": "fps4-constant",
+      "input": {
+        "project": {
+          "settings": {
+            "scale_z": 60,
+            "mesh_fill_opacity": 0.8999999761581421,
+            "scale_y": 60,
+            "x_segments": 60,
+            "scale_x": 60,
+            "z_min": "-2.0",
+            "y_max": "2.0",
+            "x_min": "-2.0",
+            "y_segments": 60,
+            "z_segments": 60,
+            "background_color": "#000000",
+            "render_mode": "WIREFRAME",
+            "y_min": "-2.0",
+            "mesh_mode": "CPU",
+            "line_weight": 0.6800000071525574,
+            "x_max": "2.0",
+            "z_max": "2.0",
+            "offset_x": 0,
+            "mesh_fill": true,
+            "dot_size": 1.2000000476837158,
+            "offset_y": 0,
+            "offset_z": 0
+          },
+          "equation": {
+            "f": "x^2+y^2-z^2-1"
+          },
+          "main_equation": {
+            "color": "#FFFFFF",
+            "scale": 0.25,
+            "position": [
+              0,
+              200
+            ],
+            "enabled": false
+          },
+          "name": "fps4-constant",
+          "description": "",
+          "timeline": [
+            {
+              "type": "wait",
+              "duration": 0.2
+            },
+            {
+              "type": "animate",
+              "duration": 0.35,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "ambient",
+                  "args": [
+                    0.1,
+                    0.2,
+                    0.3
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.31
+            }
+          ],
+          "palette": [
+            "#FC6255",
+            "#FF862F",
+            "#FFFF00"
+          ],
+          "type": "IMPLICIT",
+          "camera": {
+            "phi": "PI/2",
+            "theta": "0",
+            "gamma": "0"
+          },
+          "parameters": {},
+          "config_version": "1.0.0",
+          "isUserScene": true
+        },
+        "simulationFps": 4,
+        "steps": [
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          },
+          {
+            "actualFrameRate": 60
+          }
+        ]
+      },
+      "frames": [
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 60,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "frame": 0,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 60,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.588653564453125,
+            "focalDistance": 20,
+            "phiRate": 0.0714285746216774,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.2142857313156128,
+            "zoom": 1,
+            "theta": 0.0357142873108387,
+            "gamma": 0.0535714328289032,
+            "thetaRate": 0.1428571492433548
+          },
+          "frame": 1,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.75,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 60,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.613653540611267,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.08571428805589676,
+            "gamma": 0.12857143580913544,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 2,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 60,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.6386535167694092,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.13571429252624512,
+            "gamma": 0.20357143878936768,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 3,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1.059999942779541,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 60,
+          "width": 384,
+          "complete": true,
+          "camera": {
+            "phi": 1.6636534929275513,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.18571428954601288,
+            "gamma": 0.2785714268684387,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 4,
+          "height": 288
+        }
+      ],
+      "provenance": {
+        "sourceSha256": "2465e6fb0708ebdf30a7182e456aa7ff77a38e582fc88e0e6a9f879364a0894e",
+        "probeSha256": "3fba4f4d1e045268b1ee7ff8e78d050c4772f556f55892e58d70d517b7f4cbe9",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "runtimeExit": 0
+      }
+    },
+    {
+      "name": "fps7-varying",
+      "input": {
+        "project": {
+          "settings": {
+            "scale_z": 60,
+            "mesh_fill_opacity": 0.8999999761581421,
+            "scale_y": 60,
+            "x_segments": 60,
+            "scale_x": 60,
+            "z_min": "-2.0",
+            "y_max": "2.0",
+            "x_min": "-2.0",
+            "y_segments": 60,
+            "z_segments": 60,
+            "background_color": "#000000",
+            "render_mode": "WIREFRAME",
+            "y_min": "-2.0",
+            "mesh_mode": "CPU",
+            "line_weight": 0.6800000071525574,
+            "x_max": "2.0",
+            "z_max": "2.0",
+            "offset_x": 0,
+            "mesh_fill": true,
+            "dot_size": 1.2000000476837158,
+            "offset_y": 0,
+            "offset_z": 0
+          },
+          "equation": {
+            "f": "x^2+y^2-z^2-1"
+          },
+          "main_equation": {
+            "color": "#FFFFFF",
+            "scale": 0.25,
+            "position": [
+              0,
+              200
+            ],
+            "enabled": false
+          },
+          "name": "fps7-varying",
+          "description": "",
+          "timeline": [
+            {
+              "type": "wait",
+              "duration": 0.2
+            },
+            {
+              "type": "animate",
+              "duration": 0.35,
+              "easing": "LINEAR",
+              "actions": [
+                {
+                  "method": "ambient",
+                  "args": [
+                    0.1,
+                    0.2,
+                    0.3
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "wait",
+              "duration": 0.31
+            }
+          ],
+          "palette": [
+            "#FC6255",
+            "#FF862F",
+            "#FFFF00"
+          ],
+          "type": "IMPLICIT",
+          "camera": {
+            "phi": "PI/2",
+            "theta": "0",
+            "gamma": "0"
+          },
+          "parameters": {},
+          "config_version": "1.0.0",
+          "isUserScene": true
+        },
+        "simulationFps": 7,
+        "steps": [
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 12
+          },
+          {
+            "actualFrameRate": 1
+          },
+          {
+            "actualFrameRate": 0
+          },
+          {
+            "actualFrameRate": -2
+          }
+        ]
+      },
+      "frames": [
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.1428571492433548,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 37,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "frame": 0,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.2857142984867096,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 12,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "frame": 1,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.4285714626312256,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 1,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.576627254486084,
+            "focalDistance": 20,
+            "phiRate": 0.040816329419612885,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.12244898825883865,
+            "zoom": 1,
+            "theta": 0.01166180893778801,
+            "gamma": 0.017492713406682014,
+            "thetaRate": 0.08163265883922577
+          },
+          "frame": 2,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.5714285969734192,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 0,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.5882890224456787,
+            "focalDistance": 20,
+            "phiRate": 0.08163265883922577,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.2448979765176773,
+            "zoom": 1,
+            "theta": 0.03498542681336403,
+            "gamma": 0.05247814208269119,
+            "thetaRate": 0.16326531767845154
+          },
+          "frame": 3,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.7142857313156128,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": -2,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.6025747060775757,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.06355685740709305,
+            "gamma": 0.09533528983592987,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 4,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.8571428656578064,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 37,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.6168603897094727,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.09212829172611237,
+            "gamma": 0.13819244503974915,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 5,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 12,
+          "width": 384,
+          "complete": false,
+          "camera": {
+            "phi": 1.6311460733413696,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.12069971859455109,
+            "gamma": 0.18104958534240723,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 6,
+          "height": 288
+        },
+        {
+          "managerFinishedAtFrameStart": false,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 1.0242856740951538,
+          "rendering": true,
+          "rawDt": 0.1428571492433548,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 1,
+          "width": 384,
+          "complete": true,
+          "camera": {
+            "phi": 1.6454317569732666,
+            "focalDistance": 20,
+            "phiRate": 0.10000000149011612,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0.30000001192092896,
+            "zoom": 1,
+            "theta": 0.1492711454629898,
+            "gamma": 0.2239067256450653,
+            "thetaRate": 0.20000000298023224
+          },
+          "frame": 7,
+          "height": 288
+        }
+      ],
+      "provenance": {
+        "sourceSha256": "f1bd1e465c5a9b8e6bc128ac9b85f66272c2353929bd253fddefcabf622da440",
+        "probeSha256": "3fba4f4d1e045268b1ee7ff8e78d050c4772f556f55892e58d70d517b7f4cbe9",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "runtimeExit": 0
+      }
+    },
+    {
+      "name": "empty-queue",
+      "input": {
+        "project": {
+          "settings": {
+            "scale_z": 60,
+            "mesh_fill_opacity": 0.8999999761581421,
+            "scale_y": 60,
+            "x_segments": 60,
+            "scale_x": 60,
+            "z_min": "-2.0",
+            "y_max": "2.0",
+            "x_min": "-2.0",
+            "y_segments": 60,
+            "z_segments": 60,
+            "background_color": "#000000",
+            "render_mode": "WIREFRAME",
+            "y_min": "-2.0",
+            "mesh_mode": "CPU",
+            "line_weight": 0.6800000071525574,
+            "x_max": "2.0",
+            "z_max": "2.0",
+            "offset_x": 0,
+            "mesh_fill": true,
+            "dot_size": 1.2000000476837158,
+            "offset_y": 0,
+            "offset_z": 0
+          },
+          "equation": {
+            "f": "x^2+y^2-z^2-1"
+          },
+          "main_equation": {
+            "color": "#FFFFFF",
+            "scale": 0.25,
+            "position": [
+              0,
+              200
+            ],
+            "enabled": false
+          },
+          "name": "empty-queue",
+          "description": "",
+          "timeline": [],
+          "palette": [
+            "#FC6255",
+            "#FF862F",
+            "#FFFF00"
+          ],
+          "type": "IMPLICIT",
+          "camera": {
+            "phi": "PI/2",
+            "theta": "0",
+            "gamma": "0"
+          },
+          "parameters": {},
+          "config_version": "1.0.0",
+          "isUserScene": true
+        },
+        "simulationFps": 4,
+        "steps": [
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          },
+          {
+            "actualFrameRate": 37
+          }
+        ]
+      },
+      "frames": [
+        {
+          "managerFinishedAtFrameStart": true,
+          "artworkReference": "before-branding.rgba",
+          "sceneTime": 0.25,
+          "rendering": true,
+          "rawDt": 0.25,
+          "rowOrder": "bottom-up",
+          "artworkStage": "before-branding",
+          "textureDraws": 2,
+          "actualFrameRate": 37,
+          "width": 384,
+          "complete": true,
+          "camera": {
+            "phi": 1.5707963705062866,
+            "focalDistance": 20,
+            "phiRate": 0,
+            "center": [
+              0,
+              0,
+              0
+            ],
+            "gammaRate": 0,
+            "zoom": 1,
+            "theta": 0,
+            "gamma": 0,
+            "thetaRate": 0
+          },
+          "frame": 0,
+          "height": 288
+        }
+      ],
+      "provenance": {
+        "sourceSha256": "7d01c3e7bea67aa1a31d2ca34efd43b284c8ad0eb303583e192ff6e8a528dc2a",
+        "probeSha256": "3fba4f4d1e045268b1ee7ff8e78d050c4772f556f55892e58d70d517b7f4cbe9",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "runtimeExit": 0
+      }
+    }
+  ]
+}

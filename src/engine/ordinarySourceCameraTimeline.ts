@@ -194,7 +194,7 @@ function prepare(initial:SourceCameraScalars,tracks:readonly AnimationTrack[],fp
      perlinParameterActions.push(parsed.value);
     }
     else if(particleActions==='attractor'&&noncameraMethods.has(action.method))throw new OrdinarySourceCameraTimelineError('unsupported','原版 ATTRACTOR 没有参数动画，规范化队列不能包含参数动作',track.id);
-    else if(noncameraMethods.has(action.method))warn(track,'noncamera-clock',`${action.method} 仍由独立生产 owner 执行；其 native 参数/渐变帧时钟未在相机合同中验证。`);
+    else if(noncameraMethods.has(action.method))warn(track,'noncamera-clock',action.sourceEffect==='unmapped'?`${action.method} 的原版效果尚未映射，保留动作与片段时长但不执行。`:`${action.method} 仍由独立生产 owner 执行；其 native 参数/渐变帧时钟未在相机合同中验证。`);
     else throw new OrdinarySourceCameraTimelineError('unsupported',`源相机不能解释动作 ${action.method}；需原始编译事实`,track.id);
    }
    if(Object.keys(targets).length)clip.targets=targets;

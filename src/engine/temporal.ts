@@ -1,5 +1,6 @@
 import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
+import {SourceImplicitRecordingSession} from './sourceImplicitRecording';
 import {SourceSurfaceLiveSession} from './sourceSurfaceLiveSession';
 import {SourceDomainLiveSession} from './sourceDomainLiveSession';
 import {usesSourceFractal} from './sourceFractalDocument';
@@ -80,6 +81,7 @@ export class TemporalGenerationSession {
   readonly sourceMap = new SourceIteratedSession('map');
   readonly sourceSamila = new SourceSamilaSession();
   readonly sourceSurface = new SourceSurfaceLiveSession();
+  readonly sourceImplicit = new SourceImplicitRecordingSession();
   readonly sourceDomain = new SourceDomainLiveSession();
   readonly sourceFractal = new SourceFractalLiveSession();
   readonly sourceFractalFreshRecording = new SourceFractalFreshRecordingSession();
@@ -91,9 +93,10 @@ export class TemporalGenerationSession {
   readonly domain = new DomainRenderSession();
   readonly spirograph = new SpirographFrameSession();
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
-  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSymmetry.reset();this.sourceMap.reset();this.sourceSamila.reset();this.sourceFractal.reset();this.sourceFractalFreshRecording.reset();this.sourceDomain.reset();this.sourceSurface.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
+  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSymmetry.reset();this.sourceMap.reset();this.sourceSamila.reset();this.sourceFractal.reset();this.sourceFractalFreshRecording.reset();this.sourceDomain.reset();this.sourceSurface.reset();this.sourceImplicit.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
     this.cleanup.prepare();
+    if(!usesSourceImplicitPresentation(scene))this.sourceImplicit.reset();
     if(context.surfaceLive===undefined)this.sourceSurface.reset();
     if(context.domainLive===undefined)this.sourceDomain.reset();
     if(context.fractalLive===undefined)this.sourceFractal.reset();

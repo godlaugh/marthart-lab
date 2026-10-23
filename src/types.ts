@@ -169,6 +169,8 @@ export interface SourceSurfaceParameterClip {
 }
 export interface AnimationAction {
   id: string; method: string; enabled?: boolean;
+  /** Imported Implicit effect retained for eligibility; no executable payload. */
+  sourceEffect?: 'unmapped';
   args?: Record<string, number | string | boolean>;
   parameters?: ParameterAnimation[]; gradient?: GradientAnimation;
   /** Ordered source operations within this action; All is one registry operation. */
@@ -338,6 +340,7 @@ export interface Preset {
   document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedDomainScene" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
 }
 export interface GeometryOutput {
+  implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
   sourceImplicitMesh?:import('./engine/sourceImplicitMesh').SourceImplicitMesh;
   sourceImplicitPresentation?:import('./engine/sourceImplicitPresentation').SourceImplicitPresentation;
   formulaPresentation?:FormulaPresentation;
