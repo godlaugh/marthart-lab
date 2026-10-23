@@ -1,3 +1,4 @@
+import {prepareRootsDensityColor} from '../src/engine/rootsDensityColor';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {ROOTS_NATIVE_DENSITY_CHUNK, RootsNativeDensityGpu, rootsNativeDensityGpuBytes} from '../src/engine/rootsNativeDensityGpu';
 import {RootsGpuError} from '../src/engine/rootsGpuFailure';
@@ -159,6 +160,35 @@ describe('native projected Roots GPU failure and ownership boundaries', () => {
     expect(gpu.diagnostics().lastKernel).toBe('quad');
     gpu.clear(); gpu.add([0, 0, 0], .5); gpu.flush(plan(2), 'points');
     expect(gpu.diagnostics().lastKernel).toBe('points'); gpu.dispose(); expect(f.live.size).toBe(0);
+  });
+  it('presents retained ink without resubmission and returns independently owned top-down pixels', () => {
+    const f=fakeGl(),gpu=new RootsNativeDensityGpu();gpu.initialize(2,2);gpu.add([0,0,0],.5);gpu.flush(plan(2));
+    const color=prepareRootsDensityColor({settings:{rootDensityColorVersion:'mathart-1.7.8-metric-v1'}});if(color.kind!=='metric-sum')throw Error('metric');
+    f.gl.readPixels=(...args:unknown[])=>{const p=args[6] as Uint8ClampedArray;for(let i=0;i<p.length;i+=4){p[i]=i<8?7:19;p[i+3]=255;}};
+    const first=gpu.presentPixels(color,0),second=gpu.presentPixels(color,0);
+    expect(Array.from(first.filter((_,i)=>i%4===0))).toEqual([19,19,7,7]);first.fill(0);expect(second[0]).toBe(19);
+    expect(gpu.diagnostics()).toMatchObject({submittedPoints:1,pendingPoints:0,handles:9});gpu.dispose();expect(f.live.size).toBe(0);
+  });
+  it('rejects a missing final color row before row flipping can conceal it', () => {
+    const f=fakeGl(),gpu=new RootsNativeDensityGpu();gpu.initialize(2,2);
+    const color=prepareRootsDensityColor({settings:{rootDensityColorVersion:'mathart-1.7.8-metric-v1'}});if(color.kind!=='metric-sum')throw Error('metric');
+    f.gl.readPixels=(...args:unknown[])=>{const p=args[6] as Uint8ClampedArray;p.fill(0);p[3]=p[7]=255;};
+    expect(failure(()=>gpu.presentPixels(color,0))).toMatchObject({failureKind:'device',message:'Native root color readback is incomplete'});
+    expect(gpu.diagnostics()).toMatchObject({handles:0,contextOwned:false});expect(f.live.size).toBe(0);
+  });
+  it('preserves color draw failure and retryable texture ownership', () => {
+    const f=fakeGl(),gpu=new RootsNativeDensityGpu();gpu.initialize(2,2);
+    const color=prepareRootsDensityColor({settings:{rootDensityColorVersion:'mathart-1.7.8-metric-v1'}});if(color.kind!=='metric-sum')throw Error('metric');
+    f.faults.set('drawArrays',()=>{throw Error('color draw failed');});f.faults.set('deleteTexture',()=>{throw Error('texture release failed');});
+    const error=failure(()=>gpu.presentPixels(color,0));expect(messages(error)).toContain('color draw failed');expect(error.failureKind).toBe('cleanup');
+    expect(gpu.diagnostics()).toMatchObject({handles:3,cleanupPending:true,contextOwned:true});f.faults.clear();gpu.reset();expect(f.live.size).toBe(0);
+  });
+  it('cancels after color draw and readback without publishing a partial frame', () => {
+    const f=fakeGl(),gpu=new RootsNativeDensityGpu();gpu.initialize(2,2);
+    const color=prepareRootsDensityColor({settings:{rootDensityColorVersion:'mathart-1.7.8-metric-v1'}});if(color.kind!=='metric-sum')throw Error('metric');
+    f.gl.readPixels=(...args:unknown[])=>{const p=args[6] as Uint8ClampedArray;for(let i=3;i<p.length;i+=4)p[i]=255;};let polls=0;
+    expect(()=>gpu.presentPixels(color,0,()=>++polls===3)).toThrowError(expect.objectContaining({name:'AbortError'}));
+    expect(f.calls.filter(x=>x==='drawArrays').length).toBe(1);expect(gpu.diagnostics().handles).toBe(0);expect(f.live.size).toBe(0);
   });
   it('preserves compile failure plus failed shader deletion and keeps the handle owned', () => {
     const f = fakeGl(), gpu = new RootsNativeDensityGpu();

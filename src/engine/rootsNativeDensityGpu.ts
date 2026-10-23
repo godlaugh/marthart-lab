@@ -1,3 +1,5 @@
+import {prepareRootsInkView} from './rootsNativeInk';
+import {rootsDensityScale,validateRootsMetricColorPlan,normalizeRootsSourceToneField,ROOTS_SOURCE_TONE_FIELDS,type RootsMetricColorPlan} from './rootsDensityColor';
 import type {PreparedRootsProjection} from './rootsProjection';
 import {validatePreparedRootsProjection} from './rootsProjection';
 import {RootsGpuError, rootsGpuRequire as require, rootsGpuCall as device, rootsGpuCancel as cancel, rootsGpuInput, rootsGpuCleanup, rootsGpuFinally} from './rootsGpuFailure';
@@ -81,6 +83,82 @@ void main() {
     float edgeAlpha = coverageAlpha * coreAlpha;
     fragColor = vec4(edgeAlpha, vertMetric * edgeAlpha, 0.0, 0.0);
 }`;
+// Retained MathArt 1.7.8 quad.vert and complex_roots_present.frag. Keep
+// normalized UV sampling and shader arithmetic together: CPU tone and texelFetch
+// rewrites do not preserve native palette seam rounding. Only ES declarations differ.
+const PRESENT_VERTEX = HEADER + `out vec2 texCoord;
+
+void main() {
+  float x = float((gl_VertexID & 1) << 1) - 1.0;
+  float y = float((gl_VertexID & 2)) - 1.0;
+  gl_Position = vec4(x, y, 0.0, 1.0);
+  texCoord = vec2((x + 1.0) * 0.5, (y + 1.0) * 0.5);
+}`;
+const PRESENT_FRAGMENT = HEADER + `uniform sampler2D accumTex;
+uniform sampler2D paletteTex;
+uniform float paletteOffset;
+uniform float brightness;
+uniform float contrast;
+uniform float gamma;
+uniform float dynamicRange;
+uniform float saturation;
+uniform float scale;
+uniform float displayRotation;
+uniform float viewportAspect;
+uniform vec3 backgroundRgb;
+
+in vec2 texCoord;
+
+out vec4 fragColor;
+
+vec3 adjustSaturation(vec3 rgb, float amount) {
+    float luma = dot(rgb, vec3(0.299, 0.587, 0.114));
+    return mix(vec3(luma), rgb, amount);
+}
+
+float smoothLimit(float x, float k) {
+    x = 2.0 * x - 1.0;
+    float a = pow(abs(x), 1.0 / max(k, 0.01));
+    return sign(x) * pow(a / (a + 1.0), max(k, 0.01)) * 0.5 + 0.5;
+}
+
+void main() {
+    vec2 centered = texCoord - vec2(0.5);
+    centered.x *= viewportAspect;
+    float c = cos(-displayRotation);
+    float s = sin(-displayRotation);
+    vec2 rotated = vec2(
+        centered.x * c - centered.y * s,
+        centered.x * s + centered.y * c
+    );
+    rotated.x /= viewportAspect;
+    rotated += vec2(0.5);
+    if (rotated.x < 0.0 || rotated.x > 1.0 || rotated.y < 0.0 || rotated.y > 1.0) {
+        fragColor = vec4(backgroundRgb, 1.0);
+        return;
+    }
+    vec4 accum = texture(accumTex, rotated);
+    float count = max(accum.r, 0.0);
+    if (count <= 1.0e-12) {
+        fragColor = vec4(backgroundRgb, 1.0);
+        return;
+    }
+
+    float avgT = accum.g / count;
+    vec3 avgRgb = texture(paletteTex, vec2(fract(avgT + paletteOffset), 0.5)).rgb;
+    float density = count / max(scale, 1.0e-8);
+    float v = density == 0.0
+        ? -20.0
+        : (log(density) - log(1.0)) / (log(1000.0) - log(1.0));
+    float value = smoothLimit(contrast * v + brightness, dynamicRange);
+    float densityBrightness = clamp(value, 0.0, 1.0);
+
+    vec3 rgb = mix(backgroundRgb, avgRgb, densityBrightness);
+    rgb = pow(clamp(rgb, 0.0, 1.0), vec3(1.0 / max(gamma, 0.001)));
+    rgb = adjustSaturation(rgb, saturation);
+    fragColor = vec4(rgb, 1.0);
+}`;
+
 /** MathArt 1.7.8 loads its debug point shader but never binds/initializes it
  * before probePointSplatSupport reads glProgram=0. The original probe therefore
  * selects quad, even on hardware supporting points. Preserve that source route
@@ -94,18 +172,29 @@ export function rootsNativeDensityGpuBytes(width: number, height: number): numbe
   require([width, height].every(n => Number.isInteger(n) && n > 0 && n <= 16384), 'Native root dimensions exceed the image budget', 'capacity');
   return width * height * 32 + ROOTS_NATIVE_DENSITY_CHUNK * 32 + width * 16;
 }
+/** Additional color attachment, retained LUT and output/readback row. */
+export function rootsNativeToneGpuBytes(width:number,height:number):number {
+  rootsNativeDensityGpuBytes(width,height);
+  return width*height*8+width*4+2048;
+}
+function pixels8(length:number):Uint8ClampedArray {
+  try{return new Uint8ClampedArray(length);}catch(cause){throw new RootsGpuError('Native root color buffer allocation failed','capacity',{cause});}
+}
 function floats(length: number): Float32Array {
   try { return new Float32Array(length); }
   catch (cause) { throw new RootsGpuError('Native root CPU buffer allocation failed', 'capacity', {cause}); }
 }
 
-type ProgramKind = 'points' | 'quad';
+type ProgramKind = 'points' | 'quad' | 'present';
 /** Owns only source projected metric accumulation. It does not solve roots,
  * transform raw roots, tone colors, choose source camera anchors or replay a
  * failed request. A failed/partly drawn flush invalidates the entire owner. */
 export class RootsNativeDensityGpu {
   private gl?: WebGL2RenderingContext;
   private ink?: WebGLTexture;
+  private colorTexture?: WebGLTexture;
+  private paletteTexture?: WebGLTexture;
+  private uploadedPalette?: Uint8Array;
   private framebuffer?: WebGLFramebuffer;
   private buffer?: WebGLBuffer;
   private vao?: WebGLVertexArrayObject;
@@ -133,9 +222,9 @@ export class RootsNativeDensityGpu {
       device: this.deviceFacts ? {...this.deviceFacts, maxViewport: [...this.deviceFacts.maxViewport], pointSizeRange: [...this.deviceFacts.pointSizeRange]} : undefined,
       draws: this.draws, readbackBytes: this.readbackBytes, cleanupPending: this.cleanupPending,
       contextOwned: !!this.gl,
-      handles: Number(!!this.ink) + Number(!!this.framebuffer) + Number(!!this.buffer) + Number(!!this.vao) + this.programs.size + this.shaders.size,
-      retainedBytes: (this.ink ? this.width * this.height * 16 : 0) + (this.buffer ? ROOTS_NATIVE_DENSITY_CHUNK * 16 : 0) + (this.upload?.byteLength ?? 0),
-      estimatedPeakBytes: this.gl ? rootsNativeDensityGpuBytes(this.width, this.height) : 0,
+      handles: Number(!!this.ink) + Number(!!this.colorTexture) + Number(!!this.paletteTexture) + Number(!!this.framebuffer) + Number(!!this.buffer) + Number(!!this.vao) + this.programs.size + this.shaders.size,
+      retainedBytes: (this.colorTexture ? this.width * this.height * 4 : 0) + (this.paletteTexture ? 1024 : 0) + (this.uploadedPalette?.byteLength ?? 0) + (this.ink ? this.width * this.height * 16 : 0) + (this.buffer ? ROOTS_NATIVE_DENSITY_CHUNK * 16 : 0) + (this.upload?.byteLength ?? 0),
+      estimatedPeakBytes: this.gl ? rootsNativeDensityGpuBytes(this.width, this.height) + rootsNativeToneGpuBytes(this.width, this.height) : 0,
     };
   }
 
@@ -327,11 +416,73 @@ export class RootsNativeDensityGpu {
     });
   }
 
+  /** Uses the original full-screen shader on retained ink. The caller owns
+   * arrival and display statistics; this operation never submits root points. */
+  presentPixels(color:RootsMetricColorPlan,rotation:number,isCancelled?:()=>boolean):Uint8ClampedArray {
+    return this.run(()=>{
+      cancel(isCancelled);
+      require(this.gl&&this.ink&&this.pending===0,'Native root presentation requires committed ink','input');
+      const gl=this.gl,width=this.width,height=this.height;
+      const {view,scale}=rootsGpuInput(()=>{
+        validateRootsMetricColorPlan(color);
+        // These are prepared native runtime values, whose clamps bound shader
+        // pow/log intermediates. Do not silently clamp a forged color plan.
+        for(const field of ROOTS_SOURCE_TONE_FIELDS)require(Math.fround(color[field.field])===normalizeRootsSourceToneField(field.key,color[field.field]),'Native root tone is outside source runtime bounds','input');
+        require(color.backgroundRGB.every(v=>v>=0&&v<=1),'Native root background is outside normalized RGB','input');
+        return{view:prepareRootsInkView(width,height,rotation),scale:rootsDensityScale({submittedFinitePointCount:this.submitted,width,height})};
+      });
+      require(rootsNativeDensityGpuBytes(width,height)+rootsNativeToneGpuBytes(width,height)<=MAX_BYTES,'Native root presentation exceeds 768 MiB','capacity');
+      device(()=>{
+        if(!this.programs.has('present'))this.compile('present',PRESENT_VERTEX,PRESENT_FRAGMENT);
+        gl.activeTexture(gl.TEXTURE0);gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+        const allocate=(w:number,h:number,filter:number,own:(t:WebGLTexture)=>void)=>{
+          const t=gl.createTexture();require(t,'Native root color texture allocation failed');own(t);gl.bindTexture(gl.TEXTURE_2D,t);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,filter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,filter);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+          gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+        };
+        if(!this.colorTexture)allocate(width,height,gl.NEAREST,t=>{this.colorTexture=t;});
+        if(!this.paletteTexture)allocate(256,1,gl.LINEAR,t=>{this.paletteTexture=t;});
+        gl.bindTexture(gl.TEXTURE_2D,this.paletteTexture!);
+        if(!this.uploadedPalette||!this.uploadedPalette.every((v,i)=>v===color.lut[i])){
+          gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,256,1,gl.RGBA,gl.UNSIGNED_BYTE,color.lut);this.uploadedPalette=new Uint8Array(color.lut);
+        }
+        this.target();gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,this.colorTexture!,0);
+        require(gl.checkFramebufferStatus(gl.FRAMEBUFFER)===gl.FRAMEBUFFER_COMPLETE,'Native root color framebuffer is incomplete');
+        gl.disable(gl.BLEND);gl.bindVertexArray(null);const program=this.programs.get('present')!;gl.useProgram(program);
+        gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.ink!);gl.uniform1i(gl.getUniformLocation(program,'accumTex'),0);
+        gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,this.paletteTexture!);gl.uniform1i(gl.getUniformLocation(program,'paletteTex'),1);
+        for(const field of ROOTS_SOURCE_TONE_FIELDS)gl.uniform1f(gl.getUniformLocation(program,field.field),color[field.field]);
+        gl.uniform1f(gl.getUniformLocation(program,'scale'),scale);gl.uniform1f(gl.getUniformLocation(program,'displayRotation'),view.rotation);gl.uniform1f(gl.getUniformLocation(program,'viewportAspect'),view.aspect);
+        gl.uniform3f(gl.getUniformLocation(program,'backgroundRgb'),...color.backgroundRGB);
+        this.check('presentation setup');
+      });
+      const pixels=pixels8(width*height*4),row=pixels8(width*4);
+      return rootsGpuFinally(()=>{
+        cancel(isCancelled);
+        device(()=>{
+          gl.drawArrays(gl.TRIANGLE_STRIP,0,4);gl.readBuffer(gl.COLOR_ATTACHMENT0);gl.pixelStorei(gl.PACK_ALIGNMENT,1);
+          gl.pixelStorei(gl.PACK_ROW_LENGTH,0);gl.pixelStorei(gl.PACK_SKIP_PIXELS,0);gl.pixelStorei(gl.PACK_SKIP_ROWS,0);
+          gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);this.check('color readback');
+        });
+        this.readbackBytes+=pixels.byteLength;
+        for(let y=0;y<height;y++){
+          cancel(isCancelled);
+          for(let x=0;x<width;x++)require(pixels[(y*width+x)*4+3]===255,'Native root color readback is incomplete');
+        }
+        for(let y=0;y<Math.floor(height/2);y++){
+          cancel(isCancelled);const a=y*row.length,b=(height-y-1)*row.length;row.set(pixels.subarray(a,a+row.length));pixels.copyWithin(a,b,b+row.length);pixels.set(row,b);
+        }
+        return pixels;
+      },()=>this.releaseDrawState());
+    });
+  }
+
   reset(): void {
     const errors: unknown[] = [], gl = this.gl;
     const attempt = (f: () => void) => { try { f(); } catch (error) { errors.push(error); } };
     if (gl) {
-      for (const [key, remove] of [['ink', 'deleteTexture'], ['framebuffer', 'deleteFramebuffer'], ['buffer', 'deleteBuffer'], ['vao', 'deleteVertexArray']] as const) {
+      for (const [key, remove] of [['colorTexture', 'deleteTexture'], ['paletteTexture', 'deleteTexture'], ['ink', 'deleteTexture'], ['framebuffer', 'deleteFramebuffer'], ['buffer', 'deleteBuffer'], ['vao', 'deleteVertexArray']] as const) {
         if (this[key]) attempt(() => { (gl[remove] as (o: unknown) => void).call(gl, this[key]); this[key] = undefined; });
       }
       for (const [kind, program] of this.programs) attempt(() => {
@@ -346,7 +497,7 @@ export class RootsNativeDensityGpu {
       try { rootsGpuCleanup(() => { if (!gl.isContextLost()) gl.getExtension('WEBGL_lose_context')?.loseContext(); }); }
       catch (error) { this.cleanupPending = true; throw error; }
     }
-    this.gl = undefined; this.upload = undefined; this.width = this.height = 0;
+    this.gl = undefined; this.uploadedPalette = undefined; this.upload = undefined; this.width = this.height = 0;
     this.pending = this.queued = this.submitted = 0; this.draws = this.readbackBytes = 0;
     this.lastKernel = undefined; this.deviceFacts = undefined;
   }

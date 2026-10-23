@@ -1,3 +1,5 @@
+import {presentRootsNativeMetricInk,prepareRootsInkView} from '../src/engine/rootsNativeInk';
+import type {RootsMetricColorPlan} from '../src/engine/rootsDensityColor';
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import type {PreparedRootsProjection} from '../src/engine/rootsProjection';
 
@@ -21,6 +23,7 @@ vi.mock('../src/engine/rootsNativeDensityGpu',async importOriginal=>{
    this.pending=[];
   }
   clear(){this.pending=[];this.count=0;this.ink.fill(0);observed.clears++;}
+  presentPixels(color:RootsMetricColorPlan,rotation:number){return presentRootsNativeMetricInk(this.ink,prepareRootsInkView(this.width,this.height,rotation),color,this.count).pixels;}
   readback(){observed.readbacks++;if(observed.readbackFailure)throw observed.readbackFailure;const ink=this.ink.slice();if(observed.invalidInk)ink[0]=NaN;return ink;}
   diagnostics(){return{submittedPoints:this.count,lastKernel:'points' as const,handles:this.ink.length?1:0};}
   dispose(){observed.disposals++;if(observed.disposeFailures-->0)throw new Error('controlled disposal');this.ink=new Float32Array();this.pending=[];this.count=0;}

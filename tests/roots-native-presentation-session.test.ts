@@ -1,3 +1,5 @@
+import {presentRootsNativeMetricInk,prepareRootsInkView} from '../src/engine/rootsNativeInk';
+import type {RootsMetricColorPlan} from '../src/engine/rootsDensityColor';
 import {beforeEach,describe,it,expect,vi} from 'vitest';
 import type {SceneOutput} from '../src/types';
 const observation=vi.hoisted(()=>({points:[] as number[][],readbacks:0,clears:0,disposeFailures:0,cloudDraws:0,cloudClear:0,cloudFade:0,cloudReadbacks:0}));
@@ -10,6 +12,7 @@ vi.mock('../src/engine/rootsNativeDensityGpu',async importOriginal=>{
   initialize(w:number,h:number){this.width=w;this.height=h;if(!this.ink.length)this.ink=new Float32Array(w*h*4);}
   add(p:readonly number[],metric:number){observation.points.push([...p,metric]);this.count++;this.ink[0]++;this.ink[1]+=metric;}
   flush(){}clear(){observation.clears++;this.count=0;this.ink.fill(0);}
+  presentPixels(color:RootsMetricColorPlan,rotation:number){return presentRootsNativeMetricInk(this.ink,prepareRootsInkView(this.width,this.height,rotation),color,this.count).pixels;}
   readback(){observation.readbacks++;return this.ink.slice();}
   diagnostics(){return{width:this.width,height:this.height,submittedPoints:this.count,retainedBytes:this.ink.byteLength,lastKernel:'points' as const,probe:{selected:'points' as const},handles:this.ink.length?1:0};}
   reset(){if(observation.disposeFailures-->0)throw new Error('controlled cleanup');this.ink=new Float32Array();this.count=0;}

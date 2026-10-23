@@ -1,9 +1,9 @@
 import {GenerationCleanupState} from './generationCleanup';
-import {RootsNativeDensityGpu,ROOTS_NATIVE_DENSITY_CHUNK,rootsNativeDensityGpuBytes,type RootsNativeDensityKernel} from './rootsNativeDensityGpu';
+import {RootsNativeDensityGpu,ROOTS_NATIVE_DENSITY_CHUNK,rootsNativeDensityGpuBytes,rootsNativeToneGpuBytes,type RootsNativeDensityKernel} from './rootsNativeDensityGpu';
 import {RootsGpuError,rootsGpuCancel,rootsGpuInput} from './rootsGpuFailure';
 import {validatePreparedRootsProjection,updateRootsProjectionState,transformRootsPoint,type PreparedRootsProjection,type RootsProjectionState,type RootsProjectionUpdate} from './rootsProjection';
 import {prepareRootsMetricValue,validateRootsMetricColorPlan,type RootsMetricColorPlan} from './rootsDensityColor';
-import {prepareRootsInkView,presentRootsNativeMetricInk,rootsNativeInkViewBytes} from './rootsNativeInk';
+import {prepareRootsInkView,measureRootsNativeMetricInk,rootsNativeInkViewBytes} from './rootsNativeInk';
 
 export interface RootsNativeDensityAdvanceOptions {kernel?:RootsNativeDensityKernel;isCancelled?:()=>boolean;}
 export interface RootsNativeDensityPresentOptions {isCancelled?:()=>boolean;}
@@ -77,8 +77,9 @@ export class RootsNativeDensityDisplay {
    rootsGpuCancel(isCancelled);
    const [width,height]=frame.physicalSize;
    const ink=gpu.readback(isCancelled);
-   const shown=presentRootsNativeMetricInk(ink,prepareRootsInkView(width,height,frame.displayRotation),color,frame.submittedFinitePointCount,isCancelled);
-   return{...shown,width,height,cameraResolved:true as const,backend:'webgl2' as const,facts:{...frame,toneBackend:'cpu' as const}};
+   const shown=measureRootsNativeMetricInk(ink,prepareRootsInkView(width,height,frame.displayRotation),isCancelled);
+   const pixels=gpu.presentPixels(color,frame.displayRotation,isCancelled);
+   return{...shown,pixels,width,height,toneBackend:'webgl2' as const,cameraResolved:true as const,backend:'webgl2' as const,facts:{...frame,toneBackend:'webgl2' as const}};
   });
  }
  private operation<T>(run:()=>T):T {
@@ -95,7 +96,7 @@ export class RootsNativeDensityDisplay {
   const {physicalWidth:width,physicalHeight:height}=plan;
   // GPU helper already includes one full readback; view helper includes that
   // borrowed readback again. Subtract its one overlap and include caller input.
-  const peak=rootsNativeDensityGpuBytes(width,height)+rootsNativeInkViewBytes(width,height,4)-width*height*16;
+  const peak=rootsNativeDensityGpuBytes(width,height)+rootsNativeInkViewBytes(width,height,4)-width*height*16+rootsNativeToneGpuBytes(width,height);
   if(peak>768*1024*1024)throw new RootsGpuError('Native density display representations exceed 768 MiB','capacity');
   const update=updateRootsProjectionState(this.projection,plan);
   const resized=!!this.projection&&(this.projection.current.physicalWidth!==width||this.projection.current.physicalHeight!==height);

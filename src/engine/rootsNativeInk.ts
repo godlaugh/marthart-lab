@@ -92,12 +92,20 @@ function selectInk(ink:MetricInk,view:RootsInkView,isCancelled?:()=>boolean):Met
 }
 /** Rotation happens on raw mass/metric sums before nonlinear palette/tone.
  * N remains the finite submitted count, including points clipped by the view. */
-export function presentRootsNativeMetricInk(ink:MetricInk,view:RootsInkView,color:RootsMetricColorPlan,submittedFinitePointCount:number,isCancelled?:()=>boolean){
+function prepareViewedInk(ink:MetricInk,view:RootsInkView,isCancelled?:()=>boolean){
  validateView(view);bufferShape(ink,view.width,view.height);checkViewCapacity(ink,view);
- validateRootsMetricColorPlan(color);rootsDensityScale({submittedFinitePointCount,width:view.width,height:view.height});
  const accumulated=rootsNativeInkStatistics(ink,view.width,view.height,isCancelled);
  const viewed=view.rotation===0?ink:selectInk(ink,view,isCancelled);
  const displayed=viewed===ink?accumulated:rootsNativeInkStatistics(viewed,view.width,view.height,isCancelled);
+ return{accumulated,displayed,viewed};
+}
+/** Numerical view statistics stay independent of the GPU color presentation. */
+export function measureRootsNativeMetricInk(ink:MetricInk,view:RootsInkView,isCancelled?:()=>boolean){
+ const {accumulated,displayed}=prepareViewedInk(ink,view,isCancelled);return{accumulated,displayed};
+}
+export function presentRootsNativeMetricInk(ink:MetricInk,view:RootsInkView,color:RootsMetricColorPlan,submittedFinitePointCount:number,isCancelled?:()=>boolean){
+ validateRootsMetricColorPlan(color);rootsDensityScale({submittedFinitePointCount,width:view.width,height:view.height});
+ const {accumulated,displayed,viewed}=prepareViewedInk(ink,view,isCancelled);
  const pixels=toneRootsMetricRgbaPrepared(view.width,view.height,viewed,color,{submittedFinitePointCount},isCancelled);
  return{pixels,accumulated,displayed,toneBackend:'cpu' as const};
 }

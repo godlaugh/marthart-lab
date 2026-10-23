@@ -1,3 +1,5 @@
+import {presentRootsNativeMetricInk,prepareRootsInkView} from '../src/engine/rootsNativeInk';
+import type {RootsMetricColorPlan} from '../src/engine/rootsDensityColor';
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import type {AnimationTrack,SceneOutput} from '../src/types';
 
@@ -14,6 +16,7 @@ vi.mock('../src/engine/rootsNativeDensityGpu',async load=>{
   add(_point:readonly number[],metric:number){device.points++;this.count++;this.ink[0]++;this.ink[1]+=metric;}
   flush(){device.flushes++;}
   clear(){device.clears++;this.count=0;this.ink.fill(0);}
+  presentPixels(color:RootsMetricColorPlan,rotation:number){return presentRootsNativeMetricInk(this.ink,prepareRootsInkView(this.width,this.height,rotation),color,this.count).pixels;}
   readback(){device.readbacks++;if(device.readFailure){const error=device.readFailure;device.readFailure=undefined;throw error;}return this.ink.slice();}
   diagnostics(){return{width:this.width,height:this.height,submittedPoints:this.count,retainedBytes:this.ink.byteLength,lastKernel:'points' as const,probe:{selected:'points' as const},handles:this.owned?1:0};}
   dispose(){device.disposals++;if(device.disposeFailures>0){device.disposeFailures--;throw new Error('peer controlled disposal failure');}if(this.owned){this.owned=false;device.live--;}this.ink=new Float32Array();this.count=0;}

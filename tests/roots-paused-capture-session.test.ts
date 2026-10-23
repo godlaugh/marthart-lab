@@ -1,3 +1,5 @@
+import {presentRootsNativeMetricInk,prepareRootsInkView} from '../src/engine/rootsNativeInk';
+import type {RootsMetricColorPlan} from '../src/engine/rootsDensityColor';
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import type {GenerateContext} from '../src/types';
 // These are ownership/ordering tests with real math, clock, projection and tone.
@@ -10,6 +12,7 @@ vi.mock('../src/engine/rootsNativeDensityGpu',async load=>{
   initialize(w:number,h:number){this.width=w;this.height=h;this.ink=new Float32Array(w*h*4);seen.live.add(this.id);}
   add(_p:readonly number[],m:number){seen.points++;this.count++;this.ink[0]++;this.ink[1]+=m;}
   clear(){this.count=0;this.ink.fill(0);}flush(){}
+  presentPixels(color:RootsMetricColorPlan,rotation:number){return presentRootsNativeMetricInk(this.ink,prepareRootsInkView(this.width,this.height,rotation),color,this.count).pixels;}
   readback(){seen.reads++;if(seen.readFailure){const e=seen.readFailure;seen.readFailure=undefined;throw e;}return this.ink.slice();}
   diagnostics(){return{width:this.width,height:this.height,submittedPoints:this.count,retainedBytes:this.ink.byteLength,lastKernel:'points' as const,handles:1};}
   dispose(){if(this.id===seen.failDeleteId&&seen.deleteFailures-->0)throw Error('capture disposal failed');seen.live.delete(this.id);this.ink=new Float32Array();this.count=0;}
