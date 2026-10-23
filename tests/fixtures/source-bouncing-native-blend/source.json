@@ -1,0 +1,1139 @@
+{
+  "at": "2026-10-23T21:00:31.533491+00:00",
+  "classification": "diagnostic progress, strict animation parity remains failed",
+  "scope": "Four observed pixels only; all original particles replayed in order, 176 candidate fragments inspected per state. No product behavior changed.",
+  "run": {
+    "path": ".cache/bouncing-native-animation-20261024/blend-repro/native-bouncing/run.json",
+    "sha256": "8bc57d9a1d13e362c7cc3e07201774ad9c902bc81171ffa5b1a00e69b14a3e03",
+    "probeSha256": "464e6e353ff9600ad69fecb590b3fbc6a0ee784cecfcd6a8d17cfa7a0573f69c",
+    "blendHelperSha256": "c639f5c4534f016544c8eefd83ffeffb7d181f6bcd3457b7524f018f1ccc628f",
+    "sourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+    "seconds": 13.4441351670539,
+    "exit": 0,
+    "reaped": true,
+    "processGroupExists": false,
+    "stderr": "",
+    "settingsAndLicenseUnchanged": true,
+    "policyCache": "Normal original startup refresh, backed up beforehand"
+  },
+  "files": {
+    "candidates.json": "901bcc32ed195fcb59b29b1044b33ec69365c3459562712197d2a90ee1688980",
+    "NativeBlendDiagnostic.java": "c639f5c4534f016544c8eefd83ffeffb7d181f6bcd3457b7524f018f1ccc628f",
+    "browser-probe.mjs": "35f5f5892d4be1021e6dd3c685ec1edeaab384ad42c84604b634a1bb42d07c66",
+    "prepare-native.mjs": "7378cf7e78cf1b9d0e8497fb5146f6b81c7c9c2edf0fe7a61e8fe9a5226887b6",
+    "README.md": "8fbfbbf5e0d178a7e4904d852bb9ee1b478bdff03f42dd9e34d9a4370bce1118"
+  },
+  "frames": [
+    {
+      "frame": 8,
+      "updates": 6,
+      "coordinate": [
+        264,
+        196
+      ],
+      "stateSha256": "65a62e22ae00318f9b70df3107bd92d9e4c20cf7ee497edf53ecd90119f810ea",
+      "artworkSha256": "4336ce2ac4490de1505dcd2c88888a87e50162cee4f3fad2380587e5fc756a63",
+      "matchesAcceptanceStateAndArtwork": true,
+      "report": ".cache/bouncing-native-animation-20261024/blend-repro-verified/comparison-frame-8.json",
+      "reportSha256": "bdf8e999910953dddae3805f12419389a91bf054d6f37893a070f9b7c39504ae",
+      "nativeDiagnosticSha256": "4ed625d19ef30b2ff349133bd6ea2d83521936aad6880a7620c7a50596bd0494",
+      "separateCandidates": 176,
+      "separateDifferences": 0,
+      "cumulativeDifferences": [
+        {
+          "product": {
+            "id": 1973629,
+            "rgba": [
+              150,
+              119,
+              175,
+              254
+            ]
+          },
+          "native": {
+            "rgba": [
+              150,
+              120,
+              175,
+              254
+            ],
+            "id": 1973629
+          }
+        }
+      ],
+      "lastSeparate": {
+        "id": 1973629,
+        "rgba": [
+          0.5868587493896484,
+          0.4682581126689911,
+          0.6871777176856995,
+          0.9954270124435425
+        ]
+      },
+      "blendControl": [
+        {
+          "format": "RGBA8",
+          "destinationGreen": 138,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 139,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 140,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 141,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 142,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 138,
+          "product": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 139,
+          "product": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 140,
+          "product": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 141,
+          "product": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 142,
+          "product": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        }
+      ],
+      "elapsedMs": 2673.3793330000003,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled"
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+    },
+    {
+      "frame": 23,
+      "updates": 21,
+      "coordinate": [
+        264,
+        212
+      ],
+      "stateSha256": "3091b9e544151e6e30ab49ffe59551190f0e5830738596e988e2adf62fa7fd45",
+      "artworkSha256": "1ad0a319d64a2bc198bb5e55b442b0b4ccc37cfbc3de1c0e22573b6bc37ddc92",
+      "matchesAcceptanceStateAndArtwork": true,
+      "report": ".cache/bouncing-native-animation-20261024/blend-repro-verified/comparison-frame-23.json",
+      "reportSha256": "5e994489575675e2f52bd966051880c79dabd0ac9914440534b7ab3114334b58",
+      "nativeDiagnosticSha256": "4ed625d19ef30b2ff349133bd6ea2d83521936aad6880a7620c7a50596bd0494",
+      "separateCandidates": 176,
+      "separateDifferences": 0,
+      "cumulativeDifferences": [
+        {
+          "product": {
+            "id": 1973629,
+            "rgba": [
+              150,
+              119,
+              175,
+              254
+            ]
+          },
+          "native": {
+            "rgba": [
+              150,
+              120,
+              175,
+              254
+            ],
+            "id": 1973629
+          }
+        }
+      ],
+      "lastSeparate": {
+        "id": 1973629,
+        "rgba": [
+          0.5868587493896484,
+          0.4682581126689911,
+          0.6871777176856995,
+          0.9954270124435425
+        ]
+      },
+      "blendControl": [
+        {
+          "format": "RGBA8",
+          "destinationGreen": 138,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 139,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 140,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 141,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 142,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 138,
+          "product": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 139,
+          "product": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 140,
+          "product": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 141,
+          "product": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 142,
+          "product": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        }
+      ],
+      "elapsedMs": 2666.061875,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled"
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+    },
+    {
+      "frame": 38,
+      "updates": 36,
+      "coordinate": [
+        264,
+        228
+      ],
+      "stateSha256": "245e9cba7462e8bc092ef4c3572468ddf505608583dbafae0df1e6899f523345",
+      "artworkSha256": "ab3f3c78b6fb9f41aacb221e084a9ef3be3dc75e41b883945ef14eacd96a06aa",
+      "matchesAcceptanceStateAndArtwork": true,
+      "report": ".cache/bouncing-native-animation-20261024/blend-repro-verified/comparison-frame-38.json",
+      "reportSha256": "624bd27a04177f1cbe682a2cd18cfeb8d63d3aa49b408d568aacedac23a4049a",
+      "nativeDiagnosticSha256": "4ed625d19ef30b2ff349133bd6ea2d83521936aad6880a7620c7a50596bd0494",
+      "separateCandidates": 176,
+      "separateDifferences": 0,
+      "cumulativeDifferences": [
+        {
+          "product": {
+            "id": 1973629,
+            "rgba": [
+              150,
+              119,
+              175,
+              254
+            ]
+          },
+          "native": {
+            "rgba": [
+              150,
+              120,
+              175,
+              254
+            ],
+            "id": 1973629
+          }
+        }
+      ],
+      "lastSeparate": {
+        "id": 1973629,
+        "rgba": [
+          0.5868587493896484,
+          0.4682581126689911,
+          0.6871777176856995,
+          0.9954270124435425
+        ]
+      },
+      "blendControl": [
+        {
+          "format": "RGBA8",
+          "destinationGreen": 138,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 139,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 140,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 141,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 142,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 138,
+          "product": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 139,
+          "product": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 140,
+          "product": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 141,
+          "product": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 142,
+          "product": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        }
+      ],
+      "elapsedMs": 2665.5910409999997,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled"
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+    },
+    {
+      "frame": 53,
+      "updates": 51,
+      "coordinate": [
+        264,
+        244
+      ],
+      "stateSha256": "cd3ae0e05db003e0f47842a564508bcb12a28b222f7061fd285a80abab98ff1e",
+      "artworkSha256": "3b5467d7817936490bef347b639795209073b715412a5f8b75860a20d7620e85",
+      "matchesAcceptanceStateAndArtwork": true,
+      "report": ".cache/bouncing-native-animation-20261024/blend-repro-verified/comparison-frame-53.json",
+      "reportSha256": "26ea7b217e07f7295730d4c95f67f4ad23f00d071e2a5c8484d4bd22c22fe53c",
+      "nativeDiagnosticSha256": "4ed625d19ef30b2ff349133bd6ea2d83521936aad6880a7620c7a50596bd0494",
+      "separateCandidates": 176,
+      "separateDifferences": 0,
+      "cumulativeDifferences": [
+        {
+          "product": {
+            "id": 1973629,
+            "rgba": [
+              150,
+              119,
+              175,
+              254
+            ]
+          },
+          "native": {
+            "rgba": [
+              150,
+              120,
+              175,
+              254
+            ],
+            "id": 1973629
+          }
+        }
+      ],
+      "lastSeparate": {
+        "id": 1973629,
+        "rgba": [
+          0.5868587493896484,
+          0.4682581126689911,
+          0.6871777176856995,
+          0.9954270124435425
+        ]
+      },
+      "blendControl": [
+        {
+          "format": "RGBA8",
+          "destinationGreen": 138,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 139,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.46666669845581055,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            119,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 140,
+          "product": [
+            0.5882353186607361,
+            0.46666666865348816,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            119,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 141,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA8",
+          "destinationGreen": 142,
+          "product": [
+            0.5882353186607361,
+            0.47058823704719543,
+            0.686274528503418,
+            0.9960784316062927
+          ],
+          "native": [
+            0.5882353186607361,
+            0.4705882668495178,
+            0.686274528503418,
+            0.9960784912109375
+          ],
+          "productBytes": [
+            150,
+            120,
+            175,
+            254
+          ],
+          "nativeBytes": [
+            150,
+            120,
+            175,
+            254
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 138,
+          "product": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.468591570854187,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 139,
+          "product": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686095118522644,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 140,
+          "product": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686274528503418,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 141,
+          "product": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686453938484192,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        },
+        {
+          "format": "RGBA32F",
+          "destinationGreen": 142,
+          "product": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257736206055
+          ],
+          "native": [
+            0.5865781307220459,
+            0.4686633050441742,
+            0.6874067187309265,
+            0.9944257140159607
+          ]
+        }
+      ],
+      "elapsedMs": 2623.786208,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled"
+      ],
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+    }
+  ],
+  "finding": "All 704 candidate RGBA32F unblended fragment reads match. The only cumulative byte difference at each sampled pixel begins at ID 1973629. Isolated RGBA8 blending reproduces green 120 versus 119 at destination green 140. RGBA32F green blend results match.",
+  "unknowns": [
+    "Driver internal blend/output arithmetic, FMA and rounding policy not determined.",
+    "No universal correction, cross-device or active GUI/video claim.",
+    "RGBA32F blend alpha differs by one Float32 ULP; not all blended float channels are equal."
+  ],
+  "costLimits": "Wall times measured only; CPU/process-family peak memory/GPU time/token cost and cold-versus-warm not measured."
+}
