@@ -16,6 +16,7 @@ export interface SourceDrawingTexture {
   magFilter:'linear';minFilter:'linear-mipmap-linear';wrap:'clamp';generateMipmaps:true;
 }
 export interface SourceDrawingCommand {
+  primitive:'triangles'|'points';
   vertexShader:string;fragmentShader:string;
   attributes:readonly {name:string;size:number;divisor:0|1;values:Float32Array}[];
   index?:Uint16Array|Uint32Array;
@@ -25,7 +26,7 @@ export interface SourceDrawingCommand {
   frontFace:'clockwise'|'counter-clockwise';
   /** Each pass selects the visible faces, preserving Three's double pass. */
   passes:readonly ('front'|'back'|'both')[];
-  blend:'source-alpha-over-additive-alpha';
+  blend:'source-alpha-over-additive-alpha'|'source-alpha-over';
 }
 export interface SourceDrawingSnapshot {
   model:'source-drawing-v1';
@@ -132,8 +133,8 @@ export function snapshotSourceDrawings(
           if(!textures.has(texture)){retain(data.buffer,p);charge(data.byteLength+128,p);textures.set(texture,pendingTextures.length);pendingTextures.push(texture);}
           return{name,uniform};
         }
-        const values=uniformComponents(uniform),count=uniform.kind==='float-array'?uniform.count:1;
-        const expected=uniform.kind==='mat4'?16:uniform.kind==='vec4'?4:uniform.kind==='vec3'?3:uniform.kind==='vec2'||uniform.kind==='ivec2'?2:uniform.kind==='float-array'?count:1;
+        const values=uniformComponents(uniform),count=uniform.kind==='float-array'||uniform.kind==='vec3-array'?uniform.count:1;
+        const expected=uniform.kind==='vec3-array'?count*3:uniform.kind==='mat4'?16:uniform.kind==='vec4'?4:uniform.kind==='vec3'?3:uniform.kind==='vec2'||uniform.kind==='ivec2'?2:uniform.kind==='float-array'?count:1;
         requireValue(integer(count)&&count>0&&values.length===expected,p,'参数分量数量与声明不一致');
         if(ArrayBuffer.isView(values))retain(values.buffer,p);
         charge(values.length*4,p);
@@ -179,7 +180,7 @@ export function snapshotSourceDrawings(
         const values=u.integral?new Int32Array(u.values!):new Float32Array(u.values!);copiedBufferBytes+=values.byteLength;
         return{name:u.name,kind:u.uniform.kind,count:u.count!,values};
       });
-      check();return{vertexShader:draw.material.vertexShader,fragmentShader:draw.material.fragmentShader,attributes,index,first:draw.first,count:draw.count,instances:draw.instances,uniforms,depthTest:draw.material.depthTest,depthWrite:draw.material.depthWrite,depthFunction:'less-equal',frontFace:draw.frontFace,passes:draw.passes,blend:'source-alpha-over-additive-alpha'};
+      check();return{primitive:'triangles',vertexShader:draw.material.vertexShader,fragmentShader:draw.material.fragmentShader,attributes,index,first:draw.first,count:draw.count,instances:draw.instances,uniforms,depthTest:draw.material.depthTest,depthWrite:draw.material.depthWrite,depthFunction:'less-equal',frontFace:draw.frontFace,passes:draw.passes,blend:'source-alpha-over-additive-alpha'};
     });
     return{ok:true,value:{model:'source-drawing-v1',commands,textures:textureCopies,copiedBufferBytes,retainedBufferBytes,admittedBytes}};
   }catch(error){if(error instanceof BoundaryFailure)return{ok:false,error:error.detail};throw error;}
@@ -189,7 +190,7 @@ function uniformComponents(uniform:Exclude<SourceShaderUniform,{kind:'sampler2d'
   switch(uniform.kind){
     case 'float':case 'int':return[uniform.value];
     case 'mat4':return uniform.value.elements;
-    case 'float-array':return uniform.value;
+    case 'float-array':case 'vec3-array':return uniform.value;
     default:return uniform.value instanceof THREE.Vector2||uniform.value instanceof THREE.Vector3||uniform.value instanceof THREE.Vector4?uniform.value.toArray():uniform.value;
   }
 }

@@ -9,7 +9,7 @@ export type SourceShaderUniform =
   | {readonly kind:'vec3'; value:Components|THREE.Vector3}
   | {readonly kind:'vec4'; value:Components|THREE.Vector4}
   | {readonly kind:'mat4'; value:THREE.Matrix4}
-  | {readonly kind:'float-array'; readonly count:number; value:Float32Array}
+  | {readonly kind:'float-array'|'vec3-array'; readonly count:number; value:Float32Array}
   | {readonly kind:'sampler2d'; value:THREE.DataTexture};
 export type SourceShaderUniforms = Record<string,SourceShaderUniform>;
 

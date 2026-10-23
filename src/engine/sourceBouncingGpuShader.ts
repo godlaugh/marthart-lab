@@ -319,14 +319,12 @@ void main() {
 `;
 
 // Retained bouncing_particles_render.vert SHA256 9fe1cd5e0ef63f82e27350d9cce8edf52adb0ce3dd78ff8f4756aabfce56a92a.
-export const sourceBouncingRenderVertex=`#version 300 es
-precision highp float;
+function sourceBouncingVertex(storage:'texture'|'attribute'){return `precision highp float;
 precision highp int;
 
 uniform mat4 projection;
 uniform mat4 modelview;
-uniform sampler2D stateTex;
-uniform int texSize;
+${storage==='texture'?'uniform sampler2D stateTex;\nuniform int texSize;':'in vec4 particleState;'}
 uniform vec3 scale;
 uniform vec3 offset;
 uniform float radius;
@@ -336,20 +334,21 @@ out float vSpeed;
 out float vColorT;
 
 void main() {
-  int x = gl_VertexID % texSize;
-  int y = gl_VertexID / texSize;
-  vec4 state = texelFetch(stateTex, ivec2(x, y), 0);
+  ${storage==='texture'?'int x = gl_VertexID % texSize;\n  int y = gl_VertexID / texSize;\n  vec4 state = texelFetch(stateTex, ivec2(x, y), 0);':'vec4 state = particleState;'}
   vec3 world = vec3(state.xy, 0.0) * scale + offset;
   gl_Position = projection * modelview * vec4(world, 1.0);
   gl_PointSize = max(radius, 1.0);
   vSpeed = length(state.zw);
   vColorT = float(gl_VertexID) / float(max(particleCount - 1, 1));
 }
-`;
+`;}
+
+export const sourceBouncingRenderVertex='#version 300 es\n'+sourceBouncingVertex('texture');
+/** Readback changes only state access; all position/color arithmetic is shared. */
+export const sourceBouncingNativeVertex=sourceBouncingVertex('attribute');
 
 // Retained bouncing_particles_render.frag SHA256 d8e8bdb55e7fcfecd2bd35f2b3a6645985237c2defb5048f3f63e50930456c30.
-export const sourceBouncingRenderFragment=`#version 300 es
-precision highp float;
+export const sourceBouncingNativeFragment=`precision highp float;
 precision highp int;
 
 const int MAX_PALETTE_COLORS = 25;
@@ -386,3 +385,5 @@ void main() {
   fragColor = vec4(rgb, alpha);
 }
 `;
+
+export const sourceBouncingRenderFragment='#version 300 es\n'+sourceBouncingNativeFragment;

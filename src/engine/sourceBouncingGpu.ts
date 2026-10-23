@@ -1,4 +1,6 @@
-import {sourceBouncingQuad,sourceBouncingUpdateFragment,sourceBouncingRenderVertex,sourceBouncingRenderFragment} from './sourceBouncingGpuShader';
+import type {SourceDrawingFrame} from './sourceDrawingFrame';
+import type {SourceDrawingCommand,SourceDrawingUniform} from './sourceDrawingSnapshot';
+import {sourceBouncingQuad,sourceBouncingUpdateFragment,sourceBouncingRenderVertex,sourceBouncingRenderFragment,sourceBouncingNativeVertex,sourceBouncingNativeFragment} from './sourceBouncingGpuShader';
 
 import {prepareSourceBouncingDisplay,type SourceBouncingVisualConfiguration} from './sourceBouncingVisualConfig';
 import type {SourceCameraPlan} from './sourceCamera';
@@ -99,7 +101,7 @@ export class SourceBouncingGpu {
  private initial?:Float32Array;private gl?:WebGL2RenderingContext;private updateProgram?:Program;private renderProgram?:Program;private vao?:WebGLVertexArrayObject;private pointVao?:WebGLVertexArrayObject;private output?:DisplayTarget;
  private targets:Target[]=[];private current=0;private initialized=false;private disposed=false;private failed=false;private failure:unknown;
  private boundaryResources?:BoundaryResources;private boundaryDraws=0;
- private passes=0;private rendered=0;private readbackBytes=0;private work=0;private readonly cleanup=new Map<object,{release:()=>void;bytes:number}>();
+ private nativeSnapshots=0;private passes=0;private rendered=0;private readbackBytes=0;private work=0;private readonly cleanup=new Map<object,{release:()=>void;bytes:number}>();
  constructor(initial:Float32Array|TransferredState,private readonly isCancelled?:()=>boolean){
   const transferred=initial instanceof TransferredState,data=transferred?initial.state:initial;
   if(!(data instanceof Float32Array)||data.length%4)throw new SourceBouncingGpuError('input','源弹跳状态需要 RGBA Float32Array');
@@ -116,7 +118,7 @@ export class SourceBouncingGpu {
   try{state=structuredClone(initial,{transfer:[initial.buffer]});}catch{throw new SourceBouncingGpuError('capability','源弹跳状态移交失败');}
   return new SourceBouncingGpu(new TransferredState(state),isCancelled);
  }
- diagnostics(){const retainedBytes=this.disposed?0:(this.initial?.byteLength??0)+[...this.cleanup.values()].reduce((sum,resource)=>sum+resource.bytes,0);return{...this.layout,contextOwned:!!this.gl,handles:this.cleanup.size,initialized:this.initialized,disposed:this.disposed,failed:this.failed,passes:this.passes,collisionEdgeWork:this.work,readbackBytes:this.readbackBytes,rendered:this.rendered,boundaryDraws:this.boundaryDraws,estimatedBytes:this.disposed?0:this.output?sourceBouncingGpuFrameLayout(this.layout.count,this.output.width,this.output.height,!!this.boundaryResources,this.layout.ownership).bytes:this.layout.bytes,retainedBytes};}
+ diagnostics(){const retainedBytes=this.disposed?0:(this.initial?.byteLength??0)+[...this.cleanup.values()].reduce((sum,resource)=>sum+resource.bytes,0);return{...this.layout,contextOwned:!!this.gl,handles:this.cleanup.size,initialized:this.initialized,disposed:this.disposed,failed:this.failed,passes:this.passes,collisionEdgeWork:this.work,readbackBytes:this.readbackBytes,rendered:this.rendered,nativeSnapshots:this.nativeSnapshots,boundaryDraws:this.boundaryDraws,estimatedBytes:this.disposed?0:this.output?sourceBouncingGpuFrameLayout(this.layout.count,this.output.width,this.output.height,!!this.boundaryResources,this.layout.ownership).bytes:this.layout.bytes,retainedBytes};}
  private check(){if(this.disposed)throw new SourceBouncingGpuError('disposed','源弹跳 GPU 对象已释放');if(this.failed)throw this.failure;if(this.isCancelled?.())throw new SourceBouncingGpuError('cancelled','源弹跳 GPU 已取消');if(this.gl?.isContextLost())throw new SourceBouncingGpuError('context','源弹跳 GPU 上下文丢失');}
  private guarded<T>(run:()=>T):T{try{this.check();return run();}catch(error){this.failed=true;this.failure=error;throw error;}}
  private own<T extends object>(handle:T|null,release:(value:T)=>void,bytes=0):T{if(!handle)throw new SourceBouncingGpuError('capacity','源弹跳 GPU 资源分配失败');this.cleanup.set(handle,{release:()=>release(handle),bytes});return handle;}
@@ -183,10 +185,7 @@ export class SourceBouncingGpu {
   return this.guarded(()=>{
   this.initialize();const gl=this.gl!,out=new Float32Array(this.layout.texels*4);gl.bindFramebuffer(gl.FRAMEBUFFER,this.targets[this.current].framebuffer);gl.readPixels(0,0,this.layout.size,this.layout.size,gl.RGBA,gl.FLOAT,out);this.checkGl();this.readbackBytes+=out.byteLength;return out;
  });}
- /** Draw the current state texture, then the optional source closed boundary
-  * into the same attachment. Each frame clears; scene accumulation and replay
-  * are separate policies. No particle readback occurs here. */
- render(options:SourceBouncingGpuDisplay):{width:number;height:number;pixels:Uint8ClampedArray}{return this.guarded(()=>{
+ private prepareDrawing(options:SourceBouncingGpuDisplay){
   const {display:d}=sourceBouncingGpuFrameLayout(this.layout.count,options.width,options.height,!!(options.boundary||this.boundaryResources),this.layout.ownership);
   const prepared=prepareSourceBouncingDisplay(options.visualConfiguration,{initialSpeed:options.initialSpeed},options.cameraPlan?.displayScale);
   if(!prepared.ok)throw new SourceBouncingGpuError(prepared.error.kind==='capacity'?'capacity':'input',prepared.error.reason);
@@ -198,7 +197,42 @@ export class SourceBouncingGpu {
    if(path.value.positions.length)boundary={buffers:sourceProcessingClosedStrokeBuffers(path.value.positions,path.value.lineWidth,options.cameraPlan),color:path.value.packedColor,display:sourceProcessingLineDisplay(options.cameraPlan)};
   }
   const pointSize=Math.max(1,u.radius),fragments=this.layout.count*Math.ceil(pointSize)**2;
-  if(!Number.isFinite(pointSize)||!Number.isSafeInteger(fragments)||fragments>SOURCE_BOUNCING_GPU_LIMITS.pointFragments||this.rendered>=SOURCE_BOUNCING_GPU_LIMITS.passes)throw new SourceBouncingGpuError('capacity','源弹跳点片元或绘制次数超出预算；不减少粒子或点大小');
+  if(!Number.isFinite(pointSize)||!Number.isSafeInteger(fragments)||fragments>SOURCE_BOUNCING_GPU_LIMITS.pointFragments||this.rendered+this.nativeSnapshots>=SOURCE_BOUNCING_GPU_LIMITS.passes)throw new SourceBouncingGpuError('capacity','源弹跳点片元或绘制次数超出预算；不减少粒子或点大小');
+
+  const clear=new Float32Array(4);writeSourcePackedColor(u.backgroundColor,clear,0);
+  return{d,u,projection,modelview,boundary,pointSize,clear};
+ }
+ /** Owned native snapshot from the same state and display owner as WebGL.
+  * Simulation remains GPU-resident; only an explicitly requested native draw
+  * reads it back. The caller owns this snapshot and its transfer lifetime. */
+ drawingFrame(options:SourceBouncingGpuDisplay,identity:{generation:number;sequence:number}):SourceDrawingFrame{return this.guarded(()=>{
+  if(!identity||![identity.generation,identity.sequence].every(n=>Number.isInteger(n)&&n>0&&n<=0xffffffff))throw new SourceBouncingGpuError('input','原生帧身份需要非零 uint32');
+  const {d,u,projection,modelview,boundary,clear}=this.prepareDrawing(options);
+  // Before readback, reserve the current GPU state plus packet/copy/upload and
+  // native output storage. No reduced particle count or hidden sampling.
+  const packetBound=this.layout.count*16+BOUNDARY_BYTES*2+32768;
+  if(this.layout.steadyBytes+packetBound*4+d.width*d.height*12>SOURCE_BOUNCING_GPU_LIMITS.bytes)throw new SourceBouncingGpuError('capacity','原生弹跳完整状态传输超过256 MiB预算');
+  const state=this.readState(),c=u.transform;
+  const uniform=(name:string,kind:Exclude<SourceDrawingUniform['kind'],'sampler2d'>,values:ArrayLike<number>,count=1):SourceDrawingUniform=>({name,kind,count,values:kind==='int'||kind==='ivec2'?new Int32Array(values):new Float32Array(values)});
+  const common={first:0,instances:1,depthTest:false,depthWrite:false,depthFunction:'less-equal' as const,frontFace:'counter-clockwise' as const,passes:['both' as const]};
+  const commands:SourceDrawingCommand[]=[{...common,primitive:'points',vertexShader:sourceBouncingNativeVertex,fragmentShader:sourceBouncingNativeFragment,attributes:[{name:'particleState',size:4,divisor:0,values:state.subarray(0,this.layout.count*4)}],count:this.layout.count,blend:'source-alpha-over',uniforms:[
+   uniform('projection','mat4',projection),uniform('modelview','mat4',modelview),uniform('scale','vec3',[c.scaleX,c.scaleY,c.scaleZ]),uniform('offset','vec3',[c.offsetX,c.offsetY,c.offsetZ]),uniform('radius','float',[u.radius]),uniform('particleCount','int',[this.layout.count]),uniform('speedScale','float',[u.speedScale]),uniform('paletteCount','int',[u.paletteCount]),uniform('palette','vec3-array',u.paletteRgb,25),
+  ]}];
+  if(boundary){
+   const b=boundary.buffers,rgba=new Float32Array(4);writeSourcePackedColor(boundary.color,rgba,0);const colors=new Float32Array(b.positions.length);for(let i=0;i<colors.length;i+=4)colors.set(rgba,i);
+   commands.push({...common,primitive:'triangles',vertexShader:sourceProcessingLineVertex,fragmentShader:sourceProcessingLineFragment,attributes:[{name:'position',size:4,divisor:0,values:b.positions},{name:'direction',size:4,divisor:0,values:b.directions},{name:'color',size:4,divisor:0,values:colors}],index:b.indices,count:b.indices.length,blend:'source-alpha-over-additive-alpha',uniforms:[
+    uniform('lineModelview','mat4',[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]),uniform('projection','mat4',projection),uniform('viewport','vec4',boundary.display.viewport),uniform('perspective','int',[boundary.display.perspective]),uniform('scale','vec3',boundary.display.scale),
+   ]});
+  }
+  const buffers=new Set<ArrayBufferLike>();for(const command of commands){for(const attribute of command.attributes)buffers.add(attribute.values.buffer);if(command.index)buffers.add(command.index.buffer);for(const binding of command.uniforms)if(binding.kind!=='sampler2d')buffers.add(binding.values.buffer);}
+  const bytes=[...buffers].reduce((n,b)=>n+b.byteLength,0),metadata=commands.reduce((n,c)=>n+3*(c.vertexShader.length+c.fragmentShader.length)+4096,0);this.nativeSnapshots++;
+  return{...identity,width:d.width,height:d.height,samples:0,clear:[clear[0],clear[1],clear[2],clear[3]],...(clear[3]===1?{completion:'opaque-alpha' as const}:{}),drawing:{model:'source-drawing-v1',commands,textures:[],copiedBufferBytes:bytes,retainedBufferBytes:0,admittedBytes:bytes+metadata}};
+ });}
+ /** Draw the current state texture, then the optional source closed boundary
+  * into the same attachment. Each frame clears; scene accumulation and replay
+  * are separate policies. No particle readback occurs here. */
+ render(options:SourceBouncingGpuDisplay):{width:number;height:number;pixels:Uint8ClampedArray}{return this.guarded(()=>{
+  const {d,u,projection,modelview,boundary,pointSize,clear}=this.prepareDrawing(options);
   this.initialize();const gl=this.gl!,viewport=gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array,range=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array;
   if(Math.max(d.width,d.height)>gl.getParameter(gl.MAX_TEXTURE_SIZE)||d.width>viewport[0]||d.height>viewport[1]||pointSize>range[1])throw new SourceBouncingGpuError('capability','源弹跳绘制尺寸或点直径超过设备容量');
   if(!this.renderProgram){this.renderProgram=this.compile(sourceBouncingRenderVertex,sourceBouncingRenderFragment);this.pointVao=this.own(gl.createVertexArray(),v=>gl.deleteVertexArray(v));}
@@ -211,11 +245,10 @@ export class SourceBouncingGpu {
    const framebuffer=this.own(gl.createFramebuffer(),f=>gl.deleteFramebuffer(f));gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw new SourceBouncingGpuError('capability','源弹跳RGBA8绘制附件不完整');this.output={texture,framebuffer,width:d.width,height:d.height};
   }
-  const p=this.renderProgram,c=u.transform,background=u.backgroundColor;
+  const p=this.renderProgram,c=u.transform;
   gl.bindFramebuffer(gl.FRAMEBUFFER,this.output.framebuffer);gl.viewport(0,0,d.width,d.height);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.DITHER);gl.colorMask(true,true,true,true);
   // PGraphicsOpenGL keeps ARGB format, but colorCalc(int) still treats
   // alpha-zero integers <=255 as opaque grayscale. Reuse that color owner.
-  const clear=new Float32Array(4);writeSourcePackedColor(background,clear,0);
   gl.clearColor(clear[0],clear[1],clear[2],clear[3]);gl.clear(gl.COLOR_BUFFER_BIT);
   gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   gl.useProgram(p.program);gl.bindVertexArray(this.pointVao!);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.targets[this.current].texture);

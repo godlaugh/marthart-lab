@@ -9,12 +9,14 @@ export interface SourceDrawingFrame {
   generation:number;sequence:number;width:number;height:number;
   /** Actual GL_SAMPLES; zero is single-sample. Never silently round a request. */
   samples:number;
+  /** Original offscreen completion can restore opaque background alpha. */
+  completion?:'opaque-alpha';
   clear:readonly [number,number,number,number];
   drawing:SourceDrawingSnapshot;
 }
 export const SOURCE_FRAME_MAGIC=0x31464c4d;
 export const SOURCE_FRAME_BUDGET=256*1024*1024;
-const uniformCode:Record<SourceDrawingUniform['kind'],number>={float:1,int:2,vec2:3,ivec2:4,vec3:5,vec4:6,mat4:7,'float-array':8,sampler2d:9};
+const uniformCode:Record<SourceDrawingUniform['kind'],number>={float:1,int:2,vec2:3,ivec2:4,vec3:5,vec4:6,mat4:7,'float-array':8,sampler2d:9,'vec3-array':10};
 const encoder=new TextEncoder();
 class FrameFailure extends Error {
   constructor(readonly kind:'input'|'capacity'|'cancelled'|'unsupported',message:string){super(message);}
@@ -35,6 +37,7 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
     demand(uint(frame.width)&&frame.width>0&&frame.width<=16384&&uint(frame.height)&&frame.height>0&&frame.height<=16384&&frame.width*frame.height<=16_000_000,'帧物理尺寸超出容量');
     demand(uint(frame.samples)&&frame.samples<=0x7fffffff,'帧采样数必须为非负 GLsizei');
     demand(frame.clear.length===4&&frame.clear.every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1),'帧背景必须为四个有限的 0 至 1 分量');
+    demand(frame.completion===undefined||frame.completion==='opaque-alpha'&&frame.clear[3]===1,'帧完成阶段的 alpha 策略无效');
     demand(frame.drawing.model==='source-drawing-v1','未知绘制快照版本');
     let offset=0,packet:Uint8Array|undefined,view:DataView|undefined;
     const reserve=(length:number)=>{
@@ -61,17 +64,19 @@ export function encodeSourceDrawingFrame(frame:SourceDrawingFrame,options:{isCan
       let bytes=strings.get(s);if(!bytes){bytes=encoder.encode(s);demand(new TextDecoder('utf-8',{fatal:true}).decode(bytes)===s,'帧字符串不是有效 Unicode');strings.set(s,bytes);}raw(bytes);
     };
     const emit=()=>{
-      u32(SOURCE_FRAME_MAGIC);u32(2);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
-      frame.clear.forEach(f32);u32(frame.drawing.textures.length);u32(frame.drawing.commands.length);u32(frame.samples);
+      u32(SOURCE_FRAME_MAGIC);u32(3);u32(packet?.length??0);u32(frame.generation);u32(frame.sequence);u32(frame.width);u32(frame.height);
+      frame.clear.forEach(f32);u32(frame.drawing.textures.length);u32(frame.drawing.commands.length);u32(frame.samples);u32(frame.completion==='opaque-alpha'?1:0);
       for(const t of frame.drawing.textures){
         demand(t.magFilter==='linear'&&t.minFilter==='linear-mipmap-linear'&&t.wrap==='clamp'&&t.generateMipmaps===true,'不支持的帧纹理采样');
         u32(t.width);u32(t.height);f32(t.anisotropy);raw(t.pixels);
       }
       for(const d of frame.drawing.commands){
-        demand(d.depthFunction==='less-equal'&&d.blend==='source-alpha-over-additive-alpha','不支持的帧深度或混合方式');
+        demand(d.depthFunction==='less-equal'&&['source-alpha-over-additive-alpha','source-alpha-over'].includes(d.blend),'不支持的帧深度或混合方式');
         demand(typeof d.depthTest==='boolean'&&typeof d.depthWrite==='boolean'&&['clockwise','counter-clockwise'].includes(d.frontFace),'帧光栅状态无效');
+        demand(d.primitive==='triangles'||d.primitive==='points','未知绘制图元');
+        demand(d.primitive==='points'||d.count%3===0,'三角形范围必须是三个顶点的倍数');
         text(d.vertexShader);text(d.fragmentShader);u32(d.first);u32(d.count);u32(d.instances);
-        u32((d.depthTest?1:0)|(d.depthWrite?2:0)|(d.frontFace==='clockwise'?4:0));u32(d.passes.length);
+        u32((d.depthTest?1:0)|(d.depthWrite?2:0)|(d.frontFace==='clockwise'?4:0)|(d.primitive==='points'?8:0)|(d.blend==='source-alpha-over'?16:0));u32(d.passes.length);
         for(const pass of d.passes){demand(['both','front','back'].includes(pass),'帧面选择无效');u32(pass==='both'?0:pass==='front'?1:2);}
         u32(d.attributes.length);
         for(const a of d.attributes){text(a.name);u32(a.size);u32(a.divisor);words(a.values);}

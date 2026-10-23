@@ -10,7 +10,7 @@ function frame(commands:SourceDrawingCommand[]=[]):SourceDrawingFrame {
   return{generation:7,sequence:11,width:16,height:12,samples:0,clear:[1,0,0.5,1],drawing};
 }
 function triangle():SourceDrawingCommand {
-  return{vertexShader:'in vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}',
+  return{primitive:'triangles',vertexShader:'in vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}',
     fragmentShader:'uniform float params[3];uniform int mode;uniform ivec2 pair;uniform float negative;out vec4 color;void main(){color=vec4(params[1],float(mode)/4.0,float(pair.y)/4.0,floatBitsToInt(negative)<0?1.0:0.0);}',
     attributes:[{name:'position',size:2,divisor:0,values:new Float32Array([-1,-1,3,-1,-1,3])}],
     first:0,count:3,instances:1,depthTest:false,depthWrite:false,depthFunction:'less-equal',frontFace:'counter-clockwise',passes:['both'],blend:'source-alpha-over-additive-alpha',
@@ -91,9 +91,9 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
     f.samples=0;const single=run(encode(f));expect(single.status,single.stderr).toBe(0);
     expect([...readFileSync(join(single.folder,'frame.rgba'))].every(v=>v===0||v===255)).toBe(true);
   });
-  it('continues to read retained v1 packets as single-sample evidence',()=>{
-    const current=Buffer.from(encode(frame([triangle()]))),legacy=Buffer.concat([current.subarray(0,52),current.subarray(56)]);
-    legacy.writeUInt32LE(1,4);legacy.writeUInt32LE(legacy.length,8);const r=run(legacy);expect(r.status,r.stderr).toBe(0);
+  it.each([1,2])('continues to read retained v%s packets as single-sample evidence',version=>{
+    const current=Buffer.from(encode(frame([triangle()]))),legacy=Buffer.concat([current.subarray(0,version===1?52:56),current.subarray(60)]);
+    legacy.writeUInt32LE(version,4);legacy.writeUInt32LE(legacy.length,8);const r=run(legacy);expect(r.status,r.stderr).toBe(0);
     expect(JSON.parse(readFileSync(join(r.folder,'renderer.json'),'utf8')).samples).toBe(0);
   });
   it.each(['invalid','capacity','unsupported'] as const)('rejects %s sample counts without a partial frame',kind=>{
@@ -109,6 +109,17 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
     success(frame([d]),[64,128,255,255]);
   });
   it('retains an explicitly empty indexed draw',()=>{const d=triangle();d.index=new Uint16Array();d.count=0;success(frame([d]),[255,0,128,255]);});
+
+  it('renders one actual point with vec3 palette data and source-alpha blending',()=>{
+    const d=triangle();d.primitive='points';d.count=1;d.attributes[0].values=new Float32Array([0,0]);
+    d.vertexShader='in vec2 position;void main(){gl_Position=vec4(position+vec2(float(gl_VertexID)*0.01),0,1);gl_PointSize=1.0;}';
+    d.fragmentShader='uniform vec3 palette[25];uniform float alpha;out vec4 color;void main(){color=vec4(palette[24],alpha);}';
+    const palette=new Float32Array(75);palette.set([.5868587493896484,.4682581126689911,.6871777176856995],72);
+    d.uniforms=[{name:'palette',kind:'vec3-array',count:25,values:palette},{name:'alpha',kind:'float',count:1,values:new Float32Array([.9954270124435425])}];d.blend='source-alpha-over';
+    const f=frame([d]);f.width=f.height=1;f.clear=[134/255,140/255,188/255,198/255];success(f,[150,120,175,254]);
+    f.clear=[134/255,140/255,188/255,1];f.completion='opaque-alpha';success(f,[150,120,175,255]);
+    d.blend='source-alpha-over-additive-alpha';delete f.completion;success(f,[150,120,175,255]);
+  });
   it('binds distinct textures and preserves ordered draws',()=>{
     const a=triangle(),b=triangle();a.fragmentShader='out vec4 color;void main(){color=vec4(1,0,0,1);}';a.uniforms=[];
     b.fragmentShader='uniform sampler2D a;uniform sampler2D b;out vec4 color;void main(){color=texture(a,vec2(0.5))+texture(b,vec2(0.5));}';
@@ -116,16 +127,20 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
     const f=frame([a,b]);f.drawing.textures=[[0,64,0,128],[0,0,128,127]].map(bytes=>({width:1,height:1,pixels:new Uint8Array(bytes),anisotropy:1,magFilter:'linear',minFilter:'linear-mipmap-linear',wrap:'clamp',generateMipmaps:true}));
     success(f,[0,64,128,255]);
   });
-  it.each(['magic','version','length','identity','viewport','clear','truncated','trailing','collection','index','uniform-type','shader','budget'] as const)('fails closed on malformed %s',kind=>{
+  it.each(['magic','version','length','identity','viewport','clear','truncated','trailing','collection','index','uniform-type','reserved-attribute','palette-length','flags','completion','shader','budget'] as const)('fails closed on malformed %s',kind=>{
     const f=frame([triangle()]);if(kind==='index'){f.drawing.commands[0].index=new Uint16Array([0,1,999]);}
     if(kind==='uniform-type')f.drawing.commands[0].uniforms=f.drawing.commands[0].uniforms.map((u,i)=>i===1?{name:'mode',kind:'float',count:1,values:new Float32Array([2])}:u);
+    if(kind==='reserved-attribute')f.drawing.commands[0].attributes=[...f.drawing.commands[0].attributes,{name:'gl_VertexID',size:1,divisor:0,values:new Float32Array(3)}];
+    if(kind==='palette-length')f.drawing.commands[0].uniforms=[...f.drawing.commands[0].uniforms,{name:'palette',kind:'vec3-array',count:25,values:new Float32Array(74)}];
     if(kind==='shader')f.drawing.commands[0].fragmentShader='this is not GLSL';
     let bytes=Buffer.from(encode(f));
-    if(kind==='magic')bytes.writeUInt32LE(0,0);if(kind==='version')bytes.writeUInt32LE(3,4);if(kind==='length')bytes.writeUInt32LE(bytes.length+1,8);
+    if(kind==='magic')bytes.writeUInt32LE(0,0);if(kind==='version')bytes.writeUInt32LE(4,4);if(kind==='length')bytes.writeUInt32LE(bytes.length+1,8);
     if(kind==='identity')bytes.writeUInt32LE(0,12);if(kind==='viewport')bytes.writeUInt32LE(0,20);if(kind==='clear')bytes.writeFloatLE(NaN,28);
     if(kind==='truncated')bytes=bytes.subarray(0,-7);
     if(kind==='trailing'){bytes=Buffer.concat([bytes,Buffer.alloc(4)]);bytes.writeUInt32LE(bytes.length,8);}
     if(kind==='collection')bytes.writeUInt32LE(0xffffffff,48);
+    if(kind==='completion')bytes.writeUInt32LE(2,56);
+    if(kind==='flags'){const draw=f.drawing.commands[0],offset=60+4+Buffer.byteLength(draw.vertexShader)+4+Buffer.byteLength(draw.fragmentShader)+12;bytes.writeUInt32LE(32,offset);}
     if(kind==='budget')bytes.writeUInt32LE(SOURCE_FRAME_BUDGET,8);
     const r=run(bytes);expect(r.status).toBe(1);expect(JSON.parse(r.stderr).kind).toBe(kind==='shader'||kind==='uniform-type'?'runtime':kind==='budget'?'capacity':'input');
     expect(()=>readFileSync(join(r.folder,'renderer.json'))).toThrow();

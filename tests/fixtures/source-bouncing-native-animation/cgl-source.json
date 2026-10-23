@@ -1,0 +1,1200 @@
+{
+  "at": "2026-10-23T21:20:39.818910+00:00",
+  "scope": "Original bouncing1, 2000000 particles, 62 paused full artwork references, 11 complete state textures. Production simulation/snapshot, browser HTTP client and managed CGL service. Renderer-level only.",
+  "status": "native drawing path passed; default WebGL still fails four pixels; App Bouncing integration pending",
+  "native": {
+    "report": ".cache/bouncing-cgl-20261024/native-measured/report.json",
+    "reportSha256": "ca577345de075617b7d4426a2c9c25e2495f064efac565283700567250ba8eda",
+    "backend": {
+      "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-cgl-20261024/renderer",
+      "executableSha256": "2f17ca9ebe41d0a4014af8153d13cedc5bf98f933bd7f419e68dba1b99941a1e"
+    },
+    "elapsedMs": 125271.543833,
+    "processFamily": {
+      "rootPid": 78086,
+      "samples": 359,
+      "observedProcesses": 369,
+      "maxConcurrentProcesses": 11,
+      "sampledPeakRssKiB": 4968880,
+      "observedCpuMs": 190230.00000000003,
+      "samplingErrors": []
+    },
+    "diagnostics": {
+      "count": 2000000,
+      "size": 1415,
+      "texels": 2002225,
+      "ownership": "transfer",
+      "bytes": 96071264,
+      "initializationBytes": 96071264,
+      "steadyBytes": 64071264,
+      "diagnosticBytes": 96106864,
+      "contextOwned": false,
+      "handles": 0,
+      "initialized": true,
+      "disposed": true,
+      "failed": false,
+      "passes": 60,
+      "collisionEdgeWork": 480534000,
+      "readbackBytes": 1986207200,
+      "rendered": 0,
+      "nativeSnapshots": 62,
+      "boundaryDraws": 0,
+      "estimatedBytes": 0,
+      "retainedBytes": 0
+    },
+    "rows": [
+      {
+        "frame": 1,
+        "updates": 0,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "e7c566a8892669c2a5d93a313810c6cfdd5390db1051224c502263ea554a4a7c",
+          "expectedSha256": "e7c566a8892669c2a5d93a313810c6cfdd5390db1051224c502263ea554a4a7c"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6436,
+        "referenceRgbSha256": "3f01197ac08989a61ecb1b10670f9587cadf6d07dfa7b21b71bde020abf4b670",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 2,
+        "updates": 0,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6436,
+        "referenceRgbSha256": "3f01197ac08989a61ecb1b10670f9587cadf6d07dfa7b21b71bde020abf4b670",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 3,
+        "updates": 1,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "8e8b68d709df245c96ec85a3171d6c7ac869fcb6606c446b96ced65dbe81f43b",
+          "expectedSha256": "8e8b68d709df245c96ec85a3171d6c7ac869fcb6606c446b96ced65dbe81f43b"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6329,
+        "referenceRgbSha256": "f2e83885829bf7862d34e45af2e35be04d0916c1b01d266392417a70e0143e6b",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 4,
+        "updates": 2,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "858b5f1482657d09e07bc2530ed02f26612063c2ee2861824a4ec1d275a86964",
+          "expectedSha256": "858b5f1482657d09e07bc2530ed02f26612063c2ee2861824a4ec1d275a86964"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6364,
+        "referenceRgbSha256": "cca17f39e2af381d62c9346033f3700aececf3e6ba5ca26e14c755e7f2d5040c",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 5,
+        "updates": 3,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6488,
+        "referenceRgbSha256": "503f43eb37e9f4421c186f33ce6c124f198dda8d867e935fcabb00c43ddd99c1",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 6,
+        "updates": 4,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6378,
+        "referenceRgbSha256": "d2d4f583ae3b535fd1ccb16c00460ea151f1213435c1f335b83499d60c2ba7ed",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 7,
+        "updates": 5,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "bffe87e7a3f69887236d9d73d3ead13071b6e155da906c7e1a996cc00c3d1338",
+          "expectedSha256": "bffe87e7a3f69887236d9d73d3ead13071b6e155da906c7e1a996cc00c3d1338"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6499,
+        "referenceRgbSha256": "1e32c71a8fad39af3da4c1ac878dc961dcc9e2a68385a072f379fd101d1bc10d",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 8,
+        "updates": 6,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "65a62e22ae00318f9b70df3107bd92d9e4c20cf7ee497edf53ecd90119f810ea",
+          "expectedSha256": "65a62e22ae00318f9b70df3107bd92d9e4c20cf7ee497edf53ecd90119f810ea"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6464,
+        "referenceRgbSha256": "9c63f48ed6053d3cc02cf3205808b721a567f26190ee8e4ab8937e39e695a78d",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 9,
+        "updates": 7,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6399,
+        "referenceRgbSha256": "c853a3ab2f45f2a0475804b920f4be924cb971bcd8099b852cc30e1e7fc7ea9b",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 10,
+        "updates": 8,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6361,
+        "referenceRgbSha256": "69de7812c7c49b99a199e5106a9d3a8c38ff874fce0faf6d1fc629b2a01a7cfc",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 11,
+        "updates": 9,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6335,
+        "referenceRgbSha256": "6135bb7852fa96d60ae249730ffceac14eeee7b796afd234eb3f3f1b409a5b28",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 12,
+        "updates": 10,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "09a624a70b129ea0e92a2023e704ca6d4db3828cd9a76223e68d94d38fa340e4",
+          "expectedSha256": "09a624a70b129ea0e92a2023e704ca6d4db3828cd9a76223e68d94d38fa340e4"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6404,
+        "referenceRgbSha256": "4303e6684494e5888019281e1c9c4cb2bfca784fee81bb10969a926201be8d4a",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 13,
+        "updates": 11,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6470,
+        "referenceRgbSha256": "21a26156d1bb29091c4e7032080fc68bbc3e19304fd3e5c5261b90ef51b07cc3",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 14,
+        "updates": 12,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6517,
+        "referenceRgbSha256": "50877e4e4b62190f424c6516f72680b6847f45875ce8b5e00aa80f89bfdfcab0",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 15,
+        "updates": 13,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6456,
+        "referenceRgbSha256": "42e4e618421be1a44666fb1c43d6ea6ec120c3b2e54fd7423c833dc019bd5c6a",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 16,
+        "updates": 14,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6376,
+        "referenceRgbSha256": "96e03cbaab12d6b535d019b8cd815005fedbc08679c9cdafd8edb2fac00133d0",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 17,
+        "updates": 15,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6437,
+        "referenceRgbSha256": "1cb4e3c51a7770be10393f2908ca9451106ebeecb0ea31c17b1843fede43cbef",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 18,
+        "updates": 16,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6328,
+        "referenceRgbSha256": "e875740b5f2bffdfd6801afe03d8fd0f4767ff30033db1b32334c53d0fe70f05",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 19,
+        "updates": 17,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6363,
+        "referenceRgbSha256": "494c527f65cb1a2caedc8bda251c0c1cbe0eaba67ddc349e32e6fa65f29890f7",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 20,
+        "updates": 18,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6487,
+        "referenceRgbSha256": "6cee1b42f56b9da6386fe75264e0124ae33850a0cb6d55720da0993536cd2739",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 21,
+        "updates": 19,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6378,
+        "referenceRgbSha256": "27357792ad449c51a78dc133bb68004c15a3876907309f18617922d3736cbcd7",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 22,
+        "updates": 20,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6499,
+        "referenceRgbSha256": "61c28362b545fc1244d59ac1f02003db7f81efc102dcfb367bafeadb2d2fcb61",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 23,
+        "updates": 21,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "3091b9e544151e6e30ab49ffe59551190f0e5830738596e988e2adf62fa7fd45",
+          "expectedSha256": "3091b9e544151e6e30ab49ffe59551190f0e5830738596e988e2adf62fa7fd45"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6464,
+        "referenceRgbSha256": "101677b43553b3a26179d1af7a9b80fb236a9099d7bc394d837a9fadcba8ad8b",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 24,
+        "updates": 22,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6400,
+        "referenceRgbSha256": "c7d68318dc3a37408b6b381cc312d431966ea2298444b8deaeb9fc6770ce84d2",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 25,
+        "updates": 23,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6361,
+        "referenceRgbSha256": "17943229dee83ec857f923265729bac0e35bd6ea32a9eb8dcba6c7c8f14fa770",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 26,
+        "updates": 24,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6334,
+        "referenceRgbSha256": "f44c7f4981ad6e8a5295f60749ded08d6784f90e469fa9a923ee75353e880bc9",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 27,
+        "updates": 25,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6403,
+        "referenceRgbSha256": "aba2581af854c076578fc3d2bcafed8d214dedf6cd35497bef1bc63e2dfc1221",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 28,
+        "updates": 26,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6470,
+        "referenceRgbSha256": "320aa54a491c6fc5c7acdd593d309226a735cc969e3aec9f612cf18fa5fc24ca",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 29,
+        "updates": 27,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6513,
+        "referenceRgbSha256": "9c440597dea7015138c93136fd3561e572524bb2c0792825f8a6f5b087afee4a",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 30,
+        "updates": 28,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6458,
+        "referenceRgbSha256": "94d8d6b65df7984c9c79210b3c33c8b78b8b3b61819a28e981b34f92412459be",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 31,
+        "updates": 29,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6375,
+        "referenceRgbSha256": "25d654c314a3ecf51fc46a71268e95acba1f56128eddc0d97247bb8bbb16476e",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 32,
+        "updates": 30,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "12b6c816a68e642a524bba5f7f8b64d3f953a61fd4a4a5a74a5e39924234cfaa",
+          "expectedSha256": "12b6c816a68e642a524bba5f7f8b64d3f953a61fd4a4a5a74a5e39924234cfaa"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6437,
+        "referenceRgbSha256": "24a6944fe2eab0f46cd5c2de56b612119b5a97495bf089cf1061d2ce6ce01472",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 33,
+        "updates": 31,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6327,
+        "referenceRgbSha256": "f7141d5ce92635f49010d4f4f16a4548a27776a45a3b05f5b90b6fd9900b8f27",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 34,
+        "updates": 32,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6363,
+        "referenceRgbSha256": "a990fe1053e8b9a80c01037328963aa55f901a38057550a55e59f769b01492a2",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 35,
+        "updates": 33,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6487,
+        "referenceRgbSha256": "beb6363b9300b506e1861c7751102d9aa7cc2211e52542335cce185d6b63eb20",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 36,
+        "updates": 34,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6375,
+        "referenceRgbSha256": "deac525fa125e070a5d3c049d856463791cd14eb277d9628c0c70a27c1842e82",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 37,
+        "updates": 35,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6499,
+        "referenceRgbSha256": "bd50915193a4d96562c9400a6dd31a062315830daa7040b02c1405280f1821c2",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 38,
+        "updates": 36,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "245e9cba7462e8bc092ef4c3572468ddf505608583dbafae0df1e6899f523345",
+          "expectedSha256": "245e9cba7462e8bc092ef4c3572468ddf505608583dbafae0df1e6899f523345"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6464,
+        "referenceRgbSha256": "8b825a239618a1dd9180ab6adfae7435854c57bb399230a92546d57efc7b7b02",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 39,
+        "updates": 37,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6403,
+        "referenceRgbSha256": "1f9d7be208849a017bc61aa2ecad9c47d7171a3ec4745f672fa27542aad9a928",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 40,
+        "updates": 38,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6363,
+        "referenceRgbSha256": "792be3f24d403278a9d917d4601f61648256576b5958478efd87c428a0d66237",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 41,
+        "updates": 39,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6335,
+        "referenceRgbSha256": "662cb8d37a7c1714684427054ab8de6d2bb6158894fd22b75469dbcf20e1441f",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 42,
+        "updates": 40,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6405,
+        "referenceRgbSha256": "d2bec79241fb1548d6025233f07be9b504a0295ee2393c1ddc9e00d7780cb608",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 43,
+        "updates": 41,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6469,
+        "referenceRgbSha256": "22b5952994d9243d263d100f4fb082a44c4dd9ab44a3c1999f8b0f843362f5b6",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 44,
+        "updates": 42,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6515,
+        "referenceRgbSha256": "c8c9c3e7a906977d9f2648343cfa8766cf55227856054535b353f972c60ce5aa",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 45,
+        "updates": 43,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6455,
+        "referenceRgbSha256": "cbf0c3188a911537209728e25e09b001d62ae34d304d5f20477dcc8085a8fcf3",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 46,
+        "updates": 44,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6374,
+        "referenceRgbSha256": "a354f406fb844f9526368f4f4af8be6540420778efb3897036fd101dba7e8414",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 47,
+        "updates": 45,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6436,
+        "referenceRgbSha256": "75279ab9cf25b8df305c97f5ddc8f31555a4b5bd07ba51dc1745752c87241168",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 48,
+        "updates": 46,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6328,
+        "referenceRgbSha256": "bb37f2604becaa97c1105efb9d18cf2842daf5115ea806b24dfd01c74aee8879",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 49,
+        "updates": 47,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6363,
+        "referenceRgbSha256": "b4997f64b7429e2ac16076f1aa17e62fdbb4e65ee2ac9fd698ab7d0b51ead947",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 50,
+        "updates": 48,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6489,
+        "referenceRgbSha256": "2777b02123589fc159d1351a1e4efea16e90940be942dc5ed43f6d8cd312ac55",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 51,
+        "updates": 49,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6374,
+        "referenceRgbSha256": "6c5b6767e57f37953b3c1c579943bd0611273a01e08a6c93200fc9dbaa4862da",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 52,
+        "updates": 50,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6500,
+        "referenceRgbSha256": "4a4e455631f43fef860955ea4ec5097b5146b06d1085b119b8403bfeb78453fd",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 53,
+        "updates": 51,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "cd3ae0e05db003e0f47842a564508bcb12a28b222f7061fd285a80abab98ff1e",
+          "expectedSha256": "cd3ae0e05db003e0f47842a564508bcb12a28b222f7061fd285a80abab98ff1e"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6465,
+        "referenceRgbSha256": "b111f9db530d45328d881233e3d30635fdaf958c65a12db93d60312dc62facd8",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 54,
+        "updates": 52,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6405,
+        "referenceRgbSha256": "4dee1dd6adb5af86a168ec78a9551e14ac9cbe486682fb75187c445e74f997bb",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 55,
+        "updates": 53,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6363,
+        "referenceRgbSha256": "3196cf61298544942a2751fedfb624886cd759d76411780a4df7eca3c95061fb",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 56,
+        "updates": 54,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6338,
+        "referenceRgbSha256": "21e88ad9d438c3348c06fc2ffca4aecf287fca2149020b18cb9042e58a49f009",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 57,
+        "updates": 55,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6408,
+        "referenceRgbSha256": "20d72621b501cee94a17d5be87ed3742649390e5bf91065ef0e5e84e96e30c6c",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 58,
+        "updates": 56,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6471,
+        "referenceRgbSha256": "493a39635f8963f6368c625b9e02531fef13b6cf1ee3fd009042ca766f7a2970",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 59,
+        "updates": 57,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6518,
+        "referenceRgbSha256": "8cc703f64d287d6b205e933864ae4b441a62fe2c977001d6c932c42446d16d36",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 60,
+        "updates": 58,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6457,
+        "referenceRgbSha256": "b520b5c303ff82beccfae7a01d84d822ae7da133949bc707fdb7e4534301b5cf",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 61,
+        "updates": 59,
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6376,
+        "referenceRgbSha256": "7d98ba0aa2966ee44c7cf278bb260736f27c1fd16a70d6d184ccca018add6e35",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 62,
+        "updates": 60,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "e0bb11626c55e4da8f2f48e3af6728f2ff9420b29f7fe004be997a09244f3135",
+          "expectedSha256": "e0bb11626c55e4da8f2f48e3af6728f2ff9420b29f7fe004be997a09244f3135"
+        },
+        "differenceExamples": [],
+        "rgbPixels": 0,
+        "rgbMae": 0,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6435,
+        "referenceRgbSha256": "2efb151cb7503459ad21bafade19c36c4421d492fb2401e8da3ee3c967f33b0a",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      }
+    ]
+  },
+  "webgl": {
+    "report": ".cache/bouncing-cgl-20261024/webgl-measured/report.json",
+    "reportSha256": "0f18ac58b95ef946b946f68171967ed520201840a355f8906b1a14b5620d8a82",
+    "elapsedMs": 6592.9517909999995,
+    "processFamily": {
+      "rootPid": 84259,
+      "samples": 15,
+      "observedProcesses": 24,
+      "maxConcurrentProcesses": 10,
+      "sampledPeakRssKiB": 2339344,
+      "observedCpuMs": 9730,
+      "samplingErrors": []
+    },
+    "residualRows": [
+      {
+        "frame": 8,
+        "updates": 6,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "65a62e22ae00318f9b70df3107bd92d9e4c20cf7ee497edf53ecd90119f810ea",
+          "expectedSha256": "65a62e22ae00318f9b70df3107bd92d9e4c20cf7ee497edf53ecd90119f810ea"
+        },
+        "differenceExamples": [
+          {
+            "x": 264,
+            "y": 196,
+            "actual": [
+              150,
+              119,
+              175,
+              255
+            ],
+            "expectedRgb": [
+              150,
+              120,
+              175
+            ]
+          }
+        ],
+        "rgbPixels": 1,
+        "rgbMae": 1.111111111111111e-06,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6464,
+        "referenceRgbSha256": "9c63f48ed6053d3cc02cf3205808b721a567f26190ee8e4ab8937e39e695a78d",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 23,
+        "updates": 21,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "3091b9e544151e6e30ab49ffe59551190f0e5830738596e988e2adf62fa7fd45",
+          "expectedSha256": "3091b9e544151e6e30ab49ffe59551190f0e5830738596e988e2adf62fa7fd45"
+        },
+        "differenceExamples": [
+          {
+            "x": 264,
+            "y": 212,
+            "actual": [
+              150,
+              119,
+              175,
+              255
+            ],
+            "expectedRgb": [
+              150,
+              120,
+              175
+            ]
+          }
+        ],
+        "rgbPixels": 1,
+        "rgbMae": 1.111111111111111e-06,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6464,
+        "referenceRgbSha256": "101677b43553b3a26179d1af7a9b80fb236a9099d7bc394d837a9fadcba8ad8b",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 38,
+        "updates": 36,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "245e9cba7462e8bc092ef4c3572468ddf505608583dbafae0df1e6899f523345",
+          "expectedSha256": "245e9cba7462e8bc092ef4c3572468ddf505608583dbafae0df1e6899f523345"
+        },
+        "differenceExamples": [
+          {
+            "x": 264,
+            "y": 228,
+            "actual": [
+              150,
+              119,
+              175,
+              255
+            ],
+            "expectedRgb": [
+              150,
+              120,
+              175
+            ]
+          }
+        ],
+        "rgbPixels": 1,
+        "rgbMae": 1.111111111111111e-06,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6464,
+        "referenceRgbSha256": "8b825a239618a1dd9180ab6adfae7435854c57bb399230a92546d57efc7b7b02",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      },
+      {
+        "frame": 53,
+        "updates": 51,
+        "state": {
+          "components": 8008900,
+          "different": 0,
+          "maxAbs": 0,
+          "actualSha256": "cd3ae0e05db003e0f47842a564508bcb12a28b222f7061fd285a80abab98ff1e",
+          "expectedSha256": "cd3ae0e05db003e0f47842a564508bcb12a28b222f7061fd285a80abab98ff1e"
+        },
+        "differenceExamples": [
+          {
+            "x": 264,
+            "y": 244,
+            "actual": [
+              150,
+              119,
+              175,
+              255
+            ],
+            "expectedRgb": [
+              150,
+              120,
+              175
+            ]
+          }
+        ],
+        "rgbPixels": 1,
+        "rgbMae": 1.111111111111111e-06,
+        "alphaPixels": 0,
+        "intermediateAlphaPixels": 6465,
+        "referenceRgbSha256": "b111f9db530d45328d881233e3d30635fdaf958c65a12db93d60312dc62facd8",
+        "camera": {
+          "projectionMax": 0,
+          "modelviewMax": 0
+        }
+      }
+    ]
+  },
+  "sourceHashes": {
+    "src/engine/sourceBouncingGpu.ts": "4670d7b48be3db7f5c632e69e3a3548380fd2e4070f789dc7245bc5c4922e21b",
+    "src/engine/sourceBouncingGpuShader.ts": "fb56cc9fec4b37ac93d2059f089c83a4dc6d5ac19cc3a9c290491b30f0e239d2",
+    "src/engine/sourceDrawingFrame.ts": "00020178a70510ed1c9429dc34a66fd64ef37b1c5cffd069f7ca1eb6057cf300",
+    "src/engine/sourceDrawingSnapshot.ts": "5c9c32861c185f65564d3e1ee7473d87650acf5a8c1af5b76ab0b671fe4fed43",
+    "src/engine/sourceShaderMaterial.ts": "2222f5bb7c0dd62419f89f23d0e12232628c01edb7bbca71b45539be24e1edf1",
+    "src/engine/sourceNativeClient.ts": "8dc0b521fb2da95f291328a402731988e0f0cfcfa0d158e72210be7bee2a4650",
+    "server/source-renderer.mjs": "6bfaf2863c4c2e7bb0aa3eb9af63f7f5b9792648e43c603dd9cfeb4936b24d4a",
+    "server/render/SourceCglRenderer.m": "31901d9b9ac87c81a725df56cb1afbe5588741b419e2b528bc96737f95837fd7",
+    "scripts/verify-source-bouncing-native-animation.mjs": "e60d8ab83209c2c4d413b95795bf86fcf82bf20d3785d5096bd353377a1f3ea6"
+  },
+  "reference": {
+    "runSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8",
+    "probeSha256": "6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d",
+    "sourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+  },
+  "regression": {
+    "surfaceReport": ".cache/bouncing-cgl-20261024/surface-regression/report.json",
+    "surfaceReportSha256": "65ee65bcc341cd2821b72ca0e4bb91842fc316de8d6a2af43d9069e099ad252d",
+    "cases": [
+      "cornucopia",
+      "sphere",
+      "mobius"
+    ],
+    "fullArtworkDifferentPixels": [
+      0,
+      0,
+      0
+    ],
+    "testsPassed": 135,
+    "testFiles": 9,
+    "testLogSha256": "bc15a1fb4f99b2280a0da7816c694de5eb1091398aa7bb087427ff808266569a",
+    "buildV2": "passed",
+    "buildLogSha256": "4073f666fb83af1d407f407c0c9238b34b8fb3f174dde8620bf8defdcf0ebe61"
+  },
+  "limits": [
+    "Not wired into Bouncing App preview/capture/recording or installed package.",
+    "About 32 MB state readback/transfer per frame; 5000000-particle snapshot rejected by 256 MiB representation budget. No sampling/fallback.",
+    "Test process-family RSS includes browser/automation/measurement; not a 256 MiB whole-process peak promise.",
+    "Cold/warm driver state uncontrolled; GPU time/token cost unmeasured; no performance improvement claim.",
+    "Reference is paused redraws of successive simulation states; no active original GUI/video acceptance."
+  ]
+}

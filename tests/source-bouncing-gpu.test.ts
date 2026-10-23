@@ -85,6 +85,15 @@ describe('Bouncing particle display admission before allocating GPU resources',(
   rejects({...options(),width:16384,height:16384},'画布');
   expect(sourceBouncingGpuDisplayLayout(1920,1080).bytes).toBeGreaterThan(1920*1080*8);
  });
+
+ it('rejects invalid native identity before acquiring a context or reading state',()=>{
+  const gpu=SourceBouncingGpu.takeState(new Float32Array([0,0,1,0]));
+  try{expect(()=>gpu.drawingFrame(options(),{generation:0,sequence:1})).toThrow('uint32');expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,readbackBytes:0,nativeSnapshots:0});}finally{gpu.dispose();}
+ });
+ it('admits native packet expansion before readback and preserves the full count on refusal',()=>{
+  const gpu=SourceBouncingGpu.takeState(new Float32Array(5000000*4));
+  try{expect(()=>gpu.drawingFrame(options(),{generation:1,sequence:1})).toThrow('完整状态传输');expect(gpu.diagnostics()).toMatchObject({count:5000000,contextOwned:false,handles:0,readbackBytes:0,nativeSnapshots:0});}finally{gpu.dispose();}
+ });
  it('rejects corrupted camera upload arrays before initialization',()=>{
   const input=options();input.cameraPlan.projection.columnMajor[5]=NaN;rejects(input,'Float32');
  });

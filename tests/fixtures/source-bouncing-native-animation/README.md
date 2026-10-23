@@ -64,3 +64,15 @@ All 11 full state textures and all camera matrices match exactly. Do not weaken
 the check or label the whole animation exact until the remaining render-path
 difference is resolved. This is not an App UI, original window, recording or
 cross-device acceptance test.
+
+## Native CGL follow-up
+
+`cgl-source.json` indexes a later full 62-frame comparison using production
+`SourceBouncingGpu.drawingFrame`, the real browser client, HTTP gateway and sealed
+CGL process. It passes the same strict checks; the default WebGL comparison
+continues to fail at the original four pixels. Select the new backend manifest
+with `MATHART_SOURCE_RENDERER_BACKEND` when running the verifier above.
+This establishes the drawing path, not integration into Bouncing App preview,
+capture, recording or final packaging. See the
+[readable report](../../../docs/source-bouncing-native-rendering.zh-CN.md) for cost
+and larger-state limits. Historical `source.json` is intentionally unchanged.
