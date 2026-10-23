@@ -1,9 +1,10 @@
+import {SourceBouncingGpuError,SOURCE_BOUNCING_GPU_LIMITS} from '../engine/sourceBouncingLimits';
 import {parseSourceBouncingView,sourceBouncingViewInput} from '../engine/sourceBouncingNavigation';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
 import {prepareSourceBouncingScene,sourceBouncingCameraInput,sourceBouncingInitializationKey} from '../engine/sourceBouncingDocument';
 import {parseSourceBouncingCheckpoint,sourceBouncingSeedCheckpoint,type SourceBouncingCheckpoint} from '../engine/sourceBouncingReplay';
 import {prepareSourceBouncingSeeds,type SourceBouncingSeedDiagnostics} from '../engine/sourceBouncingSeeds';
-import {SourceBouncingGpu,SourceBouncingGpuError,sourceBouncingGpuFrameLayout,sourceBouncingGpuUpdateWork,SOURCE_BOUNCING_GPU_LIMITS,type SourceBouncingUpdate} from '../engine/sourceBouncingGpu';
+import {SourceBouncingGpu,sourceBouncingGpuFrameLayout,sourceBouncingGpuUpdateWork,type SourceBouncingUpdate} from '../engine/sourceBouncingGpu';
 import type {SourceBouncingResult} from '../engine/sourceBouncingConfig';
 import {prepareSourceCamera,type SourceCameraScalars,type SourceCameraViewport} from '../engine/sourceCamera';
 import {GenerationCleanupState} from '../engine/generationCleanup';

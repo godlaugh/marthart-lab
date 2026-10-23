@@ -1,19 +1,16 @@
 // Internal CGL state owner. The stdio/HTTP protocol does not expose this owner
 // until resource identity, cancellation and transport admission are integrated.
 // Included after the renderer's compile/applyUniforms helpers.
-typedef struct {
- int32_t subSteps,shape;
- float timeStep,particleRadius,center[2],radius,a,b;
- uint32_t polygonCount;
- float polygon[128];
-} SourceBouncingUpdate;
+
 @interface SourceCglBouncingState:NSObject {
  CGLContextObj _context;
+ NSString *_pointVertex,*_pointFragment;
  GLuint _textures[2],_frames[2],_quadVao,_pointVao,_quadBuffer,_updateProgram,_pointProgram;
  uint32_t _count,_size,_uploaded,_updates,_current,_draws;
  BOOL _failed,_disposed,_prepared;
  uint64_t _readbackBytes;
 }
+@property(readonly) NSString *pointVertex,*pointFragment;
 @property(readonly) uint32_t particleCount,size,updates,uploaded;
 @property(readonly) uint64_t retainedBytes,readbackBytes;
 -(instancetype)initWithCount:(uint32_t)count;
@@ -21,6 +18,7 @@ typedef struct {
 -(void)upload:(NSData*)data atParticle:(uint32_t)offset;
 -(void)advanceFrom:(uint32_t)from to:(uint32_t)to update:(SourceBouncingUpdate)update;
 -(NSData*)readState;
+-(void)validateDrawUniforms:(NSArray*)uniforms;
 -(void)drawUniforms:(NSArray*)uniforms;
 -(void)dispose;
 @end
@@ -31,8 +29,9 @@ static GLuint bouncingProgram(NSString *vertex,NSString *fragment){
  @finally{if(vs)glDeleteShader(vs);if(fs)glDeleteShader(fs);}
 }
 @implementation SourceCglBouncingState
+-(NSString*)pointVertex{return _pointVertex;}-(NSString*)pointFragment{return _pointFragment;}
 -(uint32_t)particleCount{return _count;}-(uint32_t)size{return _size;}-(uint32_t)updates{return _updates;}-(uint32_t)uploaded{return _uploaded;}
--(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_size*_size*32+32;}
+-(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_size*_size*32+32+(_pointVertex.length+_pointFragment.length)*3;}
 -(uint64_t)readbackBytes{return _readbackBytes;}
 -(void)check{INPUT(_prepared,@"Bouncing state not prepared");INPUT(!_disposed,@"Bouncing state disposed");RUNTIME(!_failed,@"Bouncing state requires reset after GL failure");RUNTIME(CGLGetCurrentContext()==_context,@"Bouncing state belongs to another context");}
 -(void)checkGl{if(glGetError()!=GL_NO_ERROR){_failed=YES;RUNTIME(NO,@"Bouncing state GL operation failed");}}
@@ -49,7 +48,7 @@ static GLuint bouncingProgram(NSString *vertex,NSString *fragment){
  INPUT(!_prepared&&!_disposed&&!_failed,@"Bouncing state cannot be prepared twice");RUNTIME(CGLGetCurrentContext()==_context,@"Bouncing preparation context mismatch");
  @try{
   GLint maximum=0;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maximum);ensure(_size<=(uint32_t)maximum,@"unsupported",@"Bouncing state texture too large");
-  _updateProgram=bouncingProgram(quad,update);_pointProgram=bouncingProgram(vertex,fragment);
+  _updateProgram=bouncingProgram(quad,update);_pointProgram=bouncingProgram(vertex,fragment);_pointVertex=[vertex copy];_pointFragment=[fragment copy];
   glGenTextures(2,_textures);glGenFramebuffers(2,_frames);glActiveTexture(GL_TEXTURE0);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
   glDisable(GL_SCISSOR_TEST);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);const GLfloat zero[4]={0,0,0,0};
   for(int i=0;i<2;i++){
@@ -92,13 +91,16 @@ static GLuint bouncingProgram(NSString *vertex,NSString *fragment){
 -(NSData*)readState{
  [self ready];NSUInteger length=(NSUInteger)_size*_size*16;ensure(self.retainedBytes+length<=Budget,@"capacity",@"Bouncing diagnostic readback exceeds budget");NSMutableData *bytes=[NSMutableData dataWithLength:length];glBindFramebuffer(GL_FRAMEBUFFER,_frames[_current]);glBindBuffer(GL_PIXEL_PACK_BUFFER,0);glPixelStorei(GL_PACK_ALIGNMENT,4);glPixelStorei(GL_PACK_ROW_LENGTH,0);glPixelStorei(GL_PACK_SKIP_PIXELS,0);glPixelStorei(GL_PACK_SKIP_ROWS,0);glReadPixels(0,0,_size,_size,GL_RGBA,GL_FLOAT,bytes.mutableBytes);[self checkGl];_readbackBytes+=length;return bytes;
 }
--(void)drawUniforms:(NSArray*)uniforms{
+-(void)validateDrawUniforms:(NSArray*)uniforms{
  [self ready];
  NSDictionary *particleCount=nil,*radius=nil;for(NSDictionary *u in uniforms){INPUT(![u[@"name"]isEqual:@"stateTex"]&&![u[@"name"]isEqual:@"texSize"],@"Bouncing state texture bindings belong to the state owner");if([u[@"name"]isEqual:@"particleCount"])particleCount=u;if([u[@"name"]isEqual:@"radius"])radius=u;}
  NSData *countBytes=particleCount[@"bytes"],*radiusBytes=radius[@"bytes"];int32_t n=0;float pointSize=0;
  INPUT([particleCount[@"kind"]intValue]==2&&countBytes.length==4&&[radius[@"kind"]intValue]==1&&radiusBytes.length==4,@"Bouncing draw missing count/radius");memcpy(&n,countBytes.bytes,4);memcpy(&pointSize,radiusBytes.bytes,4);
  INPUT(n==(int32_t)_count&&isfinite(pointSize),@"Bouncing drawing state identity mismatch");double fragments=(double)_count*pow(ceil(fmax(1,pointSize)),2);
  ensure(_draws<10000&&isfinite(fragments)&&fragments<=1000000000,@"capacity",@"Bouncing point fragments/draw count exceed budget");
+}
+-(void)drawUniforms:(NSArray*)uniforms{
+ [self validateDrawUniforms:uniforms];
  glUseProgram(_pointProgram);glBindVertexArray(_pointVao);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,_textures[_current]);
  int32_t size=(int32_t)_size;NSMutableArray *bindings=[uniforms mutableCopy];[bindings addObject:@{@"name":@"stateTex",@"kind":@9,@"texture":@0}];[bindings addObject:@{@"name":@"texSize",@"kind":@2,@"count":@1,@"bytes":[NSData dataWithBytes:&size length:4]}];applyUniforms(_pointProgram,bindings);
  glDisable(GL_DEPTH_TEST);glDepthMask(GL_FALSE);glDisable(GL_CULL_FACE);glDisable(GL_DITHER);glEnable(GL_BLEND);glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);glEnable(GL_PROGRAM_POINT_SIZE);glDrawArrays(GL_POINTS,0,_count);[self checkGl];_draws++;
@@ -114,6 +116,6 @@ static GLuint bouncingProgram(NSString *vertex,NSString *fragment){
  for(int i=0;i<2;i++){DROP(_frames[i],glDeleteFramebuffers(1,&_frames[i]));DROP(_textures[i],glDeleteTextures(1,&_textures[i]));}
  DROP(_quadBuffer,glDeleteBuffers(1,&_quadBuffer));DROP(_quadVao,glDeleteVertexArrays(1,&_quadVao));DROP(_pointVao,glDeleteVertexArrays(1,&_pointVao));DROP(_updateProgram,glDeleteProgram(_updateProgram));DROP(_pointProgram,glDeleteProgram(_pointProgram));
  #undef DROP
- _disposed=YES;CGLReleaseContext(_context);_context=NULL;
+ _pointVertex=nil;_pointFragment=nil;_disposed=YES;CGLReleaseContext(_context);_context=NULL;
 }
 @end

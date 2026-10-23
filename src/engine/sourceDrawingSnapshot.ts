@@ -17,6 +17,8 @@ export interface SourceDrawingTexture {
 }
 export interface SourceDrawingCommand {
   primitive:'triangles'|'points';
+  /** Only wire v4 can draw from the separately owned Bouncing state texture. */
+  retainedBouncingState?:true;
   vertexShader:string;fragmentShader:string;
   attributes:readonly {name:string;size:number;divisor:0|1;values:Float32Array}[];
   index?:Uint16Array|Uint32Array;

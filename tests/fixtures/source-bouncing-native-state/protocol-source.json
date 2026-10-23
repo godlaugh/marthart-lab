@@ -1,0 +1,156 @@
+{
+  "at": "2026-10-23T22:28:16.272125+00:00",
+  "status": "protocol passed; App integration pending",
+  "scope": "Original 2M bouncing1 seeds, pure display preparation and real stateful HTTP/CGL: 62 complete paused artwork frames, 60 native updates; initial CPU seed comparison only, no subsequent protocol state readback.",
+  "limits": [
+    "Offscreen original active draws have a zero viewport; paused redraws of the same simulation state are the accepted artwork reference. Not an active-window or native-video acceptance.",
+    "Artwork RGB is captured before normal branding; completed native PNG alpha is checked separately. No claim that the intermediate pre-branding RGBA equals completed pixels.",
+    "One original preset and 60 updates; no all-parameter, long-run or cross-device claim.",
+    "No product App/Worker transport, video encoding or package validation in this verifier.",
+    "Stateful HTTP compares initial CPU seeds only; 11 complete texture comparisons belong to the separate component verifier.",
+    "5M is synthetic capacity/upload validation, not original 5M motion or artwork acceptance.",
+    "Delayed real stdout cancellation verifies process retirement, not GPU preemption timing."
+  ],
+  "artifactHashes": {
+    ".cache/bouncing-state-protocol-20261024/retained-comparison/report.json": "c2d4e07aba602d7a41e89ce7b51c187b882f43d3f0710d8d213c5aa1f2638d7e",
+    ".cache/bouncing-state-protocol-20261024/component-regression/report.json": "cfcddea02cbe6e55dd28ac83cd40614ec19773ddba2e30e08627dbd59eaa4738",
+    ".cache/bouncing-state-protocol-20261024/stateless-regression/report.json": "50a825690fd6c65ff2128bc9fda8860f580b7a8ff7289e07e2a667b283183c9a",
+    ".cache/bouncing-state-protocol-20261024/webgl-control/report.json": "bc71b888cbea1787572e3b43ad1078de3f6f60e222cf8c40d397ad106456684c",
+    ".cache/bouncing-state-protocol-20261024/surface-regression/report.json": "c8b8d9493156ac6b3d54f9eecd73f4c155395037c85a43fb1f57f51b9de8e141",
+    ".cache/bouncing-state-protocol-20261024/tests-final.log": "f2073c58845f6540f95f0d84434f08fa3917397b811755b81e545b7b3a4ca96b",
+    ".cache/bouncing-state-protocol-20261024/build.log": "e84cbaa448ac737720f1ef23212c04d7af5bb3ba2a08baede5169659f804ae0c"
+  },
+  "sourceHashes": {
+    "scripts/verify-source-bouncing-native-animation.mjs": "607a222d94f1dd05f638814e4a166c16c7c39184ab91b88d08878cddbe10ed1a",
+    "server/index.mjs": "8145e7bf0676b2d5c45a27f44493bb755aa277274944a2d73e9588a09a2403cf",
+    "server/render/SourceCglBouncingState.h": "ca9bc7a476be97198dba40bb3093bb66e9d0c8fb618406f9d4f5cb5095e3ed4f",
+    "server/render/SourceCglRenderer.m": "cd99d49825227d0225ad2253267650f1f4a643dcc4a9b0512946ba80c2cc0f12",
+    "server/source-renderer.mjs": "2bf089292002f8652ebd72f3981385adee6c4547e19e73773afc49058b802907",
+    "src/engine/sourceBouncingGpu.ts": "c93b87d32a0375368e30cf1389d1165bc5e33913bfa95ef8b45330f0df2b8ec1",
+    "src/engine/sourceDrawingFrame.ts": "b33312f51e848b42b269caaa335e2e7a4e033688412be758f226de3dae379e4f",
+    "src/engine/sourceDrawingSnapshot.ts": "ab7077afbfd29f59d162457731c7da3311b73268f325a948502462407ba1efd3",
+    "src/engine/sourceNativeClient.ts": "1ed9abccd3d23d835539bbe7e5f7a8db7b8250d49f54d06fbc0ca515824bb5f1",
+    "src/scenes/sourceBouncing.ts": "5815ab0d5046d901304569c2eefe2763b7089b428d7dd002d65f69ce423e9360",
+    "tests/source-bouncing-gpu.test.ts": "cfa363cb9de48b79895b1e186367894e0a396281758b615976c684b6632d103e",
+    "tests/source-native-client.test.ts": "13bcdb0d4dc684c7bbef6f415bdca76669adb700afa2a6c629c46d3324e16f48",
+    "src/engine/sourceBouncingDrawing.ts": "760e605d928fa547e7f736354fc4db9b22844cd96fd21a283b38537b5520be55",
+    "src/engine/sourceBouncingLimits.ts": "aee735b2527db2c668592e8a2a84180d81258d3712cdcc75e83dc334ce84adba",
+    "src/engine/sourceBouncingOperation.ts": "e8cdc1e89ade5e65bfd76564cdc482ce334418298a2b54e367803d766aaeb6d3",
+    "tests/source-bouncing-native-protocol.test.ts": "2c507039799095b79d4b2b0d69b55ecba99c0a311f036f22658efce1131aa8d8"
+  },
+  "originalRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8",
+  "originalSourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+  "backend": {
+    "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-state-protocol-20261024/renderer",
+    "executableSha256": "e06587bade3c2c12267a19df0d17bb3b39ae4beb7b2b828b48c84780802551b4"
+  },
+  "validation": {
+    "retainedHttp": {
+      "frames": 62,
+      "rgbPixelsDifferent": 0,
+      "alphaPixelsDifferent": 0,
+      "initialCpuComponents": 8000000,
+      "diagnostics": {
+        "browserGpuContexts": 0,
+        "particleReadbacks": 0,
+        "particleUploadBytes": 32000000,
+        "updates": 60,
+        "released": true,
+        "retainedSeedBytes": 0
+      },
+      "requestBytes": 34926080,
+      "remainingNativeProcesses": 0
+    },
+    "component": {
+      "frames": 62,
+      "stateCheckpoints": 11,
+      "stateComponents": 88097900,
+      "stateDifferences": 0,
+      "rejectedRequests": 16,
+      "largeCapacity": {
+        "differences": 0,
+        "retainedStateBytes": 160138063,
+        "particles": 5000000
+      },
+      "contextReferencesRestored": true,
+      "windowCreated": false
+    },
+    "stateless": {
+      "frames": 62,
+      "requestBytes": 1986905010
+    },
+    "webglNegativeControl": {
+      "expectedDifferenceFrames": [
+        8,
+        23,
+        38,
+        53
+      ],
+      "totalDifferentPixels": 4
+    },
+    "surface": [
+      {
+        "name": "cornucopia",
+        "artworkComparison": {
+          "pixels": 0,
+          "max": 0,
+          "sum": 0,
+          "examples": []
+        },
+        "status": "matched"
+      },
+      {
+        "name": "sphere",
+        "artworkComparison": {
+          "pixels": 0,
+          "max": 0,
+          "sum": 0,
+          "examples": []
+        },
+        "status": "matched"
+      },
+      {
+        "name": "mobius",
+        "artworkComparison": {
+          "pixels": 0,
+          "max": 0,
+          "sum": 0,
+          "examples": []
+        },
+        "status": "matched"
+      }
+    ],
+    "tests": {
+      "files": 10,
+      "passed": 149
+    },
+    "buildV2": "passed; existing large chunk warning"
+  },
+  "cost": {
+    "retained": {
+      "elapsedMs": 5863.525041999999,
+      "processFamily": {
+        "rootPid": 66188,
+        "samples": 15,
+        "observedProcesses": 32,
+        "maxConcurrentProcesses": 16,
+        "sampledPeakRssKiB": 2677360,
+        "observedCpuMs": 8570,
+        "samplingErrors": []
+      }
+    },
+    "stateless": {
+      "elapsedMs": 11653.462209,
+      "processFamily": {
+        "rootPid": 74811,
+        "samples": 34,
+        "observedProcesses": 50,
+        "maxConcurrentProcesses": 16,
+        "sampledPeakRssKiB": 3191456,
+        "observedCpuMs": 19760,
+        "samplingErrors": []
+      }
+    },
+    "caveat": "State readback/comparison coverage differs; not equivalent timings, not product FPS. Strict cold/warm, independent GPU and token costs unmeasured."
+  }
+}

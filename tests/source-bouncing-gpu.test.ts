@@ -1,5 +1,7 @@
+import {sourceBouncingGpuDisplayLayout,type SourceBouncingDrawingOptions} from '../src/engine/sourceBouncingDrawing';
+import {SOURCE_BOUNCING_GPU_LIMITS} from '../src/engine/sourceBouncingLimits';
 import {describe,it,expect} from 'vitest';
-import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,sourceBouncingGpuFrameLayout,sourceBouncingGpuDisplayLayout,SourceBouncingGpu,SOURCE_BOUNCING_GPU_LIMITS,type SourceBouncingUpdate,type SourceBouncingGpuDisplay} from '../src/engine/sourceBouncingGpu';
+import {prepareSourceBouncingUpdate,sourceBouncingGpuLayout,sourceBouncingGpuFrameLayout,SourceBouncingGpu,type SourceBouncingUpdate} from '../src/engine/sourceBouncingGpu';
 import {importSourceBouncingVisualConfig} from '../src/engine/sourceBouncingVisualConfig';
 import {prepareSourceCamera,SOURCE_CAMERA_MODEL} from '../src/engine/sourceCamera';
 import cameraFixture from './fixtures/source-camera/transforms.json';
@@ -70,12 +72,12 @@ describe('native Bouncing update uniform boundary',()=>{
 });
 
 describe('Bouncing particle display admission before allocating GPU resources',()=>{
- function options():SourceBouncingGpuDisplay{
+ function options():SourceBouncingDrawingOptions{
   const row=cameraFixture.cases[0],camera=prepareSourceCamera({model:SOURCE_CAMERA_MODEL,configuration:{kind:'absent'},frame:row.frame},row.viewport),visual=importSourceBouncingVisualConfig({});
   if(!camera.ok||camera.value.kind!=='known'||!visual.ok)throw Error('Invalid retained fixture');
   return{width:320,height:180,cameraPlan:camera.value.plan,visualConfiguration:visual.value.configuration,initialSpeed:1};
  }
- function rejects(input:SourceBouncingGpuDisplay,match:string){
+ function rejects(input:SourceBouncingDrawingOptions,match:string){
   const gpu=new SourceBouncingGpu(new Float32Array([0,0,1,0]));
   try{expect(()=>gpu.render(input)).toThrow(match);expect(gpu.diagnostics()).toMatchObject({contextOwned:false,handles:0,rendered:0,readbackBytes:0,failed:true});}
   finally{gpu.dispose();}

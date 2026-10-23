@@ -28,15 +28,36 @@ static void ensure(BOOL ok,NSString *kind,NSString *reason){if(!ok)@throw [NSExc
 static BOOL nameValid(NSString *s){NSData *b=[s dataUsingEncoding:NSASCIIStringEncoding];if(!b||!b.length||[s hasPrefix:@"gl_"])return NO;const uint8_t *p=b.bytes;for(NSUInteger i=0;i<b.length;i++)if(!((p[i]>='a'&&p[i]<='z')||(p[i]>='A'&&p[i]<='Z')||p[i]=='_'||(i&&p[i]>='0'&&p[i]<='9')))return NO;return YES;}
 static NSUInteger count(FrameReader *r,NSUInteger minimum){NSUInteger n=[r word];INPUT(n<=(r.data.length-r.offset)/minimum,@"Collection exceeds remaining packet");return n;}
 static uint32_t indexAt(NSData *b,NSUInteger i,NSUInteger width){if(width==2){uint16_t n;memcpy(&n,(const uint8_t*)b.bytes+i*2,2);return CFSwapInt16LittleToHost(n);}uint32_t n;memcpy(&n,(const uint8_t*)b.bytes+i*4,4);return CFSwapInt32LittleToHost(n);}
-static NSDictionary *parse(NSData *packet,BOOL trace){
+typedef struct {
+ int32_t subSteps,shape;
+ float timeStep,particleRadius,center[2],radius,a,b;
+ uint32_t polygonCount;
+ float polygon[128];
+} SourceBouncingUpdate;
+static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retainedBytes){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version==1||version==2||version==3,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=4,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
- NSUInteger nt=count(r,16),nd=count(r,40);uint32_t samples=version>=2?[r word]:0;INPUT(samples<=INT_MAX,@"Invalid sample count");uint32_t completion=version==3?[r word]:0;INPUT(completion<=1&&(!completion||[clear[3]floatValue]==1),@"Invalid completion alpha policy");
- ensure(packet.length*4+(uint64_t)width*height*(12+(uint64_t)8*samples)<=Budget,@"capacity",@"Packet, copies, multisample GPU and frame buffers exceed budget");
+ NSUInteger nt=count(r,16),nd=count(r,40);uint32_t samples=version>=2?[r word]:0;INPUT(samples<=INT_MAX,@"Invalid sample count");uint32_t completion=version>=3?[r word]:0;INPUT(completion<=1&&(!completion||[clear[3]floatValue]==1),@"Invalid completion alpha policy");
+ ensure(retainedBytes+packet.length*(version==4?6:4)+(uint64_t)width*height*(12+(uint64_t)8*samples)<=Budget,@"capacity",@"Packet, copies, multisample GPU and frame buffers exceed budget");
  ensure(!trace||((uint64_t)nd+1)*width*height*4<=Budget,@"capacity",@"Diagnostic draw readbacks exceed budget");
+ NSMutableDictionary *operation=nil;
+ if(version==4){
+  uint32_t kind=[r word];NSData *resource=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<resource.length;i++)if(((const uint8_t*)resource.bytes)[i])nonzero=YES;
+  INPUT(kind>=1&&kind<=4&&resource.length==16&&nonzero,@"Invalid Bouncing operation/resource");operation=[@{@"kind":@(kind),@"resource":resource}mutableCopy];
+  uint32_t particles=kind==4?0:[r word];if(kind!=4)INPUT(particles>0&&particles<=INT_MAX,@"Invalid Bouncing particle count");operation[@"count"]=@(particles);uint32_t programBytes=kind==4?0:[r word];operation[@"programBytes"]=@(programBytes);
+  if(kind==1){for(NSString *key in @[@"quad",@"updateShader",@"vertex",@"fragment"])operation[key]=[r text];INPUT(programBytes==([operation[@"vertex"]length]+[operation[@"fragment"]length])*3,@"Bouncing program storage mismatch");uint64_t size=(uint64_t)ceil(sqrt((double)particles));ensure(size*size*32+32+programBytes+packet.length*6+12<=Budget,@"capacity",@"Bouncing creation exceeds budget");}
+  if(kind==2){uint32_t offset=[r word];NSData *data=[r block];INPUT(data.length>0&&data.length%16==0&&offset<=particles&&data.length/16<=particles-offset,@"Invalid Bouncing upload range");operation[@"offset"]=@(offset);operation[@"data"]=data;}
+  if(kind==3){
+   uint32_t from=[r word],to=[r word];INPUT(to>=from&&to<=10000,@"Invalid Bouncing update indices");operation[@"from"]=@(from);operation[@"to"]=@(to);
+   SourceBouncingUpdate u={0};u.subSteps=(int32_t)[r word];u.timeStep=[r number];u.particleRadius=[r number];u.shape=(int32_t)[r word];INPUT(u.shape>=0&&u.shape<=2,@"Invalid Bouncing boundary kind");
+   if(u.shape==0){u.polygonCount=[r word];INPUT(u.polygonCount<=64,@"Bouncing polygon exceeds shader capacity");for(uint32_t i=0;i<u.polygonCount*2;i++)u.polygon[i]=[r number];}
+   else{u.center[0]=[r number];u.center[1]=[r number];if(u.shape==1)u.radius=[r number];else{u.a=[r number];u.b=[r number];}}
+   operation[@"update"]=[NSData dataWithBytes:&u length:sizeof(u)];
+  }else{INPUT(width==1&&height==1&&samples==0&&completion==0&&nt==0&&nd==0,@"Bouncing control request cannot draw");for(NSNumber *component in clear)INPUT(component.floatValue==0,@"Invalid Bouncing control clear");}
+ }
  NSMutableArray *textures=[NSMutableArray new],*draws=[NSMutableArray new];
  for(NSUInteger i=0;i<nt;i++){
   uint32_t w=[r word],h=[r word];float anisotropy=[r number];NSData *pixels=[r block];
@@ -45,9 +66,10 @@ static NSDictionary *parse(NSData *packet,BOOL trace){
  }
  for(NSUInteger i=0;i<nd;i++){
   NSString *vertex=[r text],*fragment=[r text];uint32_t first=[r word],n=[r word],instances=[r word],flags=[r word];
-  INPUT(first<=INT_MAX&&n<=INT_MAX&&instances<=INT_MAX&&((version==3&&(flags&8))||n%3==0)&&flags<=(version==3?31:7),@"Invalid draw range or raster flags");
+  INPUT(first<=INT_MAX&&n<=INT_MAX&&instances<=INT_MAX&&((version>=3&&(flags&8))||n%3==0)&&flags<=(version==4?63:version==3?31:7),@"Invalid draw range or raster flags");
   NSUInteger np=count(r,4);INPUT(np>0&&np<=2,@"Invalid face passes");NSMutableArray *passes=[NSMutableArray new];for(NSUInteger j=0;j<np;j++){uint32_t p=[r word];INPUT(p<=2,@"Invalid face selection");[passes addObject:@(p)];}
-  NSUInteger na=count(r,20),vertices=NSUIntegerMax;INPUT(na>0,@"Missing attributes");NSMutableArray *attributes=[NSMutableArray new];NSMutableSet *names=[NSMutableSet new];
+  BOOL retained=version==4&&(flags&32);if(retained)INPUT([operation[@"kind"]intValue]==3&&i==0&&first==0&&n==[operation[@"count"]unsignedIntValue]&&instances==1&&flags==56&&np==1&&[passes[0]intValue]==0,@"Invalid retained point draw");
+  NSUInteger na=count(r,20),vertices=NSUIntegerMax;INPUT(retained?na==0:na>0,@"Invalid retained/packed attributes");if(retained)vertices=n;NSMutableArray *attributes=[NSMutableArray new];NSMutableSet *names=[NSMutableSet new];
   for(NSUInteger j=0;j<na;j++){
    NSString *name=[r text];uint32_t size=[r word],divisor=[r word];NSData *bytes=[r block];
    INPUT(nameValid(name)&&![names containsObject:name],@"Invalid/duplicate attribute name");[names addObject:name];
@@ -55,13 +77,13 @@ static NSDictionary *parse(NSData *packet,BOOL trace){
    NSUInteger slots=bytes.length/(size*4);if(divisor)INPUT(slots>=instances,@"Insufficient instance attributes");else vertices=MIN(vertices,slots);
    [attributes addObject:@{@"name":name,@"size":@(size),@"divisor":@(divisor),@"bytes":bytes}];
   }
-  INPUT(vertices!=NSUIntegerMax,@"No per-vertex attributes");uint32_t indexType=[r word];INPUT(indexType==0||indexType==16||indexType==32,@"Invalid index width");
+  INPUT(vertices!=NSUIntegerMax,@"No per-vertex attributes");uint32_t indexType=[r word];if(retained)INPUT(indexType==0,@"Retained Bouncing draw cannot use indices");INPUT(indexType==0||indexType==16||indexType==32,@"Invalid index width");
   NSData *indices=indexType?[r block]:[NSData data];NSUInteger indexWidth=indexType/8,available=indexType?indices.length/indexWidth:vertices;
   INPUT((!indexType||indices.length%indexWidth==0)&&first<=available&&n<=available-first,@"Draw exceeds available vertices/indices");
   if(indexType)for(NSUInteger j=first;j<(NSUInteger)first+n;j++)INPUT(indexAt(indices,j,indexWidth)<vertices,@"Index exceeds vertex buffer");
   NSUInteger nu=count(r,12);NSMutableArray *uniforms=[NSMutableArray new];[names removeAllObjects];
   for(NSUInteger j=0;j<nu;j++){
-   NSString *name=[r text];uint32_t kind=[r word],number=[r word];INPUT(nameValid(name)&&![names containsObject:name]&&kind>=1&&kind<=(version==3?10:9),@"Invalid/duplicate uniform declaration");[names addObject:name];
+   NSString *name=[r text];uint32_t kind=[r word],number=[r word];INPUT(nameValid(name)&&![names containsObject:name]&&kind>=1&&kind<=(version>=3?10:9),@"Invalid/duplicate uniform declaration");[names addObject:name];
    if(kind==9){INPUT(number<nt,@"Sampler texture missing");[uniforms addObject:@{@"name":name,@"kind":@(kind),@"texture":@(number)}];continue;}
    NSData *values=[r block];NSUInteger components=kind==3||kind==4?2:kind==5||kind==10?3:kind==6?4:kind==7?16:1;
    INPUT(number>0&&number<=INT_MAX&&(kind==8||kind==10||number==1)&&(uint64_t)number*components*4==values.length,@"Uniform dimensions do not match declaration");
@@ -70,8 +92,10 @@ static NSDictionary *parse(NSData *packet,BOOL trace){
   }
   [draws addObject:@{@"vertex":vertex,@"fragment":fragment,@"first":@(first),@"count":@(n),@"instances":@(instances),@"flags":@(flags),@"passes":passes,@"attributes":attributes,@"indexType":@(indexType),@"indices":indices,@"uniforms":uniforms}];
  }
- INPUT(r.offset==packet.length,@"Trailing frame bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@(samples),@"completion":@(completion),@"clear":clear,@"textures":textures,@"draws":draws};
+ if([operation[@"kind"]intValue]==3)INPUT(nd>0&&([draws[0][@"flags"]unsignedIntValue]&32),@"Bouncing frame lacks its leading state draw");
+ INPUT(r.offset==packet.length,@"Trailing frame bytes");NSMutableDictionary *frame=[@{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@(samples),@"completion":@(completion),@"clear":clear,@"textures":textures,@"draws":draws}mutableCopy];if(operation)frame[@"bouncing"]=operation;return frame;
 }
+static __attribute__((unused)) NSDictionary *parse(NSData *packet,BOOL trace){return parseWithRetained(packet,trace,0);}
 // EOF is valid only between frames. Partial headers/bodies terminate the
 // session: no attempt to scan arbitrary bytes for another magic marker.
 static NSData *readPacket(FILE *f,BOOL stream){
@@ -161,33 +185,45 @@ static NSData *renderFrame(NSDictionary *frame,NSString *out){return renderFrame
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
 static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData *payload){
- uint32_t header[11]={0x31524c4d,1,(uint32_t)(44+payload.length),indexAt(request,3,4),indexAt(request,4,4),indexAt(request,5,4),indexAt(request,6,4),status,status?0:1,(uint32_t)payload.length,contextSerial};
+ uint32_t header[11]={0x31524c4d,1,(uint32_t)(44+payload.length),indexAt(request,3,4),indexAt(request,4,4),indexAt(request,5,4),indexAt(request,6,4),status,status?0:(indexAt(request,1,4)==4&&indexAt(request,15,4)!=3?2:1),(uint32_t)payload.length,contextSerial};
  for(int i=0;i<11;i++)header[i]=CFSwapInt32HostToLittle(header[i]);
  RUNTIME(fwrite(header,1,sizeof(header),stdout)==sizeof(header)&&fwrite(payload.bytes,1,payload.length,stdout)==payload.length&&fflush(stdout)==0,@"Response pipe write failed");
 }
-static uint32_t errorCode(NSString *kind){return [kind isEqual:@"input"]?1:[kind isEqual:@"unsupported"]?2:[kind isEqual:@"capacity"]?3:4;}
+static uint32_t errorCode(NSString *kind){return [kind isEqual:@"input"]?1:[kind isEqual:@"unsupported"]?2:[kind isEqual:@"capacity"]?3:[kind isEqual:@"state-lost"]?5:[kind isEqual:@"ownership"]?6:4;}
 int main(int argc,const char **argv){@autoreleasepool{
- CGLContextObj ctx=NULL;FILE *input=NULL;int result=1;uint32_t serial=0;BOOL stream=argc==2&&strcmp(argv[1],"--stdio")==0;
+ CGLContextObj ctx=NULL;SourceCglBouncingState *bouncing=nil;NSData *bouncingResource=nil;FILE *input=NULL;int result=1;uint32_t serial=0;BOOL stream=argc==2&&strcmp(argv[1],"--stdio")==0;
  @try{
   INPUT(stream||argc==3,@"Usage: renderer --stdio | frame.bin output-directory");input=stream?stdin:fopen(argv[1],"rb");INPUT(input!=NULL,@"Cannot open frame packet");
   NSString *out=stream?nil:@(argv[2]);if(out){BOOL isDir=NO;INPUT([[NSFileManager defaultManager]fileExistsAtPath:out isDirectory:&isDir]&&isDir,@"Output directory must exist");}
   while(YES){@autoreleasepool{
    NSData *packet=readPacket(input,stream);if(!packet)break;
    @try{
-    NSDictionary *frame=parse(packet,!stream);if(!ctx){createContext(&ctx);serial++;}NSData *rgba=renderFrame(frame,out);
+    NSDictionary *frame=parseWithRetained(packet,!stream,bouncing?bouncing.retainedBytes:0),*operation=frame[@"bouncing"];uint32_t kind=[operation[@"kind"]unsignedIntValue];
+    if(kind==1)ensure(bouncing==nil,@"capacity",@"A Bouncing resource is already owned");
+    else if(kind){if(bouncing)ensure([bouncingResource isEqual:operation[@"resource"]],@"ownership",@"Bouncing resource belongs to another caller");else if(kind!=4)ensure(NO,@"state-lost",@"Bouncing resource is absent after release or context loss");if(bouncing&&kind!=4)INPUT(bouncing.particleCount==[operation[@"count"]unsignedIntValue]&&(bouncing.pointVertex.length+bouncing.pointFragment.length)*3==[operation[@"programBytes"]unsignedIntValue],@"Bouncing particle count differs from owned state");}
+    if(!ctx){createContext(&ctx);serial++;}NSData *rgba;
+    if(kind==1){bouncing=[[SourceCglBouncingState alloc]initWithCount:[operation[@"count"]unsignedIntValue]];bouncingResource=operation[@"resource"];@try{[bouncing prepareQuad:operation[@"quad"] update:operation[@"updateShader"] vertex:operation[@"vertex"] fragment:operation[@"fragment"]];}@catch(NSException *e){[bouncing dispose];bouncing=nil;bouncingResource=nil;@throw;}}
+    else if(kind==2)[bouncing upload:operation[@"data"] atParticle:[operation[@"offset"]unsignedIntValue]];
+    else if(kind==4){[bouncing dispose];bouncing=nil;bouncingResource=nil;}
+    if(kind==3){
+     NSDictionary *point=frame[@"draws"][0];INPUT([point[@"vertex"]isEqual:bouncing.pointVertex]&&[point[@"fragment"]isEqual:bouncing.pointFragment],@"Bouncing draw shaders differ from the owned programs");[bouncing validateDrawUniforms:point[@"uniforms"]];
+     SourceBouncingUpdate update;memcpy(&update,[operation[@"update"]bytes],sizeof(update));[bouncing advanceFrom:[operation[@"from"]unsignedIntValue] to:[operation[@"to"]unsignedIntValue] update:update];
+     rgba=renderFrameWithDraw(frame,out,bouncing.retainedBytes,^(NSDictionary *command,NSArray *textures){if([command[@"flags"]unsignedIntValue]&32)[bouncing drawUniforms:command[@"uniforms"]];else draw(command,textures);});
+    }else if(kind){uint32_t uploaded=CFSwapInt32HostToLittle(bouncing?bouncing.uploaded:0);rgba=[NSData dataWithBytes:&uploaded length:4];}
+    else rgba=bouncing?renderFrameWithDraw(frame,out,bouncing.retainedBytes,^(NSDictionary *command,NSArray *textures){draw(command,textures);}):renderFrame(frame,out);
     if(stream)reply(packet,0,serial,rgba);
     else{writeFile(out,@"frame.rgba",rgba);NSDictionary *meta=@{@"generation":frame[@"generation"],@"sequence":frame[@"sequence"],@"renderer":@((const char*)glGetString(GL_RENDERER)),@"version":@((const char*)glGetString(GL_VERSION)),@"vendor":@((const char*)glGetString(GL_VENDOR)),@"windowCreated":@NO,@"width":frame[@"width"],@"height":frame[@"height"],@"samples":frame[@"samples"],@"draws":@([frame[@"draws"]count]),@"rowOrder":@"bottom-up",@"format":@"rgba8"};writeFile(out,@"renderer.json",[NSJSONSerialization dataWithJSONObject:meta options:NSJSONWritingPrettyPrinted error:NULL]);}
    }@catch(NSException *e){
     if(!stream)@throw;
     // A failed GL operation can poison context state. Recreate it before the
     // next valid frame; invalid input never touches an existing good context.
-    uint32_t status=errorCode(e.name);if(status==4)destroyContext(&ctx);
+    uint32_t status=errorCode(e.name);if(status==4){[bouncing dispose];bouncing=nil;bouncingResource=nil;destroyContext(&ctx);}
     NSData *message=[(e.reason?:@"Native frame failed") dataUsingEncoding:NSUTF8StringEncoding];if(!message||message.length>8192)message=[@"Native frame failed; diagnostic exceeded response budget" dataUsingEncoding:NSUTF8StringEncoding];
     reply(packet,status,serial,message);
    }
    if(!stream)break;
   }}result=0;
  }@catch(NSException *e){NSData *json=[NSJSONSerialization dataWithJSONObject:@{@"kind":e.name,@"reason":e.reason?:@"Native failure"} options:0 error:NULL];fwrite(json.bytes,1,json.length,stderr);fputc('\n',stderr);}
- @finally{destroyContext(&ctx);if(input&&!stream)fclose(input);}
+ @finally{@try{[bouncing dispose];}@catch(NSException *e){fprintf(stderr,"Bouncing cleanup failed: %s\n",e.reason.UTF8String);result=1;}destroyContext(&ctx);if(input&&!stream)fclose(input);}
  return result;
 }}

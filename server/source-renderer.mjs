@@ -12,20 +12,22 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
- return {ok:true,value:{generation,sequence,width,height,samples}};
+ const operation=version===4?b.readUInt32LE(60):undefined;if(operation!==undefined&&(operation<1||operation>4))return failure('input','原生状态操作无效');
+ const control=operation!==undefined&&operation!==3;if(control&&(width!==1||height!==1))return failure('input','原生状态确认尺寸无效');
+ return {ok:true,value:{generation,sequence,width,height,samples,control}};
 }
 function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
  const length=bytes.readUInt32LE(8),generation=bytes.readUInt32LE(12),sequence=bytes.readUInt32LE(16),width=bytes.readUInt32LE(20),height=bytes.readUInt32LE(24),status=bytes.readUInt32LE(28),format=bytes.readUInt32LE(32),payloadBytes=bytes.readUInt32LE(36),contextSerial=bytes.readUInt32LE(40);
  if(generation!==expected.generation||sequence!==expected.sequence||width!==expected.width||height!==expected.height)return failure('protocol','原生响应不属于当前帧');
- if(length!==HEADER+payloadBytes||status>4||(status===0?(format!==1||!contextSerial||payloadBytes!==width*height*4):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
- return {ok:true,value:{generation,sequence,width,height,status,payloadBytes,contextSerial}};
+ if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.control?2:1)||!contextSerial||payloadBytes!==(expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
+ return {ok:true,value:{generation,sequence,width,height,status,format,payloadBytes,contextSerial}};
 }
 /** Owns the actual ChildProcess handle until close, never locates/kills a PID.
  * This helper executes no shell and spawns no subprocesses. A failed cleanup
@@ -74,8 +76,8 @@ export async function createSourceRendererService({executablePath,executableSha2
     if(o.payloadUsed===o.payload.length){
      if(offset!==chunk.length){retire(o,failure('protocol','原生响应附带额外字节'));return;}
      const meta=o.response,pixels=o.payload;o.headerUsed=0;o.payload=undefined;o.response=undefined;
-     let result;if(meta.status){let message;try{message=new TextDecoder('utf-8',{fatal:true}).decode(pixels);}catch{retire(o,failure('protocol','原生错误消息不是 UTF-8'));return;}result=failure({1:'input',2:'unsupported',3:'capacity',4:'runtime'}[meta.status],message);}
-     else result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'rgba8',rowOrder:'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};
+     let result;if(meta.status){let message;try{message=new TextDecoder('utf-8',{fatal:true}).decode(pixels);}catch{retire(o,failure('protocol','原生错误消息不是 UTF-8'));return;}result=failure({1:'input',2:'unsupported',3:'capacity',4:'runtime',5:'state-lost',6:'ownership'}[meta.status],message);}
+     else result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:meta.format===2?'u32le':'rgba8',rowOrder:meta.format===2?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};
      finish(j,result);return;
     }
    }
