@@ -83,6 +83,12 @@ static NSData *readPacket(FILE *f,BOOL stream){
 static void writeFile(NSString *root,NSString *name,NSData *data){NSError *e=nil;RUNTIME([data writeToFile:[root stringByAppendingPathComponent:name] options:NSDataWritingAtomic error:&e],e.description?:@"Output write failed");}
 static GLuint compile(GLenum kind,NSString *source){GLuint shader=glCreateShader(kind);NSString *text=[@"#version 410\n" stringByAppendingString:source];const char *p=text.UTF8String;glShaderSource(shader,1,&p,NULL);glCompileShader(shader);GLint ok=0;glGetShaderiv(shader,GL_COMPILE_STATUS,&ok);if(!ok){char log[8192]={0};glGetShaderInfoLog(shader,sizeof(log),NULL,log);glDeleteShader(shader);RUNTIME(NO,[NSString stringWithUTF8String:log]?:@"Shader compile failed");}return shader;}
 static GLenum uniformType(uint32_t kind){switch(kind){case 1:case 8:return GL_FLOAT;case 2:return GL_INT;case 3:return GL_FLOAT_VEC2;case 4:return GL_INT_VEC2;case 5:case 10:return GL_FLOAT_VEC3;case 6:return GL_FLOAT_VEC4;case 7:return GL_FLOAT_MAT4;case 9:return GL_SAMPLER_2D;}return 0;}
+static void applyUniforms(GLuint program,NSArray *uniforms){
+  for(NSDictionary *u in uniforms){GLint loc=glGetUniformLocation(program,[u[@"name"]UTF8String]);if(loc<0)continue;int kind=[u[@"kind"]intValue];NSData *values=u[@"bytes"];const GLfloat *v=values.bytes;const GLint *iv=values.bytes;switch(kind){case 1:case 8:glUniform1fv(loc,[u[@"count"]intValue],v);break;case 2:glUniform1iv(loc,1,iv);break;case 3:glUniform2fv(loc,1,v);break;case 4:glUniform2iv(loc,1,iv);break;case 5:case 10:glUniform3fv(loc,[u[@"count"]intValue],v);break;case 6:glUniform4fv(loc,1,v);break;case 7:glUniformMatrix4fv(loc,1,GL_FALSE,v);break;case 9:glUniform1i(loc,[u[@"texture"]intValue]);break;}}
+  // Match linked native inputs against the owner's declarations, including
+  // arrays. An optimized-away input is fine; a missing/wrong active one is not.
+  GLint active=0;glGetProgramiv(program,GL_ACTIVE_UNIFORMS,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveUniform(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active uniform name capacity");NSString *key=@(name);if([key hasSuffix:@"[0]"])key=[key substringToIndex:key.length-3];NSDictionary *found=nil;for(NSDictionary *u in uniforms)if([u[@"name"]isEqual:key])found=u;RUNTIME(found&&uniformType([found[@"kind"]intValue])==type&&(type==GL_SAMPLER_2D?size==1:[found[@"count"]intValue]>=size),@"Active uniform lacks matching typed data");}
+}
 static void draw(NSDictionary *d,NSArray *textures){
  NSArray *attributes=d[@"attributes"],*uniforms=d[@"uniforms"];GLint maxAttributes=0,maxTextures=0;glGetIntegerv(GL_MAX_VERTEX_ATTRIBS,&maxAttributes);glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&maxTextures);
  ensure(attributes.count<=(NSUInteger)maxAttributes&&textures.count<=(NSUInteger)maxTextures,@"unsupported",@"Draw exceeds native attribute/texture limits");
@@ -95,10 +101,8 @@ static void draw(NSDictionary *d,NSArray *textures){
   if([d[@"indexType"]intValue]){glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,buffers[attributes.count]);glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.length,indices.bytes,GL_STATIC_DRAW);}
   glGenTextures((GLsizei)textures.count,tex);GLfloat maximum=1;glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT,&maximum);GLint maxTextureSize=0;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTextureSize);
   for(NSUInteger i=0;i<textures.count;i++){NSDictionary *t=textures[i];GLint w=[t[@"width"]intValue],h=[t[@"height"]intValue];GLfloat a=[t[@"anisotropy"]floatValue];ensure(a<=maximum&&w<=maxTextureSize&&h<=maxTextureSize,@"unsupported",@"Requested texture sampling/size unavailable");glActiveTexture(GL_TEXTURE0+(GLenum)i);glBindTexture(GL_TEXTURE_2D,tex[i]);NSData *pixels=t[@"pixels"];glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels.bytes);glGenerateMipmap(GL_TEXTURE_2D);glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAX_ANISOTROPY_EXT,a);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);}
-  for(NSDictionary *u in uniforms){GLint loc=glGetUniformLocation(program,[u[@"name"]UTF8String]);if(loc<0)continue;int kind=[u[@"kind"]intValue];NSData *values=u[@"bytes"];const GLfloat *v=values.bytes;const GLint *iv=values.bytes;switch(kind){case 1:case 8:glUniform1fv(loc,[u[@"count"]intValue],v);break;case 2:glUniform1iv(loc,1,iv);break;case 3:glUniform2fv(loc,1,v);break;case 4:glUniform2iv(loc,1,iv);break;case 5:case 10:glUniform3fv(loc,[u[@"count"]intValue],v);break;case 6:glUniform4fv(loc,1,v);break;case 7:glUniformMatrix4fv(loc,1,GL_FALSE,v);break;case 9:glUniform1i(loc,[u[@"texture"]intValue]);break;}}
-  // Match linked native inputs against the owner's declarations, including
-  // arrays. An optimized-away input is fine; a missing/wrong active one is not.
-  GLint active=0;glGetProgramiv(program,GL_ACTIVE_UNIFORMS,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveUniform(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active uniform name capacity");NSString *key=@(name);if([key hasSuffix:@"[0]"])key=[key substringToIndex:key.length-3];NSDictionary *found=nil;for(NSDictionary *u in uniforms)if([u[@"name"]isEqual:key])found=u;RUNTIME(found&&uniformType([found[@"kind"]intValue])==type&&(type==GL_SAMPLER_2D?size==1:[found[@"count"]intValue]>=size),@"Active uniform lacks matching typed data");}
+  applyUniforms(program,uniforms);
+  GLint active=0;
   glGetProgramiv(program,GL_ACTIVE_ATTRIBUTES,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveAttrib(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active attribute name capacity");// Apple GL exposes this fixed-function vertex input in active attributes.
   // Its value is generated by GL even when Apple reports a location.
   // Only this known built-in is exempt; packets cannot declare gl_ bindings.
@@ -124,12 +128,13 @@ static NSData *readFrame(GLuint fb,GLuint resolved,GLsizei w,GLsizei h){
  NSMutableData *rgba=[NSMutableData dataWithLength:(NSUInteger)w*h*4];glReadPixels(0,0,w,h,GL_RGBA,GL_UNSIGNED_BYTE,rgba.mutableBytes);
  RUNTIME(glGetError()==GL_NO_ERROR,@"Frame resolve/readback failed");glBindFramebuffer(GL_FRAMEBUFFER,fb);return rgba;
 }
-static NSData *renderFrame(NSDictionary *frame,NSString *out){
+static NSData *renderFrameWithDraw(NSDictionary *frame,NSString *out,uint64_t retainedBytes,void (^render)(NSDictionary*,NSArray*)){
  GLuint fb=0,resolved=0,color=0,multiColor=0,depth=0;
  @try{
   GLsizei w=[frame[@"width"]intValue],h=[frame[@"height"]intValue],samples=[frame[@"samples"]intValue];GLint maxTexture=0,maxRender=0,maxViewport[2]={0},maxSamples=0;
   glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTexture);glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE,&maxRender);glGetIntegerv(GL_MAX_VIEWPORT_DIMS,maxViewport);glGetIntegerv(GL_MAX_SAMPLES,&maxSamples);
   ensure(w<=MIN(maxTexture,maxRender)&&h<=MIN(maxTexture,maxRender)&&w<=maxViewport[0]&&h<=maxViewport[1],@"unsupported",@"Frame exceeds native dimensions");ensure(samples<=maxSamples,@"unsupported",@"Requested sample count exceeds native limit");
+  ensure(retainedBytes+(uint64_t)w*h*(12+(uint64_t)8*samples)<=Budget,@"capacity",@"Retained state and frame targets exceed budget");
   // This texture is the draw target for samples=0 and the resolve target otherwise.
   glGenFramebuffers(1,&fb);glBindFramebuffer(GL_FRAMEBUFFER,fb);glGenTextures(1,&color);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,color);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,NULL);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,color,0);
   if(samples){
@@ -145,12 +150,14 @@ static NSData *renderFrame(NSDictionary *frame,NSString *out){
   glDisable(GL_SCISSOR_TEST);glDisable(GL_DITHER);glDisable(GL_FRAMEBUFFER_SRGB);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);glDepthMask(GL_TRUE);
   NSArray *clear=frame[@"clear"];glClearColor([clear[0]floatValue],[clear[1]floatValue],[clear[2]floatValue],[clear[3]floatValue]);glClearDepth(1);glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
   NSArray *draws=frame[@"draws"];for(NSUInteger i=0;i<draws.count;i++)@autoreleasepool{
-   draw(draws[i],frame[@"textures"]);if(out)writeFile(out,[NSString stringWithFormat:@"draw-%lu-after.rgba",(unsigned long)i+1],readFrame(fb,resolved,w,h));
+   render(draws[i],frame[@"textures"]);if(out)writeFile(out,[NSString stringWithFormat:@"draw-%lu-after.rgba",(unsigned long)i+1],readFrame(fb,resolved,w,h));
   }
   if([frame[@"completion"]boolValue]){glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_TRUE);glClearColor(0,0,0,1);glClear(GL_COLOR_BUFFER_BIT);glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);}
   return readFrame(fb,resolved,w,h);
  }@finally{glBindFramebuffer(GL_FRAMEBUFFER,0);glBindRenderbuffer(GL_RENDERBUFFER,0);if(fb)glDeleteFramebuffers(1,&fb);if(resolved)glDeleteFramebuffers(1,&resolved);if(color)glDeleteTextures(1,&color);if(multiColor)glDeleteRenderbuffers(1,&multiColor);if(depth)glDeleteRenderbuffers(1,&depth);}
 }
+static NSData *renderFrame(NSDictionary *frame,NSString *out){return renderFrameWithDraw(frame,out,0,^(NSDictionary *command,NSArray *textures){draw(command,textures);});}
+#include "SourceCglBouncingState.h"
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
 static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData *payload){

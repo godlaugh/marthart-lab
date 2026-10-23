@@ -1,0 +1,555 @@
+{
+  "at": "2026-10-23T21:55:15.278020+00:00",
+  "scope": "Actual production initial seeds/display/shaders, retained native CGL simulation and texture drawing, 62 original complete artwork frames and 11 full states. Internal component; no stateful HTTP protocol or App integration.",
+  "status": "retained native component passed; stateful transport and App integration pending",
+  "report": ".cache/bouncing-retained-state-20261024/context-owned/report.json",
+  "artifactHashes": {
+    ".cache/bouncing-retained-state-20261024/context-owned/report.json": "7f29b89aecbcdb644f0ff3c74c69fd0f04faba19dd2f69e58009da8940359bf2",
+    ".cache/bouncing-retained-state-20261024/tests.log": "58d0388434624835dd3b8f3563b12ceaee2258e6f209dcd1174a9d20398a9de3",
+    ".cache/bouncing-retained-state-20261024/build.log": "4bb472673987b4207de68d67ad546b6231c8ae9df38f1cfb5b2d4384f5003c9a",
+    ".cache/bouncing-retained-state-20261024/final-native-contracts.log": "33b276a60273ef64fd5d1f55394942cd5fa12bfc85c8409b868522f8fc700b95",
+    ".cache/bouncing-retained-state-20261024/surface-regression/report.json": "11176e2ee03ab67d6bf1a19fe2b60b9d63d467ffab6dc7241211f359361d10f0"
+  },
+  "originalRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8",
+  "executableSha256": "9426bad9084569cc8f7f4c020db691e700a7f42dcf4eb7c1c6903184948505d9",
+  "preparedSha256": "19e0c533d40638bad28eb2a789cf3f61bc276e747a8a28621f02da2cdeb7e565",
+  "packetSha256": "aef190eaaf2f98e4da3a9918e154737a3cafd2258b134a026f6221fe50e794d0",
+  "sourceHashes": {
+    "scripts/browser-process-cost.mjs": "352bdf0f8779e3b2a6d6fca9ff77aaf50fcfbb1c4ad5623da71365f05fe52277",
+    "scripts/headless-renderer-page.mjs": "1411d7146f6aeef2754546e152a9d0b18d16867467bf8f614668327a08baa05a",
+    "scripts/lib/verify-png.mjs": "f9f91d729ed9ef0bdea5be246d87a32c75ca977a50ea9c6d43f4919e3ae02e74",
+    "scripts/prepare-source-bouncing-native-state.mjs": "84080580aacd1c1af87efebd61217470c2103edec46cb1f2ad37bf21a1b1e87e",
+    "scripts/verify-source-bouncing-native-state.mjs": "9fb3a2c4d91f4c0e21ea5276b535abddde96c6ab3613bd2e8e7308a09b23493d",
+    "server/render/SourceCglBouncingState.h": "0259fcdaad87382fa1f440fde6b9957b1dd31c1276c756fb95457181c4a93ca5",
+    "server/render/SourceCglRenderer.m": "32966650471922b0d41c4e55ab55cc79b408b973e4109145b5a12b92880f7a63",
+    "src/engine/sourceBouncingGpuShader.ts": "78f979a0a3d8a0cac663c1ae431a2e771d07431e481fbd678f3d8b44d93c0c21",
+    "tests/fixtures/source-bouncing-native-state/retained-state.m": "8a65f0b8832de273e88d850e0407c4dcc9ead51c61bde152662b70dbcc396549"
+  },
+  "results": {
+    "status": "passed",
+    "disposed": true,
+    "stateReadbackBytes": 352391600,
+    "contextReferencesRestored": true,
+    "rows": [
+      {
+        "stateDifferent": 0,
+        "frame": 1,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 0
+      },
+      {
+        "frame": 2,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 0
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 3,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 1
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 4,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 2
+      },
+      {
+        "frame": 5,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 3
+      },
+      {
+        "frame": 6,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 4
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 7,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 5
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 8,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 6
+      },
+      {
+        "frame": 9,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 7
+      },
+      {
+        "frame": 10,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 8
+      },
+      {
+        "frame": 11,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 9
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 12,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 10
+      },
+      {
+        "frame": 13,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 11
+      },
+      {
+        "frame": 14,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 12
+      },
+      {
+        "frame": 15,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 13
+      },
+      {
+        "frame": 16,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 14
+      },
+      {
+        "frame": 17,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 15
+      },
+      {
+        "frame": 18,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 16
+      },
+      {
+        "frame": 19,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 17
+      },
+      {
+        "frame": 20,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 18
+      },
+      {
+        "frame": 21,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 19
+      },
+      {
+        "frame": 22,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 20
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 23,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 21
+      },
+      {
+        "frame": 24,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 22
+      },
+      {
+        "frame": 25,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 23
+      },
+      {
+        "frame": 26,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 24
+      },
+      {
+        "frame": 27,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 25
+      },
+      {
+        "frame": 28,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 26
+      },
+      {
+        "frame": 29,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 27
+      },
+      {
+        "frame": 30,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 28
+      },
+      {
+        "frame": 31,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 29
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 32,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 30
+      },
+      {
+        "frame": 33,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 31
+      },
+      {
+        "frame": 34,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 32
+      },
+      {
+        "frame": 35,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 33
+      },
+      {
+        "frame": 36,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 34
+      },
+      {
+        "frame": 37,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 35
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 38,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 36
+      },
+      {
+        "frame": 39,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 37
+      },
+      {
+        "frame": 40,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 38
+      },
+      {
+        "frame": 41,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 39
+      },
+      {
+        "frame": 42,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 40
+      },
+      {
+        "frame": 43,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 41
+      },
+      {
+        "frame": 44,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 42
+      },
+      {
+        "frame": 45,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 43
+      },
+      {
+        "frame": 46,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 44
+      },
+      {
+        "frame": 47,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 45
+      },
+      {
+        "frame": 48,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 46
+      },
+      {
+        "frame": 49,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 47
+      },
+      {
+        "frame": 50,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 48
+      },
+      {
+        "frame": 51,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 49
+      },
+      {
+        "frame": 52,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 50
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 53,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 51
+      },
+      {
+        "frame": 54,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 52
+      },
+      {
+        "frame": 55,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 53
+      },
+      {
+        "frame": 56,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 54
+      },
+      {
+        "frame": 57,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 55
+      },
+      {
+        "frame": 58,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 56
+      },
+      {
+        "frame": 59,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 57
+      },
+      {
+        "frame": 60,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 58
+      },
+      {
+        "frame": 61,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "updates": 59
+      },
+      {
+        "stateDifferent": 0,
+        "frame": 62,
+        "opaqueAlphaFailures": 0,
+        "rgbPixels": 0,
+        "stateComponents": 8008900,
+        "updates": 60
+      }
+    ],
+    "retainedStateBytes": 64071232,
+    "rejectedRequests": 16,
+    "windowCreated": false,
+    "staleGlErrorCleanup": true,
+    "renderer": "Apple M2 Max",
+    "largeCapacity": {
+      "differences": 0,
+      "retainedStateBytes": 160133440,
+      "particles": 5000000
+    }
+  },
+  "cameraFramesMatched": 62,
+  "outputHashes": {
+    "1": "2164b45c79a9fdb3ad1707c78d2445261bf90dcc064e6992f61fe70b1ab16f2d",
+    "2": "2164b45c79a9fdb3ad1707c78d2445261bf90dcc064e6992f61fe70b1ab16f2d",
+    "3": "d7e532301cda7861c0ebbe25a2349bc2866afed39a59246d813da3667d8bb5f9",
+    "4": "bc2e1ece667d4e184687e60fdcfc4b36d17ec9ff951d6bd602e3d189d8be8c76",
+    "5": "6ccd8ace9003c667482744726a1bcbad58ddb9c30d28f2b3223f9caa4560c76f",
+    "6": "1f887300f3f3d3fc8058c9f8ee5cae1deefd403302a7f2c791031907560e0b30",
+    "7": "1c4dcd17617124d2f518631afff04a50b2bebde7ad54726958346584633d1f44",
+    "8": "e40c3c76229dfe871c06caa237ae3e2524265bb6e2e4c6b31327a5675b176529",
+    "9": "68ed655a603299641bc17bdbc6f8b0592c67ed08f0c9a28871708c3f7a648f38",
+    "10": "af4e4591a1027f821aea38993f29ab58450e146b8bdd96c5f1433b8cc6d8a90e",
+    "11": "161d37f82e5553cc3121ba79db64b2cfca3a4f98790a41e285e8655676b0d6df",
+    "12": "69f9e0049301720da2eea5badd492b8b8d1803a4dd35d0528d94407bd5901ab5",
+    "13": "ea39efac0356f2d8b4ebbae8a7f5646302b2a6106251c52e1f07f64ee7828b8b",
+    "14": "8ba91dfa34ea1be4654c30578b19deb9a336b73b541e84438e271846a43b744e",
+    "15": "b7ec913506db8a561ec55a6a63daf3d9a6e9fc428715e46e9b4fac66fa81c646",
+    "16": "0cdc2c9334ec0d6ee6b303a32da7c9fb7f704c0c060b0afaa763571b8878bf0e",
+    "17": "1862b916e21a67e9089bd154ce7a60696ea393950ff9d5eaa8d1830dbe32ad22",
+    "18": "3ef7b10221d20b4d9dc29ea55e46c87645dfadb65a93db9cd75ab34ad3fc0ab5",
+    "19": "87f0a74cc9e457b3a0de301d13e95269a1163a14f6e0b52ae02b0682976c5c9d",
+    "20": "bcfc41362511c386808b170a0a6c21ea0f308eb18b64e3642e79fe0cbbefe031",
+    "21": "055b7aa086ead24e2a3e0c2d8a626058e9f8fdbf284e6b76f424573e1b2d4470",
+    "22": "96d61863d19e6c25e187c9e0bef3cc51e74bad5408b3454a0f86c5a5ec31d01e",
+    "23": "c7c2ffb6bcb708ce0ce0ed8641a59db04743e8496ca3de4dab5dd67b9f0c8e49",
+    "24": "9b1695969f6222348d36b3a2ed3a5eeccfd4f7fc08dfa98f5f1fc50c451fd5ce",
+    "25": "babe7d5aa36f1bafa8dcc9a5557193b434e99c735963715675ab8c87e28dff41",
+    "26": "5967234605179e5d60131e92f880db1133007b17ed48a43ee91fb85fcf5ff57c",
+    "27": "ee910d0a86ecf52a3b42211167cf640864d9840a13d36a531c5047e1c7563942",
+    "28": "8d296969822a175009280bda0b9c9fad3571e22cc9904e7b0d58bdd8c9248e14",
+    "29": "5c02f2212518fbb0e5923d2cfe1cfeb39be7b63f151bfa2602c9cc2b7da57e56",
+    "30": "c35c17bb36730f96a6895e93b049f22d3d24dd4b40e75f73d9f220abd0404b4c",
+    "31": "b0b53f5575c3d8f8d35ed9fefcbbc740ae134fb49af785cc56388fb46959ca33",
+    "32": "3f9616a7b9d68097b547a30d523a567e155d3b5507821905e69fc07968bf6fc8",
+    "33": "334219f474f81d243a0d6f4658646d7776b67da532468cd17efd1fd54542f136",
+    "34": "3dce4e35c1eb847160c67d79b69bb092532c9c4b5257caab6de0ce354d7ba3a1",
+    "35": "e49dcabb07d7e60243e0a4816c5e332350683e1b1f84a1f0317adadb49fc8557",
+    "36": "14fd093ca1a1b801494ea98c18c76b8f7741a5537bec4597894e5f965137d984",
+    "37": "5a47b956c8219875562a8d7717a013ed5a0b6ef56668935694cc5aa6c8a95cc9",
+    "38": "2b68a77371576390d6820ebf7d2caf48ed8feced2c3083f7204282d497cb4b59",
+    "39": "27407e83b9f77d1bd31f070bd18b0a090df420bfc05998212655ab32e060f47d",
+    "40": "a678d714de927bc06d6ef7aef571c2c3f38a98f9fe1732cec588d8c2c01db62d",
+    "41": "2f06c1d124268b7c39f7a928d2865005cc6525aa51268c21ab60868ec717daa5",
+    "42": "d8abaf44f495a5b70f3923519685edaef439dcee00e83349e7456050c26bd479",
+    "43": "c30611d93cdabf597507da7235dc103ba5c22cd9cc60a668d7197b4fa3feffc1",
+    "44": "6f8274c20ec31d3da34ccaac52d52b163e40f9078d9e84a029217e753b0cccf3",
+    "45": "27ee4c8398062d87e5a4340731797c167ae9d61066a33d9e4f0a496315bdb90f",
+    "46": "51794e556f3e604304951a823a25c3fac65e24f878aba3fd3885f9ef72109ee1",
+    "47": "cd37032e8cec194456da7b631497fac63d6e451b32a833ec900f411b924cb6c3",
+    "48": "c528dc2946c9366b3744b4a63dabb3c2a636bf381b37470b2b2468100e2a9d54",
+    "49": "51a7e0b9b43baedc632a48ebf0cec3a08b21442de96dbeafe3cd47e2d051aae5",
+    "50": "4d7d9eef3d3c32fed4a7f4843e2a49e932a247e42e7ed4b8221b5f40df76d8b4",
+    "51": "d6d82ebaed687fe9141976a8b2620748bd90a22cbe572719e951df36b6188347",
+    "52": "0a72247bb38eeaa99708213141ded1ffbec38dd75da34be7ec2f94df33341d7c",
+    "53": "d41f0519e9979fc05e32827e34affb2e79507ed69ff942c99b3bfc2740549060",
+    "54": "7fd31b6e3b0c14e9a59be4438069fab0460e3131abd8d63df2302194c96b7e97",
+    "55": "c4fda5e23c2379686dc4abe3927cb393fd96a9b362caaa73dbc4b9ae4fcebb42",
+    "56": "3a861aa928e0640cfef37bf89b9c7154509f9c3370fee819ca2e7048c24a5945",
+    "57": "0bb5362d213c7b4eb5c64b1af959a5f0b1feed7238d3ffa843829333913a4836",
+    "58": "7be9feb0693465e9b03dbd576def83e66a5485609bef75483fc1ee87eaafb256",
+    "59": "b74c2f1f11b1f1849a8d823c6641a8c18bb5c4afa44f4de06b3e2ea164a703db",
+    "60": "d6b588f226cb689e22896d1582c64917eb26e6c8aa79089527aff00506261206",
+    "61": "1dd0c26aacca5a8e4f7fb182c53f6e399fb7ac5dce5d8c362866d777c8006dc8",
+    "62": "01c8b8a774edff7be759b1d82b8e5293648597a1944145fd57be4440242cd14f"
+  },
+  "cost": {
+    "preparationMs": 1964.8347910000002,
+    "nativeMs": 1857.0702500000002,
+    "processFamily": {
+      "rootPid": 35445,
+      "samples": 8,
+      "observedProcesses": 11,
+      "maxConcurrentProcesses": 4,
+      "sampledPeakRssKiB": 631248,
+      "observedCpuMs": 809.9999999999999,
+      "samplingErrors": []
+    }
+  },
+  "sourceStable": true,
+  "referencesStable": true,
+  "nativeProcess": {
+    "exit": 0,
+    "reaped": true,
+    "stdout": "",
+    "stderr": ""
+  },
+  "regressions": {
+    "tests": 135,
+    "testFiles": 9,
+    "nativeContractRetest": 66,
+    "nativeContractFiles": 3,
+    "buildV2": "passed",
+    "surface": [
+      {
+        "name": "cornucopia",
+        "artworkPixelsDifferent": 0
+      },
+      {
+        "name": "sphere",
+        "artworkPixelsDifferent": 0
+      },
+      {
+        "name": "mobius",
+        "artworkPixelsDifferent": 0
+      }
+    ]
+  },
+  "limits": [
+    "Original references are paused redraws of successive simulation states, not active GUI/video acceptance.",
+    "One original 2M preset and 60 updates. 5M case verifies resource capacity and upload bits only, not original artwork or motion parity.",
+    "Native timing includes references/output and a separate 5M capacity exercise; it is not product FPS and is not equivalent to browser/HTTP timings.",
+    "Process-family CPU/RSS use 250ms samples; strict cold/warm GPU and token costs unmeasured.",
+    "5M native capacity test does not include a browser-owned full 80MB seed array; end-to-end chunk admission remains required.",
+    "No stateful protocol, cancellation across native sessions, actual preview/capture/recording or installed application changes."
+  ]
+}

@@ -3,8 +3,7 @@
  * Only #version and highp declarations differ from retained GLSL 410.
  * No exact-ballistic repair, coordinate normalization or extra collisions. */
 // quad_attrib.vert SHA256 6fb3b800bf875cd150753deaf7a7ae894a367f051495add8e8a65613a688982b
-export const sourceBouncingQuad=`#version 300 es
-precision highp float;
+export const sourceBouncingNativeQuad=`precision highp float;
 precision highp int;
 
 in vec2 quadPosition;
@@ -18,8 +17,7 @@ void main() {
 }
 `;
 // bouncing_particles_update.frag SHA256 eb716d5dd721f791efbc8e1db9e976ebf7cd91aab2ac33625329f9407fbf484b
-export const sourceBouncingUpdateFragment=`#version 300 es
-precision highp float;
+export const sourceBouncingNativeUpdateFragment=`precision highp float;
 precision highp int;
 
 #define MAX_POLYGON_VERTICES 64
@@ -343,7 +341,10 @@ void main() {
 }
 `;}
 
-export const sourceBouncingRenderVertex='#version 300 es\n'+sourceBouncingVertex('texture');
+export const sourceBouncingQuad='#version 300 es\n'+sourceBouncingNativeQuad;
+export const sourceBouncingUpdateFragment='#version 300 es\n'+sourceBouncingNativeUpdateFragment;
+export const sourceBouncingNativeTextureVertex=sourceBouncingVertex('texture');
+export const sourceBouncingRenderVertex='#version 300 es\n'+sourceBouncingNativeTextureVertex;
 /** Readback changes only state access; all position/color arithmetic is shared. */
 export const sourceBouncingNativeVertex=sourceBouncingVertex('attribute');
 
