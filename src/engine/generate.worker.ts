@@ -42,6 +42,7 @@ self.onmessage = (
   let recordingSource:typeof completed;
   let generationSource:typeof completed;
   let surfaceSource:typeof completed;
+  let implicitCaptureSource:typeof completed;
   const leaseAtEntry=recording;
   let captureRendered=false;
   let captureSourceMatched=false;
@@ -49,6 +50,12 @@ self.onmessage = (
     // A failed release keeps the old owner and must still answer this request.
     if(recording&&(owner!==sessionId||!isSourceRecordingOperation(operation)))throw new Error('源场景录制期间不能执行其它后台任务');
     if (owner !== sessionId) { temporalSession.reset(); owner = sessionId; completed=undefined; }
+    if(event.data.operation==='implicit-paused-capture'){
+      const source=implicitCaptureSource=completed;
+      if(!source||source.id!==event.data.sourceId||source.scene.kind!=='implicit'||!temporalSession.sourceImplicit.matchesCompletedPrimary(source.scene,source.context))throw Error('隐式截图对应的实时主预览已过期');
+      const result=temporalSession.sourceImplicit.capturePaused(source.scene,source.context,event.data.size,event.data.scale);
+      send({operation:event.data.operation,id,sourceId:source.id,result},[...new Set([...outputBuffers(result.capture),...outputBuffers(result.preview)])]);return;
+    }
     if(event.data.operation==='surface-navigation'||event.data.operation==='surface-paused-capture'||event.data.operation==='surface-parameter'||event.data.operation==='surface-playback'||event.data.operation==='surface-current'){
       const source=surfaceSource=completed,live=source?.context.surfaceLive;
       if(!source||source.id!==event.data.sourceId||source.scene.kind!=='surface'||!live||!temporalSession.sourceSurface.matchesCompletedPrimary(source.scene,source.context))throw Error('曲面操作对应的实时主预览已过期');
@@ -306,6 +313,9 @@ self.onmessage = (
         :temporalSession.rootsNative.matchesCompletedPrimary(captureSource.scene,captureSource.context));
       completed=retained?captureSource:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:captureSource!.id}:{})});
+    }else if(implicitCaptureSource){
+      const source=implicitCaptureSource,retained=owner===sessionId&&temporalSession.sourceImplicit.matchesCompletedPrimary(source.scene,source.context);
+      completed=retained?source:undefined;send({id,operation,error:message,...(retained?{retainedSourceId:source.id}:{})});
     }else if(surfaceSource||operation==='generate'&&generationSource?.context.surfaceLive){
       const source=surfaceSource??generationSource!;
       const retained=owner===sessionId&&temporalSession.sourceSurface.matchesCompletedPrimary(source.scene,source.context);

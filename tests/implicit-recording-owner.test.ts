@@ -62,3 +62,18 @@ describe('Implicit continuation failure ownership',()=>{
   expect(()=>f.owner.generateContinuation(stop.scene,context)).toThrow('原录制');f.owner.reset();
  });
 });
+
+describe('Implicit paused geometry materialization',()=>{
+ it('retains numerical ownership after failed rematerialization and rejects copied capabilities',()=>{
+  const f=setup(),start=f.owner.beginRecording(f.scene,f.context,f.options),stop=f.owner.finishRecording(start.handle,1000);
+  const context=f.owner.setPaused(stop.scene,stop.context,true,2000);
+  expect(()=>f.owner.capturePaused(stop.scene,{...context},{width:65,height:49},1)).toThrow('已完成');
+  vi.spyOn(geometry,'generateImplicit').mockImplementationOnce(()=>{throw Error('capture allocation');});
+  expect(()=>f.owner.capturePaused(stop.scene,context,{width:65,height:49},1)).toThrow('capture allocation');
+  expect(f.owner.matchesCompletedPrimary(stop.scene,context)).toBe(true);
+  const capture=f.owner.capturePaused(stop.scene,context,{width:65,height:49},1);
+  expect(capture.preview.sourceCameraFrame).toEqual(stop.preview.sourceCameraFrame);
+  const resumed=f.owner.setPaused(stop.scene,context,false,3000);
+  expect(f.owner.generateContinuation(stop.scene,{...resumed,implicitLive:{...resumed.implicitLive!,clock:{paused:false,timestampMs:3125}}}).sourceCameraFrame).toMatchObject({sceneTime:.375,rawDt:.125,frameIndex:1});f.owner.reset();
+ });
+});

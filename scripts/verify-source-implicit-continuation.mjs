@@ -14,7 +14,7 @@ const sha=b=>createHash('sha256').update(b).digest('hex'),referenceHashes={};
 const read=async path=>{const b=await readFile(path);referenceHashes[path]=sha(b);return b;};
 const paths=[...(await readdir('src',{recursive:true})).filter(p=>/\.tsx?$/.test(p)).map(p=>'src/'+p),'scripts/verify-source-implicit-continuation.mjs','desktop/graphics.mjs'];
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.sort().map(async p=>[p,sha(await readFile(p))])));
-let browser,vite,service;const started=performance.now(),report={scope:'Controlled-clock original MathArt stop/pause/resume versus public Generator and real Worker; diagnostic offscreen projection, no primary GUI or MP4 claim.',cases:[],referenceHashes,sourceBefore:await hashes()};
+let browser,vite,service;const started=performance.now(),report={scope:'Controlled-clock original MathArt stop/pause/resume versus public Generator and real Worker. Paused states use actual captureImplicitPaused with owned geometry; other states use diagnostic offscreen projection. No primary GUI or original encoded PNG/MP4 claim.',cases:[],referenceHashes,sourceBefore:await hashes()};
 try{
  assert.equal(sha(await read('../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar')),'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018');
  service=await createExportServer({root:directory+'/service',allowedOrigins:['http://127.0.0.1:5178'],sourceRendererBackend:JSON.parse(await read(process.env.MATHART_SOURCE_RENDERER_BACKEND))});const a=await service.listen(0);
@@ -45,6 +45,7 @@ try{
     }else if(step.action==='stop'){stop=await g.finishSourceRecording(start.handle,step.timestampMs);output=stop.preview;}
     else if(step.action==='pause'||step.action==='resume'){paused=step.action==='pause';await g.setImplicitPaused(output,paused,step.timestampMs);}
     else output=await g.generate(stop.scene,{...stop.context,time:999,implicitLive:{...stop.context.implicitLive,actualFrameRate:step.actualFrameRate,clock:{paused,timestampMs:step.timestampMs}}});
+    if(paused){const pair=await g.captureImplicitPaused(output,{width:384,height:288},1);output=pair.preview;raster=pair.capture;}
     if(!raster){
      // Keep numerical output intact. Only this diagnostic rendering copy selects
      // the same physical offscreen projection as the original reference host.
@@ -52,7 +53,7 @@ try{
      const renderer=resources.renderer;renderer.setSize(384,288,1);renderer.setOutput(diagnostic,{...scene,evaluatedSourceCamera:diagnostic.sourceCameraFrame},false);
      const drawing=renderer.sourceDrawingFrame(1,i+1);if(!drawing.ok)throw Error(JSON.stringify(drawing.error));raster=await renderSourceNativeFrame(drawing.value);
     }
-    rows.push({frame:output.sourceCameraFrame,action:step.action,paused,live:output.implicitLive,pixels:encode(raster.pixels)});
+    rows.push({frame:output.sourceCameraFrame,action:step.action,paused,live:output.implicitLive,capture:raster.sourceCurrentImage,pixels:encode(raster.pixels)});
    }return rows;}finally{g.dispose();resources.dispose();}
   },input);
   const result={name,frames:[]};report.cases.push(result);
@@ -62,7 +63,7 @@ try{
    assert.deepEqual(frame.camera,camera);assert.equal(frame.sceneTime,ref.sceneTime);assert.equal(frame.rawDt,ref.rawDt);assert.equal(frame.queueComplete,ref.complete);assert.equal(local.paused,ref.paused);assert.equal(ref.rendering,step.action==='record');assert.deepEqual(frame.rates,[ref.camera.phiRate,ref.camera.thetaRate,ref.camera.gammaRate]);
    const bytes=await read(native+'/frame-'+i+'/'+ref.artworkReference),pixels=Buffer.from(local.pixels,'base64');assert.equal(bytes.length,384*288*4);assert.equal(pixels.length,bytes.length);let differingPixels=0,maxDelta=0;
    for(let y=0;y<288;y++)for(let x=0;x<384;x++){let changed=false;for(let c=0;c<4;c++){const d=Math.abs(bytes[((287-y)*384+x)*4+c]-pixels[(y*384+x)*4+c]);changed ||=d!==0;maxDelta=Math.max(maxDelta,d);}if(changed)differingPixels++;}
-   result.frames.push({index:i,action:step.action,differingPixels,maxDelta,reference:ref,candidate:frame,live:local.live});assert.equal(differingPixels,0,'Original offscreen artwork differs');
+   result.frames.push({index:i,action:step.action,differingPixels,maxDelta,reference:ref,candidate:frame,live:local.live,capture:local.capture});assert.equal(differingPixels,0,'Original offscreen artwork differs');
    await writeFile(directory+'/'+name+'-'+i+'.rgba',pixels);
   }
   console.log(JSON.stringify({name,frames:rows.length,diffs:result.frames.map(f=>f.differingPixels)}));

@@ -2,7 +2,7 @@ import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {SourceSurfaceLiveSession} from '../src/engine/sourceSurfaceLiveSession';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
-import {renderSurfaceCapture} from '../src/engine/renderSurfaceCapture';
+import {renderGeometryCapture} from '../src/engine/renderGeometryCapture';
 import {encodeFormulaRaster} from '../src/engine/formulaCanvas';
 import {GeometryRecordingRenderer} from '../src/engine/renderGeometryRecording';
 import type {GenerationInput,FormulaPresentation} from '../src/types';
@@ -26,7 +26,7 @@ afterEach(()=>{vi.unstubAllGlobals();vi.restoreAllMocks();});
 describe('Surface base PNG and formula composition owner',()=>{
  it.each([1,3,5] as const)('delivers raw base geometry and composes formula before shared enhancement/%sx upscale',async scale=>{
   const f=setup(),draft=structuredClone(f.scene);draft.formulas!.main.latex='unapplied draft';draft.formulas!.main.x=999;
-  const prepared=f.owner.capturePaused(draft,f.context,{width:8,height:4},scale),result=await renderSurfaceCapture(prepared,f.context,{width:8,height:4},scale,()=>false);
+  const prepared=f.owner.capturePaused(draft,f.context,{width:8,height:4},scale),result=await renderGeometryCapture(prepared,f.context,{width:8,height:4},scale,()=>false);
   expect(result.capture).toMatchObject({width:8,height:4,sourceCurrentImage:{stage:'base-before-formulas',baseSize:[8,4],logicalSize:[4,2],pixelDensity:2,requestedSize:[8,4],scale}});
   expect(result.capture.pixels[0]).toBe(23);expect(state.events).toEqual(['geometry']);
   const controller=new AbortController();await encodeFormulaRaster(result.capture,'image/png',{signal:controller.signal});expect(state.events).toEqual(['geometry','formula','enhance-upscale']);

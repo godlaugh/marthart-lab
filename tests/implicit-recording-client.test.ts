@@ -130,3 +130,22 @@ describe('Implicit queue handoff',()=>{
   expect(outputs.at(-1)?.time).toBe(rendered.time);expect(errors).toEqual([]);queue.dispose();
  });
 });
+
+describe('Implicit capture identity admission',()=>{
+ it.each(['scene','frame','viewport','live','formula'] as const)('rejects corrupt capture %s before drawing',async kind=>{
+  const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options),stop=await f.generator.finishSourceRecording(start.handle,1000);
+  await f.generator.setImplicitPaused(stop.preview,true,2000);
+  await expect(f.generator.captureImplicitPaused({...stop.preview},{width:65,height:49})).rejects.toMatchObject({previewRetained:false});
+  await expect(f.generator.captureImplicitPaused(stop.preview,{width:30000,height:30000})).rejects.toMatchObject({previewRetained:true});
+  corrupt=r=>{
+   if(r.operation!=='implicit-paused-capture'||'error' in r)return;
+   if(kind==='scene')r.result.scene.timeline.fps=4;
+   if(kind==='frame')r.result.capture.sourceCameraFrame={...r.result.capture.sourceCameraFrame!,camera:{...r.result.capture.sourceCameraFrame!.camera,phi:r.result.capture.sourceCameraFrame!.camera.phi+1}};
+   if(kind==='viewport')r.result.capture.sourceCameraFrame={...r.result.capture.sourceCameraFrame!,viewport:{...r.result.capture.sourceCameraFrame!.viewport,logicalWidth:33}};
+   if(kind==='live')r.result.capture.implicitLive!.sessionId='foreign';
+   if(kind==='formula')r.result.capture.formulaPresentation=undefined;
+  };
+  await expect(f.generator.captureImplicitPaused(stop.preview,{width:65,height:49})).rejects.toThrow('响应状态');
+  expect(port.terminated).toBe(true);f.generator.dispose();
+ });
+});

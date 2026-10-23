@@ -8,8 +8,10 @@ import type {SourceCameraViewport} from './sourceCamera';
 import {validSourcePerlinLiveOutput} from './sourcePerlinResponse';
 import {SourceGeometryRecordingLease} from './sourceGeometryRecordingLease';
 import {validSourceSurfaceOutput} from './sourceSurfaceResponse';
-import {sourceSurfaceCapturePlan,type SourceSurfacePausedCaptureResult} from './sourceSurfaceCapture';
-import {SurfacePausedCaptureError} from './generationProtocol';
+import {sourceGeometryCapturePlan,type SourceGeometryPausedCaptureResult} from './sourceGeometryCapture';
+import type {GeometryPausedCaptureOperation} from './generationProtocol';
+import {sameSourceRecordingValue} from './sourceRecordingValue';
+import {implicitCameraFrame} from './sourceImplicitResponse';
 import {validateSourceDomainFrameRate} from './sourceDomainClockInput';
 import type {SourceDomainNavigationEvent} from './sourceDomainLiveSession';
 import type {FractalFreshRecordingPlan} from './sourceFractalRecording';
@@ -171,8 +173,24 @@ function validFractalCapture(result:PausedCaptureResult,source:SceneOutput,size:
  const matchesSize=(value:unknown,width:number,height:number)=>Array.isArray(value)&&value.length===2&&value[0]===width&&value[1]===height;
  return preview.width===source.width&&preview.height===source.height&&validCurrentImage(capture,size,scale,base)&&matchesSize(capture.fractalRender?.logicalSize,base.logicalWidth,base.logicalHeight)&&matchesSize(capture.fractalRender?.requestedSize,base.width,base.height)&&matchesSize(capture.fractalRender?.rasterSize,base.width,base.height);
 }
+function validGeometryCapture(result:import('./sourceGeometryCapture').SourceGeometryCapturePreparation,source:Completed,target:GenerationInput,operation:GeometryPausedCaptureOperation):boolean {
+ if(!result?.scene||result.scene.id!==source.scene.id)return false;
+ if(operation==='implicit-paused-capture'){
+  if(!sameSourceRecordingValue(result.scene,source.scene))return false;
+  const {viewport:beforeViewport,...before}=implicitCameraFrame(source.output);void beforeViewport;
+  for(const [output,input] of [[result.capture,target],[result.preview,source.context]] as const){
+   if(!validSourceImplicitOutput(output,input)||output.implicitLive?.renderKind!=='snapshot'||!output.implicitLive.paused)return false;
+   const {viewport,...frame}=implicitCameraFrame(output);void viewport;
+   if(!sameSourceRecordingValue(frame,before))return false;
+  }
+ }else{
+  const frame=surfaceFrame(source);
+  if(result.scene.kind!=='surface'||!validSourceSurfaceOutput(result.capture,target)||!validSourceSurfaceOutput(result.preview,source.context)||result.capture.surfaceLive?.renderKind!=='snapshot'||result.preview.surfaceLive?.renderKind!=='snapshot'||!sameSourceRecordingValue(result.capture.surfaceLive.frame,frame)||!sameSourceRecordingValue(result.preview.surfaceLive.frame,frame))return false;
+ }
+ return sameSourceRecordingValue(result.capture.formulaPresentation,source.output.formulaPresentation)&&sameSourceRecordingValue(result.preview.formulaPresentation,source.output.formulaPresentation);
+}
 type Pending =
-  | {operation:'surface-paused-capture';source:Completed;size:PausedCaptureSize;scale:1|3|5;controller:AbortController;rendering?:boolean;resolve:(result:SourceSurfacePausedCaptureResult)=>void;reject:(error:Error)=>void}
+  | {[O in GeometryPausedCaptureOperation]:{operation:O;source:Completed;size:PausedCaptureSize;scale:1|3|5;controller:AbortController;rendering?:boolean;resolve:(result:SourceGeometryPausedCaptureResult)=>void;reject:(error:Error)=>void}}[GeometryPausedCaptureOperation]
   | {operation:'surface-parameter';source:Completed;resolve:()=>void;reject:(error:Error)=>void}
   | {operation:'surface-current';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
   | {operation:'domain-navigation';source:Completed;resolve:(output:SceneOutput)=>void;reject:(error:Error)=>void}
@@ -200,12 +218,12 @@ export class Generator {
   private currentInputId=0;
   private completed?:Completed;
   private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
-  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||p.operation==='surface-paused-capture'||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='implicit-playback'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
+  private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='implicit-playback'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
     try{this.recording?.geometry?.releaseRenderer();}catch(cleanup){error=new AggregateError([error,cleanup],'曲面录制已失效，绘图清理仍待重试');}
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
-    for(const p of this.pending.values()){if(p.operation==='surface-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
+    for(const p of this.pending.values()){if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
   }
   hasSourceRecording(handle:SourceRecordingHandle):boolean{return !!this.worker&&this.recording?.handle===handle&&this.recording.usable;}
 
@@ -235,26 +253,27 @@ export class Generator {
         if(!validSourceSurfaceOutput(output,p.source.context)||output.type!=='geometry'||before.type!=='geometry'||!previous||!output.surfaceLive?.paused||output.surfaceLive.renderKind!=='update'||output.surfaceLive.constructions!==before.surfaceLive?.constructions||JSON.stringify(output.surfaceLive.frame)!==JSON.stringify({...previous,camera:output.surfaceLive.frame.camera,frameIndex:previous.frameIndex+1,rawDt:0,activeDt:0})){this.invalidate(new Error('曲面视口响应状态不匹配'));return;}
         this.pending.delete(data.id);this.completed={...p.source,id:data.id,output,surfaceFrame:output.type==='geometry'?output.surfaceLive?.frame:undefined};p.resolve(output);return;
       }
-      if(p.operation==='surface-paused-capture'){
+      if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture'){
+        const contract=pausedCaptureContracts[p.operation];
         if(p.rendering){this.invalidate(new Error('曲面截图重复交付准备结果'));return;}
-        if(data.operation!=='surface-paused-capture'||data.id!==this.currentInputId){this.invalidate(new Error('曲面截图响应身份不匹配'));return;}
+        if(data.operation!==p.operation||data.id!==this.currentInputId){this.invalidate(new Error('曲面截图响应身份不匹配'));return;}
         if('error' in data){
           const retained=data.retainedSourceId===p.source.id;
-          if(!retained){this.invalidate(new SurfacePausedCaptureError(data.error,false));return;}
-          this.pending.delete(data.id);this.completed=p.source;p.reject(new SurfacePausedCaptureError(data.error,true));return;
+          if(!retained){this.invalidate(new contract.Error(data.error,false));return;}
+          this.pending.delete(data.id);this.completed=p.source;p.reject(new contract.Error(data.error,true));return;
         }
         const result=data.result;
         try{
-          const plan=sourceSurfaceCapturePlan(p.source.context,p.size,p.scale),frame=surfaceFrame(p.source);
-          if(data.sourceId!==p.source.id||!result?.scene||result.scene.id!==p.source.scene.id||result.scene.kind!=='surface'||!validSourceSurfaceOutput(result.capture,plan.captureContext)||!validSourceSurfaceOutput(result.preview,p.source.context)||result.capture.surfaceLive?.renderKind!=='snapshot'||result.preview.surfaceLive?.renderKind!=='snapshot'||JSON.stringify(result.capture.surfaceLive.frame)!==JSON.stringify(frame)||JSON.stringify(result.preview.surfaceLive.frame)!==JSON.stringify(frame)||JSON.stringify(result.capture.formulaPresentation)!==JSON.stringify(p.source.output.formulaPresentation)||JSON.stringify(result.preview.formulaPresentation)!==JSON.stringify(p.source.output.formulaPresentation))throw Error('曲面截图响应状态不匹配');
+          const plan=sourceGeometryCapturePlan(p.source.context,p.size,p.scale);
+          if(data.sourceId!==p.source.id||!validGeometryCapture(result,p.source,plan.captureContext,p.operation))throw Error('几何截图响应状态不匹配');
         }catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));return;}
         // Keep the operation pending across module loading and readback. A
         // cancelled transport cannot publish the subsequently encoded image.
         const cancelled=()=>this.pending.get(data.id)!==p||this.worker!==worker;
         p.rendering=true;
-        void import('./renderSurfaceCapture').then(({renderSurfaceCapture})=>renderSurfaceCapture(result,p.source.context,p.size,p.scale,cancelled,{signal:p.controller.signal,generation:this.sessionId,sequence:data.id})).then(value=>{
-          if(cancelled())return;const plan=sourceSurfaceCapturePlan(p.source.context,p.size,p.scale);if(!validCurrentImage(value.capture,p.size,p.scale,plan.base)||!validOutputFormulas(value.capture,{kind:'raster'}))throw Error('曲面截图基础图像或公式无效');this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
-        }).catch(error=>{if(cancelled())return;this.pending.delete(data.id);this.completed=p.source;p.reject(new SurfacePausedCaptureError(error instanceof Error?error.message:String(error),true));});
+        void import('./renderGeometryCapture').then(({renderGeometryCapture})=>renderGeometryCapture(result,p.source.context,p.size,p.scale,cancelled,{signal:p.controller.signal,generation:this.sessionId,sequence:data.id})).then(value=>{
+          if(cancelled())return;const plan=sourceGeometryCapturePlan(p.source.context,p.size,p.scale);if(!validCurrentImage(value.capture,p.size,p.scale,plan.base)||!validOutputFormulas(value.capture,{kind:'raster'}))throw Error('曲面截图基础图像或公式无效');this.pending.delete(data.id);this.completed={...p.source,output:value.preview,surfaceFrame:value.preview.surfaceLive?.frame};p.resolve(value);
+        }).catch(error=>{if(cancelled())return;this.pending.delete(data.id);this.completed=p.source;p.reject(new contract.Error(error instanceof Error?error.message:String(error),true));});
         return;
       }
       if(p.operation==='surface-parameter'){
@@ -509,17 +528,19 @@ export class Generator {
   }
   /** The exact completed preview is the capability. A copied, superseded or
    * partially generated frame cannot select a live worker-owned scene. */
-  captureSurfacePaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1,signal?:AbortSignal):Promise<SourceSurfacePausedCaptureResult>{
-    if(signal?.aborted)return Promise.reject(new DOMException('曲面截图已取消','AbortError'));
-    const source=this.completed;
-    if(this.recording||this.pending.size||!this.worker||!source||source.output!==output||output.type!=='geometry'||!output.surfaceLive)return Promise.reject(new SurfacePausedCaptureError('曲面截图需要当前已完成的暂停预览',false));
-    try{sourceSurfaceCapturePlan(source.context,size,scale);}catch(error){return Promise.reject(new SurfacePausedCaptureError(error instanceof Error?error.message:String(error),true));}
+  captureSurfacePaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1,signal?:AbortSignal):Promise<SourceGeometryPausedCaptureResult>{return this.captureGeometryPaused('surface-paused-capture',output,size,scale,signal);}
+  captureImplicitPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1,signal?:AbortSignal):Promise<SourceGeometryPausedCaptureResult>{return this.captureGeometryPaused('implicit-paused-capture',output,size,scale,signal);}
+  private captureGeometryPaused(operation:GeometryPausedCaptureOperation,output:SceneOutput,size:PausedCaptureSize,scale:1|3|5,signal?:AbortSignal):Promise<SourceGeometryPausedCaptureResult>{
+    if(signal?.aborted)return Promise.reject(new DOMException('截图已取消','AbortError'));
+    const source=this.completed,contract=pausedCaptureContracts[operation];
+    if(this.recording||this.pending.size||!this.worker||!source||source.output!==output||output.type!=='geometry'||!(operation==='implicit-paused-capture'?output.implicitLive:output.surfaceLive))return Promise.reject(new contract.Error('截图需要当前已完成的暂停预览',false));
+    try{sourceGeometryCapturePlan(source.context,size,scale);}catch(error){return Promise.reject(new contract.Error(error instanceof Error?error.message:String(error),true));}
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;const copied={...size};
     return new Promise((resolve,reject)=>{
       const controller=new AbortController(),cancel=()=>controller.abort();signal?.addEventListener('abort',cancel,{once:true});
       const release=()=>signal?.removeEventListener('abort',cancel);
-      this.pending.set(id,{operation:'surface-paused-capture',source,size:copied,scale,controller,resolve:value=>{release();resolve(value);},reject:error=>{release();reject(error);}});
-      try{this.worker!.postMessage({operation:'surface-paused-capture',sessionId:this.sessionId,id,sourceId:source.id,size:copied,scale} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}
+      this.pending.set(id,{operation,source,size:copied,scale,controller,resolve:value=>{release();resolve(value);},reject:error=>{release();reject(error);}});
+      try{this.worker!.postMessage({operation,sessionId:this.sessionId,id,sourceId:source.id,size:copied,scale} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}
     });
   }
   captureRootsPaused(output:SceneOutput,size:RootsPausedCaptureSize,scale:1|3|5=1):Promise<RootsPausedCaptureResult>{
@@ -763,7 +784,7 @@ export class Generator {
     this.worker?.terminate();
     this.worker = null;
     for (const p of this.pending.values()){
-      if(p.operation==='surface-paused-capture')p.controller.abort();
+      if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();
       p.reject(new DOMException("已取消", "AbortError"));
     }
     this.pending.clear();

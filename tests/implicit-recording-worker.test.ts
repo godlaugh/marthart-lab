@@ -92,3 +92,30 @@ describe('Implicit recording production Worker transport',()=>{
   delete action.args;scene.timeline.schedule=undefined;expect(()=>parseProjectFile(serializeScene(scene))).toThrow('未映射源效果');
  });
 });
+
+// Use the actual Worker, including detached geometry publication. Capturing
+// must not consume a queue update, even after an unsuccessful delivery.
+describe('Implicit paused capture production transport',()=>{
+ for(const detached of [false,true])it(`retries failed capture publication without changing the queue (detached=${detached})`,()=>{
+  const f=setup(),start=begin(f);
+  result(send({operation:'source-recording-frame',recordingId:start.recordingId,displayFrame:1,actualFrameRate:12}),'source-recording-frame');
+  const stop=result(send({operation:'source-recording-finish',recordingId:start.recordingId,timestampMs:1000}),'source-recording-finish');
+  const sourceId=stop.id;
+  expect(send({operation:'implicit-paused-capture',sourceId,size:{width:65,height:49},scale:1})).toMatchObject({retainedSourceId:sourceId,error:expect.any(String)});
+  result(send({operation:'implicit-playback',sourceId,paused:true,timestampMs:2000}),'implicit-playback');
+  const request={operation:'implicit-paused-capture',sourceId,size:{width:65,height:49},scale:3};
+  fail={operation:'implicit-paused-capture',detached};expect(send(request)).toMatchObject({retainedSourceId:sourceId,error:expect.stringContaining('publication')});
+  for(const scale of [1,3,5]){
+   const pair=result(send({...request,scale}),'implicit-paused-capture').result;
+   expect(pair.capture.positions.byteLength).toBeGreaterThan(0);
+   expect(pair.capture.sourceCameraFrame).toEqual({...stop.result.preview.sourceCameraFrame,viewport:{...stop.result.preview.sourceCameraFrame!.viewport,logicalWidth:66,logicalHeight:50,target:'offscreen'}});
+   expect(pair.preview.sourceCameraFrame).toEqual(stop.result.preview.sourceCameraFrame);
+   expect(pair.capture.implicitLive).toMatchObject({paused:true,renderKind:'snapshot',actualFrameRate:12});
+  }
+  expect(send({...request,size:{width:30000,height:30000}})).toMatchObject({retainedSourceId:sourceId});
+  expect(send({...request,sourceId:sourceId+500})).toMatchObject({retainedSourceId:sourceId});
+  result(send({operation:'implicit-playback',sourceId,paused:false,timestampMs:10000}),'implicit-playback');
+  const continued=result(send({operation:'generate',scene:stop.result.scene,context:{...stop.result.context,implicitLive:{...stop.result.context.implicitLive!,clock:{paused:false,timestampMs:10125}}}}),'generate');
+  expect(continued.output.sourceCameraFrame).toMatchObject({sceneTime:.625,frameIndex:2,rawDt:.125});
+ });
+});

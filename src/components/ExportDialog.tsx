@@ -59,7 +59,7 @@ export function ExportDialog({
   samilaPrimaryPixelHeight,
   sourceMapToneReference,sourceSymmetryToneReference,
   currentFractalCapture,currentDomainCapture,domainPixelDensity,
-  currentSurfaceCapture,surfacePixelDensity,
+  currentSurfaceCapture,currentImplicitCapture,surfacePixelDensity,
   currentRootsCapture,rootsPixelDensity,
   currentSamilaCapture,
   currentIteratedCapture,
@@ -77,6 +77,7 @@ export function ExportDialog({
   mode?:'export'|'implicit-recording'|'fractal-recording'|'domain-recording'|'surface-recording'|'perlin-recording'|'roots-recording';
   rootsPixelDensity?:number;
   surfacePixelDensity?:number;
+  currentImplicitCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5,signal?:AbortSignal)=>Promise<SceneOutput>};
   currentSurfaceCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5,signal?:AbortSignal)=>Promise<SceneOutput>};
   domainPixelDensity?:number;
   currentDomainCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
@@ -105,13 +106,14 @@ export function ExportDialog({
   const {t}=useI18n();
   const sourceFractal=usesSourceFractal(scene),sourceBouncing=usesSourceBouncing(scene),sourcePerlin=!!scene.perlinSource,sourceSamila=usesSourceSamilaSampling(scene),sourceIterated=sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map';
   const sourceImplicit=usesSourceImplicitCpuMesh(scene);
+  const sourceImplicitLive=!!currentImplicitCapture,sourceGeometryLive=!!currentImplicitCapture||!!currentSurfaceCapture;
   const sourceSurfaceLive=!!currentSurfaceCapture,sourceFractalLive=!!currentFractalCapture,sourceDomainLive=!!currentDomainCapture,sourceNumericalLive=sourceFractalLive||sourceDomainLive;
   const recordingMode=mode!=='export';
   const recordingTitle=mode==='implicit-recording'?'隐式曲面录制':mode==='roots-recording'?'复根录制':sourceSurfaceLive?'曲面录制':sourceDomainLive?'域着色录制':sourcePerlin?'Perlin 录制':'分形录制';
-  const currentPausedCapture=sourceSurfaceLive?currentSurfaceCapture:sourceDomainLive?currentDomainCapture:sourceFractalLive?currentFractalCapture:sourcePerlin?currentPerlinCapture:sourceSamila?currentSamilaCapture:sourceIterated?currentIteratedCapture:currentRootsCapture;
+  const currentPausedCapture=sourceImplicitLive?currentImplicitCapture:sourceSurfaceLive?currentSurfaceCapture:sourceDomainLive?currentDomainCapture:sourceFractalLive?currentFractalCapture:sourcePerlin?currentPerlinCapture:sourceSamila?currentSamilaCapture:sourceIterated?currentIteratedCapture:currentRootsCapture;
   const [bouncingStart,setBouncingStart]=useState<'current'|'seed'>('seed');
   const sourceFrames=usesSpirographFrameClock(scene);
-  const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>sourceSurfaceLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated?'current':'replay');
+  const [sourceImageMode,setSourceImageMode]=useState<'current'|'replay'>(()=>sourceGeometryLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated?'current':'replay');
   const [pausedImageScale,setPausedImageScale]=useState<1|3|5>(1);
   const [rootsVideoMode,setRootsVideoMode]=useState<'duration'|'source'|'retained'>(()=>sourceLivePreviewKind(scene)==='roots'?'retained':usesRootsGradientTimeline(scene)?'source':'duration');
   const [implicitVideoMode,setImplicitVideoMode]=useState<'duration'|'retained'>(mode==='implicit-recording'?'retained':'duration');
@@ -170,9 +172,9 @@ export function ExportDialog({
     if(clock.completionReason!=='animation-queue')throw Error('录制完成条件与当前导出方式不匹配');
     (retainedImplicit?assertSourceImplicitRecordingFrame:retainedSurface?assertSourceSurfaceRecordingFrame:retainedDomain?assertDomainRecordingFrame:retainedNumerical?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,clock,index);
   };
-  const pausedSourceImage=kind==='image'&&(sourceSurfaceLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
+  const pausedSourceImage=kind==='image'&&(sourceGeometryLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
-  if((sourceSurfaceLive||sourceNumericalLive)&&pausedSourceImage){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceSurfaceLive?surfacePixelDensity:sourceDomainLive?domainPixelDensity:fractalPixelDensity)??NaN,sourceSurfaceLive?undefined:MAX_RASTER_PIXELS);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  if((sourceGeometryLive||sourceNumericalLive)&&pausedSourceImage){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceImplicitLive?previewPointPixelDensity:sourceSurfaceLive?surfacePixelDensity:sourceDomainLive?domainPixelDensity:fractalPixelDensity)??NaN,sourceGeometryLive?undefined:MAX_RASTER_PIXELS);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   else if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let recordingSize:{width:number;height:number;logicalWidth?:number;logicalHeight?:number}={width:outputBase.width,height:outputBase.height};
   if(fixedRetained||fractalVideo){try{recordingSize=sourceRecordingSize({width,height},(retainedImplicit?previewPointPixelDensity:retainedRoots?rootsPixelDensity:retainedSurface?surfacePixelDensity:retainedDomain?domainPixelDensity:(fractalVideo||retainedNumerical)?fractalPixelDensity:iteratedPixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
@@ -252,10 +254,10 @@ export function ExportDialog({
       checkCancelled();
       if(pausedSourceImage){
         if(!currentPausedCapture?.ready)throw new Error(t('请等待当前预览完成并暂停后再保存画面'));
-        const captured=sourceSurfaceLive?await currentSurfaceCapture!.capture({width,height},pausedImageScale,abort.signal):await currentPausedCapture.capture({width,height},pausedImageScale);
+        const captured=sourceGeometryLive?await currentPausedCapture.capture({width,height},pausedImageScale,abort.signal):await currentPausedCapture.capture({width,height},pausedImageScale);
         checkCancelled();
         if(captured.type!=='raster')throw new Error(t('暂停截图没有生成图像'));
-        const blob=sourceSurfaceLive||sourceNumericalLive||captured.sourceCurrentImage?await encodeFormulaRaster(captured,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);
+        const blob=sourceGeometryLive||sourceNumericalLive||captured.sourceCurrentImage?await encodeFormulaRaster(captured,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(captured.pixels,captured.width,captured.height,()=>cancelRef.current);
         checkCancelled();
         const url=service?(await request('/api/images',{method:'POST',headers:{'content-type':'image/png'},body:blob})).url:URL.createObjectURL(blob);
         checkCancelled();
@@ -528,7 +530,7 @@ export function ExportDialog({
           >
             <Film size={15} />{t("动画视频")}</button>
         </div>}
-        {kind==='image'&&(sourceSurfaceLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&<label className="field"><span>{t(sourceSurfaceLive?'曲面图像来源':sourceDomainLive?'域着色图像来源':sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')}</span><select aria-label={t(sourceSurfaceLive?'曲面图像来源':sourceDomainLive?'域着色图像来源':sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
+        {kind==='image'&&(sourceGeometryLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&<label className="field"><span>{t(sourceImplicitLive?'隐式曲面图像来源':sourceSurfaceLive?'曲面图像来源':sourceDomainLive?'域着色图像来源':sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')}</span><select aria-label={t(sourceImplicitLive?'隐式曲面图像来源':sourceSurfaceLive?'曲面图像来源':sourceDomainLive?'域着色图像来源':sourceFractalLive?'分形图像来源':sourcePerlin?'Perlin 图像来源':sourceSamila?'Samila 图像来源':sourceIterated?(scene.kind==='map'?'Map 图像来源':'Symmetry 图像来源'):'复根图像来源')} disabled={working} value={sourceImageMode} onChange={e=>{setSourceImageMode(e.target.value as 'current'|'replay');setFormat('png');}}><option value="current">{t('当前暂停场景')}</option><option value="replay">{t('从初始状态重放')}</option></select></label>}
         {kind==='image'&&sourceDomainLive&&<p className="muted">{t(sourceImageMode==='current'?'保存当前暂停的域着色状态，不推进动画；尺寸只改变导出画面。':'从当前配置按固定时间重放，不复制实时预览的编辑历史。')}</p>}
         {kind==='image'&&sourceFractalLive&&<p className="muted">{t(sourceImageMode==='current'?'保存当前暂停的分形状态，不推进动画；尺寸只改变导出画面。':'从当前配置按固定时间重放，不复制实时预览的编辑历史。')}</p>}
         {pausedSourceImage&&<><label className="field"><span>{t('PNG 放大倍率')}</span><select aria-label={t('PNG 放大倍率')} disabled={working} value={pausedImageScale} onChange={e=>setPausedImageScale(Number(e.target.value) as 1|3|5)}>{([1,3,5] as const).map(scale=><option key={scale} value={scale}>{scale}×</option>)}</select></label><p className="muted">{t(sourceNumericalLive?'按当前暂停状态生成图像，再按所选倍率放大。输出 {width} × {height} 像素。':'先按基础尺寸增强，再放大图像。输出 {width} × {height} 像素。',{width:outputBase.width*pausedImageScale,height:outputBase.height*pausedImageScale})}</p>{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}

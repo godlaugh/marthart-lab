@@ -64,8 +64,13 @@ export class DomainPausedCaptureError extends PausedCaptureError {
 export class SurfacePausedCaptureError extends PausedCaptureError {
  constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='SurfacePausedCaptureError';}
 }
+export type GeometryPausedCaptureOperation='surface-paused-capture'|'implicit-paused-capture';
+export class ImplicitPausedCaptureError extends PausedCaptureError {
+ constructor(message:string,previewRetained:boolean){super(message,previewRetained);this.name='ImplicitPausedCaptureError';}
+}
 /** The operation owns its label and error type across client and queue. */
 export const pausedCaptureContracts={
+ 'implicit-paused-capture':{label:'隐式曲面',Error:ImplicitPausedCaptureError},
  'surface-paused-capture':{label:'曲面',Error:SurfacePausedCaptureError},
  'roots-paused-capture':{label:'复根',Error:RootsPausedCaptureError},
  'perlin-paused-capture':{label:'Perlin',Error:PerlinPausedCaptureError},
@@ -74,7 +79,7 @@ export const pausedCaptureContracts={
  'map-paused-capture':{label:'Map',Error:MapPausedCaptureError},
  'domain-paused-capture':{label:'域着色',Error:DomainPausedCaptureError},
  'fractal-paused-capture':{label:'分形',Error:FractalPausedCaptureError},
-} satisfies Record<PausedCaptureOperation|'surface-paused-capture',{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
+} satisfies Record<PausedCaptureOperation|GeometryPausedCaptureOperation,{label:string;Error:new(message:string,retained:boolean)=>PausedCaptureError}>;
 
 type IteratedPlaybackOperation='symmetry-playback'|'map-playback';
 type IteratedPlaybackRequest={ [Operation in IteratedPlaybackOperation]:{operation:Operation;id:number;sourceId:number;paused:boolean;timestampMs?:number} }[IteratedPlaybackOperation];
@@ -84,7 +89,7 @@ export type GenerationRequest = { sessionId: number } & (
   | {operation:'implicit-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;timestampMs?:number}
   | {operation:'surface-parameter';id:number;sourceId:number;name:string;value:number}
-  | {operation:'surface-paused-capture';id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5}
+  | {[O in GeometryPausedCaptureOperation]:{operation:O;id:number;sourceId:number;size:PausedCaptureSize;scale:1|3|5}}[GeometryPausedCaptureOperation]
   | {operation:'surface-current';id:number;sourceId:number}
   | {operation:'domain-navigation';id:number;sourceId:number;event:import('./sourceDomainLiveSession').SourceDomainNavigationEvent}
   | {operation:'domain-parameters';id:number;sourceId:number;scene:SceneDocument;writes:readonly (readonly [string,number])[]}
@@ -112,7 +117,7 @@ export type GenerationPayload =
   | {operation:'implicit-playback';id:number;sourceId:number;paused:boolean}
   | {operation:'surface-playback';id:number;sourceId:number;paused:boolean;frame:import('./ordinarySourceCameraTimeline').OrdinarySourceCameraFrame}
   | {operation:'surface-parameter';id:number;sourceId:number}
-  | {operation:'surface-paused-capture';id:number;sourceId:number;result:import('./sourceSurfaceCapture').SourceSurfaceCapturePreparation}
+  | {[O in GeometryPausedCaptureOperation]:{operation:O;id:number;sourceId:number;result:import('./sourceGeometryCapture').SourceGeometryCapturePreparation}}[GeometryPausedCaptureOperation]
   | {operation:'surface-current';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-navigation';id:number;sourceId:number;output:SceneOutput}
   | {operation:'domain-parameters';id:number;sourceId:number}

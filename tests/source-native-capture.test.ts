@@ -2,7 +2,7 @@ import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {SourceSurfaceLiveSession} from '../src/engine/sourceSurfaceLiveSession';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
-import {renderSurfaceCapture} from '../src/engine/renderSurfaceCapture';
+import {renderGeometryCapture} from '../src/engine/renderGeometryCapture';
 import {GeometryRecordingRenderer} from '../src/engine/renderGeometryRecording';
 import {retrySourceDrawingCleanup,sourceDrawingCleanupCount} from '../src/engine/sourceDrawingResources';
 import type {GenerationInput} from '../src/types';
@@ -17,7 +17,7 @@ function fixture(){
  const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SURFACE',name:'native capture',equations:{x:'u',y:'v',z:'0'},settings:{render_mode:'CPU',surface_mode:'POINTS',u_segments:2,v_segments:2},timeline:[{type:'wait',duration:1}]})).scene;
  const context:GenerationInput={time:0,width:16,height:8,quality:'preview',sourcePointPixelDensity:2,sourceViewport:ordinarySourceViewport(scene,8,4,'primary',4),surfaceLive:{sessionId:'native-capture',revision:0,clock:{paused:true,timestampMs:0},actualFrameRate:60}};
  const owner=new SourceSurfaceLiveSession();owner.generate(scene,context);const prepared=owner.capturePaused(scene,context,{width:8,height:4},1),controller=new AbortController();
- return{controller,scene,prepared,run:()=>renderSurfaceCapture(prepared,context,{width:8,height:4},1,()=>false,{signal:controller.signal,generation:2,sequence:9})};
+ return{controller,scene,prepared,run:()=>renderGeometryCapture(prepared,context,{width:8,height:4},1,()=>false,{signal:controller.signal,generation:2,sequence:9})};
 }
 function response(){const pixels=new Uint8Array(128);for(let y=0;y<4;y++)pixels.fill(y+1,y*32,(y+1)*32);return new Response(pixels,{headers:{'content-type':'application/octet-stream','content-length':'128','x-source-format':'rgba8','x-source-row-order':'bottom-up','x-source-generation':'2','x-source-sequence':'9','x-source-width':'8','x-source-height':'4','x-source-renderer':'a'.repeat(64)}});}
 beforeEach(()=>{retrySourceDrawingCleanup();Object.assign(state,{width:0,height:0,created:0,disposed:0,released:0,readbacks:0,failDispose:false});vi.stubGlobal('document',{createElement:()=>({width:0,height:0})});vi.stubEnv('VITE_SOURCE_RENDERER','native');});

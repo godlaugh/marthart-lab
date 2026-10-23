@@ -5,7 +5,7 @@ import type {SourceRecordingOptions} from './generationProtocol';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {navigateSourceViewportCamera,type SourceViewportNavigationEvent} from './sourceViewportNavigation';
-import {sourceSurfaceCapturePlan,type SourceSurfaceCapturePreparation} from './sourceSurfaceCapture';
+import {sourceGeometryCapturePlan,type SourceGeometryCapturePreparation} from './sourceGeometryCapture';
 import type {GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
 import {OrdinarySourceCameraTimelineSession,type OrdinarySourceCameraFrame} from './ordinarySourceCameraTimeline';
@@ -204,10 +204,10 @@ export class SourceSurfaceLiveSession {
  }
  /** Native paused capture renders the same scene to an offscreen destination,
   * then primary; neither display calls Scene.update. Preflight is nonmutating. */
- capturePaused(scene:SceneDocument,c:GenerateContext,size:{width:number;height:number},scale:1|3|5):SourceSurfaceCapturePreparation {
+ capturePaused(scene:SceneDocument,c:GenerateContext,size:{width:number;height:number},scale:1|3|5):SourceGeometryCapturePreparation {
   if(!this.matchesCompletedPrimary(scene,c))throw Error('曲面截图需要匹配的已完成主预览');
   const own=this.owned!;own.clock.assertPaused(true);
-  const plan=sourceSurfaceCapturePlan(snapshotGenerationInput(c),size,scale);
+  const plan=sourceGeometryCapturePlan(snapshotGenerationInput(c),size,scale);
   validateSourceSurfacePresentation(own.scene,plan.captureContext);
   this.handoff=undefined;this.cancel=c.isCancelled;this.budget=sourceSurfaceWorkBudget();this.busy=true;
   try{

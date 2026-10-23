@@ -42,6 +42,7 @@ async function run(name){
  const fixture=JSON.parse(await readFile('tests/fixtures/source-implicit-presentation/recording-clock.json')),raw=structuredClone(fixture.cases.find(c=>c.name==='fps4-varying').input.project);raw.name='Implicit recording '+name;raw.settings.x_segments=raw.settings.y_segments=raw.settings.z_segments=12;
  if(name==='warmup')raw.timeline=[];if(['manual','cancel'].includes(name))raw.timeline.push({type:'wait',duration:4});
  await writeFile(directory+'/'+name+'-input.json',JSON.stringify(raw,null,2));row.inputSha256=sha(JSON.stringify(raw));
+ await page.route('**/src/main.tsx',async route=>{const response=await route.fetch(),body=await response.text();await route.fulfill({response,body:`import {Generator as CaptureAudit} from '/src/engine/client.ts';const captureOriginal=CaptureAudit.prototype.captureImplicitPaused;window.__implicitCaptures=[];CaptureAudit.prototype.captureImplicitPaused=async function(...args){try{const result=await captureOriginal.apply(this,args);window.__implicitCapture=result;window.__implicitCaptures.push({frame:result.preview.sourceCameraFrame,producer:result.capture.sourcePixelRenderer,image:result.capture.sourceCurrentImage});return result;}catch(error){window.__implicitCaptureError=String(error);throw error;}};\n`+body});});
  await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto(origin+'/fixture');
  await page.evaluate(async raw=>{const{parseProjectFile}=await import('/src/engine/legacyImport.ts'),{saveWorkspace}=await import('/src/engine/document.ts');const scene=parseProjectFile(JSON.stringify(raw)).scene;saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'high',frameRate:20}});},raw);
  await page.goto(origin);await page.waitForFunction(()=>document.querySelector('[data-testid=native-art-canvas]')?.style.display==='block'&&!document.querySelector('.error-card'));
@@ -79,6 +80,31 @@ async function run(name){
  const paused=await page.evaluate(()=>window.__implicit.rows.filter(r=>r.operation==='generate').at(-1));
  await page.setViewportSize({width:1420,height:940});await page.waitForFunction(s=>window.__implicit.rows.some(r=>r.request.sequence>s&&r.output?.live?.renderKind==='snapshot'),paused.request.sequence);
  const snapshot=await page.evaluate(()=>window.__implicit.rows.filter(r=>r.output?.live?.renderKind==='snapshot').at(-1));assert.equal(snapshot.output.frame.sceneTime,paused.output.frame.sceneTime);assert.deepEqual(snapshot.output.frame.camera,paused.output.frame.camera);
+ if(name==='natural'){
+  row.pngs=[];
+  await page.getByRole('button',{name:'Export artwork',exact:true}).click();
+  assert.equal(await page.getByRole('combobox',{name:'Implicit surface image source',exact:true}).inputValue(),'current');
+  await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');
+  const save=async(width,height,scale,label)=>{
+   await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill(String(width));await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill(String(height));await page.getByRole('combobox',{name:'PNG upscale',exact:true}).selectOption(String(scale));await enabled('Start export');
+   const count=downloads.length,delivered=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();await delivered;await enabled('Start export');assert.equal(downloads.length,count+1);
+   const file=directory+'/'+label+'.png';await downloads.at(-1).saveAs(file);const bytes=await readFile(file),png=decodePng(bytes),facts=await page.evaluate(()=>window.__implicitCaptures.at(-1));
+   assert.equal(png.width,Math.round(width/2)*2*scale);assert.equal(png.height,Math.round(height/2)*2*scale);assert.deepEqual(facts.frame,snapshot.output.frame);assert.equal(facts.producer.backend,'native');
+   // Checks delivery/composition of the actual held-state raster. This uses
+   // the shared encoder; it is not an independent original-app PNG oracle.
+   const expected=await page.evaluate(async()=>{const{encodeFormulaRaster}=await import('/src/engine/formulaCanvas.ts');return Array.from(new Uint8Array(await(await encodeFormulaRaster(window.__implicitCapture.capture,'image/png')).arrayBuffer()));});assert.deepEqual(png.rgba,decodePng(Buffer.from(expected)).rgba);
+   const fact={file,width:png.width,height:png.height,sha256:sha(bytes),...facts};row.pngs.push(fact);return fact;
+  };
+  const first=await save(65,49,1,'paused-odd'),again=await save(65,49,1,'paused-repeat');assert.equal(first.sha256,again.sha256);
+  await save(128,96,3,'paused-upscale');
+  let arrive,pendingRoute;const arrived=new Promise(resolve=>arrive=resolve);const beforeCancel=downloads.length;
+  const held=async route=>{if(route.request().postDataBuffer().readUInt32LE(52)!==0){await route.fallback();return;}pendingRoute=route;arrive();};
+  await page.route('**/api/source-renderer/frames',held);await page.getByRole('button',{name:'Start export',exact:true}).click();
+  let timer;try{await Promise.race([arrived,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('No PNG capture to cancel')),30000))]);}finally{clearTimeout(timer);}
+  await page.getByRole('button',{name:'Cancel export',exact:true}).click();await page.waitForFunction(()=>!!window.__implicitCaptureError);await pendingRoute.abort().catch(()=>{});await page.unroute('**/api/source-renderer/frames',held);assert.equal(downloads.length,beforeCancel);
+  const recovered=await save(65,49,1,'paused-after-cancel');assert.equal(recovered.sha256,first.sha256);row.pngCancelRetained=true;
+  await page.screenshot({path:directory+'/paused-png-dialog.png'});await page.getByRole('button',{name:'Close export',exact:true}).click();
+ }
  await page.getByRole('button',{name:'Play',exact:true}).click();await page.waitForFunction(s=>window.__implicit.rows.some(r=>r.request.sequence>s&&r.output?.live?.renderKind==='update'),snapshot.request.sequence);row.pauseResizeResume=true;
  if(name==='cancel'){
   const count=downloads.length;await open();await page.getByRole('button',{name:'Start recording',exact:true}).click();await page.waitForFunction(()=>!!document.querySelector('.export-result'),undefined,{timeout:90000});assert.equal(downloads.length,count+1);await downloads.at(-1).saveAs(directory+'/cancel-retry.mp4');const metadata=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,duration','-of','json',directory+'/cancel-retry.mp4'],{encoding:'utf8'})).streams[0];assert.equal(Number(metadata.nb_read_frames),creates.at(-1).frames);assert.equal(metadata.width,128);assert.equal(metadata.height,96);assert.equal(metadata.r_frame_rate,'4/1');assert.equal(Number(metadata.duration),creates.at(-1).frames/4);row.retryVideo=metadata;row.retryCompleted=true;await page.getByRole('button',{name:'Close export',exact:true}).click();

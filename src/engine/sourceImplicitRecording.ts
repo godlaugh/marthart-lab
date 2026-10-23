@@ -1,3 +1,4 @@
+import {sourceGeometryCapturePlan,type SourceGeometryCapturePreparation} from './sourceGeometryCapture';
 import {SourceSceneHostClock} from './sourceSceneHostClock';
 import {sameSourceRecordingValue} from './sourceRecordingValue';
 import {validateSourceImplicitLiveContext,implicitObservedFrameRate} from './sourceImplicitLive';
@@ -129,6 +130,19 @@ export class SourceImplicitRecordingSession {
    const output=this.display(record,frame,context,false,observed,context.isCancelled);output.implicitLive!.renderKind=snapshot?'snapshot':'update';
    this.primary={scene,context,anchor:structuredClone(record.author),input:snapshotGenerationInput(context)};return output;
   }catch(error){record.liveFailed=true;throw error;}finally{this.busy=false;this.cancel=undefined;}
+ }
+ /** Read the held queue without a numerical update or clock reset. Geometry
+  * and transfer buffers are disposable; the numerical owner survives failure. */
+ capturePaused(scene:SceneDocument,context:GenerationInput,size:{width:number;height:number},scale:1|3|5):SourceGeometryCapturePreparation {
+  if(!this.matchesCompletedPrimary(scene,context))throw Error('隐式截图需要当前已完成的暂停主预览');
+  const record=this.continued(scene,context),plan=sourceGeometryCapturePlan(context,size,scale);
+  record.liveClock!.assertPaused(true);this.busy=true;
+  try{
+   const frame=record.queue.display();
+   const capture=this.display(record,frame,plan.captureContext,false,record.actualFrameRate);
+   const preview=this.display(record,frame,context,false,record.actualFrameRate);
+   return{scene:structuredClone(record.author),capture,preview};
+  }finally{this.busy=false;}
  }
  setPaused(scene:SceneDocument,context:GenerationInput,paused:boolean,timestampMs?:number){
   if(!this.matchesCompletedPrimary(scene,context))throw Error('隐式暂停控制需要当前已完成的主预览');
