@@ -7,6 +7,8 @@ import {encodeSourcePausedPng} from './sourcePausedPng';
 import {prepareSourcePausedPng} from './sourcePausedPngContract';
 import {compositeSourceFormulaPixels,formulaBasePixels} from './sourceFormulaCompositor';
 export interface FormulaCompositeOptions {signal?:AbortSignal;isCancelled?:()=>boolean;
+ /** Video transports raw framebuffer RGB with opaque alpha after composition. */
+ sourcePresentationAlpha?:'preserve'|'opaque';
  /** Native static PNG postprocessing, independent of retained-frame identity. */
  sourceImageProcessing?:'paused-png';}
 function check(options?:FormulaCompositeOptions){if(options?.signal?.aborted||options?.isCancelled?.())throw new DOMException('公式合成已取消','AbortError');}
@@ -59,9 +61,12 @@ export async function encodeFormulaRaster(output:RasterOutput,type:'image/png'|'
   if(options?.sourceImageProcessing!==undefined&&options.sourceImageProcessing!=='paused-png')throw new Error('未知源图像后处理');
   if(current&&current.scale!==1&&current.scale!==3&&current.scale!==5)throw new Error('当前帧 PNG 倍率必须为 1、3 或 5');
   const imageScale=current?current.scale:(options?.sourceImageProcessing==='paused-png'?1:undefined);
+  const alpha=options?.sourcePresentationAlpha??'preserve';
+  if(alpha!=='preserve'&&alpha!=='opaque')throw new Error('未知源图像透明度处理');
+  if(alpha==='opaque'&&(type!=='image/png'||imageScale!==undefined))throw new Error('不透明视频帧只支持未经图像增强的 PNG');
   if(imageScale!==undefined&&type!=='image/png')throw new Error('源暂停图像后处理仅支持 PNG');
   if(current&&(current.model!=='local-current-numerical-snapshot'||current.stage!=='base-before-formulas'||current.baseSize?.[0]!==width||current.baseSize?.[1]!==height||'resampling' in current||type!=='image/png'))throw new Error('当前帧 PNG 缺少未合成的基础图像');
-  if(imageScale===undefined&&!hasFormulaComposition(presentation)&&type==='image/png')return encodeRgbaPng(pixels,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.());
+  if(imageScale===undefined&&!hasFormulaComposition(presentation)&&type==='image/png')return encodeRgbaPng(pixels,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.(),{alpha});
   const bytes=width*height*4;
   if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||!Number.isSafeInteger(bytes)||bytes>MAX_RASTER_PIXELS*4||!(pixels instanceof Uint8ClampedArray)||!(pixels.buffer instanceof ArrayBuffer)||pixels.length!==bytes)throw new Error('公式合成需要完整且有界的 RGBA 图像');
   // Include both the caller's base frame and the composed readback retained
@@ -76,7 +81,7 @@ export async function encodeFormulaRaster(output:RasterOutput,type:'image/png'|'
   if(presentation.layout==='source-surface-centered-v1'&&hasFormulaComposition(presentation)){
     const composed=await compositeSourceFormulaPixels(pixels,width,height,presentation,options?.signal);check(options);
     if(imageScale!==undefined)return encodeSourcePausedPng(composed,width,height,imageScale,options);
-    if(type==='image/png')return encodeRgbaPng(composed,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.());
+    if(type==='image/png')return encodeRgbaPng(composed,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.(),{alpha});
     const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
     try{const context=canvas.getContext('2d');if(!context)throw new Error('无法创建公式合成画布');context.putImageData(new ImageData(composed,width,height),0,0);
       const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('公式图像导出失败')),type,.95));check(options);return blob;
@@ -88,6 +93,7 @@ export async function encodeFormulaRaster(output:RasterOutput,type:'image/png'|'
     const context=canvas.getContext('2d');if(!context)throw new Error('无法创建公式合成画布');
     context.putImageData(new ImageData(new Uint8ClampedArray(pixels.buffer,pixels.byteOffset,pixels.length),width,height),0,0);
     await drawFormulas(canvas,presentation,options);check(options);
+    if(alpha==='opaque')return encodeRgbaPng(context.getImageData(0,0,width,height).data,width,height,()=>!!options?.signal?.aborted||!!options?.isCancelled?.(),{alpha});
     if(imageScale!==undefined)composed=context.getImageData(0,0,width,height).data;
     else{
       const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('公式图像导出失败')),type,.95));

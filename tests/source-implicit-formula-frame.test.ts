@@ -34,7 +34,7 @@ describe('source implicit formula frame owner',()=>{
  it('requires the producing viewport and preserves old saved local formulas without inferring migration from provenance',()=>{
   const scene=imported();expect(()=>generateScene(scene,{...context(scene),sourceViewport:undefined})).toThrow('主画布');
   scene.formulas=defaultFormulas();scene.formulas.main={visible:true,x:640,y:560,scale:.625,anchor:'center',color:'#ffffff',latex:'old authored text'};
-  const restored=parseProjectFile(JSON.stringify(scene)).scene,p=formulaPresentation(restored);expect(restored.formulas).toEqual(scene.formulas);expect(p.labels[0].latex).toBe('old authored text');expect(p).not.toHaveProperty('layout');
+  const restored=parseProjectFile(JSON.stringify(scene)).scene,p=formulaPresentation(restored);expect(restored.formulas).toEqual(scene.formulas);expect(p.labels[0].latex).toBe('old authored text');expect(p).not.toHaveProperty('layout');expect(generateScene(restored,context(restored)).formulaPresentation).toEqual(p);
   const local=createScene(definition('implicit'));local.formulas=imported().formulas;expect(()=>parseScene(JSON.stringify(local))).toThrow('源曲面');
  });
  it('delivers immutable initial labels to every progress frame and final frame',()=>{
@@ -43,10 +43,11 @@ describe('source implicit formula frame owner',()=>{
   const output=generateScene(scene,{...input,onProgress:frame=>{observed.push(structuredClone(frame.formulaPresentation));frame.formulaPresentation!.labels[0].latex='consumer mutation';}});
   expect(observed).toEqual([output.formulaPresentation]);expect(output.formulaPresentation!.labels[0].latex).not.toBe('consumer mutation');
  });
- it.each(['missing','height','layout'] as const)('rejects %s producer formula facts at the Worker boundary for progress and final',async mutation=>{
+ it.each(['missing','height','layout','local-missing','local-layout'] as const)('rejects %s producer formula facts at the Worker boundary for progress and final',async mutation=>{
   for(const operation of ['generate','generate-progress'] as const){
-   const scene=imported(),input=context(scene),output=generateScene(scene,input);if(output.type!=='geometry')throw Error('geometry');
-   if(mutation==='missing')delete output.formulaPresentation;
+   const scene=imported();if(mutation.startsWith('local-'))scene.formulas=defaultFormulas();const input=context(scene),output=generateScene(scene,input);if(output.type!=='geometry')throw Error('geometry');
+   if(mutation==='local-layout')output.formulaPresentation={layout:'source-surface-centered-v1',primaryLogicalHeight:486,labels:[]};
+   else if(mutation==='missing'||mutation==='local-missing')delete output.formulaPresentation;
    else if(mutation==='height')output.formulaPresentation={...output.formulaPresentation!,primaryLogicalHeight:600} as never;
    else output.formulaPresentation={referenceWidth:1280,referenceHeight:720,labels:[]};
    Transport.instances=[];vi.stubGlobal('Worker',Transport);const generator=new Generator(),pending=generator.generate(scene,input),caught=pending.catch(e=>e),worker=Transport.instances[0],request=worker.messages[0];

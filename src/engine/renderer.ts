@@ -480,7 +480,7 @@ export class ArtRenderer {
     }
     return{pixels,width,height};
   }
-  async blob(type = "image/png", quality = 0.95, options?:Omit<FormulaCompositeOptions,'sourceImageProcessing'>&{sourcePresentationAlpha:'preserve'|'opaque'}): Promise<Blob> {
+  async blob(type = "image/png", quality = 0.95, options?:Omit<FormulaCompositeOptions,'sourceImageProcessing'|'sourcePresentationAlpha'>&{sourcePresentationAlpha:'preserve'|'opaque'}): Promise<Blob> {
     this.render();
     if(options?.signal?.aborted||options?.isCancelled?.())throw new DOMException('图像导出已取消','AbortError');
     if((this.document?.fractalSource||this.document?.formulas?.layout==='source-surface-centered-v1')&&!this.formulaFrame)throw new Error('源图像缺少实际帧的公式标注');

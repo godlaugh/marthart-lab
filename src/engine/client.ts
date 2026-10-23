@@ -4,7 +4,6 @@ import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsFormulaViewport} from './rootsFormulaPresentation';
 import type {SourceCameraViewport} from './sourceCamera';
 import {validSourcePerlinLiveOutput} from './sourcePerlinResponse';
-import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {SourceSurfaceRecordingLease} from './sourceSurfaceRecordingLease';
 import {validSourceSurfaceOutput} from './sourceSurfaceResponse';
 import {sourceSurfaceCapturePlan,type SourceSurfacePausedCaptureResult} from './sourceSurfaceCapture';
@@ -31,6 +30,7 @@ import type {RootsFreshRecordingPlan} from './rootsRecording';
 import {validateFrameFormulas} from './formulaConfig';
 import {usesSourceFractal} from './sourceFractalDocument';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
+import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 type FormulaOutputContract =
  |{kind:'optional'}
  |{kind:'raster'}
@@ -38,7 +38,7 @@ type FormulaOutputContract =
  |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
 function generationFormulaContract(scene:SceneDocument,context:GenerationInput):FormulaOutputContract {
  if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
- if(usesSourceSurfaceGeometry(scene)||scene.formulas?.layout==='source-surface-centered-v1'&&usesSourceCenteredFormulaLayout(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
+ if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
  return{kind:usesSourceFractal(scene)?'raster':'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {

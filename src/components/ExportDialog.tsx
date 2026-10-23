@@ -31,7 +31,7 @@ import {MAX_RASTER_PIXELS,validateRasterRequest} from '../engine/rasterDimension
 import {encodeRgbaPng} from '../engine/rgbaPng';
 import {encodeSourcePausedPng} from '../engine/sourcePausedPng';
 import {encodeFormulaRaster} from '../engine/formulaCanvas';
-import {encodeSourceImplicitPng} from '../engine/sourceImplicitPng';
+import {encodeSourceImplicitImage} from '../engine/sourceImplicitImage';
 import { Generator } from "../engine/client";
 import { ArtRenderer,artExportPurpose } from "../engine/renderer";
 import { sceneAtTime, normalizeTimelineTime,resolveTimeline } from "../engine/timeline";
@@ -413,8 +413,8 @@ export function ExportDialog({
         }else{
           const frameScene=output.spirographFrame?withSpirographReplayFrame(exportScene,output.spirographFrame):usesRootsNativePresentation(exportScene)?exportScene:sourceQueuePresentedScene(exportScene,output)??sceneAtTime(exportScene,output.sourceCameraFrame?.time??frameTime);
           const view=outputCamera(frameScene,output);r!.setOutput(output,frameScene,false,view);
-          blob=kind==='image'&&format==='png'&&usesSourceImplicitCpuMesh(exportScene)
-            ?await encodeSourceImplicitPng(r!,output,{signal:abort.signal,isCancelled:()=>cancelRef.current})
+          blob=(kind==='video'||format==='png')&&usesSourceImplicitCpuMesh(exportScene)
+            ?await encodeSourceImplicitImage(r!,output,{signal:abort.signal,isCancelled:()=>cancelRef.current,purpose:kind==='video'?'video-frame':'static-png'})
             :await r!.blob(kind==='image'&&format==='jpg'?'image/jpeg':'image/png',.95,{sourcePresentationAlpha:kind==='video'?'opaque':'preserve',signal:abort.signal,isCancelled:()=>cancelRef.current});
         }
         checkCancelled();

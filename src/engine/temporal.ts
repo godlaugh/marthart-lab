@@ -412,7 +412,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
     // A fresh source Scene constructs its labels from its input configuration,
     // before any source queue update. Deliver that same text with every pass.
-    const implicitFormulas=usesSourceImplicitPresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1';
+    const implicitFormulas=usesSourceImplicitPresentation(scene);
     const formulas=usesSourceFractal(scene)||implicitFormulas?formulaPresentation(scene,context.sourceViewport):undefined;
     ordinarySourceCameraInitial(scene);
     // Validate requested projection and paired camera before any geometry or
