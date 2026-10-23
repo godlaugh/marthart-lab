@@ -43,6 +43,7 @@ export class SourceSurfaceRecordingLease {
  acceptStart(start:SourceRecordingWireStart):void {
   if(start?.scene?.formulas?.layout==='source-surface-centered-v1'&&start.warmup?.formulaPresentation?.layout!=='source-surface-centered-v1')throw Error('曲面录制公式布局无效');
   if(!start?.scene||start.scene.id!==this.sceneId||!usesSourceSurfaceGeometry(start.scene)||!this.context(start.context)||start.context.time!==0||!Object.is(rate(start.context.surfaceLive!.actualFrameRate),this.options.actualFrameRate))throw Error('曲面录制起始配置或主预览身份无效');
+  if(!validSourceQueueRecordingClock(start.clock,this.options.simulationFps))throw Error('曲面录制完成规划无效');
   this.frame(start.warmup,0,this.options.actualFrameRate!,start.clock);
   this.clock=structuredClone(start.clock);this.scene=structuredClone(start.scene);this.pending=start.warmup;this.formulas=structuredClone(start.warmup.formulaPresentation);this.last=structuredClone(start.warmup.surfaceLive!);
  }

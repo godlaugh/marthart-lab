@@ -1,3 +1,5 @@
+import {validSourceQueueRecordingClock} from './sourceRecordingClock';
+import {assertRootsLiveRecordingFrame} from './sourceRootsRecordingLease';
 import type {SourceSurfacePausedCaptureResult} from './sourceSurfaceCapture';
 import {sourceParameterWriteEvents} from './sourceParameterWriteEvents';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
@@ -343,18 +345,24 @@ export class GenerationQueue {
     let failed=false,failure:unknown;
     try{
       const start=await this.generator.beginSourceRecording(output,options);owner.handle=start.handle;
-      const lastDisplayFrame=start.clock.lastDisplayFrame,handle=start.handle;
+      const clock=structuredClone(start.clock),handle=start.handle;
+      if(clock.completionReason==='animation-queue'&&!validSourceQueueRecordingClock(clock,options.simulationFps))throw Error('录制完成规划无效');
+      const complete=(frame:SceneOutput,ordinal:number)=>{
+        if(clock.completionReason==='animation-queue')return ordinal===clock.lastDisplayFrame;
+        assertRootsLiveRecordingFrame(frame,clock,ordinal);return frame.rootsLive!.recording!.complete;
+      };
+      let finished=complete(start.warmup,0);
       check();await consumer.start?.(start);check();
       let requestedStop=consumer.shouldStop?.()===true,encodedFrames=0,consumedDisplayFrame=0;
-      for(let displayFrame=1;displayFrame<=lastDisplayFrame&&!requestedStop;displayFrame++){
+      for(let displayFrame=1;!finished&&!requestedStop;displayFrame++){
         const frame=await(observedFrames?this.generator.nextSourceRecordingFrame(handle,displayFrame,consumer.actualFrameRate!()):this.generator.nextSourceRecordingFrame(handle,displayFrame));
-        check();await consumer.frame(frame,displayFrame-1,start);
-        encodedFrames++;consumedDisplayFrame=displayFrame;check();
-        if(displayFrame<lastDisplayFrame)requestedStop=consumer.shouldStop?.()===true;
+        const frameComplete=complete(frame,displayFrame);check();await consumer.frame(frame,displayFrame-1,start);
+        encodedFrames++;consumedDisplayFrame=displayFrame;finished=frameComplete;check();
+        if(!finished)requestedStop=consumer.shouldStop?.()===true;
       }
       // A terminal display already consumed is natural completion even when
       // Stop arrives during that last upload. Never fabricate a hold frame.
-      const completion:SourceRecordingCompletion={reason:requestedStop&&consumedDisplayFrame<lastDisplayFrame?'manual-stop':'queue-complete',encodedFrames,lastDisplayFrame:consumedDisplayFrame};
+      const completion:SourceRecordingCompletion={reason:requestedStop&&!finished?'manual-stop':'queue-complete',encodedFrames,lastDisplayFrame:consumedDisplayFrame};
       await consumer.complete?.(start,completion);check();
     }catch(error){
       if(error instanceof SourceRecordingOperationError&&error.recordingRetained&&error.handle)owner.handle=error.handle;
@@ -396,6 +404,8 @@ export class GenerationQueue {
       const latest=this.latest,deferred=latest!==owner.request;let expected=latest;
       try{
         if(!stop&&owner.invalidPreview&&!this.disposed&&this.latest===owner.request)this.callbacks.error(owner.invalidPreview);
+        const roots=stop?.context.rootsLive,queuedRoots=latest?.context.rootsLive;
+        const sameRoots=!!roots&&!!queuedRoots&&latest?.scene.kind==='roots'&&latest.scene.id===owner.request.scene.id&&queuedRoots.sessionId===roots.sessionId;
         const fractal=stop?.context.fractalLive,queued=latest?.context.fractalLive;
         const sameFractal=!!fractal&&!!queued&&latest?.scene.kind==='fractal'&&latest.scene.id===owner.request.scene.id&&queued.sessionId===fractal.sessionId;
         const domain=stop?.context.domainLive,queuedDomain=latest?.context.domainLive;
@@ -404,12 +414,12 @@ export class GenerationQueue {
         const samePerlin=!!perlin&&!!queuedPerlin&&latest?.scene.kind==='perlin'&&latest.scene.id===owner.request.scene.id&&queuedPerlin.sessionId===perlin.sessionId;
         const surface=stop?.context.surfaceLive,queuedSurface=latest?.context.surfaceLive;
         const sameSurface=!!surface&&!!queuedSurface&&latest?.scene.kind==='surface'&&latest.scene.id===owner.request.scene.id&&queuedSurface.sessionId===surface.sessionId;
-        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!perlin||samePerlin)||sameFractal||sameDomain||sameSurface||samePerlin)){
+        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!perlin||samePerlin)||sameFractal||sameDomain||sameSurface||samePerlin||sameRoots)){
           // Keep deferred viewport changes, but never reuse the pre-recording
           // live session or seek time after the runtime has been rebuilt.
           // Fractal author identity remains in the UI. Runtime/presentation
           // comes from the retained owner, including after an unsubmitted edit.
-          if(fractal||domain||surface)stop={...stop,scene:latest?.scene??owner.request.scene};
+          if(fractal||domain||surface||sameRoots)stop={...stop,scene:latest?.scene??owner.request.scene};
           if(samePerlin&&latest&&latest.scene!==owner.request.scene){
             // Perlin auto-applies new edits. Recording resets a hot backend to
             // the applied constructor and changes FPS; an unchanged queued
@@ -423,7 +433,7 @@ export class GenerationQueue {
           const nextFractal=fractal&&queued&&queued.revision>fractal.revision?{...fractal,revision:queued.revision,intent:queued.intent,configuration:queued.configuration}:fractal;
           const nextDomain=domain&&queuedDomain?{...domain,viewport:queuedDomain.viewport,actualFrameRate:queuedDomain.actualFrameRate,...(queuedDomain.revision>domain.revision?{revision:queuedDomain.revision,configuration:queuedDomain.configuration}:{})}:domain;
           const nextSurface=surface&&queuedSurface?{...surface,actualFrameRate:queuedSurface.actualFrameRate,...(queuedSurface.revision>surface.revision?{revision:queuedSurface.revision,configuration:queuedSurface.configuration,startAt:queuedSurface.startAt}:{})}:surface;
-          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:perlin}:stop.context);
+          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:perlin}:stop.context);
           this.latest=expected={scene:stop.scene,context};
           if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);

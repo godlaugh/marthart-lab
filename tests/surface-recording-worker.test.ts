@@ -35,7 +35,7 @@ function setup(name='animated-mesh',backend='CPU'){
 function begin(f:ReturnType<typeof setup>){return result(send({operation:'source-recording-begin',sourceId:f.sourceId,options:f.options}),'source-recording-begin');}
 describe('Surface recording production worker transport',()=>{
  for(const row of native.actual.cases)it('matches original numerical frames after real buffer transfer: '+row.input.name,()=>{
-  const f=setup(row.input.name),start=begin(f);expect(start.result.clock.updates).toBe(row.frames.length);
+  const f=setup(row.input.name),start=begin(f);if(start.result.clock.completionReason!=='animation-queue')throw Error('expected planned clock');expect(start.result.clock.updates).toBe(row.frames.length);
   for(const [i,expected]of row.frames.entries()){
    const out=i===0?start.result.warmup:result(send({operation:'source-recording-frame',recordingId:start.recordingId,displayFrame:i,actualFrameRate:row.input.steps[i].actualFrameRate}),'source-recording-frame').output;
    if(out.type!=='geometry')throw Error('expected geometry');

@@ -39,6 +39,11 @@ describe('Perlin recording queue lease',()=>{
   expect(f.callbacks.recordingStopped).toHaveBeenCalledWith(f.stop,f.scene);expect(f.callbacks.output).toHaveBeenCalledWith(f.stop.preview,2/24,f.effective);
   expect(f.port.cancel).not.toHaveBeenCalled();expect(f.port.generate).toHaveBeenCalledTimes(1);f.queue.dispose();
  });
+ it('keeps the producer completion plan independent of a mutating consumer',async()=>{
+  const f=await fixture(),consume=vi.fn();
+  await f.queue.recordSource(raster,options,{start:async start=>{if(start.clock.completionReason==='animation-queue')(start.clock as {lastDisplayFrame:number}).lastDisplayFrame=99;},frame:consume});
+  expect(consume).toHaveBeenCalledTimes(2);expect(f.port.nextSourceRecordingFrame.mock.calls.map(row=>row[1])).toEqual([1,2]);f.queue.dispose();
+ });
  it('leases during pending begin and rejects duplicate begin/capture without cancelling the worker',async()=>{
   const f=await fixture(),begin=deferred<SourceRecordingStart>();f.port.beginSourceRecording.mockImplementationOnce(()=>begin.promise);
   const task=f.queue.recordSource(raster,options,{frame:vi.fn()}),caught=task.catch(error=>error);
@@ -60,7 +65,7 @@ describe('Perlin recording queue lease',()=>{
   expect(consume).not.toHaveBeenCalled();expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();expect(f.port.cancel).not.toHaveBeenCalled();f.queue.dispose();
  });
  it('finishes a warmup-only queue without inventing encoded frames',async()=>{
-  const f=await fixture(),consume=vi.fn();f.start.clock={...f.start.clock,updates:1,encodedFrames:0,firstEncodedUpdate:null,lastDisplayFrame:0};
+  const f=await fixture(),consume=vi.fn();f.start.clock={...f.start.clock,completionReason:'animation-queue',updates:1,encodedFrames:0,firstEncodedUpdate:null,lastDisplayFrame:0};
   await f.queue.recordSource(raster,options,{frame:consume});expect(consume).not.toHaveBeenCalled();expect(f.port.nextSourceRecordingFrame).not.toHaveBeenCalled();expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();f.queue.dispose();
  });
  it('rejects an already-aborted request without acquiring a lease',async()=>{
@@ -187,7 +192,7 @@ describe('manual recording stop preserves an acknowledged frame prefix',()=>{
   expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'queue-complete',encodedFrames:2,lastDisplayFrame:2});expect(f.port.nextSourceRecordingFrame).toHaveBeenCalledTimes(2);f.queue.dispose();
  });
  it('reports a naturally empty queue without inventing a frame even if Stop is already set',async()=>{
-  const f=await fixture();f.start.clock={...f.start.clock,updates:1,encodedFrames:0,lastDisplayFrame:0,firstEncodedUpdate:null};const complete=vi.fn();
+  const f=await fixture();f.start.clock={...f.start.clock,completionReason:'animation-queue',updates:1,encodedFrames:0,lastDisplayFrame:0,firstEncodedUpdate:null};const complete=vi.fn();
   await f.queue.recordSource(raster,options,{shouldStop:()=>true,frame:vi.fn(),complete});
   expect(complete).toHaveBeenCalledExactlyOnceWith(f.start,{reason:'queue-complete',encodedFrames:0,lastDisplayFrame:0});expect(f.port.nextSourceRecordingFrame).not.toHaveBeenCalled();f.queue.dispose();
  });

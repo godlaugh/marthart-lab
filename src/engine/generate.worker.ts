@@ -18,7 +18,7 @@ import {sourceDomainParameterWrites} from './sourceDomainParameterEdit';
 const temporalSession = new TemporalGenerationSession();
 let owner: number | undefined;
 let completed:{id:number;scene:SceneDocument;context:GenerationInput}|undefined;
-function recordingProducer(scene:SceneDocument){return scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
+function recordingProducer(scene:SceneDocument){return scene.kind==='roots'?temporalSession.rootsNative:scene.kind==='surface'?temporalSession.sourceSurface:scene.kind==='domain'?temporalSession.sourceDomain:scene.kind==='fractal'?temporalSession.sourceFractal:scene.kind==='perlin'?temporalSession.sourcePerlin:scene.kind==='map'?temporalSession.sourceMap:scene.kind==='symmetry'?temporalSession.sourceSymmetry:undefined;}
 type RecordingProducer=NonNullable<ReturnType<typeof recordingProducer>>;
 type RuntimeStart=ReturnType<RecordingProducer['beginRecording']>;
 type RecordingOutput=RuntimeStart['warmup'];
@@ -178,7 +178,7 @@ self.onmessage = (
         lease.preview=publication(output);
       }
       const preview=lease.preview.output;
-      const resumed={...context,time:preview.type==='geometry'?preview.surfaceLive!.frame.sceneTime:preview.perlinLive?.sceneTime??preview.domainLive?.sceneTime??preview.fractalLive?.sceneTime??preview.mapLive?.sceneTime??preview.symmetryLive?.sceneTime??context.time};
+      const resumed={...context,time:preview.type==='geometry'?preview.surfaceLive!.frame.sceneTime:preview.rootsLive?.sceneTime??preview.perlinLive?.sceneTime??preview.domainLive?.sceneTime??preview.fractalLive?.sceneTime??preview.mapLive?.sceneTime??preview.symmetryLive?.sceneTime??context.time};
       send({operation:event.data.operation,id,recordingId:lease.id,result:{scene,context:resumed,preview}},outputBuffers(preview));
       completed={id,scene,context:resumed};recording=undefined;return;
     }

@@ -36,6 +36,7 @@ async function setup(name='animated-mesh'){
 describe('Surface retained recording client',()=>{
  it('uses one renderer, delivers observed frame facts, and restores a usable geometry preview',async()=>{
   const f=await setup(),start=await f.generator.beginSourceRecording(f.output,f.options);expect(start.warmup).toMatchObject({type:'raster',width:51,height:39,surfaceLive:{recording:{warmup:true,actualFrameRate:37}}});
+  if(start.clock.completionReason!=='animation-queue')throw Error('expected planned clock');
   for(let i=1;i<start.clock.updates;i++){const out=await f.generator.nextSourceRecordingFrame(start.handle,i,f.trace.input.steps[i].actualFrameRate);expect(out.surfaceLive!.frame.sceneTime).toBe(f.trace.frames[i].state.sceneTime);}
   expect(draw.created).toBe(1);expect(draw.frames).toEqual([0,1,2,3,4]);
   const stop=await f.generator.finishSourceRecording(start.handle);expect(stop.preview.type).toBe('geometry');expect(draw.disposed).toBe(1);

@@ -1,5 +1,5 @@
 import type {FractalFreshRecordingPlan} from './sourceFractalRecording';
-import type {SourceQueueRecordingClock} from './sourceRecordingClock';
+import type {SourceRecordingClock} from './sourceRecordingClock';
 import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { GenerationInput, GenerationStatus, SceneDocument, SceneOutput } from '../types';
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
@@ -11,7 +11,7 @@ export type SourceRecordingRaster=Extract<SceneOutput,{type:'raster'}>;
 export type SourceRecordingWireStart=Omit<SourceRecordingStart,'handle'|'warmup'>&{warmup:SceneOutput};
 export interface SourceRecordingOptions {width:number;height:number;simulationFps:number;/** Domain and Surface require the independently observed FPS for warmup. */actualFrameRate?:number;}
 export interface SourceRecordingHandle {readonly sessionId:number;readonly recordingId:number;}
-export interface SourceRecordingStart {handle:SourceRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceQueueRecordingClock;warmup:SourceRecordingRaster;}
+export interface SourceRecordingStart {handle:SourceRecordingHandle;scene:SceneDocument;context:GenerationInput;clock:SourceRecordingClock;warmup:SourceRecordingRaster;}
 export interface SourceRecordingStop {scene:SceneDocument;context:GenerationInput;preview:SceneOutput;}
 export type SourceRecordingOperation='source-recording-begin'|'source-recording-frame'|'source-recording-finish';
 export function isSourceRecordingOperation(operation:string):operation is SourceRecordingOperation{return operation==='source-recording-begin'||operation==='source-recording-frame'||operation==='source-recording-finish';}

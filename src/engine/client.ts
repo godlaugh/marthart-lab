@@ -1,3 +1,4 @@
+import {SourceRootsRecordingLease} from './sourceRootsRecordingLease';
 import {validRootsLiveOutput} from './rootsLive';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsFormulaViewport} from './rootsFormulaPresentation';
@@ -12,7 +13,7 @@ import {validateSourceDomainFrameRate} from './sourceDomainClockInput';
 import type {SourceDomainNavigationEvent} from './sourceDomainLiveSession';
 import type {FractalFreshRecordingPlan} from './sourceFractalRecording';
 import {assertFractalRecordingFrame} from './sourceFractalRecording';
-import {validSourceQueueRecordingClock,type SourceQueueRecordingClock} from './sourceRecordingClock';
+import {validSourceQueueRecordingClock,type SourceQueueRecordingClock,type SourceRecordingClock} from './sourceRecordingClock';
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
@@ -59,7 +60,7 @@ function rasterRecordingResponse(value:GenerationResponse):value is RasterRecord
  return value.operation==='source-recording-begin'?value.result?.warmup?.type==='raster':value.operation==='source-recording-frame'?value.output?.type==='raster':value.operation==='source-recording-finish'&&value.result?.preview?.type==='raster';
 }
 function recordingRaster(value:unknown,family:string):value is SourceRecordingRaster {
-  const v=value as SourceRecordingRaster|undefined;return !!v&&v.type==='raster'&&Number.isSafeInteger(v.width)&&v.width>0&&Number.isSafeInteger(v.height)&&v.height>0&&v.pixels instanceof Uint8ClampedArray&&v.pixels.byteLength===v.width*v.height*4&&(family==='domain'?!!v.domainLive&&!!v.domainRender:family==='fractal'?!!v.fractalLive&&!!v.fractalRender:family==='perlin'?!!v.sourcePerlinFrame:family==='map'?!!v.mapLive:family==='symmetry'&&!!v.symmetryLive);
+  const v=value as SourceRecordingRaster|undefined;return !!v&&v.type==='raster'&&Number.isSafeInteger(v.width)&&v.width>0&&Number.isSafeInteger(v.height)&&v.height>0&&v.pixels instanceof Uint8ClampedArray&&v.pixels.byteLength===v.width*v.height*4&&(family==='roots'?!!v.rootsLive&&!!v.rootsPresentation:family==='domain'?!!v.domainLive&&!!v.domainRender:family==='fractal'?!!v.fractalLive&&!!v.fractalRender:family==='perlin'?!!v.sourcePerlinFrame:family==='map'?!!v.mapLive:family==='symmetry'&&!!v.symmetryLive);
 }
 /** Runtime frame can change on a playback acknowledgement before any new image
  * is displayed. Keep it separate from the caller's completed-image capability. */
@@ -95,7 +96,7 @@ function validDomainRecordingContext(input:GenerationInput,lease:DomainRecording
  const live=input?.domainLive,old=lease.primary.domainLive;
  return !!live&&!!old&&live.sessionId===old.sessionId&&live.revision===old.revision&&live.startAt===old.startAt&&live.clock?.paused===false&&live.configuration===undefined&&input.width===lease.primary.width&&input.height===lease.primary.height&&input.quality===lease.primary.quality&&JSON.stringify(input.domainTarget)===JSON.stringify(lease.primary.domainTarget)&&JSON.stringify(live.viewport)===JSON.stringify(old.viewport);
 }
-function validDomainRecordingOutput(output:SceneOutput,lease:DomainRecordingLease,clock:SourceQueueRecordingClock,ordinal:number,actualFrameRate:number):boolean {
+function validDomainRecordingOutput(output:SceneOutput,lease:DomainRecordingLease,clock:SourceRecordingClock,ordinal:number,actualFrameRate:number):boolean {
  const live=lease.primary.domainLive,size=lease.size;
  if(!live||!validSourceQueueRecordingClock(clock,lease.options.simulationFps)||!validDomainOutput(output,{...live,paused:false,actualFrameRate},{...lease.primary,quality:'export',width:size.width,height:size.height},'offscreen',true)||output.type!=='raster')return false;
  const facts=output.domainLive!,position=facts.recording,frame=facts.presentation.evaluatedDomainScene!,render=output.domainRender!,target=render.target;
@@ -119,8 +120,9 @@ function validDomainRecordingStop(stop:SourceRecordingStop,lease:DomainRecording
  }
  return true;
 }
-function validFractalRecordingOutput(output:SceneOutput,lease:RetainedRecordingLease,clock:SourceQueueRecordingClock,displayFrame:number):boolean {
+function validFractalRecordingOutput(output:SceneOutput,lease:RetainedRecordingLease,clock:SourceRecordingClock,displayFrame:number):boolean {
  try{
+  if(!validSourceQueueRecordingClock(clock,lease.options.simulationFps))return false;
   assertFractalRecordingFrame(output,clock,displayFrame);
   const live=lease.primary.fractalLive;
   if(!live||clock.simulationFps!==lease.options.simulationFps||!validFractalOutput(output,{sessionId:live.sessionId,revision:live.revision,paused:false,actualFrameRate:clock.simulationFps},'offscreen','update','fixed-source-queue')||output.type!=='raster')return false;
@@ -195,7 +197,7 @@ export class Generator {
   private pending = new Map<number, Pending>();
   private currentInputId=0;
   private completed?:Completed;
-  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;surface?:SourceSurfaceRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
+  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;surface?:SourceSurfaceRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
   private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||p.operation==='surface-paused-capture'||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
@@ -304,6 +306,34 @@ export class Generator {
         const fractal=this.recording?.fractal,domain=this.recording?.domain,perlin=this.recording?.perlin;
         const matching=data.operation===p.operation&&('error' in data||('recordingId' in data&&data.recordingId===p.handle.recordingId&&(p.operation!=='source-recording-frame'||('displayFrame' in data&&data.displayFrame===p.displayFrame))));
         if(!matching){this.invalidate(new SourceRecordingOperationError('源场景后台录制响应身份不匹配',false,false));return;}
+        if(family==='roots'){
+          const lease=this.recording?.roots;
+          if(!lease){this.invalidate(new SourceRecordingOperationError('复根录制客户端会话缺失',false,false));return;}
+          if('error' in data){
+            if(data.retainedRecordingId!==undefined&&data.retainedRecordingId!==p.handle.recordingId){this.invalidate(new SourceRecordingOperationError('复根录制保留身份不匹配',false,false));return;}
+            const retained=data.retainedRecordingId===p.handle.recordingId,previewRetained=p.operation==='source-recording-begin'&&data.retainedSourceId===p.source.id&&!retained;
+            const error=new SourceRecordingOperationError(data.error,previewRetained,retained,retained?p.handle:undefined);
+            if(!retained&&!previewRetained){this.invalidate(error);return;}
+            this.pending.delete(data.id);
+            if(retained)this.recording!.usable=true;else{this.recording=undefined;this.completed=p.operation==='source-recording-begin'?p.source:undefined;}
+            p.reject(error);return;
+          }
+          try{
+            if(p.operation==='source-recording-begin'&&data.operation==='source-recording-begin'){
+              lease.acceptStart(data.result);if(data.result.warmup.type!=='raster')throw Error('复根录制需要像素输出');
+              this.recording!.usable=true;this.pending.delete(data.id);p.resolve({...data.result,warmup:data.result.warmup,handle:p.handle});return;
+            }
+            if(p.operation==='source-recording-frame'&&data.operation==='source-recording-frame'){
+              lease.acceptFrame(data.output,data.displayFrame);if(data.output.type!=='raster')throw Error('复根录制需要像素输出');
+              this.pending.delete(data.id);p.resolve(data.output);return;
+            }
+            if(p.operation==='source-recording-finish'&&data.operation==='source-recording-finish'){
+              lease.acceptStop(data.result);this.pending.delete(data.id);this.recording=undefined;this.currentInputId=data.id;
+              this.completed={id:data.id,scene:data.result.scene,context:snapshotGenerationInput(data.result.context),output:data.result.preview};p.resolve(data.result);return;
+            }
+            throw Error('复根录制响应操作无效');
+          }catch(error){this.invalidate(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,false));return;}
+        }
         if(family==='surface'){
           const lease=this.recording?.surface;
           if(!lease){this.invalidate(new SourceRecordingOperationError('曲面录制客户端会话缺失',false,false));return;}
@@ -337,7 +367,7 @@ export class Generator {
             :data.operation==='source-recording-frame'?!!domain.clock&&p.operation==='source-recording-frame'&&data.displayFrame===domain.nextDisplayFrame&&validDomainRecordingOutput(data.output,domain,domain.clock,data.displayFrame,p.actualFrameRate!)
             :data.operation==='source-recording-finish'&&data.result?.scene?.kind===family&&validDomainRecordingStop(data.result,domain)):
             family==='fractal'?!!fractal&&(data.operation==='source-recording-begin'
-            ?data.result?.scene?.kind===family&&data.result.context?.quality===fractal.primary.quality&&data.result.context.fractalViewport?.target==='primary'&&data.result.context.width===fractal.primary.width&&data.result.context.height===fractal.primary.height&&data.result.context.fractalLive?.sessionId===fractal.primary.fractalLive?.sessionId&&data.result.context.fractalLive?.revision===fractal.primary.fractalLive?.revision&&data.result.context.fractalLive?.clock.paused===false&&data.result.clock?.lastDisplayFrame/data.result.clock.simulationFps<=86400&&validFractalRecordingOutput(data.result.warmup,fractal,data.result.clock,0)
+            ?data.result?.scene?.kind===family&&data.result.context?.quality===fractal.primary.quality&&data.result.context.fractalViewport?.target==='primary'&&data.result.context.width===fractal.primary.width&&data.result.context.height===fractal.primary.height&&data.result.context.fractalLive?.sessionId===fractal.primary.fractalLive?.sessionId&&data.result.context.fractalLive?.revision===fractal.primary.fractalLive?.revision&&data.result.context.fractalLive?.clock.paused===false&&validSourceQueueRecordingClock(data.result.clock,fractal.options.simulationFps)&&validFractalRecordingOutput(data.result.warmup,fractal,data.result.clock,0)
             :data.operation==='source-recording-frame'?!!fractal.clock&&data.displayFrame===fractal.nextDisplayFrame&&validFractalRecordingOutput(data.output,fractal,fractal.clock,data.displayFrame)
             :data.operation==='source-recording-finish'&&data.result?.scene?.kind===family&&validFractalRecordingStop(data.result,fractal)):
             data.operation==='source-recording-begin'?!!data.result?.scene&&!!data.result.context&&!!data.result.clock&&data.result.scene.kind===family&&recordingRaster(data.result.warmup,family)&&(family==='perlin'?data.result.warmup.sourcePerlinFrame!.frameIndex===0:data.result.warmup.iteratedRecording?.displayFrame===0&&data.result.warmup.iteratedRecording.warmup):
@@ -361,8 +391,8 @@ export class Generator {
           p.reject(new SourceRecordingOperationError(data.error,previewRetained,retained,retained?p.handle:undefined));return;
         }
         if(p.operation==='source-recording-begin'&&data.operation==='source-recording-begin'){
-          if(fractal){fractal.clock=structuredClone(data.result.clock);fractal.primary=snapshotGenerationInput(data.result.context);}
-          if(domain){domain.clock=structuredClone(data.result.clock);domain.primary=snapshotGenerationInput(data.result.context);domain.last=structuredClone(data.result.warmup.domainLive!);}
+          if(fractal&&data.result.clock.completionReason==='animation-queue'){fractal.clock=structuredClone(data.result.clock);fractal.primary=snapshotGenerationInput(data.result.context);}
+          if(domain&&data.result.clock.completionReason==='animation-queue'){domain.clock=structuredClone(data.result.clock);domain.primary=snapshotGenerationInput(data.result.context);domain.last=structuredClone(data.result.warmup.domainLive!);}
           this.recording={handle:p.handle,family,usable:true,fractal,domain,perlin};this.completed=undefined;p.resolve({...data.result,handle:p.handle});return;
         }
         if(p.operation==='source-recording-frame'&&data.operation==='source-recording-frame'){if(fractal)fractal.nextDisplayFrame=data.displayFrame+1;if(domain){domain.nextDisplayFrame=data.displayFrame+1;domain.last=structuredClone(data.output.domainLive!);domain.attempt=undefined;}p.resolve(data.output);return;}
@@ -586,9 +616,13 @@ export class Generator {
   beginSourceRecording(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>{
     const source=this.completed;
     if(this.recording)return Promise.reject(this.recordingError('源场景录制已开始'));
-    const eligible=source&&(source.scene.kind==='surface'?output.type==='geometry'&&!!output.surfaceLive&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
+    const eligible=source&&(source.scene.kind==='surface'?output.type==='geometry'&&!!output.surfaceLive&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
     if(!this.worker||this.pending.size||!source||source.output!==output||!eligible)
       return Promise.reject(new SourceRecordingOperationError('源场景录制需要当前已完成的主预览',false,false));
+    let roots:SourceRootsRecordingLease|undefined;
+    if(source.scene.kind==='roots')try{
+      if(output.type!=='raster')throw Error('复根录制需要像素预览');roots=new SourceRootsRecordingLease(source.scene,source.context,output,options);
+    }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     let fractal:RetainedRecordingLease|undefined,domain:DomainRecordingLease|undefined,surface:SourceSurfaceRecordingLease|undefined,perlin:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}|undefined;
     if(source.scene.kind==='perlin'&&source.context.perlinLive)try{perlin={sceneId:source.scene.id,primary:snapshotGenerationInput(source.context),size:prepareSourcePausedCaptureSize(options,source.context.sourcePerlinViewport?.pixelDensity??NaN)};}catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     if(source.scene.kind==='surface')try{
@@ -604,7 +638,7 @@ export class Generator {
       domain={sceneId:source.scene.id,options:{...options},size:sourceRecordingSize(options,source.context.domainLive?.viewport?.pixelDensity??NaN),primary:snapshotGenerationInput(source.context),nextDisplayFrame:1,formulas:structuredClone(output.type==='raster'?output.formulaPresentation:undefined)};
     }catch(error){return Promise.reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),true,false));}
     const id=++this.counter,handle=Object.freeze({sessionId:this.sessionId,recordingId:id});
-    this.currentInputId=id;this.completed=undefined;this.recording={handle,family:source.scene.kind,usable:false,fractal,domain,surface,perlin};
+    this.currentInputId=id;this.completed=undefined;this.recording={handle,family:source.scene.kind,usable:false,roots,fractal,domain,surface,perlin};
     return new Promise((resolve,reject)=>{
       this.pending.set(id,{operation:'source-recording-begin',source,handle,resolve,reject});
       try{this.worker!.postMessage({operation:'source-recording-begin',sessionId:this.sessionId,id,sourceId:source.id,options:{...options}} satisfies GenerationRequest);}
@@ -614,6 +648,7 @@ export class Generator {
   nextSourceRecordingFrame(handle:SourceRecordingHandle,displayFrame:number,actualFrameRate?:number):Promise<SourceRecordingRaster>{
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
     if(!Number.isSafeInteger(displayFrame)||displayFrame<1)return Promise.reject(this.recordingError('源场景录制帧序号无效'));
+    try{this.recording!.roots?.requestFrame(displayFrame);}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
     const fractal=this.recording!.fractal,domain=this.recording!.domain;
     if(fractal&&(!fractal.clock||displayFrame!==fractal.nextDisplayFrame||displayFrame>fractal.clock.lastDisplayFrame))return Promise.reject(this.recordingError('分形录制必须按已确认规划连续请求，未交付 warmup 的会话只能停止'));
     if(domain){

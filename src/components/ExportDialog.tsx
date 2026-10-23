@@ -264,6 +264,7 @@ export function ExportDialog({
           },
           start:async start=>{
             checkCancelled();
+            if(start.clock.completionReason!=='animation-queue')throw Error('录制完成条件与当前导出方式不匹配');
             (retainedSurface?assertSourceSurfaceRecordingFrame:retainedDomain?assertDomainRecordingFrame:retainedNumerical?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(start.warmup,start.clock,0);
             if(start.warmup.width!==recordingSize.width||start.warmup.height!==recordingSize.height)throw new Error(t('录制实际尺寸与预检不一致，请等待预览完成后重试'));
             const frames=start.clock.encodedFrames;
@@ -278,6 +279,7 @@ export function ExportDialog({
           },
           frame:async(output,index,start)=>{
             checkCancelled();
+            if(start.clock.completionReason!=='animation-queue')throw Error('录制完成条件与当前导出方式不匹配');
             (retainedSurface?assertSourceSurfaceRecordingFrame:retainedDomain?assertDomainRecordingFrame:retainedNumerical?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,start.clock,index+1);
             const blob=retainedNumerical?await encodeFormulaRaster(output,'image/png',{signal:abort.signal,isCancelled:()=>cancelRef.current}):await encodeRgbaPng(output.pixels,output.width,output.height,()=>cancelRef.current);
             checkCancelled();
