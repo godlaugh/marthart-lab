@@ -1,0 +1,385 @@
+{
+  "at": "2026-10-23T21:35:18.012338+00:00",
+  "scope": "Same original bouncing1, 2M particles, 60 updates, 62 paused complete artwork frames and 11 padded state textures. Renderer verifier only, no App delivery.",
+  "executionOrder": [
+    "cdp-blank-1",
+    "playwright-blank-1",
+    "cdp-blank-2",
+    "cdp-app-1",
+    "cdp-webgl-control"
+  ],
+  "runs": [
+    {
+      "name": "cdp-blank-1",
+      "report": ".cache/bouncing-driver-cost-20261024/cdp-blank-1/report.json",
+      "sha256": "6331765d8f7e247ecd02988b49112fa0f090fd6d66219c9e296834284d698b1c",
+      "driver": "cdp",
+      "fixture": "blank",
+      "browser": "Chrome/155.0.8059.85",
+      "backend": {
+        "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-cgl-20261024/renderer",
+        "executableSha256": "2f17ca9ebe41d0a4014af8153d13cedc5bf98f933bd7f419e68dba1b99941a1e"
+      },
+      "status": "passed",
+      "elapsedMs": 12353.275417,
+      "processFamily": {
+        "rootPid": 2595,
+        "samples": 36,
+        "observedProcesses": 54,
+        "maxConcurrentProcesses": 16,
+        "sampledPeakRssKiB": 3224672,
+        "observedCpuMs": 19529.999999999996,
+        "samplingErrors": []
+      },
+      "exactFrames": 62,
+      "residuals": [],
+      "stateComponents": 88097900,
+      "stateDifferences": 0,
+      "alphaDifferences": 0,
+      "cameraDifferences": 0,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled",
+        "fulfilled"
+      ],
+      "remainingNativeProcesses": 0,
+      "sourceDigests": {
+        "scripts/browser-process-cost.mjs": "352bdf0f8779e3b2a6d6fca9ff77aaf50fcfbb1c4ad5623da71365f05fe52277",
+        "scripts/headless-renderer-page.mjs": "832d25ab3172249c15ffabcf65f08d6eb76f296b050ede0e8f2ca34803e6a254",
+        "scripts/verify-source-bouncing-native-animation.mjs": "a7db00f74355c5abe9126765a311e91647f9fc62278aaee5fa620d2c85aa9ade",
+        "server/render/SourceCglRenderer.m": "31901d9b9ac87c81a725df56cb1afbe5588741b419e2b528bc96737f95837fd7",
+        "server/source-renderer.mjs": "6bfaf2863c4c2e7bb0aa3eb9af63f7f5b9792648e43c603dd9cfeb4936b24d4a"
+      },
+      "referenceRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8"
+    },
+    {
+      "name": "playwright-blank-1",
+      "report": ".cache/bouncing-driver-cost-20261024/playwright-blank-1/report.json",
+      "sha256": "a72fa14b1afe520b52c90e79abfe816e130f0f69b07c78513144bfbd227a764c",
+      "driver": "playwright",
+      "fixture": "blank",
+      "browser": "155.0.8059.85",
+      "backend": {
+        "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-cgl-20261024/renderer",
+        "executableSha256": "2f17ca9ebe41d0a4014af8153d13cedc5bf98f933bd7f419e68dba1b99941a1e"
+      },
+      "status": "passed",
+      "elapsedMs": 123504.742167,
+      "processFamily": {
+        "rootPid": 3581,
+        "samples": 356,
+        "observedProcesses": 366,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 4000624,
+        "observedCpuMs": 185160,
+        "samplingErrors": []
+      },
+      "exactFrames": 62,
+      "residuals": [],
+      "stateComponents": 88097900,
+      "stateDifferences": 0,
+      "alphaDifferences": 0,
+      "cameraDifferences": 0,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled",
+        "fulfilled"
+      ],
+      "remainingNativeProcesses": 0,
+      "sourceDigests": {
+        "scripts/browser-process-cost.mjs": "352bdf0f8779e3b2a6d6fca9ff77aaf50fcfbb1c4ad5623da71365f05fe52277",
+        "scripts/headless-renderer-page.mjs": "832d25ab3172249c15ffabcf65f08d6eb76f296b050ede0e8f2ca34803e6a254",
+        "scripts/verify-source-bouncing-native-animation.mjs": "a7db00f74355c5abe9126765a311e91647f9fc62278aaee5fa620d2c85aa9ade",
+        "server/render/SourceCglRenderer.m": "31901d9b9ac87c81a725df56cb1afbe5588741b419e2b528bc96737f95837fd7",
+        "server/source-renderer.mjs": "6bfaf2863c4c2e7bb0aa3eb9af63f7f5b9792648e43c603dd9cfeb4936b24d4a"
+      },
+      "referenceRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8"
+    },
+    {
+      "name": "cdp-blank-2",
+      "report": ".cache/bouncing-driver-cost-20261024/cdp-blank-2/report.json",
+      "sha256": "be4359f809273b521ede003cce293c71812edd78b7d73480fdea652783c6660d",
+      "driver": "cdp",
+      "fixture": "blank",
+      "browser": "Chrome/155.0.8059.85",
+      "backend": {
+        "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-cgl-20261024/renderer",
+        "executableSha256": "2f17ca9ebe41d0a4014af8153d13cedc5bf98f933bd7f419e68dba1b99941a1e"
+      },
+      "status": "passed",
+      "elapsedMs": 11157.051083,
+      "processFamily": {
+        "rootPid": 9865,
+        "samples": 34,
+        "observedProcesses": 51,
+        "maxConcurrentProcesses": 16,
+        "sampledPeakRssKiB": 2687936,
+        "observedCpuMs": 19450,
+        "samplingErrors": []
+      },
+      "exactFrames": 62,
+      "residuals": [],
+      "stateComponents": 88097900,
+      "stateDifferences": 0,
+      "alphaDifferences": 0,
+      "cameraDifferences": 0,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled",
+        "fulfilled"
+      ],
+      "remainingNativeProcesses": 0,
+      "sourceDigests": {
+        "scripts/browser-process-cost.mjs": "352bdf0f8779e3b2a6d6fca9ff77aaf50fcfbb1c4ad5623da71365f05fe52277",
+        "scripts/headless-renderer-page.mjs": "832d25ab3172249c15ffabcf65f08d6eb76f296b050ede0e8f2ca34803e6a254",
+        "scripts/verify-source-bouncing-native-animation.mjs": "7e1453ef21a6e2eddd9166756fa6ecea4c8ea8809a46250eb5f639e0526d7d76",
+        "server/render/SourceCglRenderer.m": "31901d9b9ac87c81a725df56cb1afbe5588741b419e2b528bc96737f95837fd7",
+        "server/source-renderer.mjs": "6bfaf2863c4c2e7bb0aa3eb9af63f7f5b9792648e43c603dd9cfeb4936b24d4a"
+      },
+      "referenceRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8",
+      "stageTotalsMs": {
+        "simulationMs": 9.899999976158142,
+        "snapshotMs": 761.0999999046326,
+        "stateCheckMs": 1605.4999998807907,
+        "drawMs": 5015.799999952316,
+        "comparisonMs": 1006.6999998092651
+      },
+      "drawMedianMs": 77.94999998807907
+    },
+    {
+      "name": "cdp-app-1",
+      "report": ".cache/bouncing-driver-cost-20261024/cdp-app-1/report.json",
+      "sha256": "8f222f6358cc430c7c7b7dd9b4f391de9e1adf4831a891300070fc3c120e8dfc",
+      "driver": "cdp",
+      "fixture": "app",
+      "browser": "Chrome/155.0.8059.85",
+      "backend": {
+        "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-cgl-20261024/renderer",
+        "executableSha256": "2f17ca9ebe41d0a4014af8153d13cedc5bf98f933bd7f419e68dba1b99941a1e"
+      },
+      "status": "passed",
+      "elapsedMs": 12426.278124999999,
+      "processFamily": {
+        "rootPid": 10807,
+        "samples": 35,
+        "observedProcesses": 51,
+        "maxConcurrentProcesses": 15,
+        "sampledPeakRssKiB": 3110992,
+        "observedCpuMs": 22260,
+        "samplingErrors": []
+      },
+      "exactFrames": 62,
+      "residuals": [],
+      "stateComponents": 88097900,
+      "stateDifferences": 0,
+      "alphaDifferences": 0,
+      "cameraDifferences": 0,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled",
+        "fulfilled"
+      ],
+      "remainingNativeProcesses": 0,
+      "sourceDigests": {
+        "scripts/browser-process-cost.mjs": "352bdf0f8779e3b2a6d6fca9ff77aaf50fcfbb1c4ad5623da71365f05fe52277",
+        "scripts/headless-renderer-page.mjs": "832d25ab3172249c15ffabcf65f08d6eb76f296b050ede0e8f2ca34803e6a254",
+        "scripts/verify-source-bouncing-native-animation.mjs": "7e1453ef21a6e2eddd9166756fa6ecea4c8ea8809a46250eb5f639e0526d7d76",
+        "server/render/SourceCglRenderer.m": "31901d9b9ac87c81a725df56cb1afbe5588741b419e2b528bc96737f95837fd7",
+        "server/source-renderer.mjs": "6bfaf2863c4c2e7bb0aa3eb9af63f7f5b9792648e43c603dd9cfeb4936b24d4a"
+      },
+      "referenceRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8",
+      "stageTotalsMs": {
+        "simulationMs": 10.100000381469727,
+        "snapshotMs": 749.4999997615814,
+        "stateCheckMs": 1743.9000000953674,
+        "drawMs": 5107.400000214577,
+        "comparisonMs": 970.2999994754791
+      },
+      "drawMedianMs": 79.19999992847443
+    },
+    {
+      "name": "cdp-webgl-control",
+      "report": ".cache/bouncing-driver-cost-20261024/cdp-webgl-control/report.json",
+      "sha256": "8ae31a718f284a9b564200cf5a45bcc500132b6361c79595124c54974188c47f",
+      "driver": "cdp",
+      "fixture": "blank",
+      "browser": "Chrome/155.0.8059.85",
+      "backend": null,
+      "status": "failed",
+      "elapsedMs": 6232.3935,
+      "processFamily": {
+        "rootPid": 11722,
+        "samples": 17,
+        "observedProcesses": 32,
+        "maxConcurrentProcesses": 15,
+        "sampledPeakRssKiB": 2379344,
+        "observedCpuMs": 8700,
+        "samplingErrors": []
+      },
+      "exactFrames": 58,
+      "residuals": [
+        {
+          "frame": 8,
+          "updates": 6,
+          "rgbPixels": 1,
+          "examples": [
+            {
+              "x": 264,
+              "y": 196,
+              "actual": [
+                150,
+                119,
+                175,
+                255
+              ],
+              "expectedRgb": [
+                150,
+                120,
+                175
+              ]
+            }
+          ]
+        },
+        {
+          "frame": 23,
+          "updates": 21,
+          "rgbPixels": 1,
+          "examples": [
+            {
+              "x": 264,
+              "y": 212,
+              "actual": [
+                150,
+                119,
+                175,
+                255
+              ],
+              "expectedRgb": [
+                150,
+                120,
+                175
+              ]
+            }
+          ]
+        },
+        {
+          "frame": 38,
+          "updates": 36,
+          "rgbPixels": 1,
+          "examples": [
+            {
+              "x": 264,
+              "y": 228,
+              "actual": [
+                150,
+                119,
+                175,
+                255
+              ],
+              "expectedRgb": [
+                150,
+                120,
+                175
+              ]
+            }
+          ]
+        },
+        {
+          "frame": 53,
+          "updates": 51,
+          "rgbPixels": 1,
+          "examples": [
+            {
+              "x": 264,
+              "y": 244,
+              "actual": [
+                150,
+                119,
+                175,
+                255
+              ],
+              "expectedRgb": [
+                150,
+                120,
+                175
+              ]
+            }
+          ]
+        }
+      ],
+      "stateComponents": 88097900,
+      "stateDifferences": 0,
+      "alphaDifferences": 0,
+      "cameraDifferences": 0,
+      "sourceStable": true,
+      "cleanup": [
+        "fulfilled",
+        "fulfilled",
+        "fulfilled"
+      ],
+      "remainingNativeProcesses": 0,
+      "sourceDigests": {
+        "scripts/browser-process-cost.mjs": "352bdf0f8779e3b2a6d6fca9ff77aaf50fcfbb1c4ad5623da71365f05fe52277",
+        "scripts/headless-renderer-page.mjs": "832d25ab3172249c15ffabcf65f08d6eb76f296b050ede0e8f2ca34803e6a254",
+        "scripts/verify-source-bouncing-native-animation.mjs": "7e1453ef21a6e2eddd9166756fa6ecea4c8ea8809a46250eb5f639e0526d7d76",
+        "server/render/SourceCglRenderer.m": "31901d9b9ac87c81a725df56cb1afbe5588741b419e2b528bc96737f95837fd7",
+        "server/source-renderer.mjs": "6bfaf2863c4c2e7bb0aa3eb9af63f7f5b9792648e43c603dd9cfeb4936b24d4a"
+      },
+      "referenceRunSha256": "4c5e92aae5dcca23635377be73cb60421a1360c75c1c663829ad23fcc1e757b8",
+      "stageTotalsMs": {
+        "simulationMs": 7.999999642372131,
+        "snapshotMs": 0,
+        "stateCheckMs": 1747.0,
+        "drawMs": 678.4000002145767,
+        "comparisonMs": 950.1000001430511
+      },
+      "drawMedianMs": 7.5
+    }
+  ],
+  "test": {
+    "command": "node --test scripts/headless-renderer-page.test.mjs",
+    "log": ".cache/bouncing-driver-cost-20261024/driver-test.log",
+    "sha256": "fd611c3f0c522300d2fd912fc4c7e53fb06bc42c08213c4077887ddcd494a6b8"
+  },
+  "limits": [
+    "Serial fresh-process runs; OS/driver caches uncontrolled, no strict cold/warm claim.",
+    "Drivers differ in launch flags/context setup as well as Network observation; no isolated attribution to one CDP command.",
+    "Process-family CPU/RSS sampled every 250ms; short-lived processes/peaks may be missed.",
+    "Stage clocks include waits and are not independent GPU timings or product FPS.",
+    "Token cost not independently measured.",
+    "No product runtime, App integration, 5M capacity or package changes."
+  ],
+  "finalVerification": {
+    "report": ".cache/bouncing-driver-cost-20261024/final-cdp/report.json",
+    "sha256": "de32d1d2909c7c7746bd14e2c42b7e23d52d02ec1a17fa1886f72ea30f16edeb",
+    "status": "passed",
+    "elapsedMs": 11175.816541,
+    "processFamily": {
+      "rootPid": 14798,
+      "samples": 34,
+      "observedProcesses": 51,
+      "maxConcurrentProcesses": 17,
+      "sampledPeakRssKiB": 2725728,
+      "observedCpuMs": 19360.000000000004,
+      "samplingErrors": []
+    },
+    "exactFrames": 62,
+    "stateCheckpoints": 11,
+    "sourceStable": true,
+    "remainingNativeProcesses": 0,
+    "cleanup": [
+      "fulfilled",
+      "fulfilled",
+      "fulfilled"
+    ],
+    "sourceDigests": {
+      "scripts/browser-process-cost.mjs": "352bdf0f8779e3b2a6d6fca9ff77aaf50fcfbb1c4ad5623da71365f05fe52277",
+      "scripts/headless-renderer-page.mjs": "1411d7146f6aeef2754546e152a9d0b18d16867467bf8f614668327a08baa05a",
+      "scripts/verify-source-bouncing-native-animation.mjs": "7e1453ef21a6e2eddd9166756fa6ecea4c8ea8809a46250eb5f639e0526d7d76"
+    }
+  }
+}
