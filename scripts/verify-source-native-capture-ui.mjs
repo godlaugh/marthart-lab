@@ -19,8 +19,8 @@ try{
  vite=await createServer({mode:'preview-v2',define:{'import.meta.env.VITE_SOURCE_RENDERER':JSON.stringify('native')},server:{host:'127.0.0.1',port:5179,strictPort:true,hmr:false,proxy:{'/api':`http://127.0.0.1:${address.port}`}},logLevel:'error'});await vite.listen();
  const switches=new Map();configureDesktopGraphics({getSwitchValue:k=>switches.get(k)??'',appendSwitch:(k,v)=>switches.set(k,v)});browser=await chromium.launch({channel:'chrome',headless:true,args:[...switches].map(([k,v])=>'--'+k+'='+v)});
  for(const name of ['cornucopia','sphere','mobius']){
-  const page=await browser.newPage({viewport:{width:1360,height:900}}),row={name,downloads:[],nativeRequests:0,errors:[]};report.cases.push(row);page.setDefaultTimeout(20000);page.on('pageerror',e=>row.errors.push(e.message));
-  page.on('request',r=>{if(r.url().endsWith('/api/source-renderer/frames'))row.nativeRequests++;});
+  const page=await browser.newPage({viewport:{width:1360,height:900}}),row={name,downloads:[],nativeRequests:0,captureRequests:0,previewRequests:0,errors:[]};report.cases.push(row);page.setDefaultTimeout(20000);page.on('pageerror',e=>row.errors.push(e.message));
+  page.on('request',r=>{if(r.url().endsWith('/api/source-renderer/frames')){row.nativeRequests++;const samples=r.postDataBuffer().readUInt32LE(52);if(samples===0)row.captureRequests++;else if(samples===4)row.previewRequests++;else row.errors.push('Unexpected sample count '+samples);}});
   await page.addInitScript(()=>{window.__captures=[];const Native=Worker;window.Worker=class extends Native{constructor(...args){super(...args);this.addEventListener('message',({data})=>{if(data.output?.surfaceLive)window.__lastSurface=data.output.surfaceLive;});}};});
   await page.route('**/fixture',r=>r.fulfill({contentType:'text/html',body:'<!doctype html>'}));await page.goto('http://127.0.0.1:5179/fixture');
   await page.evaluate(async()=>{const{createScene,saveWorkspace}=await import('/src/engine/document.ts'),{definition}=await import('/src/scenes/index.ts');const scene=createScene(definition('surface'));Object.assign(scene.settings,{uSegments:3,vSegments:3,showTrails:false});saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'low',frameRate:20}});});
@@ -30,7 +30,7 @@ try{
   await page.goto('http://127.0.0.1:5179/');const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('Ready')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));await ready();
   const ref=referenceRoot+(name==='mobius'?'/mesh':'')+'/native-'+name,run=JSON.parse(await readFile(ref+'/run.json')),input=await readFile(run.source);assert.equal(sha(input),run.sourceSha256);row.inputSha256=sha(input);row.authoredRenderMode=JSON.parse(input).settings.render_mode;
   await page.locator('input[type=file]').setInputFiles({name:name+'.json',mimeType:'application/json',buffer:input});await page.waitForFunction(()=>window.__lastSurface?.paused&&window.__lastSurface.frame.sceneTime===0);await ready();
-  const before=await page.evaluate(()=>window.__lastSurface.frame);await page.getByRole('button',{name:'Export artwork',exact:true}).click();assert.equal(await page.getByRole('combobox',{name:'Surface image source',exact:true}).inputValue(),'current');
+  await page.waitForFunction(()=>{const canvas=document.querySelector('[data-testid=native-art-canvas]');return canvas&&getComputedStyle(canvas).display!=='none'&&!document.querySelector('.error-card');});const beforeRequests=row.captureRequests;const before=await page.evaluate(()=>window.__lastSurface.frame);await page.getByRole('button',{name:'Export artwork',exact:true}).click();assert.equal(await page.getByRole('combobox',{name:'Surface image source',exact:true}).inputValue(),'current');
   await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('500');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('600');await page.getByRole('combobox',{name:'PNG upscale',exact:true}).selectOption('1');
   for(let i=0;i<2;i++){
    const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Start export',exact:true}).click();const download=await pending,file=root+'/'+name+'-'+i+'.png';await download.saveAs(file);assert.equal(await download.failure(),null);
@@ -39,7 +39,7 @@ try{
    const expected=await page.evaluate(async()=>{const{encodeFormulaRaster}=await import('/src/engine/formulaCanvas.ts');return Array.from(new Uint8Array(await(await encodeFormulaRaster(window.__latestCapture.capture,'image/png')).arrayBuffer()));});assert.deepEqual(png.rgba,decodePng(Buffer.from(expected)).rgba);
    row.downloads.push({file,sha256:sha(bytes),producer:capture.producer});
   }
-  assert.equal(row.downloads[0].sha256,row.downloads[1].sha256);assert.equal(row.nativeRequests,2);
+  assert.equal(row.downloads[0].sha256,row.downloads[1].sha256);assert.equal(row.captureRequests-beforeRequests,2);assert.ok(row.previewRequests>=1);
   if(name==='mobius'){
    let intercepted;const held=new Promise(resolve=>{intercepted=resolve;});let pendingRoute;
    await page.route('**/api/source-renderer/frames',route=>{pendingRoute=route;intercepted();});const delivered=await page.evaluate(()=>window.__captures.length);

@@ -2,11 +2,15 @@ import type {ArtRenderer} from './renderer';
 import type {RasterOutput} from '../types';
 import {renderSourceNativeFrame,SourceNativeError} from './sourceNativeClient';
 export interface SourceDrawingRequest {signal:AbortSignal;generation:number;sequence:number}
+export function sourceDrawingPolicy():'native'|'webgl' {
+ const backend=import.meta.env.VITE_SOURCE_RENDERER??'webgl';
+ if(backend!=='native'&&backend!=='webgl')throw Error('未知源绘图后端配置');
+ return backend;
+}
 /** Build policy is shared by captures and recording; never select a fallback
  * after an unavailable, unsupported or failed native frame. */
 export function sourceDrawingBackend(request?:SourceDrawingRequest):'native'|'webgl' {
- const backend=import.meta.env.VITE_SOURCE_RENDERER??'webgl';
- if(backend!=='native'&&backend!=='webgl')throw Error('未知源绘图后端配置');
+ const backend=sourceDrawingPolicy();
  if(backend==='native'&&!request)throw Error('原生绘图需要可取消的帧请求');
  return backend;
 }

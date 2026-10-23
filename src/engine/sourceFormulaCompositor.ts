@@ -37,6 +37,7 @@ export class SourceFormulaCompositor {
  private projection:WebGLUniformLocation;
  private vertices=new Float32Array(24);
  private disposed=false;
+ private released=false;
  private anisotropy?:SourceTextureAnisotropy;
  constructor(canvas=document.createElement('canvas')){
   this.canvas=canvas;
@@ -72,20 +73,26 @@ precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,mipmap?gl.LINEAR:gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,mipmap?gl.LINEAR_MIPMAP_LINEAR:gl.NEAREST);if(mipmap){gl.generateMipmap(gl.TEXTURE_2D);if(this.anisotropy)gl.texParameterf(gl.TEXTURE_2D,this.anisotropy.parameter,this.anisotropy.maximum);}
  }
  draw(prepared:PreparedSourceFormula,width:number,height:number,base:Uint8ClampedArray){
+  this.drawFrame(prepared,width,height,base);
+ }
+ /** Copy source pixels without inventing a formula layout for an empty legacy
+  * label list. Uses the same exact RGBA transfer as the composed source path. */
+ drawPixels(width:number,height:number,base:Uint8ClampedArray){this.drawFrame(undefined,width,height,base);}
+ private drawFrame(prepared:PreparedSourceFormula|undefined,width:number,height:number,base:Uint8ClampedArray){
   this.check();const gl=this.gl;
   if(!Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width*height>MAX_RASTER_PIXELS||width>gl.getParameter(gl.MAX_TEXTURE_SIZE)||height>gl.getParameter(gl.MAX_TEXTURE_SIZE))throw new Error('源公式合成画布超出图像预算');
   if(!(base.buffer instanceof ArrayBuffer)||base.length!==width*height*4)throw new Error('源公式需要完整未共享的基础 RGBA 图像');
-  if(prepared.glyphs.length!==prepared.presentation.labels.length)throw new Error('源公式字形与标注不对应');
+  if(prepared&&prepared.glyphs.length!==prepared.presentation.labels.length)throw new Error('源公式字形与标注不对应');
   if(this.canvas.width!==width)this.canvas.width=width;if(this.canvas.height!==height)this.canvas.height=height;
   gl.viewport(0,0,width,height);gl.useProgram(this.program);gl.uniform2f(this.projection,Math.fround(2/width),Math.fround(-2/height));gl.disable(gl.BLEND);gl.disable(gl.DITHER);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   this.upload(this.texture,width,height,base,false);this.quad([-width/2,-height/2,-width/2,height/2,width/2,height/2,width/2,-height/2]);
-  const keep=new Set(prepared.glyphs);for(const [glyph,texture]of this.textures)if(!keep.has(glyph)){gl.deleteTexture(texture);this.textures.delete(glyph);}
+  const keep=new Set(prepared?.glyphs);for(const [glyph,texture]of this.textures)if(!keep.has(glyph)){gl.deleteTexture(texture);this.textures.delete(glyph);}
   gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
-  prepared.glyphs.forEach((glyph,index)=>{
+  prepared?.glyphs.forEach((glyph,index)=>{
    let texture=this.textures.get(glyph);if(!texture){texture=gl.createTexture()??undefined;if(!texture)throw new Error('无法创建公式纹理');this.textures.set(glyph,texture);this.upload(texture,glyph.width,glyph.height,glyph.pixels,true);}else gl.bindTexture(gl.TEXTURE_2D,texture);
    this.quad(sourceFormulaQuad(prepared.presentation,prepared.presentation.labels[index],width,height,glyph));
   });
-  const overlay=prepared.presentation.finalBlackOverlayAlpha??0;
+  const overlay=prepared?.presentation.finalBlackOverlayAlpha??0;
   if(overlay){
    // The source's final black rectangle uses the same straight-RGB/additive-
    // alpha blend as glyphs. Reuse the owned base texture after its copy pass.
@@ -97,7 +104,7 @@ precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(
  readPixels(){
   this.check();const {width,height}=this.canvas,gl=this.gl,pixels=new Uint8ClampedArray(width*height*4);gl.readPixels(0,0,width,height,gl.RGBA,gl.UNSIGNED_BYTE,pixels);this.check();if(gl.getError()!==gl.NO_ERROR)throw new Error('源公式像素回读失败');flipRows(pixels,width,height);return pixels;
  }
- dispose(){if(this.disposed)return;this.disposed=true;const gl=this.gl;for(const t of this.textures.values())gl.deleteTexture(t);this.textures.clear();gl.deleteTexture(this.texture);gl.deleteBuffer(this.buffer);gl.deleteProgram(this.program);gl.getExtension('WEBGL_lose_context')?.loseContext();this.canvas.width=this.canvas.height=0;}
+ dispose(){if(this.released)return;this.disposed=true;const gl=this.gl;for(const t of this.textures.values())gl.deleteTexture(t);this.textures.clear();gl.deleteTexture(this.texture);gl.deleteBuffer(this.buffer);gl.deleteProgram(this.program);gl.getExtension('WEBGL_lose_context')?.loseContext();this.canvas.width=this.canvas.height=0;this.released=true;}
 }
 function flipRows(pixels:Uint8ClampedArray,width:number,height:number){const stride=width*4,row=new Uint8ClampedArray(stride);for(let y=0;y<Math.floor(height/2);y++){const a=y*stride,b=(height-y-1)*stride;row.set(pixels.subarray(a,a+stride));pixels.copyWithin(a,b,b+stride);pixels.set(row,b);}}
 /** Read the source framebuffer without Canvas2D's alpha conversion. Reading

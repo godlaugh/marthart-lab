@@ -537,7 +537,7 @@ kbd {
   overflow: hidden;
   background: #111317;
 }
-.art-canvas {
+.art-canvas, .native-art-canvas {
   display: block;
   width: 100%;
   height: 100%;
@@ -1496,3 +1496,5 @@ html[lang="en"] .category-grid { grid-template-columns: 1fr; }
 .perlin-preset-controls {display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
 .perlin-preset-controls p {flex:1;margin:0;}
 .perlin-preset-controls button {display:flex;align-items:center;gap:6px;}
+
+.art-canvas[data-native-hidden="true"] { opacity: 0 !important; }

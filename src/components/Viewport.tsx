@@ -27,6 +27,8 @@ import {usesRootsNativePresentation,navigateRootsPresentation,type RootsPresenta
 import type {RootsPresentationConfiguration} from '../engine/rootsPresentationConfig';
 import type {ProjectResolution} from '../engine/projectResolution';
 import {projectViewportFit} from '../engine/projectViewportFit';
+import {SourceNativeViewport,usesNativeSurfaceViewport} from '../engine/sourceNativeViewport';
+import {outputBuffers} from '../engine/outputBuffers';
 const sourceCameraNavigation=(scene:SceneDocument)=>sourceLivePreviewKind(scene)==='surface'||!!sourceIteratedLiveKind(scene);
 export interface ViewportHandle {
   fit: () => void;
@@ -75,6 +77,8 @@ export const Viewport = forwardRef<
   const renderedScene=useRef<SceneDocument|null>(null),presented=useRef(new PresentedFrameOwner());
   const deliveredOutput=useRef<{source:SceneDocument;output:SceneOutput}|null>(null);
   const source=outputScene??scene;
+  const nativeMode=usesNativeSurfaceViewport(source,output),nativeCanvas=useRef<HTMLCanvasElement>(null),nativeOwner=useRef<SourceNativeViewport|null>(null);
+  const nativeWanted=useRef(nativeMode);nativeWanted.current=nativeMode;
   const presentationCallbacks=useRef({onPresented,onRenderError});presentationCallbacks.current={onPresented,onRenderError};
   function failed(error:unknown){const message=error instanceof Error?error.message:String(error);presented.current.clear();deliveredOutput.current=null;presentationCallbacks.current.onPresented?.(null);presentationCallbacks.current.onRenderError?.(message);setRenderError(message);}
   const callback = useRef(onCamera),sizeCallback=useRef(onSize),latestOutput=useRef(output);sizeCallback.current=onSize;latestOutput.current=output;
@@ -105,7 +109,7 @@ export const Viewport = forwardRef<
       if(bulb)onViewSettings?.({bulbCameraYaw:0,bulbCameraPitch:.78,zoom:1,bulbCameraRadius:3.2,bulbRayScale:3});else if(plane)onViewSettings?.(fitPlane(completed?.evaluated??scene,completed?.output.domainRender?.view));
     },
     camera: () => scene.sourceCamera||sourceBouncing?scene.camera:renderer.current?.cameraState() ?? scene.camera,
-    frame:()=>{const frame=presented.current.read();return canvas.current&&frame?{canvas:canvas.current,...frame}:null;},
+    frame:()=>{const frame=presented.current.read(),element=frame?.composited?nativeCanvas.current:canvas.current;return element&&frame?{canvas:element,...frame}:null;},
   }));
   useEffect(() => {
     let r:ArtRenderer;
@@ -120,7 +124,12 @@ export const Viewport = forwardRef<
         else {for(const property of ['width','height','left','top','right','bottom'])element.style.removeProperty(property);}
         const width=Math.round(fit.width),height=Math.round(fit.height);
         const sourceCamera=!!interaction.current.scene.sourceCamera||usesSourceBouncing(interaction.current.scene)||usesSourceSamilaSplat(interaction.current.scene)||usesSourceDomain(interaction.current.scene);
-        r.setSize(sourceCamera?width:fit.width,sourceCamera?height:fit.height,ratio.current);presented.current.appearance();
+        const before=[element.width,element.height];
+        r.setSize(sourceCamera?width:fit.width,sourceCamera?height:fit.height,ratio.current);
+        if(nativeCanvas.current)for(const property of ['width','height','left','top','right','bottom'])nativeCanvas.current.style.setProperty(property,element.style.getPropertyValue(property));
+        if(nativeWanted.current&&(before[0]!==element.width||before[1]!==element.height)){
+          nativeOwner.current?.cancel();presented.current.clear();presentationCallbacks.current.onPresented?.(null);
+        }else presented.current.appearance();
         if(width>0&&height>0)sizeCallback.current?.(width,height,configured,r.renderer.getPixelRatio());
       }catch(error){failed(error);}
     };
@@ -134,8 +143,8 @@ export const Viewport = forwardRef<
     return () => {
       ro.disconnect();
       refit.current=null;
-      r.dispose();
-      renderer.current = null;deliveredOutput.current=null;presented.current.clear();presentationCallbacks.current.onPresented?.(null);
+      try{nativeOwner.current?.dispose();nativeOwner.current=null;}
+      finally{try{r.dispose();}finally{renderer.current=null;deliveredOutput.current=null;presented.current.clear();presentationCallbacks.current.onPresented?.(null);}}
     };
   }, []);
   useEffect(()=>{
@@ -325,20 +334,41 @@ export const Viewport = forwardRef<
   useEffect(()=>{refit.current?.();},[pixelRatio,scene.projectResolution?.width,scene.projectResolution?.height,!!scene.sourceCamera,sourceBouncing,scene.settings.samilaSplatModel]);
   useEffect(() => {
     if (output&&renderer.current) {
+      const r=renderer.current;
       const changed = lastId.current !== source.id;
       const resolved=usesSourceBouncing(source)||hasMathematicalPlane(source)||isRaymarchScene(source);
       let frameScene:SceneDocument,view:ReturnType<typeof outputCamera>;
       const authoredCamera=!output.sourceBouncingFrame&&!output.sourceCameraFrame&&applyPresentedCamera(presented.current.read(),source,!!output.cameraFrame,resolved);
-      try{frameScene=output.spirographFrame?withSpirographReplayFrame(source,output.spirographFrame):sourceQueuePresentedScene(source,output)??sceneAtTime(source,(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);view=outputCamera(frameScene,output);renderer.current?.setOutput(output, frameScene, changed,{roll:resolved?0:view.roll,focalLength:resolved?35:view.focalLength,...(authoredCamera?{camera:view.camera}:{})});setRenderError('');}catch(error){failed(error);return;}
-      renderer.current.setInteractive(!playing&&!managed&&!sourceBouncing);
-      renderedScene.current=frameScene;
-      lastId.current = source.id;
-      deliveredOutput.current={source,output};
-      presented.current.present(source,output.sourceCameraFrame?{...frameScene,evaluatedSourceCamera:output.sourceCameraFrame}:{...frameScene,camera:renderer.current.cameraState()},(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time,output.formulaPresentation);
-      presentationCallbacks.current.onPresented?.(presented.current.read());
+      try{frameScene=output.spirographFrame?withSpirographReplayFrame(source,output.spirographFrame):sourceQueuePresentedScene(source,output)??sceneAtTime(source,(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time);view=outputCamera(frameScene,output);}catch(error){failed(error);return;}
+      const draw=()=>{r.setOutput(output,frameScene,changed,{roll:resolved?0:view.roll,focalLength:resolved?35:view.focalLength,...(authoredCamera?{camera:view.camera}:{})});r.setInteractive(!playing&&!managed&&!sourceBouncing);};
+      const commit=(composited?:true)=>{
+        renderedScene.current=frameScene;lastId.current=source.id;deliveredOutput.current={source,output};setRenderError('');
+        presented.current.present(source,output.sourceCameraFrame?{...frameScene,evaluatedSourceCamera:output.sourceCameraFrame}:{...frameScene,camera:r.cameraState()},(output.type==='raster'?output.samilaView?.time:undefined)??output.sourceBouncingFrame?.checkpoint.sceneTime??output.sourceCameraFrame?.time??output.cameraFrame?.time??time,output.formulaPresentation,composited);
+        presentationCallbacks.current.onPresented?.(presented.current.read());
+      };
+      if(nativeMode){
+        presented.current.clear();deliveredOutput.current=null;presentationCallbacks.current.onPresented?.(null);
+        try{
+          if(!output.formulaPresentation)throw Error('原生预览缺少实际帧的公式');
+          nativeOwner.current??=new SourceNativeViewport(nativeCanvas.current!);
+          nativeOwner.current.submit({formulas:output.formulaPresentation,current:()=>nativeWanted.current&&latestOutput.current===output&&renderer.current===r,
+            prepare:(generation,sequence)=>{
+              if(output.type==='raster'){
+                if(output.sourcePixelRenderer?.backend!=='native')throw Error('原生预览需要对应的原生像素帧');
+                return{pixels:output};
+              }
+              draw();const frame=r.sourceDrawingFrame(generation,sequence);if(!frame.ok)throw Error(frame.error.reason);
+              const retainedBytes=outputBuffers(output).reduce((sum,buffer)=>sum+buffer.byteLength,0)+frame.value.width*frame.value.height*12+64*1024**2;
+              return{frame:frame.value,retainedBytes};
+            },ready:()=>{nativeCanvas.current!.style.display='block';commit(true);},failed});
+        }catch(error){failed(error);}
+        return()=>nativeOwner.current?.cancel();
+      }
+      nativeOwner.current?.cancel();if(nativeCanvas.current)nativeCanvas.current.style.display='none';
+      try{draw();commit();}catch(error){failed(error);}
     }
-    else {deliveredOutput.current=null;presented.current.clear();presentationCallbacks.current.onPresented?.(null);}
-  }, [output, source, time]);
+    else {nativeOwner.current?.cancel();if(nativeCanvas.current)nativeCanvas.current.style.display='none';deliveredOutput.current=null;presented.current.clear();presentationCallbacks.current.onPresented?.(null);}
+  }, [output, source, time,nativeMode]);
   useEffect(() => {
     renderer.current?.setInteractive(!playing&&!managed&&!sourceBouncing);
   }, [playing,managed,sourceBouncing]);
@@ -346,9 +376,10 @@ export const Viewport = forwardRef<
     <><canvas
       ref={canvas}
       className="art-canvas"
+      data-native-hidden={nativeMode?'true':undefined}
       style={pickingJulia?{cursor:'crosshair'}:undefined}
       aria-label={t("数学艺术画布")}
       data-testid="art-canvas"
-    />{sourceBouncing&&<div className="viewport-note" role="status">{t("暂停时可拖动旋转、滚轮缩放；恢复播放会还原旋转角度，保留缩放。")}</div>}{scene.sourceCamera&&<div className="viewport-note" role="status">{t(sourceCameraNavigation(scene)?scene.kind==='map'&&scene.mapSource?.construction.dimension===2?"暂停时拖动平移、滚轮缩放；恢复播放保留平移和缩放。":"暂停时拖动旋转、滚轮缩放；恢复播放还原旋转角度、保留缩放。":"当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
+    /><canvas ref={nativeCanvas} className="native-art-canvas" data-testid="native-art-canvas" aria-label={t("原生数学艺术画布")} style={{display:'none',pointerEvents:'none',objectFit:'contain'}}/>{sourceBouncing&&<div className="viewport-note" role="status">{t("暂停时可拖动旋转、滚轮缩放；恢复播放会还原旋转角度，保留缩放。")}</div>}{scene.sourceCamera&&<div className="viewport-note" role="status">{t(sourceCameraNavigation(scene)?scene.kind==='map'&&scene.mapSource?.construction.dimension===2?"暂停时拖动平移、滚轮缩放；恢复播放保留平移和缩放。":"暂停时拖动旋转、滚轮缩放；恢复播放还原旋转角度、保留缩放。":"当前使用原版相机，请在右侧相机面板或时间线调整视角。")}</div>}{(samilaCameraEnabled(scene)||output?.type==='raster'&&output.samilaView)&&<div className="viewport-note" role="status">{t(SAMILA_CAMERA_NAVIGATION_NOTICE)}</div>}{navigationNotice&&<div className="viewport-note" role="status">{t(navigationNotice)}</div>}{renderError&&<div className="error-card" role="alert"><strong>{t('画布无法显示')}</strong><p>{t(renderError)}</p><small>{t('请检查浏览器的图形加速是否可用，再重新加载页面。场景数据仍保留在本地。')}</small></div>}</>
   );
 });

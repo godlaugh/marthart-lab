@@ -4,6 +4,8 @@ import type {SceneDocument,FormulaPresentation} from '../types';
  * not a new mathematical sample, a new pixel image, or an encoded video frame. */
 export interface PresentedFrame {
  source:SceneDocument;scene:SceneDocument;sceneTime:number;revision:number;formulaPresentation?:FormulaPresentation;
+ /** The selected canvas already includes the frame's formulas/final effects. */
+ composited?:true;
 }
 const cameraAnimated=(scene:SceneDocument)=>scene.timeline.tracks.some(track=>track.enabled&&track.target.startsWith('camera.'));
 /** Keep fitted/manual views during ordinary generation, but consume completed
@@ -19,9 +21,9 @@ export function applyPresentedCamera(previous:PresentedFrame|null,source:SceneDo
 export class PresentedFrameOwner {
  private value:PresentedFrame|null=null;
  private revision=0;
- present(source:SceneDocument,scene:SceneDocument,sceneTime:number,formulaPresentation?:FormulaPresentation){
+ present(source:SceneDocument,scene:SceneDocument,sceneTime:number,formulaPresentation?:FormulaPresentation,composited?:true){
   if(!Number.isFinite(sceneTime)||sceneTime<0)throw new Error('已呈现帧时间无效');
-  this.value={source,scene,sceneTime,revision:++this.revision,...(formulaPresentation?{formulaPresentation:structuredClone(formulaPresentation)}:{})};
+  this.value={source,scene,sceneTime,revision:++this.revision,...(formulaPresentation?{formulaPresentation:structuredClone(formulaPresentation)}:{}),...(composited?{composited}: {})};
  }
  appearance(scene?:SceneDocument){if(this.value)this.value={...this.value,scene:scene??this.value.scene,revision:++this.revision};}
  clear(){this.value=null;}

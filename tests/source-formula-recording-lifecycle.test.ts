@@ -123,6 +123,14 @@ describe('source formula realtime recording lifecycle',()=>{
   await flush();expect([...media.streams[0].canvas.pixels.slice(0,4)]).toEqual([11,22,33,255]);expect(glyph.pending).toHaveLength(0);
   expect([...f.canvas.pixels.slice(0,4)]).toEqual([11,22,33,0]);recorder.cancel();await rejected;assertReleased();
  });
+ it.each(['source','local'])('records an already composited %s frame without drawing formulas twice',async layout=>{
+  const f=setup(),base=f.getFrame(),frame:RecordingFrame={...base,composited:true,
+   formulaPresentation:layout==='source'?base.formulaPresentation:{referenceWidth:4,referenceHeight:2,labels:base.formulaPresentation!.labels}};
+  const recorder=new RealtimeRecorder(),result=recorder.record(()=>frame,30,10,()=>{});
+  await flush();expect(glyph.pending).toHaveLength(0);expect(glyph.draws).toHaveLength(0);
+  expect([...media.streams[0].canvas.pixels.slice(0,4)]).toEqual([11,11,11,255]);
+  await tick();recorder.stop();expect((await result).frames).toBe(1);assertReleased();
+ });
  it('aborts initial glyph preparation without ever creating a stream or MediaRecorder',async()=>{
   const f=setup(),recorder=new RealtimeRecorder(),result=recorder.record(f.getFrame,30,10,()=>{}),rejected=expect(result).rejects.toMatchObject({name:'AbortError'});
   recorder.cancel();await rejected;expect(glyph.pending[0].signal.aborted).toBe(true);expect(media.streams).toHaveLength(0);expect(media.recorders).toHaveLength(0);expect(glyph.draws).toHaveLength(0);assertReleased();

@@ -83,12 +83,12 @@ export class RealtimeRecorder {
   }
   private async formulas(context:CanvasRenderingContext2D,frame:RecordingFrame,width:number,height:number){
     const presentation:FormulaPresentation=frame.formulaPresentation??formulaPresentation(frame.scene),labels=presentation.labels;
-    if(presentation.layout==='source-surface-centered-v1'&&(frame.canvas.width!==width||frame.canvas.height!==height))throw new Error('录制期间画布尺寸已变化，请重新开始录制。');
-    if(presentation.layout==='source-surface-centered-v1'){
+    if((frame.composited||presentation.layout==='source-surface-centered-v1')&&(frame.canvas.width!==width||frame.canvas.height!==height))throw new Error('录制期间画布尺寸已变化，请重新开始录制。');
+    if(frame.composited||presentation.layout==='source-surface-centered-v1'){
       // Snapshot before the first await: playback may replace frame.canvas
       // while an uncached glyph is loading. Keep image/time/revision together.
       const pixels=formulaBasePixels(frame.canvas);let composed=pixels;this.images.clear();
-      if(hasFormulaComposition(presentation)){
+      if(presentation.layout==='source-surface-centered-v1'&&hasFormulaComposition(presentation)&&!frame.composited){
         const key=JSON.stringify(presentation);let retained=this.sourceFormulas;
         if(!retained||retained.key!==key){
           const prepared=await prepareSourceFormulas(presentation,this.formulaAbort.signal);if(this.stopping)return;
