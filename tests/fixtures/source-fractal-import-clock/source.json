@@ -1,0 +1,2525 @@
+{
+  "provenance": {
+    "artifact": "MathArt 1.7.8",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "jvmSha256": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee",
+    "harnessSha256": "6207455098b8d62062474fc9d748a235d05cfb34a4bdd66ba206485237e79998",
+    "inputsSha256": "8a5464471131adcebbfc09a53cc1203e3db18d8e682e315995783429a35b277f",
+    "rawSha256": [
+      "53333d41c4d24b556b009b58c7653e2a821a510698e23f1cb9954ce856c7c39e",
+      "53333d41c4d24b556b009b58c7653e2a821a510698e23f1cb9954ce856c7c39e"
+    ],
+    "classes": {
+      "mathart/fractal/config/JsonComplexFractalConfig.class": "0eb27dc71f957a7d97c28baf62c30bc35c5aca69c405788ae8bbb06a9cfedac6",
+      "mathart/fractal/config/BaseComplexFractalConfig.class": "fe20a5205097459e79cbb34556ee3fe3cd099fa02fc500bce149aa5f49065b62",
+      "mathart/fractal/ComplexFractalMobject.class": "d616f53f5364be32f3e280a7bb00e40785abbb3374e724fc9862badac3ef596f",
+      "mathart/fractal/ComplexFractalScene.class": "f0f3d190f36619398e81a3b7f3fee77359d2fbfa3599de95050e477d51271ec2",
+      "mathart/scene/Scene.class": "1237defdd1a14b13e63669cbf5dfdab517cb2e4587c47264fff4b87fb6f58e53",
+      "mathart/scene/SceneManager.class": "973ee64fef4c06b615eab028ae0668db1917ac1b7db47a62b0a73fc278b760e7",
+      "mathart/fractal/animation/FractalZoomTargetAnimation.class": "b0d9ded394ade186186550702a224920ae1a3bbdb92196757520f2606082e4bb"
+    },
+    "evidence": "Original config constructor/getters and Scene.update; graphical constructors bypassed; viewport applied using original setters as specified by applyConfig bytecode. Two independent identical runs. No GUI/GL/render/encoder."
+  },
+  "fps": 30,
+  "fields": [
+    "zoom",
+    "centerX",
+    "centerXLow",
+    "centerY",
+    "centerYLow"
+  ],
+  "cases": [
+    {
+      "id": "initial-high-low",
+      "input": {
+        "config_version": "1.0.0",
+        "type": "FRACTAL",
+        "name": "deep animation",
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "center_hi_lo": [
+            1,
+            1e-20,
+            2,
+            -1e-20
+          ],
+          "zoom": 1e+16
+        },
+        "timeline": [
+          {
+            "type": "fractal_zoom",
+            "duration": 2,
+            "easing": "LINEAR",
+            "center_hi_lo": [
+              1,
+              3e-20,
+              2,
+              5e-20
+            ],
+            "zoom": 1e+20
+          }
+        ]
+      },
+      "initial": {
+        "viewport": [
+          {
+            "value": 10000000000000000,
+            "bits": "4341c37937e08000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          }
+        ],
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "managerIndex": 0,
+        "managerFinished": false
+      },
+      "frames": [
+        {
+          "index": 0,
+          "viewport": [
+            {
+              "value": 11659144105140824,
+              "bits": "4344b5f70362d12c"
+            },
+            {
+              "value": 0.14231834010978275,
+              "bits": "3fc2377cc4323e29"
+            },
+            {
+              "value": 4.269550203293483e-21,
+              "bits": "3bb42991c95e8d7d"
+            },
+            {
+              "value": 0.2846366802195655,
+              "bits": "3fd2377cc4323e29"
+            },
+            {
+              "value": 7.115917005489137e-21,
+              "bits": "3bc0cd4ed27975e7"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.03333333507180214,
+            "bits": "3d088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 14,
+          "viewport": [
+            {
+              "value": 1.000000000000001e+17,
+              "bits": "4376345785d8a006"
+            },
+            {
+              "value": 0.9000900090009001,
+              "bits": "3feccd899003afd0"
+            },
+            {
+              "value": 2.7002700270027006e-20,
+              "bits": "3bdfe110bd5454b1"
+            },
+            {
+              "value": 1.8001800180018002,
+              "bits": "3ffccd899003afd0"
+            },
+            {
+              "value": 4.5004500450045003e-20,
+              "bits": "3bea90e34870f13d"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5,
+            "bits": "3f000000"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 15,
+          "viewport": [
+            {
+              "value": 1.1659145505277886e+17,
+              "bits": "4379e374f86444d7"
+            },
+            {
+              "value": 0.9143218533129067,
+              "bits": "3fed421fe73fe7c8"
+            },
+            {
+              "value": 2.7429655599387207e-20,
+              "bits": "3be0310d67713bce"
+            },
+            {
+              "value": 1.8286437066258134,
+              "bits": "3ffd421fe73fe7c8"
+            },
+            {
+              "value": 4.5716092665645334e-20,
+              "bits": "3beafc6bac6763ab"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5333333611488342,
+            "bits": "3f088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 28,
+          "viewport": [
+            {
+              "value": 8.576974367254438e+17,
+              "bits": "43a7ce4e8c8190fa"
+            },
+            {
+              "value": 0.9884397208689815,
+              "bits": "3fefa14c5666637c"
+            },
+            {
+              "value": 2.965319162606945e-20,
+              "bits": "3be1811049a6f075"
+            },
+            {
+              "value": 1.976879441737963,
+              "bits": "3fffa14c5666637c"
+            },
+            {
+              "value": 4.9421986043449073e-20,
+              "bits": "3bed2c707ac0e617"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.9666670560836792,
+            "bits": "3f77777e"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 29,
+          "viewport": [
+            {
+              "value": 1.0000016469385548e+18,
+              "bits": "43abc17066392803"
+            },
+            {
+              "value": 0.9900990263719956,
+              "bits": "3fefaee427423695"
+            },
+            {
+              "value": 2.9702970791159874e-20,
+              "bits": "3be18896069ff365"
+            },
+            {
+              "value": 1.9801980527439913,
+              "bits": "3fffaee427423695"
+            },
+            {
+              "value": 4.950495131859978e-20,
+              "bits": "3bed38fa0b0a95a7"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0000003576278687,
+            "bits": "3f800003"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 30,
+          "viewport": [
+            {
+              "value": 1.1659161506855841e+18,
+              "bits": "43b02e2a8fcf814b"
+            },
+            {
+              "value": 0.9915222061047858,
+              "bits": "3fefba8cc70f4a5b"
+            },
+            {
+              "value": 2.974566618314358e-20,
+              "bits": "3be18f09b94e8042"
+            },
+            {
+              "value": 1.9830444122095716,
+              "bits": "3fffba8cc70f4a5b"
+            },
+            {
+              "value": 4.957611030523929e-20,
+              "bits": "3bed43badf82d5c2"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.033333659172058,
+            "bits": "3f844447"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 31,
+          "viewport": [
+            {
+              "value": 1.359358231650008e+18,
+              "bits": "43b2dd691c08007c"
+            },
+            {
+              "value": 0.9927428617032547,
+              "bits": "3fefc48cad8b4b33"
+            },
+            {
+              "value": 2.978228585109764e-20,
+              "bits": "3be1949260eea011"
+            },
+            {
+              "value": 1.9854857234065093,
+              "bits": "3fffc48cad8b4b33"
+            },
+            {
+              "value": 4.963714308516273e-20,
+              "bits": "3bed4cf3f6e30ac6"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0666669607162476,
+            "bits": "3f88888b"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 44,
+          "viewport": [
+            {
+              "value": 9.999994510210873e+18,
+              "bits": "43e158e3c0cb1f37"
+            },
+            {
+              "value": 0.999099909441965,
+              "bits": "3feff8a05f8fac74"
+            },
+            {
+              "value": 2.997299728325895e-20,
+              "bits": "3be1b1642b79864c"
+            },
+            {
+              "value": 1.99819981888393,
+              "bits": "3ffff8a05f8fac74"
+            },
+            {
+              "value": 4.995499547209825e-20,
+              "bits": "3bed7cfc48753529"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.4999998807907104,
+            "bits": "3fbfffff"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 45,
+          "viewport": [
+            {
+              "value": 1.1659135904341598e+19,
+              "bits": "43e439b24aa1c914"
+            },
+            {
+              "value": 0.9992422277277626,
+              "bits": "3feff9cad61bef00"
+            },
+            {
+              "value": 2.997726683183288e-20,
+              "bits": "3be1b20957092645"
+            },
+            {
+              "value": 1.9984844554555252,
+              "bits": "3ffff9cad61bef00"
+            },
+            {
+              "value": 4.996211138638813e-20,
+              "bits": "3bed7e0f910f3fc7"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5333331823349,
+            "bits": "3fc44443"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 46,
+          "viewport": [
+            {
+              "value": 1.3593552466164292e+19,
+              "bits": "43e794bffe47ab73"
+            },
+            {
+              "value": 0.9993642935556556,
+              "bits": "3feffacad3b392eb"
+            },
+            {
+              "value": 2.998092880666967e-20,
+              "bits": "3be1b297017a5968"
+            },
+            {
+              "value": 1.9987285871113112,
+              "bits": "3ffffacad3b392eb"
+            },
+            {
+              "value": 4.9968214677782777e-20,
+              "bits": "3bed7efbad213fac"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5666664838790894,
+            "bits": "3fc88887"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 58,
+          "viewport": [
+            {
+              "value": 8.576936698702175e+19,
+              "bits": "4412992803657e30"
+            },
+            {
+              "value": 0.9999834065975785,
+              "bits": "3fefffdd337c22fb"
+            },
+            {
+              "value": 2.999950219792736e-20,
+              "bits": "3be1b565876f805c"
+            },
+            {
+              "value": 1.999966813195157,
+              "bits": "3fffffdd337c22fb"
+            },
+            {
+              "value": 4.9999170329878923e-20,
+              "bits": "3bed83a9370f2b43"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9666661024093628,
+            "bits": "3ffbbbb7"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 59,
+          "viewport": [
+            {
+              "value": 9.999972551084347e+19,
+              "bits": "4415af19921f9992"
+            },
+            {
+              "value": 0.9999999997254827,
+              "bits": "3fefffffffda4548"
+            },
+            {
+              "value": 2.9999999991764486e-20,
+              "bits": "3be1b578c958d073"
+            },
+            {
+              "value": 1.9999999994509654,
+              "bits": "3fffffffffda4548"
+            },
+            {
+              "value": 4.9999999986274137e-20,
+              "bits": "3bed83c94f940614"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9999994039535522,
+            "bits": "3ffffffb"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 60,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2,
+            "bits": "40000000"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 61,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.0333333015441895,
+            "bits": "40022222"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 88,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.9333324432373047,
+            "bits": "403bbbb8"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 89,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.966665744781494,
+            "bits": "403dddda"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 90,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.9999990463256836,
+            "bits": "403ffffc"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 91,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 3.033332347869873,
+            "bits": "4042221e"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        }
+      ]
+    },
+    {
+      "id": "wait-target",
+      "input": {
+        "config_version": "1.0.0",
+        "type": "FRACTAL",
+        "name": "zoom",
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "center": [
+            0,
+            0
+          ],
+          "zoom": 1
+        },
+        "timeline": [
+          {
+            "type": "wait",
+            "duration": 1
+          },
+          {
+            "type": "fractal_zoom",
+            "duration": 2,
+            "easing": "LINEAR",
+            "center": [
+              -1,
+              0.2
+            ],
+            "zoom": 100
+          }
+        ]
+      },
+      "initial": {
+        "viewport": [
+          {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          }
+        ],
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "managerIndex": 0,
+        "managerFinished": false
+      },
+      "frames": [
+        {
+          "index": 0,
+          "viewport": [
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.03333333507180214,
+            "bits": "3d088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 14,
+          "viewport": [
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5,
+            "bits": "3f000000"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 15,
+          "viewport": [
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5333333611488342,
+            "bits": "3f088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 28,
+          "viewport": [
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.9666670560836792,
+            "bits": "3f77777e"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 29,
+          "viewport": [
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0000003576278687,
+            "bits": "3f800003"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 30,
+          "viewport": [
+            {
+              "value": 1.0797751666500197,
+              "bits": "3ff146c2533cb770"
+            },
+            {
+              "value": -0.07462755108932743,
+              "bits": "bfb31aca8b4f29bb"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.014925510217865487,
+              "bits": "3f8e9144121842c5"
+            },
+            {
+              "value": 4.815875597122536e-19,
+              "bits": "3c21c477454b75f8"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.033333659172058,
+            "bits": "3f844447"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 31,
+          "viewport": [
+            {
+              "value": 1.165914410514078,
+              "bits": "3ff2a795de717d45"
+            },
+            {
+              "value": -0.1437415235108806,
+              "bits": "bfc2661f4b4739aa"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.02874830470217612,
+              "bits": "3f9d7032120b8f77"
+            },
+            {
+              "value": -4.858166812073894e-19,
+              "bits": "bc21ec68a8b5ade0"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0666669607162476,
+            "bits": "3f88888b"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 44,
+          "viewport": [
+            {
+              "value": 3.16227766016838,
+              "bits": "40094c583ada5b54"
+            },
+            {
+              "value": -0.6906790242254163,
+              "bits": "bfe61a0ae5a29a75"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.13813580484508325,
+              "bits": "3fc1ae6f1e1baec4"
+            },
+            {
+              "value": 7.668077553206934e-18,
+              "bits": "3c61ae6f1e1baec4"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.4999998807907104,
+            "bits": "3fbfffff"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 45,
+          "viewport": [
+            {
+              "value": 3.414549092527125,
+              "bits": "400b50ff1d57ec81"
+            },
+            {
+              "value": -0.7142783457522515,
+              "bits": "bfe6db5e42e7e69c"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.1428556691504503,
+              "bits": "3fc2491835865217"
+            },
+            {
+              "value": -8.723262714924169e-18,
+              "bits": "bc641d4e30e01450"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5333331823349,
+            "bits": "3fc44443"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 46,
+          "viewport": [
+            {
+              "value": 3.68694553679926,
+              "bits": "400d7edd4d357ce6"
+            },
+            {
+              "value": -0.7361341179895776,
+              "bits": "bfe78e6923478575"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.14722682359791553,
+              "bits": "3fc2d8541c393791"
+            },
+            {
+              "value": 2.6216153469158245e-18,
+              "bits": "3c482e1d3db1ab10"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5666664838790894,
+            "bits": "3fc88887"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 58,
+          "viewport": [
+            {
+              "value": 9.261195585481637,
+              "bits": "402285bb6d8301a4"
+            },
+            {
+              "value": -0.9010329096837703,
+              "bits": "bfecd542f7f6c4bb"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.18020658193675407,
+              "bits": "3fc711025ff89d63"
+            },
+            {
+              "value": -6.649870546618139e-18,
+              "bits": "bc5eaac80cdb9208"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9666661024093628,
+            "bits": "3ffbbbb7"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 59,
+          "viewport": [
+            {
+              "value": 10.000008234689384,
+              "bits": "40240001144f7175"
+            },
+            {
+              "value": -0.9090909922695213,
+              "bits": "bfed1745fe1c5855"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.18181819845390426,
+              "bits": "3fc745d19816ad11"
+            },
+            {
+              "value": 4.5418223878437445e-18,
+              "bits": "3c54f2099693c088"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9999994039535522,
+            "bits": "3ffffffb"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 60,
+          "viewport": [
+            {
+              "value": 10.797759724524258,
+              "bits": "40259873f66dcb9a"
+            },
+            {
+              "value": -0.9165537340112456,
+              "bits": "bfed54687f135c05"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.18331074680224912,
+              "bits": "3fc776b9ff42b004"
+            },
+            {
+              "value": 1.0175790588054463e-17,
+              "bits": "3c6776b9ff42b004"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.0333328247070312,
+            "bits": "40022220"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 61,
+          "viewport": [
+            {
+              "value": 11.659151905906384,
+              "bits": "4027517c5bcded90"
+            },
+            {
+              "value": -0.9234651194073392,
+              "bits": "bfed8d06b8db3d7f"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.18469302388146785,
+              "bits": "3fc7a40560af6466"
+            },
+            {
+              "value": -8.497078662090905e-19,
+              "bits": "bc2f59438ea35340"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.0666661262512207,
+            "bits": "40044442"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 88,
+          "viewport": [
+            {
+              "value": 92.6117524869395,
+              "bits": "40572726f3e729b7"
+            },
+            {
+              "value": -0.9991941761088182,
+              "bits": "bfeff9661097b697"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.19983883522176366,
+              "bits": "3fc99451a6dfc546"
+            },
+            {
+              "value": -8.94644237783047e-21,
+              "bits": "bbc51fcae7515000"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.966665267944336,
+            "bits": "403dddd8"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 89,
+          "viewport": [
+            {
+              "value": 99.99986275532765,
+              "bits": "4058fffdc05aa7ba"
+            },
+            {
+              "value": -0.9999999861368827,
+              "bits": "bfeffffff88eaaec"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.19999999722737655,
+              "bits": "3fc9999993a5558a"
+            },
+            {
+              "value": -1.5391152042595402e-25,
+              "bits": "bac7d11040000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.9999985694885254,
+            "bits": "403ffffa"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 90,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": -1,
+              "bits": "bff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.2,
+              "bits": "3fc999999999999a"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.9999990463256836,
+            "bits": "403ffffc"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        },
+        {
+          "index": 91,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": -1,
+              "bits": "bff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.2,
+              "bits": "3fc999999999999a"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 3.033332347869873,
+            "bits": "4042221e"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        }
+      ]
+    },
+    {
+      "id": "sequential",
+      "input": {
+        "config_version": "1.0.0",
+        "type": "FRACTAL",
+        "name": "sequential",
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "zoom": 1
+        },
+        "timeline": [
+          {
+            "type": "fractal_zoom",
+            "duration": 1,
+            "zoom": 10,
+            "center": [
+              1,
+              2
+            ]
+          },
+          {
+            "type": "fractal_zoom",
+            "duration": 1,
+            "zoom": 100,
+            "center": [
+              3,
+              4
+            ]
+          }
+        ]
+      },
+      "initial": {
+        "viewport": [
+          {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          }
+        ],
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "managerIndex": 0,
+        "managerFinished": false
+      },
+      "frames": [
+        {
+          "index": 0,
+          "viewport": [
+            {
+              "value": 1.0063268076071494,
+              "bits": "3ff019ea237c2c33"
+            },
+            {
+              "value": 0.006985589747809199,
+              "bits": "3f7c9cebf8296caa"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 0.013971179495618397,
+              "bits": "3f8c9cebf8296caa"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.03333333507180214,
+            "bits": "3d088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 14,
+          "viewport": [
+            {
+              "value": 3.16227766016838,
+              "bits": "40094c583ada5b54"
+            },
+            {
+              "value": 0.7597469266479578,
+              "bits": "3fe84fd8c966104d"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 1.5194938532959157,
+              "bits": "3ff84fd8c966104d"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5,
+            "bits": "3f000000"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 15,
+          "viewport": [
+            {
+              "value": 3.5666815298242134,
+              "bits": "400c8890536ebceb"
+            },
+            {
+              "value": 0.7995859295606649,
+              "bits": "3fe996353b39c10c"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 1.5991718591213298,
+              "bits": "3ff996353b39c10c"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5333333611488342,
+            "bits": "3f088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 28,
+          "viewport": [
+            {
+              "value": 9.937131737998497,
+              "bits": "4023dfcfbb2d7e8f"
+            },
+            {
+              "value": 0.9992970443958289,
+              "bits": "3feffa3dcb956cea"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 1.9985940887916578,
+              "bits": "3ffffa3dcb956cea"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.9666670560836792,
+            "bits": "3f77777e"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 29,
+          "viewport": [
+            {
+              "value": 10.000000000000002,
+              "bits": "4024000000000001"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0000003576278687,
+            "bits": "3f800003"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 30,
+          "viewport": [
+            {
+              "value": 10.063268076071498,
+              "bits": "40242064ac5b3742"
+            },
+            {
+              "value": 1.0139711794956183,
+              "bits": "3ff03939d7f052d9"
+            },
+            {
+              "value": 7.28583859910259e-17,
+              "bits": "3c95000000000000"
+            },
+            {
+              "value": 2.0139711794956185,
+              "bits": "40001c9cebf8296d"
+            },
+            {
+              "value": -1.491862189340054e-16,
+              "bits": "bca5800000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.033333659172058,
+            "bits": "3f844447"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 31,
+          "viewport": [
+            {
+              "value": 10.254776206219562,
+              "bits": "4024827206e30621"
+            },
+            {
+              "value": 1.055210307447879,
+              "bits": "3ff0e224340e407e"
+            },
+            {
+              "value": -4.85722573273506e-17,
+              "bits": "bc8c000000000000"
+            },
+            {
+              "value": 2.055210307447879,
+              "bits": "400071121a07203f"
+            },
+            {
+              "value": -4.85722573273506e-17,
+              "bits": "bc8c000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0666669607162476,
+            "bits": "3f88888b"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 44,
+          "viewport": [
+            {
+              "value": 31.622776601683803,
+              "bits": "403f9f6e4990f22a"
+            },
+            {
+              "value": 2.5194938532959155,
+              "bits": "400427ec64b30826"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 3.5194938532959155,
+              "bits": "400c27ec64b30826"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.4999998807907104,
+            "bits": "3fbfffff"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 45,
+          "viewport": [
+            {
+              "value": 35.66681529824214,
+              "bits": "4041d55a34253614"
+            },
+            {
+              "value": 2.5991718591213298,
+              "bits": "4004cb1a9d9ce086"
+            },
+            {
+              "value": -2.220446049250313e-16,
+              "bits": "bcb0000000000000"
+            },
+            {
+              "value": 3.5991718591213298,
+              "bits": "400ccb1a9d9ce086"
+            },
+            {
+              "value": -2.220446049250313e-16,
+              "bits": "bcb0000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5333331823349,
+            "bits": "3fc44443"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 46,
+          "viewport": [
+            {
+              "value": 40.175003614739104,
+              "bits": "4044166684b8fe3d"
+            },
+            {
+              "value": 2.6690866846296504,
+              "bits": "40055a4a1ea56327"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 3.6690866846296504,
+              "bits": "400d5a4a1ea56327"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5666664838790894,
+            "bits": "3fc88887"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 58,
+          "viewport": [
+            {
+              "value": 99.37131737998504,
+              "bits": "4058d7c3a9f8de38"
+            },
+            {
+              "value": 2.998594088791658,
+              "bits": "4007fd1ee5cab675"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 3.998594088791658,
+              "bits": "400ffd1ee5cab675"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9666661024093628,
+            "bits": "3ffbbbb7"
+          },
+          "managerIndex": 1,
+          "managerFinished": false
+        },
+        {
+          "index": 59,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": 3,
+              "bits": "4008000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 4,
+              "bits": "4010000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9999990463256836,
+            "bits": "3ffffff8"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        },
+        {
+          "index": 60,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": 3,
+              "bits": "4008000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 4,
+              "bits": "4010000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.033332347869873,
+            "bits": "4002221e"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        },
+        {
+          "index": 61,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": 3,
+              "bits": "4008000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 4,
+              "bits": "4010000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.0666656494140625,
+            "bits": "40044440"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        },
+        {
+          "index": 88,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": 3,
+              "bits": "4008000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 4,
+              "bits": "4010000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.9666647911071777,
+            "bits": "403dddd6"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        },
+        {
+          "index": 89,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": 3,
+              "bits": "4008000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 4,
+              "bits": "4010000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.999998092651367,
+            "bits": "403ffff8"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        },
+        {
+          "index": 90,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": 3,
+              "bits": "4008000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 4,
+              "bits": "4010000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 3.0333313941955566,
+            "bits": "4042221a"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        },
+        {
+          "index": 91,
+          "viewport": [
+            {
+              "value": 100.00000000000004,
+              "bits": "4059000000000003"
+            },
+            {
+              "value": 3,
+              "bits": "4008000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            },
+            {
+              "value": 4,
+              "bits": "4010000000000000"
+            },
+            {
+              "value": 0,
+              "bits": "0000000000000000"
+            }
+          ],
+          "sceneTime": {
+            "value": 3.066664695739746,
+            "bits": "4044443c"
+          },
+          "managerIndex": 2,
+          "managerFinished": true
+        }
+      ]
+    },
+    {
+      "id": "initial-center-precedence",
+      "input": {
+        "config_version": "1.0.0",
+        "type": "FRACTAL",
+        "name": "deep animation",
+        "fractal": {
+          "formula_id": "mandelbrot",
+          "center_hi_lo": [
+            1,
+            1e-20,
+            2,
+            -1e-20
+          ],
+          "zoom": 1e+16,
+          "center": [
+            1,
+            2
+          ]
+        },
+        "timeline": [
+          {
+            "type": "fractal_zoom",
+            "duration": 2,
+            "easing": "LINEAR",
+            "center_hi_lo": [
+              1,
+              3e-20,
+              2,
+              5e-20
+            ],
+            "zoom": 1e+20
+          }
+        ]
+      },
+      "initial": {
+        "viewport": [
+          {
+            "value": 10000000000000000,
+            "bits": "4341c37937e08000"
+          },
+          {
+            "value": 1,
+            "bits": "3ff0000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          },
+          {
+            "value": 2,
+            "bits": "4000000000000000"
+          },
+          {
+            "value": 0,
+            "bits": "0000000000000000"
+          }
+        ],
+        "sceneTime": {
+          "value": 0,
+          "bits": "00000000"
+        },
+        "managerIndex": 0,
+        "managerFinished": false
+      },
+      "frames": [
+        {
+          "index": 0,
+          "viewport": [
+            {
+              "value": 11659144105140824,
+              "bits": "4344b5f70362d12c"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 4.269550203293483e-21,
+              "bits": "3bb42991c95e8d7d"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 7.115917005489137e-21,
+              "bits": "3bc0cd4ed27975e7"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.03333333507180214,
+            "bits": "3d088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 14,
+          "viewport": [
+            {
+              "value": 1.000000000000001e+17,
+              "bits": "4376345785d8a006"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.7002700270027006e-20,
+              "bits": "3bdfe110bd5454b1"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.5004500450045003e-20,
+              "bits": "3bea90e34870f13d"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5,
+            "bits": "3f000000"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 15,
+          "viewport": [
+            {
+              "value": 1.1659145505277886e+17,
+              "bits": "4379e374f86444d7"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.7429655599387207e-20,
+              "bits": "3be0310d67713bce"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.5716092665645334e-20,
+              "bits": "3beafc6bac6763ab"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.5333333611488342,
+            "bits": "3f088889"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 28,
+          "viewport": [
+            {
+              "value": 8.576974367254438e+17,
+              "bits": "43a7ce4e8c8190fa"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.965319162606945e-20,
+              "bits": "3be1811049a6f075"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.9421986043449073e-20,
+              "bits": "3bed2c707ac0e617"
+            }
+          ],
+          "sceneTime": {
+            "value": 0.9666670560836792,
+            "bits": "3f77777e"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 29,
+          "viewport": [
+            {
+              "value": 1.0000016469385548e+18,
+              "bits": "43abc17066392803"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.9702970791159874e-20,
+              "bits": "3be18896069ff365"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.950495131859978e-20,
+              "bits": "3bed38fa0b0a95a7"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0000003576278687,
+            "bits": "3f800003"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 30,
+          "viewport": [
+            {
+              "value": 1.1659161506855841e+18,
+              "bits": "43b02e2a8fcf814b"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.974566618314358e-20,
+              "bits": "3be18f09b94e8042"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.957611030523929e-20,
+              "bits": "3bed43badf82d5c2"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.033333659172058,
+            "bits": "3f844447"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 31,
+          "viewport": [
+            {
+              "value": 1.359358231650008e+18,
+              "bits": "43b2dd691c08007c"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.978228585109764e-20,
+              "bits": "3be1949260eea011"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.963714308516273e-20,
+              "bits": "3bed4cf3f6e30ac6"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.0666669607162476,
+            "bits": "3f88888b"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 44,
+          "viewport": [
+            {
+              "value": 9.999994510210873e+18,
+              "bits": "43e158e3c0cb1f37"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.997299728325895e-20,
+              "bits": "3be1b1642b79864c"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.995499547209825e-20,
+              "bits": "3bed7cfc48753529"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.4999998807907104,
+            "bits": "3fbfffff"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 45,
+          "viewport": [
+            {
+              "value": 1.1659135904341598e+19,
+              "bits": "43e439b24aa1c914"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.997726683183288e-20,
+              "bits": "3be1b20957092645"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.996211138638813e-20,
+              "bits": "3bed7e0f910f3fc7"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5333331823349,
+            "bits": "3fc44443"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 46,
+          "viewport": [
+            {
+              "value": 1.3593552466164292e+19,
+              "bits": "43e794bffe47ab73"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.998092880666967e-20,
+              "bits": "3be1b297017a5968"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.9968214677782777e-20,
+              "bits": "3bed7efbad213fac"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.5666664838790894,
+            "bits": "3fc88887"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 58,
+          "viewport": [
+            {
+              "value": 8.576936698702175e+19,
+              "bits": "4412992803657e30"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.999950219792736e-20,
+              "bits": "3be1b565876f805c"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.9999170329878923e-20,
+              "bits": "3bed83a9370f2b43"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9666661024093628,
+            "bits": "3ffbbbb7"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 59,
+          "viewport": [
+            {
+              "value": 9.999972551084347e+19,
+              "bits": "4415af19921f9992"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 2.9999999991764486e-20,
+              "bits": "3be1b578c958d073"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 4.9999999986274137e-20,
+              "bits": "3bed83c94f940614"
+            }
+          ],
+          "sceneTime": {
+            "value": 1.9999994039535522,
+            "bits": "3ffffffb"
+          },
+          "managerIndex": 0,
+          "managerFinished": false
+        },
+        {
+          "index": 60,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2,
+            "bits": "40000000"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 61,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.0333333015441895,
+            "bits": "40022222"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 88,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.9333324432373047,
+            "bits": "403bbbb8"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 89,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.966665744781494,
+            "bits": "403dddda"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 90,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 2.9999990463256836,
+            "bits": "403ffffc"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        },
+        {
+          "index": 91,
+          "viewport": [
+            {
+              "value": 1.0000000000000008e+20,
+              "bits": "4415af1d78b58c45"
+            },
+            {
+              "value": 1,
+              "bits": "3ff0000000000000"
+            },
+            {
+              "value": 3e-20,
+              "bits": "3be1b578c96db19b"
+            },
+            {
+              "value": 2,
+              "bits": "4000000000000000"
+            },
+            {
+              "value": 5e-20,
+              "bits": "3bed83c94fb6d2ac"
+            }
+          ],
+          "sceneTime": {
+            "value": 3.033332347869873,
+            "bits": "4042221e"
+          },
+          "managerIndex": 1,
+          "managerFinished": true
+        }
+      ]
+    }
+  ]
+}

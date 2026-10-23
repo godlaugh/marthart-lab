@@ -1,4 +1,5 @@
 import {describe,it,expect} from 'vitest';
+import fractalClock from './fixtures/source-fractal-import-clock/source.json';
 import {parseLegacyScene,parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,createScene} from '../src/engine/document';
 import {sceneAtTime,clipDuration,resolveTimeline} from '../src/engine/timeline';
@@ -21,11 +22,29 @@ function local(tracks:AnimationTrack[],original?:unknown):SceneDocument {
  const reopened=parseScene(JSON.stringify(scene));expect(reopened.version).toBe(1);expect(reopened.sourceCamera).toBeUndefined();expect(reopened.timeline.schedule).toBeUndefined();return reopened;
 }
 describe('original timeline Reader to real scene evaluator',()=>{
- it('keeps imported high/low centers through save/reload and interpolates below double precision',()=>{
-  const result=parse({config_version:'1.0.0',type:'FRACTAL',name:'deep animation',fractal:{formula_id:'mandelbrot',center_hi_lo:[1,1e-20,2,-1e-20],zoom:1e16},timeline:[{type:'fractal_zoom',duration:2,easing:'LINEAR',center_hi_lo:[1,3e-20,2,5e-20],zoom:1e20}]});
-  const restored=parseScene(JSON.stringify(result.scene)),middle=sceneAtTime(restored,1),end=sceneAtTime(restored,2);
-  expect(restored.timeline.tracks[0].sourceFractalZoom!.centerXLow).toBe(3e-20);
-  expect(middle.settings.centerX).toBe(1);expect(Number(middle.settings.centerXLow)).toBeCloseTo(2.98019801980198e-20,31);expect(Number(middle.settings.centerYLow)).toBeCloseTo(4.94059405940594e-20,31);expect(Number(middle.settings.zoom)/1e18).toBeCloseTo(1,12);expect(Number(end.settings.centerXLow)).toBeCloseTo(3e-20,31);
+ // These observations execute the original config parser and fixed-frame queue.
+ // Time 0 displays update 1; nominal seconds are not exact clip boundaries.
+ it.each(fractalClock.cases)('preserves original Fractal import and frame clock: $id',sample=>{
+  const imported=parseProjectFile(JSON.stringify(sample.input)).scene,restored=parseScene(JSON.stringify(imported));
+  const fields=['zoom','centerX','centerXLow','centerY','centerYLow'] as const;
+  expect(restored.provenance!.original).toEqual(sample.input);
+  expect(restored.timeline.fps).toBe(fractalClock.fps);
+  for(const [i,key] of fields.entries())expect(restored.settings[key]).toBe(sample.initial.viewport[i].value);
+  if(sample.id.startsWith('initial-'))expect(restored.timeline.tracks[0].sourceFractalZoom).toMatchObject({centerXLow:3e-20,centerYLow:5e-20});
+  // Revisit the first frame after completion to cover backwards reconstruction.
+  for(const row of [...sample.frames,sample.frames[0]]){
+   const at=sceneAtTime(restored,row.index/fractalClock.fps),native=at.evaluatedFractalScene!;
+   expect(native.displayFrame).toBe(row.index);
+   expect(native.scene.sceneTime).toBe(row.sceneTime.value);
+   expect(native.scene.queueIndex).toBe(row.managerIndex);
+   expect(native.scene.queueComplete).toBe(row.managerFinished);
+   for(const [i,key] of fields.entries()){
+    const expected=row.viewport[i].value;
+    // Same cross-JVM/JS arithmetic bound as the standalone scene-clock oracle.
+    expect(Math.abs(Number(at.settings[key])-expected),`${sample.id} frame ${row.index} ${key}`).toBeLessThanOrEqual(Math.max(Number.MIN_VALUE,Math.abs(expected)*Number.EPSILON*8));
+   }
+  }
+  expect(restored.settings).toEqual(imported.settings);
  });
  it('replaces default wait with a source queue and preserves full original through edited project reload',()=>{
   const raw=surface([wait(2),animate(2,[action('zoom',3)]),wait(1),animate(2,[action('zoom',5)])]),result=parseProjectFile(JSON.stringify(raw));result.scene.timeline.fps=4;
@@ -90,15 +109,10 @@ describe('original timeline Reader to real scene evaluator',()=>{
   const raw=surface([{type:'trails',duration:1,enable:true},{type:'surface_mode_transition',duration:2,easing:'LINEAR',to:'MESH'}]);const imported=parse(raw).scene;expect(imported.timeline.tracks.map(t=>t.type)).toEqual(['trails','surface_mode_transition']);expect(imported.timeline.tracks[0].duration).toBe(0);expect(sceneAtTime(imported,.5).settings.surfaceBlend).toBeUndefined();
   const scene=local([localClip(0,1,[],{type:'trails',target:'settings.recordTrails',trailsEnabled:true}),localClip(1,2,[],{type:'surface_mode_transition',target:'settings.surfaceBlend',surfaceMode:'mesh'})],raw),at=sceneAtTime(scene,2);expect(at.settings.recordTrails).toBe(true);expect(at.settings.surfaceBlend).toBeCloseTo(.5);expect(at.settings.renderMode).toBe('mesh');expect(scene.provenance!.original).toEqual(raw);
  });
- it('interpolates fractal target centers during the clip without changing the imported initial state',()=>{
-  const result=parse({config_version:'1.0.0',type:'FRACTAL',name:'zoom',fractal:{formula_id:'mandelbrot',center:[0,0],zoom:1},timeline:[wait(1),{type:'fractal_zoom',duration:2,easing:'LINEAR',center:[-1,.2],zoom:100}]});
-  expect(result.scene.settings.centerX).toBe(0);const at=sceneAtTime(result.scene,2);expect(at.settings.centerX).toBeCloseTo(-10/11);expect(at.settings.zoom).toBeCloseTo(10);expect(sceneAtTime(result.scene,3).settings.centerX).toBe(-1);
- });
  it('selects the greatest-time old key target, with last equal-time entry winning, and preserves high/low coordinates',()=>{
   const result=parse({config_version:'1.0.0',type:'FRACTAL',name:'keys',fractal:{formula_id:'mandelbrot',zoom:1},timeline:[{type:'fractal_zoom',duration:2,zoom:10,keys:[{time:.8,zoom:100,center:[1,2]},{time:.3,zoom:3},{time:.8,zoom:400,center_hi_lo:[3,1e-20,4,-1e-20]}]}]});
   expect(result.scene.timeline.tracks[0].keyframes).toBeUndefined();expect(sceneAtTime(result.scene,2).settings.zoom).toBeCloseTo(400);expect(sceneAtTime(result.scene,2).settings.centerX).toBe(3);expect(result.warnings.join()).toContain('并列取后者');expect(result.scene.timeline.tracks[0].sourceFractalZoom).toMatchObject({centerXLow:1e-20,centerYLow:-1e-20});
  });
- it('uses previous zoom clip endpoint as the following clip start',()=>{const result=parse({config_version:'1.0.0',type:'FRACTAL',name:'sequential',fractal:{formula_id:'mandelbrot',zoom:1},timeline:[{type:'fractal_zoom',duration:1,zoom:10,center:[1,2]},{type:'fractal_zoom',duration:1,zoom:100,center:[3,4]}]});expect(sceneAtTime(result.scene,1).settings).toMatchObject({zoom:Math.exp(Math.log(10)),centerX:1,centerY:2,centerXLow:0,centerYLow:0});expect(sceneAtTime(result.scene,1.5).settings.centerX).toBeCloseTo(1+2*Math.sqrt(10)/(Math.sqrt(10)+1));});
  it('retains Fractal registry identities while unknown metadata stays inert',()=>{const result=parse({config_version:'1.0.0',type:'FRACTAL',name:'params',fractal:{formula_id:'newton'},timeline:[animate(0,[action('paramStart',{targetDomain:'FRACTAL',parameters:{start_value_re:{min:-1,max:1,step:.01},bailout:{min:.001,max:.01,step:.00001}}})]),wait(1)]});expect(result.scene.timeline.tracks[0].fractalSource!.parameters.map(p=>p.scope.kind==='named'?p.scope.name:'all').sort()).toEqual(['bailout','start_value_re']);const frame=sceneAtTime(result.scene,0).evaluatedFractalScene!;expect(frame.formula.parameters.floats.bailout).toBeDefined();expect(frame.formula.parameters.complex.start_value).toBeUndefined();});
  it('routes each scene rotation to the correct setting and refuses cross-scene actions',()=>{const domain=parse({config_version:'1.0.0',type:'DOMAIN_COLORING',name:'rotate',domainColoring:{formula:'z'},timeline:[animate(0,[action('domainRotate',.25)]),wait(2)]});domain.scene.timeline.fps=4;/* Four updates × two .25s object phases × .25 rad/s. */expect(sceneAtTime(domain.scene,.75).settings.rotation).toBe(.5);const wrong=parse(surface([animate(1,[action('domainRotate',.25)])]));expect(wrong.warnings.join()).toContain('未分派');expect(wrong.scene.timeline.tracks[0].actions).toEqual([]);});
  it('preserves source finish-wait duration as a deadline while scheduling its visual completion',()=>{const result=parse({config_version:'1.0.0',type:'SPIROGRAPH',name:'finish',settings:{layers:[{statorRadius:3,penDistance:1,speed:2,rotors:[{radius:1,mode:'INSIDE'}]}]},timeline:[{type:'spirograph_finish_wait',duration:99}]});const track=result.scene.timeline.tracks[0];expect(track).toMatchObject({duration:99,spirographWait:'visual-or-deadline-v1'});expect(result.scene.timeline.duration).toBe(.1);expect(resolveTimeline(result.scene).duration).toBe(clipDuration(track,result.scene));expect(resolveTimeline(result.scene).duration).toBeLessThan(99);});

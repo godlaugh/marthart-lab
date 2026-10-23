@@ -1,0 +1,134 @@
+[
+  {
+    "id": "initial-high-low",
+    "input": {
+      "config_version": "1.0.0",
+      "type": "FRACTAL",
+      "name": "deep animation",
+      "fractal": {
+        "formula_id": "mandelbrot",
+        "center_hi_lo": [
+          1,
+          1e-20,
+          2,
+          -1e-20
+        ],
+        "zoom": 1e+16
+      },
+      "timeline": [
+        {
+          "type": "fractal_zoom",
+          "duration": 2,
+          "easing": "LINEAR",
+          "center_hi_lo": [
+            1,
+            3e-20,
+            2,
+            5e-20
+          ],
+          "zoom": 1e+20
+        }
+      ]
+    }
+  },
+  {
+    "id": "wait-target",
+    "input": {
+      "config_version": "1.0.0",
+      "type": "FRACTAL",
+      "name": "zoom",
+      "fractal": {
+        "formula_id": "mandelbrot",
+        "center": [
+          0,
+          0
+        ],
+        "zoom": 1
+      },
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 1
+        },
+        {
+          "type": "fractal_zoom",
+          "duration": 2,
+          "easing": "LINEAR",
+          "center": [
+            -1,
+            0.2
+          ],
+          "zoom": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "sequential",
+    "input": {
+      "config_version": "1.0.0",
+      "type": "FRACTAL",
+      "name": "sequential",
+      "fractal": {
+        "formula_id": "mandelbrot",
+        "zoom": 1
+      },
+      "timeline": [
+        {
+          "type": "fractal_zoom",
+          "duration": 1,
+          "zoom": 10,
+          "center": [
+            1,
+            2
+          ]
+        },
+        {
+          "type": "fractal_zoom",
+          "duration": 1,
+          "zoom": 100,
+          "center": [
+            3,
+            4
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "initial-center-precedence",
+    "input": {
+      "config_version": "1.0.0",
+      "type": "FRACTAL",
+      "name": "deep animation",
+      "fractal": {
+        "formula_id": "mandelbrot",
+        "center_hi_lo": [
+          1,
+          1e-20,
+          2,
+          -1e-20
+        ],
+        "zoom": 1e+16,
+        "center": [
+          1,
+          2
+        ]
+      },
+      "timeline": [
+        {
+          "type": "fractal_zoom",
+          "duration": 2,
+          "easing": "LINEAR",
+          "center_hi_lo": [
+            1,
+            3e-20,
+            2,
+            5e-20
+          ],
+          "zoom": 1e+20
+        }
+      ]
+    }
+  }
+]
