@@ -1,13 +1,29 @@
-// Real public workflow; run against a built preview server. No private cache input.
+// Real public workflow against a preview/dev server. Optional fourth argument
+// selects retained original evidence; without it this is a local workflow check.
 import {chromium} from '@playwright/test';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {configureDesktopGraphics} from '../desktop/graphics.mjs';
+import assert from 'node:assert/strict';
 const directory=process.argv[2]??'.cache/source-implicit-public-export';await mkdir(directory,{recursive:true});
 const input=JSON.parse(await readFile(new URL('../tests/fixtures/source-implicit-presentation/native.json',import.meta.url),'utf8')).cases[0].input;
 const report={at:new Date().toISOString(),input,status:'running',errors:[]};
-const browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000},deviceScaleFactor:2});page.setDefaultTimeout(30000);page.on('pageerror',e=>report.errors.push(e.message));
+const hash=b=>createHash('sha256').update(b).digest('hex');
+let original;
+if(process.argv[4]){
+ const root=process.argv[4],run=JSON.parse(await readFile(root+'/run.json')),source=await readFile(run.source),probe=await readFile(root+'/NativeSceneProbe.java'),artwork=await readFile(root+'/before-branding.rgba'),boundary=await readFile(root+'/artwork-boundary.txt');
+ assert.equal(run.exit,0);assert.equal(run.timedOut,false);assert.equal(run.reaped,true);assert.equal(run.processGroupExists,false);
+ assert.equal(hash(source),run.sourceSha256);assert.equal(hash(probe),run.probeSha256);assert.deepEqual(JSON.parse(source),input);assert.equal(artwork.length,500*600*4);assert.match(boundary.toString(),/mathart\.scene\.Scene\.drawWatermark\(/);
+ const jar=await readFile('../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar');assert.equal(hash(jar),'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018');
+ original=Buffer.alloc(artwork.length);for(let y=0;y<600;y++)artwork.copy(original,y*2000,(599-y)*2000,(600-y)*2000);
+ report.original={root,sourceSha256:hash(source),probeSha256:hash(probe),artworkSha256:hash(artwork),boundarySha256:hash(boundary),jarSha256:hash(jar),scope:'Entire pre-branding artwork including formulas, before PNG enhancement; no mask or tolerance, not the branded final PNG.'};
+}
+const switches=new Map();configureDesktopGraphics({getSwitchValue:k=>switches.get(k)??'',appendSwitch:(k,v)=>switches.set(k,v)});
+const browser=await chromium.launch({channel:'chrome',headless:true,args:[...switches].map(([k,v])=>'--'+k+'='+v)});const page=await browser.newPage({viewport:{width:1440,height:1000},deviceScaleFactor:2});page.setDefaultTimeout(30000);page.on('pageerror',e=>report.errors.push(e.message));
 try{
- await page.addInitScript(()=>{const Native=Worker;window.__audit={requests:[],responses:[]};window.Worker=class extends Native{constructor(...args){super(...args);this.addEventListener('message',({data})=>{const request=window.__audit.requests.findLast(r=>r.worker===this.key&&r.id===data.id);if(!request||data.operation==='generate-status')return;const o=data.output;window.__audit.responses.push({request,response:{operation:data.operation,error:data.error,camera:o?.sourceCameraFrame,type:o?.type,stats:o?.stats,formula:o?.formulaPresentation,implicitDensity:o?.sourceImplicitPresentation?.referencePixelDensity,imageResult:data.result?{width:data.result.width,height:data.result.height,type:data.result.blob?.type,size:data.result.blob?.size}:undefined}});});}key=crypto.randomUUID();postMessage(data,...args){window.__audit.requests.push({worker:this.key,id:data.id,operation:data.operation,width:data.width,height:data.height,scale:data.scale,kind:data.scene?.kind,sceneId:data.scene?.id,name:data.scene?.name,sourceCamera:data.scene?.sourceCamera,context:data.context});return super.postMessage(data,...args);}};});
+ const nativeResponses=[];
+ await page.route('**/api/source-renderer/frames',async route=>{const response=await route.fetch(),body=await response.body();nativeResponses.push({status:response.status(),headers:response.headers()});if(response.ok())await writeFile(directory+'/native-base-bottom-up.rgba',body);await route.fulfill({response,body});});
+ await page.addInitScript(()=>{const Native=Worker;window.__audit={requests:[],responses:[]};window.Worker=class extends Native{constructor(...args){super(...args);this.addEventListener('message',({data})=>{const request=window.__audit.requests.findLast(r=>r.worker===this.key&&r.id===data.id);if(!request||data.operation==='generate-status')return;const o=data.output;window.__audit.responses.push({request,response:{operation:data.operation,error:data.error,camera:o?.sourceCameraFrame,type:o?.type,stats:o?.stats,formula:o?.formulaPresentation,implicitDensity:o?.sourceImplicitPresentation?.referencePixelDensity,imageResult:data.result?{width:data.result.width,height:data.result.height,type:data.result.blob?.type,size:data.result.blob?.size}:undefined}});});}key=crypto.randomUUID();postMessage(data,...args){if(data.operation==='encode-source-paused-png')window.__artwork=Array.from(data.pixels);window.__audit.requests.push({worker:this.key,id:data.id,operation:data.operation,width:data.width,height:data.height,scale:data.scale,kind:data.scene?.kind,sceneId:data.scene?.id,name:data.scene?.name,sourceCamera:data.scene?.sourceCamera,context:data.context});return super.postMessage(data,...args);}};});
  const ready=()=>page.waitForFunction(()=>document.querySelector('.status-bar')?.textContent.includes('就绪')&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card'));
  await page.goto(process.argv[3]??'http://127.0.0.1:5179');await ready();await page.addStyleTag({content:'.viewport{width:406px!important;height:486px!important;min-height:0!important;flex:none!important}'});
  await page.locator('input[type=file]').setInputFiles({name:'implicit_sphere.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(input))});
@@ -26,6 +42,10 @@ try{
  }
  const enhancement=audit.responses.findLast(r=>r.request.operation==='encode-source-paused-png'&&r.request.width===500&&r.request.height===600&&r.request.scale===1&&r.response.operation==='encode-source-paused-png');
  if(enhancement?.response.imageResult?.width!==500||enhancement.response.imageResult.height!==600||enhancement.response.imageResult.type!=='image/png'||!enhancement.response.imageResult.size)throw Error('Missing completed native static PNG enhancement Worker response');
+ const artwork=Buffer.from(await page.evaluate(()=>window.__artwork));await writeFile(directory+'/artwork.rgba',artwork);
+ if(original){assert.equal(artwork.length,original.length);let differentPixels=0,maxChannelDelta=0;for(let i=0;i<artwork.length;i+=4){let different=false;for(let k=0;k<4;k++){const delta=Math.abs(artwork[i+k]-original[i+k]);different||=delta!==0;maxChannelDelta=Math.max(maxChannelDelta,delta);}if(different)differentPixels++;}report.artworkComparison={differentPixels,maxChannelDelta};assert.equal(differentPixels,0,'Public export artwork differs from original');}
+ report.nativeResponses=nativeResponses;
+ if(process.env.VITE_SOURCE_RENDERER==='native'){assert.equal(nativeResponses.length,1);assert.equal(nativeResponses[0].status,200);assert.equal(nativeResponses[0].headers['x-source-format'],'rgba8');}
  const png=await readFile(directory+'/export.png');if(png.subarray(0,8).toString('hex')!=='89504e470d0a1a0a'||png.readUInt32BE(16)!==500||png.readUInt32BE(20)!==600)throw Error('PNG is not the requested 500 × 600 output');
  if(report.errors.length)throw Error('Page errors: '+report.errors.join('; '));
  report.verification={previewDensity:density,exportDensity:capture.response.implicitDensity,enhancement:'completed-source-paused-png-scale1',formula:'delivered-source-centered-primary486',width:500,height:600,sha256:createHash('sha256').update(png).digest('hex'),scope:'Real import, matched Worker completion and PNG download; no original-app pixel-equivalence claim'};report.status='captured';

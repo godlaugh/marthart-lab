@@ -26,7 +26,7 @@ import {parseMeshAppearance} from './meshAppearance';
 import {createSurfaceWireframe,createThickWireframe} from './thickWireframe';
 import {createThickTrails} from './thickTrails';
 import {parseTrailAppearance} from './trailAppearance';
-import {compositeFormulas,encodeFormulaRaster,type FormulaCompositeOptions} from './formulaCanvas';
+import {compositeFormulas,type FormulaCompositeOptions} from './formulaCanvas';
 import {compositeSourceFormulaPixels,formulaBasePixels} from './sourceFormulaCompositor';
 import {formulaPresentation} from './formulas';
 import {encodeRgbaPng} from './rgbaPng';
@@ -480,19 +480,12 @@ export class ArtRenderer {
     }
     return{pixels,width,height};
   }
-  async blob(type = "image/png", quality = 0.95, options?:FormulaCompositeOptions&{sourcePresentationAlpha:'preserve'|'opaque'}): Promise<Blob> {
+  async blob(type = "image/png", quality = 0.95, options?:Omit<FormulaCompositeOptions,'sourceImageProcessing'>&{sourcePresentationAlpha:'preserve'|'opaque'}): Promise<Blob> {
     this.render();
     if(options?.signal?.aborted||options?.isCancelled?.())throw new DOMException('图像导出已取消','AbortError');
     if((this.document?.fractalSource||this.document?.formulas?.layout==='source-surface-centered-v1')&&!this.formulaFrame)throw new Error('源图像缺少实际帧的公式标注');
     const presentation=this.formulaFrame??(this.document?formulaPresentation(this.document):undefined);
     const isCancelled=()=>!!options?.signal?.aborted||!!options?.isCancelled?.();
-    if(options?.sourceImageProcessing){
-      if(type!=='image/png'||!this.sourceClear||!presentation)throw new Error('源暂停 PNG 需要源帧、原始像素和已解析公式');
-      const {pixels,width,height}=this.sourceFramebufferPixels(isCancelled);
-      // Fresh geometry is not a retained numerical snapshot. Reuse the shared
-      // formula -> native image processing -> PNG owner without inventing one.
-      return encodeFormulaRaster({type:'raster',width,height,pixels,formulaPresentation:presentation},'image/png',options);
-    }
     if(this.sourceCompositedRaster&&type==='image/png'&&!hasFormulaComposition(presentation)){
       const frame=this.sourceCompositedRaster,gl=this.renderer.getContext();
       if(frame.width!==gl.drawingBufferWidth||frame.height!==gl.drawingBufferHeight)throw new Error('源合成图像导出尺寸必须与已生成图像一致');
