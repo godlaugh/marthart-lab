@@ -1,3 +1,4 @@
+import {createSourceShaderMaterial} from './sourceShaderMaterial';
 import * as THREE from 'three';
 import type {SourceCameraPlan} from './sourceCamera';
 import type {SourceParticleTrails} from './sourceParticleTrails';
@@ -44,10 +45,10 @@ export function createSourceProcessingLines(input:SourceProcessingLineInput,plan
   }
   geometry.setIndex(new THREE.BufferAttribute(new Uint32Array([0,1,2,2,1,3]),1));geometry.instanceCount=count;
   geometry.boundingSphere=new THREE.Sphere(new THREE.Vector3(),0);
-  material=new THREE.RawShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:sourceProcessingInstancedLineVertex,fragmentShader:sourceProcessingLineFragment,
+  material=createSourceShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:sourceProcessingInstancedLineVertex,fragmentShader:sourceProcessingLineFragment,
    side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:!overlay,depthWrite:!overlay,depthFunc:THREE.LessEqualDepth,toneMapped:false,
    blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquationAlpha:THREE.AddEquation,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor,
-   uniforms:{lineModelview:{value:retained?new THREE.Matrix4().fromArray(plan.modelView.columnMajor):new THREE.Matrix4()},projection:{value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)},viewport:{value:new THREE.Vector4(...display.viewport)},perspective:{value:display.perspective},scale:{value:new THREE.Vector3(...display.scale)}}});
+   uniforms:{lineModelview:{kind:'mat4',value:retained?new THREE.Matrix4().fromArray(plan.modelView.columnMajor):new THREE.Matrix4()},projection:{kind:'mat4',value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)},viewport:{kind:'vec4',value:new THREE.Vector4(...display.viewport)},perspective:{kind:'int',value:display.perspective},scale:{kind:'vec3',value:new THREE.Vector3(...display.scale)}}});
   const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;mesh.renderOrder=1;mesh.userData.sourceProcessingLines=true;return mesh;
  }catch(error){geometry.dispose();material?.dispose();throw error;}
 }

@@ -1,3 +1,4 @@
+import {createSourceShaderMaterial} from './sourceShaderMaterial';
 import * as THREE from 'three';
 import type {SceneOutput} from '../types';
 import type {SourceCameraPlan} from './sourceCamera';
@@ -26,12 +27,12 @@ export function createSourceImplicitMesh(output:Extract<SceneOutput,{type:'geome
  try{
   const eye=sourceEyePositions(output.positions,plan.modelView.rowMajor);
   geometry.setAttribute('position',new THREE.BufferAttribute(eye,4));geometry.setAttribute('color',new THREE.BufferAttribute(facts.fillColors,4));if(indices)geometry.setIndex(new THREE.BufferAttribute(indices,1));geometry.boundingSphere=new THREE.Sphere(new THREE.Vector3(),0);
-  material=new THREE.RawShaderMaterial({glslVersion:THREE.GLSL3,
+  material=createSourceShaderMaterial({glslVersion:THREE.GLSL3,
    vertexShader:'precision highp float; uniform mat4 projection; in vec4 position; in vec4 color; out vec4 fillColor; void main(){gl_Position=projection*position;fillColor=color;}',
    fragmentShader:'precision highp float; in vec4 fillColor; out vec4 fragmentColor; void main(){fragmentColor=fillColor;}',
    side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:true,depthWrite:true,depthFunc:THREE.LessEqualDepth,toneMapped:false,
    blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquationAlpha:THREE.AddEquation,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor,
-   uniforms:{projection:{value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)}}});
+   uniforms:{projection:{kind:'mat4',value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)}}});
   const fill=new THREE.Mesh(geometry,material);fill.frustumCulled=false;fill.visible=facts.fill;
   if(wire)lines=createSourceProcessingLines({mode:'retained',positions:wire.positions,lineWidth:Math.fround(facts.lineWeight*(plan.viewport.target==='offscreen'?facts.referencePixelDensity:1)),color:{kind:'vertices',rgb:wire.colors,alphas:wire.alphas}},plan);
   return{fill,lines};

@@ -1,3 +1,4 @@
+import {createSourceShaderMaterial} from './sourceShaderMaterial';
 import * as THREE from 'three';
 import type {GeometryOutput} from '../types';
 import type {SourceCameraPlan} from './sourceCamera';
@@ -55,10 +56,10 @@ export function createSourceSurfaceMeshFill(output:GeometryOutput,plan:SourceCam
   // Native topology can retain nonfinite unused vertices after skipping their
   // quads. Culling is disabled; avoid Three deriving an irrelevant NaN sphere.
   geometry.boundingSphere=new THREE.Sphere(new THREE.Vector3(),0);
-  material=new THREE.RawShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:true,depthWrite:true,toneMapped:false,
+  material=createSourceShaderMaterial({glslVersion:THREE.GLSL3,vertexShader:vertex,fragmentShader:fragment,side:THREE.DoubleSide,forceSinglePass:true,transparent:true,depthTest:true,depthWrite:true,toneMapped:false,
    // PGraphicsOpenGL.BLEND keeps additive destination alpha (ONE, ONE).
    blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendEquationAlpha:THREE.AddEquation,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.OneFactor,
-   uniforms:{projection:{value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)}}});
+   uniforms:{projection:{kind:'mat4',value:new THREE.Matrix4().fromArray(plan.projection.columnMajor)}}});
   const mesh=new THREE.Mesh(geometry,material);mesh.frustumCulled=false;mesh.visible=appearance.fillEnabled;mesh.userData.sourceSurfaceMeshFill=true;return mesh;
  }catch(error){geometry.dispose();material?.dispose();throw error;}
 }
