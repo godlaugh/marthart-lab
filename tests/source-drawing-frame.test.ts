@@ -51,7 +51,7 @@ describe.skipIf(process.platform!=='darwin')('native binary frame boundary',()=>
   let root:string,binary:string,serial=0;
   beforeAll(()=>{
     mkdirSync('.cache',{recursive:true});root=mkdtempSync(resolve('.cache/frame-boundary-'));binary=join(root,'replay');
-    const build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-framework','Foundation','-framework','OpenGL','scripts/probes/SurfaceCglReplay.m','-o',binary],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL',maxBuffer:65536});
+    const build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-framework','Foundation','-framework','OpenGL','server/render/SourceCglRenderer.m','-o',binary],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL',maxBuffer:65536});
     expect(build.error).toBeUndefined();expect(build.status,build.stderr).toBe(0);expect(build.stderr).toBe('');
   });
   function run(bytes:Uint8Array){
