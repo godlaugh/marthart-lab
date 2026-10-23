@@ -1,3 +1,4 @@
+import {createSourceRendererService,inspectSourceFrameHeader} from './source-renderer.mjs';
 import http from 'node:http';
 import {spawn} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
@@ -97,6 +98,8 @@ export async function createExportServer(options={}){
  const sessions=new Map(),children=new Set(),files=new Map(),requests=new Set();let storedBytes=0,reservedBytes=0,reservedFiles=0,uploads=0,closing=false,healthPromise,healthAt=0;
  for(const name of await readdir(root)){const info=await lstat(path.join(root,name));if(!info.isFile())continue;storedBytes+=info.size;if(ownedName.test(name)){if(files.size>=limits.maxFiles)throw new Error('导出目录文件数量超过资源上限');files.set(name,info.size);}}
  const glyphs=options.glyphBackend?await (await import('./formula-glyph.mjs')).createFormulaGlyphService(options.glyphBackend):undefined;
+ const native=options.sourceRendererBackend?await createSourceRendererService(options.sourceRendererBackend):undefined;
+ const nativeControllers=new Set();let nativeBusy=false,nativeGeneration=1,nativeSequence=0;
  function reserve(size){if(files.size+reservedFiles>=limits.maxFiles)throw new HttpError(507,'导出文件数量达到资源上限');if(storedBytes+reservedBytes+size>limits.maxDiskBytes)throw new HttpError(507,'导出目录已达到容量上限，请清理已保存文件');reservedBytes+=size;reservedFiles++;}
  function ownedSpawn(args,stdio=['pipe','ignore','pipe','pipe']){
   const child=spawn(ffmpegPath,args,{stdio});
@@ -192,6 +195,31 @@ export async function createExportServer(options={}){
   if(!localOrigin(req,allowed))throw new HttpError(403,'不接受此来源或主机');
   const url=new URL(req.url,'http://127.0.0.1');
   if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,await health());
+  if(req.method==='GET'&&url.pathname==='/api/source-renderer/health')return json(res,200,native?await native.health():{available:false,error:{kind:'unavailable',message:'原生渲染后端尚未配置'}});
+  if(req.method==='POST'&&url.pathname==='/api/source-renderer/frames'){
+   if(!native)throw new HttpError(503,'原生渲染后端尚未配置');
+   if(mediaType(req)!=='application/octet-stream')throw new HttpError(415,'需要二进制帧请求');
+   if(nativeBusy)throw new HttpError(429,'原生帧通道正在处理请求');
+   nativeBusy=true;const controller=new AbortController(),disconnected=()=>{if(!res.writableEnded)controller.abort();};nativeControllers.add(controller);req.once('aborted',disconnected);res.once('close',disconnected);
+   try{return await withUpload(req,64*1024*1024,async bytes=>{
+    if(controller.signal.aborted||closing)throw new HttpError(499,'原生帧请求已取消');
+    const parsed=inspectSourceFrameHeader(bytes);if(!parsed.ok)return json(res,400,{error:parsed.error.message,kind:parsed.error.kind});
+    // The gateway owns transport ordering across windows. Preserve the caller's
+    // identity in the response; rewrite only an owned wire copy for the child.
+    if(nativeSequence===0xffffffff){if(nativeGeneration===0xffffffff)throw new HttpError(503,'原生请求编号已耗尽，请重启服务');nativeGeneration++;nativeSequence=0;}
+    const packet=Buffer.from(bytes);packet.writeUInt32LE(nativeGeneration,12);packet.writeUInt32LE(++nativeSequence,16);
+    const result=await native.render(packet,{signal:controller.signal});
+    if(!result.ok)return json(res,{input:400,unsupported:422,capacity:429,cancelled:499,closed:503,unavailable:503,timeout:504,protocol:502,runtime:502,cleanup:503}[result.error.kind]??502,{error:result.error.message,kind:result.error.kind});
+    if(controller.signal.aborted||res.destroyed)return;
+    const image=result.value;
+    await new Promise((resolve,reject)=>{
+     const done=()=>{clearTimeout(timer);res.off('finish',done);res.off('close',done);res.off('error',failed);resolve();};
+     const failed=error=>{clearTimeout(timer);res.off('finish',done);res.off('close',done);res.off('error',failed);reject(error);};
+     const timer=setTimeout(()=>{controller.abort();res.destroy();done();},limits.writeTimeoutMs);timer.unref();res.once('finish',done);res.once('close',done);res.once('error',failed);
+     res.writeHead(200,{'content-type':'application/octet-stream','content-length':image.pixels.length,'cache-control':'no-store','x-content-type-options':'nosniff','x-source-generation':parsed.value.generation,'x-source-sequence':parsed.value.sequence,'x-source-width':image.width,'x-source-height':image.height,'x-source-format':image.format,'x-source-row-order':image.rowOrder,'x-source-renderer':image.rendererIdentity});res.end(image.pixels);
+    });
+   });}finally{nativeBusy=false;nativeControllers.delete(controller);req.off('aborted',disconnected);res.off('close',disconnected);}
+  }
   if(req.method==='GET'&&url.pathname==='/api/formula-glyph/health')return json(res,200,glyphs?await glyphs.health():{available:false,error:{kind:'unavailable',message:'独立公式字形后端尚未配置'}});
   if(req.method==='POST'&&url.pathname==='/api/formula-glyph'){
    if(!glyphs)throw new HttpError(503,'独立公式字形后端尚未配置');
@@ -301,20 +329,21 @@ export async function createExportServer(options={}){
  let closePromise;
  return {
   server,root,
-  get ownedProcessCount(){return children.size+(glyphs?.processCount??0);},
+  get ownedProcessCount(){return children.size+(glyphs?.processCount??0)+(native?.processCount??0);},
   async listen(port=5178){await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',()=>{server.off('error',reject);resolve();});});return server.address();},
   close(){if(closePromise)return closePromise;closing=true;closePromise=(async()=>{
-   const stopped=new Promise(resolve=>server.close(resolve));
-   const results=await Promise.allSettled([...sessions.values()].filter(s=>s.status!=='complete'&&!s.cleaned).map(s=>abort(s)).concat(glyphs?[glyphs.close()]:[]));
+   const stopped=new Promise(resolve=>server.close(resolve));for(const controller of nativeControllers)controller.abort();
+   const results=await Promise.allSettled([...sessions.values()].filter(s=>s.status!=='complete'&&!s.cleaned).map(s=>abort(s)).concat(glyphs?[glyphs.close()]:[],native?[native.close().then(result=>{if(!result.ok)throw new Error(result.error.message);})]:[]));
    await Promise.allSettled([...children].map(stop));server.closeAllConnections();await stopped;await Promise.allSettled([...requests]);
    const failure=results.find(r=>r.status==='rejected');if(failure)throw failure.reason;
-  })();return closePromise;}
+  })().catch(error=>{closePromise=undefined;throw error;});return closePromise;}
  };
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const glyphBackend=process.env.MATHART_GLYPH_BACKEND?JSON.parse(await readFile(process.env.MATHART_GLYPH_BACKEND,'utf8')):undefined;
- const service=await createExportServer({glyphBackend});const address=await service.listen(Number(process.env.MATHART_EXPORT_PORT??5178));
+ const sourceRendererBackend=process.env.MATHART_SOURCE_RENDERER_BACKEND?JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND,'utf8')):undefined;
+ const service=await createExportServer({glyphBackend,sourceRendererBackend});const address=await service.listen(Number(process.env.MATHART_EXPORT_PORT??5178));
  console.log(`MathArt export service: http://127.0.0.1:${address.port}`);
  let stopping=false;const shutdown=async()=>{if(stopping)return;stopping=true;try{await service.close();}catch(error){console.error(error);process.exitCode=1;}};
  process.once('SIGTERM',shutdown);process.once('SIGINT',shutdown);

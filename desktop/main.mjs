@@ -1,7 +1,7 @@
 import {app,BrowserWindow,Menu,ipcMain,session,dialog} from 'electron';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {createDesktopHost,findFFmpeg} from './host.mjs';
 import {createWorkspaceStore,STORAGE_KEYS} from './storage.mjs';
@@ -40,7 +40,8 @@ async function start(){try{
  preferences=await createDesktopPreferences(userData);
  const configuredFFmpeg=process.env.MATHART_FFMPEG??preferences.read().ffmpegPath;
  try{activeFFmpeg=await findFFmpeg(configuredFFmpeg);}catch(error){ffmpegWarning=`所选 FFmpeg 不可用：${error.message}`;console.error(ffmpegWarning);activeFFmpeg=configuredFFmpeg;}
- host=await createDesktopHost({dist:path.join(directory,'../dist'),exportRoot:path.join(userData,'exports'),ffmpegPath:activeFFmpeg});
+ const sourceRendererBackend=process.env.MATHART_SOURCE_RENDERER_BACKEND?JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND,'utf8')):undefined;
+ host=await createDesktopHost({sourceRendererBackend,dist:path.join(directory,'../dist'),exportRoot:path.join(userData,'exports'),ffmpegPath:activeFFmpeg});
  const browserSession=session.fromPartition('persist:mathart-lab');
  browserSession.setPermissionRequestHandler((contents,permission,callback)=>callback(permission==='clipboard-sanitized-write'&&contents?.getURL().startsWith(host.origin+'/')));
  browserSession.setPermissionCheckHandler((contents,permission,origin)=>permission==='clipboard-sanitized-write'&&origin===host.origin);

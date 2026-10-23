@@ -1,3 +1,5 @@
+import {snapshotSourceDrawings,type SourceDrawingResult} from './sourceDrawingSnapshot';
+import type {SourceDrawingFrame} from './sourceDrawingFrame';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {createSourceImplicitMesh} from './sourceImplicitRenderer';
 import {usesSourceMapPresentation} from './sourceMapPresentation';
@@ -439,6 +441,29 @@ export class ArtRenderer {
       const autoClear=this.renderer.autoClear;
       try{this.renderer.autoClear=false;this.renderer.render(this.surfaceOverlayScene,this.camera);}finally{this.renderer.autoClear=autoClear;}
     }
+  }
+  /** Capture the render lists owned and sorted by Three, including the final
+   * overlay pass. Unsupported draw types fail rather than disappearing. */
+  sourceDrawingFrame(generation:number,sequence:number):SourceDrawingResult<SourceDrawingFrame>{
+    if(!this.sourceCameraPlan||this.raster)return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'当前画面不是可提交原生绘制的源几何帧'}};
+    this.render();const gl=this.renderer.getContext();
+    if(gl.isContextLost()||gl.getParameter(gl.SAMPLES)!==0||gl.isEnabled(gl.SCISSOR_TEST))return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧暂不支持丢失的上下文、多重采样或裁剪视口'}};
+    const viewport=gl.getParameter(gl.VIEWPORT) as Int32Array;if(viewport[0]!==0||viewport[1]!==0||viewport[2]!==gl.drawingBufferWidth||viewport[3]!==gl.drawingBufferHeight)return{ok:false,error:{kind:'unsupported',path:['frame'],reason:'原生帧需要完整物理视口'}};
+    const meshes:THREE.Mesh[]=[];
+    const scenes=[this.scene,...(this.surfaceOverlay?.visible?[this.surfaceOverlayScene]:[])];
+    for(const scene of scenes){
+      const list=this.renderer.renderLists.get(scene,0);
+      if(list.transmissive.length)return{ok:false,error:{kind:'unsupported',path:['draws'],reason:'原生绘制尚不支持透射材质'}};
+      for(const item of [...list.opaque,...list.transparent]){
+        if(!(item.object instanceof THREE.Mesh)||item.material!==item.object.material||item.geometry!==item.object.geometry||item.group)return{ok:false,error:{kind:'unsupported',path:['draws'],reason:'原生绘制包含尚未支持的对象或分组'}};
+        meshes.push(item.object);
+      }
+    }
+    const drawing=snapshotSourceDrawings(meshes);if(!drawing.ok)return drawing;
+    // Read the actual clear state. Source packed colors and legacy Three
+    // backgrounds have different conversion/alpha rules, already applied here.
+    const clear=Array.from(gl.getParameter(gl.COLOR_CLEAR_VALUE) as Float32Array) as [number,number,number,number];
+    return{ok:true,value:{generation,sequence,width:gl.drawingBufferWidth,height:gl.drawingBufferHeight,clear,drawing:drawing.value}};
   }
   private sourceFramebufferPixels(isCancelled:()=>boolean){
     if(isCancelled())throw new DOMException('图像导出已取消','AbortError');

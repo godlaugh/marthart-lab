@@ -56,6 +56,6 @@ export function createThickTrails(trail:Trails,width:number,opacity:number):Line
    shader.fragmentShader='varying float vTrailAlpha;\n'+shader.fragmentShader.replace('gl_FragColor = vec4( diffuseColor.rgb, alpha );','gl_FragColor = vec4( diffuseColor.rgb, alpha*clamp(vTrailAlpha,0.0,1.0) );');
   };
   material.customProgramCacheKey=()=> 'mathart-butt-ended-screen-trails-rgba-v1';
-  const line=new LineSegments2(geometry,material);line.frustumCulled=false;line.visible=width>0;line.renderOrder=1;return line;
+  const line=new LineSegments2(geometry,material);line.frustumCulled=false;line.visible=width>0&&segments>0;line.renderOrder=1;return line;
  }catch(error){geometry.dispose();material?.dispose();throw error;}
 }

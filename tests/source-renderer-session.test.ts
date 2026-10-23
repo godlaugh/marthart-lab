@@ -46,6 +46,7 @@ describe.skipIf(process.platform!=='darwin')('real persistent CGL session',()=>{
  it('cancels an actual CGL child and recovers in a fresh process',async()=>{
   const s=await service(),controller=new AbortController();try{const pending=s.render(request(1),{signal:controller.signal});for(let i=0;i<100&&s.processCount===0;i++)await delay(1);expect(s.processCount).toBe(1);controller.abort();expect(await pending).toMatchObject({ok:false,error:{kind:'cancelled'}});expect(s.processCount).toBe(0);expect((await s.render(request(2))).value).toMatchObject({sessionSerial:2,contextSerial:1});}finally{await s.close();}
  });
+ it('does not report available when close overtakes a health check',async()=>{const s=await service(),health=s.health();await s.close();expect(await health).toMatchObject({available:false,error:{kind:'closed'}});});
  it('rejects an unexpected executable identity',async()=>{await expect(createSourceRendererService({executablePath:binary,executableSha256:'0'.repeat(64)})).rejects.toThrow('身份');});
  it('does not spawn after immediate close or pre-cancel, and bounds concurrent requests',async()=>{
   const s=await service();const cancelled=new AbortController();cancelled.abort();expect(await s.render(request(1),{signal:cancelled.signal})).toMatchObject({ok:false,error:{kind:'cancelled'}});expect(s.processCount).toBe(0);

@@ -8,7 +8,7 @@ const BUDGET=256*1024*1024,HEADER=44,MAX_ERROR=8192;
 const failure=(kind,message)=>({ok:false,error:{kind,message}});
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const sameFile=(a,b)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeMs===b.mtimeMs&&a.ctimeMs===b.ctimeMs;
-function requestHeader(packet){
+export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  if(b.readUInt32LE(0)!==0x31464c4d||b.readUInt32LE(4)!==1||b.readUInt32LE(8)!==b.length)return failure('input','原生帧头部无效');
@@ -88,7 +88,7 @@ export async function createSourceRendererService({executablePath,executableSha2
   if(closing)return Promise.resolve(failure('closed','原生渲染服务已关闭'));
   if(signal?.aborted)return Promise.resolve(failure('cancelled','原生渲染已取消'));
   if(job||owner?.reason)return Promise.resolve(failure('capacity','原生渲染已有请求或正在清理'));
-  const header=requestHeader(packet);if(!header.ok)return Promise.resolve(header);
+  const header=inspectSourceFrameHeader(packet);if(!header.ok)return Promise.resolve(header);
   // Own the bytes before any await, so later caller edits cannot change a frame.
   const input=Buffer.from(packet),expected=header.value;
   return new Promise(resolve=>{
@@ -109,7 +109,12 @@ export async function createSourceRendererService({executablePath,executableSha2
    })();
   });
  }
- return{render,rendererIdentity,get processCount(){return owner?1:0;},get processObservation(){return owner?{pid:owner.child.pid,sessionSerial:owner.serial,retiring:!!owner.reason}:null;},get activeCount(){return job?1:0;},get sessionStarts(){return sessionStarts;},
+ async function health(){
+  if(closing)return{available:false,error:{kind:'closed',message:'原生渲染服务已关闭'}};
+  try{const current=await stat(executable);if(closing)return{available:false,error:{kind:'closed',message:'原生渲染服务已关闭'}};if(sameFile(identity,current))return{available:!owner?.reason,rendererIdentity,...(owner?.reason?{error:owner.reason.error}:{})};}catch{}
+  const reason=failure('unavailable','原生程序已变化或不可用，请重新初始化');if(owner)retire(owner,reason);return{available:false,error:reason.error};
+ }
+ return{render,health,rendererIdentity,get processCount(){return owner?1:0;},get processObservation(){return owner?{pid:owner.child.pid,sessionSerial:owner.serial,retiring:!!owner.reason}:null;},get activeCount(){return job?1:0;},get sessionStarts(){return sessionStarts;},
   close(){
    if(closePromise)return closePromise;closing=true;
    closePromise=(async()=>{

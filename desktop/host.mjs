@@ -13,9 +13,9 @@ export async function findFFmpeg(explicit){
  for(const candidate of new Set(names)){try{await access(candidate,constants.X_OK);return candidate;}catch{}}
  return 'ffmpeg'; // Health endpoint reports unavailable; images and the editor remain usable.
 }
-export async function createDesktopHost({dist,exportRoot,ffmpegPath}){
+export async function createDesktopHost({dist,exportRoot,ffmpegPath,sourceRendererBackend}){
  dist=path.resolve(dist);await access(path.join(dist,'index.html'));
- const api=await createExportServer({root:exportRoot,ffmpegPath,allowedOrigins:[]});
+ const api=await createExportServer({root:exportRoot,ffmpegPath,sourceRendererBackend,allowedOrigins:[]});
  let address,closing=false;const sockets=new Set();
  const server=http.createServer(async(req,res)=>{
   const finish=(status,text)=>{res.writeHead(status,{'content-type':'text/plain; charset=utf-8','x-content-type-options':'nosniff'});res.end(text);};
@@ -45,6 +45,6 @@ export async function createDesktopHost({dist,exportRoot,ffmpegPath}){
  try{await api.listen(0);await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',()=>{server.off('error',reject);resolve();});});address=server.address();}catch(error){await api.close();throw error;}
  let closePromise;
  return {origin:`http://127.0.0.1:${address.port}`,port:address.port,apiPort:api.server.address().port,api,
-  close(){if(closePromise)return closePromise;closing=true;closePromise=(async()=>{const stopped=new Promise(resolve=>server.close(resolve));try{await api.close();}finally{for(const socket of sockets)socket.destroy();await stopped;}})();return closePromise;}
+  close(){if(closePromise)return closePromise;closing=true;closePromise=(async()=>{const stopped=new Promise(resolve=>server.close(resolve));try{await api.close();}finally{for(const socket of sockets)socket.destroy();await stopped;}})().catch(error=>{closePromise=undefined;throw error;});return closePromise;}
  };
 }
