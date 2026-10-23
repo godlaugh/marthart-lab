@@ -29,7 +29,7 @@ export function prepareRootsPresentationImport(read: SourceRead, options: {
  const maxSplat = prepareRootsSourceJsonInt(read(maxSplatPath, 'integer'), pending.maxSplatPointsPerFrame, options.numberToken?.(maxSplatPath));
  if (!maxSplat.ok) return {ok: false, error: new RootsPresentationIntegerImportError(maxSplatPath, maxSplat.error)};
  pending.maxSplatPointsPerFrame = Math.max(1, maxSplat.value.value);
- configuration.pending = pending;
+ configuration.pending = pending;configuration.previewMode='live-worker-arrival-v1';
  if (maxSplat.value.route === 'fallback' && maxSplat.value.fallbackReason !== 'missing')
   diagnostics.push(`${maxSplatPath.join('.')} 按源整数规则使用默认值 ${maxSplat.value.canonicalText}；原值保留在 source。`);
  const scalar = (path: ScalarPath, fallback: number): number => {

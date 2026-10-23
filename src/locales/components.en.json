@@ -900,5 +900,10 @@
   "域着色片段按列表顺序执行；预览与导出使用固定帧率，时间跳转会重建对应画面。队列结束后，已启动的旋转、参数与渐变仍可继续。": "Domain coloring clips run in list order. Preview and export use a fixed frame rate; seeking rebuilds the selected frame. Active rotation, parameters, and gradients can continue after the queue ends.",
   "水平偏移": "Horizontal offset",
   "垂直偏移": "Vertical offset",
-  "位置相对画布中心，单位为主预览逻辑像素；正值向右、向下。缩放保留原版数值，导出按主预览高度换算。": "Position is relative to the canvas centre in primary preview logical pixels; positive values move right and down. Scale keeps the original value; export uses the primary preview height."
+  "位置相对画布中心，单位为主预览逻辑像素；正值向右、向下。缩放保留原版数值，导出按主预览高度换算。": "Position is relative to the canvas centre in primary preview logical pixels; positive values move right and down. Scale keeps the original value; export uses the primary preview height.",
+  "后台实时采样": "Compute continuously in background",
+  "暂停动画后仍继续计算并画完剩余点；重新开始会清除当前画面。": "Pausing animation keeps computing and drawing remaining points. Restart clears the current image.",
+  "此作品保留按时间顺序回放；启用后台实时采样会重新开始。": "This artwork uses sequential replay. Enabling background sampling starts a new run.",
+  "复根后台采样与动画时钟独立；暂停后继续画完剩余点。返回起点会重新采样。离线视频按所选帧率顺序回放。": "Root sampling runs independently of animation. Pausing finishes the remaining points; returning to the start begins a new run. Offline video uses sequential replay at the selected frame rate.",
+  "后台实时采样请使用返回起点重新开始": "Use Return to start to restart background sampling."
 }

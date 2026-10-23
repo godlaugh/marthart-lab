@@ -804,7 +804,7 @@ function roots(r:Reader,s:SceneDocument){
  if(!presentation.ok)fail(presentation.error.message);
  Object.assign(s,withRootsPresentation(s,presentation.value.configuration));
  r.warnings.push(...presentation.value.diagnostics);
- r.warnings.push('源复根批次与待绘制队列采用本地确定性顺序；参考堆使用打包 -Xmx4096m 上限，不是原版实测堆容量，也不是本地分配预算。');
+ r.warnings.push('源复根预览使用后台实时采样；参考堆使用打包 -Xmx4096m 上限，不是原版实测堆容量，也不是本地分配预算。离线导出仍使用顺序回放。');
  for(const field of ROOTS_SOURCE_TONE_FIELDS){
   if(!field.sourceKey)continue;
   const path='settings.'+field.sourceKey;if(!r.has(path))continue;

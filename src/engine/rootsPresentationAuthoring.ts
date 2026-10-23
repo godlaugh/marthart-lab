@@ -17,6 +17,7 @@ export function withRootsPresentation(scene:SceneDocument,configuration:RootsPre
 /** These local plane controls are dormant under the explicit spatial profile. */
 const legacyControls=new Set(['rootsMode','rootDensityBackend','rootSplat','rootSplatDiameter','rootScale','rootScaleY','rootOffsetX','rootOffsetY','rootOffsetZ','depthScale','rotation','rootRender','rootDisplayParameter','filter','densityView','densityCenterX','densityCenterY','densitySpan','densityProjection','densityPadding','densityAccumulation','densityLifetime','densitySamplingFps','densitySampleRate','densityDecay']);
 export function rootsPresentationControlVisible(scene:Pick<SceneDocument,'kind'|'rootsPresentation'>,key:string):boolean {
+ if(scene.rootsPresentation?.previewMode==='live-worker-arrival-v1'&&['rootSamplesPerFrame','rootSamplingFps','rootStartTime'].includes(key))return false;
  return !usesRootsNativePresentation(scene)||!legacyControls.has(key);
 }
 export type RootsPresentationCommit=(expected:SceneDocument,next:RootsPresentationConfiguration,begin:boolean)=>SceneDocument|undefined;

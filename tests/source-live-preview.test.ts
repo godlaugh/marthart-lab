@@ -1,3 +1,4 @@
+import {RootsSceneClock} from '../src/engine/rootsSceneClock';
 import {sourcePerlinCpuConfiguration,sourcePerlinGpuConfiguration} from '../src/engine/sourcePerlinIdentity';
 import {generateScene,TemporalGenerationSession} from '../src/engine/temporal';
 import type {GenerateContext} from '../src/types';
@@ -11,6 +12,15 @@ import {timelineWarnings} from '../src/engine/timeline';
 import type {SceneOutput} from '../src/types';
 const scene=()=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'SYMMETRY_CHAOS',name:'Live preview',parameters:{lambda:.25},settings:{batch_size:4,burn_in_steps:3},timeline:[]})).scene;
 describe('source live preview compatibility and delivered presentation',()=>{
+ it('opts newly imported Roots in and displays delivered camera facts without replaying its timeline',()=>{
+  const source=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'COMPLEX_ROOTS',name:'Live roots',polynomial:{variable:'x',coefficients:{2:'1',0:'-1'}},timeline:[]})).scene;
+  expect(sourceLivePreviewKind(source)).toBe('roots');expect(timelineWarnings(source,'realtime').some(s=>s.includes('固定帧率'))).toBe(false);expect(timelineWarnings(source,'fixed').some(s=>s.includes('固定帧率'))).toBe(true);
+  const frame=new RootsSceneClock({phi:.1,theta:.2,gamma:.3,zoom:2},[]).step(.25);
+  source.timeline.tracks=[{duration:'malformed, never replay in display'}] as never;
+  const output={type:'raster',rootsLive:{frame}} as SceneOutput,presented=sourceQueuePresentedScene(source,output)!;
+  expect(presented.evaluatedRootsCamera).toEqual(frame);expect(presented.evaluatedRootsCamera).not.toBe(frame);expect(source.evaluatedRootsCamera).toBeUndefined();
+ });
+
  it('preserves saved single-backend Perlin playback without supplying a live protocol',()=>{
   const canonical=parseProjectFile(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'Perlin',settings:{render_mode:'GPU'},timeline:[]})).scene;
   expect(sourceLivePreviewKind(canonical)).toBe('perlin');

@@ -309,6 +309,10 @@ export default function App() {
     const current=sceneRef.current,next=typeof value==='function'?value(current):value;
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
+    if(nextLive==='roots'){
+      if(currentLive!=='roots')replaceLiveSession(undefined);
+      liveDisplayRequested.current=true;
+    }
     if(nextLive==='perlin'){
       if(currentLive!=='perlin'||current.id!==next.id)replaceLiveSession(undefined);
       // Perlin keeps its established auto-apply and hot backend behavior.
@@ -392,7 +396,7 @@ export default function App() {
   const equationBasis=useRef({id:scene.id,equations:scene.equations});
   const perlinPreset=useMemo(()=>matchingPerlinPreset(scene,def),[scene,def]);
   let rootCompletion:number|undefined,rootSamplingFps:number|undefined,rootScheduleError='';
-  if(hasProgressiveRoots(scene))try{
+  if(hasProgressiveRoots(scene)&&sourceLivePreviewKind(scene)!=='roots')try{
     rootCompletion=rootsCompletionTime(scene.settings,scene.rootsMath);
     // Pending splats belong to display frames. Stepping by a different sample
     // FPS would request extra same-frame redraws and consume extra budgets.
@@ -408,9 +412,11 @@ export default function App() {
   const domainEdit=useRef<{revision:number;configuration?:SceneDocument}>({revision:0}),domainActualFps=useRef<number|undefined>(undefined);
   const [fractalStaged,setFractalStaged]=useState(false),[fractalFullApplyPending,setFractalFullApplyPending]=useState(false);
   const iteratedReplayRevision=useRef(0),iteratedStartAt=useRef<number|undefined>(scene.fractalSource||sourceLivePreviewKind(scene)==='perlin'?undefined:0),mapRuntimeRevision=useRef(0);
+  const rootsPending=output?.type==='raster'?(output.rootsLive?.stream.pending??output.rootsPresentation?.pending):undefined;
   const iteratedLiveFacts=output?.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
   const liveDisplayPending=!error&&!previewCancelled&&outputScene===scene&&(
     !!iteratedLiveFacts&&iteratedLiveFacts.sessionId===liveSessionId.current&&iteratedLiveFacts.display.replayActive===true||
+    output?.type==='raster'&&output.rootsLive?.sessionId===liveSessionId.current&&!output.rootsLive.stream.canFinishAfterDisplay||
     output?.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalRender?.display?.needsAnotherDisplay===true);
 
   const replayPendingRef=useRef(false);replayPendingRef.current=liveDisplayPending;
@@ -624,6 +630,7 @@ export default function App() {
     setGenerationRevision(value=>value+1);
   }
   function seek(value:number) {
+    if(sourceLivePreviewKind(sceneRef.current)==='roots'&&value!==0){setToast(t('后台实时采样请使用返回起点重新开始'));return;}
     if(sourceLivePreviewKind(sceneRef.current)){playingRef.current=false;setPlaying(false);replaceLiveSession(value);setGenerationRevision(n=>n+1);}
     autoPlayPending.current=false;
     playbackClock.current=value;
@@ -640,7 +647,7 @@ export default function App() {
       // Stop scheduling immediately; a running display completes before the
       // queue acknowledges pause. Resume starts scheduling only after its ack.
       playingRef.current=false;setPlaying(false);
-      void queue[liveKind==='perlin'?'setPerlinPaused':liveKind==='surface'?'setSurfacePaused':liveKind==='domain'?'setDomainPaused':liveKind==='fractal'?'setFractalPaused':liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
+      void queue[liveKind==='roots'?'setRootsPaused':liveKind==='perlin'?'setPerlinPaused':liveKind==='surface'?'setSurfacePaused':liveKind==='domain'?'setDomainPaused':liveKind==='fractal'?'setFractalPaused':liveKind==='map'?'setMapPaused':liveKind==='symmetry'?'setSymmetryPaused':'setSamilaPaused'](!value).then(()=>{
         if(livePlaybackTransition.current!==ticket||liveSessionId.current!==sessionId)return;
         liveLastFrameAt.current=undefined;surfaceActualFps.current=undefined;fractalActualFps.current=undefined;domainActualFps.current=undefined;playingRef.current=value;setPlaying(value);
         if(value)setPickingJulia(false);
@@ -818,7 +825,8 @@ export default function App() {
         // can run before React commits the delivered output.
         const live=output.type==='raster'?(output.mapLive??output.symmetryLive):undefined;
         const fractalNeedsDisplay=output.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalRender?.display?.needsAnotherDisplay===true;
-        replayPendingRef.current=source===sceneRef.current&&(live?.sessionId===liveSessionId.current&&live.display.replayActive===true||fractalNeedsDisplay);
+        const rootsNeedDisplay=output.type==='raster'&&output.rootsLive?.sessionId===liveSessionId.current&&!output.rootsLive.stream.canFinishAfterDisplay;
+        replayPendingRef.current=source===sceneRef.current&&(rootsNeedDisplay||live?.sessionId===liveSessionId.current&&live.display.replayActive===true||fractalNeedsDisplay);
         if(output.type==='geometry'&&output.surfaceLive?.sessionId===liveSessionId.current&&output.surfaceLive.revision===surfaceEdit.current.revision){const {configuration,...acknowledged}=surfaceEdit.current;surfaceEdit.current=acknowledged;}
         if(output.type==='raster'&&output.domainLive?.sessionId===liveSessionId.current&&output.domainLive.revision===domainEdit.current.revision){const {configuration,...acknowledged}=domainEdit.current;domainEdit.current=acknowledged;}
         if(output.type==='raster'&&output.fractalLive?.sessionId===liveSessionId.current&&output.fractalLive.revision===fractalEdit.current.revision){
@@ -829,7 +837,7 @@ export default function App() {
         setOutput(output);setOutputScene(source);setRenderTime(time);setError('');
         // The worker's scene clock owns elapsed time. Updating the displayed
         // playhead must not itself request another random display.
-        if(output.type==='geometry'&&output.surfaceLive||output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.fractalLive||output.domainLive||output.perlinLive||live)){
+        if(output.type==='geometry'&&output.surfaceLive||output.type==='raster'&&(output.samilaLive?.clock==='realtime-source-queue'||output.fractalLive||output.domainLive||output.perlinLive||output.rootsLive||live)){
           timeRef.current=time;playbackClock.current=time;setTime(time);
         }
       },
@@ -891,7 +899,7 @@ export default function App() {
     generationScene.current=scene;
     if(sourceBouncing)bouncingPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    generationQueue.current?.request(scene,{time:timeRef.current,quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:sourceLivePreviewKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
@@ -1427,7 +1435,7 @@ export default function App() {
                   </details>}
                   <DomainColorControls scene={scene} onChange={edit} renderFacts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.domainRender:undefined} renderTime={renderTime} onRetry={retryDomainGpu} retryDisabled={playing||recording||scene.settings.domainBackend==='cpu'}/>
                   {scene.kind==='roots'&&<RootsMathControls key={`root-math:${scene.id}`} scene={scene} onChange={edit}/>}
-                  {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={edit} onRestart={()=>{rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
+                  {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={edit} onRestart={()=>{if(sourceLivePreviewKind(scene)==='roots'){seek(0);return;}rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
                   <RootsDensityColorControls scene={scene} onChange={edit} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsColor:undefined}/>
                   {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} onSourceChange={editFractal} section="formula"/>:!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&<SettingsFields
                     controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls),scene.timeline,scene.palette,scene.equations,scene.mapSource)).filter(control=>{
@@ -1479,7 +1487,7 @@ export default function App() {
                     <p className="muted">{t('按实际累积批次调整亮度，同时启用有界历史；两组调色参数分别保留。')}</p>
                     {scene.settings.densityToneModel==='samila-normalized-v2'?<button onClick={()=>changeSetting('densityToneModel','white-point-v1')}>{t('恢复白点调色')}</button>:<button disabled={busy||playing} onClick={()=>{try{edit({...scene,settings:initializeSamilaTone(scene.settings)});}catch(e){setToast(e instanceof Error?e.message:String(e));}}}>{t('启用 Samila 归一调色')}</button>}
                   </div>}
-                  {hasProgressiveRoots(scene)&&<div className="section-body">
+                  {hasProgressiveRoots(scene)&&sourceLivePreviewKind(scene)!=='roots'&&<div className="section-body">
                     <p className="muted">{t('播放按已完成批次逐步推进；计算繁重时，采样时钟会慢于实际时间。')}</p>
                     {rootScheduleError&&<p role="alert">{t(rootScheduleError)}</p>}
                     {rootCompletion!==undefined&&<><p className="muted">{t(scene.rootsPresentation?.pending?'采样计划在时间轴 {value0} 秒处到达末尾；批次积压可能延后实际采样和绘制完成。':'全部采样将在时间轴 {value0} 秒处完成；这是采样时钟，不是预计计算耗时。',{value0:rootCompletion.toFixed(3)})}</p>
@@ -1592,7 +1600,7 @@ export default function App() {
         <span>{output?.stats.generated.toLocaleString() ?? "—"}{t("个采样点")}</span>
         {output?.temporal&&<span title={t("历史 {value0}–{value1} 秒，{value2} 次/秒",{value0:output.temporal.windowStart.toFixed(2),value1:output.temporal.time.toFixed(2),value2:output.temporal.samplingFps})}>{t("历史 ·")}{output.temporal.frames}{t("帧 /")}{output.temporal.recordedPoints.toLocaleString()}{t("点")}</span>}
         {output?.type==='raster'&&output.roots&&<span>{t(output.roots.complete?'复根采样完成 · {value0} / {value1}':'复根采样 · {value0} / {value1}',{value0:output.roots.attemptedSamples.toLocaleString(),value1:output.roots.totalSamples.toLocaleString()})}</span>}
-        {output?.type==='raster'&&output.rootsPresentation?.pending&&<span>{t('待绘制 {count} 点 · 排队 {batches} 批',{count:output.rootsPresentation.pending.pendingPoints.toLocaleString(),batches:output.rootsPresentation.pending.queuedBatches.toLocaleString()})}</span>}
+        {rootsPending&&<span data-testid="roots-pending-status" data-pending-points={rootsPending.pendingPoints}>{t('待绘制 {count} 点 · 排队 {batches} 批',{count:rootsPending.pendingPoints.toLocaleString(),batches:rootsPending.queuedBatches.toLocaleString()})}</span>}
         <span>{output?.stats.elapsedMs?.toFixed(0) ?? "—"} ms</span>
         {output?.density && <span title={t("累积 {value0} / {value1} 点；视口外 {value2} 点；最高 {value3} 点/像素",{value0:output.density.accepted.toLocaleString(),value1:output.density.examined.toLocaleString(),value2:output.density.clipped.toLocaleString(),value3:output.density.maxCount.toLocaleString()})}>{t("密度 ·")}{output.density.occupiedPixels.toLocaleString()}{t("像素")}</span>}
         {output?.stats.invalid ? (

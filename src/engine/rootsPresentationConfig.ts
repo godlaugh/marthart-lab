@@ -11,6 +11,8 @@ export interface RootsPendingConfiguration {
 export interface RootsPresentationConfiguration {
  model: 'local-v1' | 'mathart-1.7.8-v1';
  mode: 'density' | 'point-cloud';
+ /** Explicit preview policy; absence retains saved ordinal replay. */
+ previewMode?: 'live-worker-arrival-v1';
  transform: {scale: [number, number, number]; offset: [number, number, number]; rotationDegrees: number};
  camera: {phi: number; theta: number; gamma: number; center: [number, number, number]; zoom: number; focalDistance: number};
  dotSize: number;
@@ -84,6 +86,7 @@ function pendingConfiguration(value: unknown): RootsPendingConfiguration {
 }
 function decode(value: unknown): RootsPresentationConfiguration {
  const raw = object(value, 'rootsPresentation');
+ if(raw.previewMode!==undefined&&raw.previewMode!=='live-worker-arrival-v1')throw new RootsPresentationConfigurationError('previewMode','invalid-choice');
  const model = field(raw, 'model', 'model'), mode = field(raw, 'mode', 'mode');
  if (model !== 'local-v1' && model !== 'mathart-1.7.8-v1') throw new RootsPresentationConfigurationError('model', 'invalid-choice');
  if (mode !== 'density' && mode !== 'point-cloud') throw new RootsPresentationConfigurationError('mode', 'invalid-choice');
@@ -114,6 +117,7 @@ function decode(value: unknown): RootsPresentationConfiguration {
   // float arithmetic; do not quantize the entire saved configuration here.
   dotSize: source ? Math.min(.1, Math.max(.001, dotSize)) : dotSize,
   accumulation: {enabled, fadeAlpha: source ? Math.min(255, Math.max(0, fadeAlpha)) : fadeAlpha},
+  ...(raw.previewMode===undefined?{}:{previewMode:'live-worker-arrival-v1' as const}),
   ...(!Object.hasOwn(raw, 'pending') || raw.pending === undefined ? {} : {pending: pendingConfiguration(raw.pending)}),
  };
 }

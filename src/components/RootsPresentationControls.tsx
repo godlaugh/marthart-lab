@@ -24,12 +24,17 @@ export function RootsPresentationControls({scene,onChange,onRestart,facts}:Props
  function number(label:string,value:number,write:(value:number)=>RootsPresentationConfiguration,step=.01){return <PresentationNumber key={label} label={t(label)} value={value} step={step} onChange={n=>commit(write(n))}/>;}
  const camera=current.camera,transform=current.transform,cameraTimeline=usesRootsCameraTimeline(scene),sceneTimeline=usesRootsGradientTimeline(scene);
  function sceneAnimation(enabled:boolean){try{onChange(withRootsSceneTimeline(scene,enabled));setError('');}catch(error){setError(error instanceof Error?error.message:String(error));}}
- function cameraAnimation(enabled:boolean){try{onChange(withRootsCameraTimeline(scene,enabled));setError('');}catch(error){setError(error instanceof Error?error.message:String(error));}}
+ function cameraAnimation(enabled:boolean){try{const next=withRootsCameraTimeline(scene,enabled);if(!enabled&&next.rootsPresentation){next.rootsPresentation={...next.rootsPresentation};delete next.rootsPresentation.previewMode;}onChange(next);setError('');}catch(error){setError(error instanceof Error?error.message:String(error));}}
  return <details open className="inspector-section"><summary>{t('复根空间显示')}</summary><div className="section-body">
   {!active?<>
    <p className="muted">{t('启用空间显示会使用源系数表、源色板和渐进采样；已有本地公式与颜色保留。')}</p>
    <button onClick={()=>commit({...current,model:'mathart-1.7.8-v1',pending:current.pending??defaultRootsPendingConfiguration()})}>{t('启用 MathArt 空间显示')}</button>
   </>:<>
+   <label className="check-field"><input aria-label={t('后台实时采样')} type="checkbox" checked={current.previewMode==='live-worker-arrival-v1'} onChange={event=>{
+    try{const configuration={...current,pending:current.pending??defaultRootsPendingConfiguration()};if(event.target.checked)configuration.previewMode='live-worker-arrival-v1';else delete configuration.previewMode;
+     const next=withRootsPresentation(scene,configuration);onChange(event.target.checked?withRootsSceneTimeline(next,true):next);setError('');}catch(error){setError(error instanceof Error?error.message:String(error));}
+   }}/>{t('后台实时采样')}</label>
+   <p className="muted">{t(current.previewMode==='live-worker-arrival-v1'?'暂停动画后仍继续计算并画完剩余点；重新开始会清除当前画面。':'此作品保留按时间顺序回放；启用后台实时采样会重新开始。')}</p>
    <label className="field"><span>{t('空间显示方式')}</span><select aria-label={t('空间显示方式')} value={mode} onChange={event=>setMode(event.target.value as typeof mode)}><option value="density">{t('密度图')}</option><option value="point-cloud">{t('三维点云')}</option></select></label>
    <button disabled={mode===current.mode} onClick={()=>commit({...current,mode})}>{t('应用显示方式并重新采样')}</button>
    {!current.pending?<>

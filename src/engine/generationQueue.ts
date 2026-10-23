@@ -29,6 +29,7 @@ interface GeneratorPort {
   setSamilaPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   updateSurfaceParameter?(output:SceneOutput,name:string,value:number):Promise<void>;
   setSurfacePaused?(output:SceneOutput,paused:boolean):Promise<void>;
+  setRootsPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setPerlinPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setDomainPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   setFractalPaused?(output:SceneOutput,paused:boolean):Promise<void>;
@@ -75,9 +76,9 @@ function metadataContext(context:Context):Context {
   if(context.fractalLive){const {configuration:_,actualFrameRate:__,...live}=context.fractalLive;return {...context,time:0,fractalLive:{...live,actualFrameRate:0,clock:{paused:live.clock.paused}}};}
   return (context.samilaLive?.clock||context.symmetryLive||context.mapLive)?{...context,time:0}:context;
 }
-type LiveKey='perlinLive'|'surfaceLive'|'samilaLive'|'symmetryLive'|'mapLive'|'fractalLive'|'domainLive';
-const playbackMethods={perlinLive:'setPerlinPaused',surfaceLive:'setSurfacePaused',samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused',domainLive:'setDomainPaused'} as const;
-const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='perlin'&&request.context.perlinLive?'perlinLive':request.scene.kind==='surface'&&request.context.surfaceLive?'surfaceLive':request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
+type LiveKey='rootsLive'|'perlinLive'|'surfaceLive'|'samilaLive'|'symmetryLive'|'mapLive'|'fractalLive'|'domainLive';
+const playbackMethods={rootsLive:'setRootsPaused',perlinLive:'setPerlinPaused',surfaceLive:'setSurfacePaused',samilaLive:'setSamilaPaused',symmetryLive:'setSymmetryPaused',mapLive:'setMapPaused',fractalLive:'setFractalPaused',domainLive:'setDomainPaused'} as const;
+const liveKey=(request:Request):LiveKey|undefined=>request.scene.kind==='roots'&&request.context.rootsLive?'rootsLive':request.scene.kind==='perlin'&&request.context.perlinLive?'perlinLive':request.scene.kind==='surface'&&request.context.surfaceLive?'surfaceLive':request.scene.kind==='domain'&&request.context.domainLive?'domainLive':request.scene.kind==='fractal'&&request.context.fractalLive?'fractalLive':request.scene.kind==='map'&&request.context.mapLive?'mapLive':request.scene.kind==='symmetry'&&request.context.symmetryLive?'symmetryLive':request.scene.kind==='samila'&&request.context.samilaLive?'samilaLive':undefined;
 const liveIdentity=(request:Request)=>liveKey(request)==='surfaceLive'?'surface-retained':liveKey(request)==='domainLive'?'domain-retained':liveKey(request)==='fractalLive'?'fractal-retained':liveKey(request)==='samilaLive'?sourceSamilaSceneIdentity(request.scene):sourceIteratedSceneIdentity(request.scene);
 interface PlaybackOwner {key:LiveKey;sessionId:string;paused:boolean;started:boolean;resolve:()=>void;reject:(error:Error)=>void;}
 interface RecordingOwner {request:Request;stop:boolean;active:boolean;handle?:SourceRecordingHandle;cleanup?:Promise<void>;invalidPreview?:Error;}
@@ -120,9 +121,9 @@ export class GenerationQueue {
     const liveToken=key?context[key]?.sessionId:undefined,previousLiveToken=previousKey?this.latest?.context[previousKey]?.sessionId:undefined;
     const sameLive=key===previousKey&&typeof liveToken==='string'&&liveToken.trim().length>0&&liveToken===previousLiveToken;
     const liveIdentityChanged=(liveToken!==undefined||previousLiveToken!==undefined)&&!sameLive;
-    const native=usesRootsNativePresentation(scene),nativeIdentity=native?rootsPresentationRequestIdentity(scene,context.rootsSessionId):undefined;
+    const native=usesRootsNativePresentation(scene),nativeIdentity=native?rootsPresentationRequestIdentity(scene,context.rootsLive?.sessionId??context.rootsSessionId):undefined;
     const previousNative=!!previous&&usesRootsNativePresentation(previous);
-    const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsSessionId)===nativeIdentity;
+    const sameNativeRoots=previousNative&&native&&rootsPresentationRequestIdentity(previous!,this.latest?.context.rootsLive?.sessionId??this.latest?.context.rootsSessionId)===nativeIdentity;
     const nativeIdentityChanged=previousNative&&native&&!sameNativeRoots;
     const carried=sameLive&&this.latest!==this.running&&this.latest!==this.completedLive?.request?this.latest?.parameterWrites:undefined;
     const writes=new Map([...(carried??[]),...(parameterWrites??[])]);
@@ -154,7 +155,7 @@ export class GenerationQueue {
     const request=this.latest,cached=this.completedLive;
     // Metadata edits rebind the exact completed capability, without a draw.
     // The owner supplies the render identity; transport facts must also match.
-    if(cached&&liveKey(request)!=='perlinLive'&&!request.parameterWrites?.length&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
+    if(cached&&liveKey(request)!=='rootsLive'&&liveKey(request)!=='perlinLive'&&!request.parameterWrites?.length&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
       this.completedLive={request,output:cached.output};
       this.callbacks.output(cached.output,this.outputTime(cached.output,request),request.scene);this.callbacks.busy(false);return;
     }
@@ -175,7 +176,7 @@ export class GenerationQueue {
       if(!current())throw new DOMException('实时参数会话已更换','AbortError');
       return !surfaceEdit&&request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
-    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
       if(current()&&cached&&liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError&&error.previewRetained){
         // Keep the rejected document as the author's draft, but return this
         // request's applied context to the owner-confirmed completed version.
@@ -191,7 +192,7 @@ export class GenerationQueue {
   }
   private outputTime(output:SceneOutput,request:Request):number{
     const fallback=output.temporal?.time??request.context.time;
-    return output.type==='raster'?(output.perlinLive?.sceneTime??output.domainLive?.sceneTime??output.fractalLive?.sceneTime??output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:fallback)):fallback;
+    return output.type==='raster'?(output.rootsLive?.sceneTime??output.perlinLive?.sceneTime??output.domainLive?.sceneTime??output.fractalLive?.sceneTime??output.mapLive?.sceneTime??output.symmetryLive?.sceneTime??(output.samilaLive?.clock==='realtime-source-queue'?output.samilaLive.runtime!.sceneTime:fallback)):fallback;
   }
  /** Ordered input events lease the completed live owner. A document edit or
   * transport transition ends the gesture before its deferred work runs. */
@@ -238,6 +239,7 @@ export class GenerationQueue {
   setSamilaPaused(paused:boolean):Promise<void>{return this.setLivePaused('samilaLive',paused);}
   setMapPaused(paused:boolean):Promise<void>{return this.setLivePaused('mapLive',paused);}
   setSymmetryPaused(paused:boolean):Promise<void>{return this.setLivePaused('symmetryLive',paused);}
+  setRootsPaused(paused:boolean):Promise<void>{return this.setLivePaused('rootsLive',paused);}
   setPerlinPaused(paused:boolean):Promise<void>{return this.setLivePaused('perlinLive',paused);}
   setDomainPaused(paused:boolean):Promise<void>{return this.setLivePaused('domainLive',paused);}
   setFractalPaused(paused:boolean):Promise<void>{return this.setLivePaused('fractalLive',paused);}

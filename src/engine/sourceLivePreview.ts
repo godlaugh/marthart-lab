@@ -1,3 +1,4 @@
+import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {usesSourceDomain} from './sourceDomainTimeline';
 import {usesSourceMapParameters} from './sourceMapParameterIdentity';
@@ -12,7 +13,8 @@ import {supportsSourceFractalLive} from './sourceFractalDocument';
  * their saved models, including legacy parameter/timeline behavior. Local
  * delayed accumulation and disabled recording retain fixed reconstruction; the
  * native live mobject always has a zero origin and draws each normal display. */
-export function sourceLivePreviewKind(scene:SceneDocument):'surface'|'samila'|'map'|'symmetry'|'fractal'|'domain'|'perlin'|undefined {
+export function sourceLivePreviewKind(scene:SceneDocument):'surface'|'samila'|'map'|'symmetry'|'fractal'|'domain'|'perlin'|'roots'|undefined {
+ if(usesRootsNativePresentation(scene)&&scene.rootsPresentation?.previewMode==='live-worker-arrival-v1')return 'roots';
  if(scene.kind==='perlin'&&scene.perlinSource!==undefined)return 'perlin';
  if(usesSourceSurfaceGeometry(scene))return 'surface';
  if(usesSourceDomain(scene))return 'domain';
