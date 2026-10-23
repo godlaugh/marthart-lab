@@ -1,3 +1,6 @@
+import {snapshotGenerationInput} from './generationInput';
+import {sourceRecordingSize} from './sourceRecordingSize';
+import type {SourceRecordingOptions} from './generationProtocol';
 import {RootsConcurrentStream} from './rootsConcurrentStream';
 import {validateRootsLiveContext,type RootsLiveContext,type RootsLiveFacts} from './rootsLive';
 import {SourceSceneHostClock} from './sourceSceneHostClock';
@@ -62,6 +65,9 @@ interface CompletedFrame {
  configuration:RootsPresentationConfiguration;metadata:Omit<RootsRasterOutput,'pixels'|'warnings'>;baseWarnings:readonly string[];
  mathBytes:number;descriptorBytes:number;
 }
+interface LiveRecording {
+ handle:object;author:SceneDocument;primary:GenerateContext;target:GenerateContext;simulationFps:number;next:number;complete:boolean;finished:boolean;descriptorBytes:number;
+}
 /** One worker-owned native presentation instance. Explicit live requests own
  * concurrent producers; saved replay retains the existing ordinal math job.
  * Display edits consume zero historical points. Explicit backseek reconstructs
@@ -77,6 +83,9 @@ export class RootsNativePresentationSession {
  private liveContext?:RootsLiveContext;
  private hostClock?:SourceSceneHostClock;
  private liveHasAnimations=false;
+ private recording?:LiveRecording;
+ private recordingHandoff?:LiveRecording;
+ private recordingDescriptorBytes=0;
  private pendingFrame=-1;
  private pendingAdmission?:(bytes:number)=>void;
  private ring?:RootsPointCloudRing;
@@ -93,7 +102,7 @@ export class RootsNativePresentationSession {
  private resetDisplay(){
   // Never drop an owner before its cleanup succeeds. A failed cleanup ticket
   // remains attached to this generation and is retired before future work.
-  this.completed=undefined;
+  this.completed=undefined;this.recording=undefined;this.recordingHandoff=undefined;this.recordingDescriptorBytes=0;
   this.density?.dispose();this.density=undefined;
   for(const target of ['primary','offscreen'] as const){this.clouds[target]?.owner.dispose();delete this.clouds[target];}
   this.ring?.dispose();this.ring=undefined;
@@ -108,10 +117,11 @@ export class RootsNativePresentationSession {
  diagnostics(){const math=this.math.diagnostics(),density=this.density?.diagnostics(),primary=this.clouds.primary?.owner.diagnostics(),offscreen=this.clouds.offscreen?.owner.diagnostics(),cloud=primary??offscreen,ring=this.ring?.facts;return{
   instance:this.instance,attemptedSamples:this.state?.attemptedSamples??0,rawPoints:this.state?.rootPoints??0,math,density,cloud,cloudTargets:{primary,offscreen},ring,displayFrames:this.displayFrames,cameraFrame:this.cameraFrame,completedPrimary:!!this.completed&&this.completed.plan.target==='primary',
   pending:this.pending?.facts,concurrent:this.concurrent?.facts,
-  retainedBytes:math.workspaceBytes+math.keyBytes+(density?.gpu?.retainedBytes??0)+(primary?.retainedBytes??0)+(offscreen?.retainedBytes??0)+(ring?.allocatedBytes??0)+(this.completed?.descriptorBytes??0)+(this.concurrent?.facts.reservedBytes??this.pending?.retainedBytes??0),
+  retainedBytes:math.workspaceBytes+math.keyBytes+(density?.gpu?.retainedBytes??0)+(primary?.retainedBytes??0)+(offscreen?.retainedBytes??0)+(ring?.allocatedBytes??0)+(this.completed?.descriptorBytes??0)+this.recordingDescriptorBytes+(this.concurrent?.facts.reservedBytes??this.pending?.retainedBytes??0),
  };}
  generate(scene:SceneDocument,c:GenerateContext):RootsRasterOutput {
-  this.cleanup.prepare();
+  if(this.recording)throw Error('复根录制进行中，请先停止录制');
+  this.recordingHandoff=undefined;this.recordingDescriptorBytes=0;this.cleanup.prepare();
   try{if(c.rootsLive!==undefined)return this.runLive(scene,c);if(this.liveContext)this.reset();return this.run(scene,c);}catch(error){this.reset([error]);throw error;}
  }
  /** Identity observation for transport recovery after a rejected capture. This
@@ -127,6 +137,7 @@ export class RootsNativePresentationSession {
   * preview. Once rendering starts, failure revokes the frame and cleans the same
   * owners; a changed density target may already have irreversibly cleared ink. */
  capturePaused(scene:SceneDocument,c:GenerateContext,options:{additionalBytes?:number}={}):{capture:RootsRasterOutput;preview:RootsRasterOutput} {
+  if(this.recording)throw Error('复根录制进行中，不能暂停截图');
   const last=this.completed,additionalBytes=options.additionalBytes??0;
   if(!Number.isSafeInteger(additionalBytes)||additionalBytes<0)throw new RootsGpuError('暂停截图的后处理容量预留无效','input');
   rootsGpuInput(()=>validateRasterRequest(c));rootsGpuCancel(c.isCancelled);
@@ -163,6 +174,7 @@ export class RootsNativePresentationSession {
    const descriptorBytes=last.requestKey.length*2+descriptorRepresentationBytes({plan:last.plan,color:last.color,configuration:last.configuration,metadata,baseWarnings:last.baseWarnings});
    this.admitMemory(last.plan,last.mathBytes,last.descriptorBytes+captureMetadataBytes+2*metadataBytes+heldCaptureBytes+additionalBytes);
    this.completed={...last,metadata:structuredClone(metadata),descriptorBytes};
+   this.recordingHandoff=undefined;this.recordingDescriptorBytes=0;
    return{capture,preview};
   }catch(error){this.reset([error]);throw error;}
  }
@@ -182,7 +194,7 @@ export class RootsNativePresentationSession {
    if(additionalTarget?.target===other)peak+=this.displayPeak(additionalTarget);
    else if(retained)peak+=rootsNativePointCloudGpuBytes(retained.width,retained.height);
   }
-  if(peak+mathBytes+CHUNK*16+pendingBytes+extraBytes>MAX_BYTES)throw new RootsGpuError('源复根工作区、显示与点缓冲超过 768 MiB','capacity');
+  if(peak+mathBytes+CHUNK*16+pendingBytes+extraBytes+this.recordingDescriptorBytes>MAX_BYTES)throw new RootsGpuError('源复根工作区、显示与点缓冲超过 768 MiB','capacity');
  }
  private drainPending(plan:PreparedRootsProjection,isCancelled?:()=>boolean){
   if(!this.pending&&!this.concurrent)return;
@@ -246,18 +258,73 @@ export class RootsNativePresentationSession {
   this.admitMemory(plan,last.mathBytes,last.descriptorBytes+descriptorRepresentationBytes(outputMetadata)+extraBytes);
   return{...structuredClone(outputMetadata),pixels};
  }
+ /** Toolbar recording reconstructs the last applied document, including its
+  * computation workers. Completion is observed after each real display; no
+  * predicted sample/frame count can stand in for asynchronous arrivals. */
+ beginRecording(scene:SceneDocument,c:GenerateContext,options:SourceRecordingOptions){
+  if(this.recording)throw Error('复根录制已经开始');
+  if(!c.rootsLive||!this.matchesCompletedPrimary(scene,c))throw Error('复根录制需要最后成功的实时主预览');
+  rootsGpuCancel(c.isCancelled);
+  if(!options||!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('复根录制帧率必须为 1–120 的整数');
+  const last=this.completed!,size=sourceRecordingSize(options,last.plan.pixelRatio);
+  if(c.width!==last.plan.physicalWidth||c.height!==last.plan.physicalHeight||c.rootsViewport?.target==='offscreen')throw Error('复根录制主视口与最后成功预览不一致');
+  const input=snapshotGenerationInput(c);
+  const descriptorBytes=2*descriptorRepresentationBytes(scene)+4*descriptorRepresentationBytes(input);
+  this.admitMemory(last.plan,0,last.descriptorBytes+descriptorBytes);
+  const author=structuredClone(scene),live={...validateRootsLiveContext(c.rootsLive),clock:{paused:false}};
+  const primary:GenerateContext={...input,time:0,rootsLive:live,rootsViewport:{logicalWidth:last.plan.logicalWidth,logicalHeight:last.plan.logicalHeight,referenceLogicalHeight:last.plan.referenceLogicalHeight,target:'primary'}};
+  const target:GenerateContext={...primary,isCancelled:c.isCancelled,quality:'export',width:size.width,height:size.height,rootsViewport:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,referenceLogicalHeight:last.plan.referenceLogicalHeight,target:'offscreen'}};
+  const plan=prepareRootsProjection(author.rootsPresentation!,{width:target.width,height:target.height,viewport:target.rootsViewport!});
+  // Admit the new target against the existing identical computation budget
+  // before destroying the completed preview. Rebuilding starts no worker here.
+  this.admitMemory(plan,0,last.descriptorBytes+descriptorBytes);
+  const record:LiveRecording={handle:{},author,primary,target,simulationFps:options.simulationFps,next:0,complete:false,finished:false,descriptorBytes};
+  this.reset();
+  try{
+   const warmup=this.runLive(author,target,{kind:'recording',simulationFps:record.simulationFps,displayFrame:0,descriptorBytes});
+   record.next=1;record.complete=warmup.rootsLive!.autoRecording.complete;this.recording=record;
+   return{handle:record.handle,scene:structuredClone(author),context:snapshotGenerationInput(primary),clock:{simulationFps:record.simulationFps,warmupUpdates:1 as const,completionReason:'observed-roots-display' as const},warmup};
+  }catch(error){this.reset([error]);throw error;}
+ }
+ ownsRecording(handle:object):boolean{return this.recording?.handle===handle;}
+ nextRecordingFrame(handle:object,displayFrame:number):RootsRasterOutput {
+  const record=this.recording;
+  if(!record||record.handle!==handle||record.finished||record.complete)throw Error('复根录制已完成或身份已失效');
+  if(!Number.isSafeInteger(displayFrame)||displayFrame!==record.next)throw Error('复根录制必须连续请求下一显示帧');
+  // Cancellation before a draw preserves the last delivered state for finish.
+  rootsGpuCancel(record.target.isCancelled);
+  try{
+   const output=this.runLive(record.author,record.target,{kind:'recording',simulationFps:record.simulationFps,displayFrame,descriptorBytes:record.descriptorBytes});
+   record.next++;record.complete=output.rootsLive!.autoRecording.complete;return output;
+  }catch(error){this.reset([error]);throw error;}
+ }
+ finishRecording(handle:object,timestampMs?:number){
+  const record=this.recording??this.recordingHandoff;
+  if(!record||record.handle!==handle)throw Error('复根录制身份已失效');
+  // disableRenderMode resets only lastTime. It never resets scene time,
+  // restores pause angles, reconstructs workers or repeats the final update.
+  if(!record.finished){this.hostClock!.resetTime(timestampMs);record.finished=true;}
+  const primary={...record.primary,time:this.cameraClock!.snapshot().sceneTime,isCancelled:undefined};
+  try{
+   const preview=this.runLive(record.author,primary,{kind:'snapshot'});
+   this.recording=undefined;this.recordingHandoff=record;
+   return{scene:structuredClone(record.author),context:snapshotGenerationInput(primary),preview};
+  }catch(error){this.reset([error]);throw error;}
+ }
  setPaused(paused:boolean,timestampMs?:number):void {
+  if(this.recording)throw Error('复根录制进行中，不能切换播放状态');
   if(!this.liveContext||!this.hostClock||!this.cameraClock)throw Error('复根播放控制需要实时实例');
   const restore=this.hostClock.setPaused(paused,this.cameraClock.snapshot().camera,timestampMs);
   if(restore)this.cameraClock.writeAngles(restore);
   this.liveContext={...this.liveContext,clock:{...this.liveContext.clock,paused}};
+  this.recordingHandoff=undefined;this.recordingDescriptorBytes=0;
  }
  private liveFacts(renderKind:'update'|'snapshot',mode:'density'|'point-cloud'):RootsLiveFacts {
   const stream=this.concurrent!.facts,frame=this.cameraClock!.snapshot(),host=this.hostClock!.diagnostics();
   const inputs={queueComplete:frame.queueComplete,hasAnimations:this.liveHasAnimations,mode,finishedWorkers:stream.pending.finishedWorkers,workerCount:stream.pending.workerCount,queueSize:stream.pool.queuedBatches+stream.pool.waitingBatches+stream.pending.queuedBatches,pendingPoints:stream.pending.pendingPoints};
   return{sessionId:this.liveContext!.sessionId,paused:host.paused,clockSource:host.clockSource,renderKind,sceneTime:frame.sceneTime,frame,stream,autoRecording:{...inputs,policy:'roots-worker-arrival-v1',complete:isRootsAutoRecordingComplete(inputs)}};
  }
- private runLive(scene:SceneDocument,c:GenerateContext):RootsRasterOutput {
+ private runLive(scene:SceneDocument,c:GenerateContext,operation?:{kind:'recording';simulationFps:number;displayFrame:number;descriptorBytes:number}|{kind:'snapshot'}):RootsRasterOutput {
   const started=performance.now();validateRasterRequest(c);rootsGpuCancel(c.isCancelled);
   const live=validateRootsLiveContext(c.rootsLive);
   if(!usesRootsNativePresentation(scene)||!usesRootsNativeMath(scene)||scene.settings.rootsMode!=='progressive'||!usesRootsCameraTimeline(scene))throw Error('复根实时预览需要完整源数学、显示和相机队列');
@@ -280,16 +347,19 @@ export class RootsNativePresentationSession {
    this.concurrent=new RootsConcurrentStream(scene.rootsMath,color.metric,pending,{maximumWorkers:live.maximumWorkers,maximumBytes},undefined,bytes=>this.pendingAdmission!(bytes));
    this.state=this.concurrent.progress;this.concurrent.start();
   }
+  if(operation?.kind==='recording')this.recordingDescriptorBytes=operation.descriptorBytes;
   this.hostClock!.assertPaused(live.clock.paused);
-  const before=this.state!,previous=this.cameraClock!.snapshot(),dt=this.hostClock!.update(live.clock);
-  const frame=this.cameraClock!.step(dt,{paused:live.clock.paused,allowSignedDt:true,isCancelled:c.isCancelled});
+  const before=this.state!,previous=this.cameraClock!.snapshot();
+  const dt=operation?.kind==='recording'?Math.fround(1/Math.fround(operation.simulationFps)):operation?.kind==='snapshot'?0:this.hostClock!.update(live.clock);
+  const frame=operation?.kind==='snapshot'?previous:this.cameraClock!.step(dt,{paused:live.clock.paused,allowSignedDt:true,isCancelled:c.isCancelled});
   plan=projection(frame.camera);if(frame.gradient)color={...color,paletteOffset:frame.gradient.offset};
   this.admitMemory(plan,0,requestKey.length*2);
   this.pendingAdmission=bytes=>this.admitMemory(plan,0,requestKey.length*2,undefined,bytes);
-  for(let i=0;i<(previous.queueComplete||live.clock.paused?1:2);i++)this.drainPending(plan,c.isCancelled);
+  if(operation?.kind!=='snapshot')for(let i=0;i<(previous.queueComplete||live.clock.paused?1:2);i++)this.drainPending(plan,c.isCancelled);
   const display=this.advanceDisplay(plan,[],color,c.isCancelled),pixels=this.readDisplay(plan,color,c.isCancelled);
   rootsGpuCancel(c.isCancelled);this.lastTime=c.time;this.liveContext=live;
-  const state=this.state!,liveFacts=this.liveFacts('update',plan.mode),density=display.density;
+  const state=this.state!,liveFacts=this.liveFacts(operation?.kind==='snapshot'?'snapshot':'update',plan.mode),density=display.density;
+  if(operation?.kind==='recording'){liveFacts.clockSource='render-fixed-step';liveFacts.recording={displayFrame:operation.displayFrame,simulationFps:operation.simulationFps,warmup:operation.displayFrame===0,complete:liveFacts.autoRecording.complete};}
   const facts:RootsPresentationFacts={model:'mathart-1.7.8-v1',mode:plan.mode,clockPolicy:'source-live-clock-v1',streamPolicy:'worker-arrival',presentationAlpha:'opaque-framebuffer-rgb',instance:this.instance,restartReason,attemptedSamples:state.attemptedSamples,newSamples:state.attemptedSamples-before.attemptedSamples,newRawPoints:state.rootPoints-before.rootPoints,totalRawPoints:state.rootPoints,physicalSize:[c.width,c.height],logicalSize:[plan.logicalWidth,plan.logicalHeight],referenceLogicalHeight:plan.referenceLogicalHeight,target:plan.target,...display};
   const warnings=[...color.diagnostics,...timeline.warnings,'后台求根按实际线程批次到达；暂停只停止场景时钟，绘制继续消费积压点。未声明与原版墙钟或逐帧到达顺序一致。',OPAQUE_FRAME_WARNING];
   const output:RootsRasterOutput={type:'raster',dimension:2,cameraResolved:true,backend:'webgl2',width:c.width,height:c.height,pixels,formulaPresentation:formulaPresentation(scene,rootsFormulaViewport(plan)),rootsPresentation:facts,rootsLive:liveFacts,

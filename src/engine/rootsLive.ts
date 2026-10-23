@@ -5,8 +5,9 @@ import type {RootsAutoRecordingInputs} from './rootsRecording';
 import {validateSourceSceneClockRequest,type SourceSceneClockRequest} from './sourceSceneHostClock';
 export interface RootsLiveContext {sessionId:string;clock:SourceSceneClockRequest;maximumWorkers:number;}
 export interface RootsLiveFacts {
- sessionId:string;paused:boolean;clockSource:'worker-wall-clock'|'injected';renderKind:'update'|'snapshot';
+ sessionId:string;paused:boolean;clockSource:'worker-wall-clock'|'injected'|'render-fixed-step';renderKind:'update'|'snapshot';
  sceneTime:number;frame:RootsSceneFrame;stream:RootsConcurrentStream['facts'];
+ recording?:{displayFrame:number;simulationFps:number;warmup:boolean;complete:boolean};
  autoRecording:RootsAutoRecordingInputs&{policy:'roots-worker-arrival-v1';complete:boolean};
 }
 export function validateRootsLiveContext(raw:unknown):RootsLiveContext {
@@ -21,7 +22,7 @@ export function validRootsLiveOutput(output:SceneOutput,context:GenerateContext)
   const v=validateRootsLiveContext(context.rootsLive);
   if(output.type!=='raster'||!output.rootsLive||!output.rootsPresentation||!output.roots)return false;
   const f=output.rootsLive;
-  return f.sessionId===v.sessionId&&f.paused===v.clock.paused&&['worker-wall-clock','injected'].includes(f.clockSource)&&['update','snapshot'].includes(f.renderKind)
+  return f.recording===undefined&&f.sessionId===v.sessionId&&f.paused===v.clock.paused&&['worker-wall-clock','injected'].includes(f.clockSource)&&['update','snapshot'].includes(f.renderKind)
    &&Number.isFinite(f.sceneTime)&&Number.isSafeInteger(f.frame.frame)&&f.frame.frame>=0&&f.stream.policy==='roots-worker-arrival-v1'&&!f.stream.failed&&!f.stream.disposed
    &&f.stream.pool.consumedSamples===output.roots.attemptedSamples&&f.stream.pending.producedPoints===output.roots.rootPoints
    &&f.frame.sceneTime===f.sceneTime
