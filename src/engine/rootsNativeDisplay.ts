@@ -127,7 +127,7 @@ export class RootsNativeDensityDisplay {
   rootsGpuCancel(isCancelled);
   const gpu=this.gpu.diagnostics();
   this.projection=update.state;this.invalidPoints+=invalid;this.consumedPoints+=inputCount;this.renders++;
-  this.frame=Object.freeze({model:'mathart-1.7.8-v1',mode:'density',kernelPolicy:kernel,actualKernel:gpu.lastKernel??gpu.probe?.selected,
+  this.frame=Object.freeze({model:'mathart-1.7.8-v1',mode:'density',kernelPolicy:kernel,actualKernel:gpu.lastKernel??gpu.autoKernel,
     submittedFinitePointCount:gpu.submittedPoints,newInputPoints:inputCount,newInvalidPoints:invalid,consumedInputPoints:this.consumedPoints,
     capture:update.capture,captureReason:update.captureReason,clearInk:update.clearInk,clearReasons:Object.freeze([...update.reasons]),displayRotation:update.displayRotation,
     projectionKind:update.state.anchor.optics.projectionKind,physicalSize:Object.freeze([width,height] as const),logicalSize:Object.freeze([plan.logicalWidth,plan.logicalHeight] as const),

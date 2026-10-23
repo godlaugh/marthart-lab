@@ -8,7 +8,7 @@ import {defaultRootsPresentationConfiguration} from '../src/engine/rootsPresenta
  * covered by the independent retained-shader browser verifier, not this mock. */
 function fakeGl() {
   const live = new Set<object>(), deleted: object[] = [], calls: string[] = [];
-  let id = 0, lost = false, current: object | null = null, readCount = 0;
+  let id = 0, lost = false, current: object | null = null;
   const faults = new Map<string, () => void>();
   const constants = new Map<string, number>();
   const create = () => { const object = {id: ++id}; live.add(object); return object; };
@@ -32,7 +32,7 @@ function fakeGl() {
       if (key === 'checkFramebufferStatus') return gl.FRAMEBUFFER_COMPLETE;
       if (key === 'getError') return gl.NO_ERROR;
       if (key === 'getUniformLocation') return {};
-      if (key === 'readPixels') { const dst = args[6] as Float32Array; dst.fill(0); if (readCount++ === 0) dst.fill(1, 0, 4); }
+      if (key === 'readPixels') { const dst = args[6] as Float32Array; dst.fill(0); }
     };
     target[key] = fn; return fn;
   }});
@@ -59,7 +59,7 @@ describe('native projected Roots GPU failure and ownership boundaries', () => {
     expect(failure(() => gpu.add([0, 0, 0], .5)).failureKind).toBe('input');
     expect(gpu.diagnostics().contextOwned).toBe(false);
   });
-  it('counts queued points separately and clears pending data without rerunning probe', () => {
+  it('counts queued points separately and clears pending data without reading ink', () => {
     const f = fakeGl(), gpu = new RootsNativeDensityGpu(); gpu.initialize(2, 2);
     const reads = f.calls.filter(s => s === 'readPixels').length;
     gpu.add([1e9, 2, 3], .5);
@@ -108,7 +108,7 @@ describe('native projected Roots GPU failure and ownership boundaries', () => {
     const f = fakeGl(), gpu = new RootsNativeDensityGpu(), p = plan(2); gpu.initialize(2, 2); gpu.add([0, 0, 0], .5);
     let checks = 0;
     expect(() => gpu.flush(p, 'points', () => ++checks === 3)).toThrowError(expect.objectContaining({name: 'AbortError'}));
-    expect(f.calls.filter(x => x === 'drawArrays').length).toBe(2); // Probe + actual draw.
+    expect(f.calls.filter(x => x === 'drawArrays').length).toBe(1); // Actual draw before cancellation.
     expect(f.live.size).toBe(0); expect(gpu.diagnostics().submittedPoints).toBe(0);
     const recovered = fakeGl(); gpu.initialize(2, 2); gpu.add([0, 0, 0], .5); gpu.flush(p, 'quad');
     expect(gpu.diagnostics()).toMatchObject({submittedPoints: 1, pendingPoints: 0}); gpu.dispose(); expect(recovered.live.size).toBe(0);
@@ -133,32 +133,32 @@ describe('native projected Roots GPU failure and ownership boundaries', () => {
   it('cleans all previously allocated objects on compilation, linking, FBO and read failure', () => {
     for (const stage of ['compileShader', 'linkProgram', 'checkFramebufferStatus', 'readPixels']) {
       const f = fakeGl(), gpu = new RootsNativeDensityGpu(); f.faults.set(stage, () => { throw Error(stage); });
-      expect(failure(() => gpu.initialize(2, 2)).failureKind).toBe('device');
+      expect(failure(() => { gpu.initialize(2, 2); if (stage === 'readPixels') gpu.readback(); }).failureKind).toBe('device');
       expect(f.live.size).toBe(0); expect(gpu.diagnostics().handles).toBe(0);
     }
   });
-  it('rejects incomplete or invalid no-error probe RGBA before caching a kernel', () => {
+  it('rejects incomplete or invalid no-error metric readback', () => {
     for (const fill of [
       (dst: Float32Array) => { dst.fill(0, 0, dst.length - 4); },
-      (dst: Float32Array) => { dst.fill(0); dst[0] = 1; },
+      (dst: Float32Array) => { dst.fill(0); dst[1] = 1; },
       (dst: Float32Array) => { dst.fill(0); dst[dst.length - 1] = Infinity; },
       (dst: Float32Array) => { dst.fill(0); dst.fill(-1, 0, 4); },
     ]) {
       const f = fakeGl(), gpu = new RootsNativeDensityGpu();
       f.gl.readPixels = (...args: unknown[]) => fill(args[6] as Float32Array);
-      expect(failure(() => gpu.initialize(2, 2))).toMatchObject({failureKind: 'device', message: 'Native root point probe readback is incomplete or invalid'});
-      expect(gpu.diagnostics()).toMatchObject({contextOwned: false, handles: 0, probe: undefined}); expect(f.live.size).toBe(0);
+      gpu.initialize(2, 2);
+      expect(failure(() => gpu.readback())).toMatchObject({failureKind: 'device', message: 'Native root readback violates metric ink contract'});
+      expect(gpu.diagnostics()).toMatchObject({contextOwned: false, handles: 0}); expect(f.live.size).toBe(0);
     }
   });
-  it('keeps explicit probe GL error on the native quad route and accepts complete empty ink', () => {
-    for (const reportsError of [false, true]) {
-      const f = fakeGl(), gpu = new RootsNativeDensityGpu();
-      f.gl.readPixels = (...args: unknown[]) => { if (!reportsError) (args[6] as Float32Array).fill(0); };
-      let checks = 0; f.gl.getError = () => ++checks === 2 && reportsError ? f.gl.INVALID_OPERATION : f.gl.NO_ERROR;
-      gpu.initialize(2, 2);
-      expect(gpu.diagnostics().probe).toMatchObject({nonzeroPixels: 0, selected: 'quad', glError: reportsError ? f.gl.INVALID_OPERATION : f.gl.NO_ERROR});
-      gpu.dispose(); expect(f.live.size).toBe(0);
-    }
+  it('preserves the source auto quad route and explicit diagnostic points without a repaired probe', () => {
+    const f = fakeGl(), gpu = new RootsNativeDensityGpu(); gpu.initialize(2, 2);
+    expect(f.calls).not.toContain('drawArrays'); expect(f.calls).not.toContain('readPixels');
+    expect(gpu.diagnostics()).toMatchObject({autoKernel: 'quad', autoKernelReason: 'mathart-1.7.8-uninitialized-probe'});
+    gpu.add([0, 0, 0], .5); gpu.flush(plan(2));
+    expect(gpu.diagnostics().lastKernel).toBe('quad');
+    gpu.clear(); gpu.add([0, 0, 0], .5); gpu.flush(plan(2), 'points');
+    expect(gpu.diagnostics().lastKernel).toBe('points'); gpu.dispose(); expect(f.live.size).toBe(0);
   });
   it('preserves compile failure plus failed shader deletion and keeps the handle owned', () => {
     const f = fakeGl(), gpu = new RootsNativeDensityGpu();
@@ -174,7 +174,7 @@ describe('native projected Roots GPU failure and ownership boundaries', () => {
     const f = fakeGl(), gpu = new RootsNativeDensityGpu(); gpu.initialize(2, 2);
     f.faults.set('deleteProgram', () => { throw Error('program deletion fault'); });
     expect(failure(() => gpu.dispose()).failureKind).toBe('cleanup');
-    expect(gpu.diagnostics()).toMatchObject({cleanupPending: true, handles: 3}); expect(f.live.size).toBe(3);
+    expect(gpu.diagnostics()).toMatchObject({cleanupPending: true, handles: 2}); expect(f.live.size).toBe(2);
     f.faults.clear(); gpu.dispose(); expect(f.live.size).toBe(0); expect(gpu.diagnostics().handles).toBe(0);
   });
   it('retains context ownership after context release fails and permits explicit retry', () => {

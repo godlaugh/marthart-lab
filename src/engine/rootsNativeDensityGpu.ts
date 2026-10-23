@@ -81,24 +81,14 @@ void main() {
     float edgeAlpha = coverageAlpha * coreAlpha;
     fragColor = vec4(edgeAlpha, vertMetric * edgeAlpha, 0.0, 0.0);
 }`;
-// The retained map_attractor_debug_point shaders used by the source probe.
-const PROBE_VERTEX = HEADER + `
-uniform float radius;
-void main() {
-  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
-  gl_PointSize = max(radius, 16.0);
-}`;
-const PROBE_FRAGMENT = HEADER + `
-out vec4 fragColor;
-void main() {
-  vec2 p = gl_PointCoord * 2.0 - 1.0;
-  if (dot(p, p) > 1.0) {
-    discard;
-  }
-  fragColor = vec4(1.0, 1.0, 1.0, 1.0);
-}`;
+/** MathArt 1.7.8 loads its debug point shader but never binds/initializes it
+ * before probePointSplatSupport reads glProgram=0. The original probe therefore
+ * selects quad, even on hardware supporting points. Preserve that source route
+ * without issuing invalid GL calls or repairing the source probe. Explicit
+ * points/quad remain diagnostic overrides. See the native reference report. */
+export const ROOTS_NATIVE_AUTO_KERNEL = 'quad' as const;
 
-/** Peak includes RGBA32F ink + readback (also used for probe), CPU/GPU
+/** Peak includes RGBA32F ink + readback, CPU/GPU
  * interleaved chunks and one readback flip row. It excludes driver overhead. */
 export function rootsNativeDensityGpuBytes(width: number, height: number): number {
   require([width, height].every(n => Number.isInteger(n) && n > 0 && n <= 16384), 'Native root dimensions exceed the image budget', 'capacity');
@@ -109,7 +99,7 @@ function floats(length: number): Float32Array {
   catch (cause) { throw new RootsGpuError('Native root CPU buffer allocation failed', 'capacity', {cause}); }
 }
 
-type ProgramKind = 'points' | 'quad' | 'probe';
+type ProgramKind = 'points' | 'quad';
 /** Owns only source projected metric accumulation. It does not solve roots,
  * transform raw roots, tone colors, choose source camera anchors or replay a
  * failed request. A failed/partly drawn flush invalidates the entire owner. */
@@ -128,7 +118,6 @@ export class RootsNativeDensityGpu {
   private queued = 0;
   private submitted = 0;
   private cleanupPending = false;
-  private probe?: {nonzeroPixels: number; glError: number; selected: 'points' | 'quad'};
   private lastKernel?: 'points' | 'quad';
   private draws = 0;
   private readbackBytes = 0;
@@ -139,7 +128,8 @@ export class RootsNativeDensityGpu {
       width: this.width, height: this.height, inkKind: 'metric-sum' as const,
       queuedFinitePoints: this.queued, pendingPoints: this.pending, submittedPoints: this.submitted,
       stagingCapacity: ROOTS_NATIVE_DENSITY_CHUNK, lastKernel: this.lastKernel,
-      probe: this.probe ? {...this.probe} : undefined,
+      autoKernel: ROOTS_NATIVE_AUTO_KERNEL,
+      autoKernelReason: 'mathart-1.7.8-uninitialized-probe' as const,
       device: this.deviceFacts ? {...this.deviceFacts, maxViewport: [...this.deviceFacts.maxViewport], pointSizeRange: [...this.deviceFacts.pointSizeRange]} : undefined,
       draws: this.draws, readbackBytes: this.readbackBytes, cleanupPending: this.cleanupPending,
       contextOwned: !!this.gl,
@@ -185,7 +175,6 @@ export class RootsNativeDensityGpu {
         require(this.ink && this.framebuffer && this.buffer && this.vao, 'Native root resource allocation failed');
         this.compile('points', POINT_VERTEX, POINT_FRAGMENT);
         this.compile('quad', QUAD_VERTEX, QUAD_FRAGMENT);
-        this.compile('probe', PROBE_VERTEX, PROBE_FRAGMENT);
         gl.bindTexture(gl.TEXTURE_2D, this.ink);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -197,9 +186,6 @@ export class RootsNativeDensityGpu {
         this.target(); this.clearInk(); this.check('allocation');
       });
       this.upload = floats(ROOTS_NATIVE_DENSITY_CHUNK * 4);
-      // Before any user points: the original same-size draw/read probe cannot
-      // erase existing ink, and its geometry/metrics never enter submitted N.
-      this.probePoints();
     });
   }
 
@@ -247,33 +233,6 @@ export class RootsNativeDensityGpu {
   private blend(): void { const gl = this.gl!; gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD); gl.blendFunc(gl.ONE, gl.ONE); }
   private releaseDrawState(): void { const gl = this.gl!; gl.disable(gl.BLEND); gl.bindVertexArray(null); gl.bindBuffer(gl.ARRAY_BUFFER, null); gl.useProgram(null); }
 
-  private probePoints(): void {
-    const gl = this.gl!, data = floats(this.width * this.height * 4);
-    data.fill(NaN);
-    rootsGpuFinally(() => device(() => {
-      this.target(); this.clearInk(); this.blend();
-      gl.bindVertexArray(this.vao!);
-      gl.useProgram(this.programs.get('probe')!);
-      gl.uniform1f(gl.getUniformLocation(this.programs.get('probe')!, 'radius'), 32);
-      gl.drawArrays(gl.POINTS, 0, 16);
-      gl.readBuffer(gl.COLOR_ATTACHMENT0); gl.pixelStorei(gl.PACK_ALIGNMENT, 1);
-      gl.readPixels(0, 0, this.width, this.height, gl.RGBA, gl.FLOAT, data);
-      const glError = gl.getError();
-      require(!gl.isContextLost(), 'Native root context lost during point probe');
-      let nonzeroPixels = 0;
-      for (let i = 0; i < data.length; i += 4) {
-        // The probe writes equal, nonnegative RGBA over a clear-zero target.
-        // NO_ERROR alone cannot establish that the requested read completed:
-        // untouched sentinel cells or partial channels must not select/cache a
-        // rendering kernel. A reported GL error retains the native quad route.
-        if (glError === gl.NO_ERROR) require(Number.isFinite(data[i]) && data[i] >= 0 && data[i + 1] === data[i] && data[i + 2] === data[i] && data[i + 3] === data[i], 'Native root point probe readback is incomplete or invalid');
-        if (Number.isFinite(data[i]) && data[i] > 0) nonzeroPixels++;
-      }
-      this.probe = {nonzeroPixels, glError, selected: nonzeroPixels > 0 && glError === gl.NO_ERROR ? 'points' : 'quad'};
-      this.readbackBytes += data.byteLength;
-    }), () => { this.releaseDrawState(); this.clearInk(); this.check('probe cleanup'); });
-  }
-
   /** Up to one bounded chunk. Caller flushes before the next add when full. */
   add(worldXYZ: readonly number[], metric: number): void {
     this.run(() => {
@@ -289,13 +248,13 @@ export class RootsNativeDensityGpu {
   flush(projection: PreparedRootsProjection, kernel: RootsNativeDensityKernel = 'auto', isCancelled?: () => boolean): void {
     this.run(() => {
       cancel(isCancelled);
-      require(this.gl && this.upload && this.probe, 'Native root density is not initialized', 'input');
+      require(this.gl && this.upload, 'Native root density is not initialized', 'input');
       rootsGpuInput(() => validatePreparedRootsProjection(projection));
       require(projection.mode === 'density', 'Native metric density cannot consume a point-cloud presentation plan', 'input');
       require(projection.physicalWidth === this.width && projection.physicalHeight === this.height, 'Native root projection dimensions do not match ink', 'input');
       require(kernel === 'auto' || kernel === 'points' || kernel === 'quad', 'Native root kernel is invalid', 'input');
       if (!this.pending) return;
-      const selected = kernel === 'auto' ? this.probe.selected : kernel;
+      const selected = kernel === 'auto' ? ROOTS_NATIVE_AUTO_KERNEL : kernel;
       const gl = this.gl, program = this.programs.get(selected)!;
       require(Number.isSafeInteger(this.submitted + this.pending), 'Native root submitted count exceeds safe integer', 'capacity');
       device(() => {
@@ -389,7 +348,7 @@ export class RootsNativeDensityGpu {
     }
     this.gl = undefined; this.upload = undefined; this.width = this.height = 0;
     this.pending = this.queued = this.submitted = 0; this.draws = this.readbackBytes = 0;
-    this.probe = undefined; this.lastKernel = undefined; this.deviceFacts = undefined;
+    this.lastKernel = undefined; this.deviceFacts = undefined;
   }
   dispose(): void { this.reset(); }
 }

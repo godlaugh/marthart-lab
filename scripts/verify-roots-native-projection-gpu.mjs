@@ -67,7 +67,7 @@ try{
   try{
    for(const fixture of fixtures)for(const kernel of ['points','quad','auto']){
     const id=fixture.id+'-'+kernel,p=plan(fixture.w,fixture.h,fixture.d,fixture.options),g=new RootsNativeDensityGpu();let independent;
-    try{label='production:'+id;g.initialize(fixture.w,fixture.h);check(g.diagnostics().submittedPoints===0,'Probe counted as submission');for(const v of fixture.points)g.add(v.slice(0,3),v[3]);g.flush(p,kernel);const a=g.readback(),facts=g.diagnostics();check(facts.submittedPoints===fixture.points.length&&facts.pendingPoints===0,'Submission fact mismatch '+id);const selected=facts.lastKernel;label='retained:'+id;independent=oracle(fixture.w,fixture.h);const b=independent.run(selected,p,fixture.points);let different=0,maxDifference=0;for(let i=0;i<a.length;i++){if(!Object.is(a[i],b[i]))different++;maxDifference=Math.max(maxDifference,Math.abs(a[i]-b[i]));}check(different===0,id+' retained shader pixel mismatch '+different+'/'+maxDifference);result.cases.push({id,width:fixture.w,height:fixture.h,kernelRequested:kernel,kernelActual:selected,probe:facts.probe,submittedPoints:facts.submittedPoints,occupied:Array.from(a).filter((v,i)=>i%4===0&&v>0).length,sha256:await digest(a),floatValuesCompared:a.length,different,maxDifference});
+    try{label='production:'+id;g.initialize(fixture.w,fixture.h);check(g.diagnostics().submittedPoints===0,'Initialization counted as submission');for(const v of fixture.points)g.add(v.slice(0,3),v[3]);g.flush(p,kernel);const a=g.readback(),facts=g.diagnostics();check(facts.submittedPoints===fixture.points.length&&facts.pendingPoints===0,'Submission fact mismatch '+id);const selected=facts.lastKernel;label='retained:'+id;independent=oracle(fixture.w,fixture.h);const b=independent.run(selected,p,fixture.points);let different=0,maxDifference=0;for(let i=0;i<a.length;i++){if(!Object.is(a[i],b[i]))different++;maxDifference=Math.max(maxDifference,Math.abs(a[i]-b[i]));}check(different===0,id+' retained shader pixel mismatch '+different+'/'+maxDifference);result.cases.push({id,width:fixture.w,height:fixture.h,kernelRequested:kernel,kernelActual:selected,autoKernel:facts.autoKernel,autoKernelReason:facts.autoKernelReason,submittedPoints:facts.submittedPoints,occupied:Array.from(a).filter((v,i)=>i%4===0&&v>0).length,sha256:await digest(a),floatValuesCompared:a.length,different,maxDifference});
      g.clear();const empty=g.readback();check(empty.every(x=>x===0)&&g.diagnostics().submittedPoints===0,'Clear/probe contamination '+id);
     }finally{independent?.dispose();g.dispose();}
    }
@@ -81,17 +81,15 @@ try{
    }finally{g.dispose();}
    // A wrapper shortens one real readPixels call by one row. GL succeeds,
    // but the untouched NaN-prefilled row must invalidate the entire owner.
-   const read=glP.readPixels;label='controlled-partial-probe';const partial=new RootsNativeDensityGpu();
+   const read=glP.readPixels;label='controlled-partial-readback';const partial=new RootsNativeDensityGpu();
    try{
     glP.readPixels=function(x,y,w,h,format,type,data,...rest){return read.call(this,x,y,w,h-1,format,type,data,...rest);};
-    let error;try{partial.initialize(17,13);}catch(e){error=e;}
-    check(error?.failureKind==='device'&&error.message.includes('probe readback')&&partial.diagnostics().handles===0&&partial.diagnostics().probe===undefined,'Partial no-error probe was accepted/cached');
-    result.boundaries.push({id:'controlled-partial-probe-rejected',failureKind:error.failureKind,message:error.message,facts:partial.diagnostics()});
+    let error;try{partial.initialize(17,13);partial.readback();}catch(e){error=e;}
+    check(error?.failureKind==='device'&&error.message.includes('readback violates metric ink contract')&&partial.diagnostics().handles===0,'Partial no-error ink was accepted');
+    result.boundaries.push({id:'controlled-partial-readback-rejected',failureKind:error.failureKind,message:error.message,facts:partial.diagnostics()});
    }finally{glP.readPixels=read;partial.dispose();}
-   try{partial.initialize(17,13);partial.add([0,0,0],.6);partial.flush(p);const recovered=partial.readback();check(recovered.some((v,i)=>i%4===0&&v>0),'Recovery after incomplete probe failed');result.boundaries.push({id:'controlled-partial-probe-recovery',facts:partial.diagnostics()});}finally{partial.dispose();}
-   // Explicitly force the real probe draw to emit no points; auto must choose
-   // quad, with no silent switch in an explicitly forced points invocation.
-   const draw=glP.drawArrays;try{glP.drawArrays=function(mode,first,count){if(count===16&&mode===this.POINTS)return draw.call(this,mode,first,0);return draw.call(this,mode,first,count);};const fallback=new RootsNativeDensityGpu();try{fallback.initialize(17,13);check(fallback.diagnostics().probe.selected==='quad','Zero probe did not choose quad');fallback.add([0,0,0],.7);fallback.flush(p);check(fallback.diagnostics().lastKernel==='quad','Auto selection ignored');fallback.readback();const probe=fallback.diagnostics().probe;fallback.clear();fallback.add([0,0,0],.7);fallback.flush(p,'points');check(fallback.diagnostics().lastKernel==='points','Forced points silently changed geometry');fallback.readback();result.boundaries.push({id:'real-zero-probe-auto-quad-forced-points',probe});}finally{fallback.dispose();}}finally{glP.drawArrays=draw;}
+   try{partial.initialize(17,13);partial.add([0,0,0],.6);partial.flush(p);const recovered=partial.readback();check(recovered.some((v,i)=>i%4===0&&v>0),'Recovery after incomplete readback failed');result.boundaries.push({id:'controlled-partial-readback-recovery',facts:partial.diagnostics()});}finally{partial.dispose();}
+   const fallback=new RootsNativeDensityGpu();try{fallback.initialize(17,13);check(fallback.diagnostics().autoKernel==='quad','Source automatic route changed');fallback.add([0,0,0],.7);fallback.flush(p);check(fallback.diagnostics().lastKernel==='quad','Auto selection ignored');fallback.readback();fallback.clear();fallback.add([0,0,0],.7);fallback.flush(p,'points');check(fallback.diagnostics().lastKernel==='points','Forced points silently changed geometry');fallback.readback();result.boundaries.push({id:'source-auto-quad-and-explicit-points'});}finally{fallback.dispose();}
    return result;
   }catch(error){primaryFailure=error;throw error;}finally{
    result.contexts=Array.from(states.values()).map((s,i)=>({index:i,label:s.label,created:s.objects.length,deleteCalls:s.deletes.length,liveImmediatelyBeforeContextLoss:s.beforeLoss}));
