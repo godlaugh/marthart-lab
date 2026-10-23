@@ -8,6 +8,10 @@ import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const directory=process.argv[2]??`.cache/roots-formulas-${Date.now()}`;
 const native=process.argv[3]??'.cache/roots-native-exposure-20261023/native-roots';
+const frame=Number(process.argv[4]??65),layer=process.argv[5];
+assert.ok(Number.isSafeInteger(frame)&&frame>=0);
+assert.ok(layer===undefined||/^texture-draw-\d+-after\.rgba$/.test(layer));
+const baseName=`present-frame-${frame}.rgba`,referenceName=layer??`raw-frame-${frame}.png`;
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function files(p){const result=[];for(const e of await readdir(p,{withFileTypes:true})){const n=p+'/'+e.name;if(e.isDirectory())result.push(...await files(n));else if(e.isFile())result.push(n);}return result;}
 const hashes=async()=>Object.fromEntries(await Promise.all([...(await files('src')), 'scripts/verify-roots-formulas.mjs'].sort().map(async p=>[p,sha(await readFile(p))])));
@@ -15,17 +19,17 @@ await mkdir(directory,{recursive:true});
 const run=JSON.parse(await readFile(native+'/run.json','utf8')),sourceText=await readFile(run.source,'utf8');
 assert.equal(sha(sourceText),run.sourceSha256);assert.equal(run.reaped,true);assert.equal(run.processGroupExists,false);
 const backend=JSON.parse(await readFile('.cache/source-glyph-service-20261022/build-final/backend.json','utf8'));
-const report={status:'running',at:new Date().toISOString(),sourceBefore:await hashes(),nativeFiles:{},scope:'Replay existing original density-color capture through production imported formula layout and real glyph HTTP/GPU composition. Actual local Generator/Worker paused capture and PNG. Does not run the original again or prove whole-scene parity.'};
-for(const name of ['run.json','present-frame-65.rgba','raw-frame-65.png'])report.nativeFiles[name]=sha(await readFile(native+'/'+name));
+const report={status:'running',at:new Date().toISOString(),sourceBefore:await hashes(),nativeFiles:{},frame,referenceName,scope:'Replay existing original density-color capture through production imported formula layout and real glyph HTTP/GPU composition. Actual local Generator/Worker paused capture and PNG. Does not run the original again or prove whole-scene parity.'};
+for(const name of ['run.json',baseName,referenceName])report.nativeFiles[name]=sha(await readFile(native+'/'+name));
 let api,server,browser;const started=performance.now();
 try{
  api=await createExportServer({root:directory+'/exports',glyphBackend:backend});const address=await api.listen(0);
  server=await createServer({mode:'preview-v2',server:{host:'127.0.0.1',port:0,hmr:false,proxy:{'/api':{target:`http://127.0.0.1:${address.port}`,changeOrigin:false}}},logLevel:'error'});await server.listen();
  browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1480,height:1000},acceptDownloads:true});page.setDefaultTimeout(30000);
  report.pageErrors=[];page.on('pageerror',e=>report.pageErrors.push(e.message));
- await page.route('**/reference/*',async route=>{const n=new URL(route.request().url()).pathname.split('/').at(-1);assert.ok(['present-frame-65.rgba','raw-frame-65.png'].includes(n));await route.fulfill({body:await readFile(native+'/'+n),contentType:n.endsWith('.png')?'image/png':'application/octet-stream'});});
+ await page.route('**/reference/*',async route=>{const n=new URL(route.request().url()).pathname.split('/').at(-1);assert.ok([baseName,referenceName].includes(n));await route.fulfill({body:await readFile(native+'/'+n),contentType:n.endsWith('.png')?'image/png':'application/octet-stream'});});
  await page.route('**/formula-verification',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Roots formulas</title>'}));await page.goto(server.resolvedUrls.local[0]+'formula-verification');
- report.result=await page.evaluate(async sourceText=>{
+ report.result=await page.evaluate(async ({sourceText,baseName,referenceName})=>{
   const{parseLegacyScene}=await import('/src/engine/legacyImport.ts'),{parseScene}=await import('/src/engine/document.ts');
   const{formulaPresentation,formulaPlacement}=await import('/src/engine/formulas.ts');
   const{rootsFormulaViewport}=await import('/src/engine/rootsFormulaPresentation.ts');
@@ -40,12 +44,15 @@ try{
   check(scene.formulas.layout==='source-surface-centered-v1','imported layout');
   const viewport=rootsFormulaViewport({logicalWidth:250,logicalHeight:300,referenceLogicalHeight:486,target:'offscreen'}),presentation=formulaPresentation(scene,viewport);
   check(presentation.labels.length===3,'three imported labels');
-  const raw=new Uint8Array(await(await fetch('/reference/present-frame-65.rgba')).arrayBuffer()),base=new Uint8ClampedArray(raw.length);
+  const raw=new Uint8Array(await(await fetch('/reference/'+baseName)).arrayBuffer()),base=new Uint8ClampedArray(raw.length);
   for(let y=0;y<height;y++)base.set(raw.subarray((height-y-1)*width*4,(height-y)*width*4),y*width*4);
   const prepared=await prepareSourceFormulas(presentation),compositor=new SourceFormulaCompositor();let pixels;
   try{compositor.draw(prepared,width,height,base);pixels=compositor.readPixels();}finally{compositor.dispose();}
-  const image=await createImageBitmap(await(await fetch('/reference/raw-frame-65.png')).blob());
-  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);image.close();const reference=ctx.getImageData(0,0,width,height).data;
+  let reference;
+  if(referenceName.endsWith('.rgba')){const bottomUp=new Uint8Array(await(await fetch('/reference/'+referenceName)).arrayBuffer());if(bottomUp.length!==width*height*4)throw Error('Incomplete native formula-layer capture');reference=new Uint8ClampedArray(bottomUp.length);for(let y=0;y<height;y++)reference.set(bottomUp.subarray((height-y-1)*width*4,(height-y)*width*4),y*width*4);}
+  else{const image=await createImageBitmap(await(await fetch('/reference/'+referenceName)).blob());
+   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);image.close();reference=ctx.getImageData(0,0,width,height).data;}
+
   function compare(a,b,rect={x:0,y:0,width,height}){let differentPixels=0,maxDifference=0,sum=0;const examples=[];const x0=Math.max(0,Math.floor(rect.x)),y0=Math.max(0,Math.floor(rect.y)),x1=Math.min(width,Math.ceil(rect.x+rect.width)),y1=Math.min(height,Math.ceil(rect.y+rect.height));for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){let changed=false;const i=(y*width+x)*4;for(let k=0;k<4;k++){const d=Math.abs(a[i+k]-b[i+k]);changed||=d>0;maxDifference=Math.max(maxDifference,d);sum+=d;}if(changed){differentPixels++;if(examples.length<4)examples.push({x,y,actual:Array.from(a.subarray(i,i+4)),reference:Array.from(b.subarray(i,i+4))});}}return{bounds:[x0,y0,x1,y1],differentPixels,maxDifference,sumAbsoluteError:sum,examples};}
   const labels=prepared.glyphs.map((g,i)=>{const p=formulaPlacement(presentation,presentation.labels[i],width,height,{...g,centerAnchor:'integer-half-size'}),bounds={x:p.x,y:p.y,width:g.width*p.scale,height:g.height*p.scale};return{label:presentation.labels[i],glyph:{width:g.width,height:g.height,rendererIdentity:g.rendererIdentity},bounds,comparison:compare(pixels,reference,bounds)};});
   const artifacts=[];async function save(name,blob){artifacts.push({name,bytes:Array.from(new Uint8Array(await blob.arrayBuffer()))});}
@@ -71,7 +78,8 @@ try{
    }
   }finally{generator.dispose();}
   window.__formulaFixture=scene;return{presentation,labels,wholeImage:compare(pixels,reference),workerCases,artifacts};
- },sourceText);
+ },{sourceText,baseName,referenceName});
+ if(layer)assert.equal(report.result.wholeImage.differentPixels,0,'Captured native formula-layer RGBA differs');
  // Decode PNG outside Canvas, preserving encoded RGBA exactly.
  for(const a of report.result.artifacts)await writeFile(directory+'/'+a.name,Buffer.from(a.bytes));
  delete report.result.artifacts;

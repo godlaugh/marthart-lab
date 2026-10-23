@@ -61,3 +61,15 @@ export function formulaPlacement(config:FormulaPresentation|FormulaConfig,label:
   const scale=label.scale*Math.min(width/config.referenceWidth,height/config.referenceHeight),center=label.anchor==='center';
   return{x:label.x*width/config.referenceWidth-(center?(dimensions?.width??0)*scale/2:0),y:label.y*height/config.referenceHeight-(center?(dimensions?.height??0)*scale/2:0),scale};
 }
+
+/** Source TexMobject transforms image corners on the CPU before the orthographic
+ * shader projection. Keep each Java float operation: moving division and
+ * centering into a screen-space shader changes subpixel texture sampling. */
+export function sourceFormulaQuad(presentation:Extract<FormulaPresentation,{layout:'source-surface-centered-v1'}>,label:FormulaLabel,width:number,height:number,glyph:{width:number;height:number}):Float32Array {
+  const F=Math.fround,ratio=F(height/presentation.primaryLogicalHeight),scale=F(F(label.scale)*ratio);
+  const centerX=F(F(F(width/2)+F(F(label.x)*ratio))-F(width/2));
+  const centerY=F(F(F(height/2)+F(F(label.y)*ratio))-F(height/2));
+  const left=F(F(-Math.floor(glyph.width/2)*scale)+centerX),right=F(F((glyph.width-Math.floor(glyph.width/2))*scale)+centerX);
+  const top=F(F(-Math.floor(glyph.height/2)*scale)+centerY),bottom=F(F((glyph.height-Math.floor(glyph.height/2))*scale)+centerY);
+  return new Float32Array([left,top,left,bottom,right,bottom,right,top]);
+}

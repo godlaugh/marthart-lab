@@ -1,8 +1,9 @@
 import type {FormulaPresentation} from '../types';
-import {formulaPlacement} from './formulas';
+import {sourceFormulaQuad} from './formulas';
 import {sourceFormulaGlyph,type SourceFormulaGlyph} from './sourceFormulaGlyphClient';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import {sourceTextureAnisotropy,type SourceTextureAnisotropy} from './sourceProcessingTextureSampling';
+const QUAD_ORDER=[0,1,2,0,2,3],QUAD_UV=[0,0,0,1,1,1,1,0];
 export type SourceFormulaPresentation=Extract<FormulaPresentation,{layout:'source-surface-centered-v1'}>;
 export interface PreparedSourceFormula {presentation:SourceFormulaPresentation;glyphs:readonly SourceFormulaGlyph[];}
 /** One immutable presentation owns its glyph snapshot. A recording may retain
@@ -32,8 +33,8 @@ export class SourceFormulaCompositor {
  private buffer:WebGLBuffer;
  private texture:WebGLTexture;
  private textures=new Map<SourceFormulaGlyph,WebGLTexture>();
- private rect:WebGLUniformLocation;
- private size:WebGLUniformLocation;
+ private projection:WebGLUniformLocation;
+ private vertices=new Float32Array(24);
  private disposed=false;
  private anisotropy?:SourceTextureAnisotropy;
  constructor(canvas=document.createElement('canvas')){
@@ -46,18 +47,22 @@ export class SourceFormulaCompositor {
    const shader=(type:number,source:string)=>{const s=gl.createShader(type);if(!s)throw new Error('无法创建公式着色器');shaders.push(s);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error('公式着色器编译失败');return s;};
    program=gl.createProgram();if(!program)throw new Error('无法创建公式绘图程序');
    gl.attachShader(program,shader(gl.VERTEX_SHADER,`#version 300 es
-in vec2 a;out vec2 uv;uniform vec4 rect;uniform vec2 size;void main(){uv=a;vec2 p=rect.xy+a*rect.zw;gl_Position=vec4(p.x/size.x*2.-1.,1.-p.y/size.y*2.,0.,1.);}`));
+in vec2 position;in vec2 texCoord;out vec2 uv;uniform vec2 projection;void main(){uv=texCoord;gl_Position=vec4(position*projection,0.,1.);}`));
    gl.attachShader(program,shader(gl.FRAGMENT_SHADER,`#version 300 es
 precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(){color=texture(tex,uv);}`));
    gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error('公式绘图程序链接失败');gl.useProgram(program);
    buffer=gl.createBuffer();texture=gl.createTexture();if(!buffer||!texture)throw new Error('无法创建公式图形资源');
-   gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([0,0,1,0,0,1,0,1,1,0,1,1]),gl.STATIC_DRAW);
-   const a=gl.getAttribLocation(program,'a');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
-   const rect=gl.getUniformLocation(program,'rect'),size=gl.getUniformLocation(program,'size');if(!rect||!size)throw new Error('公式着色器缺少布局参数');
-   this.program=program;this.buffer=buffer;this.texture=texture;this.rect=rect;this.size=size;
+   gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,this.vertices.byteLength,gl.DYNAMIC_DRAW);
+   for(const [name,offset] of [['position',0],['texCoord',8]] as const){const a=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,16,offset);}
+   const projection=gl.getUniformLocation(program,'projection');if(!projection)throw new Error('公式着色器缺少布局参数');
+   this.program=program;this.buffer=buffer;this.texture=texture;this.projection=projection;
    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL,gl.NONE);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
   }catch(error){if(texture)gl.deleteTexture(texture);if(buffer)gl.deleteBuffer(buffer);if(program)gl.deleteProgram(program);gl.getExtension('WEBGL_lose_context')?.loseContext();throw error;}
   finally{for(const s of shaders)gl.deleteShader(s);}
+ }
+ private quad(corners:readonly number[]|Float32Array){
+  for(let i=0;i<QUAD_ORDER.length;i++){const corner=QUAD_ORDER[i]*2,at=i*4;this.vertices[at]=corners[corner];this.vertices[at+1]=corners[corner+1];this.vertices[at+2]=QUAD_UV[corner];this.vertices[at+3]=QUAD_UV[corner+1];}
+  const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,this.vertices);gl.drawArrays(gl.TRIANGLES,0,6);
  }
  private check(){if(this.disposed||this.gl.isContextLost())throw new Error('源公式图形上下文已释放或丢失');}
  private upload(texture:WebGLTexture,width:number,height:number,pixels:Uint8Array|Uint8ClampedArray,mipmap:boolean){
@@ -71,13 +76,13 @@ precision highp float;in vec2 uv;uniform sampler2D tex;out vec4 color;void main(
   if(!(base.buffer instanceof ArrayBuffer)||base.length!==width*height*4)throw new Error('源公式需要完整未共享的基础 RGBA 图像');
   if(prepared.glyphs.length!==prepared.presentation.labels.length)throw new Error('源公式字形与标注不对应');
   if(this.canvas.width!==width)this.canvas.width=width;if(this.canvas.height!==height)this.canvas.height=height;
-  gl.viewport(0,0,width,height);gl.useProgram(this.program);gl.uniform2f(this.size,width,height);gl.disable(gl.BLEND);gl.disable(gl.DITHER);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
-  this.upload(this.texture,width,height,base,false);gl.uniform4f(this.rect,0,0,width,height);gl.drawArrays(gl.TRIANGLES,0,6);
+  gl.viewport(0,0,width,height);gl.useProgram(this.program);gl.uniform2f(this.projection,Math.fround(2/width),Math.fround(-2/height));gl.disable(gl.BLEND);gl.disable(gl.DITHER);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+  this.upload(this.texture,width,height,base,false);this.quad([-width/2,-height/2,-width/2,height/2,width/2,height/2,width/2,-height/2]);
   const keep=new Set(prepared.glyphs);for(const [glyph,texture]of this.textures)if(!keep.has(glyph)){gl.deleteTexture(texture);this.textures.delete(glyph);}
   gl.enable(gl.BLEND);gl.blendEquationSeparate(gl.FUNC_ADD,gl.FUNC_ADD);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE);
   prepared.glyphs.forEach((glyph,index)=>{
    let texture=this.textures.get(glyph);if(!texture){texture=gl.createTexture()??undefined;if(!texture)throw new Error('无法创建公式纹理');this.textures.set(glyph,texture);this.upload(texture,glyph.width,glyph.height,glyph.pixels,true);}else gl.bindTexture(gl.TEXTURE_2D,texture);
-   const p=formulaPlacement(prepared.presentation,prepared.presentation.labels[index],width,height,{width:glyph.width,height:glyph.height,fontSize:glyph.fontSize,centerAnchor:'integer-half-size'});gl.uniform4f(this.rect,p.x,p.y,glyph.width*p.scale,glyph.height*p.scale);gl.drawArrays(gl.TRIANGLES,0,6);
+   this.quad(sourceFormulaQuad(prepared.presentation,prepared.presentation.labels[index],width,height,glyph));
   });
   this.check();if(gl.getError()!==gl.NO_ERROR)throw new Error('源公式 GPU 合成失败');
  }

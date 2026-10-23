@@ -1,0 +1,121 @@
+{
+  "scope": "Original TexMobject CPU-transformed positions, observed passively after actual GL draw with normal FREE license and watermark. XYZ depth omitted here; original buffer hashes retained. No formula or renderer replacement.",
+  "inputSha256": "a32ca394255b4a9f10c92e88f5aea8b846868923a2d5d9b901904a7a6d9fb7ea",
+  "probeSha256": "3212d889a2308626e0bf27d0b9538912f6c2f4c15cfd32096199d084235fcfa6",
+  "source": "MathArt 1.7.8 Degree10_UnitCircle_T1T2_Formula06.json",
+  "capture": "studio/.cache/roots-formula-draws-20261023/capture/native-roots/",
+  "nativeLogicalSize": [
+    250,
+    300
+  ],
+  "physicalSize": [
+    500,
+    600
+  ],
+  "primaryLogicalHeight": 486,
+  "cases": [
+    {
+      "x": -50,
+      "y": 170,
+      "scale": 0.28999999165534973,
+      "glyph": {
+        "width": 209,
+        "height": 63
+      },
+      "nativeCorners": [
+        -49.48147964477539,
+        99.38887786865234,
+        -49.48147964477539,
+        110.66665649414062,
+        -12.067901611328125,
+        110.66665649414062,
+        -12.067901611328125,
+        99.38887786865234
+      ],
+      "vertexBufferSha256": "54fc57d4626b54ce0f9de983ab48e7aeb08bf4d04a500f5ee618dee296527121",
+      "textureSha256": "c2d0d53d80515ca1f37dc8bbe047522c2b6dc8b29c0c77cfcf8680e4b0286654"
+    },
+    {
+      "x": 50,
+      "y": 170,
+      "scale": 0.28999999165534973,
+      "glyph": {
+        "width": 303,
+        "height": 69
+      },
+      "nativeCorners": [
+        3.833332061767578,
+        98.85184478759766,
+        3.833332061767578,
+        111.20369720458984,
+        58.074073791503906,
+        111.20369720458984,
+        58.074073791503906,
+        98.85184478759766
+      ],
+      "vertexBufferSha256": "c6f564f9dbebb9eec320f5c8ae9b2328ffdf3ae6228fd1e985a7de99b743d9b0",
+      "textureSha256": "4275af597a0a81fec1f5a0826902a803fab1116a41393f76a48c663d8ee977ab"
+    },
+    {
+      "x": 0,
+      "y": 150,
+      "scale": 0.25,
+      "glyph": {
+        "width": 1978,
+        "height": 80
+      },
+      "nativeCorners": [
+        -152.6234588623047,
+        86.41975402832031,
+        -152.6234588623047,
+        98.76542663574219,
+        152.6234588623047,
+        98.76542663574219,
+        152.6234588623047,
+        86.41975402832031
+      ],
+      "vertexBufferSha256": "ea85097352ac210d4906f1dd42a0daf1727cf457e4badf808776716aafce106b",
+      "textureSha256": "1e54817b3aa94dcc185cee09b5e33f49084e8484bc97e7ef211654ff4e8193b3"
+    }
+  ],
+  "artifacts": {
+    "MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "core-4.5.0-acdf3bce2932985b9d091c284407a54.jar": "89410e2c4f59cb4b4aeb2a3baeaf6a4bc189d6e1c612920c3f8e0f58b62a769a",
+    "libjvm.dylib": "81d98e7d627b5613dd72885a66240d89f75c48c9ec96fbb2dd9ad3e00393f7ee"
+  },
+  "execution": {
+    "exit": 0,
+    "seconds": 7.071797625045292,
+    "reaped": true,
+    "processGroupExists": false,
+    "timedOut": false,
+    "userFilesBefore": {
+      "scene_access_policies_cache.json": {
+        "exists": true,
+        "sha256": "acab1c44d02d60f6c21eb7f38d03233f3d01a180b868f9102e61f8809c11bb8f"
+      },
+      "license.dat": {
+        "exists": false,
+        "sha256": null
+      },
+      "settings/settings.conf": {
+        "exists": true,
+        "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+      }
+    },
+    "userFilesAfter": {
+      "scene_access_policies_cache.json": {
+        "exists": true,
+        "sha256": "49d18b0be1ea1614944aec20a9be6267fd3cf63c69257cd5ce66227df16e6f9e"
+      },
+      "license.dat": {
+        "exists": false,
+        "sha256": null
+      },
+      "settings/settings.conf": {
+        "exists": true,
+        "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+      }
+    }
+  }
+}
