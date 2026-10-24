@@ -135,6 +135,9 @@ import {visibleIteratedControls} from './scenes/iteratedDensity';
 import {domainControlSettings,visibleDomainControls} from './engine/domainModel';
 import {visibleRootsControls,rootsControlSettings,rootsAppearanceControlVisible} from './engine/rootsControls';
 import {rootsSourceColorRgbHex,usesRootsSourceDensity} from './engine/rootsDensityColor';
+import {RootsEditorSession,assertRootsEditorRetention,type RootsEditorCheckpoint} from './engine/rootsEditorSession';
+import {rootsEditorActionFor,type RootsEditorIntent} from './engine/rootsEditIntent';
+import {RootsLiveGenerationError} from './engine/generationProtocol';
 import {RootsDensityColorControls,RootsSourcePaletteEditor} from './components/RootsDensityColorControls';
 import {visibleAttractorControls} from './engine/attractorControls';
 import {rootsCompletionTime,rootsSchedule} from './scenes/rootsDensity';
@@ -172,7 +175,10 @@ import {usesRootsCameraTimeline} from './engine/rootsCameraTimeline';
 import {rootMathControlVisible,usesRootsNativeMath} from './engine/rootsMathConfig';
 import {RecordDialog} from './components/RecordDialog';
 import {I18nProvider,translate,type Language} from './i18n';
-type SceneEditIntent='perlin-palette'|'surface-apply'|'surface-parameters'|'surface-metadata'|'domain-apply'|'domain-parameters'|'domain-metadata'|'fractal-hot'|'fractal-apply'|'fractal-stage'|'fractal-metadata'|'iterated-replay'|'iterated-palette'|'iterated-dot-size'|'map-runtime'|'iterated-apply'|'iterated-parameters';
+type RootsEditorState={owner:RootsEditorSession;checkpoint:RootsEditorCheckpoint;staged:boolean};
+type RootsHistoryEffect={before?:RootsEditorState;after?:RootsEditorState;runtimeChanged:boolean};
+type SceneHistoryEntry={scene:SceneDocument;roots?:RootsHistoryEffect};
+type SceneEditIntent=RootsEditorIntent|'perlin-palette'|'surface-apply'|'surface-parameters'|'surface-metadata'|'domain-apply'|'domain-parameters'|'domain-metadata'|'fractal-hot'|'fractal-apply'|'fractal-stage'|'fractal-metadata'|'iterated-replay'|'iterated-palette'|'iterated-dot-size'|'map-runtime'|'iterated-apply'|'iterated-parameters';
 const icons: Record<SceneKind, typeof Activity> = {
   surface: Layers,
   attractor: Activity,
@@ -275,8 +281,8 @@ export default function App() {
     sceneRef = useRef(scene),
     timeRef = useRef(time),
     playingRef = useRef(playing),
-    history = useRef<SceneDocument[]>([]),
-    future = useRef<SceneDocument[]>([]),
+    history = useRef<SceneHistoryEntry[]>([]),
+    future = useRef<SceneHistoryEntry[]>([]),
     playbackClock = useRef(0),
     playbackStartedAt = useRef<number|undefined>(undefined),
     autoPlayPending = useRef(continuousBouncing(scene)),
@@ -321,8 +327,12 @@ export default function App() {
     if(usesSourceSamilaSampling(current)&&usesSourceSamilaSampling(next)&&sourceSamilaApplyIdentity(current)!==sourceSamilaApplyIdentity(next))restartSamila();
     const nextLive=sourceLivePreviewKind(next),currentLive=sourceLivePreviewKind(current);
     if(nextLive==='roots'){
-      if(currentLive!=='roots')replaceLiveSession(undefined);
-      liveDisplayRequested.current=true;
+      if(!rootsEditor.current&&!rootsNeedsApply.current){
+        replaceLiveSession(undefined);rootsEditor.current=new RootsEditorSession(liveSessionId.current,next);
+        setRootsStaged(false);rootsNeedsApply.current=false;
+      }
+    }else if(currentLive==='roots'){
+      generationQueue.current?.cancel();rootsEditor.current=undefined;retireRootsGesture();
     }
     if(nextLive==='perlin'){
       if(currentLive!=='perlin'||current.id!==next.id)replaceLiveSession(undefined);
@@ -391,7 +401,10 @@ export default function App() {
       // not advance time while the new host measurement is still pending.
       autoPlayPending.current=autoPlayPending.current||playingRef.current;
       playingRef.current=false;setPlaying(false);
-      generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(nextLive==='surface'||nextLive==='fractal'||nextLive==='domain'||nextLive==='perlin'?undefined:0);
+      if(nextLive==='roots'&&rootsEditor.current){
+        // Rebuild the existing applied/hot plan for a new host, not the draft.
+        restoreRootsRuntime({owner:rootsEditor.current,checkpoint:rootsEditor.current.checkpoint(),staged:rootsStagedRef.current});
+      }else{generationQueue.current?.cancel();rootsSessionId.current=crypto.randomUUID();replaceLiveSession(nextLive==='surface'||nextLive==='fractal'||nextLive==='domain'||nextLive==='perlin'?undefined:0);}
       playbackClock.current=0;timeRef.current=0;setPlayhead(0);
       if(usesSourceBouncing(next)){showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;resetBouncingNavigation(next);}
       setOutput(null);setOutputScene(null);setPresentedSource(null);setPresentedOutput(null);
@@ -424,6 +437,33 @@ export default function App() {
   }
   const rootsSessionId=useRef(crypto.randomUUID());
   const liveSessionId=useRef<string>(crypto.randomUUID()),samilaDirtyRevision=useRef(0),liveDisplayRequested=useRef(false),liveLastFrameAt=useRef<number|undefined>(undefined),livePlaybackTransition=useRef<object|undefined>(undefined);
+  const rootsEditor=useRef<RootsEditorSession|undefined>(undefined),rootsNeedsApply=useRef(false);
+  const rootsInitialFailure=useRef<string|undefined>(undefined);
+  if(sourceLivePreviewKind(scene)==='roots'&&!rootsEditor.current&&!rootsNeedsApply.current){
+    try{rootsEditor.current=new RootsEditorSession(liveSessionId.current,scene);}
+    catch(error){rootsNeedsApply.current=true;rootsInitialFailure.current=error instanceof Error?error.message:String(error);}
+  }
+  useEffect(()=>{if(rootsInitialFailure.current){setError(rootsInitialFailure.current);rootsInitialFailure.current=undefined;}},[]);
+  const rootsDraftStates=useRef(new Map<string,RootsEditorState>());
+  const [rootsStaged,setRootsStagedState]=useState(false),rootsStagedRef=useRef(false);
+  const [rootsInteractionEpoch,setRootsInteractionEpoch]=useState(0),rootsInteractionEpochRef=useRef(0);
+  function setRootsStaged(value:boolean){rootsStagedRef.current=value;setRootsStagedState(value);}
+  function retireRootsGesture(){rootsInteractionEpochRef.current++;setRootsInteractionEpoch(rootsInteractionEpochRef.current);}
+  function rootsEditorState():RootsEditorState|undefined {const owner=rootsEditor.current;return owner?{owner,checkpoint:owner.checkpoint(),staged:rootsStagedRef.current}:undefined;}
+  function admitRootsRetention(candidate?:unknown){
+    const states=[...rootsDraftStates.current.values(),...[...history.current,...future.current].flatMap(entry=>[entry.roots?.before,entry.roots?.after]),rootsEditorState()].filter((state):state is RootsEditorState=>!!state);
+    assertRootsEditorRetention(states.map(state=>state.owner),states.map(state=>state.checkpoint),candidate);
+  }
+  function rememberScene(document:SceneDocument,roots?:RootsHistoryEffect){history.current.push({scene:document,roots});if(history.current.length>40)history.current.shift();future.current=[];}
+  function restoreRootsRuntime(state:RootsEditorState){
+    admitRootsRetention(state.checkpoint);
+    const sessionId=crypto.randomUUID();state.owner.restore(state.checkpoint,sessionId);
+    generationQueue.current?.cancel();replaceLiveSession(undefined);liveSessionId.current=sessionId;rootsEditor.current=state.owner;
+    rootsNeedsApply.current=false;setRootsStaged(state.staged);retireRootsGesture();
+    playbackClock.current=0;timeRef.current=0;setTime(0);setPreviewCancelled(false);setError('');
+    liveDisplayRequested.current=true;setGenerationRevision(value=>value+1);
+  }
+  function editRoots(next:SceneDocument,intent:RootsEditorIntent){return edit(next,false,intent!=='roots-stage'&&intent!=='roots-metadata',intent);}
   const perlinPaletteRevision=useRef(0);
   const fractalEdit=useRef<{revision:number;intent:'hot'|'apply';configuration?:SceneDocument}>({revision:0,intent:'apply'}),fractalActualFps=useRef<number|undefined>(undefined);
   const implicitContinuation=useRef<{scene:SceneDocument;context:SourceImplicitLiveContext}|undefined>(undefined),implicitActualFps=useRef<number|undefined>(undefined),implicitRecordingScene=useRef<SceneDocument|undefined>(undefined);
@@ -444,6 +484,9 @@ export default function App() {
   function replaceLiveSession(startAt:number|undefined){perlinPaletteRevision.current=0;implicitContinuation.current=undefined;implicitActualFps.current=undefined;surfaceEdit.current={revision:0};surfaceActualFps.current=undefined;domainEdit.current={revision:0};domainActualFps.current=undefined;fractalEdit.current={revision:0,intent:'apply'};fractalActualFps.current=undefined;setFractalStaged(false);setFractalFullApplyPending(false);liveSessionId.current=crypto.randomUUID();samilaDirtyRevision.current=0;iteratedReplayRevision.current=0;mapRuntimeRevision.current=0;iteratedStartAt.current=startAt;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
   function interruptLivePlayback(){
     if(!previewLiveKind(sceneRef.current))return;
+    if(sourceLivePreviewKind(sceneRef.current)==='roots'){
+      rootsNeedsApply.current=true;retireRootsGesture();playingRef.current=false;setPlaying(false);generationQueue.current?.cancel();setPreviewCancelled(true);return;
+    }
     playingRef.current=false;setPlaying(false);replaceLiveSession(Math.max(0,timeRef.current));
     // Retry is an explicit reconstruction, never continuation of failed ink.
     generationQueue.current?.cancel();setPreviewCancelled(true);
@@ -453,11 +496,11 @@ export default function App() {
   const pendingParameterWrites=useRef(new Map<string,number>());
   function stageEditor(next:SceneDocument,cameraTexts=iteratedDraftRef.current?.cameraTexts){
     const current=sceneRef.current;
-    history.current.push(withSourceIteratedDraft(current,iteratedDraftRef.current));if(history.current.length>40)history.current.shift();future.current=[];
+    rememberScene(withSourceIteratedDraft(current,iteratedDraftRef.current));
     setIteratedDraft(sourceIteratedDraftFromEditor(current,next,cameraTexts));
   }
   function discardIteratedDraft(){
-    history.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));if(history.current.length>40)history.current.shift();future.current=[];setIteratedDraft(undefined);
+    rememberScene(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));setIteratedDraft(undefined);
   }
   function editParameter(next:SceneDocument,name:string){
     const current=sceneRef.current,family=sourceLivePreviewKind(current);
@@ -484,9 +527,34 @@ export default function App() {
     try{if(!normalized)next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit'),intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
-    if(display&&sourceLivePreviewKind(next))liveDisplayRequested.current=true;
+    const currentLive=sourceLivePreviewKind(sceneRef.current),nextLive=sourceLivePreviewKind(next);
+    let rootsHistory:RootsHistoryEffect|undefined;
+    if(currentLive==='roots'||nextLive==='roots'){
+      const before=rootsEditorState(),rootsIntent=(intent?.startsWith('roots-')?intent:display?'roots-apply':'roots-metadata') as RootsEditorIntent;
+      try{
+        admitRootsRetention({checkpoint:before?.checkpoint,action:nextLive==='roots'?rootsEditorActionFor(next,rootsIntent):undefined});
+        if(nextLive==='roots'){
+          if(!rootsEditor.current&&currentLive==='roots'&&rootsIntent!=='roots-apply'){
+            if(rootsIntent!=='roots-stage'&&rootsIntent!=='roots-metadata')throw Error(t('请先应用场景以重新建立预览。'));
+            if(rootsIntent==='roots-stage')setRootsStaged(true);
+            rootsHistory={before,runtimeChanged:false};
+          }else if(!rootsEditor.current||rootsNeedsApply.current&&rootsIntent==='roots-apply'){
+            const owner=new RootsEditorSession(crypto.randomUUID(),next);generationQueue.current?.cancel();replaceLiveSession(undefined);liveSessionId.current=owner.sessionId;rootsEditor.current=owner;rootsNeedsApply.current=false;setRootsStaged(false);retireRootsGesture();
+            rootsHistory={before,after:rootsEditorState(),runtimeChanged:true};
+          }else{
+            if(rootsNeedsApply.current&&rootsIntent!=='roots-stage'&&rootsIntent!=='roots-metadata')throw Error(t('请先应用场景以重新建立预览。'));
+            const change=rootsEditor.current.edit(rootsEditorActionFor(next,rootsIntent));
+            if(rootsIntent==='roots-stage')setRootsStaged(true);
+            else if(rootsIntent==='roots-apply'){setRootsStaged(false);retireRootsGesture();}
+            rootsHistory={before,after:rootsEditorState(),runtimeChanged:change.runtimeChanged};
+          }
+          if(rootsHistory.runtimeChanged){liveDisplayRequested.current=true;setGenerationRevision(value=>value+1);setError('');setPreviewCancelled(false);}
+        }else rootsHistory={before,runtimeChanged:true};
+      }catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    }
+    if(display&&nextLive)liveDisplayRequested.current=true;
     if(samilaDirty)dirtySamila();
-    history.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));if(history.current.length>40)history.current.shift();future.current=[];
+    rememberScene(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current),rootsHistory);
     if(draftAfter===null)setIteratedDraft(undefined);
     else if(draftAfter)setIteratedDraft(sourceIteratedDraftFromEditor(next,draftAfter.editor,draftAfter.cameraTexts));
     else cancelApplyCheck();
@@ -510,6 +578,7 @@ export default function App() {
   async function applyScene(next=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current)){
     const current=sceneRef.current,draft=iteratedDraftRef.current,family=sourceLivePreviewKind(current);
     if(family==='fractal'){editFractal(next,'apply');return;}
+    if(family==='roots'){editRoots(next,'roots-apply');return;}
     if(family!=='map'&&family!=='symmetry'){edit(next);return;}
     cancelApplyCheck();
     try{
@@ -536,6 +605,7 @@ export default function App() {
   function changeSetting(key: string, value: number | string | boolean) {
     try {
       const current=sceneRef.current,family=sourceLivePreviewKind(current),scene=sourceIteratedEditorScene(current,iteratedDraftRef.current);
+      if(family==='roots'&&['showGrid','showAxes'].includes(key)){editRoots({...scene,settings:{...scene.settings,[key]:value}},'roots-metadata');return;}
       if(sourceIteratedSettingIsStaged(current,key)){
         const next=key==='dimension'?changeMapDimension(scene,value):key==='template'?withSymmetryTemplate(scene,value):{...scene,settings:{...scene.settings,[key]:value}};stageEditor(next);return;
       }
@@ -553,40 +623,42 @@ export default function App() {
     return current.id===item.id?withSourceIteratedDraft({...current,camera:camera.current},iteratedDraftRef.current):drafts.current[item.id]??item;
   }
   function load(next: SceneDocument, source: 'library' | 'document') {
+    const current=sceneRef.current,retainedRoots=rootsEditorState();
+    // Opening a file is fresh authority; library navigation restores the open
+    // draft's issued cold/hot plan, without applying its staged author fields.
+    if(source==='library')next=workingDocument(next);
+    const draft=next.iteratedDraft;next=withoutSourceIteratedDraft(next);
+    const retained=source==='library'?next.id===current.id?retainedRoots:rootsDraftStates.current.get(next.id):undefined;
+    let preparedRoots:RootsEditorSession|undefined;
+    try{
+      if(sourceLivePreviewKind(next)==='roots'){
+        admitRootsRetention(retained?.checkpoint??next);
+        const sessionId=crypto.randomUUID();
+        if(retained){retained.owner.restore(retained.checkpoint,sessionId);preparedRoots=retained.owner;}
+        else preparedRoots=new RootsEditorSession(sessionId,next);
+      }
+    }catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    if(retainedRoots)rootsDraftStates.current.set(current.id,retainedRoots);
+    drafts.current[current.id]=workingDocument(current);
     showBouncingCheckpoint(sourceBouncingSeedCheckpoint());bouncingLastFrameAt.current=undefined;
     rootsSessionId.current=crypto.randomUUID();replaceLiveSession(next.fractalSource||sourceLivePreviewKind(next)==='perlin'?undefined:0);
-    // A file/new document is a new renderer instance even when its saved id
-    // matches the open work. Ordinary edits retain the current failure latch.
-    if(source==='document'){generationQueue.current?.cancel();setPreviewCancelled(false);}
-    setPickingJulia(false);
-    const current=sceneRef.current;
-    drafts.current[current.id]=workingDocument(current);
-    clearTimeout(cameraTimer.current);
-    // Library navigation resumes work; an explicit file or new document owns
-    // its contents even when its identity matches an existing draft.
-    if(source==='library')next=workingDocument(next);
-    setIteratedDraft(next.iteratedDraft);next=withoutSourceIteratedDraft(next);
+    if(source==='document'||preparedRoots||sourceLivePreviewKind(current)==='roots'){generationQueue.current?.cancel();setPreviewCancelled(false);}
+    setPickingJulia(false);clearTimeout(cameraTimer.current);setIteratedDraft(draft);
+    rootsEditor.current=preparedRoots;if(preparedRoots)liveSessionId.current=preparedRoots.sessionId;
+    rootsNeedsApply.current=false;setRootsStaged(!!preparedRoots&&!!retained?.staged);retireRootsGesture();
+    if(source==='document')rootsDraftStates.current.delete(next.id);
     if(usesSourceBouncing(next))resetBouncingNavigation(next);
-    autoPlayPending.current=continuousBouncing(next);
-    playingRef.current=false;
-    setPlaying(false);
-    setTime(0);
-    playbackClock.current=0;
-    history.current=[];
-    future.current=[];
-    setScene(structuredClone(next));
-    setFractalStaged(false);setFractalFullApplyPending(false);
-    setFinalPreview(next.kind==='spirograph');
-    setFormulaDraft(next.equations);
-    setError("");
-    camera.current = next.camera;
+    autoPlayPending.current=continuousBouncing(next);playingRef.current=false;setPlaying(false);
+    setTime(0);timeRef.current=0;playbackClock.current=0;history.current=[];future.current=[];
+    setScene(structuredClone(next));setFractalStaged(false);setFractalFullApplyPending(false);
+    setFinalPreview(next.kind==='spirograph');setFormulaDraft(next.equations);setError('');camera.current=next.camera;
   }
   function save(favorite?: boolean) {
     try {
     const builtin=isBuiltinCreationScene(scene);
     const item = parseScene(serializeScene({ ...workingDocument(scene),id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
-    if(builtin)drafts.current[scene.id]=workingDocument(scene);
-    setScene(retainDomainPaletteEditorOnSave(scene,retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item))),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':sourceLivePreviewKind(scene)==='domain'?'domain-metadata':undefined);camera.current=item.camera;
+    if(builtin){drafts.current[scene.id]=workingDocument(scene);const roots=rootsEditorState();if(roots)rootsDraftStates.current.set(scene.id,roots);}
+    setScene(retainDomainPaletteEditorOnSave(scene,retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item))),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':sourceLivePreviewKind(scene)==='domain'?'domain-metadata':sourceLivePreviewKind(scene)==='roots'?'roots-metadata':undefined);camera.current=item.camera;
     setSaved((current) => {
       const others = current.filter((s) => s.id !== item.id);
       return [...others, item];
@@ -628,18 +700,22 @@ export default function App() {
     },'document');
     notify(t("已创建独立副本"));
   }
-  function undo() {
-    const prev = history.current.pop();
-    if (prev) {
-      future.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));
-      setIteratedDraft(prev.iteratedDraft);setScene(withoutSourceIteratedDraft(prev));
-      notify(t("已撤销"));
-    }
+  function restoreHistory(direction:'undo'|'redo'){
+    const from=direction==='undo'?history:future,to=direction==='undo'?future:history,entry=from.current.at(-1);if(!entry)return;
+    try{
+      const target=entry.roots?.[direction==='undo'?'before':'after'];
+      if(entry.roots?.runtimeChanged){
+        if(target)restoreRootsRuntime(target);
+        else{generationQueue.current?.cancel();rootsEditor.current=undefined;rootsNeedsApply.current=sourceLivePreviewKind(entry.scene)==='roots';retireRootsGesture();}
+      }
+      if(entry.roots)setRootsStaged(target?.staged??false);
+      from.current.pop();to.current.push({scene:withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current),roots:entry.roots});
+      setIteratedDraft(entry.scene.iteratedDraft);setScene(withoutSourceIteratedDraft(entry.scene));
+      notify(t(direction==='undo'?'已撤销':'已重做'));
+    }catch(error){notify(error instanceof Error?error.message:String(error));}
   }
-  function redo() {
-    const next=future.current.pop();
-    if(next){history.current.push(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current));setIteratedDraft(next.iteratedDraft);setScene(withoutSourceIteratedDraft(next));notify(t("已重做"));}
-  }
+  function undo(){restoreHistory('undo');}
+  function redo(){restoreHistory('redo');}
   function seekBouncingUpdates(updates:number){
     retireBouncingGesture();
     const planned=planSourceBouncingFixedReplay({updates,fps:sceneRef.current.timeline.fps});
@@ -651,7 +727,15 @@ export default function App() {
     setGenerationRevision(value=>value+1);
   }
   function seek(value:number) {
-    if(sourceLivePreviewKind(sceneRef.current)==='roots'&&value!==0){setToast(t('后台实时采样请使用返回起点重新开始'));return;}
+    if(sourceLivePreviewKind(sceneRef.current)==='roots'){
+      if(value!==0){setToast(t('后台实时采样请使用返回起点重新开始'));return;}
+      if(rootsNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}
+      try{admitRootsRetention(rootsEditor.current!.checkpoint());rootsEditor.current!.edit({kind:'restart'});retireRootsGesture();livePlaybackTransition.current=undefined;
+        // Native Reset resumes the applied scene and leaves author edits staged.
+        autoPlayPending.current=false;playingRef.current=true;setPlaying(true);liveLastFrameAt.current=undefined;
+        playbackClock.current=0;timeRef.current=0;setTime(0);liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);
+      }catch(error){notify(error instanceof Error?error.message:String(error));}return;
+    }
     if(previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);replaceLiveSession(value);setGenerationRevision(n=>n+1);}
     autoPlayPending.current=false;
     playbackClock.current=value;
@@ -661,6 +745,7 @@ export default function App() {
     if(value&&experience.error){setToast(t(experience.error));return;}
     autoPlayPending.current=false;
     const liveKind=previewLiveKind(sceneRef.current);
+    if(liveKind==='roots'){if(rootsNeedsApply.current){notify(t('请先应用场景以重新建立预览。'));return;}retireRootsGesture();}
     if(liveKind){
       if(livePlaybackTransition.current)return;
       const queue=generationQueue.current;if(!queue)return;
@@ -869,13 +954,20 @@ export default function App() {
           timeRef.current=time;playbackClock.current=time;setTime(time);
         }
       },
+      rootsControlAcknowledged:(sessionId,receipt)=>{
+        const owner=rootsEditor.current;if(!owner||owner.sessionId!==sessionId)return;
+        const previous=owner.receipt;
+        if(receipt.revision>previous.revision||receipt.resetRevision>previous.resetRevision)admitRootsRetention(owner.checkpoint());
+        if(owner.acknowledge(sessionId,receipt)&&receipt.resetRevision>previous.resetRevision)retireRootsGesture();
+      },
       recordingStopped:(result,originalScene)=>{
         // The queue finishes the owned recording even if its dialog unmounted.
         // Do not replace a document the user selected or edited meanwhile.
-        if(sceneRef.current!==originalScene)return;
+        const roots=result.context.rootsLive;
+        if(roots?rootsEditor.current?.sessionId!==roots.sessionId:sceneRef.current!==originalScene)return;
         autoPlayPending.current=false;
-        if(result.context.rootsLive){
-          const live=result.context.rootsLive;liveSessionId.current=live.sessionId;
+        if(roots){
+          const live=roots;liveSessionId.current=live.sessionId;
           livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;
           playingRef.current=!live.clock.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
           setTime(result.context.time);setPreviewCancelled(false);return;
@@ -923,7 +1015,16 @@ export default function App() {
         timeRef.current=result.context.time;playbackClock.current=result.context.time;
         setTime(result.context.time);setPreviewCancelled(false);
       },
-      error:error=>{autoPlayPending.current=false;interruptSourceBouncingInteraction();interruptLivePlayback();playingRef.current=false;setError(error.message);setPlaying(false);},
+      error:error=>{
+        autoPlayPending.current=false;interruptSourceBouncingInteraction();
+        if(error instanceof RootsLiveGenerationError&&error.previewRetained){
+          // Retain the completed image, but a rejected issued command cannot
+          // precede a later repair forever. Only explicit Apply replaces it.
+          if(rootsEditor.current?.pendingCount)rootsNeedsApply.current=true;
+          retireRootsGesture();
+        }else interruptLivePlayback();
+        playingRef.current=false;setError(error.message);setPlaying(false);
+      },
       busy:value=>{generationPending.current=value;setGenerationActive(value);setBusy(value&&!playingRef.current);},
     });
     generationQueue.current=queue;
@@ -932,7 +1033,7 @@ export default function App() {
   useEffect(()=>{
     // A provisional size would consume progressive samples before the first
     // measured viewport, whose resize then legitimately clears their ink.
-    if(!viewportSize||implicitRecordingScene.current===scene)return;
+    if(!viewportSize||implicitRecordingScene.current===scene||sourceLivePreviewKind(scene)==='roots'&&rootsNeedsApply.current)return;
     setPreviewCancelled(false);
     const changed=generationScene.current!==scene;
     if(generationScene.current?.id!==scene.id)setOutput(null);
@@ -940,7 +1041,7 @@ export default function App() {
     if(sourceBouncing)bouncingPresented.current=false;
     if(nativeGeometryPreviewEnabled(scene))nativeGeometryPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,...(implicitContinuation.current?.scene===scene?{implicitLive:{...implicitContinuation.current.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,paletteRevision:perlinPaletteRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    generationQueue.current?.request(scene,{time:timeRef.current,...(implicitContinuation.current?.scene===scene?{implicitLive:{...implicitContinuation.current.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,controls:rootsEditor.current!.request(),clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,paletteRevision:perlinPaletteRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(scene,viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:previewLiveKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
@@ -1276,13 +1377,19 @@ export default function App() {
               onSamilaViewport={(expected,view,begin)=>{
                 if(playingRef.current)return;
                 const next=commitSamilaViewport(sceneRef.current,expected,view);if(!next)return;
-                if(begin){history.current.push(expected);if(history.current.length>40)history.current.shift();future.current=[];}
+                if(begin)rememberScene(expected);
                 dirtySamila();setScene(next);return next;
+              }}
+              rootsInteractionEpoch={rootsInteractionEpoch}
+              onRootsNavigate={(expected,sessionId,camera,epoch)=>{
+                if(playingRef.current||rootsDialogOpen.current||rootsNeedsApply.current||sceneRef.current!==expected||rootsEditor.current?.sessionId!==sessionId||rootsInteractionEpochRef.current!==epoch)return false;
+                try{admitRootsRetention({checkpoint:rootsEditor.current.checkpoint(),camera});rootsEditor.current.edit({kind:'hot',command:{kind:'camera',camera}});liveDisplayRequested.current=true;setGenerationRevision(value=>value+1);return true;}
+                catch(error){notify(error instanceof Error?error.message:String(error));return false;}
               }}
               onRootsPresentation={(expected,rootsPresentation,begin)=>{
                 if(playingRef.current||sceneRef.current!==expected||!usesRootsNativePresentation(expected))return;
                 const next={...expected,rootsPresentation};
-                if(begin){history.current.push(expected);if(history.current.length>40)history.current.shift();future.current=[];}
+                if(begin)rememberScene(expected);
                 sceneRef.current=next;setScene(next);return next;
               }}
               pickingJulia={pickingJulia&&!busy&&!playing&&scene.kind==='fractal'&&activeFractalFormulaIdentity(scene)==='mandelbrot'&&(scene.fractalSource!==undefined||scene.settings.variant!=='julia')}
@@ -1300,7 +1407,7 @@ export default function App() {
                 <button onClick={()=>{interruptSourceBouncingInteraction();interruptLivePlayback();generationQueue.current?.cancel();setPreviewCancelled(true);}}>{t('取消计算')}</button>
               </div>
             )}
-            {previewCancelled&&<div className="rendering-badge" role="status"><span>{t('计算已取消；当前画布保留取消前的预览。')}</span><button onClick={()=>setGenerationRevision(value=>value+1)}>{t('重新计算')}</button></div>}
+            {previewCancelled&&<div className="rendering-badge" role="status"><span>{t('计算已取消；当前画布保留取消前的预览。')}</span><button onClick={()=>sourceLivePreviewKind(sceneRef.current)==='roots'?void applyScene(sceneRef.current):setGenerationRevision(value=>value+1)}>{t('重新计算')}</button></div>}
             {error && (
               <div className="error-card" role="alert">
                 <strong>{t("计算未完成")}</strong>
@@ -1340,7 +1447,7 @@ export default function App() {
             playing={playing}
             onTime={seek}
             onPlay={play}
-            onChange={next=>sourceLivePreviewKind(sceneRef.current)==='fractal'?editFractal(next,'stage'):['map','symmetry'].includes(sourceLivePreviewKind(sceneRef.current)??'')?void applyScene({...sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),timeline:next.timeline}):edit(next)}
+            onChange={next=>sourceLivePreviewKind(sceneRef.current)==='fractal'?editFractal(next,'stage'):sourceLivePreviewKind(sceneRef.current)==='roots'?editRoots(next,'roots-stage'):['map','symmetry'].includes(sourceLivePreviewKind(sceneRef.current)??'')?void applyScene({...sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),timeline:next.timeline}):edit(next)}
           />}
         </main>
         {inspector && (()=>{const scene=editorScene,edit=editInspector;return (
@@ -1384,12 +1491,13 @@ export default function App() {
               {!isCreationKind(scene.kind)&&<p className="section-body muted" role="note">{t('此场景的完整创作支持计划于 2.0。已有项目数据可继续保存和备份。')}</p>}
               {(sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry')&&<div className="section-body"><button data-testid="iterated-apply" disabled={recording||applying} onClick={()=>void applyScene(scene)}>{t(applying?'正在验证 GLSL…':'应用场景')}</button>{iteratedDraft&&<><p role="status" data-testid="iterated-draft-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p><button onClick={discardIteratedDraft}>{t('放弃未应用修改')}</button></>}</div>}
               {sourceLivePreviewKind(scene)==='surface'&&<div className="section-body"><button data-testid="surface-apply" disabled={recording||applying} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
+              {sourceLivePreviewKind(scene)==='roots'&&<div className="section-body"><button data-testid="roots-apply" disabled={recording} onClick={()=>void applyScene(sceneRef.current)}>{t('应用场景')}</button>{rootsStaged&&<p role="status" data-testid="roots-staged-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p>}<p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='domain'&&<div className="section-body"><button data-testid="domain-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='fractal'&&<div className="section-body"><button data-testid="fractal-apply" disabled={recording||applying} onClick={()=>editFractal(scene,'apply')}>{t('应用场景')}</button>{fractalStaged&&<p role="status" data-testid="fractal-draft-status">{t('有待应用的修改；修改几何参数也会应用当前分形设置。')}</p>}{fractalFullApplyPending&&<p role="status" data-testid="fractal-full-apply-status">{t('时间线或场景外观有修改，需在播放时应用才能替换当前运行场景。')}</p>}<p className="muted">{t('暂停时应用保留当前动画进度；播放时应用会从头运行新的时间线。')}</p></div>}
               <ProjectResolutionControls resolution={scene.projectResolution} onChange={projectResolution=>{
                 const next={...scene};
                 if(projectResolution)next.projectResolution=projectResolution;else delete next.projectResolution;
-                edit(next);
+                if(sourceLivePreviewKind(scene)==='roots')editRoots(next,'roots-metadata');else edit(next);
               }}/>
               {scene.provenance && (
                 <details className="inspector-section">
@@ -1478,8 +1586,8 @@ export default function App() {
                   </details>}
                   <DomainColorControls scene={scene} onChange={edit} renderFacts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.domainRender:undefined} renderTime={renderTime} onRetry={retryDomainGpu} retryDisabled={playing||recording||scene.settings.domainBackend==='cpu'}/>
                   {scene.kind==='roots'&&<RootsMathControls key={`root-math:${scene.id}`} scene={scene} onChange={edit}/>}
-                  {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={edit} onRestart={()=>{if(sourceLivePreviewKind(scene)==='roots'){seek(0);return;}rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
-                  <RootsDensityColorControls scene={scene} onChange={edit} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsColor:undefined}/>
+                  {scene.kind==='roots'&&<RootsPresentationControls scene={scene} onChange={editRoots} onRestart={()=>{if(sourceLivePreviewKind(scene)==='roots'){seek(0);return;}rootsSessionId.current=crypto.randomUUID();generationQueue.current?.cancel();autoPlayPending.current=false;setPlaying(false);const start=rootsSchedule(scene.settings,scene.rootsMath).start;playbackClock.current=start;setTime(start);setGenerationRevision(n=>n+1);}} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsPresentation:undefined}/>}
+                  <RootsDensityColorControls scene={scene} onChange={editRoots} facts={output?.type==='raster'&&output===presentedOutput&&outputScene===scene&&presentedSource===scene&&!previewCancelled?output.rootsColor:undefined}/>
                   {scene.kind==='fractal'?<FractalControls scene={scene} onChange={edit} onSourceChange={editFractal} section="formula"/>:!usesSourceSurfaceHost(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&<SettingsFields
                     controls={spirographAuthoringControls(scene,visibleIteratedControls(scene.kind,scene.settings,scene.kind==='perlin'?visiblePerlinControls(def.controls,scene.settings):scene.kind==='bouncing'?visibleBouncingControls(def.controls,scene.settings):scene.kind==='domain'?visibleDomainControls(def.controls,scene.settings):scene.kind==='roots'?visibleRootsControls(def.controls,scene.settings):scene.kind==='attractor'?visibleAttractorControls(scene.settings,def.controls):symmetryAuthoringControls(scene,def.controls),scene.timeline,scene.palette,scene.equations,scene.mapSource)).filter(control=>{
                       if(!isMeshMaterialControlVisible(scene,control.key)||!rootMathControlVisible(scene,control.key)||!rootsPresentationControlVisible(scene,control.key))return false;
@@ -1553,7 +1661,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-palette':undefined)}/>}
+                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={editRoots}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-palette':undefined)}/>}
                       {!usesSourceSamilaSplat(scene)&&!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",

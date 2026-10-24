@@ -1289,5 +1289,8 @@
   "重建初始状态会按当前场景配置生成粒子、恢复作者相机角度并将缩放重置为 1；当前状态选项保留已呈现的粒子与视角。两种方式均将录制时钟清零，先推进并绘制 1 帧预热但不编码，再录制到源时长阈值。": "Rebuild from seed uses the authored scene and camera angles at zoom 1; current state preserves the presented particles and view. Both reset the recording clock, advance one unencoded warmup frame, then record until the source duration is reached.",
   "单独设置模拟帧率": "Separate simulation FPS",
   "模拟帧率默认跟随导出帧率。单独设置时，模拟帧率决定每秒的物理更新次数，导出帧率决定视频播放速度。": "Simulation FPS follows export FPS by default. When set separately, simulation FPS controls physical updates per second and export FPS controls video playback speed.",
-  "源弹跳模拟帧率必须为 1–120 的整数": "Bouncing simulation FPS must be an integer from 1 to 120"
+  "源弹跳模拟帧率必须为 1–120 的整数": "Bouncing simulation FPS must be an integer from 1 to 120",
+  "请先应用场景以重新建立预览。": "Apply the scene to rebuild its preview first.",
+  "源色板保留颜色原文与顺序；热更新使用完整色表。空列表或省略色板不会改变当前配色；应用场景后，省略值使用四色默认，空列表使用白色。": "The source palette retains its original text and order. Live updates use the full color list. An empty or omitted palette keeps the current colors; after Apply Scene, omission uses four default colors and an empty list uses white.",
+  "空源色板暂不改变当前配色；应用场景后使用白色纹理。": "An empty source palette keeps the current colors until Apply Scene, which uses a white texture."
 }

@@ -23,7 +23,7 @@ import {useI18n} from '../i18n';
 import {parseBulbCameraSettings} from '../engine/mandelbulb';
 import {juliaSeedAtPointer} from '../engine/complexViewport';
 import {hasMathematicalPlane,planeNavigation,panPlane,zoomPlane,fitPlane,rasterPresentationRect,type PlaneNavigation} from '../engine/planeNavigation';
-import {usesRootsNativePresentation,navigateRootsPresentation,type RootsPresentationCommit} from '../engine/rootsPresentationAuthoring';
+import {usesRootsNativePresentation,navigateRootsPresentation,captureRootsRuntimeNavigation,type RootsPresentationCommit,type RootsNavigationCommit} from '../engine/rootsPresentationAuthoring';
 import type {RootsPresentationConfiguration} from '../engine/rootsPresentationConfig';
 import type {ProjectResolution} from '../engine/projectResolution';
 import {projectViewportFit} from '../engine/projectViewportFit';
@@ -59,10 +59,12 @@ export const Viewport = forwardRef<
     onSourceBouncingNavigate?:(expected:SceneDocument,view:SourceBouncingView,checkpoint:SourceBouncingCheckpoint,event:SourceBouncingNavigationEvent,begin:boolean,epoch:number)=>SourceBouncingView|undefined;
     onSamilaViewport?:SamilaViewportCommit;
     onRootsPresentation?:RootsPresentationCommit;
+    rootsInteractionEpoch?:number;
+    onRootsNavigate?:RootsNavigationCommit;
     pickingJulia?:boolean;
     onPickJulia?:(values:Settings)=>void;
   }
->(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,onSourceDomainNavigate,onSourceSurfaceNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia }, ref) {
+>(function Viewport({ output, scene, outputScene, onPresented,onRenderError,playing,renderPending,planeFrameReady, time, pixelRatio, onCamera, onSize, onViewSettings,onSourceDomainNavigate,onSourceSurfaceNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,rootsInteractionEpoch,onRootsNavigate,pickingJulia,onPickJulia }, ref) {
   const {t}=useI18n();
   const [renderError,setRenderError]=useState('');
   const [navigationNotice,setNavigationNotice]=useState('');
@@ -70,7 +72,7 @@ export const Viewport = forwardRef<
   const sourceBouncing=usesSourceBouncing(scene);
   const bulb=isRaymarchScene(scene);
   const plane=hasMathematicalPlane(scene),managed=bulb||plane||sourceBouncing||sourceCameraNavigation(scene);
-  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceDomainNavigate,onSourceSurfaceNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceDomainNavigate,onSourceSurfaceNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,pickingJulia,onPickJulia};
+  const interaction=useRef({scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceDomainNavigate,onSourceSurfaceNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,rootsInteractionEpoch,onRootsNavigate,pickingJulia,onPickJulia});interaction.current={scene,playing,renderPending,planeFrameReady,bulb,plane,managed,onViewSettings,onSourceDomainNavigate,onSourceSurfaceNavigate,onSourceIteratedNavigate,sourceBouncingInteractionEpoch,onSourceBouncingNavigate,onSamilaViewport,onRootsPresentation,rootsInteractionEpoch,onRootsNavigate,pickingJulia,onPickJulia};
   const canvas = useRef<HTMLCanvasElement>(null),
     renderer = useRef<ArtRenderer | null>(null),
     lastId = useRef("");
@@ -153,6 +155,23 @@ export const Viewport = forwardRef<
     type NavigationDrag={id:number;x:number;y:number;camera:{yaw:number;pitch:number}|PlaneNavigation;mode:'bulb'|'plane';scale:number};
     type SamilaDrag={id:number;x:number;y:number;mode:'samila';scale:number;width:number;height:number;view:SamilaCapture;expected:SceneDocument;began:boolean;lastX:number;lastY:number};
     type RootsDrag={id:number;x:number;y:number;mode:'roots';expected:SceneDocument;view:RootsPresentationConfiguration;began:boolean;width:number;height:number};
+    type LiveRootsCapture={expected:SceneDocument;sessionId:string;epoch:number;view:RootsPresentationConfiguration};
+    type LiveRootsDrag=LiveRootsCapture&{id:number;x:number;y:number;mode:'live-roots';width:number;height:number};
+    const captureLiveRoots=():LiveRootsCapture|undefined=>{
+      const current=interaction.current,frame=presented.current.read(),delivered=deliveredOutput.current;
+      if(current.renderPending||current.planeFrameReady===false||frame?.source!==current.scene||delivered?.source!==current.scene||!current.onRootsNavigate)return;
+      const captured=captureRootsRuntimeNavigation(delivered.output);
+      if(captured)return{...captured,expected:current.scene,epoch:current.rootsInteractionEpoch??0};
+    };
+    const navigateLiveRoots=(captured:LiveRootsCapture,view:RootsPresentationConfiguration)=>{
+      const current=interaction.current,delivered=deliveredOutput.current;
+      // Accepted events accumulate locally while their Worker frame is pending.
+      // A new author/session/epoch or playback invalidates that gesture.
+      if(current.scene!==captured.expected||(current.rootsInteractionEpoch??0)!==captured.epoch||current.playing||delivered?.source!==current.scene||delivered.output.type!=='raster'||delivered.output.rootsLive?.sessionId!==captured.sessionId||!delivered.output.rootsLive.paused)return false;
+      const {phi,theta,gamma,zoom}=view.camera;
+      return current.onRootsNavigate?.(captured.expected,captured.sessionId,{phi,theta,gamma,zoom},captured.epoch)===true;
+    };
+    let rootsWheel:(LiveRootsCapture&{last:number})|undefined;
     type BouncingCapture={epoch:number;view:SourceBouncingView;expected:SceneDocument;checkpoint:SourceBouncingCheckpoint};
     type DomainCapture={expected:SceneDocument;sessionId:string;scaleX:number;scaleY:number};
     type DomainDrag=DomainCapture&{id:number;x:number;y:number;mode:'domain'};
@@ -184,7 +203,7 @@ export const Viewport = forwardRef<
     };
     let viewportWheel:(SourceViewportCapture&{last:number})|undefined;
     type BouncingDrag=BouncingCapture&{id:number;x:number;y:number;mode:'bouncing';began:boolean};
-    let drag:NavigationDrag|SamilaDrag|RootsDrag|BouncingDrag|SourceViewportDrag|DomainDrag|undefined,revision=0;
+    let drag:NavigationDrag|SamilaDrag|RootsDrag|LiveRootsDrag|BouncingDrag|SourceViewportDrag|DomainDrag|undefined,revision=0;
     let bouncingWheel:(BouncingCapture&{last:number})|undefined;
     const captureBouncing=():BouncingCapture|undefined=>{
       const current=interaction.current,frame=presented.current.read(),delivered=deliveredOutput.current;
@@ -218,7 +237,7 @@ export const Viewport = forwardRef<
     };
     const down=(event:PointerEvent)=>{
       if(!active()||event.button!==0&&!usesSourceBouncing(interaction.current.scene)&&!sourceCameraNavigation(interaction.current.scene))return;
-      try{const current=interaction.current;wheelGesture=undefined;bouncingWheel=undefined;viewportWheel=undefined;domainWheel=undefined;
+      try{const current=interaction.current;wheelGesture=undefined;bouncingWheel=undefined;viewportWheel=undefined;domainWheel=undefined;rootsWheel=undefined;
         if(usesSourceDomain(current.scene)){
           const captured=captureDomain();if(!captured)return;
           drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'domain'};
@@ -229,9 +248,14 @@ export const Viewport = forwardRef<
           const captured=captureBouncing();if(!captured||!current.onSourceBouncingNavigate)return;
           drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'bouncing',began:false};
         }else if(usesRootsNativePresentation(current.scene)){
-          const frame=presented.current.read();
-          if(current.renderPending||frame?.source!==current.scene||!current.onRootsPresentation)return;
-          drag={id:event.pointerId,x:event.clientX,y:event.clientY,mode:'roots',expected:current.scene,view:current.scene.rootsPresentation!,began:false,width:element.clientWidth,height:element.clientHeight};
+          if(current.scene.rootsPresentation?.previewMode==='live-worker-arrival-v1'){
+            const captured=captureLiveRoots();if(!captured)return;
+            drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,mode:'live-roots',width:element.clientWidth,height:element.clientHeight};
+          }else{
+            const frame=presented.current.read();
+            if(current.renderPending||frame?.source!==current.scene||!current.onRootsPresentation)return;
+            drag={id:event.pointerId,x:event.clientX,y:event.clientY,mode:'roots',expected:current.scene,view:current.scene.rootsPresentation!,began:false,width:element.clientWidth,height:element.clientHeight};
+          }
         }else if(samila()){
           const captured=capture();if(!captured||!current.onSamilaViewport)return;
           drag={...captured,id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,mode:'samila',began:false};
@@ -260,6 +284,11 @@ export const Viewport = forwardRef<
           const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!dx&&!dy)return;
           const accepted=interaction.current.onSourceBouncingNavigate?.(drag.expected,drag.view,drag.checkpoint,{kind:'drag',dx,dy},!drag.began,drag.epoch);
           if(!accepted){drag=undefined;return;}drag.view=accepted;drag.x=event.clientX;drag.y=event.clientY;drag.began=true;
+        }else if(drag.mode==='live-roots'){
+          const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(!dx&&!dy)return;
+          const next=navigateRootsPresentation(drag.view,{kind:'rotate',dx,dy,width:drag.width,height:drag.height});
+          if(!navigateLiveRoots(drag,next)){drag=undefined;return;}
+          drag.view=next;drag.x=event.clientX;drag.y=event.clientY;
         }else if(drag.mode==='roots'){
           const next=navigateRootsPresentation(drag.view,{kind:'rotate',dx:event.clientX-drag.x,dy:event.clientY-drag.y,width:drag.width,height:drag.height});
           const accepted=interaction.current.onRootsPresentation?.(drag.expected,next,!drag.began);
@@ -279,7 +308,7 @@ export const Viewport = forwardRef<
     };
     const end=()=>{drag=undefined;};
     const wheel=(event:WheelEvent)=>{
-      if(!active()){bouncingWheel=undefined;viewportWheel=undefined;domainWheel=undefined;return;}if(drag?.mode==='samila'||drag?.mode==='bouncing'||drag?.mode==='source-viewport'||drag?.mode==='domain')return;event.preventDefault();
+      if(!active()){bouncingWheel=undefined;viewportWheel=undefined;domainWheel=undefined;rootsWheel=undefined;return;}if(drag?.mode==='samila'||drag?.mode==='bouncing'||drag?.mode==='source-viewport'||drag?.mode==='domain'||drag?.mode==='live-roots')return;event.preventDefault();
       try{
         const current=interaction.current,pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?element.clientHeight:1);
         if(usesSourceDomain(current.scene)){
@@ -302,9 +331,16 @@ export const Viewport = forwardRef<
           const accepted=current.onSourceBouncingNavigate?.(captured.expected,captured.view,captured.checkpoint,{kind:'wheel',count:pixels/16},!continuing,captured.epoch);
           bouncingWheel=accepted?{...captured,view:accepted,last:now}:undefined;
         }else if(usesRootsNativePresentation(current.scene)){
-          if(current.renderPending||presented.current.read()?.source!==current.scene||!pixels)return;
-          const next=navigateRootsPresentation(current.scene.rootsPresentation!,{kind:'zoom',deltaPixels:pixels});
-          current.onRootsPresentation?.(current.scene,next,true);
+          if(!pixels)return;
+          if(current.scene.rootsPresentation?.previewMode==='live-worker-arrival-v1'){
+            const now=performance.now(),captured=rootsWheel&&now-rootsWheel.last<250?rootsWheel:captureLiveRoots();if(!captured)return;
+            const next=navigateRootsPresentation(captured.view,{kind:'zoom',deltaPixels:pixels});
+            rootsWheel=navigateLiveRoots(captured,next)?{...captured,view:next,last:now}:undefined;
+          }else{
+            if(current.renderPending||presented.current.read()?.source!==current.scene)return;
+            const next=navigateRootsPresentation(current.scene.rootsPresentation!,{kind:'zoom',deltaPixels:pixels});
+            current.onRootsPresentation?.(current.scene,next,true);
+          }
         }else if(samila()){
           if(!pixels)return;
           const now=performance.now(),continuing=wheelGesture&&now-wheelGesture.last<250;

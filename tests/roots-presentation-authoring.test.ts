@@ -34,11 +34,11 @@ describe('source spatial Roots authoring',()=>{
   expect(()=>navigateRootsPresentation(initial,{kind:'rotate',dx:1,dy:2,width:0,height:1})).toThrow();
   expect(()=>navigateRootsPresentation(initial,{kind:'zoom',deltaPixels:-1e9})).toThrow();
  });
- it('exposes mode apply, source units and lifecycle behavior in both languages',()=>{
+ it('exposes the staged mode selector, source units and lifecycle behavior in both languages',()=>{
   const scene=withRootsPresentation(createScene(definition('roots')),defaultRootsPresentationConfiguration());
   for(const language of ['zh','en'] as const){
    const html=renderToStaticMarkup(createElement(I18nProvider,{language,children:createElement(RootsPresentationControls,{scene,onChange:()=>{}})}));
-   expect(html).toContain(language==='zh'?'应用显示方式并重新采样':'Apply display mode and restart sampling');
+   expect(html).toContain(language==='zh'?'aria-label="空间显示方式"':'aria-label="Spatial display mode"');
    expect(html).toContain(language==='zh'?'相机 phi（弧度）':'Camera phi (radians)');
    expect(html).toContain(language==='zh'?'空间偏移 Z':'Spatial offset Z');
   }

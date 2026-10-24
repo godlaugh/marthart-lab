@@ -1,0 +1,452 @@
+{
+  "date": "2026-10-24",
+  "baseCommit": "d6bf8dd36657c2be72912bc2431978476426c19f",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "status": "app-controls-and-finite-export-matrix-verified-original-images-pending",
+  "milestone": "M3",
+  "readableReport": "docs/source-roots-control-ui.zh-CN.md",
+  "evidenceKinds": {
+    "original": "Reused pinned JAR static control-routing evidence; no original JVM or GUI execution in this increment.",
+    "local": "Actual App public controls, GenerationQueue, generation Worker, real CPU solver Workers, WebGL, PNG and four MP4 deliveries; finite single-Worker fixtures. No original application or native pixel-parity claim."
+  },
+  "claims": [
+    "Public typed edit intents separate staged author, applied cold configuration and narrow hot runtime updates; same-value Apply remains an event.",
+    "Runtime navigation uses completed frame camera and does not modify authored Inspector values or history.",
+    "History, library, metadata, recording receipts and capacity admission retain explicit runtime ownership rather than interpreting author diffs.",
+    "Real finite density/point-cloud App export validates every PNG upload RGBA including alpha and every decoded MP4 RGB channel against independent raw-input encoding."
+  ],
+  "validation": {
+    "regression": {
+      "files": 67,
+      "tests": 1587,
+      "log": ".cache/roots-control-ui-20261024/validation/targeted.log"
+    },
+    "afterRetentionChanges": {
+      "files": 3,
+      "tests": 37
+    },
+    "afterPaletteTextChanges": {
+      "files": 2,
+      "tests": 32
+    },
+    "build": "passed before final palette wording-only changes; existing chunk-size warning",
+    "i18n": "final passed, zero required UI gaps",
+    "actualApp": {
+      "checks": 243,
+      "modes": [
+        "density",
+        "point-cloud"
+      ],
+      "sourceFiles": 564,
+      "sourceStable": true,
+      "finalSourceHashesMatch": true,
+      "remainingWorkers": 0,
+      "remainingServiceProcesses": 0,
+      "cleanup": [
+        {
+          "resource": "browser",
+          "status": "fulfilled"
+        },
+        {
+          "resource": "vite",
+          "status": "fulfilled"
+        },
+        {
+          "resource": "export-service",
+          "status": "fulfilled"
+        }
+      ],
+      "pageErrors": [],
+      "browser": "155.0.8059.85",
+      "pngs": [
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/density-hot-B.png",
+          "sha256": "b8643a4b2a6870372d96360b378c1cf90efdb94dc0c9813b16d5c01f083faa54",
+          "rgbaSha256": "4adc2bbf98db3cef4793b19bbaa4e9e20a0eb0c582e2ccac81803927c9b21f66"
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/density-after-record-A.png",
+          "sha256": "19038ed36258041dcc5577ee79adfe11f9f25d01b17823b555c7b67ee53c86d5",
+          "rgbaSha256": "955540695facd57f155509c918c4db0f0d3a6ebce65e5b501ceec2ac4808b3ce"
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/density-after-record-B.png",
+          "sha256": "b8643a4b2a6870372d96360b378c1cf90efdb94dc0c9813b16d5c01f083faa54",
+          "rgbaSha256": "4adc2bbf98db3cef4793b19bbaa4e9e20a0eb0c582e2ccac81803927c9b21f66"
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/point-cloud-hot-B.png",
+          "sha256": "158181e482ed8d7679b6a8672f0bab388fb6e64f9df3c440f396cc00d30ecbff",
+          "rgbaSha256": "8adadfa59ccc72c3fd8038610d051051329b7e42c1f23537c958d4959a5cda3d"
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/point-cloud-after-record-A.png",
+          "sha256": "9e4368ffa827b3ec8212511ca41f50a8904156e4e702096ce9a6ac90dd3d16b1",
+          "rgbaSha256": "0a8025240e97c9dff2d9ac4b7609c7716b36fae3eb3d86c8df428d2069e42c6c"
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/point-cloud-after-record-B.png",
+          "sha256": "158181e482ed8d7679b6a8672f0bab388fb6e64f9df3c440f396cc00d30ecbff",
+          "rgbaSha256": "8adadfa59ccc72c3fd8038610d051051329b7e42c1f23537c958d4959a5cda3d"
+        }
+      ],
+      "videos": [
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/density-cold-A.mp4",
+          "sha256": "1fab9bfaf8e4cffa39b4efc7e3f52032bfaf8795f871d1909681ea75f9a4d745",
+          "mode": "density",
+          "settings": {
+            "width": 160,
+            "height": 120,
+            "fps": 12,
+            "frames": null,
+            "format": "mp4",
+            "profile": "mathart",
+            "quality": "high",
+            "inputWidth": 480,
+            "inputHeight": 360
+          },
+          "frames": 12,
+          "decodedRgbMatchesIndependentEncoding": true,
+          "sequenceSensitivity": {
+            "swappedDistinctPairRejected": [
+              0,
+              4
+            ],
+            "repeatedFirstFrameRejectedAt": 4
+          }
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/density-applied-B.mp4",
+          "sha256": "e6cd07bdab72d6a51dc27a2eeab94f67ac81557f629373801dee322165d750c3",
+          "mode": "density",
+          "settings": {
+            "width": 160,
+            "height": 120,
+            "fps": 12,
+            "frames": null,
+            "format": "mp4",
+            "profile": "mathart",
+            "quality": "high",
+            "inputWidth": 480,
+            "inputHeight": 360
+          },
+          "frames": 12,
+          "decodedRgbMatchesIndependentEncoding": true,
+          "sequenceSensitivity": {
+            "swappedDistinctPairRejected": [
+              0,
+              1
+            ],
+            "repeatedFirstFrameRejectedAt": 1
+          }
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/point-cloud-cold-A.mp4",
+          "sha256": "6042a01e8f574260c24fa8903674fa5bbc78b34d37dee519aea012702d29dbfb",
+          "mode": "point-cloud",
+          "settings": {
+            "width": 160,
+            "height": 120,
+            "fps": 12,
+            "frames": null,
+            "format": "mp4",
+            "profile": "mathart",
+            "quality": "high",
+            "inputWidth": 480,
+            "inputHeight": 360
+          },
+          "frames": 7,
+          "decodedRgbMatchesIndependentEncoding": true,
+          "sequenceSensitivity": {
+            "swappedDistinctPairRejected": [
+              0,
+              4
+            ],
+            "repeatedFirstFrameRejectedAt": 4
+          }
+        },
+        {
+          "path": ".cache/roots-control-ui-20261024-run-5/point-cloud-applied-B.mp4",
+          "sha256": "39bab49b2c3f14bb59ad2032a25d21686742583bad097374342c57419e76b15f",
+          "mode": "point-cloud",
+          "settings": {
+            "width": 160,
+            "height": 120,
+            "fps": 12,
+            "frames": null,
+            "format": "mp4",
+            "profile": "mathart",
+            "quality": "high",
+            "inputWidth": 480,
+            "inputHeight": 360
+          },
+          "frames": 7,
+          "decodedRgbMatchesIndependentEncoding": true,
+          "sequenceSensitivity": {
+            "swappedDistinctPairRejected": [
+              0,
+              4
+            ],
+            "repeatedFirstFrameRejectedAt": 4
+          }
+        }
+      ]
+    }
+  },
+  "measurements": {
+    "actualApp": {
+      "elapsedMs": 31447.670416,
+      "costScope": "Two actual App workflows, export service/real FFmpeg/independent raw-input video verification; warm browser setup excluded",
+      "processFamily": {
+        "rootPid": 28303,
+        "samples": 104,
+        "observedProcesses": 122,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 2453696,
+        "observedCpuMs": 62140.00000000001,
+        "samplingErrors": []
+      }
+    },
+    "actualAppTotalMs": 32218.902917,
+    "costComparison": {
+      "scope": "Paused public App Roots density, one actual CPU sampling Worker, seed91, 256 polynomial samples and batch64, fixed browser1120x800/DPR1/project aspect480x360/low preview quality. Complete initial image, then exactly six first-color Manual RGB changes through the public color input, each awaited through production Generator and actual ArtRenderer delivery.",
+      "measurement": "Cold phase: first App navigation/Worker setup, initial completed sampling and Appearance opening. Warm phase: six committed UI RGB change events and complete resulting frames. Process-family CPU deltas and summed RSS peaks use the verifier Node PID, covering this Node/Vite process and its Chrome descendants, sampled at boundaries/every250ms. Archive extraction, Vite/Chrome launch and workspace preparation are outside phases. The same Node process serves both variants sequentially; module/JIT/OS/driver caches are not flushed. Passive hashing/observation is included. One run per variant, no statistical speedup claim.",
+      "baseCommit": "d6bf8dd36657c2be72912bc2431978476426c19f",
+      "variants": [
+        {
+          "variant": "before",
+          "phases": [
+            {
+              "phase": "cold-app-and-completed-density",
+              "elapsedMs": 1835.9569169999995,
+              "processFamily": {
+                "rootPid": 32559,
+                "samples": 8,
+                "observedProcesses": 17,
+                "maxConcurrentProcesses": 10,
+                "sampledPeakRssKiB": 2538832,
+                "observedCpuMs": 5480,
+                "samplingErrors": []
+              }
+            },
+            {
+              "phase": "warm-six-manual-rgb-edits",
+              "elapsedMs": 1036.1074579999995,
+              "processFamily": {
+                "rootPid": 32559,
+                "samples": 5,
+                "observedProcesses": 14,
+                "maxConcurrentProcesses": 10,
+                "sampledPeakRssKiB": 2565520,
+                "observedCpuMs": 949.9999999999998,
+                "samplingErrors": []
+              }
+            }
+          ],
+          "cleanup": [
+            {
+              "resource": "browser",
+              "status": "fulfilled"
+            },
+            {
+              "resource": "ownedChromeFamily",
+              "status": "fulfilled"
+            },
+            {
+              "resource": "vite",
+              "status": "fulfilled"
+            }
+          ],
+          "chromeExit": {
+            "exitCode": 0,
+            "signalCode": null
+          }
+        },
+        {
+          "variant": "after",
+          "phases": [
+            {
+              "phase": "cold-app-and-completed-density",
+              "elapsedMs": 1859.4421659999998,
+              "processFamily": {
+                "rootPid": 32559,
+                "samples": 8,
+                "observedProcesses": 17,
+                "maxConcurrentProcesses": 10,
+                "sampledPeakRssKiB": 2718992,
+                "observedCpuMs": 7809.999999999999,
+                "samplingErrors": []
+              }
+            },
+            {
+              "phase": "warm-six-manual-rgb-edits",
+              "elapsedMs": 1103.2799999999988,
+              "processFamily": {
+                "rootPid": 32559,
+                "samples": 5,
+                "observedProcesses": 14,
+                "maxConcurrentProcesses": 10,
+                "sampledPeakRssKiB": 2763648,
+                "observedCpuMs": 3100.0000000000005,
+                "samplingErrors": []
+              }
+            }
+          ],
+          "cleanup": [
+            {
+              "resource": "browser",
+              "status": "fulfilled"
+            },
+            {
+              "resource": "ownedChromeFamily",
+              "status": "fulfilled"
+            },
+            {
+              "resource": "vite",
+              "status": "fulfilled"
+            }
+          ],
+          "chromeExit": {
+            "exitCode": 0,
+            "signalCode": null
+          }
+        }
+      ],
+      "equalCompleteRgbaSequence": true,
+      "equalConsumedCpuBatches": true,
+      "sourceStable": true,
+      "finalSourceHashesMatch": true,
+      "unmeasured": [
+        "Agent token usage",
+        "GPU device time and VRAM",
+        "Transient RSS peaks/short-lived processes missed by ps sampling",
+        "Original application behavior/cost",
+        "Flushed-cache cold performance",
+        "Browser/server startup and archive preparation"
+      ],
+      "interpretation": "Current sampled CPU and RSS are higher in this single sequential observation; no statistical speedup, regression attribution or net application-cost claim."
+    }
+  },
+  "verifierCorrections": [
+    {
+      "path": ".cache/roots-control-ui-20261024-run-1/report.json",
+      "reason": "Harness selected tone control without switching from Appearance to Geometry."
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-2/report.json",
+      "reason": "Harness compared in-memory undefined fields against their omitted JSON representation."
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-3/report.json",
+      "reason": "Harness forced formula compositor although fixture has no formula labels."
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-4/report.json",
+      "reason": "Harness forced opaque alpha although Roots PNG path preserves actual RGBA."
+    },
+    {
+      "path": ".cache/roots-control-ui-cost-20261024/run-Fx8QRB/report.json",
+      "reason": "Harness expected six-hex input rather than existing opaque FFARGB owner normalization in both versions."
+    }
+  ],
+  "sourcePins": {
+    "src/App.tsx": "3d09c5ce889d3def3a60107d1d6c92e957936653d3722c1e7056bdb1e0a8f226",
+    "src/components/RootsDensityColorControls.tsx": "b60f922414a460ec2e0ad7539ca6ac1cb1c9e7d94f17e04d9202c6d6f5794c76",
+    "src/components/RootsPresentationControls.tsx": "b2659c5c91a6e14f7b692197b162ee8708d01b173b70bc685747fa3f836e8a01",
+    "src/components/Viewport.tsx": "3d4ae057f0bfca25218cfe4ebbaa9e6a2a5cb41bdcf6ff5ac8b1d7614642170a",
+    "src/engine/rootsPresentationAuthoring.ts": "0ff61f48277de72777f6caaa13df5c949149f44b11d8494a5a4fe86cab8c2839",
+    "src/engine/rootsEditIntent.ts": "e6ab245331c03c252764166ba4a7a9aa385da8c92f461338230c5adc6f2ad5ed",
+    "src/engine/rootsEditorSession.ts": "a4cbe68fda62f33d56d4031256f3b06a312279eb5f5f3f3c0c7007b81582ceca",
+    "src/locales/application.en.json": "357b9bc39a79f4a3f566d10c30505d2107f1fadcf640153e4a5c92f802c020a4",
+    "tests/roots-presentation-authoring.test.ts": "1200eadb8bf3a04182ea2fe081213bb1fbb18759239e313281b47a7ae8c6735c",
+    "tests/roots-edit-intent-projection.test.ts": "2c83da2715d41ac2c38de5d5ad1691fc6958db1453b69c0aca0551c9a33a0a2b",
+    "tests/roots-editor-intents.test.tsx": "7cd52f63d8375b2e6524bccd2482ab8d8b85d3097f354462c7480ef22725869f",
+    "tests/roots-editor-session.test.ts": "7893b652a35c307f4a05cd146afaf0ab5fcdcf83e59eb31c5c59f8d712a27390",
+    "tests/roots-viewport-navigation.test.tsx": "537c92a15d1e634ede7f4753d0bf2225d91326c5508ec24e65d34bfaaf06c0ae",
+    "scripts/verify-roots-live-ui.mjs": "8d7324c328cc70e02e576024716fb960158dafdf326cc517cb278badece863fc",
+    "scripts/verify-roots-presentation-ui.mjs": "597b53e6a1517a8d2da027947a996c7412a4c03612c272f58320dfdeac07d182",
+    "scripts/verify-roots-control-ui.mjs": "e2774e6a4e750252337e52c6cb1093705ac2def838a8f26b65119effc698a18c",
+    "scripts/benchmark-roots-control-ui.mjs": "835ff8a3a38feba3a188bbfbee1fb2f2ae86c1130a63e2b98b922c7b22d28c81"
+  },
+  "artifacts": [
+    {
+      "path": ".cache/roots-control-ui-20261024-run-5/report.json",
+      "sha256": "8460f88d28a3256a1e8b87b8a0af7703dcceced9a6a9929e1490885fc904eeba"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-5/ACCEPTANCE.zh-CN.md",
+      "sha256": "633265edc61fc25ad90542d07241e63f8581448bb55ed5ed3f53e6ca150364a1"
+    },
+    {
+      "path": ".cache/roots-control-ui-cost-20261024/run-K6kbBy/report.json",
+      "sha256": "55326612f2f7c43f23772c3f33142ccc35a7ac6c0b9e8461ff97d18afd7127f4"
+    },
+    {
+      "path": ".cache/roots-control-ui-cost-20261024/run-K6kbBy/README.zh-CN.md",
+      "sha256": "35e64ca875959dc50ce6ec7735517035728e72d0047dde13202b37541a20761c"
+    },
+    {
+      "path": ".cache/roots-app-explicit-controls-review-20261024/final-review.md",
+      "sha256": "eb1ff5960865d38e469ebea9088c9170aad7d6f89ca0032bee1a4a0aad446bbd"
+    },
+    {
+      "path": ".cache/roots-app-explicit-controls-review-20261024/final-manifest.json",
+      "sha256": "860a387b4560be86d378eae1db018b1365f4f531607c0a7b1e7b86bf67a5826a"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024/validation/build-final.log",
+      "sha256": "09fc85c1787d244a91a72026bcbbd30931f62958754bca5b615ad2aa3d987eb9"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024/validation/build.log",
+      "sha256": "eab0d13552ba243b50447aef670b748f3d82161cf12b2012ad981ea89c5db8dc"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024/validation/i18n-final.log",
+      "sha256": "4e8af666c6328378e16080e9fe69deebd7d1a2d4cf08a3307f554c908ecec2dd"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024/validation/i18n.log",
+      "sha256": "7a13a49666db565145671ee6c4b68caae22d6359a98ec8b578136273bf833ddd"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024/validation/palette-text.log",
+      "sha256": "2b72b1d5d2155751e33ae2d0761581d9295ed80a204b8562ce419739d8dde433"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024/validation/retention.log",
+      "sha256": "c93be9beb6955560ee36489b962e8bbe4e63ea3dedc0617ceb3bc29776d2c114"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024/validation/targeted.log",
+      "sha256": "bfa94e8f47f65863d4cc1a58ffe8cc10d424f041907235f796ef3d2d7e597a15"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-1/report.json",
+      "sha256": "6681018ddba65cadb7fc0b021ec97d4a455e58abdd73ce185cf9bb28f488ad5e"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-2/report.json",
+      "sha256": "3aa9dc48797c0a0f17c58fe5e25ff3d71b7f152aafa876c655ffd9f55418334b"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-3/report.json",
+      "sha256": "b214d056dbb7a778675508a6e828dd78418a9aa6daee01d7d10b133eb9ce7c4c"
+    },
+    {
+      "path": ".cache/roots-control-ui-20261024-run-4/report.json",
+      "sha256": "ff6899b6de041df7a0c373506ed78e5adc6f75d9d814e6195b171cf0680899dc"
+    },
+    {
+      "path": ".cache/roots-control-ui-cost-20261024/run-Fx8QRB/report.json",
+      "sha256": "1758cdd576fd0d9d5bfadf36db325236de7d858f70bbb22580fde6bd66cd455c"
+    }
+  ],
+  "remaining": [
+    "Actual App toolbar restart and invalid Apply followed by repaired Apply are not covered by this matrix; helper/backend tests do not substitute for UI evidence.",
+    "Arbitrary capture dimensions, multiple-worker arrival ordering, long animations and formula-composed Roots videos remain outside this matrix.",
+    "Original matched whole-image comparisons and remaining generator/scene/general requirements remain active.",
+    "Final Apple Silicon integration/package remains; installed 1.0 is unchanged."
+  ]
+}

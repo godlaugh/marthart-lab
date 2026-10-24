@@ -1,6 +1,7 @@
-import type {SceneDocument} from '../types';
+import type {SceneDocument,SceneOutput} from '../types';
 import {parseRootsPresentationConfiguration,type RootsPresentationConfiguration} from './rootsPresentationConfig';
 import {withRootsMathModel} from './rootsMathConfig';
+import type {RootsCameraState} from './rootsSceneClock';
 
 export function usesRootsNativePresentation(scene:Pick<SceneDocument,'kind'|'rootsPresentation'>):boolean {
  return scene.kind==='roots'&&scene.rootsPresentation?.model==='mathart-1.7.8-v1';
@@ -21,6 +22,16 @@ export function rootsPresentationControlVisible(scene:Pick<SceneDocument,'kind'|
  return !usesRootsNativePresentation(scene)||!legacyControls.has(key);
 }
 export type RootsPresentationCommit=(expected:SceneDocument,next:RootsPresentationConfiguration,begin:boolean)=>SceneDocument|undefined;
+/** A live mouse gesture changes only the running camera. The document and its
+ * staged Inspector fields remain with the App authoring owner. */
+export type RootsNavigationCommit=(expected:SceneDocument,sessionId:string,camera:RootsCameraState,epoch:number)=>boolean;
+export function captureRootsRuntimeNavigation(output:SceneOutput):{sessionId:string;view:RootsPresentationConfiguration}|undefined {
+ if(output.type!=='raster'||output.rootsPresentation?.target!=='primary')return;
+ const facts=output.rootsLive;
+ if(!facts?.paused||facts.recording||!facts.presentation||facts.presentation.model!=='mathart-1.7.8-v1')return;
+ const view=parseRootsPresentationConfiguration({...facts.presentation,camera:{...facts.presentation.camera,...facts.frame.camera}});
+ return{sessionId:facts.sessionId,view};
+}
 /** Local pointer mapping into the source camera's authored radians/zoom. This
  * does not claim the native host's mouse acceleration or event granularity. */
 export function navigateRootsPresentation(configuration:RootsPresentationConfiguration,action:{kind:'rotate';dx:number;dy:number;width:number;height:number}|{kind:'zoom';deltaPixels:number}):RootsPresentationConfiguration {
