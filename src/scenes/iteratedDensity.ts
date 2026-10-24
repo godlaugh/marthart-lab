@@ -25,6 +25,8 @@ import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera} from '../engine
 import {ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from '../engine/ordinarySourceCamera';
 import {prepareCapturedDensityCamera,prepareCapturedDensityView,projectCapturedDensityPoint,type CapturedDensityAnchor,type PreparedDensityCameraFrame} from '../engine/sourceDensityCamera';
 import {GenerationCleanupState} from '../engine/generationCleanup';
+import type {IteratedDensityAsyncBackend,IteratedDensityAsyncStepResult,IteratedDensityAsyncPresentResult,IteratedDensityPreparedPresent} from '../engine/iteratedDensityAsyncBackend';
+import type {SourceSamilaPreparedDisplay} from '../engine/sourceSamilaSession';
 import {inputScene,identity,retainsIteratedCompiler} from '../engine/iteratedIdentity';
 import {applySamilaViewport,samilaViewportTransform,type PreparedSamilaViewport} from '../engine/samilaViewport';
 import {samilaCameraEnabled,samilaCameraFrame,prepareSamilaView,parseSamilaCamera,samilaSamplingRotation} from '../engine/samilaCamera';
@@ -148,12 +150,24 @@ interface State {iterationFrame?:SourceIterationFramePlan;samilaSampling?:Source
 const stateBytes=(s:State)=>s.ink.byteLength+(s.positions?.byteLength??0)+(s.metrics?.byteLength??0)+(s.valid?.byteLength??0);
 const structure=(c:IteratedConfig)=>JSON.stringify([c.count,c.sourceInitialSeed,c.seed,c.dimension,c.burn,c.bounds]);
 function clearInk(s:State){s.ink.fill(0);s.accepted=0;s.clipped=0;s.deposited=0;s.sampleInvalid=0;s.recordedPasses=0;s.clears++;}
+type ReplayEffect={kind:'reset'}|{kind:'step';prepared:SourceSamilaPreparedDisplay}|{kind:'present';prepared:IteratedDensityPreparedPresent};
+type ReplayReply=IteratedDensityAsyncStepResult|IteratedDensityAsyncPresentResult|void;
+type ReplayOperation=Generator<ReplayEffect,SceneOutput,ReplayReply>;
+function completedTone(prepared:DensityToneJob,s:State,width:number,height:number):DensityToneJob {
+ return prepared.model==='normalized-v2'?{...prepared,normalization:(prepared.sourceMapPresentation?deriveSourceIteratedNormalization({kind:'map',width,height,recordedPasses:s.recordedPasses,batchSize:s.lastBatchSize},prepared.sourceMapPresentation.reference):prepared.sourceSymmetryPresentation?deriveSourceIteratedNormalization({kind:'symmetry',width,height,recordedPasses:s.recordedPasses,batchSize:s.lastBatchSize},prepared.sourceSymmetryPresentation.reference):deriveDensityNormalization({kind:prepared.normalization.kind,width,height,recordedPasses:s.recordedPasses,batchSize:s.lastBatchSize},prepared.normalization))}:prepared.model==='samila-normalized-v2'?{...prepared,normalization:deriveSamilaNormalization(s.completedSamila!)}:prepared;
+}
+function replaySamilaView(current:SceneDocument,zero:SceneDocument,anchor:number|undefined,width:number,height:number,time:number,tone:DensityToneJob){
+ const camera=samilaCameraFrame(current),view=camera?prepareSamilaView(camera,anchor??samilaCameraFrame(zero)?.theta??camera.theta,width,height,time):undefined;
+ if(view&&tone.sourcePresentation){const {delta}=sourceSamilaDisplayTransform(view,width,height);view.delta=delta;view.cos=Math.cos(delta);view.sin=Math.sin(delta);}return view;
+}
 
 /** One worker/session owns continuous particles and floating RGB/mass. No output
  * aliases that state. A cancelled or failed operation discards incomplete state. */
 export class IteratedDensitySession {
  private readonly sampling:SourceSamilaSamplingSession;private samplingKey='';
- constructor(options:{samilaSeedProvider?:()=>number}={}){this.sampling=new SourceSamilaSamplingSession({nextSeed:options.samilaSeedProvider});}
+ private readonly asyncBackend?:IteratedDensityAsyncBackend;
+ private inFlight?:Promise<SceneOutput>;private resetting?:Promise<void>;private asyncRevision=0;private asyncBlocked=false;
+ constructor(options:{samilaSeedProvider?:()=>number;asyncBackend?:IteratedDensityAsyncBackend}={}){this.sampling=new SourceSamilaSamplingSession({nextSeed:options.samilaSeedProvider});this.asyncBackend=options.asyncBackend;}
  private samplingBytes():number{return this.sampling.retainedBytes+this.samplingKey.length*2;}
  private key='';private state?:State;private hits=0;private gpu?:IteratedDensityGpu;private fallback?:{key:string;reason:string};
  private samilaPrograms?:SamilaPrograms;
@@ -165,7 +179,29 @@ export class IteratedDensitySession {
  private clearReplay(){this.key='';this.state=undefined;this.hits=0;this.fallback=undefined;}
  private resetSimulation(){this.gpu?.dispose();this.gpu=undefined;this.gpuScope=undefined;this.clearReplay();}
  private resetRuntime(failures:readonly unknown[]=[],keepSampling=false){this.cleanup.reset(()=>{this.resetSimulation();this.samilaPrograms=undefined;if(!keepSampling){this.sampling.reset();this.samplingKey='';}},failures);}
- reset(failures:readonly unknown[]=[]){this.resetRuntime(failures);}
+ reset(failures:readonly unknown[]=[]){if(this.asyncBackend)throw Error('异步持续密度资源必须等待 resetAsync');this.resetRuntime(failures);}
+ /** Soft cancellation only. Let an acknowledged draw settle before releasing
+  * this owner's resource; aborting shared native transport would lose preview. */
+ resetAsync():Promise<void> {
+  if(!this.asyncBackend){this.reset();return Promise.resolve();}if(this.resetting)return this.resetting;
+  this.asyncRevision++;this.asyncBlocked=true;const pending=this.inFlight;
+  const cleanup=(async()=>{await pending?.catch(()=>{});await this.asyncBackend!.reset();this.resetRuntime();this.asyncBlocked=false;})();
+  this.resetting=cleanup;void cleanup.then(()=>{if(this.resetting===cleanup)this.resetting=undefined;},()=>{if(this.resetting===cleanup)this.resetting=undefined;});return cleanup;
+ }
+ /** A failed native request ends this call. Exact release preserves its tape
+  * for a later explicit generate, never an in-call retry or CPU substitution. */
+ generateAsync(scene:SceneDocument,context:GenerateContext):Promise<SceneOutput> {
+  if(!this.asyncBackend)return Promise.reject(Error('异步持续密度缺少 backend'));
+  if(this.inFlight||this.resetting||this.asyncBlocked)return Promise.reject(Error('异步持续密度正在执行或等待清理'));
+  const revision=this.asyncRevision,c={...context,isCancelled:()=>revision!==this.asyncRevision||Boolean(context.isCancelled?.())};
+  const operation=(async()=>{
+   try{
+    const replay=this.generateOperation(scene,c,true);let next=replay.next();
+    while(!next.done){const effect=next.value;let reply:ReplayReply;try{reply=effect.kind==='reset'?await this.asyncBackend!.reset():effect.kind==='step'?await this.asyncBackend!.draw(effect.prepared):await this.asyncBackend!.present(effect.prepared);}catch(error){if(effect.kind==='reset'){this.asyncBlocked=true;throw error;}next=replay.throw(error);continue;}next=replay.next(reply);}
+    return next.value;
+   }catch(error){if(this.asyncBlocked)throw error;try{await this.asyncBackend!.reset();this.resetRuntime([],true);}catch(cleanup){this.asyncBlocked=true;throw new AggregateError([error,cleanup],'持续密度失败且原生清理未完成；资源保留以便重试');}throw error;}
+  })();this.inFlight=operation;void operation.then(()=>{if(this.inFlight===operation)this.inFlight=undefined;},()=>{if(this.inFlight===operation)this.inFlight=undefined;});return operation;
+ }
  /** Legacy Samila retains unrestricted own-scope symbol lookup and lazy branches.
   * Source Samila owns fixed AST slots, so its cache also includes parameter names
   * and math version. Install only after both source parsers/emitters succeed. */
@@ -176,10 +212,14 @@ export class IteratedDensitySession {
   const f1=compileReal(equations.f1),f2=compileReal(equations.f2);
   return this.samilaPrograms={f1,f2,key,source1:equations.f1,source2:equations.f2};
  }
- diagnostics(){return{samilaSampling:this.sampling.diagnostics(),retainedBytes:this.samplingBytes()+(this.state?.samilaSplat?256*256*4:0)+(this.state?stateBytes(this.state)+this.key.length*2:0)+(this.gpu?.diagnostics().retainedBytes??0),samilaCompiledExpressions:this.samilaPrograms?2:0,gpu:this.gpu?.diagnostics(),backend:this.gpu?'webgl2':'cpu',frame:this.state?.frame??null,cacheHits:this.hits,steps:this.state?.steps??0,deposited:this.state?.deposited??0,recordedPasses:this.state?.recordedPasses??0,lastBatchSize:this.state?.lastBatchSize??null,lastFramePasses:this.state?.lastFramePasses??0,lastFrameSamples:this.state?.lastFrameSamples??0,replays:this.state?.replays??0,clears:this.state?.clears??0,sourceCameraAnchor:this.state?.sourceCameraAnchor?structuredClone(this.state.sourceCameraAnchor):undefined,samilaAnchor:this.state?.samilaAnchor,bounds:this.state?{...this.state.bounds}:undefined};}
+ diagnostics(){return{asyncBackend:this.asyncBackend?.diagnostics?.(),inFlight:Boolean(this.inFlight),cleanupPending:this.asyncBlocked,resetting:Boolean(this.resetting),samilaSampling:this.sampling.diagnostics(),retainedBytes:this.samplingBytes()+(this.state?.samilaSplat?256*256*4:0)+(this.state?stateBytes(this.state)+this.key.length*2:0)+(this.gpu?.diagnostics().retainedBytes??0),samilaCompiledExpressions:this.samilaPrograms?2:0,gpu:this.gpu?.diagnostics(),backend:this.asyncBackend&&this.state?.frame!==-1?'native':this.gpu?'webgl2':'cpu',frame:this.state?.frame??null,cacheHits:this.hits,steps:this.state?.steps??0,deposited:this.state?.deposited??0,recordedPasses:this.state?.recordedPasses??0,lastBatchSize:this.state?.lastBatchSize??null,lastFramePasses:this.state?.lastFramePasses??0,lastFrameSamples:this.state?.lastFrameSamples??0,replays:this.state?.replays??0,clears:this.state?.clears??0,sourceCameraAnchor:this.state?.sourceCameraAnchor?structuredClone(this.state.sourceCameraAnchor):undefined,samilaAnchor:this.state?.samilaAnchor,bounds:this.state?{...this.state.bounds}:undefined};}
  /** Explicit copied raw-ink diagnostic; never a per-frame presentation copy. */
- snapshotInk():Float32Array|Float64Array {if(this.gpu)return this.gpu.readback();const state=this.state;if(!state)return new Float64Array();if(stateBytes(state)+state.ink.byteLength+this.samplingBytes()+(state.samilaSplat?256*256*4:0)>MAX_LIVE_BYTES)throw new Error('持续密度诊断复制超过 768 MiB');return state.ink.slice();}
+ snapshotInk():Float32Array|Float64Array {if(this.asyncBackend&&this.state&&this.state.frame>=0)throw Error('原生冷重放未提供原始墨迹读取');if(this.gpu)return this.gpu.readback();const state=this.state;if(!state)return new Float64Array();if(stateBytes(state)+state.ink.byteLength+this.samplingBytes()+(state.samilaSplat?256*256*4:0)>MAX_LIVE_BYTES)throw new Error('持续密度诊断复制超过 768 MiB');return state.ink.slice();}
  generate(baseScene:SceneDocument,c:GenerateContext):SceneOutput {
+  if(this.asyncBackend)throw Error('异步持续密度必须通过 generateAsync 执行');
+  const result=this.generateOperation(baseScene,c).next();if(!result.done)throw Error('同步持续密度不能执行异步 backend');return result.value;
+ }
+ private *generateOperation(baseScene:SceneDocument,c:GenerateContext,external=false):ReplayOperation {
   this.cleanup.prepare();validateSourceMapPresentation(baseScene);validateSourceSymmetryPresentation(baseScene);validateSourceSamilaSampling(baseScene);validateSourceSamilaPresentation(baseScene);validateSourceSamilaSplat(baseScene);const started=performance.now();
   try {
    const runtime=applySamilaViewport(baseScene,c.time);baseScene=runtime.scene;
@@ -188,6 +228,7 @@ export class IteratedDensitySession {
    // Actual completed counts and raster dimensions are bound after simulation.
    const baseline=config(runtime.atTime(Number(baseScene.settings.iteratedStartTime??0)),baseScene);
    const tone=usesSourceMapPresentation(baseScene)?prepareSourceMapTone(current,c):usesSourceSymmetryPresentation(baseScene)?prepareSourceSymmetryTone(current,c):prepareDensityTone(current.palette,current.settings,baseScene.kind==='samila'&&baseline.samilaHistoryModel==='bounded-v2'?samilaToneFacts(baseline,c.width,c.height,0,prepareSourceSamilaSplat(current,{width:c.width,height:c.height,primaryPixelHeight:c.samilaPrimaryPixelHeight,path:'points'})):baseScene.kind==='map'||baseScene.kind==='symmetry'?{kind:baseScene.kind,width:c.width,height:c.height,recordedPasses:0,batchSize:1}:undefined);
+   if(external){if(!usesSourceSamilaSampling(baseScene)||!usesSourceSamilaPresentation(baseScene)||!usesSourceSamilaSplat(baseScene))throw Error('原生冷重放需要完整源 Samila 采样、点覆盖和呈现模型');return yield* this.run(baseScene,c,'native',current,tone,runtime);}
    const requested=option(baseScene.settings,'iteratedBackend','auto',['auto','cpu','gpu']),custom=hasSymmetryCustom(baseScene),sourceSymmetry=usesSourceSymmetryMath(baseScene),sourceMap=usesSourceMapMath(baseScene);
    if(sourceMap&&requested==='cpu')throw Error('源 Map 数学需要 GPU；CPU 数学不能替代源 GLSL。');
    if(sourceSymmetry&&requested==='cpu')throw new Error('源 Symmetry 数学需要 GPU；本地 CPU 极坐标实现不能替代原版复数迭代。');
@@ -195,19 +236,19 @@ export class IteratedDensitySession {
    const wantsGpu=custom||sourceSymmetry||sourceMap||requested==='gpu'||requested==='auto'&&(usesSourceSamilaSplat(baseScene)||Number(baseScene.settings.batchSize??4096)>=50000);
    const attemptKey=identity(inputScene(baseScene),c.width,c.height)+(runtime.key??'')+JSON.stringify([c.sourceViewport,c.samilaPrimaryPixelHeight]),prior=this.fallback?.key===attemptKey?this.fallback:undefined;
    let reason=prior?.reason;
-   if(wantsGpu&&!prior){try{return this.run(baseScene,c,'webgl2',current,tone,runtime);}catch(error){this.resetRuntime([error],true);if(error instanceof DOMException&&error.name==='AbortError')throw error;reason=error instanceof Error?error.message:String(error);if(sourceMap)throw Error(`源 Map GPU 计算失败；未回退到不同的 CPU 数学：${reason}`);if(sourceSymmetry)throw new Error(`源 Symmetry GPU 计算失败；未回退到不同的 CPU 数学：${reason}`);if(custom)throw new Error(`自定义 Symmetry GLSL 无法在 GPU 上执行；未使用内建方程替代：${reason}`);}}
-   const output=this.run(baseScene,c,'cpu',current,tone,runtime);
+   if(wantsGpu&&!prior){try{return yield* this.run(baseScene,c,'webgl2',current,tone,runtime);}catch(error){this.resetRuntime([error],true);if(error instanceof DOMException&&error.name==='AbortError')throw error;reason=error instanceof Error?error.message:String(error);if(sourceMap)throw Error(`源 Map GPU 计算失败；未回退到不同的 CPU 数学：${reason}`);if(sourceSymmetry)throw new Error(`源 Symmetry GPU 计算失败；未回退到不同的 CPU 数学：${reason}`);if(custom)throw new Error(`自定义 Symmetry GLSL 无法在 GPU 上执行；未使用内建方程替代：${reason}`);}}
+   const output=yield* this.run(baseScene,c,'cpu',current,tone,runtime);
    if(wantsGpu&&reason){this.fallback={key:attemptKey,reason};output.warnings=[...(output.warnings??[]),`GPU 持续密度不可用，已完整重放 CPU：${reason}`];}
    output.stats.elapsedMs=performance.now()-started;return output;
-  }catch(error){this.resetRuntime([error],true);throw error;}
+  }catch(error){if(!external)this.resetRuntime([error],true);throw error;}
  }
- private run(baseScene:SceneDocument,c:GenerateContext,backend:'cpu'|'webgl2',current:SceneDocument,preparedTone:DensityToneJob,runtime:PreparedSamilaViewport):SceneOutput {
+ private *run(baseScene:SceneDocument,c:GenerateContext,backend:'cpu'|'webgl2'|'native',current:SceneDocument,preparedTone:DensityToneJob,runtime:PreparedSamilaViewport):ReplayOperation {
   const started=performance.now();if(!['map','symmetry','samila'].includes(baseScene.kind))throw new Error('持续批次密度仅支持 Map、Symmetry 和 Samila');
   if(!Number.isFinite(c.time)||c.time<0||c.time>86400)throw new Error('持续密度时间须为 0–86400 秒');cancelled(c);
   const base=inputScene(baseScene),zero=runtime.atTime(Number(base.settings.iteratedStartTime??0)),initial=config(zero,baseScene),target=Math.max(-1,Math.floor((c.time-initial.startTime)*initial.fps+1e-9)),warnings:string[]=[];
   if(target<0)backend='cpu';
   warnings.push(...parseSamilaCamera(baseScene).warnings);
-  const [width,height]=usesSourceSamilaSplat(base)||usesSourceMapPresentation(baseScene)||usesSourceSymmetryPresentation(baseScene)?exactRasterDimensions(c):rasterDimensions(c,1,backend,warnings),view=usesSamilaSourceProjection(current)?samilaNdcDensityViewport():parseDensityViewport(current,width,height),bytes=backend==='webgl2'?iteratedGpuBytes(initial.count,width,height,2048,initial.samilaHistoryModel==='bounded-v2',hasSymmetryCustom(base),usesSourceSamilaSplat(base),Boolean(preparedTone.sourcePresentation||preparedTone.sourceSymmetryPresentation||preparedTone.sourceMapPresentation),usesSourceSamilaSampling(base))+width*height*4:(usesSourceSamilaSplat(base)?256*256*4+1024*3*4:0)+(base.kind==='samila'?0:initial.count*33)+width*height*36;
+  const [width,height]=usesSourceSamilaSplat(base)||usesSourceMapPresentation(baseScene)||usesSourceSymmetryPresentation(baseScene)?exactRasterDimensions(c):rasterDimensions(c,1,backend==='native'?'webgl2':backend,warnings),view=usesSamilaSourceProjection(current)?samilaNdcDensityViewport():parseDensityViewport(current,width,height),bytes=backend==='native'?width*height*4:backend==='webgl2'?iteratedGpuBytes(initial.count,width,height,2048,initial.samilaHistoryModel==='bounded-v2',hasSymmetryCustom(base),usesSourceSamilaSplat(base),Boolean(preparedTone.sourcePresentation||preparedTone.sourceSymmetryPresentation||preparedTone.sourceMapPresentation),usesSourceSamilaSampling(base))+width*height*4:(usesSourceSamilaSplat(base)?256*256*4+1024*3*4:0)+(base.kind==='samila'?0:initial.count*33)+width*height*36;
   const captured=usesCapturedDensityCamera(baseScene);
   if(captured){view.projection='xy';view.bounds={minX:-1,maxX:1,minY:-1,maxY:1};}
   else if(runtime.bounds&&!usesSamilaSourceProjection(current))view.bounds=runtime.bounds;
@@ -217,17 +258,18 @@ export class IteratedDensitySession {
   const reusableCompiler=backend==='webgl2'&&retainsIteratedCompiler(base),scope=JSON.stringify([base.id,base.kind]);
   const key=backend+identity(base,width,height)+JSON.stringify({projection:view.projection,bounds:view.bounds,padding:view.padding,samilaViewport:runtime.key,sourceViewport:captured?c.sourceViewport:undefined,samilaPrimaryPixelHeight:usesSourceSamilaSplat(base)?c.samilaPrimaryPixelHeight:undefined});
   if(key!==this.key||this.gpu&&this.gpuScope!==scope){
+   if(this.asyncBackend)yield{kind:'reset'};
    if(reusableCompiler&&this.gpu&&this.gpuScope===scope)this.clearReplay();else this.resetSimulation();
    this.key=key;this.gpuScope=scope;
   }
   if(base.kind!=='samila'||backend!=='cpu')this.samilaPrograms=undefined;
-  let state=this.state;this.hits=state&&state.frame<=target?1:0;if(state&&state.frame>target){state=undefined;if(!reusableCompiler)this.gpu?.reset();}
+  let state=this.state;this.hits=state&&state.frame<=target?1:0;if(state&&state.frame>target){if(this.asyncBackend)yield{kind:'reset'};state=undefined;if(!reusableCompiler)this.gpu?.reset();}
   let work=0,pixelTests=0;
   // A source quad evaluates the formula pair at each of its six vertices.
   // Before the GL point-capability probe, admit its conservative upper bound.
   const formulaMultiplicity=sourceSampling&&backend==='webgl2'?6:1;
   const preflight=(steps:number)=>{work+=steps*formulaMultiplicity;if(!Number.isSafeInteger(work)||work>MAX_REQUEST_STEPS)throw new Error('持续密度单次重放超过 20 亿次数学求值；请缩短时间、减少预热或批次');};
-  if(!state){state={completedSamila:initial.samilaHistoryModel==='bounded-v2'?samilaToneFacts(initial,width,height,0,prepareSourceSamilaSplat(current,{width,height,primaryPixelHeight:c.samilaPrimaryPixelHeight,path:'points'})):undefined,lastFramePasses:0,lastFrameSamples:0,frame:-1,ink:new Float64Array(backend==='webgl2'?0:width*height*4),bounds:view.bounds??{minX:-width/height,maxX:width/height,minY:-1,maxY:1},fieldKey:'',structuralKey:'',steps:0,invalid:0,deposited:0,accepted:0,clipped:0,sampleInvalid:0,replays:0,clears:0,recordedPasses:0,lastBatchSize:initial.count};}
+  if(!state){state={completedSamila:initial.samilaHistoryModel==='bounded-v2'?samilaToneFacts(initial,width,height,0,prepareSourceSamilaSplat(current,{width,height,primaryPixelHeight:c.samilaPrimaryPixelHeight,path:'points'})):undefined,lastFramePasses:0,lastFrameSamples:0,frame:-1,ink:new Float64Array(backend==='cpu'?width*height*4:0),bounds:view.bounds??{minX:-width/height,maxX:width/height,minY:-1,maxY:1},fieldKey:'',structuralKey:'',steps:0,invalid:0,deposited:0,accepted:0,clipped:0,sampleInvalid:0,replays:0,clears:0,recordedPasses:0,lastBatchSize:initial.count};}
   const s=state;let newFrames=0;
   // Reject the minimum required work before allocating potentially huge states.
   // Samila may have disabled-record spans in its timeline. Only the parsed
@@ -253,9 +295,10 @@ export class IteratedDensitySession {
    const passes=job.history?.passes??(cfg.record?1:0),samples=job.history?.samples??(cfg.record?cfg.count:0),randomFrames=job.history?.randomFrames??[frame];
    // Compensation is charged before backend allocation, copying or sampling.
    if(job.history){preflight(samples);pixelTests+=samples*(Math.ceil(job.samilaSplat?Math.max(sourceSamilaPointDiameter(job.samilaSplat),Math.max(Math.fround(job.samilaSplat.radius*Math.fround(.6)),Math.fround(.8))):cfg.pointSize)+2)**2;if(!Number.isSafeInteger(pixelTests)||pixelTests>MAX_PIXEL_TESTS)throw new Error('Samila 历史补采超过 20 亿次像素测试；请减少点尺寸、批次或时间');}
-   const frameBytes=backend==='webgl2'?iteratedGpuBytes(cfg.count,width,height,2048,cfg.samilaHistoryModel==='bounded-v2',job.field.kind==='symmetry-custom',Boolean(job.samilaSplat),Boolean(preparedTone.sourcePresentation||preparedTone.sourceSymmetryPresentation||preparedTone.sourceMapPresentation),usesSourceSamilaSampling(baseScene))+width*height*4:(job.samilaSplat?256*256*4+1024*3*4:0)+(base.kind==='samila'?0:cfg.count*33)+width*height*36;if(frameBytes+(sourceSampling?this.sampling.projectedBytes(frame)+this.samplingKey.length*2:this.samplingBytes())>MAX_LIVE_BYTES)throw new Error('持续密度动画状态超过 768 MiB 工作预算');
+   const frameBytes=backend==='native'?width*height*4:backend==='webgl2'?iteratedGpuBytes(cfg.count,width,height,2048,cfg.samilaHistoryModel==='bounded-v2',job.field.kind==='symmetry-custom',Boolean(job.samilaSplat),Boolean(preparedTone.sourcePresentation||preparedTone.sourceSymmetryPresentation||preparedTone.sourceMapPresentation),usesSourceSamilaSampling(baseScene))+width*height*4:(job.samilaSplat?256*256*4+1024*3*4:0)+(base.kind==='samila'?0:cfg.count*33)+width*height*36;if(frameBytes+(sourceSampling?this.sampling.projectedBytes(frame)+this.samplingKey.length*2:this.samplingBytes())>MAX_LIVE_BYTES)throw new Error('持续密度动画状态超过 768 MiB 工作预算');
+   if(backend==='native')this.asyncBackend!.admitDisplay({job,width,height,additionalBytes:width*height*4,stateBytes:stateBytes(s)+this.sampling.projectedBytes(frame)+this.samplingKey.length*2+this.key.length*2});
    if(sourceSampling)job.samilaSampling=prepareSourceSamilaSamplingBatch(this.sampling,frame,cfg.count,passes);
-   if(backend==='webgl2'){
+   if(backend!=='cpu'){
     const parameterFrame=sourceIterationParameterFrame(snapshot);
     if((usesSourceSymmetryParameters(baseScene)||usesSourceMapParameters(baseScene))&&!parameterFrame)throw Error('源迭代场景缺少同帧参数快照');
     const resetParticles=s.structuralKey!==job.structuralKey,clear=(job.history?.clear??(resetParticles||(parameterFrame?parameterFrame.changed:s.fieldKey!==job.fieldKey)))||job.sourceCamera?.clearInk===true;
@@ -269,10 +312,15 @@ export class IteratedDensitySession {
     if(!job.history)preflight(base.kind==='samila'?samples:cfg.count*(job.iterationFrame?job.iterationFrame.warmupSteps+job.iterationFrame.iterationSteps:cfg.iterations+(resetParticles?cfg.burn:0)));
     if(cfg.record&&!job.history){pixelTests+=job.densitySplat?sourceDensitySplatPixelTests(job.densitySplat,cfg.count):cfg.count*(Math.ceil(job.samilaSplat?Math.max(sourceSamilaPointDiameter(job.samilaSplat),Math.max(Math.fround(job.samilaSplat.radius*Math.fround(.6)),Math.fround(.8))):cfg.pointSize)+2)**2;if(pixelTests>MAX_PIXEL_TESTS)throw new Error('GPU 持续密度单次累积像素测试上界超过 20 亿；请减少点尺寸、批次或时间');}
     if(clear)clearInk(s);if(resetParticles)s.replays++;
-    // GPU float states and ink never coexist with CPU orbit state. A failed
-    // frame invalidates the entire trajectory and generate() restarts on CPU.
-    this.gpu??=new IteratedDensityGpu();
-    const facts=this.gpu.step(job,{resetParticles,clearInk:clear,width,height,projection:view.projection,padding:view.padding,bounds:view.bounds??(frame===0?undefined:s.bounds),isCancelled:c.isCancelled});
+    // GPU float states and ink never coexist with CPU orbit state. WebGL keeps
+    // its existing CPU fallback; an uncertain native step is never resubmitted.
+    const options={resetParticles,clearInk:clear,width,height,projection:view.projection,padding:view.padding,bounds:view.bounds??(frame===0?undefined:s.bounds),...(backend==='webgl2'?{isCancelled:c.isCancelled}:{})};
+    let facts:IteratedDensityAsyncStepResult['facts'];
+    if(backend==='native'){
+     const tone=completedTone(preparedTone,{...s,recordedPasses:s.recordedPasses+passes,lastBatchSize:cfg.count,completedSamila:samilaToneFacts(cfg,width,height,s.recordedPasses+passes,job.samilaSplat)},width,height),displayView=replaySamilaView(snapshot,zero,s.samilaAnchor,width,height,at,tone);
+     if(!displayView)throw Error('原生 Samila 冷重放缺少已解析相机');
+     const result=(yield{kind:'step',prepared:{job,options,tone,view:displayView}}) as IteratedDensityAsyncStepResult;facts=result.facts;
+    }else{this.gpu??=new IteratedDensityGpu();facts=this.gpu.step(job,options);}
     s.iterationFrame=job.iterationFrame;s.structuralKey=job.structuralKey;s.fieldKey=job.fieldKey;s.bounds=facts.bounds;s.steps+=facts.steps;s.invalid+=facts.invalid;s.accepted+=facts.accepted;s.clipped+=facts.clipped;s.sampleInvalid+=facts.sampleInvalid;s.deposited+=samples;s.recordedPasses+=passes;s.lastFramePasses=passes;s.lastFrameSamples=samples;s.history=job.history?.next;s.lastBatchSize=cfg.count;if(job.history)s.completedSamila=samilaToneFacts(cfg,width,height,s.recordedPasses,job.samilaSplat);s.densitySplat=job.densitySplat;s.symmetryPalette=job.symmetryPalette;s.samilaSplat=job.samilaSplat;s.samilaSampling=job.samilaSampling;s.frame=frame;newFrames++;continue;
    }
    const f=compileField(job,job.field.kind==='samila'?this.programs(job.field):undefined),structuralKey=job.structuralKey,transform=job.transform,palette=job.palette,noise=job.samilaSplat?undefined:createNoise(cfg.seed),[axisX,axisY]=AXES[view.projection];
@@ -317,13 +365,15 @@ export class IteratedDensitySession {
    }
    s.recordedPasses+=passes;s.lastFramePasses=passes;s.lastFrameSamples=samples;s.history=job.history?.next;s.lastBatchSize=cfg.count;if(job.history)s.completedSamila=samilaToneFacts(cfg,width,height,s.recordedPasses,job.samilaSplat);s.densitySplat=job.densitySplat;s.symmetryPalette=job.symmetryPalette;s.samilaSplat=job.samilaSplat;s.samilaSampling=job.samilaSampling;s.frame=frame;newFrames++;
   }
-  cancelled(c);const tone:DensityToneJob=preparedTone.model==='normalized-v2'?{...preparedTone,normalization:(preparedTone.sourceMapPresentation?deriveSourceIteratedNormalization({kind:'map',width,height,recordedPasses:s.recordedPasses,batchSize:s.lastBatchSize},preparedTone.sourceMapPresentation.reference):preparedTone.sourceSymmetryPresentation?deriveSourceIteratedNormalization({kind:'symmetry',width,height,recordedPasses:s.recordedPasses,batchSize:s.lastBatchSize},preparedTone.sourceSymmetryPresentation.reference):deriveDensityNormalization({kind:preparedTone.normalization.kind,width,height,recordedPasses:s.recordedPasses,batchSize:s.lastBatchSize},preparedTone.normalization))}:preparedTone.model==='samila-normalized-v2'?{...preparedTone,normalization:deriveSamilaNormalization(s.completedSamila!)}:preparedTone;let pixels:Uint8ClampedArray,occupied=0,maxCount=0,toneBackend:'cpu'|'webgl2'='cpu';
-  const camera=samilaCameraFrame(current),samilaView=camera?prepareSamilaView(camera,s.samilaAnchor??samilaCameraFrame(zero)?.theta??camera.theta,width,height,c.time):undefined;
+  cancelled(c);const tone=completedTone(preparedTone,s,width,height);let pixels:Uint8ClampedArray,occupied=0,maxCount=0,toneBackend:'cpu'|'webgl2'|'native'='cpu',sourcePixelRenderer:IteratedDensityAsyncPresentResult['sourcePixelRenderer'];
+  const samilaView=replaySamilaView(current,zero,s.samilaAnchor,width,height,c.time,tone);
   const shownTime=initial.startTime+Math.max(0,target)/initial.fps,sourceFrame=captured?ordinarySourceCameraFrame(runtime.atTime(Math.min(c.time,shownTime)),c):undefined;
   const sourceAnchor=sourceFrame?(s.sourceCameraAnchor??prepareCapturedDensityCamera(base.kind as 'map'|'symmetry',prepareOrdinarySourceFrame(sourceFrame)).anchor):undefined;
-  if(samilaView&&tone.sourcePresentation){const {delta}=sourceSamilaDisplayTransform(samilaView,width,height);samilaView.delta=delta;samilaView.cos=Math.cos(delta);samilaView.sin=Math.sin(delta);}
   const densityView=sourceFrame&&sourceAnchor?prepareCapturedDensityView(sourceAnchor,sourceFrame.camera,width,height):samilaView;
-  if(backend==='webgl2'){const shown=this.gpu!.present(tone,c.isCancelled,densityView);pixels=shown.pixels;occupied=shown.occupiedPixels;maxCount=shown.maxCount;toneBackend=shown.toneBackend;warnings.push(...shown.warnings);}
+  if(backend==='native'){
+   if(!samilaView)throw Error('原生 Samila 冷呈现缺少已解析相机');
+   const result=(yield{kind:'present',prepared:{tone,view:samilaView,width,height}}) as IteratedDensityAsyncPresentResult,{shown}=result;cancelled(c);pixels=shown.pixels;occupied=shown.occupiedPixels;maxCount=shown.maxCount;toneBackend=shown.toneBackend;sourcePixelRenderer=result.sourcePixelRenderer;warnings.push(...shown.warnings);
+  }else if(backend==='webgl2'){const shown=this.gpu!.present(tone,c.isCancelled,densityView);pixels=shown.pixels;occupied=shown.occupiedPixels;maxCount=shown.maxCount;toneBackend=shown.toneBackend;warnings.push(...shown.warnings);}
   else if((tone.sourceSymmetryPresentation||tone.sourceMapPresentation)&&target<0){pixels=clearSourceIteratedTarget(width,height,tone.sceneBackground??tone.background,c.isCancelled);}
   else{pixels=toneDensityRgbaPrepared(width,height,s.ink,tone,c.isCancelled,undefined,densityView);for(let i=3;i<s.ink.length;i+=4){if((i&65535)===3)cancelled(c);if(s.ink[i]>0)occupied++;maxCount=Math.max(maxCount,s.ink[i]);}}
   this.state=s;
@@ -333,16 +383,16 @@ export class IteratedDensitySession {
   const iteratedPresentation=tone.sourceMapPresentation??tone.sourceSymmetryPresentation;
   if(iteratedPresentation){if(iteratedPresentation.referenceKind==='local-output')warnings.push('未提供主画布物理尺寸；当前使用输出尺寸归一化，不代表原版参考画布。');warnings.push('Map／Symmetry 使用源最终调色与场景背景混合；原生窗口、实时帧计数和完整合成仍待对照。');}else if(tone.model==='normalized-v2')warnings.push(NORMALIZED_DENSITY_NOTICE);
   if(tone.sourcePresentation&&toneBackend==='cpu')warnings.push('源 Samila 呈现采用 CPU float32 派生近似；JS 三角函数、幂函数和最近邻采样不保证与原 GPU 像素一致。');
-  if(s.samilaSampling)warnings.push('源 Samila PCG 使用运行时随机 frameSeed；同时间请求复用本地固定帧及临时种子记录，新 Worker 或导出会重新取随机值；原版每次 display/暂停截图再抽样尚未接入，不等同原版未知 ThreadLocalRandom 流。');
+  if(s.samilaSampling)warnings.push('源 Samila 冷重放按固定帧复用临时 frameSeed 记录；新的独立导出重新取随机值。它与热预览的每次 display 抽样分开，不等同原版未知 ThreadLocalRandom 流。');
   if(s.samilaSampling&&backend==='cpu')warnings.push('源 Samila CPU 采样采用逐步 float32 派生算术，不能保证与 GPU 融合乘加逐位相同。');
   if(s.samilaSampling&&backend==='webgl2')warnings.push('源 Samila GPU 的原生整图及跨设备效果尚未完成验证，不承诺任意画面逐像素相同。');
-  if(s.samilaSplat){warnings.push(s.samilaSampling?'源 Samila splat 使用固定二维 Simplex LUT、源色板与点覆盖；CPU 栅格化为派生近似，未声明原版整图一致。':'源 Samila splat 使用固定二维 Simplex LUT、源色板与点覆盖；随机点流仍为本地确定性流，CPU 栅格化为派生近似，未声明原版整图一致。');if(s.samilaSplat.referenceKind==='local-output')warnings.push('未提供主画布物理高度；本地显式使用输出高度作为点尺寸参考，不能当作原版主画布证据。');}
+  if(s.samilaSplat){warnings.push(backend==='native'?'源 Samila 冷重放使用独立原生 CGL 墨迹、源二维 Simplex LUT、色板和点覆盖；固定帧种子由本地重放 owner 保留，不复用热预览历史。':s.samilaSampling?'源 Samila splat 使用固定二维 Simplex LUT、源色板与点覆盖；CPU 栅格化为派生近似，未声明原版整图一致。':'源 Samila splat 使用固定二维 Simplex LUT、源色板与点覆盖；随机点流仍为本地确定性流，CPU 栅格化为派生近似，未声明原版整图一致。');if(s.samilaSplat.referenceKind==='local-output')warnings.push('未提供主画布物理高度；本地显式使用输出高度作为点尺寸参考，不能当作原版主画布证据。');}
   if(s.densitySplat)warnings.push(usesSourceSymmetryGradient(baseScene)?'Symmetry 使用源覆盖与 1024 格色板；渐变按源队列更新并保留停止配色。编辑后的重建节奏、实时显示计数与原版完整窗口仍待对照。':'Symmetry 使用源点尺寸、原生点/三角形覆盖；静态 RGB/余弦使用源 1024 格色板，本地扩展保留独立采样；梯度动画、实时帧节奏与原版完整画面仍待对照。');
   if(backend==='webgl2'&&!s.samilaSplat&&!s.densitySplat)warnings.push('GPU 使用 float32 持久粒子与浮点密度、4097 点色板插值；混沌轨迹和颜色可能与 CPU 双精度不同，不承诺原版像素一致。');
   if(view.projection!=='xy')warnings.push(`当前密度投影为 ${view.projection.toUpperCase()}；三维坐标先做空间变换再投影。`);
   if(s.invalid)warnings.push(usesSourceMapMath(base)?`${s.invalid} 次源 Map 非有限结果已跳过绘制；数学状态保留，未重生粒子。`:usesSourceSymmetryMath(base)?`${s.invalid} 次源 Symmetry 非有限结果已跳过绘制；数学状态保留，未重生粒子。`:base.kind==='samila'?`${s.invalid} 次无效 Samila 数学采样已跳过。`:`${s.invalid} 次无效数学结果已显式跳过；迭代粒子从确定的初始盒重生。`);
   if(s.clipped)warnings.push(`${s.clipped} 个样本完全位于密度视口之外。`);
-  return{type:'raster',cameraResolved:true,...(s.iterationFrame?baseScene.kind==='map'?{mapFrame:{...s.iterationFrame}}:{symmetryFrame:{...s.iterationFrame}}:{}),...(s.samilaSampling?{samilaSampling:{...s.samilaSampling}}:{}),...(tone.sourcePresentation?{sourceSamilaPresentation:{model:SOURCE_SAMILA_PRESENTATION_MODEL,stage:'present-target-rgba8' as const,display:'opaque-rgb-copy' as const,backend:toneBackend==='webgl2'?'webgl2' as const:'cpu-derived' as const}}:{}),...(tone.sourceMapPresentation&&tone.model==='normalized-v2'?{sourceMapPresentation:{...tone.sourceMapPresentation,scale:tone.normalization.scale}}:{}),...(tone.sourceSymmetryPresentation&&tone.model==='normalized-v2'?{sourceSymmetryPresentation:{...tone.sourceSymmetryPresentation,scale:tone.normalization.scale}}:{}),...(s.densitySplat?baseScene.kind==='map'?{mapSplat:{...s.densitySplat}}:{symmetrySplat:{...s.densitySplat}}:{}),...(s.symmetryPalette?{symmetryPalette:{...s.symmetryPalette}}:{}),...(s.samilaSplat?{samilaSplat:{...s.samilaSplat}}:{}),...(sourceFrame?{sourceCameraFrame:sourceFrame}:{}),...(samilaView?{samilaView,samilaViewportTransform:s.samilaGeometry??samilaViewportTransform(current)}:{}),dimension:2,backend,width,height,pixels,density:{projection:view.projection,bounds:{...s.bounds},inputPoints:s.deposited,examined:s.deposited,accepted:s.accepted,clipped:s.clipped,invalid:s.sampleInvalid,occupiedPixels:occupied,maxCount,toneBackend,cancelled:false},temporal:{time:Math.min(c.time,shownTime),windowStart:initial.startTime,frames:Math.max(0,target+1),samplingFps:initial.fps,recordedPoints:s.deposited,cacheHits:this.hits},stats:{samples:s.steps,generated:s.accepted,invalid:s.invalid,elapsedMs:performance.now()-started},warnings};
+  return{type:'raster',cameraResolved:true,...(sourcePixelRenderer?{sourcePixelRenderer}:{}),...(s.iterationFrame?baseScene.kind==='map'?{mapFrame:{...s.iterationFrame}}:{symmetryFrame:{...s.iterationFrame}}:{}),...(s.samilaSampling?{samilaSampling:{...s.samilaSampling}}:{}),...(tone.sourcePresentation?{sourceSamilaPresentation:{model:SOURCE_SAMILA_PRESENTATION_MODEL,stage:'present-target-rgba8' as const,display:'opaque-rgb-copy' as const,backend:toneBackend==='native'?'native' as const:toneBackend==='webgl2'?'webgl2' as const:'cpu-derived' as const}}:{}),...(tone.sourceMapPresentation&&tone.model==='normalized-v2'?{sourceMapPresentation:{...tone.sourceMapPresentation,scale:tone.normalization.scale}}:{}),...(tone.sourceSymmetryPresentation&&tone.model==='normalized-v2'?{sourceSymmetryPresentation:{...tone.sourceSymmetryPresentation,scale:tone.normalization.scale}}:{}),...(s.densitySplat?baseScene.kind==='map'?{mapSplat:{...s.densitySplat}}:{symmetrySplat:{...s.densitySplat}}:{}),...(s.symmetryPalette?{symmetryPalette:{...s.symmetryPalette}}:{}),...(s.samilaSplat?{samilaSplat:{...s.samilaSplat}}:{}),...(sourceFrame?{sourceCameraFrame:sourceFrame}:{}),...(samilaView?{samilaView,samilaViewportTransform:s.samilaGeometry??samilaViewportTransform(current)}:{}),dimension:2,backend,width,height,pixels,density:{projection:view.projection,bounds:{...s.bounds},inputPoints:s.deposited,examined:s.deposited,accepted:s.accepted,clipped:s.clipped,invalid:s.sampleInvalid,occupiedPixels:occupied,maxCount,toneBackend,cancelled:false},temporal:{time:Math.min(c.time,shownTime),windowStart:initial.startTime,frames:Math.max(0,target+1),samplingFps:initial.fps,recordedPoints:s.deposited,cacheHits:this.hits},stats:{samples:s.steps,generated:s.accepted,invalid:s.invalid,elapsedMs:performance.now()-started},warnings};
  }
 }
 export function generateIteratedDensity(scene:SceneDocument,context:GenerateContext,session?:IteratedDensitySession):SceneOutput {if(session)return session.generate(scene,context);const owner=new IteratedDensitySession();try{return owner.generate(scene,context);}finally{owner.reset();}}

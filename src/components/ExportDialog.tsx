@@ -44,7 +44,7 @@ import {withSpirographReplayFrame} from '../engine/spirographFramePlan';
 import {usesRootsNativePresentation} from '../engine/rootsPresentationAuthoring';
 import {usesRootsCameraTimeline,usesRootsGradientTimeline} from '../engine/rootsCameraTimeline';
 import {withRootsFreshRecording} from '../engine/rootsRecording';
-import {exportSessionCleanup,ExportSessionCleanupError,type ExportSessionTicket} from '../engine/exportSessionCleanup';
+import {exportSessionCleanup,ExportSessionCleanupError,type ExportSessionTicket,type ExportResourceTicket} from '../engine/exportSessionCleanup';
 import {RecordingVideoDelivery} from '../engine/recordingVideoDelivery';
 export function ExportDialog({
   scene,
@@ -68,6 +68,7 @@ export function ExportDialog({
   currentPerlinCapture,
   currentSourceRecording,
   currentSourceBouncingFrame,
+  onWorkingChange,
   onClose,
   onDone,
 }: {
@@ -100,6 +101,7 @@ export function ExportDialog({
   currentPerlinCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5)=>Promise<SceneOutput>};
   currentSourceRecording?:{ready:boolean;record:(options:SourceRecordingOptions,consumer:SourceRecordingConsumer,signal?:AbortSignal)=>Promise<void>};
   currentSourceBouncingFrame?:SourceBouncingPresentedExport;
+  onWorkingChange?:(working:boolean)=>void;
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
@@ -153,6 +155,7 @@ export function ExportDialog({
   const cancelRef = useRef(false),
     sessionRef = useRef<ExportSessionTicket | null>(null),
     generator = useRef<Generator | null>(null),
+    generatorCleanup = useRef<ExportResourceTicket | null>(null),
     recordingAbort = useRef<AbortController | null>(null);
   const [width,height]=resolution==='custom'?[customWidth,customHeight]:resolution.split('x').map(Number);
   const retainedRoots=kind==='video'&&sourceLivePreviewKind(scene)==='roots'&&rootsVideoMode==='retained';
@@ -200,12 +203,10 @@ export function ExportDialog({
     return () => {
       cancelRef.current = true;
       recordingAbort.current?.abort();
-      try { generator.current?.dispose(); }
-      finally {
-        // The module owner retains failed cleanup after this dialog unmounts.
-        // A later export retries it before creating another server session.
-        void sessionRef.current?.cleanup().catch(() => {});
-      }
+      // Both owners outlive an unmounted dialog when release fails. Native
+      // cold disposal waits for its active display, then releases only itself.
+      void generatorCleanup.current?.cleanup().catch(() => {});
+      void sessionRef.current?.cleanup().catch(() => {});
     };
   }, []);
   async function request(url: string, init: RequestInit) {
@@ -217,6 +218,7 @@ export function ExportDialog({
   async function run() {
     if(!previewReady)return;
     if(dimensionError||upscaleError){setError(dimensionError||upscaleError);return;}
+    onWorkingChange?.(true);
     setWorking(true);
     setError("");
     setProgress(0);
@@ -228,6 +230,7 @@ export function ExportDialog({
     saveStop.current=false;setSaveStage('recording');setRecoveringSave(false);
     cancelRef.current = false;
     let g:Generator|null=null;
+    let resource:ExportResourceTicket|undefined;
     const abort=new AbortController();recordingAbort.current=abort;
     let r:ArtRenderer|null=null;
     const checkCancelled=()=>{if(cancelRef.current)throw new DOMException(t('导出已取消'),'AbortError');};
@@ -315,6 +318,11 @@ export function ExportDialog({
         if(!noFrames)onDone(t('视频已编码并导出'));return;
       }
       g=new Generator();generator.current=g;
+      const owned=g;let disposed=false;
+      resource=exportSessionCleanup.registerResource(owned,async()=>{
+        if(!disposed){owned.dispose();disposed=true;}
+        await owned.settledNativeCleanup();
+      });generatorCleanup.current=resource;
       const exportScene=kind==='video'?(fractalFrames?withFractalFreshRecording(scene,recordingFps):rootsFrames?withRootsFreshRecording(scene,recordingFps):perlinFrames?withPerlinFreshRecording(scene,recordingFps):scene):scene;
       const bouncingPlan=sourceBouncing?prepareSourceBouncingExport(exportScene,currentSourceBouncingFrame,{kind,start:bouncingStart,width,height,fps,...(bouncingSeparateFps?{simulationFps:recordingFps}:{})}):undefined;
       if(bouncingPlan&&!bouncingPlan.ok)throw new Error(bouncingPlan.error.reason);
@@ -467,19 +475,20 @@ export function ExportDialog({
       if(message)setError(message);
     } finally {
       // Every owner gets its cleanup attempt even when another one fails.
-      // Keep the dialog busy until retirement settles; the native session
-      // retains a failed release token for the next acquisition to retry.
+      // Failed native cleanup stays in exportSessionCleanup after UI refs go.
       const failures:string[]=[];
-      for(const cleanup of [()=>g?.dispose(),()=>g?.settledNativeCleanup(),()=>r?.dispose()]){
+      for(const cleanup of [()=>resource?.cleanup(),()=>r?.dispose()]){
         try { await cleanup(); }
         catch(error){failures.push(error instanceof Error?error.message:String(error));}
       }
       if(failures.length)setError(previous=>[previous,t('导出资源清理未完成：{reason}',{reason:failures.join('\n')})].filter(Boolean).join('\n'));
       generator.current = null;
+      if(generatorCleanup.current===resource)generatorCleanup.current=null;
       if(recordingAbort.current===abort)recordingAbort.current=null;
       retrySave.current=null;setRecoveringSave(false);
       setGenerationStatus(null);
       setWorking(false);
+      onWorkingChange?.(false);
     }
   }
   function cancel() {

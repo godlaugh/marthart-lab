@@ -19,10 +19,10 @@ export function inspectSourceFrameHeader(packet){
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
  if(version===5){
-  const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex'),control=operation!==2;
-  if(b.readUInt32LE(60)!==1||operation<1||operation>3||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0)||control&&(width!==1||height!==1)||operation===2&&b.length<108)return failure('input','Samila 原生帧头部无效');
-  const expectedIndex=operation===2?b.readUInt32LE(88):undefined,baseBatch=operation===2?b.readUInt32LE(96):0,passes=operation===2?b.readUInt32LE(100):0;
-  if(operation===2&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||baseBatch<1||baseBatch>8000000||![1,6].includes(passes)))return failure('input','Samila 原生显示检查点无效');
+  const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex'),control=operation!==2&&operation!==4,accumulate=operation===2||operation===5;
+  if(b.readUInt32LE(60)!==1||operation<1||operation>5||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0)||(operation===1||operation===3)&&(width!==1||height!==1)||accumulate&&b.length<108||operation===4&&b.length<96)return failure('input','Samila 原生帧头部无效');
+  const expectedIndex=accumulate||operation===4?b.readUInt32LE(88):undefined,baseBatch=accumulate?b.readUInt32LE(96):0,passes=accumulate?b.readUInt32LE(100):0;
+  if(accumulate&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||baseBatch<1||baseBatch>8000000||![1,6].includes(passes)))return failure('input','Samila 原生显示检查点无效');
   if(b.length*6+width*height*8+64>BUDGET)return failure('capacity','Samila 原生帧容量无效');
   return {ok:true,value:{generation,sequence,width,height,samples,control,operation,resource,family:'samila',expectedIndex,steps:baseBatch*passes}};
  }
@@ -41,8 +41,15 @@ function responseHeader(bytes,expected){
 function samilaResponse(payload,expected){
  const word=n=>payload.readUInt32LE(n),index=word(24),disposition=word(28),steps=word(32),accepted=word(36),clipped=word(40),invalid=word(44),occupied=word(48),maxCount=payload.readFloatLE(52),invalidInk=word(56);
  if(word(0)!==1||word(4)!==expected.operation||payload.subarray(8,24).toString('hex')!==expected.resource||word(60)!==0||!Number.isFinite(maxCount)||maxCount<0)return failure('protocol','Samila 原生响应身份或统计无效');
- if(expected.operation===2){if(disposition!==0||index!==expected.expectedIndex+1||steps!==expected.steps||accepted+clipped+invalid!==steps||occupied>expected.width*expected.height||invalidInk!==0)return failure('protocol','Samila 原生响应检查点或覆盖无效');}
- else if(!payload.subarray(32,64).every(n=>n===0)||expected.operation===1&&(index!==0||disposition!==0)||expected.operation===3&&(disposition!==1&&disposition!==2||disposition===2&&index!==0))return failure('protocol','Samila 原生控制响应无效');
+ if(expected.operation===2||expected.operation===5){
+  if(disposition!==0||index!==expected.expectedIndex+1||steps!==expected.steps||accepted+clipped+invalid!==steps)return failure('protocol','Samila 原生累积检查点或覆盖无效');
+  if(expected.operation===5&&!payload.subarray(48,60).every(n=>n===0))return failure('protocol','Samila step 包含未经测量的呈现统计');
+ }
+ if(expected.operation===2||expected.operation===4){
+  if(disposition!==0||occupied>expected.width*expected.height||invalidInk!==0)return failure('protocol','Samila 原生呈现统计无效');
+  if(expected.operation===4&&(index!==expected.expectedIndex||!payload.subarray(32,48).every(n=>n===0)))return failure('protocol','Samila 只呈现事务推进了采样');
+ }
+ if(expected.operation===1||expected.operation===3){if(!payload.subarray(32,64).every(n=>n===0)||expected.operation===1&&(index!==0||disposition!==0)||expected.operation===3&&(disposition!==1&&disposition!==2||disposition===2&&index!==0))return failure('protocol','Samila 原生控制响应无效');}
  return {ok:true,value:{index,disposition}};
 }
 /** Owns the actual ChildProcess handle until close, never locates/kills a PID.

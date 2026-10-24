@@ -1141,12 +1141,25 @@ kbd {
   display: flex;
   align-items: center;
   gap: 11px;
+  flex: none;
+  height: 26px;
   min-height: 26px;
+  white-space: nowrap;
+  overflow: hidden;
   padding: 0 15px;
   border-top: 1px solid var(--border);
   background: var(--panel);
   font-size: 9px;
   color: var(--muted);
+}
+.status-bar > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.status-bar > .status-dot,
+.status-bar > .status-divider {
+  flex: none;
 }
 .status-divider {
   height: 10px;

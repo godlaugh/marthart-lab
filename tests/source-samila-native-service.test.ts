@@ -30,6 +30,8 @@ function envelope(version:4|5,operation:number,token:string,display=false,index=
 const create=(token=tokenA)=>envelope(5,1,token);
 const display=(token=tokenA,index=0)=>envelope(5,2,token,true,index);
 const release=(token=tokenA)=>envelope(5,3,token);
+const step=(token=tokenA,index=0)=>envelope(5,5,token,true,index);
+const present=(token=tokenA,index=1)=>{const bytes=envelope(5,4,token,true,index).subarray(0,96);bytes.writeUInt32LE(bytes.length,8);bytes.writeUInt32LE(0,92);return bytes;};
 const bouncingCreate=(token=tokenA)=>envelope(4,1,token);
 const bouncingRelease=(token=tokenA)=>envelope(4,4,token);
 
@@ -40,7 +42,7 @@ import {writeFileSync} from 'node:fs';
 const mode=${JSON.stringify(mode)},states=new Map();let input=Buffer.alloc(0),context=mode==='http-context'?7:1;
 function handle(request){
  const version=request.readUInt32LE(4),samila=version===5,operation=request.readUInt32LE(samila?64:60),resource=request.subarray(samila?72:68,samila?88:84),key=(samila?'samila:':'bouncing:')+resource.toString('hex');
- const width=request.readUInt32LE(20),height=request.readUInt32LE(24),control=samila?operation!==2:operation!==3;
+ const width=request.readUInt32LE(20),height=request.readUInt32LE(24),control=samila?operation!==2&&operation!==4:operation!==3;
  if(mode.startsWith('hang-'))writeFileSync(${JSON.stringify(receivedPath)},String(request.readUInt32LE(16)));
  if(samila&&(mode==='hang-create'&&operation===1||mode==='hang-display'&&operation===2))return;
  let status=0,format=samila?3:control?2:1,payload;
@@ -49,7 +51,12 @@ function handle(request){
  }else if(samila){
   payload=Buffer.alloc(64+(control?0:width*height*4));payload.writeUInt32LE(1,0);payload.writeUInt32LE(operation,4);resource.copy(payload,8);
   if(operation===1)states.set(key,0);
-  if(operation===2){const index=request.readUInt32LE(88)+1,steps=request.readUInt32LE(96)*request.readUInt32LE(100);states.set(key,index);payload.writeUInt32LE(index,24);payload.writeUInt32LE(steps,32);payload.writeUInt32LE(steps-2,36);payload.writeUInt32LE(1,40);payload.writeUInt32LE(1,44);payload.writeUInt32LE(2,48);payload.writeFloatLE(1.5,52);for(let i=64;i<payload.length;i+=4)payload.set([11,23,47,255],i);}
+  if(operation===2||operation===5){const index=request.readUInt32LE(88)+1,steps=request.readUInt32LE(96)*request.readUInt32LE(100);states.set(key,index);payload.writeUInt32LE(index,24);payload.writeUInt32LE(steps,32);payload.writeUInt32LE(steps-2,36);payload.writeUInt32LE(1,40);payload.writeUInt32LE(1,44);}
+  if(operation===4)payload.writeUInt32LE(request.readUInt32LE(88),24);
+  if(operation===2||operation===4){payload.writeUInt32LE(2,48);payload.writeFloatLE(1.5,52);for(let i=64;i<payload.length;i+=4)payload.set([11,23,47,255],i);}
+  if(operation===5&&mode==='step-ink')payload.writeUInt32LE(1,48);
+  if(operation===4&&mode==='present-samples')payload.writeUInt32LE(1,32);
+  if(operation===4&&mode==='present-index')payload.writeUInt32LE(request.readUInt32LE(88)+1,24);
   if(operation===3){const present=states.has(key);payload.writeUInt32LE(present?states.get(key):0,24);payload.writeUInt32LE(present?1:2,28);states.delete(key);}
   if(operation===2){
    const offsets={family:0,operation:4,index:24,disposition:28,steps:32,conservation:36,occupied:48,reserved:60};
@@ -89,6 +96,15 @@ describe('Samila retained service protocol with CPU-only owned children',()=>{
    expect(image.value.pixels).toHaveLength(88);expect(image.value.pixels.readUInt32LE(24)).toBe(1);expect(image.value.pixels.readUInt32LE(32)).toBe(30);
    expect([...image.value.pixels.subarray(64,68)]).toEqual([11,23,47,255]);expect((await f.send(display(tokenA,1))).value.pixels.readUInt32LE(24)).toBe(2);
   }finally{await f.close();}
+ });
+
+ it('carries pixel-free steps and presentation without advancing its checkpoint',async()=>{
+  const f=await fixture();try{await f.send(create());const accumulated=await f.send(step());expect(accumulated).toMatchObject({ok:true,value:{rowOrder:'none',width:3,height:2}});expect(accumulated.value.pixels).toHaveLength(64);expect(accumulated.value.pixels.readUInt32LE(24)).toBe(1);expect(accumulated.value.pixels.readUInt32LE(32)).toBe(30);
+   const shown=await f.send(present());expect(shown).toMatchObject({ok:true,value:{rowOrder:'bottom-up'}});expect(shown.value.pixels).toHaveLength(88);expect(shown.value.pixels.readUInt32LE(24)).toBe(1);expect(shown.value.pixels.readUInt32LE(32)).toBe(0);expect(f.service.retainedResourceCount).toBe(1);
+  }finally{await f.close();}
+ });
+ it.each(['step-ink','present-samples','present-index'])('rejects invalid %s response and retires the uncertain process',async mode=>{
+  const f=await fixture(mode);try{await f.send(create());expect(await f.send(mode==='step-ink'?step():present())).toMatchObject({ok:false,error:{kind:'protocol'}});expect(f.service.retainedResourceCount).toBe(0);expect(f.service.processCount).toBe(0);}finally{await f.close();}
  });
 
  it('tracks two Samila resources and Bouncing independently, even when tokens coincide across families',async()=>{

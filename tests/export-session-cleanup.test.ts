@@ -5,6 +5,26 @@ const response=(status:number)=>new Response(null,{status});
 function deferred<T>(){let resolve!:(value:T)=>void,reject!:(value:unknown)=>void;const promise=new Promise<T>((yes,no)=>{resolve=yes;reject=no;});return{promise,resolve,reject};}
 
 describe('export cleanup owns successful creation tickets across dialog lifetimes',()=>{
+ it('retains a failed local generator release after its dialog reference is lost, without retiring an active sibling',async()=>{
+  const owner=new ExportSessionCleanup(vi.fn()),generator={},release=vi.fn().mockRejectedValueOnce(Error('native release failed')).mockResolvedValue(undefined),activeRelease=vi.fn();
+  let ticket=owner.registerResource(generator,release);const active=owner.registerResource({},activeRelease);expect(owner.registerResource(generator,vi.fn())).toBe(ticket);
+  await expect(ticket.cleanup()).rejects.toThrow('native release failed');ticket=undefined as never;
+  await owner.flush();expect(release).toHaveBeenCalledTimes(2);expect(active.pending).toBe(true);expect(activeRelease).not.toHaveBeenCalled();expect(owner.diagnostics()).toEqual({owned:1,pendingCleanup:0,ids:[]});
+  await owner.flush();expect(release).toHaveBeenCalledTimes(2);await active.cleanup();expect(owner.diagnostics().owned).toBe(0);
+ });
+ it('shares pending generator cleanup across unmount/finally/flush and waits for its active display',async()=>{
+  const draw=deferred<void>(),owner=new ExportSessionCleanup(vi.fn()),released=vi.fn(),release=vi.fn(async()=>{await draw.promise;released();}),ticket=owner.registerResource({},release);
+  const unmount=ticket.cleanup(),finallyCleanup=ticket.cleanup(),flush=owner.flush();expect(unmount).toBe(finallyCleanup);await Promise.resolve();expect(release).toHaveBeenCalledOnce();expect(released).not.toHaveBeenCalled();
+  draw.resolve();await Promise.all([unmount,finallyCleanup,flush]);expect(released).toHaveBeenCalledOnce();expect(ticket.pending).toBe(false);
+ });
+ it('retries local native owners serially through a shared slot and attempts siblings after failure',async()=>{
+  const owner=new ExportSessionCleanup(vi.fn());let unavailable=true,active=false,overlaps=0;const released:number[]=[];
+  const release=(id:number)=>async()=>{if(unavailable)throw Error('offline');if(active){overlaps++;throw Error('occupied');}active=true;try{await new Promise(resolve=>setTimeout(resolve,1));released.push(id);}finally{active=false;}};
+  const a=owner.registerResource({},release(1)),b=owner.registerResource({},release(2));await Promise.allSettled([a.cleanup(),b.cleanup()]);unavailable=false;
+  await owner.flush();expect(overlaps).toBe(0);expect(released).toEqual([1,2]);expect(owner.diagnostics().owned).toBe(0);
+  const bad=owner.registerResource({},async()=>{throw Error('still unavailable');}),goodRelease=vi.fn().mockRejectedValueOnce(Error('temporarily unavailable')).mockResolvedValue(undefined),good=owner.registerResource({},goodRelease);
+  await Promise.allSettled([bad.cleanup(),good.cleanup()]);await expect(owner.flush()).rejects.toBeInstanceOf(ExportSessionCleanupError);expect(bad.pending).toBe(true);expect(good.pending).toBe(false);expect(goodRelease).toHaveBeenCalledTimes(2);
+ });
  it('does not create cleanup ownership until successful POST data is explicitly registered',async()=>{
   const fetcher=vi.fn<ExportCleanupFetch>().mockResolvedValue(response(200)),owner=new ExportSessionCleanup(fetcher);
   expect(owner.diagnostics()).toEqual({owned:0,pendingCleanup:0,ids:[]});await owner.flush();expect(fetcher).not.toHaveBeenCalled();

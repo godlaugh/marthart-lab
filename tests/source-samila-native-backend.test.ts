@@ -19,8 +19,8 @@ const context:GenerateContext={width:17,height:13,time:0,quality:'preview',samil
 const owners:SourceSamilaAsyncSession[]=[],generators:Generator[]=[];
 function owner(seed=1){const backend=new SourceSamilaNativeBackend(),session=new SourceSamilaAsyncSession(backend,{samilaSeedProvider:()=>seed});owners.push(session);return{backend,session};}
 function reply(request:SourceSamilaNativeRequest):SourceNativeSamilaResponse {
- const op=request.operation,display=op.kind==='display',steps=display?op.baseBatch*op.passes:0;
- return{width:request.width,height:request.height,generation:request.generation,sequence:request.sequence,resource:op.resource,committedDisplays:display?op.expectedIndex+1:0,disposition:op.kind==='release'?'absent':'owned',steps,accepted:steps,clipped:0,invalid:0,occupiedPixels:display?1:0,maxCount:display ? .5 : 0,invalidInkPixels:0,...(display?{pixels:new Uint8ClampedArray(request.width*request.height*4)}:{}),rendererIdentity:'a'.repeat(64),contextSerial:9,sessionSerial:4,requestBytes:128};
+ const op=request.operation,display=op.kind==='display'||op.kind==='present',accumulate=op.kind==='display'||op.kind==='step',steps=accumulate?op.baseBatch*op.passes:0;
+ return{width:request.width,height:request.height,generation:request.generation,sequence:request.sequence,resource:op.resource,committedDisplays:accumulate?op.expectedIndex+1:op.kind==='present'?op.expectedIndex:0,disposition:op.kind==='release'?'absent':'owned',steps,accepted:steps,clipped:0,invalid:0,occupiedPixels:display?1:0,maxCount:display ? .5 : 0,invalidInkPixels:0,...(display?{pixels:new Uint8ClampedArray(request.width*request.height*4)}:{}),rendererIdentity:'a'.repeat(64),contextSerial:9,sessionSerial:4,requestBytes:128};
 }
 const operations=()=>transport.mock.calls.map(([request])=>(request as SourceSamilaNativeRequest).operation);
 beforeEach(()=>{transport.mockReset().mockImplementation(async request=>reply(request));});
@@ -139,6 +139,20 @@ describe('Samila native resource/backend integration (real producers, mock trans
   });
   await retryRetiredGenerationQueueCleanup();expect(overlaps).toBe(0);expect(released).toEqual(resources);
   await retryRetiredGenerationQueueCleanup();expect(released).toEqual(resources);
+ });
+ it('routes source cold replay through independent steps and read-only presentations',async()=>{
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');const a=new Generator(),b=new Generator();generators.push(a,b);const s=scene(),c={width:17,height:13,time:0,quality:'export' as const,samilaPrimaryPixelHeight:972};
+  const hot=await a.generate(s,{...context,samilaLive:{...context.samilaLive!,clock:{paused:true}}});await b.generate(s,c);const ops=operations(),aId=ops[0].resource,bId=ops.find(op=>op.kind==='step')!.resource;expect(aId).not.toBe(bId);expect(ops.map(op=>op.kind)).toEqual(['create','display','create','step','present']);
+  const mark=ops.length;await b.generate(s,c);await b.generate({...s,settings:{...s.settings,normalizedBrightness:.625}},c);expect(operations().slice(mark).map(op=>op.kind)).toEqual(['present','present']);
+  await a.setSamilaPaused(hot,true);b.dispose();await b.settledNativeCleanup();expect(operations().at(-1)).toMatchObject({kind:'release',resource:bId});expect(operations().filter(op=>op.resource===aId).map(op=>op.kind)).toEqual(['create','display']);
+  expect(await a.generate(s,{...context,samilaLive:{...context.samilaLive!,clock:{paused:true}}})).toMatchObject({samilaLive:{displayIndex:1}});
+ });
+ it('soft-cancels a submitted cold step, acknowledges it, then releases only its owner',async()=>{
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');const a=new Generator(),b=new Generator();generators.push(a,b);const s=scene();await a.generate(s,context);let complete!:(value:SourceNativeSamilaResponse)=>void,submitted:SourceSamilaNativeRequest|undefined,signal:AbortSignal|undefined;
+  transport.mockImplementation((request:SourceSamilaNativeRequest,options:{signal?:AbortSignal})=>{if(request.operation.kind==='step'){submitted=request;signal=options.signal;return new Promise(resolve=>{complete=resolve;});}return Promise.resolve(reply(request));});
+  const work=b.generate(s,{width:17,height:13,time:0,quality:'export',samilaPrimaryPixelHeight:972}),cancelled=expect(work).rejects.toMatchObject({name:'AbortError'});await vi.waitFor(()=>expect(submitted).toBeDefined());b.cancel();await cancelled;
+  expect(signal?.aborted).toBe(false);expect(operations().some(op=>op.kind==='release')).toBe(false);complete(reply(submitted!));await b.settledNativeCleanup();
+  expect(signal?.aborted).toBe(false);expect(operations().filter(op=>op.resource===submitted!.operation.resource).map(op=>op.kind)).toEqual(['create','step','release']);expect(await a.generate(s,context)).toMatchObject({samilaLive:{displayIndex:1}});
  });
  it('keeps legacy Samila without a source live context on the existing Worker route',async()=>{
   vi.stubEnv('VITE_SOURCE_RENDERER','native');const posted:unknown[]=[];let terminated=0;vi.stubGlobal('Worker',class {postMessage(message:unknown){posted.push(message);}terminate(){terminated++;}});

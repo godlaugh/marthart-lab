@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-24",
+  "status": "verified-increment-goal-active",
+  "milestone": "M3",
+  "baseCommit": "1b1aa462eb6ebc3d428c23d6fbbe39f03e39ad95",
+  "scope": "Independent native Samila cold PNG/video replay, shared fixed-frame owner, step/present operations, soft export cancellation, preview deferral and stable status geometry.",
+  "policy": "Opt-in VITE_SOURCE_RENDERER=native with configured local native service; default WebGL and installed 1.0 unchanged.",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "nativeExecutableSha256": "8716df02d4dbe5ad36f94528035da0d79528b466124a02d4905dd173cb0950d4",
+  "productFiles": {
+    "server/render/SourceCglRenderer.m": "0c506da6dafd90ce85a74b1c1d376cb1df5132ea676933011ce883aede97c91c",
+    "server/render/SourceCglSamilaState.h": "9a4b8fa6c973ed20e469a1ca20b19299f61bce71f6f9d1ce7e5be920b32b3c4e",
+    "server/source-renderer.mjs": "770164111c24491c39a857614ec55d4cf27dc2317de3fca453a0216ea7a7d01a",
+    "src/App.tsx": "64c14f274bed75d860a0c149c6b0add1a9f3fc1eac50318c637b28e9f910674d",
+    "src/components/ExportDialog.tsx": "c27dcf4bbe184ffaa8de902066ab1dd71fdfa44a5edec5c4e0be5e36fa5b4ed9",
+    "src/engine/client.ts": "61d3a3348e8fde3c584c36e72bba3701d2efad31f997efc3e67e8f871a51f55b",
+    "src/engine/exportSessionCleanup.ts": "76766a7447209c53546294fcdba16f318e43c6bc9911219300fd3b22dfe75a96",
+    "src/engine/iteratedDensityAsyncBackend.ts": "ce6e724b60020432f3e2e504bcfffd13cf82e1bb58f01d7f69174f48d7bb44e0",
+    "src/engine/sourceNativeClient.ts": "73e80b6a1306e1eaf85613f78d1dd3b7470e4242ee31b3dfdefbdd3274bbc40d",
+    "src/engine/sourceSamilaExportPreview.ts": "9107143e23d9ec5523e8c6d08bff065a407869bc7cb0ecf1286067f232930f9b",
+    "src/engine/sourceSamilaNativeBackend.ts": "a34edaeb1377134da496d7dd8a27182e5ae5c488181c107b24524e290c16ddc0",
+    "src/engine/sourceSamilaNativeProgram.ts": "602c66cdbfb093a9534451d8439fef3902d67b490310098488746ea0ef07f387",
+    "src/engine/sourceSamilaNativeProtocol.ts": "545ea04a43febc3f5b7d6c0af4e9ebeb140c84438b75db5281e9e2c6ca4ebcea",
+    "src/scenes/iteratedDensity.ts": "6792113e64782d8bf4f497026566b0e99bd71ff5a76377f1588fe5fbf8fb0117",
+    "src/styles.css": "908672d9c25b5b272352cd2ce2283614dae48940b3005e970cc9b03b045e4e55"
+  },
+  "checks": {
+    "uniqueTestFiles": 75,
+    "uniqueTestsPassed": 1105,
+    "cpuTests": 1059,
+    "sharedNativeRegressionTests": 41,
+    "samilaRealCglTests": 5,
+    "buildV2": "passed with existing chunk-size warning",
+    "nativeColdChecks": 4,
+    "hiddenAppUiChecks": 7,
+    "originalExactFullRgbaFrames": 15,
+    "referenceInputsRehashed": 50,
+    "reportSourcesMatchFinalTree": true,
+    "ownedProcessesAfterClose": 0
+  },
+  "testCommands": [
+    "node node_modules/vitest/vitest.mjs run <70 exact paths in final-test-files.json> (1055 passed; before four new service cases)",
+    "node node_modules/vitest/vitest.mjs run tests/source-samila-native-service.test.ts (32 passed, replaces prior 28)",
+    "node node_modules/vitest/vitest.mjs run tests/source-samila-native-client.test.ts tests/source-samila-native-backend.test.ts tests/source-samila-native-service.test.ts (independent review:74 passed)",
+    "node node_modules/vitest/vitest.mjs run tests/source-samila-native-lifecycle.test.ts (5 passed)",
+    "node node_modules/vitest/vitest.mjs run tests/source-renderer-session.test.ts tests/source-native-http.test.ts tests/source-native-capture.test.ts tests/source-native-viewport.test.ts --maxWorkers=1 (34 passed; nonexistent source-native-http pattern matched no file)",
+    "node node_modules/vitest/vitest.mjs run tests/source-renderer-http.test.ts --maxWorkers=1 (7 passed)",
+    "npm run build:v2",
+    "git diff --check"
+  ],
+  "reproducibleSharedCommand": "node node_modules/vitest/vitest.mjs run tests/source-renderer-session.test.ts tests/source-renderer-http.test.ts tests/source-native-capture.test.ts tests/source-native-viewport.test.ts --maxWorkers=1",
+  "coldCases": [
+    "Fixed-seed cold step/present matches every complete RGBA from equivalent combined-native replay; repeated/fractional target and retone only present; backward replay reuses seeds; resize starts fresh tape.",
+    "A hot six-pass primary retains full image, checkpoint and random word count across independent cold replay, resize and exact release.",
+    "Cold capacity rejection occurs before seed draw and leaves primary unchanged.",
+    "Public Generator cancels after real cold step bytes exist without aborting shared transport, then releases only cold resource; primary pixels/index/seeds survive."
+  ],
+  "uiCases": [
+    {
+      "name": "cold-same",
+      "fullRgbaExact": true,
+      "previewPreserved": true
+    },
+    {
+      "name": "cold-different",
+      "fullRgbaExact": true,
+      "previewPreserved": true
+    },
+    {
+      "name": "cold-three-frame-video",
+      "fullRgbaExact": null,
+      "previewPreserved": true
+    },
+    {
+      "name": "dialog-resize-deferred",
+      "fullRgbaExact": null,
+      "previewPreserved": null
+    },
+    {
+      "name": "dialog-waits-in-flight-preview-and-pause",
+      "fullRgbaExact": null,
+      "previewPreserved": null
+    },
+    {
+      "name": "cancel-pending-native-cold",
+      "fullRgbaExact": null,
+      "previewPreserved": true
+    },
+    {
+      "name": "retained-preview-resumes-after-cancel",
+      "fullRgbaExact": null,
+      "previewPreserved": null
+    }
+  ],
+  "uiDetails": {
+    "pngSizes": [
+      [
+        674,
+        452
+      ],
+      [
+        193,
+        129
+      ]
+    ],
+    "video": {
+      "width": 192,
+      "height": 128,
+      "encoderFps": 3,
+      "frames": 3,
+      "simulationFps": 30,
+      "steps": 21,
+      "presentations": 3,
+      "uploadedRgbExact": true,
+      "uploadedAlpha": 255,
+      "ffprobeVerified": true,
+      "lossyMp4PixelsCompared": false
+    },
+    "resizeFollowups": 1,
+    "statusBarPx": 26,
+    "nativeSlotSerial": true,
+    "visibleWindows": 0,
+    "host": "Electron 44.7.2",
+    "workload": "samila1 formulas/palette/parameters, batch256, spot .12, alpha .8, no trails, wait2s"
+  },
+  "measurement": {
+    "coldSeconds": 3.68125,
+    "coldNodeCpuMicros": {
+      "user": 3945304,
+      "system": 2051670
+    },
+    "coldNodeMaxRssKiB": 630992,
+    "timeWallSeconds": 3.83,
+    "timeUserSeconds": 6.69,
+    "timeSystemSeconds": 2.94,
+    "timeMaxRssBytes": 646529024,
+    "equivalentNativeSequences": [
+      {
+        "combined": true,
+        "seconds": 0.24906595900000003,
+        "words": 5,
+        "requestBytes": 890734,
+        "responseBytes": 1332616
+      },
+      {
+        "combined": false,
+        "seconds": 0.13576466600000003,
+        "words": 5,
+        "requestBytes": 890734,
+        "responseBytes": 628612
+      }
+    ],
+    "cacheScope": "Fresh cold owner per sequence; subsequent per-frame costs preserved. OS/module/driver caches uncontrolled. Build ran concurrently, no speedup conclusion.",
+    "unmeasured": [
+      "process-family peak memory",
+      "GPU time/VRAM",
+      "agent tokens"
+    ],
+    "uiSeconds": 13.419226583,
+    "productionSeconds": 4.890106334
+  },
+  "artifacts": [
+    {
+      "path": ".cache/samila-native-cold-export-20261024/UI-验收索引.zh-CN.md",
+      "sha256": "3fab34b8a42e9d1911171b762682f8707ebd2f66731c24478ca12234d15fa637",
+      "bytes": 5040
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/build-v2-final.log",
+      "sha256": "695f23a2bac292f373902138a9c3e043fa13800ea4a5f5a062d2038ffa87fb64",
+      "bytes": 1575
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/cold-2026-10-24T13-34-29.878Z/report.json",
+      "sha256": "fa5c6c5caf532a82938b21ee88191a7ab967ba33e2261441eaa322767ae93d62",
+      "bytes": 149695
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/cold-final-time.log",
+      "sha256": "e0b6c5d353403ee2ace2b7ded2e0f93eb410088d76da4e6a48a63f757959fb97",
+      "bytes": 1605
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/final-test-files.json",
+      "sha256": "97cc622d022c24f88e8fbb8a53c925be134093c64a1b91e34183d27198da0190",
+      "bytes": 2941
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/final-tests.log",
+      "sha256": "ef6825d0c1b65e34b30432254898298b226883b0a83029047b3546f5d9c6c830",
+      "bytes": 8625
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/native-tests.log",
+      "sha256": "4046a4d33240c5c0464cf8daf9ad965ca98a2d0efa83d84ae7661d002cc7bdba",
+      "bytes": 593
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/production-2026-10-24T13-34-54.955Z/report.json",
+      "sha256": "b0284f78104a4fc455ac3538b1e42ce73bbb0833cb7107dc53c4547e78f5a498",
+      "bytes": 190729
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/service-tests.log",
+      "sha256": "ff322fb0bf2cddf0a5f01e085a9ba135be17df74560614352b05ff84dc88ca4d",
+      "bytes": 4094
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/shared-http-regressions.log",
+      "sha256": "7c3f57d92ab8707b9a1a60ef31a5328ac97eda0ec18bb093a348e3cf00cec50e",
+      "bytes": 433
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/shared-native-regressions.log",
+      "sha256": "933dfc7f5737e78b756fccfca808fc0949f0c7785ffc0ef1d5b39cf786e2c1aa",
+      "bytes": 1331
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/0-MathArt-Lab.png",
+      "sha256": "5fadcbace4724f9d5b74a93391589b57267f2066daa8673c8476ef1d3446b1bf",
+      "bytes": 13266
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/1-MathArt-Lab.png",
+      "sha256": "672119f25024479b9c26ee02d1deaa91efe1c26d478ed9626c7547966d391be2",
+      "bytes": 2498
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/2-MathArt-Lab.mp4",
+      "sha256": "e2747290c45f8446285ee3e9e8936ad1af33631616136ea15fc9f6906fe11c2a",
+      "bytes": 8374
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/README.zh-CN.md",
+      "sha256": "31ae0f08fa4abb25a7a95d99d6acb2295c3924bfac850ffe02d0706779159b29",
+      "bytes": 1131
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/cold-different.png",
+      "sha256": "672119f25024479b9c26ee02d1deaa91efe1c26d478ed9626c7547966d391be2",
+      "bytes": 2498
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/cold-same.png",
+      "sha256": "5fadcbace4724f9d5b74a93391589b57267f2066daa8673c8476ef1d3446b1bf",
+      "bytes": 13266
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/cold-three-frames.mp4",
+      "sha256": "e2747290c45f8446285ee3e9e8936ad1af33631616136ea15fc9f6906fe11c2a",
+      "bytes": 8374
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/report.json",
+      "sha256": "0df59b6b35512e09fe71e7b869fa97922933054d51357b5070a708d0540c006f",
+      "bytes": 322396
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/ui.png",
+      "sha256": "2d5b3c56fdff00b18e0177b6dac5b92ce1eee8ce097f6c7b4dde02249b7ab060",
+      "bytes": 200981
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/video-frame-0.png",
+      "sha256": "b507c61025dbdd32e4cab07d2a6b42a1da86157c1750a3944f918e25ced00205",
+      "bytes": 2455
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/video-frame-1.png",
+      "sha256": "63e016390259270945e60531c9fe9036a9c2faa1b94711327005ca0e089a2aa4",
+      "bytes": 5421
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-2026-10-24T13-33-08.403Z/video-frame-2.png",
+      "sha256": "7d1a4e7d41343ac9983318a32a8c0c27dd4d88e4f10616458f636edcc179d9ac",
+      "bytes": 6557
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/ui-bootstrap.mjs",
+      "sha256": "338eb87e42cc17b83cc0a14b721b1c2d770409c3c937f7761d8e9981054de0d8",
+      "bytes": 5061
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/verify-cold.mjs",
+      "sha256": "e6e62cd9b29bb1f294e4af6828cb07189894b7356472cba900931f20f261254b",
+      "bytes": 9800
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/verify-production.mjs",
+      "sha256": "8495eab0434aa70d5bde26dc0fcf88d23cbfc22e7695e2581f10594162d01610",
+      "bytes": 7385
+    },
+    {
+      "path": ".cache/samila-native-cold-export-20261024/verify-ui.mjs",
+      "sha256": "378f8aa8d8e6b8df8584a394ad1d0c3bfd9dafcf3f16b565d4457d5e5e56fc1f",
+      "bytes": 18760
+    }
+  ],
+  "limitations": [
+    "No new original execution. Retained run5 covers full scene buffers only, paused time0, not window UI/PNG enhancement.",
+    "Original45 captured draws had pending GL1282 before uniform observation; subsequent checks zero. Origin/nonperturbation unknown.",
+    "Cold fixed-duration replay is distinct from original hot recording, still outstanding.",
+    "UI workload reduced; failure cleanup/capacity evidence comes from separate native or CPU boundaries, not every UI case.",
+    "Full family animation/general acceptance and Apple Silicon2.0 packaging remain."
+  ],
+  "reviewFixes": [
+    "Recording Escape now obeys working-close guard; no competing dialog can receive stale busy=false.",
+    "Status-bar geometry fixed at26px; actual prior busy27px induced 1px canvas oscillation and extra sampling.",
+    "Cold owner keeps normalized time/tape/history in shared existing replay loop; no alternate semantics parser."
+  ]
+}

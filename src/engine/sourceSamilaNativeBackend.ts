@@ -2,8 +2,9 @@ import {ensureSourceNativeLease} from './sourceNativeLease';
 import {exchangeSourceSamilaNative,type SourceNativeSamilaResponse,SourceNativeError} from './sourceNativeClient';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {SOURCE_FRAME_BUDGET} from './sourceDrawingFrame';
-import {prepareSourceSamilaNativeCreate,prepareSourceSamilaNativeDisplay,prepareSourceSamilaNativeProgram} from './sourceSamilaNativeProgram';
+import {prepareSourceSamilaNativeCreate,prepareSourceSamilaNativeDisplay,prepareSourceSamilaNativePresent,prepareSourceSamilaNativeProgram} from './sourceSamilaNativeProgram';
 import {sourceSamilaNativeProgramBytes,sourceSamilaNativeResidentBytes,type SourceSamilaNativeOperation} from './sourceSamilaNativeProtocol';
+import type {IteratedDensityAsyncStepResult,IteratedDensityAsyncPresentResult,IteratedDensityPreparedPresent} from './iteratedDensityAsyncBackend';
 import type {SourceSamilaAsyncBackend} from './sourceSamilaAsyncSession';
 import type {SourceSamilaPreparedDisplay,SourceSamilaDisplayBudget,SourceSamilaDisplayResult} from './sourceSamilaSession';
 
@@ -19,10 +20,10 @@ const aborted=(signal?:AbortSignal,cancelled?:()=>boolean)=>{if(signal?.aborted|
 export class SourceSamilaNativeBackend implements SourceSamilaAsyncBackend {
  private readonly generation=++generation;private sequence=0;
  private state?:State;private active?:AbortController;private retiring?:Promise<void>;
- private counters={creations:0,displays:0,requestBytes:0};
+ private counters={creations:0,displays:0,steps:0,presentations:0,requestBytes:0};
  private identity(){if(this.sequence===0xffffffff)throw new SourceNativeError('capacity','Samila 请求序号已耗尽');return{generation:this.generation,sequence:++this.sequence};}
  private async exchange(operation:SourceSamilaNativeOperation,width=1,height=1,signal?:AbortSignal,additionalBytes=0){
-  const reply=await exchangeSourceSamilaNative({...this.identity(),width,height,operation},{signal,retainedBytes:retainedBytes()-(operation.kind==='display'?(this.state?.pendingTargetBytes??0):0)+additionalBytes});this.counters.requestBytes+=reply.requestBytes;return reply;
+  const reply=await exchangeSourceSamilaNative({...this.identity(),width,height,operation},{signal,retainedBytes:retainedBytes()-(operation.kind==='display'||operation.kind==='step'?(this.state?.pendingTargetBytes??0):0)+additionalBytes});this.counters.requestBytes+=reply.requestBytes;return reply;
  }
  private checkIdentity(state:State,reply:SourceNativeSamilaResponse){
   if(state.identity&&(state.identity!==reply.rendererIdentity||state.context!==reply.contextSerial||state.session!==reply.sessionSerial))throw new SourceNativeError('state-lost','Samila 所属原生 context 已变化，不能重建为同一随机历史');
@@ -39,12 +40,17 @@ export class SourceSamilaNativeBackend implements SourceSamilaAsyncBackend {
   const peak=retainedBytes()+createBytes+width*height*84+65532*16+programBytes*2+additionalBytes+stateBytes;
   if(!Number.isSafeInteger(peak)||peak>SOURCE_FRAME_BUDGET)throw new SourceNativeError('capacity','Samila 原生显示和保留图像超过 256 MiB 工作预算');
  }
- async draw(prepared:SourceSamilaPreparedDisplay):Promise<SourceSamilaDisplayResult> {
+ async draw(prepared:SourceSamilaPreparedDisplay):Promise<SourceSamilaDisplayResult> {return this.accumulate(prepared,'display') as Promise<SourceSamilaDisplayResult>;}
+ async step(prepared:SourceSamilaPreparedDisplay):Promise<IteratedDensityAsyncStepResult> {return this.accumulate(prepared,'step');}
+ private async accumulate(prepared:SourceSamilaPreparedDisplay,kind:'display'|'step'):Promise<SourceSamilaDisplayResult|IteratedDensityAsyncStepResult> {
   if(this.active||this.retiring)throw new SourceNativeError('capacity','Samila 原生事务或清理尚未完成');
   if(this.state?.failed)throw new SourceNativeError('state-lost','Samila 原生会话已经失效');
   const controller=new AbortController();this.active=controller;const signal=controller.signal,{job,options,tone,view}=prepared;
+  // Cold replay cancels at its owner boundary. Never abort shared transport or
+  // discard an acknowledged checkpoint when only that export was cancelled.
+  const isCancelled=kind==='display'?options.isCancelled:undefined;
   try{
-   aborted(signal,options.isCancelled);await ensureSourceNativeLease(signal);aborted(signal,options.isCancelled);
+   aborted(signal,isCancelled);await ensureSourceNativeLease(signal);aborted(signal,isCancelled);
    const program=prepareSourceSamilaNativeProgram(job),paletteKey=JSON.stringify(job.palette);
    if(this.state&&this.state.programKey!==program.key)throw new SourceNativeError('input','Samila 程序变化必须先释放旧会话');
    if(!this.state){
@@ -55,17 +61,34 @@ export class SourceSamilaNativeBackend implements SourceSamilaAsyncBackend {
     this.state=state;resources.set(this,state);
     const response=await this.exchange(prepareSourceSamilaNativeCreate(job,state.resource),1,1,signal);this.checkIdentity(state,response);this.counters.creations++;
    }
-   const state=this.state;aborted(signal,options.isCancelled);
-   const operation=prepareSourceSamilaNativeDisplay(job,tone,view,{width:options.width,height:options.height,clearInk:options.clearInk||options.resetParticles,resource:state.resource,expectedIndex:state.index,paletteChanged:state.paletteKey!==paletteKey});
+   const state=this.state;aborted(signal,isCancelled);
+   const operation={...prepareSourceSamilaNativeDisplay(job,tone,view,{width:options.width,height:options.height,clearInk:options.clearInk||options.resetParticles,resource:state.resource,expectedIndex:state.index,paletteChanged:state.paletteKey!==paletteKey}),kind};
    // A lost response does not establish whether resize allocated its targets.
    // Keep the possible new generation as well as the old one until ACK/release.
    state.pendingTargetBytes=state.width!==options.width||state.height!==options.height?options.width*options.height*52:0;
-   const response=await this.exchange(operation,options.width,options.height,signal);this.checkIdentity(state,response);aborted(signal,options.isCancelled);
-   if(!response.pixels)throw new SourceNativeError('protocol','Samila display 缺少像素');
-   state.width=options.width;state.height=options.height;state.pendingTargetBytes=0;state.paletteKey=paletteKey;state.index=response.committedDisplays;this.counters.displays++;
-   return{facts:{bounds:{minX:-1,maxX:1,minY:-1,maxY:1},steps:response.steps,accepted:response.accepted,clipped:response.clipped,invalid:response.invalid,sampleInvalid:response.invalid},shown:{pixels:response.pixels,occupiedPixels:response.occupiedPixels,maxCount:response.maxCount,toneBackend:'native',warnings:[]},sourcePixelRenderer:{backend:'native',identity:response.rendererIdentity,generation:response.generation,sequence:response.sequence,samples:0}};
+   const response=await this.exchange(operation,options.width,options.height,signal);this.checkIdentity(state,response);
+   if(kind==='display'&&!response.pixels)throw new SourceNativeError('protocol','Samila display 缺少像素');
+   state.width=options.width;state.height=options.height;state.pendingTargetBytes=0;state.paletteKey=paletteKey;state.index=response.committedDisplays;this.counters[kind==='display'?'displays':'steps']++;aborted(signal,isCancelled);
+   const result={facts:{bounds:{minX:-1,maxX:1,minY:-1,maxY:1},steps:response.steps,accepted:response.accepted,clipped:response.clipped,invalid:response.invalid,sampleInvalid:response.invalid},sourcePixelRenderer:this.renderer(response)};
+   return kind==='step'?result:{...result,shown:this.shown(response)};
   }catch(error){if(this.state)this.state.failed=true;throw error;}
   finally{if(this.active===controller)this.active=undefined;}
+ }
+ private renderer(response:SourceNativeSamilaResponse){return{backend:'native' as const,identity:response.rendererIdentity,generation:response.generation,sequence:response.sequence,samples:0};}
+ private shown(response:SourceNativeSamilaResponse):SourceSamilaDisplayResult['shown'] {
+  if(!response.pixels)throw new SourceNativeError('protocol','Samila 呈现缺少像素');
+  return{pixels:response.pixels,occupiedPixels:response.occupiedPixels,maxCount:response.maxCount,toneBackend:'native',warnings:[]};
+ }
+ async present({tone,view,width,height}:IteratedDensityPreparedPresent):Promise<IteratedDensityAsyncPresentResult> {
+  if(this.active||this.retiring)throw new SourceNativeError('capacity','Samila 原生事务或清理尚未完成');
+  const state=this.state;if(!state||state.failed)throw new SourceNativeError('state-lost','Samila 原生墨迹不存在或已失效');
+  if(width!==state.width||height!==state.height||state.index===0)throw new SourceNativeError('input','Samila 呈现必须使用已完成累积的尺寸');
+  const controller=new AbortController();this.active=controller;
+  try{
+   const operation=prepareSourceSamilaNativePresent(tone,view,width,height,state.resource,state.index);
+   const response=await this.exchange(operation,width,height,controller.signal);this.checkIdentity(state,response);
+   const shown=this.shown(response);this.counters.presentations++;return{shown,sourcePixelRenderer:this.renderer(response)};
+  }catch(error){state.failed=true;throw error;}finally{if(this.active===controller)this.active=undefined;}
  }
  cancel(){this.active?.abort();}
  reset():Promise<void> {

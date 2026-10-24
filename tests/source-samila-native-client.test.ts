@@ -18,9 +18,10 @@ function requests(){
 // Hand-authored wire responses follow the retained 64-byte contract. Production
 // parsing/encoding and shader/LUT preparation remain under test; only fetch is fake.
 function response(request:SourceSamilaNativeRequest,change?:(body:Uint8Array,headers:Record<string,string>)=>void){
- const op=request.operation,display=op.kind==='display',body=new Uint8Array(64+(display?request.width*request.height*4:0)),v=new DataView(body.buffer),word=(at:number,value:number)=>v.setUint32(at,value,true);
- word(0,1);word(4,op.kind==='create'?1:display?2:3);body.set(Uint8Array.from(op.resource.match(/../g)!,part=>parseInt(part,16)),8);word(24,display?op.expectedIndex+1:0);word(28,op.kind==='release'?2:0);
- if(display){word(32,op.baseBatch*op.passes);word(36,op.baseBatch*op.passes);word(48,1);v.setFloat32(52,.5,true);for(let i=64;i<body.length;i++)body[i]=(i-64)*7;}
+ const op=request.operation,display=op.kind==='display'||op.kind==='present',accumulate=op.kind==='display'||op.kind==='step',body=new Uint8Array(64+(display?request.width*request.height*4:0)),v=new DataView(body.buffer),word=(at:number,value:number)=>v.setUint32(at,value,true);
+ word(0,1);word(4,{create:1,display:2,release:3,present:4,step:5}[op.kind]);body.set(Uint8Array.from(op.resource.match(/../g)!,part=>parseInt(part,16)),8);word(24,accumulate?op.expectedIndex+1:op.kind==='present'?op.expectedIndex:0);word(28,op.kind==='release'?2:0);
+ if(accumulate){word(32,op.baseBatch*op.passes);word(36,op.baseBatch*op.passes);}
+ if(display){word(48,1);v.setFloat32(52,.5,true);for(let i=64;i<body.length;i++)body[i]=(i-64)*7;}
  const headers:Record<string,string>={'content-type':'application/octet-stream','content-length':String(body.length),'x-source-generation':String(request.generation),'x-source-sequence':String(request.sequence),'x-source-width':String(request.width),'x-source-height':String(request.height),'x-source-renderer':'a'.repeat(64),'x-source-format':'samila-v1','x-source-row-order':display?'bottom-up':'none','x-source-context':'9','x-source-session':'4'};
  change?.(body,headers);return new Response(body,{headers});
 }
@@ -35,6 +36,14 @@ describe('Samila v5 production transport contract (CPU only)',()=>{
   expect(output).toMatchObject({resource,committedDisplays:1,steps:13,accepted:13,contextSerial:9,sessionSerial:4,generation:2,sequence:4});
   const input=fetch.mock.calls[0] as unknown as [string,RequestInit];expect(input[0]).toBe('/api/source-renderer/frames');expect(input[1]).toMatchObject({method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store'});
   const packet=input[1].body as Uint8Array;expect(new DataView(packet.buffer,packet.byteOffset).getUint32(4,true)).toBe(5);expect(packet.byteLength).toBe(output.requestBytes);
+ });
+ it('keeps step acknowledgements pixel-free and read-only presentation at the same checkpoint',async()=>{
+  const {display}=requests();if(display.operation.kind!=='display')throw Error('fixture');
+  const step:SourceSamilaNativeRequest={...display,operation:{...display.operation,kind:'step'}};
+  vi.stubGlobal('fetch',vi.fn(async()=>response(step)));expect(await exchangeSourceSamilaNative(step)).toMatchObject({committedDisplays:1,steps:13,accepted:13,occupiedPixels:0,maxCount:0});expect(await exchangeSourceSamilaNative(step)).not.toHaveProperty('pixels');
+  const present:SourceSamilaNativeRequest={...display,operation:{kind:'present',resource,expectedIndex:1,present:display.operation.present}};
+  vi.stubGlobal('fetch',vi.fn(async()=>response(present)));const shown=await exchangeSourceSamilaNative(present);expect(shown).toMatchObject({committedDisplays:1,steps:0,occupiedPixels:1});expect(shown.pixels).toHaveLength(24);
+  for(const [request,offset,value]of [[step,48,1],[step,24,0],[present,32,1],[present,24,2]] as const){vi.stubGlobal('fetch',vi.fn(async()=>response(request,body=>new DataView(body.buffer).setUint32(offset,value,true))));await expect(exchangeSourceSamilaNative(request)).rejects.toMatchObject({kind:'protocol'});}
  });
  it.each(['resource','checkpoint','generation','sequence','context','session','family','kind','disposition','reserved','counts','ink','nan','row-order'] as const)('rejects a forged or malformed %s response',async kind=>{
   const {display}=requests();vi.stubGlobal('fetch',vi.fn(async()=>response(display,(body,headers)=>{

@@ -1,5 +1,7 @@
 # Samila 原生预览接入与生命周期验证
 
+后续进度：独立冷 PNG／视频已在[冷导出验收](source-samila-native-cold-export-validation.zh-CN.md)中接通并通过真实 App 测试。下文保留本轮预览接入时的范围与记录。
+
 2026-10-24：Samila 的原生绘制已接入生产生成器和热会话。五个未修改的原版预设、各三次暂停显示，共 **15 张完整 500×600 场景缓冲，RGBA 逐字节一致**。热改、暂停截图、恢复主预览、多会话隔离和取消也通过实际原生验证。整体仍处于 **M3**；冷重放导出、热录制、完整动画对照和 2.0 应用打包尚未完成。
 
 这是开发分支的可选原生后端，选择条件为 `VITE_SOURCE_RENDERER=native`，本机服务需配置已有的 `MATHART_SOURCE_RENDERER_BACKEND`。普通 WebGL 默认入口和已安装的 1.0 包尚未切换。机器证据与文件摘要见[证据索引](../tests/fixtures/source-samila-native-integration/20261024.json)。

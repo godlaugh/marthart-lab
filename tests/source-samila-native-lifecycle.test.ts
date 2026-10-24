@@ -39,7 +39,7 @@ function corruptUniform(bytes:Buffer,name:string,kind:number,write:(bytes:Buffer
 }
 async function owner(){
  const service=await createSourceRendererService({...backend,timeoutMs:15000});let sequence=0;
- const request=(operation:SourceSamilaNativeOperation,w=operation.kind==='display'?width:1,h=operation.kind==='display'?height:1):SourceSamilaNativeRequest=>({generation:1,sequence:++sequence,width:w,height:h,operation});
+ const request=(operation:SourceSamilaNativeOperation,w=['display','step','present'].includes(operation.kind)?width:1,h=['display','step','present'].includes(operation.kind)?height:1):SourceSamilaNativeRequest=>({generation:1,sequence:++sequence,width:w,height:h,operation});
  return{service,
   async send(operation:SourceSamilaNativeOperation,w?:number,h?:number,options:{signal?:AbortSignal;mutate?:(bytes:Buffer)=>Buffer}={}){const input=request(operation,w,h),bytes=packet(input),result=await service.render(options.mutate?options.mutate(bytes):bytes,{signal:options.signal});return{result,input,...(result.ok?{decoded:decodeSourceSamilaNativeResponse(result.value.pixels,input)}:{})};},
   async draw(operation:SourceSamilaNativeOperation,w?:number,h?:number){const response=await this.send(operation,w,h);expect(response.result.ok,JSON.stringify(response.result.error)).toBe(true);return{...response,decoded:response.decoded!};},
@@ -58,6 +58,21 @@ describe.skipIf(process.platform!=='darwin')('real retained Samila CGL lifecycle
    expect(image((await o.draw(display())).decoded)).toEqual(expected[0]);expect(image((await o.draw(display(resourceB,0,otherSeeds[0]))).decoded)).toEqual(other[0]);
    await o.generic();expect(image((await o.draw(display(resourceA,1,seeds[1]))).decoded)).toEqual(expected[1]);await o.generic();expect(image((await o.draw(display(resourceB,1,otherSeeds[1]))).decoded)).toEqual(other[1]);
    expect(expected[0].occupiedPixels).toBeGreaterThan(0);expect(expected[0].maxCount).toBeGreaterThan(0);expect(o.service.sessionStarts).toBe(1);expect(o.service.processCount).toBe(1);
+  }finally{await o.close();}
+ },30000);
+
+ it('separates accumulation from read-only presentation without changing the full image or either history',async()=>{
+  const expected=await reference(),o=await owner();try{
+   await o.draw(create());await o.draw(create(resourceB));await o.draw(display(resourceB));
+   for(let i=0;i<seeds.length;i++){
+    const op=display(resourceA,i,seeds[i]),stepped=(await o.draw({...op,kind:'step'})).decoded;
+    expect(stepped).not.toHaveProperty('pixels');expect(stepped.committedDisplays).toBe(i+1);expect(stepped.steps).toBe(expected[i].steps);expect(stepped.accepted).toBe(expected[i].accepted);
+    const present:SourceSamilaNativeOperation={kind:'present',resource:resourceA,expectedIndex:i+1,present:op.present};
+    const shown=(await o.draw(present)).decoded,again=(await o.draw(present)).decoded;expect(shown.committedDisplays).toBe(i+1);expect(shown.steps).toBe(0);expect(again).toEqual(shown);
+    expect(Buffer.from(shown.pixels!)).toEqual(expected[i].pixels);expect(shown.occupiedPixels).toBe(expected[i].occupiedPixels);expect(shown.maxCount).toBe(expected[i].maxCount);
+    expect((await o.send({...present,expectedIndex:i})).result).toMatchObject({ok:false,error:{kind:'input'}});
+   }
+   await o.draw(release());expect(image((await o.draw(display(resourceB,1,seeds[1]))).decoded)).toEqual(expected[1]);expect(o.service.sessionStarts).toBe(1);
   }finally{await o.close();}
  },30000);
 

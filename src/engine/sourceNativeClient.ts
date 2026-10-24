@@ -29,7 +29,7 @@ type NativeOptions={signal?:AbortSignal;retainedBytes?:number};
  * it. The loopback gateway separately coordinates other windows/consumers. */
 let active=false;
 async function exchange(frame:SourceDrawingFrame|SourceSamilaNativeRequest,options:NativeOptions):Promise<NativeResponse>{
- const samila='operation' in frame,control=samila?frame.operation.kind!=='display':!!frame.bouncing&&frame.bouncing.kind!=='draw';
+ const samila='operation' in frame,control=samila?!['display','present'].includes(frame.operation.kind):!!frame.bouncing&&frame.bouncing.kind!=='draw';
  check(options.signal);if(active)throw new SourceNativeError('capacity','当前页面已有原生帧请求');active=true;
  const controller=new AbortController(),cancel=()=>controller.abort(options.signal?.reason),timer=setTimeout(()=>controller.abort(new SourceNativeError('timeout','原生帧传输超时')),20000);
  options.signal?.addEventListener('abort',cancel,{once:true});
