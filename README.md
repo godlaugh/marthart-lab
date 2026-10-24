@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+2026-10-24 隐式曲面已接通冷配置、热改色和录制重置的后端控制；真实 Worker 与录制帧验证通过，生成器界面接入仍待继续。见[隐式色板与录制状态验收](docs/source-implicit-palette-controls.zh-CN.md)。
+
 2026-10-24 最新弹跳进展：四个内置预设已取得实际原版 JVM 的完整状态与艺术画面对照；200 万粒子预设的完整 10 秒模拟、600 帧艺术画面及使用相同原版完成帧的编码结果均通过。更早调查中的失败与限制保留在各历史记录中，当前剩余范围见[弹跳验收清单](docs/source-bouncing-acceptance.zh-CN.md)和[完整录像报告](docs/source-bouncing-full-recording.zh-CN.md)。整类与整版验收仍在进行。
 
 Perlin GPU 已修正原版各向异性纹理过滤。相同时间和尺寸下，实际 PNG 导出的固定区域由 29,235 个差异像素降至 0；整图和动画仍待验收。见[Perlin 原生参考验证](docs/source-perlin-native-reference-validation.zh-CN.md)。隐式曲面的剩余 28 个原始差异像素已缩小到填充与线条组合时的深度／栅格交互，尚无可集成修复，见[隐式栅格差异定位](docs/source-implicit-raster-residual-validation.zh-CN.md)。

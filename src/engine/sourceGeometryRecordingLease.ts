@@ -1,4 +1,5 @@
 import {sameSourceRecordingValue as same} from './sourceRecordingValue';
+import {implicitPaletteControlReceiptMatches,validateImplicitPaletteControlReceipt,type ImplicitPaletteControlReceipt} from './implicitPaletteControl';
 import {validateSourceImplicitLiveContext} from './sourceImplicitLive';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {validSourceImplicitOutput,implicitCameraFrame,assertSourceImplicitRecordingFrame,type ImplicitCameraFrame} from './sourceImplicitResponse';
@@ -28,25 +29,47 @@ export class SourceGeometryRecordingLease {
  readonly size:ReturnType<typeof sourceRecordingSize>;readonly options:SourceRecordingOptions;
  readonly primary:GenerationInput;readonly sceneId:string;readonly constructions:number;
  clock?:SourceQueueRecordingClock;scene?:SceneDocument;
- private readonly implicit:boolean;private readonly anchor?:SceneDocument;private lastImplicit?:ImplicitCameraFrame;private implicitSessionId?:string;
+ private readonly implicit:boolean;private readonly controlReceipt?:{sessionId:string}&ImplicitPaletteControlReceipt;private readonly anchor?:SceneDocument;private lastImplicit?:ImplicitCameraFrame;private implicitSessionId?:string;
  private formulas?:FormulaPresentation;private pending?:Geometry;private last?:SourceSurfaceLiveFacts;
  private attempt?:{index:number;rate:number};private next=1;private warmupDelivered=false;
  private renderer?:GeometryRecordingRenderer;private stopping=false;private drawing=false;
  constructor(scene:SceneDocument,input:GenerationInput,output:Geometry,options:SourceRecordingOptions,private readonly signal?:AbortSignal){
   this.implicit=usesSourceImplicitCpuMesh(scene);this.anchor=this.implicit?structuredClone(scene):undefined;
   if((this.implicit?!validSourceImplicitOutput(output,input,true):!validSourceSurfacePresentation(output,input)||!usesSourceSurfaceGeometry(scene))||output.sourceCameraFrame?.viewport.target!=='primary')throw Error('几何录制需要已完成的源主预览');
+  if(this.implicit&&input.implicitControls){
+   const {sessionId,...request}=input.implicitControls,receipt=output.implicitControls;
+   if(!receipt||receipt.sessionId!==sessionId)throw Error('隐式录制缺少已完成的色板控制身份');
+   const {sessionId:_,...facts}=receipt;
+   if(!implicitPaletteControlReceiptMatches(facts,request,undefined,{allowRecordingResets:true})||!Number.isSafeInteger(facts.resetRevision+1))throw Error('隐式录制色板控制回执无效');
+   this.controlReceipt=Object.freeze({sessionId,...facts,resetRevision:facts.resetRevision+1});
+  }
   const actualFrameRate=rate(options.actualFrameRate);
   if(!Number.isSafeInteger(options.simulationFps)||options.simulationFps<1||options.simulationFps>120)throw Error('曲面录制模拟帧率必须为 1–120 的整数');
   this.options={...options,actualFrameRate};this.size=sourceRecordingSize(options,input.sourcePointPixelDensity??1);
   this.primary=snapshotGenerationInput(input);this.sceneId=scene.id;this.constructions=this.implicit?0:output.surfaceLive!.constructions+1;
  }
  private context(input:GenerationInput):boolean {
-  if(this.implicit){if(!input)return false;const {time:_,implicitLive:__,...a}=input,{time:___,implicitLive:____,...b}=this.primary;return same(a,b);}
+  if(this.implicit){
+   if(!input)return false;
+   const {time:_,implicitLive:__,implicitControls:controls,...a}=input,{time:___,implicitLive:____,implicitControls:primaryControls,...b}=this.primary;
+   if(this.controlReceipt){
+    if(!controls||controls.sessionId!==this.controlReceipt.sessionId||controls.acknowledgedRevision!==this.controlReceipt.revision||!Array.isArray(controls.commands)||controls.commands.length!==0||Object.keys(controls).some(key=>!['sessionId','acknowledgedRevision','commands'].includes(key)))return false;
+   }else if(!same(controls,primaryControls))return false;
+   return same(a,b);
+  }
   const a=input?.surfaceLive,b=this.primary.surfaceLive;
   return !!a&&!!b&&a.sessionId===b.sessionId&&a.revision===b.revision&&a.clock?.paused===false&&a.startAt===undefined&&a.configuration===undefined&&input.width===this.primary.width&&input.height===this.primary.height&&input.quality===this.primary.quality&&input.sourcePointPixelDensity===this.primary.sourcePointPixelDensity&&same(input.sourceViewport,this.primary.sourceViewport);
  }
+ private controls(output:SceneOutput):void {
+  if(!this.controlReceipt)return;
+  const receipt=output.implicitControls;
+  if(!receipt)throw Error('隐式录制缺少色板控制回执');
+  const {sessionId,...facts}=receipt;validateImplicitPaletteControlReceipt(facts);
+  if(sessionId!==this.controlReceipt.sessionId||!same(receipt,this.controlReceipt))throw Error('隐式录制色板控制回执改变了已确认状态');
+ }
  private frame(output:SceneOutput,index:number,actualFrameRate:number,clock=this.clock):asserts output is Geometry {
   if(this.implicit){
+   this.controls(output);
    const size=this.size,input:GenerationInput={...this.primary,width:size.width,height:size.height,quality:'export',sourceViewport:{...this.primary.sourceViewport!,logicalWidth:size.width,logicalHeight:size.height,referenceLogicalHeight:this.primary.sourceViewport!.logicalHeight,target:'offscreen'}};
    if(!clock||!validSourceQueueRecordingClock(clock,this.options.simulationFps)||!validSourceImplicitOutput(output,input))throw Error('隐式录制响应身份或尺寸无效');
    assertSourceImplicitRecordingFrame(output,clock,index);
@@ -63,12 +86,12 @@ export class SourceGeometryRecordingLease {
  }
  acceptStart(start:SourceRecordingWireStart):void {
   if(this.drawing||this.clock)throw Error('曲面录制重复起始响应');
-  if(start?.scene?.formulas?.layout==='source-surface-centered-v1'&&start.warmup?.formulaPresentation?.layout!=='source-surface-centered-v1')throw Error('曲面录制公式布局无效');
-  if(this.implicit){if(!same(start?.scene,this.anchor)||!this.context(start.context)||start.context.time!==this.primary.time)throw Error('隐式录制起始配置或主预览身份无效');validateSourceImplicitLiveContext(start.context.implicitLive!);if(start.context.implicitLive!.clock.paused||!Object.is(start.context.implicitLive!.actualFrameRate,this.options.actualFrameRate))throw Error('隐式录制继续播放状态无效');this.implicitSessionId=start.context.implicitLive!.sessionId;}
+  if(!this.controlReceipt&&start?.scene?.formulas?.layout==='source-surface-centered-v1'&&start.warmup?.formulaPresentation?.layout!=='source-surface-centered-v1')throw Error('曲面录制公式布局无效');
+  if(this.implicit){if(!same(start?.scene,this.anchor)||!this.context(start.context)||start.context.time!==this.primary.time)throw Error('隐式录制起始配置或主预览身份无效');validateSourceImplicitLiveContext(start.context.implicitLive!);if(start.context.implicitLive!.clock.paused||!Object.is(start.context.implicitLive!.actualFrameRate,this.options.actualFrameRate))throw Error('隐式录制继续播放状态无效');}
   else if(!start?.scene||start.scene.id!==this.sceneId||!usesSourceSurfaceGeometry(start.scene)||!this.context(start.context)||start.context.time!==0||!Object.is(rate(start.context.surfaceLive!.actualFrameRate),this.options.actualFrameRate))throw Error('曲面录制起始配置或主预览身份无效');
   if(!validSourceQueueRecordingClock(start.clock,this.options.simulationFps))throw Error('曲面录制完成规划无效');
   this.frame(start.warmup,0,this.options.actualFrameRate!,start.clock);
-  this.clock=structuredClone(start.clock);this.scene=structuredClone(start.scene);this.pending=start.warmup;this.formulas=structuredClone(annotations(start.warmup.formulaPresentation));if(this.implicit)this.lastImplicit=structuredClone(implicitCameraFrame(start.warmup));else this.last=structuredClone(start.warmup.surfaceLive!);
+  this.clock=structuredClone(start.clock);this.scene=structuredClone(start.scene);this.pending=start.warmup;this.formulas=structuredClone(annotations(start.warmup.formulaPresentation));if(this.implicit)this.implicitSessionId=start.context.implicitLive!.sessionId;if(this.implicit)this.lastImplicit=structuredClone(implicitCameraFrame(start.warmup));else this.last=structuredClone(start.warmup.surfaceLive!);
  }
  requestFrame(index:number,actualFrameRate:number|undefined):{cached:boolean;actualFrameRate:number} {
   if(this.stopping||!this.warmupDelivered||!this.clock||index!==this.next||index>this.clock.lastDisplayFrame)throw Error('曲面录制必须连续请求，未交付 warmup 的会话只能停止');
@@ -99,6 +122,8 @@ export class SourceGeometryRecordingLease {
  acceptStop(stop:SourceRecordingStop):void {
   const output=stop?.preview;
   if(this.implicit){
+   if(!output)throw Error('隐式录制缺少停止预览');
+   this.controls(output);
    if(!same(stop?.scene,this.anchor)||!this.context(stop.context)||!validSourceImplicitOutput(output,stop.context)||output.implicitRecording!==undefined)throw Error('隐式录制停止响应身份无效');
    validateSourceImplicitLiveContext(stop.context.implicitLive!);
    if(stop.context.implicitLive!.clock.paused||this.implicitSessionId&&stop.context.implicitLive!.sessionId!==this.implicitSessionId)throw Error('隐式录制停止继续播放身份无效');

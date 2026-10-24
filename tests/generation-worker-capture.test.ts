@@ -3,7 +3,7 @@ import type {GenerationRequest,GenerationResponse} from '../src/engine/generatio
 import type {GenerationInput,SceneDocument,SceneOutput} from '../src/types';
 import {sourcePausedImageBytes} from '../src/engine/sourcePausedImage';
 import {prepareSourcePausedUpscale} from '../src/engine/sourcePausedUpscale';
-const owners=vi.hoisted(()=>({fractal:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},map:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},symmetry:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},samila:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()}}));
+const owners=vi.hoisted(()=>({fractal:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},map:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},symmetry:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()},generate:vi.fn(),reset:vi.fn(),perlin:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn()},roots:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),completedHasFormulas:vi.fn()},samila:{capturePaused:vi.fn(),matchesCompletedPrimary:vi.fn(),setPaused:vi.fn()}}));
 vi.mock('../src/engine/temporal',()=>({generateScene:owners.generate,TemporalGenerationSession:class{
  sourceFractal=owners.fractal;sourceMap=owners.map;sourceSymmetry=owners.symmetry;sourcePerlin=owners.perlin;rootsNative=owners.roots;sourceSamila=owners.samila;reset=owners.reset;
 }}));
@@ -18,7 +18,7 @@ function send(request:GenerationRequest){worker.onmessage!({data:request} as Mes
 function generate(input=context){return send({operation:'generate',id:1,sessionId:7,scene,context:input});}
 beforeEach(async()=>{
  vi.resetModules();vi.clearAllMocks();owners.generate.mockReturnValue(raster(32,24));
- owners.perlin.matchesCompletedPrimary.mockReturnValue(true);owners.roots.matchesCompletedPrimary.mockReturnValue(false);
+ owners.perlin.matchesCompletedPrimary.mockReturnValue(true);owners.roots.matchesCompletedPrimary.mockReturnValue(false);owners.roots.completedHasFormulas.mockReturnValue(false);
  owners.perlin.capturePaused.mockReturnValue({capture:raster(4,6),preview:raster(32,24)});
  owners.samila.matchesCompletedPrimary.mockReturnValue(true);owners.samila.capturePaused.mockReturnValue({capture:raster(4,6),preview:raster(32,24)});
  owners.fractal.matchesCompletedPrimary.mockReturnValue(true);owners.fractal.capturePaused.mockReturnValue({capture:raster(3,5),preview:raster(32,24)});
@@ -49,7 +49,7 @@ describe('paused capture worker ownership and routing',()=>{
  });
  it('preserves Roots capture dimensions, public metadata and its separate owner',()=>{
   generate();const response=send({operation:'roots-paused-capture',id:2,sessionId:7,sourceId:1,size:{width:3,height:5},scale:1});
-  expect(owners.perlin.capturePaused).not.toHaveBeenCalled();expect(owners.roots.capturePaused).toHaveBeenCalledOnce();
+  expect(owners.perlin.capturePaused).not.toHaveBeenCalled();expect(owners.roots.capturePaused).toHaveBeenCalledOnce();expect(owners.roots.completedHasFormulas).toHaveBeenCalledOnce();
   if(response.operation!=='roots-paused-capture'||!('result' in response))throw Error('capture response');
   expect(response.result.capture).toMatchObject({width:3,height:5,rootsPausedImage:{baseSize:[3,5],scale:1}});expect(response.result.capture.sourcePausedImage).toBeUndefined();
  });

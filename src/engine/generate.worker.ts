@@ -278,7 +278,7 @@ self.onmessage = (
       return;
     }
     const { context } = event.data;
-    generationSource=context.fractalLive||context.surfaceLive||context.rootsLive?.controls?completed:undefined;
+    generationSource=context.fractalLive||context.surfaceLive||context.rootsLive?.controls||context.implicitControls?completed:undefined;
     completed=undefined;
     const executionContext = { ...context, onStatus: event.data.wantsStatus ? status => send({operation:'generate-status',id,status}) : undefined, onProgress: output => {
       output.dimension ??= definition(scene.kind).dimension;
@@ -287,8 +287,8 @@ self.onmessage = (
     const output = generateScene(scene, executionContext, temporalSession);
     output.dimension ??= definition(scene.kind).dimension;
     output.stats.elapsedMs = performance.now() - start;
-    if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary'&&!context.implicitLive)temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
-    completed={id,scene,context:context.implicitLive?executionContext:context};
+    if(usesSourceImplicitCpuMesh(scene)){if(output.type!=='geometry')throw Error('隐式主预览缺少几何');if(context.sourceViewport?.target==='primary'&&!context.implicitLive&&!context.implicitControls)temporalSession.sourceImplicit.admitPrimary(scene,context,output);}
+    completed={id,scene,context:context.implicitLive||context.implicitControls?executionContext:context};
     send({ operation: 'generate', id, output }, outputBuffers(output));
   } catch (error) {
     const message=error instanceof Error?error.message:String(error);
@@ -320,6 +320,10 @@ self.onmessage = (
       const retained=owner===sessionId&&temporalSession.sourceSurface.matchesCompletedPrimary(source.scene,source.context);
       completed=retained?source:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:source.id}:{})});
+    }else if(operation==='generate'&&generationSource?.context.implicitControls){
+      const retained=owner===sessionId&&temporalSession.sourceImplicit.matchesCompletedPrimary(generationSource.scene,generationSource.context);
+      completed=retained?generationSource:undefined;
+      send({id,operation,error:message,...(retained?{retainedSourceId:generationSource.id}:{})});
     }else if(operation==='generate'&&generationSource?.context.rootsLive?.controls){
       const retained=owner===sessionId&&temporalSession.rootsNative.matchesCompletedPrimary(generationSource.scene,generationSource.context);
       completed=retained?generationSource:undefined;

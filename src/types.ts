@@ -252,6 +252,9 @@ export interface SceneDocument {
    * switching to local keeps this configuration available for restoration. */
   fractalSourceColor?: FractalSourceColorConfiguration;
   rootsSourcePalette?: RootsSourcePalette;
+  /** Raw source colors; cold Apply retains ARGB and hot commands use the
+   * separate runtime parser without changing this authored payload. */
+  implicitSourcePalette?: {colors:string[]};
   surfaceSourcePalette?: SourceSurfacePalette;
   /** Canonical source mesh settings, independent of local mesh controls. */
   surfaceSource?: SourceSurfaceMeshConfiguration;
@@ -345,6 +348,7 @@ export interface Preset {
   document?: Omit<SceneDocument, "id" | "name" | "description" | "kind" | "favorite" | "evaluatedCamera" | "evaluatedRootsCamera" | "evaluatedDomainGradient" | "evaluatedDomainScene" | "evaluatedSpirographRotationRadians" | "evaluatedSpirographFrame" | "runtimeSamilaViewport">;
 }
 export interface GeometryOutput {
+  implicitControls?: {sessionId:string}&import('./engine/implicitPaletteControl').ImplicitPaletteControlReceipt;
   implicitLive?:import('./engine/sourceImplicitLive').SourceImplicitLiveFacts;
   sourceImplicitParameters?:{model:'implicit-registry-1.7.8';values:Record<string,number>};
   implicitRecording?:import('./engine/sourceImplicitRecording').SourceImplicitRecordingFrame;
@@ -432,6 +436,7 @@ export interface RootsProgress {
   complete:boolean;
 }
 export interface RasterOutput {
+  implicitControls?: {sessionId:string}&import('./engine/implicitPaletteControl').ImplicitPaletteControlReceipt;
   /** Actual pixel producer for a geometry capture; absent for older outputs. */
   sourcePixelRenderer?:{backend:'webgl'}|{backend:'native';identity:string;generation:number;sequence:number;samples:number};
   rootsLive?:import('./engine/rootsLive').RootsLiveFacts;
@@ -525,6 +530,9 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
 };
 export type GenerationStatus = {kind:'roots';attemptedSamples:number;targetSamples:number;totalSamples:number};
 export interface GenerateContext {
+  implicitControls?: {sessionId:string}&import('./engine/implicitPaletteControl').ImplicitPaletteControls;
+  /** Producer-owned parsed palette; excluded from the public Worker input. */
+  implicitPalettePrepared?: import('./engine/implicitPaletteControl').ImplicitPaletteFacts;
   domainTarget?:import('./engine/domainRasterTarget').DomainTargetRequest;
   time: number;
   sourceBouncingFrame?:SourceBouncingCheckpoint;
@@ -575,7 +583,7 @@ export interface GenerateContext {
   /** Lightweight completed-work facts; no raster allocation or transfer. */
   onStatus?: (status: GenerationStatus) => void;
 }
-export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'implicitLive'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'|'rootsPixelDensity'>;
+export type GenerationInput = Pick<GenerateContext,'time'|'quality'|'width'|'height'|'sourceBouncingFrame'|'sourceBouncingView'|'spirographFrame'|'rootsViewport'|'sourceViewport'|'sourcePointPixelDensity'|'samilaPrimaryPixelHeight'|'sourceMapToneReference'|'sourceSymmetryToneReference'|'perlinLive'|'samilaLive'|'mapLive'|'symmetryLive'|'fractalLive'|'domainLive'|'implicitLive'|'implicitControls'|'surfaceLive'|'domainTarget'|'fractalPixelDensity'|'sourcePerlinViewport'|'fractalViewport'|'fractalRecording'|'rootsSessionId'|'rootsLive'|'rootsPixelDensity'>;
 export interface SceneDefinition {
   kind: SceneKind;
   name: string;

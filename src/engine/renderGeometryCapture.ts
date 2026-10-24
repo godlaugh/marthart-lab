@@ -24,7 +24,7 @@ export async function renderGeometryCapture(prepared:SourceGeometryCapturePrepar
   check();
   // FormulaPresentation owns any transition deferred until after its labels.
   // The shared encoder finishes composition before enhancement/enlargement.
-  return{preview:prepared.preview,capture:{type:'raster',width,height,pixels,sourcePixelRenderer,stats:prepared.capture.stats,formulaPresentation:validateFormulaPresentation(prepared.capture.formulaPresentation),sourceCameraFrame:prepared.capture.sourceCameraFrame,sourceImplicitParameters:prepared.capture.sourceImplicitParameters,sourceCurrentImage:{model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[size.width,size.height],logicalSize:[plan.base.logicalWidth,plan.base.logicalHeight],pixelDensity:plan.base.density,baseSize:[width,height],scale}}};
+  return{preview:prepared.preview,capture:{type:'raster',width,height,pixels,sourcePixelRenderer,stats:prepared.capture.stats,formulaPresentation:validateFormulaPresentation(prepared.capture.formulaPresentation),sourceCameraFrame:prepared.capture.sourceCameraFrame,sourceImplicitParameters:prepared.capture.sourceImplicitParameters,implicitControls:prepared.capture.implicitControls,sourceCurrentImage:{model:'local-current-numerical-snapshot',stage:'base-before-formulas',requestedSize:[size.width,size.height],logicalSize:[plan.base.logicalWidth,plan.base.logicalHeight],pixelDensity:plan.base.density,baseSize:[width,height],scale}}};
  }catch(error){failure=error;throw error;}
  finally{try{resources.dispose();}catch(cleanup){if(failure)throw new AggregateError([failure,cleanup],'几何场景截图失败且绘图资源仍待清理');throw cleanup;}}
 }

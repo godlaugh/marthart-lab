@@ -1,3 +1,4 @@
+import {validateImplicitPaletteControlReceipt,type ImplicitPaletteControlReceipt} from './implicitPaletteControl';
 import {implicitCameraFrame} from './sourceImplicitResponse';
 import {validSourceQueueRecordingClock} from './sourceRecordingClock';
 import {assertRootsLiveRecordingFrame} from './sourceRootsRecordingLease';
@@ -17,7 +18,7 @@ import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
 import {validateRootsControlReceipt,type RootsControlReceipt} from './rootsControl';
 import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCaptureResult,PerlinPausedCaptureSize,PausedCaptureSize,PausedCaptureResult,SourceRecordingOptions,SourceRecordingHandle,SourceRecordingStart,SourceRecordingStop,SourceRecordingRaster} from './generationProtocol';
-import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError,RootsLiveGenerationError} from './generationProtocol';
+import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError,RootsLiveGenerationError,ImplicitControlGenerationError} from './generationProtocol';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
@@ -113,13 +114,15 @@ export class GenerationQueue {
   private recordingOwner?:RecordingOwner;
   private playbackOwner?:PlaybackOwner;
   private navigationOwner?:{request:Request;events:((output:SceneOutput)=>Promise<SceneOutput>)[]};
-  constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void;rootsControlAcknowledged?:(sessionId:string,receipt:RootsControlReceipt)=>void}){
+  constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void;rootsControlAcknowledged?:(sessionId:string,receipt:RootsControlReceipt)=>void;implicitControlAcknowledged?:(sessionId:string,receipt:ImplicitPaletteControlReceipt)=>void}){
     if(retiredQueues.size)void retryRetiredGenerationQueueCleanup().catch(error=>{if(!this.disposed)this.callbacks.error(error);});
   }
   request(scene:SceneDocument,context:Context,delayMs=0,intent?:'metadata',parameterWrites?:readonly (readonly [string,number])[]){
     if(this.disposed)return;
     const previous=this.latest?.scene,sceneChanged=previous!==scene;
     const sameIterated=!!previous&&previous.id===scene.id&&previous.kind===scene.kind&&retainsIteratedCompiler(previous)&&retainsIteratedCompiler(scene);
+    const sameImplicit=scene.kind==='implicit'&&previous?.kind==='implicit'&&!!context.implicitControls&&context.implicitControls.sessionId===this.latest?.context.implicitControls?.sessionId;
+    const implicitIdentityChanged=!!this.latest?.context.implicitControls&&!sameImplicit;
     const sameDomain=previous?.kind==='domain'&&scene.kind==='domain'&&previous.id===scene.id;
     const sameSourceBouncing=!!previous&&usesSourceBouncing(previous)&&usesSourceBouncing(scene)&&previous.id===scene.id;
     const sameSourcePerlin=!!previous&&usesSourcePerlin(previous)&&usesSourcePerlin(scene)&&previous.id===scene.id;
@@ -143,7 +146,7 @@ export class GenerationQueue {
     // A recording leases this exact worker, including while begin is pending.
     // Keep only the newest editor request without cancelling that lease.
     if(this.recordingOwner){this.callbacks.busy(true);this.retryRecordingInBackground();return;}
-    if((sceneChanged&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing&&!sameSourcePerlin&&!sameIterated&&!sameLive)||nativeIdentityChanged||liveIdentityChanged){
+    if((sceneChanged&&!sameImplicit&&!sameDomain&&!sameNativeRoots&&!sameSourceBouncing&&!sameSourcePerlin&&!sameIterated&&!sameLive)||nativeIdentityChanged||implicitIdentityChanged||liveIdentityChanged&&!sameImplicit){
       this.rejectPlayback();this.navigationOwner=undefined;this.running=null;this.completedLive=undefined;clearTimeout(this.timer);this.timer=undefined;
       // A capture owns two sequential displays. Retire only after its owner
       // finishes restoring the primary destination, even on document replace.
@@ -161,7 +164,7 @@ export class GenerationQueue {
     const request=this.latest,cached=this.completedLive;
     // Metadata edits rebind the exact completed capability, without a draw.
     // The owner supplies the render identity; transport facts must also match.
-    if(cached&&liveKey(request)!=='implicitLive'&&liveKey(request)!=='rootsLive'&&liveKey(request)!=='perlinLive'&&!request.parameterWrites?.length&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
+    if(cached&&!request.context.implicitControls&&liveKey(request)!=='implicitLive'&&liveKey(request)!=='rootsLive'&&liveKey(request)!=='perlinLive'&&!request.parameterWrites?.length&&request.intent==='metadata'&&liveKey(request)&&liveKey(request)===liveKey(cached.request)&&request.scene!==cached.request.scene&&liveIdentity(request)===liveIdentity(cached.request)&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached.request.context))){
       this.completedLive={request,output:cached.output};
       this.callbacks.output(cached.output,this.outputTime(cached.output,request),request.scene);this.callbacks.busy(false);return;
     }
@@ -169,7 +172,7 @@ export class GenerationQueue {
     const current=()=>!this.disposed&&this.running===request;
     // Source Bouncing can change only its runtime view while scene/time stay
     // identical. Retain its GPU work, but publish only the latest request.
-    const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||liveKey(request)!==undefined)||this.latest===request);
+    const publishable=()=>current()&&this.latest?.scene===request.scene&&(!(usesSourceBouncing(request.scene)||request.context.implicitControls||liveKey(request)!==undefined)||this.latest===request);
     const publish=(output:SceneOutput,time=this.outputTime(output,request))=>{if(publishable())this.callbacks.output(output,time,request.scene);};
     const surfaceWriteRequest=cached&&this.generator.updateSurfaceParameter&&liveKey(request)==='surfaceLive'&&liveKey(cached.request)==='surfaceLive'&&request.context.surfaceLive!.sessionId===cached.request.context.surfaceLive!.sessionId&&request.context.surfaceLive!.revision===cached.request.context.surfaceLive!.revision&&request.parameterWrites?.length;
     const surfaceEdit=surfaceWriteRequest&&usesSourceSurfaceGeometry(cached!.request.scene)&&usesSourceSurfaceGeometry(request.scene)&&sourceParameterWriteEvents(cached!.request.scene,request.scene,request.parameterWrites);
@@ -182,8 +185,8 @@ export class GenerationQueue {
       if(!current())throw new DOMException('实时参数会话已更换','AbortError');
       return !surfaceEdit&&request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
-    void operation.then(output=>{this.acknowledgeRoots(output,request);if(current()&&liveKey(request)){if(request.context.implicitLive||request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
-      if(current()&&cached&&(liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError||liveKey(request)==='rootsLive'&&error instanceof RootsLiveGenerationError)&&error.previewRetained){
+    void operation.then(output=>{this.acknowledgeRoots(output,request);this.acknowledgeImplicit(output,request);if(current()&&(liveKey(request)||request.context.implicitControls)){if(request.context.implicitLive||request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+      if(current()&&cached&&(liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError||liveKey(request)==='rootsLive'&&error instanceof RootsLiveGenerationError||request.context.implicitControls&&error instanceof ImplicitControlGenerationError)&&error.previewRetained){
         // Keep the rejected document as the author's draft, but return this
         // request's applied context to the owner-confirmed completed version.
         request.context=snapshotGenerationInput(cached.request.context);this.completedLive={request,output:cached.output};
@@ -214,6 +217,17 @@ export class GenerationQueue {
     if(receipt.revision>=controls.acknowledgedRevision){
       latest.context={...latest.context,rootsLive:{...queued,controls:{acknowledgedRevision:receipt.revision,commands:controls.commands.filter(command=>command.revision>receipt.revision)}}};
     }
+  }
+  private acknowledgeImplicit(output:SceneOutput,request:Request):void {
+    const sent=request.context.implicitControls,raw=output.implicitControls;
+    if(!sent||this.disposed||this.latest?.context.implicitControls?.sessionId!==sent.sessionId)return;
+    if(!raw||raw.sessionId!==sent.sessionId)throw Error('隐式控制回执的会话不匹配');
+    const {sessionId:_,...facts}=raw,receipt=validateImplicitPaletteControlReceipt(facts),issued=sent.commands.at(-1)?.revision??sent.acknowledgedRevision;
+    if(receipt.revision!==issued)throw Error('隐式控制回执未覆盖已发送的命令');
+    this.callbacks.implicitControlAcknowledged?.(sent.sessionId,{...receipt});
+    const latest=this.latest,queued=latest?.context.implicitControls;
+    if(!latest||queued?.sessionId!==sent.sessionId)return;
+    if(receipt.revision>=queued.acknowledgedRevision)latest.context={...latest.context,implicitControls:{sessionId:sent.sessionId,acknowledgedRevision:receipt.revision,commands:queued.commands.filter(command=>command.revision>receipt.revision)}};
   }
   private outputTime(output:SceneOutput,request:Request):number{
     const fallback=output.implicitLive?implicitCameraFrame(output).sceneTime:output.temporal?.time??request.context.time;
@@ -371,7 +385,7 @@ export class GenerationQueue {
     let failed=false,failure:unknown;
     try{
       const start=await (request.scene.kind==='surface'||request.scene.kind==='implicit'?this.generator.beginSourceRecording(output,options,owner.controller.signal):this.generator.beginSourceRecording(output,options));owner.handle=start.handle;
-      this.acknowledgeRoots(start.warmup,request);
+      this.acknowledgeRoots(start.warmup,request);this.acknowledgeImplicit(start.warmup,request);
       const clock=structuredClone(start.clock),handle=start.handle;
       if(clock.completionReason==='animation-queue'&&!validSourceQueueRecordingClock(clock,options.simulationFps))throw Error('录制完成规划无效');
       const complete=(frame:SceneOutput,ordinal:number)=>{
@@ -430,11 +444,14 @@ export class GenerationQueue {
       }
       let expected=this.latest,deferred=this.latest!==owner.request;
       try{
-        if(stop)this.acknowledgeRoots(stop.preview,owner.request);
+        if(stop){this.acknowledgeRoots(stop.preview,owner.request);this.acknowledgeImplicit(stop.preview,owner.request);}
         // A receipt callback may synchronously open another document. Read
         // current ownership after that callback before adopting the stop image.
         const latest=this.latest;deferred=latest!==owner.request;expected=latest;
         if(!stop&&owner.invalidPreview&&!this.disposed&&this.latest===owner.request)this.callbacks.error(owner.invalidPreview);
+        const implicit=stop?.context.implicitControls,queuedImplicit=latest?.context.implicitControls;
+        const sameImplicit=!!implicit&&!!queuedImplicit&&latest?.scene.kind==='implicit'&&queuedImplicit.sessionId===implicit.sessionId;
+        const resetImplicit=sameImplicit&&queuedImplicit.commands.some(command=>command.kind==='apply'||command.kind==='restart');
         const roots=stop?.context.rootsLive,queuedRoots=latest?.context.rootsLive;
         const sameRoots=!!roots&&!!queuedRoots&&latest?.scene.kind==='roots'&&queuedRoots.sessionId===roots.sessionId&&(roots.controls!==undefined||latest.scene.id===owner.request.scene.id);
         const fractal=stop?.context.fractalLive,queued=latest?.context.fractalLive;
@@ -445,12 +462,12 @@ export class GenerationQueue {
         const samePerlin=!!perlin&&!!queuedPerlin&&latest?.scene.kind==='perlin'&&latest.scene.id===owner.request.scene.id&&queuedPerlin.sessionId===perlin.sessionId;
         const surface=stop?.context.surfaceLive,queuedSurface=latest?.context.surfaceLive;
         const sameSurface=!!surface&&!!queuedSurface&&latest?.scene.kind==='surface'&&latest.scene.id===owner.request.scene.id&&queuedSurface.sessionId===surface.sessionId;
-        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!perlin||samePerlin)&&(!roots||sameRoots)||sameFractal||sameDomain||sameSurface||samePerlin||sameRoots)){
+        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!perlin||samePerlin)&&(!roots||sameRoots)&&(!(implicit||queuedImplicit)||sameImplicit)||sameFractal||sameDomain||sameSurface||samePerlin||sameRoots||sameImplicit)){
           // Keep deferred viewport changes, but never reuse the pre-recording
           // live session or seek time after the runtime has been rebuilt.
           // Fractal author identity remains in the UI. Runtime/presentation
           // comes from the retained owner, including after an unsubmitted edit.
-          if(fractal||domain||surface||sameRoots||stop.context.implicitLive&&latest?.scene===owner.request.scene)stop={...stop,scene:latest?.scene??owner.request.scene};
+          if(fractal||domain||surface||sameRoots||sameImplicit||stop.context.implicitLive&&latest?.scene===owner.request.scene)stop={...stop,scene:latest?.scene??owner.request.scene};
           if(samePerlin&&latest&&latest.scene!==owner.request.scene){
             // Perlin auto-applies new edits. Recording resets a hot backend to
             // the applied constructor and changes FPS; an unchanged queued
@@ -465,7 +482,7 @@ export class GenerationQueue {
           const nextDomain=domain&&queuedDomain?{...domain,viewport:queuedDomain.viewport,actualFrameRate:queuedDomain.actualFrameRate,...(queuedDomain.revision>domain.revision?{revision:queuedDomain.revision,configuration:queuedDomain.configuration}:{})}:domain;
           const nextPerlin=perlin&&samePerlin&&queuedPerlin?.paletteRevision!==undefined&&queuedPerlin.paletteRevision>(perlin.paletteRevision??-1)?{...perlin,paletteRevision:queuedPerlin.paletteRevision}:perlin;
           const nextSurface=surface&&queuedSurface?{...surface,actualFrameRate:queuedSurface.actualFrameRate,...(queuedSurface.revision>surface.revision?{revision:queuedSurface.revision,configuration:queuedSurface.configuration,startAt:queuedSurface.startAt}:{})}:surface;
-          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,implicitLive:latest?.scene===owner.request.scene?stop.context.implicitLive:latest?.context.implicitLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:nextPerlin}:stop.context);
+          const context=snapshotGenerationInput(deferred?{...latest!.context,time:resetImplicit?0:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,implicitLive:resetImplicit?undefined:sameImplicit||latest?.scene===owner.request.scene?stop.context.implicitLive:latest?.context.implicitLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:nextPerlin}:stop.context);
           this.latest=expected={scene:stop.scene,context};
           if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);

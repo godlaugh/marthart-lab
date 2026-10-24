@@ -390,6 +390,20 @@ function generateSceneFrame(scene: SceneDocument, context: GenerateContext, sess
 }
 
 /** All public callers receive the same unsupported-timeline evidence. */
+function generateImplicitFrame(scene:SceneDocument,context:GenerateContext):Extract<SceneOutput,{type:'geometry'}> {
+      const formulas=formulaPresentation(scene,context.sourceViewport);
+      const evaluated=replaySourceImplicitTimeline(scene,context.time,context.isCancelled),current={...scene,parameters:evaluated.parameters,evaluatedSourceCamera:evaluated.frame};
+      const camera=ordinarySourceCameraFrame(current,context);
+      const bind=(output:SceneOutput)=>{
+        if(output.type!=='geometry')throw Error('源标注与实际帧类型不匹配');
+        output.sourceCameraFrame=structuredClone(camera);
+        output.sourceImplicitParameters={model:'implicit-registry-1.7.8',values:{...evaluated.parameters}};
+        output.formulaPresentation=structuredClone(formulas);
+        if(evaluated.frame.diagnostics.length)output.warnings=[...(output.warnings??[]),...evaluated.frame.diagnostics.map(d=>d.message)];
+        return output;
+      };
+      return bind(definition(scene.kind).generate(current,{...context,onProgress:context.onProgress?output=>context.onProgress!(bind(output)):undefined}));
+}
 export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
   scene=domainPaletteRuntimeScene(scene);
   if(context.fractalRecording!==undefined&&!usesSourceFractal(scene))throw Error('分形录制帧只能用于完整源分形场景');
@@ -403,8 +417,13 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(!scene.perlinSource||scene.kind!=='perlin')throw Error('Perlin 实时上下文需要完整源 Perlin 场景');
     if([context.implicitLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.fractalRecording].some(value=>value!==undefined))throw Error('一次生成只能拥有一个 Perlin 实时或录制时钟');
   }
+  if(context.implicitControls!==undefined){
+    if(!usesSourceImplicitCpuMesh(scene))throw Error('隐式控制需要源 CPU 网格场景');
+    if([context.rootsLive,context.surfaceLive,context.domainLive,context.fractalLive,context.samilaLive,context.mapLive,context.symmetryLive,context.perlinLive,context.fractalRecording].some(value=>value!==undefined))throw Error('隐式控制不能共用其它场景的时钟');
+  }
   const owner=session??new TemporalGenerationSession();
   const generate=()=>{
+    if(context.implicitControls!==undefined){owner.select(scene,context);return owner.sourceImplicit.generateControlled(scene,context,(effective,palette)=>generateImplicitFrame(effective,{...context,implicitPalettePrepared:palette,onProgress:undefined}));}
     if(context.rootsLive!==undefined){owner.select(scene,context);return owner.rootsNative.generate(scene,context);}
     if(context.implicitLive!==undefined){owner.select(scene,context);return owner.sourceImplicit.generateContinuation(scene,context);}
     if(context.surfaceLive!==undefined){owner.select(scene,context);return owner.sourceSurface.generate(scene,context);}
@@ -420,18 +439,7 @@ export function generateScene(scene:SceneDocument,context:GenerateContext,sessio
     if(usesSourceAttractor(scene)){owner.select(scene,context);return generateSourceAttractor(scene,context,owner.sourceAttractor);}
     if(usesSourceImplicitCpuMesh(scene)){
       owner.select(scene,context);
-      const formulas=formulaPresentation(scene,context.sourceViewport);
-      const evaluated=replaySourceImplicitTimeline(scene,context.time,context.isCancelled),current={...scene,parameters:evaluated.parameters,evaluatedSourceCamera:evaluated.frame};
-      const camera=ordinarySourceCameraFrame(current,context);
-      const bind=(output:SceneOutput)=>{
-        if(output.type!=='geometry')throw Error('源标注与实际帧类型不匹配');
-        output.sourceCameraFrame=structuredClone(camera);
-        output.sourceImplicitParameters={model:'implicit-registry-1.7.8',values:{...evaluated.parameters}};
-        output.formulaPresentation=structuredClone(formulas);
-        if(evaluated.frame.diagnostics.length)output.warnings=[...(output.warnings??[]),...evaluated.frame.diagnostics.map(d=>d.message)];
-        return output;
-      };
-      return bind(definition(scene.kind).generate(current,{...context,onProgress:context.onProgress?output=>context.onProgress!(bind(output)):undefined}));
+      return generateImplicitFrame(scene,context);
     }
     // A fresh source Scene constructs its labels from its input configuration,
     // before any source queue update. Deliver that same text with every pass.

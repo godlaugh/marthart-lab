@@ -2,7 +2,7 @@ import {domainPaletteRuntimeScene} from './domainPaletteEditing';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
-import {validSourceImplicitOutput} from './sourceImplicitResponse';
+import {validImplicitControlOutput,validSourceImplicitOutput} from './sourceImplicitResponse';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
 import {SourceRootsRecordingLease} from './sourceRootsRecordingLease';
 import {validRootsLiveOutput} from './rootsLive';
@@ -31,7 +31,7 @@ import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
 import type { GenerationRequest, GenerationResponse, RootsPausedCaptureResult, RootsPausedCaptureSize, PerlinPausedCaptureResult, PerlinPausedCaptureSize, PausedCaptureOperation, PausedCaptureResult, PausedCaptureSize, SourceRecordingOptions, SourceRecordingHandle, SourceRecordingStart, SourceRecordingStop, SourceRecordingRaster } from './generationProtocol';
-import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperationError,isSourceRecordingOperation,FractalLiveGenerationError,RootsLiveGenerationError} from './generationProtocol';
+import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperationError,isSourceRecordingOperation,FractalLiveGenerationError,RootsLiveGenerationError,ImplicitControlGenerationError} from './generationProtocol';
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
@@ -44,8 +44,10 @@ type FormulaOutputContract =
  |{kind:'raster'}
  |{kind:'roots-runtime-raster';viewport:SourceCameraViewport}
  |{kind:'source-raster';layout:'source-surface-centered-v1';viewport:SourceCameraViewport}
+ |{kind:'implicit-runtime-geometry'}
  |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
 function generationFormulaContract(scene:SceneDocument,context:GenerationInput):FormulaOutputContract {
+ if(context.implicitControls)return{kind:'implicit-runtime-geometry'};
  if(context.rootsLive?.controls)return{kind:'roots-runtime-raster',viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
@@ -53,7 +55,7 @@ function generationFormulaContract(scene:SceneDocument,context:GenerationInput):
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
  try{
-  if(!output||(contract.kind==='raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster')&&output.type!=='raster'||contract.kind==='source-geometry'&&output.type!=='geometry')return false;
+  if(!output||(contract.kind==='raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster')&&output.type!=='raster'||(contract.kind==='source-geometry'||contract.kind==='implicit-runtime-geometry')&&output.type!=='geometry')return false;
   if(output.formulaPresentation===undefined)return contract.kind==='optional';
   output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
   return contract.kind!=='source-geometry'&&contract.kind!=='source-raster'||output.formulaPresentation.layout===contract.layout;
@@ -187,7 +189,7 @@ function validGeometryCapture(result:import('./sourceGeometryCapture').SourceGeo
   for(const [output,input] of [[result.capture,target],[result.preview,source.context]] as const){
    if(!validSourceImplicitOutput(output,input)||output.implicitLive?.renderKind!=='snapshot'||!output.implicitLive.paused)return false;
    const {viewport,...frame}=implicitCameraFrame(output);void viewport;
-   if(!sameSourceRecordingValue(output.sourceImplicitParameters,source.output.sourceImplicitParameters)||!sameSourceRecordingValue(frame,before))return false;
+   if(!sameSourceRecordingValue(output.implicitControls,source.output.implicitControls)||!sameSourceRecordingValue(output.sourceImplicitParameters,source.output.sourceImplicitParameters)||!sameSourceRecordingValue(frame,before))return false;
   }
  }else{
   const frame=surfaceFrame(source);
@@ -465,6 +467,11 @@ export class Generator {
           if(data.retainedSourceId!==undefined&&!retained){const error=new FractalLiveGenerationError('分形实时预览保留身份不匹配',false);p.reject(error);this.invalidate(error);return;}
           if(retained)this.completed=p.source;
           p.reject(new FractalLiveGenerationError(data.error,retained));
+        }else if(p.operation==='generate'&&p.context.implicitControls){
+          const retained=data.operation==='generate'&&data.retainedSourceId!==undefined&&data.retainedSourceId===p.source?.id&&data.id===this.currentInputId;
+          if(data.retainedSourceId!==undefined&&!retained){const error=new ImplicitControlGenerationError('隐式控制保留预览的身份不匹配',false);p.reject(error);this.invalidate(error);return;}
+          const error=new ImplicitControlGenerationError(data.error,retained);if(retained)this.completed=p.source;
+          p.reject(error);if(!retained)this.invalidate(error);
         }else if(p.operation==='generate'&&p.context.rootsLive?.controls){
           const retained=data.operation==='generate'&&data.retainedSourceId!==undefined&&data.retainedSourceId===p.source?.id&&data.id===this.currentInputId;
           if(data.retainedSourceId!==undefined&&!retained){const error=new RootsLiveGenerationError('复根实时预览保留身份不匹配',false);p.reject(error);this.invalidate(error);return;}
@@ -477,6 +484,7 @@ export class Generator {
         if(!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
         if(p.context.rootsLive&&!validRootsLiveOutput(data.output,p.context,p.source?.output.type==='raster'?p.source.output.rootsLive:undefined)){const error=new Error('复根实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){const error=new Error('Perlin 实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
+        if(p.context.implicitControls&&!validImplicitControlOutput(data.output,p.context,p.source?.output)){const error=new Error('隐式控制回执身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.implicitLive&&!validSourceImplicitOutput(data.output,p.context)){const error=new Error('隐式实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){const error=new Error('曲面实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.domain&&!validDomainOutput(data.output,p.domain,p.context)){const error=new Error('域着色实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
@@ -564,10 +572,11 @@ export class Generator {
       const v=context.fractalLive,fractal=v?{sessionId:v.sessionId,revision:v.revision,paused:v.clock?.paused,actualFrameRate:v.actualFrameRate}:undefined;
       let input:GenerationInput;
       try{input=snapshotGenerationInput(context);}catch(error){
-        if(context.rootsLive?.controls!==undefined){this.completed=source;reject(new RootsLiveGenerationError(error instanceof Error?error.message:String(error),source!==undefined));}
+        if(context.implicitControls!==undefined){this.completed=source;reject(new ImplicitControlGenerationError(error instanceof Error?error.message:String(error),source!==undefined));}
+        else if(context.rootsLive?.controls!==undefined){this.completed=source;reject(new RootsLiveGenerationError(error instanceof Error?error.message:String(error),source!==undefined));}
         else reject(error);return;
       }
-      try { this.pending.set(id, { operation: 'generate', scene,context:input,fractal,domain,source:fractal||input.rootsLive?.controls?source:undefined, resolve, reject, onProgress, onStatus });
+      try { this.pending.set(id, { operation: 'generate', scene,context:input,fractal,domain,source:fractal||input.rootsLive?.controls||input.implicitControls?source:undefined, resolve, reject, onProgress, onStatus });
       const request: GenerationRequest = { operation: 'generate', sessionId: this.sessionId, id, scene:domainPaletteRuntimeScene(scene), ...(onStatus?{wantsStatus:true as const}:{}), context: input };
       this.worker!.postMessage(request); } catch (error) { this.pending.delete(id); reject(error); }
     });

@@ -29,6 +29,9 @@ export class FractalLiveGenerationError extends Error {
 export class RootsLiveGenerationError extends Error {
  constructor(message:string,readonly previewRetained:boolean){super(message);this.name='RootsLiveGenerationError';}
 }
+export class ImplicitControlGenerationError extends Error {
+ constructor(message:string,readonly previewRetained:boolean){super(message);this.name='ImplicitControlGenerationError';}
+}
 
 export interface PausedCaptureSize {width:number;height:number;}
 export interface PausedCaptureResult {capture:Extract<SceneOutput,{type:'raster'}>;preview:Extract<SceneOutput,{type:'raster'}>;}

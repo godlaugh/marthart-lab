@@ -310,19 +310,20 @@ export class ArtRenderer {
       this.group.add(lines);
     }
     const sourceBackground=output.type==='geometry'?output.sourceBackgroundColor:undefined;
+    const display=output.type==='geometry'?output.sourceImplicitPresentation?.display:undefined;
     // Source shaders and P3D clear colors are already display channel values.
     // Keep screen and offscreen clear paths in the same raw channel space.
     this.renderer.outputColorSpace=sourceBackground===undefined?THREE.SRGBColorSpace:THREE.LinearSRGBColorSpace;
     if(sourceBackground!==undefined){
       const rgba=new Float32Array(4);writeSourcePackedColor(sourceBackground,rgba,0);
-      this.sourceClear=[rgba[0],rgba[1],rgba[2],document.settings.transparentBackground?0:rgba[3]];
+      this.sourceClear=[rgba[0],rgba[1],rgba[2],(display?.transparentBackground??document.settings.transparentBackground)?0:rgba[3]];
       this.renderer.setClearColor(new THREE.Color().setRGB(rgba[0],rgba[1],rgba[2]),this.sourceClear[3]);
     }else{
       this.sourceClear=undefined;
       this.renderer.setClearColor(String(document.settings.background??'#111317'),document.settings.transparentBackground?0:1);
     }
-    this.grid.visible = !!document.settings.showGrid && !isRaster;
-    this.axes.visible = !!document.settings.showAxes && !isRaster;
+    this.grid.visible = (display?.showGrid??!!document.settings.showGrid) && !isRaster;
+    this.axes.visible = (display?.showAxes??!!document.settings.showAxes) && !isRaster;
     if(sourcePlan){this.fitted=true;this.render();return;}
     if(optics)this.configureCameraEffects(optics.roll,optics.focalLength);
     // A supplied final camera takes precedence over automatic fitting. Fitting

@@ -25,6 +25,7 @@ import {usesSourceAttractor,parseSourceAttractorDocument,prepareSourceAttractorS
 import {usesSourceBouncing,prepareSourceBouncingScene} from './sourceBouncingDocument';
 import {prepareSourceSurfaceScene} from './sourceSurfaceScene';
 import {parseSourceSurfacePalette} from './sourceSurfaceColor';
+import {validateImplicitSourcePalette} from './sourceImplicitPalette';
 import {SOURCE_SURFACE_HOST,usesSourceSurfaceParticles,usesSourceSurfaceHost,usesSourceSurfaceGeometry} from './sourceSurfaceIdentity';
 import {parseSourceSurfaceMeshConfiguration,type SourceSurfaceMeshConfiguration} from './sourceSurfaceMeshConfig';
 import {ordinarySourceCameraInitial} from './ordinarySourceCamera';
@@ -276,6 +277,10 @@ export function parseSceneValue(data: unknown): SceneDocument {
   if(data.rootsSourcePalette!==undefined){
     if(data.kind!=='roots')fail('复根源色板仅适用于复根场景');
     data.rootsSourcePalette=parseRootsSourcePalette(data.rootsSourcePalette);
+  }
+  if(data.implicitSourcePalette!==undefined){
+    if(data.kind!=='implicit')fail('隐式源色板仅适用于隐式场景');
+    data.implicitSourcePalette=validateImplicitSourcePalette(data.implicitSourcePalette);
   }
   if(data.rootsMath!==undefined){
     if(data.kind!=='roots')fail('复根数学规则仅适用于复根场景');

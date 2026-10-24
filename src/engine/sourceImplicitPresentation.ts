@@ -2,6 +2,7 @@ import type {GenerateContext,GeometryOutput,SceneDocument} from '../types';
 import type {ImplicitJob} from './implicitSurface';
 import {prepareSourceImplicitField,type SourceImplicitField} from './sourceImplicitField';
 import {sourceConfigPackedColor} from './sourceConfigColor';
+import {prepareImplicitPalette} from './sourceImplicitPalette';
 import {IMPLICIT_WORK_BYTES,IMPLICIT_OUTPUT_BYTES} from './meshEdges';
 import {writeSourcePackedColor} from './sourceProcessingGeometry';
 
@@ -11,6 +12,7 @@ export const usesSourceImplicitCpuMesh=(scene:Pick<SceneDocument,'kind'|'setting
 export interface SourceImplicitPresentation {
  readonly model:typeof SOURCE_IMPLICIT_PRESENTATION;
  readonly fill:boolean;readonly fillColors:Float32Array;readonly lineWeight:number;readonly referencePixelDensity:number;
+ readonly display:{readonly transparentBackground:boolean;readonly showGrid:boolean;readonly showAxes:boolean};
  readonly wire?:{positions:Float32Array;colors:Float32Array;alphas:Float32Array;axes:readonly number[];samples:number};
 }
 const F=Math.fround;
@@ -56,7 +58,7 @@ export function sourceImplicitSliceLines(job:ImplicitJob,context:GenerateContext
 }
 /** One generation owner resolves fill/line presence and color. Consumers never
  * reinterpret current inspector settings or replace slice lines by topology. */
-export function bindSourceImplicitPresentation(output:GeometryOutput,job:ImplicitJob,context:GenerateContext,prepared?:SourceImplicitField):void{
+export function bindSourceImplicitPresentation(output:GeometryOutput&{warnings?:string[]},job:ImplicitJob,context:GenerateContext,prepared?:SourceImplicitField):void{
  const s=job.scene.settings;if(s.implicitPresentationVersion===undefined)return;
  if(!usesSourceImplicitPresentation(job.scene))throw Error('未知源隐式曲面显示版本');
  // The imported marker retains provenance if the user switches rendering mode.
@@ -67,7 +69,9 @@ export function bindSourceImplicitPresentation(output:GeometryOutput,job:Implici
  if(typeof s.meshFill!=='boolean'||typeof s.meshWireframe!=='boolean')throw Error('源隐式填充与线条开关必须为布尔值');
  const fill=s.meshFill,lineWeight=scalar(s.meshWireframeWidth??1,'line weight'),density=context.sourcePointPixelDensity??1;
  if(lineWeight<=0||!Number.isFinite(density)||density<=0)throw Error('源隐式曲面线宽或参考像素密度无效');
- const palette=job.scene.palette.stops.map(sourceConfigPackedColor);if(!palette.length)throw Error('源隐式曲面调色板不能为空');
+ const paletteFacts=context.implicitPalettePrepared??(job.scene.implicitSourcePalette?prepareImplicitPalette(job.scene.implicitSourcePalette.colors,'cold'):undefined);
+ const palette=paletteFacts?.packed??job.scene.palette.stops.map(sourceConfigPackedColor);if(!palette.length)throw Error('源隐式曲面调色板不能为空');
+ if(paletteFacts?.diagnostics.length)output.warnings=[...(output.warnings??[]),...paletteFacts.diagnostics];
  const field=prepared??prepareSourceImplicitField(job),zScale=field.scale[2],zOffset=field.offset[2],low=F(field.min[2]*zScale),high=F(field.max[2]*zScale),fillLow=F(low+zOffset),fillSpan=F(F(high+zOffset)-fillLow)||1,wireSpan=F(high-low)||1;
  const retained=output.positions.byteLength+(output.sourceImplicitMesh?.normals.byteLength??0)+(output.indices?.byteLength??0)+output.positions.length/3*16;
  if(retained>IMPLICIT_OUTPUT_BYTES||retained+output.positions.length/3*32>IMPLICIT_WORK_BYTES)throw Error('源隐式曲面显示缓冲超过容量');
@@ -75,7 +79,7 @@ export function bindSourceImplicitPresentation(output:GeometryOutput,job:Implici
  for(let i=0;i<output.positions.length;i+=3){if((i&4095)===0)check();const packed=sourceImplicitHeightColor(palette,output.positions[i+2],fillLow,fillSpan),alpha=Math.trunc(F(F(F((packed>>>24)/255)*opacity)*255));writeSourcePackedColor((packed&0xffffff)|(alpha<<24),fillColors,i/3*4);}
  // CPU Scene rendering is unlit. Preserve the original fill(int) byte boundary
  // and keep palette alpha; neither Phong lighting nor sRGB conversion applies.
- const facts:SourceImplicitPresentation={model:SOURCE_IMPLICIT_PRESENTATION,fill,fillColors,lineWeight,referencePixelDensity:density};
+ const facts:SourceImplicitPresentation={model:SOURCE_IMPLICIT_PRESENTATION,fill,fillColors,lineWeight,referencePixelDensity:density,display:{transparentBackground:!!s.transparentBackground,showGrid:!!s.showGrid,showAxes:!!s.showAxes}};
  if(s.meshWireframe&&(!fill||opacity<F(.999))){
   const wire=sourceImplicitSliceLines(job,context,retained,field),rgb=new Float32Array(wire.positions.length),alphas=new Float32Array(wire.positions.length/3),rgba=new Float32Array(4);
   for(let i=0;i<rgb.length;i+=3){if((i&4095)===0)check();writeSourcePackedColor(sourceImplicitHeightColor(palette,wire.positions[i+2],low,wireSpan),rgba,0);rgb.set(rgba.subarray(0,3),i);alphas[i/3]=rgba[3];}

@@ -14,6 +14,7 @@ import {IMPLICIT_WORK_BYTES} from './meshEdges';
  * density converts that original logical stroke width exactly once. */
 export function createSourceImplicitMesh(output:Extract<SceneOutput,{type:'geometry'}>,plan:SourceCameraPlan){
  const facts=output.sourceImplicitPresentation,count=output.positions.length/3,indices=output.indices;
+ if(!facts?.display||[facts.display.transparentBackground,facts.display.showGrid,facts.display.showAxes].some(value=>typeof value!=='boolean'))throw Error('源隐式曲面缺少有效显示配置');
  if(!facts||facts.model!==SOURCE_IMPLICIT_PRESENTATION||output.topology!=='mesh'||output.backend!=='cpu'||!Number.isInteger(count)||(indices?indices.length%3:count%3)||facts.fillColors.length!==count*4)throw Error('源隐式曲面显示与网格不匹配');
  const wire=facts.wire;
  const retained=output.positions.byteLength+(indices?.byteLength??0)+(output.sourceImplicitMesh?.normals.byteLength??0)+facts.fillColors.byteLength+(wire?wire.positions.byteLength+wire.colors.byteLength+wire.alphas.byteLength:0);

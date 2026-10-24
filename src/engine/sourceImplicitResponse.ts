@@ -5,8 +5,20 @@ import type {OrdinarySourceCameraFrame as NumericalFrame} from './ordinarySource
 import {validateFrameFormulas} from './formulaConfig';
 import {SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
 import type {SourceQueueRecordingClock} from './sourceRecordingClock';
+import {implicitPaletteControlReceiptMatches} from './implicitPaletteControl';
 export type ImplicitCameraFrame=OrdinarySourceCameraFrame&NumericalFrame;
 type Geometry=Extract<SceneOutput,{type:'geometry'}>&{sourceCameraFrame:ImplicitCameraFrame};
+/** Validate the actual owner's receipt; staged author values never select the
+ * applied configuration or reset count. Recording checks its own reset step. */
+export function validImplicitControlOutput(output:SceneOutput,input:GenerationInput,previous?:SceneOutput):boolean {
+ const request=input.implicitControls,receipt=output.implicitControls;
+ if(!request)return receipt===undefined;
+ if(!receipt||receipt.sessionId!==request.sessionId||!validSourceImplicitOutput(output,input))return false;
+ const {sessionId:_,...facts}=receipt,{sessionId:__,...controls}=request;
+ const prior=previous?.implicitControls?.sessionId===request.sessionId?previous.implicitControls:undefined;
+ const priorFacts=prior?{revision:prior.revision,applyRevision:prior.applyRevision,resetRevision:prior.resetRevision}:undefined;
+ return implicitPaletteControlReceiptMatches(facts,controls,priorFacts);
+}
 /** Validate delivered numerical camera facts without replaying the queue. */
 export function implicitCameraFrame(output:SceneOutput):ImplicitCameraFrame {
  const f=output.sourceCameraFrame as ImplicitCameraFrame|undefined;
@@ -16,6 +28,7 @@ export function implicitCameraFrame(output:SceneOutput):ImplicitCameraFrame {
 export function validSourceImplicitOutput(output:SceneOutput,input:GenerationInput,presentationOnly=false):output is Geometry {
  try{
   if(output?.type!=='geometry'||output.sourceImplicitPresentation?.model!==SOURCE_IMPLICIT_PRESENTATION||output.sourceImplicitPresentation.referencePixelDensity!==input.sourcePointPixelDensity)return false;
+  const display=output.sourceImplicitPresentation.display;if(!display||[display.transparentBackground,display.showGrid,display.showAxes].some(value=>typeof value!=='boolean'))return false;
   const parameters=output.sourceImplicitParameters;if(!parameters||parameters.model!=='implicit-registry-1.7.8'||!parameters.values||typeof parameters.values!=='object'||Array.isArray(parameters.values)||Object.values(parameters.values).some(value=>typeof value!=='number'||!Number.isFinite(value)))return false;
   const frame=implicitCameraFrame(output),v=frame.viewport,w=input.sourceViewport;
   if(!w||v.logicalWidth!==w.logicalWidth||v.logicalHeight!==w.logicalHeight||v.referenceLogicalHeight!==w.referenceLogicalHeight||v.target!==w.target||v.projectionPass!==w.projectionPass)return false;
