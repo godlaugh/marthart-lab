@@ -45,10 +45,10 @@
 
 最终完整比较（含浏览器、参考读取、逐像素检查和编码）用时分别为 5.73、11.55、7.56、7.21 秒；采样进程族 CPU 约 11.49、19.64、12.53、12.29 秒，峰值 RSS 约 2400、2203、1830、1831 MiB。采样可能遗漏瞬时峰值；未测等价的修复前性能、严格冷暖、GPU／VRAM或 token 成本，不作加速结论。
 
-## 已发现但尚未修复的独立差异
+## 当时发现的独立差异（后续已修复）
 
-另测 **1 fps、0.3 秒**：原版第一帧时刻为 1 秒，已经完成，但这一帧是预热帧，因此编码帧数为 0。本地规划目前仍多推进并编码一帧，时刻为 2 秒。原版运行、空视频流和本地规划结果均已保存。
+另测 **1 fps、0.3 秒**：原版第一帧时刻为 1 秒，已经完成，但这一帧是预热帧，因此编码帧数为 0。本地旧规划多推进并编码一帧，时刻为 2 秒。原版运行、空视频流和旧规划结果均已保存。
 
-这是 `planSourceBouncingRecording` 完成检查的位置错误，属于下一项录制时钟修复；本次 12 fps 的通过结果不覆盖它。完整 Goal 保持进行中，未更新已安装 1.0 应用，也未完成最终 Apple Silicon 打包。
+这是 `planSourceBouncingRecording` 完成检查的位置错误，已在后续[预热结束边界修复与验收](source-bouncing-warmup-completion.zh-CN.md)中修正，并补充原版运行和实际界面验证。本文的 12 fps 结果本身不覆盖该边界。完整 Goal 保持进行中，未更新已安装 1.0 应用，也未完成最终 Apple Silicon 打包。
 
 原始证据根目录为 `.cache/bouncing-native-recording-20261024/`。查看[探针和复现说明](../tests/fixtures/source-bouncing-native-recording/README.md)及[证据索引](../tests/fixtures/source-bouncing-native-recording/source.json)。原版程序、视频和大体积状态数据不进入 Git。

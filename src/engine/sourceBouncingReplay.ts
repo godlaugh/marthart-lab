@@ -91,8 +91,8 @@ export function planSourceBouncingFixedReplay(request:{readonly from?:SourceBoun
  return Object.freeze({checkpoint:state,step,advancedUpdates:target-from.simulationUpdates});
 });}
 /** Native offline ordering: reset only time, render one unencoded warmup,
- * then advance/render/encode and only afterwards test duration. At least one
- * frame is encoded even when warmup already crossed the duration threshold.
+ * then test duration after every display, including warmup. When warmup has
+ * completed the recording there are no encoded frames and end is warmup.
  * Completion does not freeze subsequent realtime simulation. */
 export function planSourceBouncingRecording(request:{readonly from:SourceBouncingCheckpoint;readonly fps:number;readonly recordDuration:number},options:SourceBouncingReplayOptions={}):SourceBouncingResult<SourceBouncingRecordingPlan>{return attempt(()=>{
  cancelled(options);const from=readCheckpoint(request.from),step=renderStep(request.fps),duration=request.recordDuration;
@@ -101,6 +101,6 @@ export function planSourceBouncingRecording(request:{readonly from:SourceBouncin
  if(!Object.is(F(duration),duration)||duration<F(.1))fail('input',['recordDuration'],'录像时长必须为已规范化且至少 0.1 秒的 Float32 值');
  const start=checkpoint(from.simulationUpdates,0),warmup=advance(start,step,options),frames:SourceBouncingCheckpoint[]=[];
  let state=warmup;
- do{state=advance(state,step,options);frames.push(state);}while(state.sceneTime<duration);
+ while(state.sceneTime<duration){state=advance(state,step,options);frames.push(state);}
  return Object.freeze({start,warmup,frames:Object.freeze(frames),end:state,step});
 });}

@@ -87,7 +87,8 @@ public final class NativeSceneProbe {
       return graphics;
      }
     };app.sketchPath();app.width=405;app.height=486;app.pixelWidth=810;app.pixelHeight=972;app.pixelDensity=2;app.frameRate=60;
-    app.config.renderWidth=128;app.config.renderHeight=96;app.config.renderFps=12;app.config.saveVideo=false;app.config.showDebugInfo=false;
+    float fps=descriptor.getInt("fps",12);if(fps<1||fps>120)throw new IllegalArgumentException("Recording fps outside 1–120");
+    app.config.renderWidth=128;app.config.renderHeight=96;app.config.renderFps=(int)fps;app.config.saveVideo=false;app.config.showDebugInfo=false;
     app.updateRestrictedBadgeText("FREE Restricted","Upgrade to PRO to unlock");
     PGraphics3D primary=new PGraphics3D();primary.noSmooth();app.g=primary;primary.setParent(app);primary.setPrimary(true);primary.pixelDensity=2;primary.setSize(405,486);((PJOGL)primary.pgl).getGL(d);((PJOGL)primary.pgl).init(d);
     PGraphics3D buffer=null;mathart.utils.VideoRecorder recorder=null;
@@ -98,8 +99,8 @@ public final class NativeSceneProbe {
      call(app,"ensureRenderBuffer",new Class<?>[]{});buffer=(PGraphics3D)app.renderBuffer;
      if(buffer.pixelWidth!=384||buffer.pixelHeight!=288)throw new IllegalStateException("Unexpected actual original recording size");
      System.out.printf("primary=%dx%d,density=%d;buffer=%dx%d,pixels=%dx%d,density=%d%n",primary.width,primary.height,primary.pixelDensity,buffer.width,buffer.height,buffer.pixelWidth,buffer.pixelHeight,buffer.pixelDensity);
-     app.currentScene.setRenderMode(12f);
-     recorder=new mathart.utils.VideoRecorder(app,output.resolve("original.mp4").toString(),12f,buffer.pixelWidth,buffer.pixelHeight,128,96);
+     app.currentScene.setRenderMode(fps);
+     recorder=new mathart.utils.VideoRecorder(app,output.resolve("original.mp4").toString(),fps,buffer.pixelWidth,buffer.pixelHeight,128,96);
      recorder.setQuality(app.config.renderQuality);recorder.setFFmpegPath(descriptor.getString("ffmpegPath"));recorder.start();
      java.lang.reflect.Field processField=mathart.utils.VideoRecorder.class.getDeclaredField("ffmpeg");processField.setAccessible(true);Process encoder=(Process)processField.get(recorder);
      JSONObject encoderFacts=new JSONObject();encoderFacts.setLong("pid",encoder.pid());encoderFacts.setString("command",encoder.info().command().orElse(""));processing.data.JSONArray arguments=new processing.data.JSONArray();for(String argument:encoder.info().arguments().orElseThrow())arguments.append(argument);encoderFacts.setJSONArray("arguments",arguments);encoderFacts.setFloat("exportScaleFactor",app.config.exportScaleFactor);

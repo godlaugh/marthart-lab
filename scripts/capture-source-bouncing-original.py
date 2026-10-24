@@ -6,11 +6,13 @@ staged-loader host. No engine/JDK installation, bytecode patch or policy overrid
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import shutil
 import signal
 import subprocess
+import struct
 import time
 import zipfile
 
@@ -18,7 +20,7 @@ PINS = json.loads((Path(__file__).resolve().parents[1] / 'tests/fixtures/source-
 JAR_SHA = 'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018'
 HOST_SHA = 'c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e'
 PROBE_SHA = '6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d'
-RECORDING_PROBE_SHA = '9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac'
+RECORDING_PROBE_SHA = 'ed8783d84dc956c7b800a3a316d823b777150a6e6d0874ab73705318fb298a91'
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
 def require(condition, message):
@@ -34,6 +36,8 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--mode', choices=['animation', 'recording'], default='animation')
     parser.add_argument('--ffmpeg', type=Path, help='Existing encoder required for recording mode; no installation')
+    parser.add_argument('--recording-fps', type=int, help='Recording mode only; default 12, range 1–120')
+    parser.add_argument('--recording-duration', type=float, help='Recording mode only; default 0.3s, at most eight active frames')
     for name in ['app-contents', 'java-home', 'host', 'app-data']:
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
@@ -42,6 +46,18 @@ def main():
     ffmpeg = args.ffmpeg.resolve() if recording else None
     if recording:
         require(ffmpeg.is_file() and os.access(ffmpeg, os.X_OK), 'Selected FFmpeg must be an existing executable')
+    require(recording or args.recording_fps is None and args.recording_duration is None, 'Recording clock options require recording mode')
+    fps = args.recording_fps if args.recording_fps is not None else 12
+    duration = args.recording_duration if args.recording_duration is not None else .3
+    require(1 <= fps <= 120, 'Recording FPS must be 1–120')
+    require(math.isfinite(duration) and .1 <= duration <= 8, 'Recording duration must be finite and between 0.1 and 8 seconds')
+    # Preflight resource bound only. Original runtime completion selects the
+    # captured frames; this does not truncate or replace its stopping rule.
+    f32 = lambda value: struct.unpack('f', struct.pack('f', value))[0]
+    bound = 0.
+    for _ in range(8):
+        bound = f32(bound + f32(1. / fps))
+    require(not recording or f32(duration) <= bound, 'Recording exceeds the eight-active-frame diagnostic capacity')
     app = (args.app_contents / 'app').resolve()
     jdk, host, data, out = [p.resolve() for p in [args.java_home, args.host, args.app_data, args.output]]
     preset = PINS[args.preset]
@@ -65,9 +81,9 @@ def main():
     original_source = source
     if recording:
         project = json.loads(original)
-        project['settings']['record_duration'] = .3
+        project['settings']['record_duration'] = duration
         source = out / 'input.json'
-        write(source, {'project': project, 'ffmpegPath': str(ffmpeg)})
+        write(source, {'project': project, 'ffmpegPath': str(ffmpeg), 'fps': fps})
     shutil.copy2(probe, out / probe.name)
     command = [str(jdk / 'bin/javac'), '-proc:none', '-cp', str(app / '*'), '-d', str(out), str(out / probe.name)]
     compiled = subprocess.run(command, capture_output=True, text=True, timeout=30)
@@ -111,10 +127,11 @@ def main():
     report = {'case': args.preset, 'particleCount': count, 'sourceMember': member,
         'mode': args.mode, 'source': str(source), 'sourceSha256': sha(source.read_bytes()), 'originalSource': str(original_source), 'originalSourceSha256': source_sha,
         'jarSha256': JAR_SHA, 'hostSha256': HOST_SHA, 'probeSha256': probe_sha,
-        'scope': 'Original ensureRenderBuffer(default scale3), Scene.update(false) before buffer.beginDraw/render, and real VideoRecorder. Only original record_duration changed to0.3s; all particles retained. Four active384x288 frames at12fps, first warmup not encoded;128x96 original high-quality MP4 using explicitly selected installed FFmpeg. Context-binding graphics allocation bridge; normal policy/license/branding, no AWT windows.' if recording else 'Original methods and unmodified preset; three initial paused frames and 60 fixed-60-fps updates, each followed by a paused redraw. Eleven complete state readbacks, full 500x600 artwork before normal branding, normal license/policy initialization, no AWT windows.',
+        'scope': f'Original ensureRenderBuffer(default scale3), Scene.update(false) before buffer.beginDraw/render, and real VideoRecorder. Only original record_duration changed to {duration}s; all particles retained. Up to eight active384x288 frames at {fps}fps, first warmup not encoded; original completion checked after every display. 128x96 original high-quality MP4 using explicitly selected installed FFmpeg. Context-binding graphics allocation bridge; normal policy/license/branding, no AWT windows.' if recording else 'Original methods and unmodified preset; three initial paused frames and 60 fixed-60-fps updates, each followed by a paused redraw. Eleven complete state readbacks, full 500x600 artwork before normal branding, normal license/policy initialization, no AWT windows.',
         'command': command, 'exit': process.returncode, 'stdout': stdout, 'stderr': stderr, 'seconds': time.monotonic() - started,
         'pid': process.pid, 'reaped': True, 'processGroupExists': group_exists, 'timedOut': timed_out, 'userFilesBefore': before, 'userFilesAfter': facts()}
     if recording:
+        report['recording'] = {'fps': fps, 'duration': duration, 'maxActiveFrames': 8}
         report['ffmpeg'] = {'selectedPath': str(args.ffmpeg), 'resolvedPath': str(ffmpeg), 'sha256': sha(ffmpeg.read_bytes())}
     report['captureStatus'] = 'failed' if process.returncode or timed_out or group_exists or ' ERROR ' in stdout else 'passed'
     write(out / 'run.json', report)

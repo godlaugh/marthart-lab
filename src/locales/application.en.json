@@ -1,4 +1,5 @@
 {
+  "源弹跳录制在预热帧内已结束，没有可编码帧；请延长源录制时长或提高导出帧率": "Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or export frame rate",
   "几何场景截图需要已暂停的主预览": "Pause the completed geometry preview before capturing it.",
   "几何场景 PNG 放大倍率必须为 1、3 或 5": "Geometry PNG upscale must be 1, 3, or 5.",
   "几何场景截图图像缓冲超过本地 256 MiB 预算": "Geometry capture image buffers exceed the local 256 MiB budget.",

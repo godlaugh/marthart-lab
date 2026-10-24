@@ -15,9 +15,16 @@ python3 scripts/capture-source-bouncing-original.py bouncing1 NEW_OUTPUT \
 ```
 
 The original preset retains every particle and setting except `record_duration`,
-explicitly set to 0.3 seconds in the retained input descriptor. The probe uses
-128×96 output, 12 FPS and original defaults (scale 3, high quality). Each run has
-four active displays: one non-encoded warmup, followed by three encoded frames.
+explicitly set to 0.3 seconds by default in the retained input descriptor. The
+probe uses 128×96 output, 12 FPS by default and original defaults (scale 3, high
+quality). This default run has four active displays: one non-encoded warmup,
+followed by three encoded frames.
+
+Recording mode also accepts `--recording-fps` and `--recording-duration`. A
+preflight rejects inputs exceeding the probe's eight-active-frame capacity;
+the original runtime selects completion after **every** display, including
+warmup. A completed warmup produces zero encoded frames and an original MP4
+container without a video stream. The diagnostic never synthesizes a frame.
 
 The host bridges new `PGraphics` allocation to its JOGL drawable. Original
 `ensureRenderBuffer()` computes the actual 384×288 dimensions. Each frame calls
@@ -43,6 +50,20 @@ original branded PNGs** through the production export server and compares decode
 RGB to the actual original VideoRecorder movie. This latter check proves encoder
 transport/parameter equivalence for those inputs, not product-generated branding
 or full GUI movie equivalence. Both use the same explicitly selected FFmpeg.
+
+For completion boundaries, capture three new `bouncing1` references with
+FPS/duration pairs `1/0.3`, `10/0.1` and `10/0.10000000894069672`, then run:
+
+```sh
+node scripts/verify-source-bouncing-recording-boundary.mjs NEW_OUTPUT OVER EQUAL ABOVE
+MATHART_SOURCE_RENDERER_BACKEND=/absolute/path/to/backend.json \
+  node scripts/verify-source-bouncing-native-export.mjs NEW_UI_OUTPUT --warmup-boundaries
+```
+
+The first check compares original runtime clocks and actual encoded frame counts
+with the production clock owner. The second exercises public App rejection and
+retry through headless Chrome and the real native renderer/FFmpeg. See the
+[readable acceptance report](../../../docs/source-bouncing-warmup-completion.zh-CN.md).
 
 This is a short, bounded recording reference. It does not establish long videos,
 all sizes/parameters, cross-device behavior or original window presentation.

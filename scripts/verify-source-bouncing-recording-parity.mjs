@@ -23,7 +23,10 @@ try{
  const run=JSON.parse(await read(reference+'/run.json')),descriptor=JSON.parse(await read(run.source)),frames=JSON.parse(await read(reference+'/frames.json')),encoder=JSON.parse(await read(reference+'/encoder.json'));
  assert.equal(run.mode,'recording');assert.equal(run.captureStatus,'passed');assert.equal(run.exit,0);assert.equal(run.reaped,true);assert.equal(run.processGroupExists,false);assert.equal(run.timedOut,false);assert.doesNotMatch(run.stdout,/ ERROR /);assert.equal(run.stderr,'');
  assert.equal(sha(await read(run.source)),run.sourceSha256);assert.equal(sha(await read(reference+'/NativeSceneProbe.java')),run.probeSha256);
- assert.equal(run.probeSha256,sha(await readFile('tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java')));
+ // Historical 12fps probe remains a valid reference after adding explicit
+ // recording-clock inputs. Its observed bytes must still match its pinned hash.
+ assert.ok(['9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac',sha(await readFile('tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java'))].includes(run.probeSha256));
+ assert.equal(descriptor.fps??12,12);
  const jar='../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar';assert.equal(sha(await read(jar)),'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018');
  const original=execFileSync('python3',['-c','import zipfile,sys;sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read(sys.argv[2]))',jar,run.sourceMember]),preset=sourceBouncingOriginalPreset(original),expected=JSON.parse(original);assert.equal(preset.sourceSha256,run.originalSourceSha256);expected.settings.record_duration=.3;assert.deepEqual(descriptor.project,expected);
  assert.equal(frames.length,4);assert.equal(frames.at(-1).complete,true);assert.equal(encoder.exportScaleFactor,3);assert.equal(encoder.aliveAfterFinish,false);assert.equal(encoder.exit,0);assert.equal(sha(await read(encoder.command)),run.ffmpeg.sha256);

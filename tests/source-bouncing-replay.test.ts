@@ -41,18 +41,26 @@ describe('native Bouncing explicit frame and recording clock',()=>{
   expect(resumed).toMatchObject({simulationUpdates:48,sceneTime:plan.end.sceneTime});
  });
  // Expected values independently evaluated with Python struct binary32 operations,
- // applying the retained Scene float division/addition and post-record comparison.
+ // applying the retained Scene float division/addition and post-display comparison.
  it.each([
   [60,1,60,61,1.0166664123535156],
   [30,1,29,30,1.0000003576278687],
   [24,10,239,240,10.00000286102295],
   [60,F(.1),5,6,0.10000000149011612],
-  [1,F(.1),1,2,2],
+  [1,F(.1),0,1,1],
+  [10,F(.1),0,1,F(.1)],
+  [10,0.10000000894069672,1,2,F(.2)],
   [29.97,1,29,30,1.0010008811950684],
  ])('matches source F32 stopping at fps=%s duration=%s',(fps,recordDuration,encoded,updates,time)=>{
   const plan=value(planSourceBouncingRecording({from:seed,fps,recordDuration}));
   expect(plan.frames).toHaveLength(encoded);expect(plan.end.simulationUpdates).toBe(updates);expect(plan.end.sceneTime).toBe(time);
-  expect(plan.frames.at(-1)).toEqual(plan.end);
+  expect(plan.frames.at(-1)??plan.warmup).toEqual(plan.end);
+ });
+ it('retains current-state physical progress when warmup completes without any encoded frame',()=>{
+  const plan=value(planSourceBouncingRecording({from:fixed(17),fps:1,recordDuration:F(.3)}));
+  expect(plan.warmup).toMatchObject({simulationUpdates:18,sceneTime:1});
+  expect(plan.frames).toEqual([]);expect(plan.end).toBe(plan.warmup);
+  expect(value(stepSourceBouncingRealtime(plan.end,{deltaTime:0,paused:false}))).toMatchObject({simulationUpdates:19,sceneTime:1});
  });
  it('revalidates transport facts without deriving physical updates from their time',()=>{
   const realtime=value(stepSourceBouncingRealtime(seed,{deltaTime:0,paused:false}));
@@ -67,8 +75,10 @@ describe('native Bouncing explicit frame and recording clock',()=>{
   expect(kind(planSourceBouncingFixedReplay({updates:10001,fps:60}))).toBe('capacity');
   expect(kind(stepSourceBouncingRealtime(fixed(10000),{deltaTime:0,paused:false}))).toBe('capacity');
   expect(value(stepSourceBouncingRealtime(fixed(10000),{deltaTime:0,paused:true})).simulationUpdates).toBe(10000);
-  expect(kind(planSourceBouncingRecording({from:fixed(9999),fps:1,recordDuration:F(.1)}))).toBe('capacity');
-  expect(value(planSourceBouncingRecording({from:fixed(9998),fps:1,recordDuration:F(.1)})).end.simulationUpdates).toBe(10000);
+  expect(value(planSourceBouncingRecording({from:fixed(9999),fps:1,recordDuration:F(.1)}))).toMatchObject({frames:[],end:{simulationUpdates:10000,sceneTime:1}});
+  expect(kind(planSourceBouncingRecording({from:fixed(10000),fps:1,recordDuration:F(.1)}))).toBe('capacity');
+  expect(kind(planSourceBouncingRecording({from:fixed(9999),fps:1,recordDuration:2}))).toBe('capacity');
+  expect(value(planSourceBouncingRecording({from:fixed(9998),fps:1,recordDuration:2})).end.simulationUpdates).toBe(10000);
   expect(kind(planSourceBouncingRecording({from:seed,fps:60,recordDuration:1000}))).toBe('capacity');
  });
  it('reports cancellation before planning and within fixed/recording loops',()=>{

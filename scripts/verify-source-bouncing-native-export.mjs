@@ -12,6 +12,7 @@ import {decodePng} from './lib/verify-png.mjs';
 import {sourceBouncingOriginalPreset} from './lib/source-bouncing-original.mjs';
 const out=process.argv[2]??'.cache/bouncing-native-export-20261024';
 const presetAt=process.argv.indexOf('--preset'),presetName=presetAt>=0?process.argv[presetAt+1]:process.argv.includes('--five-million')?'bouncing2':undefined;
+const warmupBoundaries=process.argv.includes('--warmup-boundaries');
 if(presetAt>=0&&!presetName||presetName&&!/^[a-z0-9_]+$/.test(presetName))throw Error('--preset requires a packaged preset basename');
 if(presetAt>=0&&process.argv.includes('--five-million'))throw Error('Select one preset option');
 await mkdir(out,{recursive:true});
@@ -108,6 +109,36 @@ Generator.prototype.generate=async function(scene,input,...rest){
   report.original={jar,jarSha,member,sourceSha,count:preset.particleCount,recordDuration:Math.fround(.3)};
  }
  await seek(3);
+ if(warmupBoundaries){
+  report.warmupRejections=[];
+  const setDuration=async value=>{
+   await page.locator('.inspector-tabs button').nth(1).click();const input=page.getByTestId('source-bouncing-recordDuration');await input.fill(String(value));await input.blur();
+   await page.waitForFunction(value=>window.__nativeExportAudit.calls.findLast(c=>c.input.quality!=='export')?.scene.bouncingSource.recordDuration===Math.fround(value),value);await ready();
+  };
+  for(const [duration,fps,start] of [[.3,1,'current'],[.3,1,'seed'],[.1,10,'current'],[.1,10,'seed']]){
+   phase='warmup-'+duration+'-'+start;await setDuration(duration);const before=await snapshot(),offset=await begin(),sessions=[],uploads=[],downloads=[];
+   const capture=request=>{const url=new URL(request.url());if(request.method()==='POST'&&url.pathname==='/api/exports')sessions.push(request.postDataJSON());if(request.method()==='POST'&&/^\/api\/exports\/[^/]+\/frames$/.test(url.pathname))uploads.push(request.postDataBuffer());};
+   const downloaded=value=>downloads.push(value.suggestedFilename());page.on('request',capture);page.on('download',downloaded);
+   await openExport('Animation video');await dimensions(128,96);await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill(String(fps));await page.locator('select').filter({has:page.locator('option[value="seed"]')}).selectOption(start);await startButton().click();
+   const message='Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or export frame rate';await dialog().getByText(message,{exact:true}).waitFor();await settledExport();
+   check(sessions.length===0&&uploads.length===0&&downloads.length===0,phase+' rejects before encoder creation, upload or download');
+   check((await exportsSince(offset)).length===0,phase+' does not invent or render an extra frame');
+   check(JSON.stringify((await snapshot()).output.frame.checkpoint)===JSON.stringify(before.output.frame.checkpoint),phase+' leaves paused preview clock intact');
+   check(!await startButton().isDisabled(),phase+' permits retry after clear localized error');
+   report.warmupRejections.push({duration,fps,start,message,sessions:0,uploads:0,downloads:0,exportGenerations:0,checkpoint:before.output.frame.checkpoint});
+   if(duration===.1&&start==='seed'){
+    await page.screenshot({path:out+'/warmup-rejected.png'});await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill('11');
+    const path=await download('warmup-retry.mp4');await settledExport();
+    check(sessions.length===1&&sessions[0].frames===1&&uploads.length===1&&downloads.length===1,'increasing FPS retries the same dialog with exactly one encoded frame');
+    const calls=await exportsSince(offset);check(calls.length===2&&calls[0].output.frame.checkpoint.simulationUpdates===1&&calls[1].output.frame.checkpoint.simulationUpdates===2,'warmup retry advances once before its sole encoded frame');
+    const png=decodePng(uploads[0]);check(sha(png.rgba)===calls[1].output.pixelSha&&png.width===384&&png.height===288,'warmup retry uploads exact native 3x pixels');
+    const metadata=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-show_streams','-of','json',path],{encoding:'utf8'})).streams[0];check(Number(metadata.nb_read_frames)===1&&metadata.r_frame_rate==='11/1'&&metadata.width===128&&metadata.height===96,'warmup retry downloads a real one-frame MP4');
+    check(!(await dialog().innerText()).includes(message),'successful retry clears prior warmup error');report.warmupRetry={path,metadata,frames:calls.map(c=>c.output.frame.checkpoint)};
+   }
+   page.off('request',capture);page.off('download',downloaded);await recoverPreview(before,phase);
+  }
+  await setDuration(.3);
+ }
  if(!presetName){
   phase='paused-view';const before=await snapshot(),offset=await begin(),box=await page.getByTestId('native-art-canvas').boundingBox();
   await page.mouse.move(box.x+box.width*.5,box.y+box.height*.5);await page.mouse.down();await page.mouse.move(box.x+box.width*.5+14,box.y+box.height*.5+9);await page.mouse.up();
@@ -141,7 +172,7 @@ Generator.prototype.generate=async function(scene,input,...rest){
   const calls=await exportsSince(requestBegin),n=start==='current'?presented.output.frame.checkpoint.simulationUpdates:0,step=Math.fround(1/12),expected=[];let time=step,index=n+1;
   const expectedCamera=start==='current'?presented.output.frame.camera:{...presented.scene.bouncingSource.camera,zoom:1};
   check(calls.every(c=>['phi','theta','gamma','zoom'].every(key=>c.output.frame.camera[key]===expectedCamera[key])),start+' video uses correct current/authored camera');
-  do{time=Math.fround(time+step);expected.push({simulationUpdates:++index,sceneTime:time});}while(time<presented.scene.bouncingSource.recordDuration);
+  while(time<presented.scene.bouncingSource.recordDuration){time=Math.fround(time+step);expected.push({simulationUpdates:++index,sceneTime:time});}
   check(calls.length===expected.length+1&&calls[0].output.frame.checkpoint.simulationUpdates===n+1&&calls[0].output.frame.checkpoint.sceneTime===step,start+' recording has one non-encoded warmup');
   check(uploads.length===expected.length&&uploads.every((u,i)=>u.index===i),start+' video uploads each frame exactly once in order');
   const probe=file=>JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-select_streams','v:0','-show_entries','stream=width,height,nb_read_frames,r_frame_rate,pix_fmt,color_range,color_space,color_transfer,color_primaries','-of','json',file],{encoding:'utf8'})).streams[0];
@@ -181,8 +212,8 @@ Generator.prototype.generate=async function(scene,input,...rest){
  check(sha(await readFile(savedDespiteFailure))===sha(await readFile(retryPath)),'cleanup retry preserves downloaded PNG bytes');
  report.cleanupRetry={path:retryPath};await recoverPreview(failurePreview,'failed-cleanup retry');
  phase='retained-files';const files=await readdir(out+'/service');report.serviceFiles=await Promise.all(files.map(async name=>({name,sha:sha(await readFile(out+'/service/'+name))})));
- check(files.length===5,'service retains all five completed PNG/MP4 outputs');
- for(const path of [...report.images,...report.videos,report.cleanupFailure,report.cleanupRetry].map(item=>item.path)){const digest=sha(await readFile(path));check(report.serviceFiles.some(file=>file.sha===digest),'download equals retained service file: '+path.split('/').at(-1));}
+ check(files.length===(warmupBoundaries?6:5),'service retains every completed PNG/MP4 output and none from rejected requests');
+ for(const path of [...report.images,...report.videos,report.cleanupFailure,report.cleanupRetry,...(report.warmupRetry?[report.warmupRetry]:[])].map(item=>item.path)){const digest=sha(await readFile(path));check(report.serviceFiles.some(file=>file.sha===digest),'download equals retained service file: '+path.split('/').at(-1));}
  check(report.pageErrors.length===0,'public export workflow has no unhandled page errors');
  await page.screenshot({path:out+'/restored-preview.png'});await browser.close();browser=undefined;
  const until=Date.now()+5000;while(service.ownedProcessCount&&Date.now()<until)await new Promise(r=>setTimeout(r,25));check(service.ownedProcessCount===0,'browser exit reaps native helper while service stays live');

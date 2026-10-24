@@ -44,6 +44,7 @@ export function prepareSourceBouncingExport(scene:SceneDocument,presented:Source
  if(!Number.isSafeInteger(options.fps)||options.fps<1||options.fps>120)return{ok:false,error:{kind:'input',path:['fps'],reason:'源弹跳导出帧率必须为 1–120 的整数'}};
  const recording=planSourceBouncingRecording({from:options.start==='seed'?sourceBouncingSeedCheckpoint():checkpoint.value,fps:options.fps,recordDuration:parsed.value.recordDuration});
  if(!recording.ok)return recording;
+ if(recording.value.frames.length===0)return{ok:false,error:{kind:'input',path:['recordDuration'],reason:'源弹跳录制在预热帧内已结束，没有可编码帧；请延长源录制时长或提高导出帧率'}};
  return{ok:true,value:{...target,viewport,view,warmup:recording.value.warmup,frames:recording.value.frames}};
 }
 export function sourceBouncingExportContext(plan:SourceBouncingExportPlan,checkpoint:SourceBouncingCheckpoint):GenerationInput{

@@ -87,10 +87,15 @@ describe('source Bouncing export contract',()=>{
   const retained=unwrap(prepareSourceBouncingExport(scene,presented,{...options,kind:'image'}));
   deliveredCamera.zoom=3;expect(retained.view.zoom).toBe(2);
  });
- it('encodes one frame even when the real warmup crossed the source duration',()=>{
+ it('rejects an empty recording before export while leaving PNG and the source document intact',()=>{
   const {scene,presented}=fixture();scene.bouncingSource!.recordDuration=Math.fround(.1);
-  const plan=unwrap(prepareSourceBouncingExport(scene,presented,{...options,fps:1}));
-  expect(plan.warmup?.sceneTime).toBe(1);expect(plan.frames).toHaveLength(1);expect(plan.frames[0].sceneTime).toBe(2);
+  const before=structuredClone({scene,presented});
+  for(const start of ['current','seed'] as const)for(const fps of [1,10])expect(prepareSourceBouncingExport(scene,presented,{...options,start,fps})).toMatchObject({ok:false,error:{kind:'input',path:['recordDuration'],reason:expect.stringContaining('没有可编码帧')}});
+  expect(unwrap(prepareSourceBouncingExport(scene,presented,{...options,kind:'image',fps:1})).frames).toEqual([presented.frame.checkpoint]);
+  expect({scene,presented}).toEqual(before);
+  expect(unwrap(prepareSourceBouncingExport(scene,presented,{...options,fps:11})).frames).toHaveLength(1);
+  scene.bouncingSource!.recordDuration=0.10000000894069672;
+  expect(unwrap(prepareSourceBouncingExport(scene,presented,{...options,fps:10})).frames).toHaveLength(1);
  });
  it('rejects unready or unrepresentable presented camera facts and malformed paired clocks',()=>{
   const {scene,presented}=fixture();
