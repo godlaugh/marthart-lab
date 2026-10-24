@@ -16,8 +16,9 @@ import {samilaParametersChanged,SAMILA_HISTORY_CEILING} from './samilaHistory';
 import {prepareDensityTone} from './density';
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
 import {exactRasterDimensions} from './rasterDimensions';
+import {sourceSamilaPaletteRuntimeScene} from './sourceSamilaPaletteEditing';
 
-export interface SourceSamilaLiveContext {sessionId:string;pixelDensity:number;dirtyRevision?:number;clock?:SourceSceneClockRequest;}
+export interface SourceSamilaLiveContext {sessionId:string;pixelDensity:number;dirtyRevision?:number;runtimeRevision?:number;parameterRevisions?:Readonly<Record<string,number>>;clock?:SourceSceneClockRequest;}
 export interface SourceSamilaRuntimeFacts {sceneTime:number;rawDt:number;activeDt:number;queueIndex:number;queueComplete:boolean;parameterWriteRevision:number;phi:number;theta:number;gamma:number;paused:boolean;updates:number;clockSource:'worker-wall-clock'|'injected';}
 export type SourceSamilaHotAction=
  | {kind:'parameter';name:string;value:number}
@@ -28,16 +29,25 @@ export type SourceSamilaHotAction=
 export type SourceSamilaLiveOutput=Extract<SceneOutput,{type:'raster'}>;
 const LIMIT=768*1024*1024,F=Math.fround;
 const RUNTIME_LIMITS:Record<string,readonly[number,number]>={normalizedBrightness:[0,1],normalizedContrast:[.1,2],normalizedGamma:[.1,10],normalizedDynamicRange:[.1,1],normalizedSaturation:[0,1],colorSpeed:[.1,2],colorPhase:[0,360]};
+function appliedRuntimeSettings(scene:SceneDocument):void {
+ for(const [source,field]of Object.entries(SOURCE_SAMILA_APPEARANCE_FIELDS)){
+  if(source==='trail_lifetime')continue;const value=sourceSamilaFloat(scene.settings,field.key,field.base),limit=RUNTIME_LIMITS[field.key];
+  scene.settings[field.key]=limit?F(Math.max(F(limit[0]),Math.min(F(limit[1]),value))):value;
+ }
+}
 const cancel=(c:GenerateContext)=>{if(c.isCancelled?.())throw new DOMException('Samila 热显示已取消','AbortError');};
 const copy=<T>(value:T):T=>structuredClone(value);
 function context(c:GenerateContext):SourceSamilaLiveContext {
  const value=c.samilaLive;
  if(!value||typeof value.sessionId!=='string'||!value.sessionId.length||!Number.isSafeInteger(value.pixelDensity)||value.pixelDensity<1||value.dirtyRevision!==undefined&&(!Number.isSafeInteger(value.dirtyRevision)||value.dirtyRevision<0))throw Error('Samila 热会话上下文无效');
+ if(value.runtimeRevision!==undefined&&(!Number.isSafeInteger(value.runtimeRevision)||value.runtimeRevision<0))throw Error('Samila 运行设置版本无效');
+ if(value.parameterRevisions!==undefined&&(!value.parameterRevisions||typeof value.parameterRevisions!=='object'||Array.isArray(value.parameterRevisions)||Object.values(value.parameterRevisions).some(v=>!Number.isSafeInteger(v)||v<1)))throw Error('Samila 参数写入版本无效');
  if(value.clock!==undefined)validateSourceSceneClockRequest(value.clock);
  if(!Number.isFinite(c.time)||!value.clock&&(c.time<0||c.time>86400))throw Error('Samila 热会话时间无效');return value;
 }
 function validate(scene:SceneDocument,c:GenerateContext):void {
  context(c);if(!usesSourceSamilaSampling(scene)||!usesSourceSamilaPresentation(scene)||!usesSourceSamilaTimeline(scene))throw Error('Samila 热显示需要完整源采样、呈现和源队列配置');
+ if(Object.keys(context(c).parameterRevisions??{}).some(name=>!Object.hasOwn(scene.parameters,name)))throw Error('Samila 参数写入版本只能引用既有参数');
  validateSourceSamilaSampling(scene);validateSourceSamilaPresentation(scene);validateSourceSamilaSplat(scene);
  if(scene.settings.iteratedBackend==='cpu')throw Error('Samila 热显示需要 WebGL2；不能用冷 CPU 重放替换现有墨迹');
  prepareIteratedFrame(scene,c.time,0);exactRasterDimensions(c);cancel(c);
@@ -52,7 +62,7 @@ export class SourceSamilaSession {
  private hostClock?:SourceSceneHostClock;private runtimeFrame?:SourceSamilaFrame;
  private authored?:SceneDocument;private current?:SceneDocument;private timeline?:SourceSamilaTimelineSession;
  private sessionId='';private structure='';private acknowledged:Record<string,number>={};
- private dirty=true;private dirtyRevision=0;private writeRevision=0;private anchor?:number;
+ private dirty=true;private dirtyRevision=0;private runtimeRevision=0;private parameterRevisions:Readonly<Record<string,number>>={};private writeRevision=0;private anchor?:number;
  private width=0;private height=0;private count=0;private displayIndex=0;private passes=0;private time=0;private theta=0;
  private trailDecay=1;private runtimeSettingsApplied=false;
  private steps=0;private accepted=0;private clipped=0;private invalid=0;private clears=0;
@@ -60,14 +70,17 @@ export class SourceSamilaSession {
  constructor(options:{samilaSeedProvider?:()=>number}={}){this.random=new SourceSamilaRandomSource({nextSeed:options.samilaSeedProvider});}
  reset(failures:readonly unknown[]=[]):void {
   this.completed=undefined;this.failed=true;
-  this.cleanup.reset(()=>{this.gpu?.dispose();this.gpu=undefined;this.timeline?.reset();this.timeline=undefined;this.hostClock=undefined;this.runtimeFrame=undefined;this.authored=undefined;this.current=undefined;this.sessionId='';this.structure='';this.acknowledged={};this.dirty=true;this.dirtyRevision=0;this.writeRevision=0;this.anchor=undefined;this.trailDecay=1;this.runtimeSettingsApplied=false;this.width=0;this.height=0;this.count=0;this.displayIndex=0;this.passes=0;this.time=0;this.theta=0;this.steps=0;this.accepted=0;this.clipped=0;this.invalid=0;this.clears=0;this.failed=false;},failures);
+  this.cleanup.reset(()=>{this.gpu?.dispose();this.gpu=undefined;this.timeline?.reset();this.timeline=undefined;this.hostClock=undefined;this.runtimeFrame=undefined;this.authored=undefined;this.current=undefined;this.sessionId='';this.structure='';this.acknowledged={};this.dirty=true;this.dirtyRevision=0;this.runtimeRevision=0;this.parameterRevisions={};this.writeRevision=0;this.anchor=undefined;this.trailDecay=1;this.runtimeSettingsApplied=false;this.width=0;this.height=0;this.count=0;this.displayIndex=0;this.passes=0;this.time=0;this.theta=0;this.steps=0;this.accepted=0;this.clipped=0;this.invalid=0;this.clears=0;this.failed=false;},failures);
  }
  diagnostics(){return{runtime:this.runtimeFacts(),hostClock:this.hostClock?.diagnostics(),sessionId:this.sessionId,displayIndex:this.displayIndex,accumulationPasses:this.passes,anchorTheta:this.anchor,dirty:this.dirty,parameterSnapshot:{...this.acknowledged},parameters:{...this.current?.parameters},width:this.width,height:this.height,clears:this.clears,failed:this.failed,random:this.random.diagnostics(),gpu:this.gpu?.diagnostics(),retainedBytes:(this.gpu?.diagnostics().retainedBytes??0)+this.stateBytes()};}
- private stateBytes():number{if(!this.current&&!this.authored)return 0;return (this.authored?JSON.stringify(this.authored).length*2:0)+(this.current?JSON.stringify(this.current).length*2:0)+this.structure.length*2+JSON.stringify(this.acknowledged).length*2+(this.completed?.identity.length??0)*2;}
+ private stateBytes():number{if(!this.current&&!this.authored)return 0;return (this.authored?JSON.stringify(this.authored).length*2:0)+(this.current?JSON.stringify(this.current).length*2:0)+this.structure.length*2+JSON.stringify(this.acknowledged).length*2+JSON.stringify(this.parameterRevisions).length*2+(this.completed?.identity.length??0)*2;}
  snapshotInk():Float32Array {if(this.failed||!this.gpu)throw Error('Samila 热墨迹不可读取');if(this.diagnostics().retainedBytes+this.width*this.height*16>LIMIT)throw Error('Samila 热墨迹复制超过 768 MiB');return this.gpu.readback();}
  private replace(scene:SceneDocument,c:GenerateContext):void {
   if(context(c).clock&&(c.time<0||c.time>86400))throw Error('Samila 本地重建起点需要 0–86400 秒');
-  this.reset();this.authored=copy(scene);this.current=copy(scene);this.sessionId=context(c).sessionId;this.structure=sourceSamilaApplyIdentity(scene);this.acknowledged={...scene.parameters};this.trailDecay=sourceSamilaTrailDecay(scene.settings);this.theta=F(parseSamilaCamera(scene).theta);this.timeline=new SourceSamilaTimelineSession(copy(scene),Boolean(context(c).clock));if(context(c).clock){this.runtimeFrame=c.time>0?this.timeline.reconstruct(c.time):this.timeline.snapshot();this.hostClock=new SourceSceneHostClock(context(c).clock!.paused,this.runtimeFrame.camera);this.current.parameters={...this.runtimeFrame.parameters};this.theta=F(this.runtimeFrame.camera.theta);this.time=this.runtimeFrame.sceneTime;}this.dirtyRevision=context(c).dirtyRevision??0;
+  this.reset();this.authored=copy(scene);this.current=copy(scene);this.sessionId=context(c).sessionId;this.structure=sourceSamilaApplyIdentity(scene);this.acknowledged={...scene.parameters};this.trailDecay=sourceSamilaTrailDecay(scene.settings);this.theta=F(parseSamilaCamera(scene).theta);this.timeline=new SourceSamilaTimelineSession(copy(scene),Boolean(context(c).clock));if(context(c).clock){this.runtimeFrame=c.time>0?this.timeline.reconstruct(c.time):this.timeline.snapshot();this.hostClock=new SourceSceneHostClock(context(c).clock!.paused,this.runtimeFrame.camera);this.current.parameters={...this.runtimeFrame.parameters};this.theta=F(this.runtimeFrame.camera.theta);this.time=this.runtimeFrame.sceneTime;}this.dirtyRevision=context(c).dirtyRevision??0;this.runtimeRevision=context(c).runtimeRevision??0;this.parameterRevisions=copy(context(c).parameterRevisions??{});
+  // A history checkpoint may reconstruct effective hot settings, distinct from
+  // explicit source Reset/Apply which starts a new context at revision zero.
+  if(this.runtimeRevision){appliedRuntimeSettings(this.current);this.runtimeSettingsApplied=true;}
  }
  applyHot(action:SourceSamilaHotAction):void {
   if(this.busy||this.failed||!this.current)throw Error('Samila 热操作需要已初始化且空闲的会话');
@@ -93,8 +106,11 @@ export class SourceSamilaSession {
   const live=context(c),key=sourceSamilaApplyIdentity(scene);
   if(!this.current||this.sessionId!==live.sessionId||this.structure!==key||Boolean(live.clock)!==Boolean(this.hostClock)||!live.clock&&c.time<this.time)this.replace(scene,c);
   else{
-   const before=this.authored!,next=this.current!,oldColorSpeed=sourceSamilaFloat(next.settings,'colorSpeed',.22),oldColorPhase=sourceSamilaFloat(next.settings,'colorPhase',180);let runtimeSettingsChanged=false;
-   for(const [name,value]of Object.entries(scene.parameters))if(!Object.is(before.parameters[name],value))this.applyAction({kind:'parameter',name,value});
+   const before=this.authored!,next=this.current!,oldColorSpeed=sourceSamilaFloat(next.settings,'colorSpeed',.22),oldColorPhase=sourceSamilaFloat(next.settings,'colorPhase',180),runtimeRevision=live.runtimeRevision??0;if(runtimeRevision<this.runtimeRevision)throw Error('Samila 运行设置版本倒退；需要新的会话');let runtimeSettingsChanged=runtimeRevision!==this.runtimeRevision;
+   const parameterRevisions=live.parameterRevisions??{};
+   for(const [name,revision]of Object.entries(this.parameterRevisions))if((parameterRevisions[name]??0)<revision)throw Error('Samila 参数写入版本倒退；需要新的会话');
+   for(const [name,value]of Object.entries(scene.parameters))if(!Object.is(before.parameters[name],value)||(parameterRevisions[name]??0)>(this.parameterRevisions[name]??0))this.applyAction({kind:'parameter',name,value});
+   this.parameterRevisions=copy(parameterRevisions);
    for(const key of HOT_SETTINGS){const value=scene.settings[key];if(Object.is(before.settings[key],value))continue;
     if(key==='rotation')this.applyAction({kind:'rotation',value:sourceSamilaFloat(scene.settings,key,0)});
     else if(key==='batchSize')this.applyAction({kind:'batchSize',value:Number(value??4096)});
@@ -109,13 +125,11 @@ export class SourceSamilaSession {
     // One native setter receives the entire group: editing background can also
     // clamp a previously imported out-of-range phase/gamma. Constructor values
     // remain literal until this explicit local hot-authoring operation.
-    for(const [source,field]of Object.entries(SOURCE_SAMILA_APPEARANCE_FIELDS)){
-     if(source==='trail_lifetime')continue;const value=sourceSamilaFloat(next.settings,field.key,field.base),limit=RUNTIME_LIMITS[field.key];
-     next.settings[field.key]=limit?F(Math.max(F(limit[0]),Math.min(F(limit[1]),value))):value;
-    }
+    appliedRuntimeSettings(next);
     this.runtimeSettingsApplied=true;
     if(Math.abs(F(Number(next.settings.colorSpeed)-oldColorSpeed))>F(1e-6)||Math.abs(F(Number(next.settings.colorPhase)-oldColorPhase))>F(1e-6))this.dirty=true;
    }
+   this.runtimeRevision=runtimeRevision;
    if(JSON.stringify(before.palette)!==JSON.stringify(scene.palette)){
     if(JSON.stringify({...before.palette,offset:0})===JSON.stringify({...scene.palette,offset:0}))next.palette={...next.palette,offset:scene.palette.offset};
     else this.applyAction({kind:'palette',value:scene.palette});
@@ -178,6 +192,9 @@ export class SourceSamilaSession {
  private identity(scene:SceneDocument,c:GenerateContext):string{return JSON.stringify([sourceSamilaSceneIdentity(scene),c.time,c.samilaLive,c.samilaPrimaryPixelHeight]);}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean {return !this.failed&&!!this.completed&&this.completed.identity===this.identity(scene,c)&&this.completed.width===c.width&&this.completed.height===c.height;}
  generate(scene:SceneDocument,c:GenerateContext):SourceSamilaLiveOutput {
+  // Direct callers share the same ownership boundary as Worker transport: UI
+  // generator state is neither retained renderer state nor a cloning input.
+  scene=sourceSamilaPaletteRuntimeScene(scene);
   if(this.busy)throw Error('Samila 热会话正在执行');this.cleanup.prepare();validate(scene,c);if(this.hostClock&&context(c).clock&&this.sessionId===context(c).sessionId&&this.structure===sourceSamilaApplyIdentity(scene))this.hostClock.assertPaused(context(c).clock!.paused);this.preflight(scene,c);this.busy=true;
   try{this.sync(scene,c);const output=this.display(c,'primary');this.completed={context:{...c,samilaLive:copy(context(c))},identity:this.identity(scene,c),width:output.width,height:output.height};return output;}
   catch(error){this.reset([error]);throw error;}finally{this.busy=false;}

@@ -1,29 +1,35 @@
-import {sourceSamilaUsesPaletteLut} from '../engine/sourceSamilaSplat';
 import {useState} from 'react';
-import type {Palette,SceneDocument,CosinePalette} from '../types';
+import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
 import {Control} from './Fields';
-import {DEFAULT_SOURCE_SURFACE_COLORS} from '../engine/sourceSurfaceColor';
+import {SourceGradientPaletteEditor,type SourceGradientPaletteController} from './SourceGradientPaletteEditor';
+import {sourceSamilaEditableColors,sourceSamilaPaletteEditorState,sourceSamilaPaletteEditorMode,openSourceSamilaPaletteEditor,commitSourceSamilaPalette,restoreSourceSamilaManualPalette,changeSourceSamilaPalette,sourceSamilaManualColorRgb,sourceSamilaManualRgbText,syncSourceSamilaPaletteSession,SOURCE_SAMILA_DEFAULT_COLORS} from '../engine/sourceSamilaPaletteEditing';
+import {insertSourceBouncingColor} from '../engine/sourceBouncingPaletteEditing';
+import {usesSourceSamilaSplat} from '../engine/sourceSamilaSplat';
+import type {SourcePaletteGenerationResult} from '../engine/sourceGradientPaletteGeneration';
 import {MAX_PALETTE_STOPS} from '../engine/palette';
-const cosineDefault:CosinePalette={a:[.5,.5,.5],b:[.5,.5,.5],c:[1,1,1],d:[0,Math.fround(.333),Math.fround(.667)]};
+
+/** One user commit issues the source palette+continuous setters, including
+ * equal values. Offset edits only refresh LUT and do not clear accumulation. */
 export function SourceSamilaPaletteEditor({scene,onChange}:{scene:SceneDocument;onChange:(scene:SceneDocument,dirty?:boolean)=>void}){
- const {t}=useI18n(),[selected,setSelected]=useState(0),palette=scene.palette,index=Math.min(selected,palette.stops.length-1),mode=sourceSamilaUsesPaletteLut(scene.settings,palette)?palette.mode:'fallback';
- const emit=(next:Palette,useLut=true,dirty=true)=>onChange({...scene,palette:next,settings:{...scene.settings,samilaUsePaletteLut:useLut}},dirty);
+ const {t}=useI18n(),[selected,setSelected]=useState(0),[error,setError]=useState('');
+ if(!usesSourceSamilaSplat(scene))return null;
+ const editable=openSourceSamilaPaletteEditor(scene),colors=sourceSamilaEditableColors(editable),state=sourceSamilaPaletteEditorState(editable),index=Math.min(selected,Math.max(0,colors.length-1)),current=colors[index];
+ const accept=(result:SourcePaletteGenerationResult<SceneDocument>)=>{if(!result.ok){setError(result.error.reason);return result.error.reason;}onChange(result.value,true);setError('');return undefined;};
+ const emit=(next:readonly string[],resetSelection=false)=>{const failure=accept(changeSourceSamilaPalette(editable,next));if(!failure&&resetSelection)setSelected(0);return failure;};
+ const controller:SourceGradientPaletteController={ownsManualSnapshot:true,mode:sourceSamilaPaletteEditorMode(state),colorCount:state.colorCount,cosine:state.cosine,curve:state.curves??{},onCommit:commit=>accept(commitSourceSamilaPalette(editable,commit)),description:'生成参数只保留在当前打开项目中；保存颜色，重新打开回到手动模式。'};
+ const preview=(colors.length===1?[colors[0],colors[0]]:colors).slice(0,16).map(sourceSamilaManualColorRgb);
  return <div data-testid="source-samila-palette" style={{display:'grid',gap:10}}>
-  <label className="field"><span>{t('调色板模式')}</span><select aria-label={t('调色板模式')} value={mode} onChange={e=>emit({...palette,mode:e.target.value==='cosine'?'cosine':'linear',cosine:palette.cosine??structuredClone(cosineDefault)},e.target.value!=='fallback')}>
-   <option value="linear">{t('手动 Manual')}</option><option value="cosine">{t('余弦 Cosine')}</option><option value="fallback">{t('空色板 · 默认余弦')}</option>
-  </select></label>
-  {mode==='linear'&&<>
-   <p className="muted">{t('色标等距排列，使用 RGB 插值。')}</p>
-   <label className="field"><span>{t('选择色标')}</span><select aria-label={t('选择色标')} value={index} onChange={e=>setSelected(Number(e.target.value))}>{palette.stops.map((_,i)=><option key={i} value={i}>{i+1}</option>)}</select></label>
-   <div style={{display:'flex',gap:8}}><input type="color" aria-label={t('色标颜色')} value={palette.stops[index]} onChange={e=>emit({...palette,stops:palette.stops.map((c,i)=>i===index?e.target.value:c)})}/>
-    <button disabled={palette.stops.length>=MAX_PALETTE_STOPS} onClick={()=>{emit({...palette,stops:[...palette.stops,palette.stops[index]]});setSelected(palette.stops.length);}}>{t('添加色标')}</button>
-    <button disabled={palette.stops.length<=2} onClick={()=>{emit({...palette,stops:palette.stops.filter((_,i)=>i!==index)});setSelected(Math.max(0,index-1));}}>{t('删除色标')}</button>
-    <button onClick={()=>emit({...palette,stops:[...palette.stops].reverse()})}>{t('反转')}</button>
-   </div>
-  </>}
-  {mode==='cosine'&&(['a','b','c','d']as const).map(key=><div key={key} style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8}}>{[0,1,2].map(channel=><Control key={channel} spec={{key:`samila-cosine-${key}-${channel}`,label:`${key.toUpperCase()} ${['R','G','B'][channel]}`,type:'number',group:'palette'}} value={(palette.cosine??cosineDefault)[key][channel]} onChange={value=>{const cosine=structuredClone(palette.cosine??cosineDefault);cosine[key][channel]=Number(value);emit({...palette,cosine});}}/>)}</div>)}
-  {mode!=='fallback'&&<Control spec={{key:'samila-palette-offset',label:t('颜色偏移'),type:'number',group:'palette'}} value={palette.offset} onChange={value=>emit({...palette,offset:Number(value)},true,false)}/>}
-  <button onClick={()=>emit({name:palette.name,mode:'linear',offset:0,cycles:1,stops:[...DEFAULT_SOURCE_SURFACE_COLORS]})}>{t('恢复默认六色')}</button>
+  <SourceGradientPaletteEditor source={colors} colors={colors} onGenerate={emit} onRestore={()=>accept(restoreSourceSamilaManualPalette(editable))} controller={controller}>
+   <div role="img" aria-label={t('前 16 个颜色预览')} style={{height:25,borderRadius:5,background:preview.length?`linear-gradient(90deg,${preview.join(',')})`:'#000000',border:'1px solid var(--border)'}}/>
+   <p className="muted">{t('已保存 {count} 个颜色',{count:colors.length})}</p>
+   {current!==undefined&&<>
+    <label className="field"><span>{t('选择颜色')}</span><input aria-label={t('源颜色序号')} type="number" min={1} max={colors.length} step={1} value={index+1} onChange={e=>{const n=Number(e.target.value);if(Number.isInteger(n)&&n>=1&&n<=colors.length)setSelected(n-1);}}/></label>
+    <div style={{display:'flex',gap:8,alignItems:'center'}}><input aria-label={t('源颜色')} type="color" value={sourceSamilaManualColorRgb(current)} onChange={e=>emit(colors.map((c,i)=>i===index?sourceSamilaManualRgbText(e.target.value):c))}/><input aria-label={t('源颜色原文')} value={current} onChange={e=>emit(colors.map((c,i)=>i===index?e.target.value:c))}/><button onClick={()=>{if(!emit(colors.filter((_,i)=>i!==index)))setSelected(Math.max(0,index-1));}}>{t('删除颜色')}</button></div>
+   </>}
+   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button disabled={colors.length>=MAX_PALETTE_STOPS} onClick={()=>{const next=insertSourceBouncingColor(colors,index);if(!emit(next.colors))setSelected(next.selected);}}>{t('添加颜色')}</button><button disabled={colors.length<2} onClick={()=>emit([...colors].reverse(),true)}>{t('反转')}</button><button onClick={()=>emit(SOURCE_SAMILA_DEFAULT_COLORS,true)}>{t('恢复六色默认')}</button></div>
+  </SourceGradientPaletteEditor>
+  <Control spec={{key:'samila-palette-offset',label:t('颜色偏移'),type:'number',group:'palette'}} value={scene.palette.offset} onChange={value=>onChange(syncSourceSamilaPaletteSession(editable,{...editable,palette:{...scene.palette,offset:Number(value)}}),false)}/>
+  {error&&<p role="alert">{t(error)}</p>}
  </div>;
 }

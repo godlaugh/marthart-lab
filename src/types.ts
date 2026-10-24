@@ -1,3 +1,5 @@
+import type {SourceSamilaPalette,SamilaPaletteEditorState,SourceSamilaPaletteSession} from './engine/sourceSamilaPaletteEditing';
+import type {SymmetryPaletteEditorState,SymmetryPaletteSession} from './engine/sourceSymmetryPaletteEditing';
 import type {DomainPaletteEditorState} from './engine/domainPaletteEditing';
 import type {ImplicitPaletteEditorState} from './engine/implicitPaletteEditing';
 import type {SourceFractalRecordingFrameInput,SourceFractalRecordingFrame} from './engine/sourceFractalRecording';
@@ -265,6 +267,9 @@ export interface SceneDocument {
   attractorSource?: SourceAttractorDocumentPayload;
   /** Complete authored Perlin configuration; both backend settings are retained. */
   symmetrySource?:SourceSymmetryConfiguration;
+  symmetrySourcePalette?:{colors:string[]};
+  symmetryPaletteEditor?:SymmetryPaletteEditorState;
+  symmetryPaletteSession?:SymmetryPaletteSession;
   mapSource?:SourceMapConfiguration;
   perlinSource?: SourcePerlinDocumentPayload;
   /** Legacy single-backend payloads remain readable when provenance is incomplete. */
@@ -276,6 +281,9 @@ export interface SceneDocument {
   /** Optional authored presentation payload. Omission retains legacy rules;
    * local-v1 keeps this payload dormant without discarding its source values. */
   rootsPresentation?: RootsPresentationConfiguration;
+  samilaSourcePalette?:SourceSamilaPalette;
+  samilaPaletteEditor?:SamilaPaletteEditorState;
+  samilaPaletteSession?:SourceSamilaPaletteSession;
   runtimeSamilaViewport?: RuntimeSamilaViewport;
   evaluatedCamera?: EvaluatedCamera;
   /** Runtime camera facts, never a replacement for rootsPresentation.camera. */

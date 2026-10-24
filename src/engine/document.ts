@@ -1,3 +1,5 @@
+import {validateSourceSamilaPalette,prepareSourceSamilaColdPalette,sourceSamilaPalettePersistentScene} from './sourceSamilaPaletteEditing';
+import {assertSymmetrySourcePaletteProfile,parseSymmetrySourcePalette,symmetryColdPalette,persistentSymmetryPaletteScene} from './sourceSymmetryPaletteEditing';
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {DOMAIN_SCENE_SEQUENCE,resolveSourceDomainTimeline} from './sourceDomainTimeline';
 import {FRACTAL_SCENE_SEQUENCE,parseSourceFractalDocument} from './sourceFractalDocument';
@@ -137,6 +139,10 @@ export function parseSceneValue(data: unknown): SceneDocument {
   delete data.runtimeSamilaViewport;
   delete data.domainPaletteEditor;
   delete data.implicitPaletteEditor;
+  delete data.symmetryPaletteEditor;
+  delete data.symmetryPaletteSession;
+  delete data.samilaPaletteEditor;
+  delete data.samilaPaletteSession;
   delete data.domainRender; // Delivered execution facts are not authored rules.
   delete data.rootsColor;
   delete data.evaluatedSpirographRotationRadians;
@@ -211,6 +217,17 @@ export function parseSceneValue(data: unknown): SceneDocument {
   usesSourceSamilaMath(data as unknown as SceneDocument);
   delete data.evaluatedSourceCamera;
   const palette=validatePalette(data.palette);data.palette=palette;
+  validateSourceSamilaSplat(data as unknown as SceneDocument);
+  if(data.samilaSourcePalette!==undefined){
+    data.samilaSourcePalette=validateSourceSamilaPalette(data.samilaSourcePalette);
+    const cold=prepareSourceSamilaColdPalette(data as unknown as SceneDocument)!;data.palette=cold.palette;
+    (data.settings as Settings).samilaUsePaletteLut=cold.useLut;
+  }
+  if(data.symmetrySourcePalette!==undefined){
+    assertSymmetrySourcePaletteProfile(data as unknown as SceneDocument);
+    data.symmetrySourcePalette=parseSymmetrySourcePalette(data.symmetrySourcePalette);
+    data.palette=symmetryColdPalette((data.symmetrySourcePalette as {colors:string[]}).colors,palette.name);
+  }
   if(data.kind==='domain'){
     parseDomainRenderPolicy((data.settings as Settings).domainRenderPolicy);
     parseDomainColorVersion((data.settings as Settings).domainColorVersion);
@@ -297,7 +314,6 @@ export function parseSceneValue(data: unknown): SceneDocument {
     validateRootsSourceColorSettings(settings);
     if(!usesRootsNativeMath(data as unknown as SceneDocument))parseRootParameters(settings,String(settings.variable??'z'),Object.keys(data.parameters as object));
   }
-  validateSourceSamilaSplat(data as unknown as SceneDocument);
   validateSourceSamilaPresentation(data as unknown as SceneDocument);
   validateSourceMapPresentation(data as unknown as SceneDocument);validateSourceSymmetryPresentation(data as unknown as SceneDocument);validateSourceSymmetryGradient(data as unknown as SceneDocument);validateSourceSymmetryParameters(data as unknown as SceneDocument);validateSourceMapParameters(data as unknown as SceneDocument);validateSourceMapSplat(data as unknown as SceneDocument);
   validateSourceSamilaSampling(data as unknown as SceneDocument);
@@ -366,7 +382,7 @@ export interface SavedWorkspace {
   recovered?: boolean;
   startupError?: string;
 }
-export function persistentScene(scene:SceneDocument):SceneDocument {const {domainPaletteEditor:_domainPaletteEditor,implicitPaletteEditor:_implicitPaletteEditor,evaluatedDomainScene:_domainScene,evaluatedFractalScene:_fractalScene,evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _domainPaletteEditor;void _implicitPaletteEditor;void _domainScene;void _fractalScene;void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
+export function persistentScene(scene:SceneDocument):SceneDocument {const {domainPaletteEditor:_domainPaletteEditor,implicitPaletteEditor:_implicitPaletteEditor,evaluatedDomainScene:_domainScene,evaluatedFractalScene:_fractalScene,evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _domainPaletteEditor;void _implicitPaletteEditor;void _domainScene;void _fractalScene;void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return sourceSamilaPalettePersistentScene(persistentSymmetryPaletteScene(document));}
 /** JSON numbers retain negative zero on parse, but stringify ordinarily loses it.
  * Source animation division observes that sign. Keep the standard serializer
  * and inject only the standard raw numeric token, never a shadow field. */

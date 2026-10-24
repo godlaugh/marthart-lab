@@ -1,3 +1,5 @@
+import {symmetryPaletteColdAnchor,assertSymmetryPaletteRetention} from './sourceSymmetryPaletteEditing';
+import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {sourceRecordingSize} from './sourceRecordingSize';
 import {sourceIteratedParameterChanges} from './sourceIteratedParameterEdit';
 import {navigateSourceViewportCamera,type SourceViewportNavigationEvent} from './sourceViewportNavigation';
@@ -79,6 +81,7 @@ export class SourceIteratedSession {
  /** A parameter control writes runtime uniforms, without update/display/reseed.
   * Applied recording config and constructor seed stay owned by initialization. */
  updateParameters(before:SceneDocument,next:SceneDocument,c:GenerateContext,writes?:readonly (readonly [string,number])[]){
+  before=sourcePaletteRuntimeScene(before);next=sourcePaletteRuntimeScene(next);
   if(!this.matchesCompletedPrimary(before,c)||!this.authored||!this.timeline)throw Error('迭代参数更新需要匹配的已完成主预览');
   const changes=sourceIteratedParameterChanges(before,next,writes);if(!changes)throw Error('该编辑不是已有迭代参数热更新');
   this.timeline.writeParameters(changes);this.authored=structuredClone(next);this.shape=sourceIteratedApplyIdentity(next);this.frame=this.timeline.snapshot();
@@ -126,6 +129,7 @@ export class SourceIteratedSession {
   return{scene,job,sourceFrame,display};
  }
  generate(scene:SceneDocument,c:GenerateContext):Raster {
+  scene=sourcePaletteRuntimeScene(scene);
   if(this.recording||this.busy||this.failed)throw Error('迭代场景 实时会话需要可用且空闲的所有者');this.cleanup.prepare();const live=context(c,this.family);exactRasterDimensions(c);cancel(c);
   if(sourceIteratedLiveKind(scene)!==this.family)throw Error('迭代场景 实时生成需要完整源模型、零起点和开启绘制；本地延迟累积或停止记录使用固定回放');
   this.tone(scene,c);const shape=sourceIteratedApplyIdentity(scene),replace=!this.authored||this.sessionId!==live.sessionId||this.shape!==shape||this.startAt!==live.startAt;
@@ -163,7 +167,9 @@ export class SourceIteratedSession {
   }catch(error){this.reset([error]);throw error;}finally{this.busy=false;}
  }
  private initialize(scene:SceneDocument,live:SourceIteratedLiveContext){
-  this.reset();this.particleConstruction=structuredClone({mapSource:scene.mapSource,symmetrySource:scene.symmetrySource});this.applied=structuredClone(scene);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
+  const applied=scene.symmetrySourcePalette?symmetryPaletteColdAnchor(scene):scene;
+  if(scene.symmetrySourcePalette)assertSymmetryPaletteRetention({input:scene,authored:scene,applied,construction:scene.symmetrySource});
+  this.reset();this.particleConstruction=structuredClone({mapSource:scene.mapSource,symmetrySource:scene.symmetrySourcePalette?applied.symmetrySource:scene.symmetrySource});this.applied=structuredClone(applied);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
   this.sessionId=live.sessionId;this.startAt=live.startAt;this.revision=live.replayRevision;
   this.timeline=new SourceIteratedTimelineSession(scene);this.frame=this.timeline.snapshot();
   this.clock=new SourceSceneHostClock(live.clock.paused,this.frame.frame.camera);this.replay=new SourceIteratedReplaySession(this.family,live.renderFps);
@@ -173,12 +179,16 @@ export class SourceIteratedSession {
   * It does not promote intervening hot edits to constructor inputs. Native
   * video uses the fixed MathArtConfig exportScaleFactor=3, not PNG enhancement. */
  beginRecording(scene:SceneDocument,c:GenerateContext,options:{width:number;height:number;simulationFps:number}){
+  scene=sourcePaletteRuntimeScene(scene);
   if(this.recording||!this.matchesCompletedPrimary(scene,c)||!this.applied||c.sourceViewport?.target!=='primary')throw Error('迭代场景录制需要已完成且匹配的主预览');
   this.cleanup.prepare();cancel(c);
   const clock=planSourceIteratedRecording(this.applied,options.simulationFps,c.isCancelled);
   const size=sourceRecordingSize(options,c.sourcePointPixelDensity??NaN);
   this.replay!.validateCapture(size.width,size.height,0);
-  const applied=structuredClone(this.applied),effective={...structuredClone(scene),equations:applied.equations,parameters:applied.parameters,settings:applied.settings,sourceCamera:applied.sourceCamera,mapSource:applied.mapSource,symmetrySource:applied.symmetrySource,palette:applied.palette,projectResolution:applied.projectResolution,timeline:{...applied.timeline,fps:options.simulationFps}};
+  if(scene.symmetrySourcePalette)assertSymmetryPaletteRetention({input:scene,applied:this.applied,detached:this.applied});
+  const applied=structuredClone(this.applied),effective=scene.symmetrySourcePalette
+   ?{...applied,id:scene.id,name:scene.name,description:scene.description,favorite:scene.favorite,symmetryPaletteSession:{cold:applied},timeline:{...applied.timeline,fps:options.simulationFps}}
+   :{...structuredClone(scene),equations:applied.equations,parameters:applied.parameters,settings:applied.settings,sourceCamera:applied.sourceCamera,mapSource:applied.mapSource,symmetrySource:applied.symmetrySource,palette:applied.palette,projectResolution:applied.projectResolution,timeline:{...applied.timeline,fps:options.simulationFps}};
   const live:SourceIteratedLiveContext={sessionId:crypto.randomUUID(),renderFps:options.simulationFps,replayRevision:0,mapEdits:this.family==='map'?{runtimeRevision:0,dotSizeRevision:0}:undefined,clock:{paused:false}};
   const key=this.family==='map'?'mapLive':'symmetryLive',toneKey=this.family==='map'?'sourceMapToneReference':'sourceSymmetryToneReference';
   const primary:GenerateContext={...snapshotGenerationInput(c),time:0,[key]:live,isCancelled:c.isCancelled};

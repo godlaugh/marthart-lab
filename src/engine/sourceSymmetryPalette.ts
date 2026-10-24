@@ -1,11 +1,7 @@
 import type {SourceSymmetryPaletteFrame} from './sourceSymmetryGradient';
 import type {Palette} from '../types';
-import {importSourceConfigPalette} from './sourceConfigPalette';
 import {prepareSourcePaletteRuntime} from './sourcePaletteRuntime';
 import {DEFAULT_COSINE} from './palette';
-import {SOURCE_PROJECT_PALETTE_COLORS} from './sourceProjectPalette';
-
-export function importSourceSymmetryProjectPalette(raw:unknown){return importSourceConfigPalette(raw,SOURCE_PROJECT_PALETTE_COLORS,'Symmetry');}
 export type SourceSymmetryPaletteFacts = {model:'source-rgb1024';entries:1024;filter:'linear-repeat';frame?:SourceSymmetryPaletteFrame}|{model:'local-rgba4097';entries:4097;filter:'manual'};
 /** Rich local palettes remain explicit extensions; do not silently discard
  * cycles, HSV, curves, or authored stop positions to force a native claim. */

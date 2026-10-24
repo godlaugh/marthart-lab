@@ -1,3 +1,5 @@
+import {sourceSamilaPaletteEditorState} from './sourceSamilaPaletteEditing';
+import {parseSymmetrySourcePalette,symmetryColdPalette,symmetryPaletteEditorState,SOURCE_SYMMETRY_DEFAULT_COLORS} from './sourceSymmetryPaletteEditing';
 import {domainPaletteEditorState} from './domainPaletteEditing';
 import {implicitPaletteEditorState,SOURCE_IMPLICIT_DEFAULT_COLORS} from './implicitPaletteEditing';
 import {validateImplicitSourcePalette} from './sourceImplicitPalette';
@@ -26,7 +28,6 @@ import {SOURCE_MAP_MATH} from './sourceMapMath';
 import {usesSourceSymmetryParameters} from './sourceSymmetryParameterIdentity';
 import {SOURCE_SYMMETRY_GRADIENT_MODEL,usesSourceSymmetryGradient} from './sourceSymmetryGradient';
 import {SOURCE_SYMMETRY_PRESENTATION_MODEL} from './sourceSymmetryPresentation';
-import {importSourceSymmetryProjectPalette} from './sourceSymmetryPalette';
 import {importSourceSymmetryProjectVisual} from './sourceSymmetryProjectVisual';
 import {importSourceSymmetryProjectParameters,importSourceSymmetryParameters,createSourceSymmetryConfiguration,usesSourceSymmetryConfiguration,usesSourceSymmetryProject,sourceSymmetryDegree,sourceSymmetryTemplate,sourceSymmetryFloat} from './sourceSymmetryConfig';
 import {SOURCE_SYMMETRY_MATH,usesSourceSymmetryMath} from './sourceSymmetryMath';
@@ -298,7 +299,7 @@ function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&!s.mapSource&&!usesSourceSamilaSplat(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(!s.mapSource&&!usesSourceSymmetryProject(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!s.mapSource&&!usesSourceSymmetryProject(s)&&!['domain','roots','fractal','implicit'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
+ if(!s.mapSource&&!usesSourceSymmetryConfiguration(s)&&!['domain','roots','fractal','implicit'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
  if(!usesSourceSymmetryProject(s)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSamilaSourceProjection(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
@@ -1645,14 +1646,16 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   Object.assign(scene.settings,parsed.value.settings);
   for(const path of parsed.value.consumedPaths)r.use(path);for(const path of parsed.value.numericPaths)r.retainNumberToken(path);r.warnings.push(...parsed.value.warnings);
-  const color=importSourceSamilaPalette(r.usePalette());if(!color.ok)fail(color.error.reason);scene.palette=color.value.palette;scene.settings.samilaUsePaletteLut=color.value.useLut;r.warnings.push(...color.value.warnings);
-  if(r.has('color'))r.acknowledge('color','源 Samila JSON 不读取通用 color 对象；配色来自根 palette，原对象保留');
+  const color=importSourceSamilaPalette(r.usePalette());if(!color.ok)fail(color.error.reason);scene.palette=color.value.palette;scene.samilaSourcePalette=color.value.sourcePalette;scene.settings.samilaUsePaletteLut=color.value.useLut;r.warnings.push(...color.value.warnings);
+  if(r.entry==='project'){
+   const generator=importSourcePaletteGenerator(r.peek(['color']),'project');if(!generator.ok)fail(`${generator.error.path}: ${generator.error.reason}`);
+   scene.samilaPaletteEditor={...sourceSamilaPaletteEditorState(scene),...generator.value.configuration,useCosine:false,useCurve:false};
+   for(const path of generator.value.consumedPaths)r.use(path);
+  }else if(r.has('color'))r.acknowledge('color','源 Samila 运行配置不读取通用 color；颜色来自根 palette，原对象保留');
   if(r.has(['settings','dot_size']))r.acknowledge(['settings','dot_size'],'Samila 活动绘制使用 spot_size；通用 dot_size 保留但不参与散点半径');
  }
  if(usesSourceSymmetryProject(scene)){
   scene.settings.symmetryParameterModel=SOURCE_SYMMETRY_PARAMETER_MODEL;scene.settings.symmetryGradientModel=SOURCE_SYMMETRY_GRADIENT_MODEL;scene.settings.symmetryPresentationModel=SOURCE_SYMMETRY_PRESENTATION_MODEL;scene.settings.densityToneModel='normalized-v2';if(!r.has(['settings','background_color']))scene.settings.background='#000000';
-  const palette=importSourceSymmetryProjectPalette(r.usePalette());if(!palette.ok)fail(palette.error.reason);scene.palette=palette.value.palette;r.warnings.push(...palette.value.warnings);
-  if(r.has(['color']))r.acknowledge(['color'],'原版 Symmetry 项目不输出通用 color 配置；运行时配色可在本地检查器编辑');
   const parsed=importSourceSymmetryProjectVisual(r.peek(['settings']),path=>r.numberToken(path));
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   Object.assign(scene.settings,parsed.value.settings);
@@ -1663,6 +1666,17 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   const parsed=importSourceMapPresentationSettings(r.peek(['settings']),{entry:scene.mapSource.entry,numberToken:path=>r.numberToken(path)});
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   Object.assign(scene.settings,parsed.value.settings);for(const path of parsed.value.consumedPaths)r.use(path);for(const path of parsed.value.numericPaths)r.retainNumberToken(path);r.warnings.push(...parsed.value.warnings);
+ }
+ if(usesSourceSymmetryConfiguration(scene)){
+  let raw=r.usePalette();const project=scene.symmetrySource!.entry==='project';
+  if(project&&r.entry!=='project'){const parsed=prepareSourceProjectPalette(raw);if(!parsed.ok)fail(parsed.error.reason);raw=parsed.value.colors;}
+  const colors=raw===undefined?[...SOURCE_SYMMETRY_DEFAULT_COLORS]:raw;
+  try{scene.symmetrySourcePalette=parseSymmetrySourcePalette({colors});scene.palette=symmetryColdPalette(scene.symmetrySourcePalette.colors);}catch(error){fail(error instanceof Error?error.message:String(error));}
+  if(project){
+   const generator=importSourcePaletteGenerator(r.peek(['color']),'project');if(!generator.ok)fail(`${generator.error.path}: ${generator.error.reason}`);
+   scene.symmetryPaletteEditor={...symmetryPaletteEditorState(scene),...generator.value.configuration,useCosine:false,useCurve:false};
+   for(const path of generator.value.consumedPaths)r.use(path);
+  }else if(r.has('color'))r.acknowledge('color','源 Symmetry 运行配置不读取通用 color；颜色来自根 palette，原对象保留');
  }
  common(r,scene);
  ({surface,attractor,map:mapAttractor,implicit,fractal,domain,symmetry,perlin:()=>{},spirograph,samila,roots} as Record<Exclude<SceneKind,'bouncing'>,(r:Reader,s:SceneDocument)=>void>)[kind](r,scene);

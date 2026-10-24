@@ -15,6 +15,9 @@ describe('Symmetry original runtime LUT through project import and local save/re
   // These are explicit runtime edits in the JVM oracle, not file fields.
   if(row.offset!==undefined)scene.palette.offset=row.offset;
   if(row.cosine)scene.palette={...scene.palette,mode:'cosine',cosine:row.cosine};
+  // Legacy local documents persist runtime palette extensions. New source
+  // owner documents save the baked raw list (covered separately).
+  delete scene.symmetrySourcePalette;delete scene.symmetryPaletteEditor;
   scene=parseScene(serializeScene(scene));
   const job=prepareIteratedFrame(scene,0,0),actual=sourceSymmetryPaletteLut(job.palette);
   expect(job.symmetryPalette).toEqual({model:'source-rgb1024',entries:1024,filter:'linear-repeat'});
@@ -26,6 +29,7 @@ describe('Symmetry original runtime LUT through project import and local save/re
   {mode:'hsv'},{mode:'sine'},
  ] as Partial<Palette>[])('keeps explicit local extension %j through save/reopen',extension=>{
   const scene=load(fixture.cases.find(r=>r.id==='rgb')!.document);
+  delete scene.symmetrySourcePalette;delete scene.symmetryPaletteEditor;
   Object.assign(scene.palette,extension);
   const reopened=parseScene(serializeScene(scene));
   expect(reopened.palette).toMatchObject(extension);

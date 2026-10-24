@@ -639,7 +639,7 @@ export class Generator {
     const source=this.completed;
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代参数更新需要当前已完成的主预览'));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
-    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'iterated-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'iterated-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene,writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'iterated-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'iterated-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene:sourcePaletteRuntimeScene(scene),writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
   }
   updateSurfaceParameter(output:SceneOutput,name:string,value:number):Promise<void>{
     const source=this.completed;

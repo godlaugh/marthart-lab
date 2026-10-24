@@ -7,6 +7,7 @@ import {parseDomainSourceDouble} from './domainSourceScalar';
 import {javaEqualsIgnoreCaseAscii} from './sourceJavaText';
 
 import {SOURCE_SAMILA_APPEARANCE_FIELDS} from './sourceSamilaFields';
+import {validateSourceSamilaPalette,SourceSamilaPaletteError} from './sourceSamilaPaletteEditing';
 interface Facts {settings:Settings;consumedPaths:string[][];numericPaths:string[][];warnings:string[];}
 type Result={ok:true;value:Facts}|{ok:false;error:{kind:'input'|'capacity';path:string[];reason:string}};
 export function importSourceSamilaAppearance(raw:unknown,numberToken:(path:readonly string[])=>string|undefined):Result {
@@ -50,4 +51,9 @@ export function importSourceSamilaAppearance(raw:unknown,numberToken:(path:reado
 
 /** AbstractVisualConfig.parsePalette consumes only root.palette. Generic color
  * JSON flags are not runtime PaletteConfig mutations. Preserve them in source. */
-export function importSourceSamilaPalette(raw:unknown){return importSourceConfigPalette(raw,DEFAULT_SOURCE_SURFACE_COLORS,'Samila');}
+export function importSourceSamilaPalette(raw:unknown){
+ const colors=raw===undefined?[...DEFAULT_SOURCE_SURFACE_COLORS]:raw;
+ try{validateSourceSamilaPalette({colors});}catch(error){return{ok:false as const,error:{kind:error instanceof SourceSamilaPaletteError?error.kind:'input' as const,reason:error instanceof Error?error.message:String(error)}};}
+ const parsed=importSourceConfigPalette(colors,DEFAULT_SOURCE_SURFACE_COLORS,'Samila');
+ return parsed.ok?{ok:true as const,value:{...parsed.value,sourcePalette:{colors:[...colors as string[]]}}}:parsed;
+}

@@ -1,3 +1,6 @@
+import {ensureSourceSamilaPaletteSession,writeSourceSamilaParameter,writeSourceSamilaSetting,syncSourceSamilaPaletteSession,openSourceSamilaPaletteEditor,applySourceSamilaPalette,restartSourceSamilaPalette,retainSourceSamilaPaletteOnSave} from './engine/sourceSamilaPaletteEditing';
+import {assertSymmetryPaletteRetention,ensureSymmetryPaletteSession,openSymmetryPaletteEditor,applySymmetrySourcePalette,restartSymmetrySourcePalette,retainSymmetryPaletteOnSave,retainSymmetryPaletteAfterRecording} from './engine/sourceSymmetryPaletteEditing';
+import {SourceSymmetryPaletteEditor} from './components/SourceSymmetryPaletteEditor';
 import {sourcePaletteRuntimeScene} from './engine/sourcePaletteRuntimeScene';
 import {ImplicitEditorSession,assertImplicitEditorRetention,type ImplicitEditorCheckpoint} from './engine/implicitEditorSession';
 import {implicitEditorActionFor,type ImplicitEditorIntent} from './engine/implicitEditIntent';
@@ -213,7 +216,7 @@ export default function App() {
   const [language,setLanguage]=useState<Language>(restored?.language??'zh');
   const t=(text:string,values?:Record<string,string|number>)=>translate(language,text,values);
   const [initialDocument]=useState(()=>restored?.drafts?.[restored.active]??restored?.scenes.find(s=>s.id===restored.active)??createScene(defaultCreationTemplate.definition,defaultCreationTemplate.preset));
-  const [scene,setSceneState]=useState<SceneDocument>(()=>withoutSourceIteratedDraft(initialDocument));
+  const [scene,setSceneState]=useState<SceneDocument>(()=>ensureSourceSamilaPaletteSession(ensureSymmetryPaletteSession(withoutSourceIteratedDraft(initialDocument))));
   const [iteratedDraft,setIteratedDraftState]=useState<SourceIteratedDraft|undefined>(initialDocument.iteratedDraft);
   const iteratedDraftRef=useRef(iteratedDraft);
   const editorScene=useMemo(()=>sourceIteratedEditorScene(scene,iteratedDraft),[scene,iteratedDraft]);
@@ -327,7 +330,9 @@ export default function App() {
     bouncingPresented.current=false;timeRef.current=checkpoint.sceneTime;setTime(checkpoint.sceneTime);
   }
   function setScene(value:SceneDocument|((current:SceneDocument)=>SceneDocument),intent?:SceneEditIntent) {
-    const current=sceneRef.current,next=typeof value==='function'?value(current):value;
+    const current=sceneRef.current;let next=typeof value==='function'?value(current):value;
+    next=syncSourceSamilaPaletteSession(current,next);
+    if(next.symmetrySourcePalette||next.samilaSourcePalette)admitPaletteRetention(next);
     if(implicitContinuation.current&&next!==implicitContinuation.current.scene&&!usesSourceImplicitCpuMesh(next)){
       implicitContinuation.current=undefined;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;
       playingRef.current=false;setPlaying(false);playbackClock.current=timeRef.current;
@@ -471,7 +476,8 @@ export default function App() {
     const states=[...rootsDraftStates.current.values(),...[...history.current,...future.current].flatMap(entry=>[entry.roots?.before,entry.roots?.after]),rootsEditorState()].filter((state):state is RootsEditorState=>!!state);
     assertRootsEditorRetention(states.map(state=>state.owner),states.map(state=>state.checkpoint),candidate);
   }
-  function rememberScene(document:SceneDocument,roots?:RootsHistoryEffect,implicit?:ImplicitHistoryEffect){history.current.push({scene:document,roots,implicit});if(history.current.length>40)history.current.shift();future.current=[];}
+  function admitPaletteRetention(candidate:SceneDocument){assertSymmetryPaletteRetention([candidate,sceneRef.current,...history.current.map(v=>v.scene),...future.current.map(v=>v.scene),...Object.values(drafts.current)]);}
+  function rememberScene(document:SceneDocument,roots?:RootsHistoryEffect,implicit?:ImplicitHistoryEffect){if(document.symmetrySourcePalette||document.samilaSourcePalette)admitPaletteRetention(document);history.current.push({scene:document,roots,implicit});if(history.current.length>40)history.current.shift();future.current=[];}
   function restoreRootsRuntime(state:RootsEditorState){
     admitRootsRetention(state.checkpoint);
     const sessionId=crypto.randomUUID();state.owner.restore(state.checkpoint,sessionId);
@@ -512,6 +518,16 @@ export default function App() {
         admitImplicitRetention(sourcePaletteRuntimeScene(opened));setScene(opened,'implicit-metadata');
       }
     }
+    catch(error){notify(error instanceof Error?error.message:String(error));}
+  },[tab,scene,recording]);
+  useEffect(()=>{
+    if(tab!=='appearance'||!scene.symmetrySourcePalette||recording)return;
+    try{const opened=openSymmetryPaletteEditor(scene);if(opened!==scene)setScene(opened);}
+    catch(error){notify(error instanceof Error?error.message:String(error));}
+  },[tab,scene,recording]);
+  useEffect(()=>{
+    if(tab!=='appearance'||!usesSourceSamilaSplat(scene)||recording)return;
+    try{const opened=openSourceSamilaPaletteEditor(scene);if(opened!==scene)setScene(opened);}
     catch(error){notify(error instanceof Error?error.message:String(error));}
   },[tab,scene,recording]);
   const perlinPaletteRevision=useRef(0);
@@ -571,13 +587,16 @@ export default function App() {
       pendingParameterWrites.current.set(name,next.parameters[name]);
       const accepted=edit({...current,parameters:{...current.parameters,[name]:next.parameters[name]}},false,false,'iterated-parameters',{editor:next,cameraTexts:iteratedDraftRef.current?.cameraTexts});
       if(!accepted){if(hadPrevious)pendingParameterWrites.current.set(name,previous!);else pendingParameterWrites.current.delete(name);}
-    }else edit(next,true);
+    }else if(current.samilaSourcePalette){try{edit(writeSourceSamilaParameter(current,name,next.parameters[name]),true);}catch(error){notify(error instanceof Error?error.message:String(error));}}else edit(next,true);
   }
   function editFractal(next:SceneDocument,intent:'hot'|'apply'|'stage'='hot'){
     return edit(next,false,intent!=='stage',`fractal-${intent}`);
   }
   function edit(next:SceneDocument,samilaDirty=false,display=true,intent?:SceneEditIntent,draftAfter?:{editor:SceneDocument;cameraTexts?:string[]}|null,normalized=false){
     try{if(!normalized)next=editSourceMapScene(sceneRef.current,editSourceSymmetryConfiguration(sceneRef.current,next,intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit'),intent==='iterated-parameters'?'parameters':intent==='iterated-apply'?'apply':'edit');}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    try{next=syncSourceSamilaPaletteSession(sceneRef.current,next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
+    if(next.symmetrySourcePalette&&(intent==='iterated-apply'||sourceLivePreviewKind(sceneRef.current)==='symmetry'&&!(intent==='iterated-parameters'&&sourceIteratedParameterChanges(sceneRef.current,next,[...pendingParameterWrites.current]))&&sourceIteratedApplyIdentity(sceneRef.current)!==sourceIteratedApplyIdentity(next)))next=applySymmetrySourcePalette(next);
+    if(next.samilaSourcePalette&&usesSourceSamilaSampling(sceneRef.current)&&sourceSamilaApplyIdentity(sceneRef.current)!==sourceSamilaApplyIdentity(next))next=applySourceSamilaPalette(next);
     if(usesSourceBouncing(next)){const parsed=prepareSourceBouncingScene(next);if(!parsed.ok){notify(parsed.error.reason);return;}}
     if(next.sourceCamera)try{ordinarySourceCameraInitial(next);if(usesSourceSurfaceParticles(next))prepareSourceSurfaceParticles(next);if(usesSourceSurfaceHost(next))prepareSourceSurfaceScene(next);if(usesSourceAttractor(next))prepareSourceAttractorScene(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}
     const currentLive=sourceLivePreviewKind(sceneRef.current),nextLive=sourceLivePreviewKind(next);
@@ -629,6 +648,7 @@ export default function App() {
     }
     if(display&&nextLive)liveDisplayRequested.current=true;
     if(samilaDirty)dirtySamila();
+    if(next.symmetrySourcePalette||next.samilaSourcePalette){try{admitPaletteRetention(next);}catch(error){notify(error instanceof Error?error.message:String(error));return;}}
     rememberScene(withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current),rootsHistory,implicitHistory);
     if(draftAfter===null)setIteratedDraft(undefined);
     else if(draftAfter)setIteratedDraft(sourceIteratedDraftFromEditor(next,draftAfter.editor,draftAfter.cameraTexts));
@@ -641,7 +661,7 @@ export default function App() {
     if(family!=='map'&&family!=='symmetry'){edit(next,samilaDirty,display,intent);return;}
     if(intent==='iterated-replay'||intent==='iterated-palette'||intent==='iterated-dot-size'||intent==='map-runtime'){
       const keys=intent==='iterated-replay'?SOURCE_ITERATED_REPLAY_SETTINGS:intent==='iterated-palette'?[]:intent==='iterated-dot-size'?['pointSize']:SOURCE_MAP_RUNTIME_SETTINGS;
-      const runtime={...current,settings:{...current.settings,...Object.fromEntries(keys.filter(k=>Object.hasOwn(next.settings,k)).map(k=>[k,next.settings[k]]))},...(intent==='iterated-palette'?{palette:next.palette}:{})};
+      const runtime={...current,settings:{...current.settings,...Object.fromEntries(keys.filter(k=>Object.hasOwn(next.settings,k)).map(k=>[k,next.settings[k]]))},...(intent==='iterated-palette'?{palette:next.palette,symmetrySourcePalette:next.symmetrySourcePalette,symmetryPaletteEditor:next.symmetryPaletteEditor,symmetryPaletteSession:next.symmetryPaletteSession}:{})};
       edit(runtime,false,display,intent,{editor:next,cameraTexts:iteratedDraftRef.current?.cameraTexts});return;
     }
     if(!display){
@@ -655,7 +675,10 @@ export default function App() {
     if(usesSourceImplicitCpuMesh(current)||usesSourceImplicitCpuMesh(next)){editImplicit(next,'implicit-apply');return;}
     if(family==='fractal'){editFractal(next,'apply');return;}
     if(family==='roots'){editRoots(next,'roots-apply');return;}
-    if(family!=='map'&&family!=='symmetry'){edit(next);return;}
+    if(family!=='map'&&family!=='symmetry'){
+      const applied=applySourceSamilaPalette(next);
+      if(edit(applied)&&applied.samilaSourcePalette){replaceLiveSession(undefined);playbackClock.current=0;timeRef.current=0;setTime(0);liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);}return;
+    }
     cancelApplyCheck();
     try{
       // Merge the action's changed fields before resolving all pending text.
@@ -691,7 +714,7 @@ export default function App() {
       const settings=scene.kind==='samila'&&key==='samilaHistoryModel'
         ?selectSamilaHistoryModel(scene.settings,value)
         :{...scene.settings,[key]:value};
-      const next={...scene,settings};
+      const next=scene.samilaSourcePalette?writeSourceSamilaSetting(scene,key,value):{...scene,settings};
       if(scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)!==usesSourceImplicitCpuMesh(next)){void applyScene(next);return;}
       editInspector(next,usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':family==='symmetry'&&key==='pointSize'?'iterated-dot-size':(family==='map'||family==='symmetry')&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
@@ -705,7 +728,7 @@ export default function App() {
     // Opening a file is fresh authority; library navigation restores the open
     // draft's issued cold/hot plan, without applying its staged author fields.
     if(source==='library')next=workingDocument(next);
-    const draft=next.iteratedDraft;next=withoutSourceIteratedDraft(next);
+    const draft=next.iteratedDraft;next=ensureSourceSamilaPaletteSession(ensureSymmetryPaletteSession(withoutSourceIteratedDraft(next)));
     const retained=source==='library'?next.id===current.id?retainedRoots:rootsDraftStates.current.get(next.id):undefined;
     const heldImplicit=source==='library'?next.id===current.id?retainedImplicit:implicitDraftStates.current.get(next.id):undefined;
     let preparedImplicit:ImplicitEditorSession|undefined;
@@ -748,7 +771,7 @@ export default function App() {
     const builtin=isBuiltinCreationScene(scene);
     const item = parseScene(serializeScene({ ...workingDocument(scene),id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
     if(builtin){drafts.current[scene.id]=workingDocument(scene);const implicit=implicitEditorState();if(implicit){admitImplicitRetention(implicit.checkpoint);implicitDraftStates.current.set(scene.id,implicit);}const roots=rootsEditorState();if(roots)rootsDraftStates.current.set(scene.id,roots);}
-    setScene(retainImplicitPaletteEditorOnSave(scene,retainDomainPaletteEditorOnSave(scene,retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)))),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':sourceLivePreviewKind(scene)==='domain'?'domain-metadata':sourceLivePreviewKind(scene)==='roots'?'roots-metadata':usesSourceImplicitCpuMesh(scene)?'implicit-metadata':undefined);camera.current=item.camera;
+    setScene(retainSourceSamilaPaletteOnSave(scene,retainSymmetryPaletteOnSave(scene,retainImplicitPaletteEditorOnSave(scene,retainDomainPaletteEditorOnSave(scene,retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)))))),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':sourceLivePreviewKind(scene)==='domain'?'domain-metadata':sourceLivePreviewKind(scene)==='roots'?'roots-metadata':usesSourceImplicitCpuMesh(scene)?'implicit-metadata':undefined);camera.current=item.camera;
     setSaved((current) => {
       const others = current.filter((s) => s.id !== item.id);
       return [...others, item];
@@ -805,6 +828,12 @@ export default function App() {
         else{generationQueue.current?.cancel();implicitEditor.current=undefined;implicitNeedsApply.current=usesSourceImplicitCpuMesh(entry.scene);implicitContinuation.current=undefined;}
       }
       if(entry.implicit)setImplicitStaged(implicitTarget?.staged??false);
+      if(entry.scene.samilaSourcePalette||entry.scene.symmetrySourcePalette){
+        // Restore the checkpoint's effective state and cold anchor together.
+        // Lower command revisions belong to a fresh runtime incarnation.
+        admitPaletteRetention(entry.scene);generationQueue.current?.cancel();replaceLiveSession(undefined);
+        playingRef.current=false;setPlaying(false);autoPlayPending.current=false;playbackClock.current=0;timeRef.current=0;setTime(0);
+      }
       from.current.pop();to.current.push({scene:withSourceIteratedDraft(sceneRef.current,iteratedDraftRef.current),roots:entry.roots,implicit:entry.implicit});
       setIteratedDraft(entry.scene.iteratedDraft);setScene(withoutSourceIteratedDraft(entry.scene));
       notify(t(direction==='undo'?'已撤销':'已重做'));
@@ -840,6 +869,18 @@ export default function App() {
         autoPlayPending.current=false;playingRef.current=true;setPlaying(true);liveLastFrameAt.current=undefined;
         playbackClock.current=0;timeRef.current=0;setTime(0);liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);
       }catch(error){notify(error instanceof Error?error.message:String(error));}return;
+    }
+    if(value===0&&sceneRef.current.samilaSourcePalette){
+      setScene(restartSourceSamilaPalette(sceneRef.current));replaceLiveSession(undefined);
+      autoPlayPending.current=false;playingRef.current=true;setPlaying(true);playbackClock.current=0;timeRef.current=0;setTime(0);
+      liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);return;
+    }
+    if(value===0&&sceneRef.current.symmetrySourcePalette){
+      const editor=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current),restored=restartSymmetrySourcePalette(sceneRef.current);
+      setIteratedDraft(sourceIteratedDraftFromEditor(restored,{...editor,palette:restored.palette},iteratedDraftRef.current?.cameraTexts));
+      setScene(restored);replaceLiveSession(undefined);
+      autoPlayPending.current=false;playingRef.current=true;setPlaying(true);playbackClock.current=0;timeRef.current=0;setTime(0);
+      liveDisplayRequested.current=true;setGenerationRevision(n=>n+1);return;
     }
     if(previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);replaceLiveSession(value);setGenerationRevision(n=>n+1);}
     autoPlayPending.current=false;
@@ -1125,10 +1166,11 @@ export default function App() {
         const live=result.context.mapLive??result.context.symmetryLive;
         if(live){liveSessionId.current=live.sessionId;iteratedReplayRevision.current=live.replayRevision;iteratedStartAt.current=live.startAt;mapRuntimeRevision.current=live.mapEdits?.runtimeRevision??0;livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;}
         playingRef.current=live?!live.clock.paused:false;setPlaying(playingRef.current);
+        const restored=retainSymmetryPaletteAfterRecording(sceneRef.current,result.scene);
         const editor=sourceIteratedEditorScene(sceneRef.current,iteratedDraftRef.current);
-        setIteratedDraft(sourceIteratedDraftFromEditor(result.scene,editor,iteratedDraftRef.current?.cameraTexts));
-        sceneRef.current=result.scene;generationScene.current=result.scene;
-        camera.current=result.scene.camera;setSceneState(result.scene);
+        setIteratedDraft(sourceIteratedDraftFromEditor(restored,restored.symmetrySourcePalette?{...editor,palette:restored.palette}:editor,iteratedDraftRef.current?.cameraTexts));
+        sceneRef.current=restored;generationScene.current=restored;
+        camera.current=restored.camera;setSceneState(restored);
         timeRef.current=result.context.time;playbackClock.current=result.context.time;
         setTime(result.context.time);setPreviewCancelled(false);
       },
@@ -1160,7 +1202,7 @@ export default function App() {
     if(sourceBouncing)bouncingPresented.current=false;
     if(nativeGeometryPreviewEnabled(scene))nativeGeometryPresented.current=false;
     const profile=previewProfile(renderPreferences.quality),sourceSplat=usesSourceSamilaSplat(scene),dimensions=sourceBouncing||sourceLivePreviewKind(scene)==='domain'&&profile.quality==='export'||sourceSplat||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)?{width:Math.max(1,Math.floor(viewportSize[0]*viewportMeasurement!.pixelRatio)),height:Math.max(1,Math.floor(viewportSize[1]*viewportMeasurement!.pixelRatio))}:previewDimensions(renderPreferences.quality,...viewportSize);
-    generationQueue.current?.request(scene,{time:timeRef.current,...(usesSourceImplicitCpuMesh(scene)?{implicitControls:{sessionId:implicitEditor.current!.sessionId,...implicitEditor.current!.request()}}:{}),...(hasImplicitContinuation(scene)?{implicitLive:{...implicitContinuation.current!.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,controls:rootsEditor.current!.request(),clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,paletteRevision:perlinPaletteRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(implicitAppliedScene(scene),viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
+    generationQueue.current?.request(scene,{time:timeRef.current,...(usesSourceImplicitCpuMesh(scene)?{implicitControls:{sessionId:implicitEditor.current!.sessionId,...implicitEditor.current!.request()}}:{}),...(hasImplicitContinuation(scene)?{implicitLive:{...implicitContinuation.current!.context,clock:{paused:!playingRef.current},actualFrameRate:implicitActualFps.current??renderPreferences.frameRate}}:{}),quality:profile.quality,width:dimensions.width,height:dimensions.height,...(sourceLivePreviewKind(scene)==='roots'?{rootsLive:{sessionId:liveSessionId.current,controls:rootsEditor.current!.request(),clock:{paused:!playingRef.current},maximumWorkers:Math.max(1,navigator.hardwareConcurrency||1)}}:{}),...(sourceLivePreviewKind(scene)==='surface'?{surfaceLive:{sessionId:liveSessionId.current,...surfaceEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:surfaceActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='domain'?{...(profile.quality==='export'?{domainTarget:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}:{}),domainLive:{sessionId:liveSessionId.current,...domainEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:domainActualFps.current??renderPreferences.frameRate,viewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],pixelDensity:viewportMeasurement!.pixelRatio}}}:{}),...(sourceSplat?{samilaPrimaryPixelHeight:dimensions.height}:{}),...(usesSourceMapPresentation(scene)?{sourceMapToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(usesSourceSymmetryPresentation(scene)?{sourceSymmetryToneReference:{width:dimensions.width,height:dimensions.height}}:{}),...(sourceLivePreviewKind(scene)==='fractal'?{fractalPixelDensity:viewportMeasurement!.pixelRatio,fractalLive:{sessionId:liveSessionId.current,...fractalEdit.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current},actualFrameRate:fractalActualFps.current??renderPreferences.frameRate}}:{}),...(sourceLivePreviewKind(scene)==='map'?{mapLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,mapEdits:{runtimeRevision:mapRuntimeRevision.current,dotSizeRevision:0},clock:{paused:!playingRef.current}}}:{}),...(sourceLivePreviewKind(scene)==='symmetry'?{symmetryLive:{sessionId:liveSessionId.current,renderFps:renderPreferences.frameRate,replayRevision:iteratedReplayRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),...(usesSourceSamilaSampling(scene)?{samilaLive:{sessionId:liveSessionId.current,pixelDensity:viewportMeasurement!.pixelRatio,dirtyRevision:samilaDirtyRevision.current,runtimeRevision:scene.samilaPaletteSession?.runtimeRevision??0,parameterRevisions:scene.samilaPaletteSession?.parameterRevisions,clock:{paused:!playingRef.current}}}:{}),...(sourceBouncing?{sourcePointPixelDensity:viewportMeasurement!.pixelRatio,sourceBouncingFrame:bouncingFrame.current,sourceBouncingView:bouncingNavigationRef.current.view,sourceViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const,projectionPass:'perspective' as const}}:{}),...(usesSourcePerlin(scene)?{...(sourceLivePreviewKind(scene)==='perlin'?{perlinLive:{sessionId:liveSessionId.current,paletteRevision:perlinPaletteRevision.current,startAt:iteratedStartAt.current,clock:{paused:!playingRef.current}}}:{}),sourcePerlinViewport:sourcePerlinPreviewViewport(viewportSize[0],viewportSize[1],viewportMeasurement!.pixelRatio)}:{}),...(scene.sourceCamera?{sourceViewport:ordinarySourceViewport(implicitAppliedScene(scene),viewportSize[0],viewportSize[1],'primary',viewportSize[1]),sourcePointPixelDensity:viewportMeasurement!.pixelRatio}:{}),...(scene.kind==='fractal'?{fractalViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],target:'primary' as const}}:{}),...(usesRootsNativePresentation(scene)?{rootsPixelDensity:viewportMeasurement!.pixelRatio,rootsSessionId:rootsSessionId.current,rootsViewport:{logicalWidth:viewportSize[0],logicalHeight:viewportSize[1],referenceLogicalHeight:viewportSize[1],target:'primary' as const}}:{})},changed?90:0,changed&&!liveDisplayRequested.current?'metadata':undefined,[...pendingParameterWrites.current]);
     pendingParameterWrites.current.clear();liveDisplayRequested.current=false;
   },[scene,sourceBouncing?bouncingNavigation.view:undefined,sourceBouncing?bouncingCheckpoint:previewLiveKind(scene)?liveTickRevision:playing&&!hasProgressiveRoots(scene)?Math.floor(time*renderPreferences.frameRate):time,renderPreferences,viewportSize,generationRevision]);
   useEffect(()=>{
@@ -1618,6 +1660,7 @@ export default function App() {
             <div className="inspector-scroll">
               {!isCreationKind(scene.kind)&&<p className="section-body muted" role="note">{t('此场景的完整创作支持计划于 2.0。已有项目数据可继续保存和备份。')}</p>}
               {(sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry')&&<div className="section-body"><button data-testid="iterated-apply" disabled={recording||applying} onClick={()=>void applyScene(scene)}>{t(applying?'正在验证 GLSL…':'应用场景')}</button>{iteratedDraft&&<><p role="status" data-testid="iterated-draft-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p><button onClick={discardIteratedDraft}>{t('放弃未应用修改')}</button></>}</div>}
+              {scene.samilaSourcePalette&&<div className="section-body"><button data-testid="samila-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='surface'&&<div className="section-body"><button data-testid="surface-apply" disabled={recording||applying} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {sourceLivePreviewKind(scene)==='roots'&&<div className="section-body"><button data-testid="roots-apply" disabled={recording} onClick={()=>void applyScene(sceneRef.current)}>{t('应用场景')}</button>{rootsStaged&&<p role="status" data-testid="roots-staged-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p>}<p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
               {usesSourceImplicitCpuMesh(scene)&&<div className="section-body"><button data-testid="implicit-apply" disabled={recording} onClick={()=>void applyScene({...scene,equations:{...formulaDraft}})}>{t('应用场景')}</button><button data-testid="implicit-restart" disabled={recording||implicitNeedsApply.current} onClick={()=>seek(0)}>{t('返回起点')}</button>{implicitStaged&&<p role="status" data-testid="implicit-staged-status">{t('有未应用的修改；当前动画继续使用运行配置。')}</p>}<p className="muted">{t('应用场景会重新开始动画；暂停时应用仍保持暂停。')}</p></div>}
@@ -1790,7 +1833,7 @@ export default function App() {
                   <details open className="inspector-section">
                     <summary>{t("渐变与色彩")}</summary>
                     <div className="section-body">
-                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceImplicitCpuMesh(scene)?<SourceImplicitPaletteEditor key={scene.id} scene={scene} onChange={editImplicit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={editRoots}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-palette':undefined)}/>}
+                      {usesSourceMapPresentation(scene)?<p className="muted">{t('Map 颜色由步长度量、颜色速度和相位控制。')}</p>:usesSourceSamilaSplat(scene)?<SourceSamilaPaletteEditor key={scene.id} scene={scene} onChange={(next,dirty)=>edit(next,dirty)}/>:usesSourcePerlinCpu(scene)?<SourcePerlinCpuControls key={`source-perlin-cpu-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourcePerlinGpu(scene)?<SourcePerlinGpuControls key={`source-perlin-appearance:${scene.id}`} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)} tab="appearance"/>:usesSourceAttractor(scene)?<SourceAttractorPaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesSourceImplicitCpuMesh(scene)?<SourceImplicitPaletteEditor key={scene.id} scene={scene} onChange={editImplicit}/>:usesSourceSurfaceGeometry(scene)?<SourceSurfacePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:usesFractalSourceColor(scene)?<FractalSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.kind==='roots'&&usesRootsSourceDensity(scene.settings)?<RootsSourcePaletteEditor key={scene.id} scene={scene} onChange={editRoots}/>:scene.kind==='domain'&&parseDomainColorVersion(scene.settings.domainColorVersion)!=='local-v1'?<DomainSourcePaletteEditor key={scene.id} scene={scene} onChange={edit}/>:scene.symmetrySourcePalette?<SourceSymmetryPaletteEditor key={scene.id} scene={scene} onChange={(next,intent)=>edit(next,false,true,intent)}/>:<PaletteEditor palette={scene.palette} onChange={palette=>edit({...scene,palette},false,true,sourceLivePreviewKind(scene)==='symmetry'?'iterated-palette':undefined)}/>}
                       {!usesSourceSamilaSplat(scene)&&!usesSourceSurfaceGeometry(scene)&&!usesSourceAttractor(scene)&&!usesSourcePerlin(scene)&&scene.kind!=='fractal'&&scene.kind!=='domain'&&rootsAppearanceControlVisible(scene,'colorMetric')&&!hasGeometryColorOverride(scene)&&<Control
                         spec={{
                           key: "colorMetric",

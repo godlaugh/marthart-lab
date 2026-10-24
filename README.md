@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+2026-10-24 对称混沌（Symmetry）与 Samila 的手动／Cosine／Curve 调色、原始颜色保存、完整应用和重置状态已接通；1275 项相关测试、421 项实际界面检查通过。保存重开与两个受控样例的完整画布对照通过；它们验证本地接线，尚不代表原版整图一致。整体仍在 M3，见[两类场景调色中文验收](docs/source-symmetry-samila-palette-ui.zh-CN.md)。
+
 2026-10-24 隐式曲面的手动／Cosine／Curve 调色界面已接通冷配置、热改色、完整应用和录制重置；572 项相关测试与 320 项实际界面检查通过，含两段 MP4 和两张暂停 PNG。整体仍在 M3，原版整图与 2.0 发行验收继续。见[调色界面中文验收](docs/source-implicit-palette-ui.zh-CN.md)；底层契约见[色板与录制状态记录](docs/source-implicit-palette-controls.zh-CN.md)。
 
 2026-10-24 最新弹跳进展：四个内置预设已取得实际原版 JVM 的完整状态与艺术画面对照；200 万粒子预设的完整 10 秒模拟、600 帧艺术画面及使用相同原版完成帧的编码结果均通过。更早调查中的失败与限制保留在各历史记录中，当前剩余范围见[弹跳验收清单](docs/source-bouncing-acceptance.zh-CN.md)和[完整录像报告](docs/source-bouncing-full-recording.zh-CN.md)。整类与整版验收仍在进行。
