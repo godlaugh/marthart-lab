@@ -65,6 +65,48 @@ with the production clock owner. The second exercises public App rejection and
 retry through headless Chrome and the real native renderer/FFmpeg. See the
 [readable acceptance report](../../../docs/source-bouncing-warmup-completion.zh-CN.md).
 
+## Full original-duration recordings
+
+Add `--full-recording` to the recording capture command to preserve the **entire
+original preset**, including its duration. It defaults to the original configured
+60 FPS and 500×600 output; original `ensureRenderBuffer()` supplies the actual
+1500×1800 frame. This option cannot be combined with a duration override.
+
+The reference keeps every active artwork and final branded frame as lossless
+PNGs. Hashes bind artwork RGB, final alpha/RGBA and original encoder input;
+selected complete particle states remain retained. Disk admission covers worst
+case PNG expansion, state files and encoder space. Capture stops only on original
+completion; bounded diagnostic headroom and a 30-minute deadline fail explicitly
+if completion is not observed. Progress is written after every 60 frames.
+
+```sh
+MATHART_SOURCE_RENDERER_BACKEND=/absolute/path/to/backend.json \
+  node scripts/verify-source-bouncing-full-recording.mjs FULL_REFERENCE NEW_OUTPUT
+```
+
+The full comparator requires an **existing Pillow** installation for lossless PNG
+validation; it installs nothing. It verifies every PNG against the original GL
+readback hashes, then holds only the current native product frame while comparing
+full RGB, alpha, clocks and camera matrices. Every original branded PNG goes
+through the production HTTP export service. Complete decoded RGB streams are
+hashed without retaining an entire uncompressed movie in RAM.
+
+Simulation FPS and the original encoder's actual FPS are distinct observations.
+In the retained FREE-tier run, `VideoRecorder` reduced encoding to15fps while the
+configured scene still advanced at60fps. The comparator derives the encoder rate
+from the actual process argv and explicitly selects both rates in the product
+plan. Normal original license/branding remain active. MathArt Lab's optional
+separate simulation rate can reproduce that playback speed; its default follows
+the user's export rate and does not import a license cap.
+
+H.264 thread choice also affects CRF pixels. The `mathart` service profile uses
+the original automatic codec choice, while decoder/filter limits and service
+job/byte/deadline bounds remain in force. Ordinary format profiles retain two
+codec threads. `benchmark-source-recording-encoder.mjs REFERENCE NEW_OUTPUT
+BASELINE_SERVER_BUNDLE` compares two completed exports per implementation, with
+the same full original inputs, and records sampled CPU/RSS and elapsed time.
+Each encoder is a fresh process; it does not claim controlled OS-cold caches.
+
 This is a short, bounded recording reference. It does not establish long videos,
 all sizes/parameters, cross-device behavior or original window presentation.
 Raw vendor artifacts, captures, videos, state textures and executables stay in

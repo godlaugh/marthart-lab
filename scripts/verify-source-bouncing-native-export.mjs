@@ -13,6 +13,7 @@ import {sourceBouncingOriginalPreset} from './lib/source-bouncing-original.mjs';
 const out=process.argv[2]??'.cache/bouncing-native-export-20261024';
 const presetAt=process.argv.indexOf('--preset'),presetName=presetAt>=0?process.argv[presetAt+1]:process.argv.includes('--five-million')?'bouncing2':undefined;
 const warmupBoundaries=process.argv.includes('--warmup-boundaries');
+const separateFps=process.argv.includes('--separate-fps');
 if(presetAt>=0&&!presetName||presetName&&!/^[a-z0-9_]+$/.test(presetName))throw Error('--preset requires a packaged preset basename');
 if(presetAt>=0&&process.argv.includes('--five-million'))throw Error('Select one preset option');
 await mkdir(out,{recursive:true});
@@ -120,7 +121,7 @@ Generator.prototype.generate=async function(scene,input,...rest){
    const capture=request=>{const url=new URL(request.url());if(request.method()==='POST'&&url.pathname==='/api/exports')sessions.push(request.postDataJSON());if(request.method()==='POST'&&/^\/api\/exports\/[^/]+\/frames$/.test(url.pathname))uploads.push(request.postDataBuffer());};
    const downloaded=value=>downloads.push(value.suggestedFilename());page.on('request',capture);page.on('download',downloaded);
    await openExport('Animation video');await dimensions(128,96);await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill(String(fps));await page.locator('select').filter({has:page.locator('option[value="seed"]')}).selectOption(start);await startButton().click();
-   const message='Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or export frame rate';await dialog().getByText(message,{exact:true}).waitFor();await settledExport();
+   const message='Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or simulation frame rate';await dialog().getByText(message,{exact:true}).waitFor();await settledExport();
    check(sessions.length===0&&uploads.length===0&&downloads.length===0,phase+' rejects before encoder creation, upload or download');
    check((await exportsSince(offset)).length===0,phase+' does not invent or render an extra frame');
    check(JSON.stringify((await snapshot()).output.frame.checkpoint)===JSON.stringify(before.output.frame.checkpoint),phase+' leaves paused preview clock intact');
@@ -138,6 +139,18 @@ Generator.prototype.generate=async function(scene,input,...rest){
    page.off('request',capture);page.off('download',downloaded);await recoverPreview(before,phase);
   }
   await setDuration(.3);
+ }
+ if(separateFps){
+  phase='separate-simulation-fps';const before=await snapshot(),offset=await begin(),sessions=[],uploads=[];
+  const capture=request=>{const url=new URL(request.url());if(request.method()==='POST'&&url.pathname==='/api/exports')sessions.push(request.postDataJSON());if(request.method()==='POST'&&/^\/api\/exports\/[^/]+\/frames$/.test(url.pathname))uploads.push(request.postDataBuffer());};page.on('request',capture);
+  await openExport('Animation video');await dimensions(128,96);await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill('15');const separate=page.getByRole('checkbox',{name:'Separate simulation FPS',exact:true});check(!await separate.isChecked(),'Bouncing defaults to a shared user-selected frame rate');await separate.check();
+  const simulation=page.getByRole('spinbutton',{name:'Recording simulation FPS',exact:true});check(await simulation.inputValue()==='15','separating clocks starts from the selected export rate');await simulation.fill('0');check(await startButton().isDisabled(),'invalid separate simulation rate prevents export');await simulation.fill('60');await page.locator('select').filter({has:page.locator('option[value="seed"]')}).selectOption('seed');await page.screenshot({path:out+'/separate-fps.png'});
+  const path=await download('separate-fps.mp4');await settledExport();const calls=await exportsSince(offset);
+  check(sessions.length===1&&sessions[0].fps===15&&sessions[0].frames===17&&calls.length===18&&uploads.length===17,'60fps simulation and15fps encoding preserve the complete selected clock plan');
+  let time=0;for(let i=0;i<calls.length;i++){time=Math.fround(time+Math.fround(1/60));check(calls[i].output.frame.checkpoint.sceneTime===time&&calls[i].output.frame.checkpoint.simulationUpdates===i+1,'separate clocks frame '+i+' follows60fps simulation');if(i)check(sha(decodePng(uploads[i-1]).rgba)===calls[i].output.pixelSha,'separate clocks frame '+i+' uploads exact native pixels');}
+  const metadata=JSON.parse(execFileSync('ffprobe',['-v','error','-count_frames','-show_streams','-of','json',path],{encoding:'utf8'})).streams[0];check(Number(metadata.nb_read_frames)===17&&metadata.r_frame_rate==='15/1','downloaded separate-clock video has17frames at15fps');
+  await separate.uncheck();await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill('1');await startButton().click();await dialog().getByText('Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or simulation frame rate',{exact:true}).waitFor();await settledExport();check(sessions.length===1&&(await exportsSince(offset)).length===18,'disabling separate FPS restores coupling and correctly rejects completed warmup');
+  page.off('request',capture);report.separateFps={path,simulationFps:60,encodingFps:15,metadata,frames:calls.map(c=>c.output.frame.checkpoint),couplingRestored:true};await recoverPreview(before,'separate clocks');
  }
  if(!presetName){
   phase='paused-view';const before=await snapshot(),offset=await begin(),box=await page.getByTestId('native-art-canvas').boundingBox();
@@ -182,7 +195,7 @@ Generator.prototype.generate=async function(scene,input,...rest){
   // Independent argv from original VideoRecorder, fed the same real uploaded RGBA.
   const referencePath=out+'/'+start+'-profile-reference.mp4';
   const uploadedRgba=Buffer.concat(uploads.map(u=>decodePng(u.png).rgba));
-  execFileSync('ffmpeg',['-v','error','-y','-f','rawvideo','-vcodec','rawvideo','-s',inputWidth+'x'+inputHeight,'-r','12','-pix_fmt','rgba','-i','pipe:0','-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-tune','animation','-crf',quality==='production'?'10':'18','-preset',quality==='production'?'veryslow':'slow','-movflags','+faststart+write_colr','-vf','scale=256:192:flags=lanczos','-threads','2',referencePath],{input:uploadedRgba,maxBuffer:1024*1024});
+  execFileSync('ffmpeg',['-v','error','-y','-f','rawvideo','-vcodec','rawvideo','-s',inputWidth+'x'+inputHeight,'-r','12','-pix_fmt','rgba','-i','pipe:0','-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-tune','animation','-crf',quality==='production'?'10':'18','-preset',quality==='production'?'veryslow':'slow','-movflags','+faststart+write_colr','-vf','scale=256:192:flags=lanczos','-threads','0',referencePath],{input:uploadedRgba,maxBuffer:1024*1024});
   // The lossy-error check needs the same output grid. Independently resize raw
   // RGB without H.264; never compare an output pixel with an unrelated 3x pixel.
   const scaledRgb=execFileSync('ffmpeg',['-v','error','-f','rawvideo','-s',inputWidth+'x'+inputHeight,'-pix_fmt','rgba','-i','pipe:0','-vf','scale=256:192:flags=lanczos','-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{input:uploadedRgba,maxBuffer:32*1024*1024});
@@ -212,8 +225,8 @@ Generator.prototype.generate=async function(scene,input,...rest){
  check(sha(await readFile(savedDespiteFailure))===sha(await readFile(retryPath)),'cleanup retry preserves downloaded PNG bytes');
  report.cleanupRetry={path:retryPath};await recoverPreview(failurePreview,'failed-cleanup retry');
  phase='retained-files';const files=await readdir(out+'/service');report.serviceFiles=await Promise.all(files.map(async name=>({name,sha:sha(await readFile(out+'/service/'+name))})));
- check(files.length===(warmupBoundaries?6:5),'service retains every completed PNG/MP4 output and none from rejected requests');
- for(const path of [...report.images,...report.videos,report.cleanupFailure,report.cleanupRetry,...(report.warmupRetry?[report.warmupRetry]:[])].map(item=>item.path)){const digest=sha(await readFile(path));check(report.serviceFiles.some(file=>file.sha===digest),'download equals retained service file: '+path.split('/').at(-1));}
+ check(files.length===5+Number(warmupBoundaries)+Number(separateFps),'service retains every completed PNG/MP4 output and none from rejected requests');
+ for(const path of [...report.images,...report.videos,report.cleanupFailure,report.cleanupRetry,...(report.warmupRetry?[report.warmupRetry]:[]),...(report.separateFps?[report.separateFps]:[])].map(item=>item.path)){const digest=sha(await readFile(path));check(report.serviceFiles.some(file=>file.sha===digest),'download equals retained service file: '+path.split('/').at(-1));}
  check(report.pageErrors.length===0,'public export workflow has no unhandled page errors');
  await page.screenshot({path:out+'/restored-preview.png'});await browser.close();browser=undefined;
  const until=Date.now()+5000;while(service.ownedProcessCount&&Date.now()<until)await new Promise(r=>setTimeout(r,25));check(service.ownedProcessCount===0,'browser exit reaps native helper while service stays live');

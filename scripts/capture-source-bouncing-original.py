@@ -20,7 +20,7 @@ PINS = json.loads((Path(__file__).resolve().parents[1] / 'tests/fixtures/source-
 JAR_SHA = 'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018'
 HOST_SHA = 'c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e'
 PROBE_SHA = '6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d'
-RECORDING_PROBE_SHA = 'ed8783d84dc956c7b800a3a316d823b777150a6e6d0874ab73705318fb298a91'
+RECORDING_PROBE_SHA = '56f0ed86b33436c7339bf00d95c2d34ca72e36be13bd8e9b1e7edc54d3a2a89a'
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
 def require(condition, message):
@@ -38,6 +38,7 @@ def main():
     parser.add_argument('--ffmpeg', type=Path, help='Existing encoder required for recording mode; no installation')
     parser.add_argument('--recording-fps', type=int, help='Recording mode only; default 12, range 1–120')
     parser.add_argument('--recording-duration', type=float, help='Recording mode only; default 0.3s, at most eight active frames')
+    parser.add_argument('--full-recording', action='store_true', help='Preserve the full original preset and duration; default60fps/500x600 output, bounded lossless PNG evidence')
     for name in ['app-contents', 'java-home', 'host', 'app-data']:
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
@@ -46,8 +47,9 @@ def main():
     ffmpeg = args.ffmpeg.resolve() if recording else None
     if recording:
         require(ffmpeg.is_file() and os.access(ffmpeg, os.X_OK), 'Selected FFmpeg must be an existing executable')
-    require(recording or args.recording_fps is None and args.recording_duration is None, 'Recording clock options require recording mode')
-    fps = args.recording_fps if args.recording_fps is not None else 12
+    require(recording or args.recording_fps is None and args.recording_duration is None and not args.full_recording, 'Recording clock options require recording mode')
+    require(not args.full_recording or args.recording_duration is None, '--full-recording preserves original duration; do not supply --recording-duration')
+    fps = args.recording_fps if args.recording_fps is not None else 60 if args.full_recording else 12
     duration = args.recording_duration if args.recording_duration is not None else .3
     require(1 <= fps <= 120, 'Recording FPS must be 1–120')
     require(math.isfinite(duration) and .1 <= duration <= 8, 'Recording duration must be finite and between 0.1 and 8 seconds')
@@ -57,7 +59,7 @@ def main():
     bound = 0.
     for _ in range(8):
         bound = f32(bound + f32(1. / fps))
-    require(not recording or f32(duration) <= bound, 'Recording exceeds the eight-active-frame diagnostic capacity')
+    require(not recording or args.full_recording or f32(duration) <= bound, 'Recording exceeds the eight-active-frame diagnostic capacity')
     app = (args.app_contents / 'app').resolve()
     jdk, host, data, out = [p.resolve() for p in [args.java_home, args.host, args.app_data, args.output]]
     preset = PINS[args.preset]
@@ -73,17 +75,34 @@ def main():
         original = archive.read(member)
     require(sha(original) == source_sha and original == source.read_bytes(), 'Original preset identity mismatch')
     require(json.loads(original)['settings']['particle_count'] == count, 'Original particle count mismatch')
+    width, height, max_active_frames, timeout = 128, 96, 8, 60
+    if args.full_recording:
+        duration = json.loads(original)['settings']['record_duration']
+        require(isinstance(duration, (int, float)) and math.isfinite(duration) and .1 <= duration <= 60, 'Original duration outside full-reference capacity')
+        width, height, timeout = 500, 600, 1800
+        elapsed, expected_frames = 0., 0
+        while elapsed < f32(duration) and expected_frames < 10000:
+            elapsed = f32(elapsed + f32(1. / fps))
+            expected_frames += 1
+        # One extra display is diagnostic headroom, never an encoded substitute.
+        require(expected_frames < 10000, 'Full reference exceeds10000 active displays')
+        max_active_frames = expected_frames + 1
     # Eleven complete padded states plus ten active/paused pairs, images and
     # intermediate files; fail before running when the output cannot fit.
     required_bytes = 24 * ((int(count ** .5) + 1) ** 2 * 16) + 512 * 1024 ** 2
+    if args.full_recording:
+        # Two complete lossless RGBA PNGs per display, worst-case incompressible
+        # data plus PNG/deflate overhead; eleven states and encoder headroom.
+        required_bytes = math.ceil(max_active_frames * width * height * 9 * 4 * 2 * 1.01) + 12 * ((int(count ** .5) + 1) ** 2 * 16) + 2 * 1024 ** 3
     require(shutil.disk_usage(out.parent).free >= required_bytes, 'Insufficient space for complete reference')
     out.mkdir()  # Never overwrite an earlier run.
     original_source = source
     if recording:
         project = json.loads(original)
-        project['settings']['record_duration'] = duration
+        if not args.full_recording:
+            project['settings']['record_duration'] = duration
         source = out / 'input.json'
-        write(source, {'project': project, 'ffmpegPath': str(ffmpeg), 'fps': fps})
+        write(source, {'project': project, 'ffmpegPath': str(ffmpeg), 'fps': fps, 'fullRecording': args.full_recording, 'width': width, 'height': height, 'maxActiveFrames': max_active_frames})
     shutil.copy2(probe, out / probe.name)
     command = [str(jdk / 'bin/javac'), '-proc:none', '-cp', str(app / '*'), '-d', str(out), str(out / probe.name)]
     compiled = subprocess.run(command, capture_output=True, text=True, timeout=30)
@@ -105,7 +124,7 @@ def main():
         env={'PATH': str(jdk / 'bin') + ':/usr/bin:/bin', 'LANG': 'en_US.UTF-8', 'TMPDIR': str(out)})
     timed_out = False
     try:
-        stdout, stderr = process.communicate(timeout=60)
+        stdout, stderr = process.communicate(timeout=timeout)
     except BaseException as error:
         # The Popen child is still held and has not been reaped. Signal only
         # this newly created process group, never search for a similarly named app.
@@ -131,7 +150,9 @@ def main():
         'command': command, 'exit': process.returncode, 'stdout': stdout, 'stderr': stderr, 'seconds': time.monotonic() - started,
         'pid': process.pid, 'reaped': True, 'processGroupExists': group_exists, 'timedOut': timed_out, 'userFilesBefore': before, 'userFilesAfter': facts()}
     if recording:
-        report['recording'] = {'fps': fps, 'duration': duration, 'maxActiveFrames': 8}
+        report['recording'] = {'fps': fps, 'duration': duration, 'maxActiveFrames': max_active_frames, 'fullPreset': args.full_recording, 'width': width, 'height': height, 'timeoutSeconds': timeout, 'requiredFreeBytes': required_bytes}
+        if args.full_recording:
+            report['scope'] = f'Unmodified original full {count}-particle preset, duration {duration}s at {fps}fps. Original500x600 output/default3x render, full artwork and branded PNG per active display, original VideoRecorder. Normal policy/license/branding and context-binding graphics allocation bridge; no AWT windows. Streaming evidence, no frame/duration/particle reduction.'
         report['ffmpeg'] = {'selectedPath': str(args.ffmpeg), 'resolvedPath': str(ffmpeg), 'sha256': sha(ffmpeg.read_bytes())}
     report['captureStatus'] = 'failed' if process.returncode or timed_out or group_exists or ' ERROR ' in stdout else 'passed'
     write(out / 'run.json', report)

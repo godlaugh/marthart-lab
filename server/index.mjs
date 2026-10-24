@@ -17,7 +17,11 @@ function encoderArguments(format,profile,scale,quality){
  const filters=[...(scale?[scale]:[]),...(format==='gif'?['split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse']:[])];
  const q=mathartQuality[quality??'high'];
  const codec=profile==='mathart'?[...mathartMp4Args,'-preset',q.preset,'-crf',q.crf,...(q.tune?['-tune',q.tune]:[])]:format==='gif'?[]:formats[format].args;
- return [...(filters.length?['-vf',filters.join(',')]:[]),...codec];
+ // x264 frame/lookahead threading affects CRF pixels, not just throughput.
+ // The source profile retains VideoRecorder's automatic codec thread choice;
+ // ordinary formats retain the local two-thread policy. Decoder/filter limits
+ // and the service's active-job, input/output and deadline bounds still apply.
+ return [...(filters.length?['-vf',filters.join(',')]:[]),...codec,'-threads',profile==='mathart'?'0':'2'];
 }
 const imageFormats={'image/png':'png','image/jpeg':'jpg'};
 const uuidPattern='[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
@@ -282,7 +286,7 @@ export async function createExportServer(options={}){
    const scale=inputWidth!==width||inputHeight!==height?`scale=${width}:${height}:flags=lanczos`:undefined;
    const codecArgs=encoderArguments(format,input.profile,scale,input.quality);
    let p;
-   try{p=ownedSpawn(['-hide_banner','-loglevel','error','-nostdin','-y','-f','image2pipe','-vcodec','png','-framerate',String(fps),'-threads','2','-i','pipe:0','-an','-filter_threads','2','-filter_complex_threads','2',...codecArgs,'-threads','2','-fs',String(limits.maxOutputBytes),'-progress','pipe:3','-nostats',partial]);}catch(error){reservedBytes-=limits.maxOutputBytes;reservedFiles--;throw error;}
+   try{p=ownedSpawn(['-hide_banner','-loglevel','error','-nostdin','-y','-f','image2pipe','-vcodec','png','-framerate',String(fps),'-threads','2','-i','pipe:0','-an','-filter_threads','2','-filter_complex_threads','2',...codecArgs,'-fs',String(limits.maxOutputBytes),'-progress','pipe:3','-nostats',partial]);}catch(error){reservedBytes-=limits.maxOutputBytes;reservedFiles--;throw error;}
    const s={id,file,partial,process:p,status:'encoding',format,width,height,inputWidth,inputHeight,fps,expected:frames,frameLimit,frames:0,encodedFrames:0,inputBytes:0,error:'',locked:false,reserved:limits.maxOutputBytes};sessions.set(id,s);
    const unwatch=disconnect(req,res,s);let progress='';
    p.child.stderr.on('data',chunk=>{s.error=(s.error+chunk.toString()).slice(-8000);});

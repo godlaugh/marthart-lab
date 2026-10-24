@@ -15,12 +15,13 @@ export interface SourceBouncingExportPlan {
  readonly width:number;readonly height:number;readonly pixelDensity:number;
  readonly viewport:SourceCameraViewport;readonly view:SourceBouncingView;
  readonly warmup?:SourceBouncingCheckpoint;
+ readonly recording?:{readonly simulationFps:number;readonly encodingFps:number};
  readonly frames:readonly SourceBouncingCheckpoint[];
 }
 /** Export consumes a delivered frame and its authored scene, never UI seconds.
  * A fresh export worker reconstructs the absolute update index from the seed;
  * viewport changes only alter projection and boundary tessellation. */
-export function prepareSourceBouncingExport(scene:SceneDocument,presented:SourceBouncingPresentedExport|undefined,options:{kind:'image'|'video';start:'current'|'seed';width:number;height:number;fps:number}):SourceBouncingResult<SourceBouncingExportPlan>{
+export function prepareSourceBouncingExport(scene:SceneDocument,presented:SourceBouncingPresentedExport|undefined,options:{kind:'image'|'video';start:'current'|'seed';width:number;height:number;fps:number;simulationFps?:number}):SourceBouncingResult<SourceBouncingExportPlan>{
  const parsed=prepareSourceBouncingScene(scene);if(!parsed.ok)return parsed;
  if(!presented?.ready)return{ok:false,error:{kind:'input',path:['frame'],reason:'请等待源弹跳当前预览完成并暂停后再导出'}};
  const checkpoint=parseSourceBouncingCheckpoint(presented.frame.checkpoint);if(!checkpoint.ok)return checkpoint;
@@ -42,10 +43,12 @@ export function prepareSourceBouncingExport(scene:SceneDocument,presented:Source
  if(!camera.ok||camera.value.kind!=='known')return{ok:false,error:{kind:'input',path:['camera'],reason:'源弹跳导出相机或参考画布无效'}};
  if(options.kind==='image')return{ok:true,value:{...target,viewport,view,frames:[checkpoint.value]}};
  if(!Number.isSafeInteger(options.fps)||options.fps<1||options.fps>120)return{ok:false,error:{kind:'input',path:['fps'],reason:'源弹跳导出帧率必须为 1–120 的整数'}};
- const recording=planSourceBouncingRecording({from:options.start==='seed'?sourceBouncingSeedCheckpoint():checkpoint.value,fps:options.fps,recordDuration:parsed.value.recordDuration});
+ const simulationFps=options.simulationFps===undefined?options.fps:options.simulationFps;
+ if(!Number.isSafeInteger(simulationFps)||simulationFps<1||simulationFps>120)return{ok:false,error:{kind:'input',path:['simulationFps'],reason:'源弹跳模拟帧率必须为 1–120 的整数'}};
+ const recording=planSourceBouncingRecording({from:options.start==='seed'?sourceBouncingSeedCheckpoint():checkpoint.value,fps:simulationFps,recordDuration:parsed.value.recordDuration});
  if(!recording.ok)return recording;
- if(recording.value.frames.length===0)return{ok:false,error:{kind:'input',path:['recordDuration'],reason:'源弹跳录制在预热帧内已结束，没有可编码帧；请延长源录制时长或提高导出帧率'}};
- return{ok:true,value:{...target,viewport,view,warmup:recording.value.warmup,frames:recording.value.frames}};
+ if(recording.value.frames.length===0)return{ok:false,error:{kind:'input',path:['recordDuration'],reason:'源弹跳录制在预热帧内已结束，没有可编码帧；请延长源录制时长或提高模拟帧率'}};
+ return{ok:true,value:{...target,viewport,view,recording:{simulationFps,encodingFps:options.fps},warmup:recording.value.warmup,frames:recording.value.frames}};
 }
 export function sourceBouncingExportContext(plan:SourceBouncingExportPlan,checkpoint:SourceBouncingCheckpoint):GenerationInput{
  return{sourcePointPixelDensity:plan.pixelDensity,time:checkpoint.sceneTime,sourceBouncingFrame:checkpoint,sourceBouncingView:{...plan.view},sourceViewport:{...plan.viewport},quality:'export',width:plan.width,height:plan.height};

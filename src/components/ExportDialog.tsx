@@ -128,6 +128,7 @@ export function ExportDialog({
   const rootsFrames=usesRootsCameraTimeline(scene)&&rootsVideoMode==='source';
   const [recordingStart,setRecordingStart]=useState<'fresh'|'current'>('fresh');
   const [recordingFps,setRecordingFps]=useState(()=>sourceFrames?spirographSimulationFps(scene):scene.timeline.fps);
+  const [bouncingSeparateFps,setBouncingSeparateFps]=useState(false);
   const [sourceVideoFrames,setSourceVideoFrames]=useState<number|null>(null);
   const [kind, setKind] = useState<"image" | "video">(recordingMode?'video':"image"),
     [format, setFormat] = useState(recordingMode?'mp4':"png"),
@@ -315,7 +316,7 @@ export function ExportDialog({
       }
       g=new Generator();generator.current=g;
       const exportScene=kind==='video'?(fractalFrames?withFractalFreshRecording(scene,recordingFps):rootsFrames?withRootsFreshRecording(scene,recordingFps):perlinFrames?withPerlinFreshRecording(scene,recordingFps):scene):scene;
-      const bouncingPlan=sourceBouncing?prepareSourceBouncingExport(exportScene,currentSourceBouncingFrame,{kind,start:bouncingStart,width,height,fps}):undefined;
+      const bouncingPlan=sourceBouncing?prepareSourceBouncingExport(exportScene,currentSourceBouncingFrame,{kind,start:bouncingStart,width,height,fps,...(bouncingSeparateFps?{simulationFps:recordingFps}:{})}):undefined;
       if(bouncingPlan&&!bouncingPlan.ok)throw new Error(bouncingPlan.error.reason);
       const bouncing=bouncingPlan?.ok?bouncingPlan.value:undefined;
       const timeline=sourceFrames||sourceBouncing||perlinFrames||fractalFrames?exportScene.timeline:resolveTimeline(exportScene);
@@ -369,7 +370,7 @@ export function ExportDialog({
         const session = await request("/api/exports", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps, frames, format,...videoEncoding,...(bouncing?{inputWidth:bouncing.width,inputHeight:bouncing.height}:{}),...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height}:{}) }),
+          body: JSON.stringify({ width:videoWidth, height:videoHeight, fps:bouncing?.recording?.encodingFps??fps, frames, format,...videoEncoding,...(bouncing?{inputWidth:bouncing.width,inputHeight:bouncing.height}:{}),...(fractalRecording?{inputWidth:recordingSize.width,inputHeight:recordingSize.height}:{}) }),
         });
         sessionRef.current = exportSessionCleanup.registerCreated(session.id);
         checkCancelled();
@@ -607,7 +608,10 @@ export function ExportDialog({
             {sourceBouncing?<>
               <label className="field"><span>{t('弹跳录制起点')}</span><select aria-label={t('弹跳录制起点')} disabled={working} value={bouncingStart} onChange={event=>setBouncingStart(event.target.value as 'current'|'seed')}><option value="seed">{t('重建初始状态')}</option><option value="current">{t('当前状态（本地扩展）')}</option></select></label>
               <p className="muted" data-testid="source-bouncing-export-duration">{t('源录制时长（秒）')}：{scene.bouncingSource!.recordDuration}。{t('修改场景的源录制时长可改变停止条件。')}</p>
-              <p className="muted">{t('重建初始状态会按当前场景配置生成粒子、恢复作者相机角度并将缩放重置为 1；当前状态选项保留已呈现的粒子与视角。两种方式均将录制时钟清零，先推进并绘制 1 帧预热但不编码，再录制到源时长阈值；帧率同时用于模拟时钟和视频编码。')}</p>
+              <label className="field"><span>{t('单独设置模拟帧率')}</span><input aria-label={t('单独设置模拟帧率')} type="checkbox" disabled={working} checked={bouncingSeparateFps} onChange={event=>{setBouncingSeparateFps(event.target.checked);if(event.target.checked)setRecordingFps(fps);}}/></label>
+              {bouncingSeparateFps&&<label className="field"><span>{t('录制模拟帧率')}</span><input aria-label={t('录制模拟帧率')} disabled={working} type="number" min={1} max={120} step={1} value={recordingFps} onChange={event=>setRecordingFps(Number(event.target.value))}/></label>}
+              <p className="muted">{t('重建初始状态会按当前场景配置生成粒子、恢复作者相机角度并将缩放重置为 1；当前状态选项保留已呈现的粒子与视角。两种方式均将录制时钟清零，先推进并绘制 1 帧预热但不编码，再录制到源时长阈值。')}</p>
+              <p className="muted">{t('模拟帧率默认跟随导出帧率。单独设置时，模拟帧率决定每秒的物理更新次数，导出帧率决定视频播放速度。')}</p>
               {sourceVideoFrames!==null&&(!retainedRoots||!working)&&<p className="muted">{t('本次录制 {frames} 帧',{frames:sourceVideoFrames})}</p>}
             </>:sourceFrames||rootsFrames||sourceQueueVideo?<>
               {sourceFrames&&<label className="field"><span>{t('录制起点')}</span><select aria-label={t('录制起点')} disabled={working} value={recordingStart} onChange={event=>setRecordingStart(event.target.value as 'fresh'|'current')}><option value="fresh">{t('从初始状态')}</option><option value="current" disabled={currentSpirographFrame===undefined}>{t('从当前已呈现帧')}</option></select></label>}
@@ -668,7 +672,7 @@ export function ExportDialog({
               working || !previewReady || liveRecording&&!currentSourceRecording?.ready || !!dimensionError || !!upscaleError || sourceBouncing&&!currentSourceBouncingFrame?.ready || pausedSourceImage&&!currentPausedCapture?.ready ||
               (kind === "video" &&
                 (ffmpeg !== true || !Number.isSafeInteger(fps)||fps<1||fps>120||
-                  (sourceFrames||rootsFrames||sourceQueueVideo&&!sharedRecordingFps)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&!sourceQueueVideo&&(!Number.isFinite(duration) ||
+                  (sourceBouncing&&bouncingSeparateFps||sourceFrames||rootsFrames||sourceQueueVideo&&!sharedRecordingFps)&&(!Number.isSafeInteger(recordingFps)||recordingFps<1||recordingFps>120||sourceFrames&&recordingStart==='current'&&currentSpirographFrame===undefined)||!sourceBouncing&&!sourceFrames&&!rootsFrames&&!sourceQueueVideo&&(!Number.isFinite(duration) ||
                   duration <= 0 ||
                   duration > 3600)))
             }

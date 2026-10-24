@@ -17,11 +17,19 @@ import javax.imageio.ImageIO;
  * this headless JOGL drawable; original sizing, rendering and encoding execute.
  * Normal policy/license checks and branding are never replaced or suppressed. */
 public final class NativeSceneProbe {
- static int frame=0;static Path frameOutput;
+ static int frame=0,renderWidth=384,renderHeight=288;static Path frameOutput;static boolean fullRecording;static JSONObject currentPixels;
+ static String sha(byte[] bytes)throws Exception{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes));}
+ static String channelSha(byte[] rgba,boolean alpha)throws Exception{byte[] bytes=new byte[rgba.length/4*(alpha?1:3)];for(int i=0,j=0;i<rgba.length;i+=4){if(alpha)bytes[j++]=rgba[i+3];else{bytes[j++]=rgba[i];bytes[j++]=rgba[i+1];bytes[j++]=rgba[i+2];}}return sha(bytes);}
  static void beforeBranding(GL4 gl)throws Exception {
   if(frameOutput==null)throw new IllegalStateException("Missing frame owner");
   int[] rb={0},rbuf={0},db={0};gl.glGetIntegerv(GL4.GL_READ_FRAMEBUFFER_BINDING,rb,0);gl.glGetIntegerv(GL4.GL_READ_BUFFER,rbuf,0);gl.glGetIntegerv(GL4.GL_DRAW_FRAMEBUFFER_BINDING,db,0);
-  try{gl.glBindFramebuffer(GL4.GL_READ_FRAMEBUFFER,db[0]);gl.glReadBuffer(GL4.GL_COLOR_ATTACHMENT0);java.nio.ByteBuffer b=java.nio.ByteBuffer.allocateDirect(384*288*4);gl.glReadPixels(0,0,384,288,GL4.GL_RGBA,GL4.GL_UNSIGNED_BYTE,b);byte[] v=new byte[b.capacity()];b.get(v);Files.write(frameOutput.resolve("before-branding.rgba"),v,StandardOpenOption.CREATE_NEW);Files.writeString(frameOutput.resolve("artwork-boundary.txt"),java.util.Arrays.toString(Thread.currentThread().getStackTrace()),StandardOpenOption.CREATE_NEW);}finally{gl.glBindFramebuffer(GL4.GL_READ_FRAMEBUFFER,rb[0]);gl.glReadBuffer(rbuf[0]);}
+  try{gl.glBindFramebuffer(GL4.GL_READ_FRAMEBUFFER,db[0]);gl.glReadBuffer(GL4.GL_COLOR_ATTACHMENT0);java.nio.ByteBuffer b=java.nio.ByteBuffer.allocateDirect(renderWidth*renderHeight*4);gl.glReadPixels(0,0,renderWidth,renderHeight,GL4.GL_RGBA,GL4.GL_UNSIGNED_BYTE,b);byte[] v=new byte[b.capacity()];b.get(v);
+   if(fullRecording){
+    byte[] top=new byte[v.length];for(int y=0;y<renderHeight;y++)System.arraycopy(v,(renderHeight-y-1)*renderWidth*4,top,y*renderWidth*4,renderWidth*4);
+    BufferedImage image=new BufferedImage(renderWidth,renderHeight,BufferedImage.TYPE_INT_ARGB);int[] pixels=new int[renderWidth*renderHeight];for(int i=0;i<pixels.length;i++)pixels[i]=((top[i*4+3]&255)<<24)|((top[i*4]&255)<<16)|((top[i*4+1]&255)<<8)|(top[i*4+2]&255);image.setRGB(0,0,renderWidth,renderHeight,pixels,0,renderWidth);ImageIO.write(image,"png",frameOutput.resolve("artwork.png").toFile());currentPixels.setString("artworkRgbSha256",channelSha(top,false));
+   }else Files.write(frameOutput.resolve("before-branding.rgba"),v,StandardOpenOption.CREATE_NEW);
+   Files.writeString(frameOutput.resolve("artwork-boundary.txt"),java.util.Arrays.toString(Thread.currentThread().getStackTrace()),StandardOpenOption.CREATE_NEW);
+  }finally{gl.glBindFramebuffer(GL4.GL_READ_FRAMEBUFFER,rb[0]);gl.glReadBuffer(rbuf[0]);}
  }
  static Object call(MathArt app,String name,Class<?>[] types,Object...args)throws Exception {
   Method m=MathArt.class.getDeclaredMethod(name,types);m.setAccessible(true);return m.invoke(app,args);
@@ -32,6 +40,8 @@ public final class NativeSceneProbe {
   if(args.length!=3)throw new IllegalArgumentException("scene JSON, new output directory, original app data directory required");
   windows("entry");
   Path output=Path.of(args[1]);JSONObject descriptor=JSONObject.parse(Files.readString(Path.of(args[0]))),json=descriptor.getJSONObject("project");
+  fullRecording=descriptor.getBoolean("fullRecording",false);final int outputWidth=descriptor.getInt("width",128),outputHeight=descriptor.getInt("height",96),maxActiveFrames=descriptor.getInt("maxActiveFrames",8);
+  if(outputWidth<16||outputHeight<16||outputWidth>500||outputHeight>600||maxActiveFrames<1||maxActiveFrames>10000)throw new IllegalArgumentException("Diagnostic resource bounds exceeded");
   System.setProperty("mathart.app.data.dir",args[2]);System.setProperty("mathart.license.cache.path",Path.of(args[2],"license.dat").toString());System.setProperty("mathart.app.version","1.7.8");
   LicenseManager license=LicenseManager.getInstance();license.init();
   SceneAccessPolicyService policy=SceneAccessPolicyService.INSTANCE;
@@ -41,7 +51,7 @@ public final class NativeSceneProbe {
   for(SceneAccessAction action:new SceneAccessAction[]{SceneAccessAction.VIEW,SceneAccessAction.RUN,SceneAccessAction.EXPORT}){
    boolean allowed=policy.evaluate(sceneType,action,license.getCurrentTier()).getAllowed();System.out.println("allowed="+action+":"+allowed);if(!allowed)throw new IllegalStateException("Original policy disallows "+action);
   }
-  if(license.getMaxExportResolution()<288)throw new IllegalStateException("Original export size restriction");
+  if(license.getMaxExportResolution()<Math.max(outputWidth,outputHeight))throw new IllegalStateException("Original export size restriction");
   windows("licenseAndPolicyInitialized");
   System.out.println("stage=beforeGLProfile");GLProfile.initSingleton();System.out.println("stage=afterGLProfile");GLCapabilities caps=new GLCapabilities(GLProfile.getGL2ES2());caps.setOnscreen(false);caps.setDoubleBuffered(false);caps.setAlphaBits(8);caps.setDepthBits(24);caps.setStencilBits(8);
   System.out.println("stage=beforeFactory");GLDrawableFactory factory=GLDrawableFactory.getFactory(caps.getGLProfile());System.out.println("stage=afterFactory,beforeCreateDrawable");
@@ -88,7 +98,7 @@ public final class NativeSceneProbe {
      }
     };app.sketchPath();app.width=405;app.height=486;app.pixelWidth=810;app.pixelHeight=972;app.pixelDensity=2;app.frameRate=60;
     float fps=descriptor.getInt("fps",12);if(fps<1||fps>120)throw new IllegalArgumentException("Recording fps outside 1–120");
-    app.config.renderWidth=128;app.config.renderHeight=96;app.config.renderFps=(int)fps;app.config.saveVideo=false;app.config.showDebugInfo=false;
+    app.config.renderWidth=outputWidth;app.config.renderHeight=outputHeight;app.config.renderFps=(int)fps;app.config.saveVideo=false;app.config.showDebugInfo=false;
     app.updateRestrictedBadgeText("FREE Restricted","Upgrade to PRO to unlock");
     PGraphics3D primary=new PGraphics3D();primary.noSmooth();app.g=primary;primary.setParent(app);primary.setPrimary(true);primary.pixelDensity=2;primary.setSize(405,486);((PJOGL)primary.pgl).getGL(d);((PJOGL)primary.pgl).init(d);
     PGraphics3D buffer=null;mathart.utils.VideoRecorder recorder=null;
@@ -97,29 +107,33 @@ public final class NativeSceneProbe {
      if(app.currentScene==null)throw new IllegalStateException("Original initScene did not create scene");
      System.out.println("scene="+app.currentScene.getClass().getName()+",type="+app.getCurrentSceneType());
      call(app,"ensureRenderBuffer",new Class<?>[]{});buffer=(PGraphics3D)app.renderBuffer;
-     if(buffer.pixelWidth!=384||buffer.pixelHeight!=288)throw new IllegalStateException("Unexpected actual original recording size");
+     renderWidth=buffer.pixelWidth;renderHeight=buffer.pixelHeight;
+     if(renderWidth!=outputWidth*3||renderHeight!=outputHeight*3)throw new IllegalStateException("Unexpected actual original recording size");
      System.out.printf("primary=%dx%d,density=%d;buffer=%dx%d,pixels=%dx%d,density=%d%n",primary.width,primary.height,primary.pixelDensity,buffer.width,buffer.height,buffer.pixelWidth,buffer.pixelHeight,buffer.pixelDensity);
      app.currentScene.setRenderMode(fps);
-     recorder=new mathart.utils.VideoRecorder(app,output.resolve("original.mp4").toString(),fps,buffer.pixelWidth,buffer.pixelHeight,128,96);
+     recorder=new mathart.utils.VideoRecorder(app,output.resolve("original.mp4").toString(),fps,buffer.pixelWidth,buffer.pixelHeight,outputWidth,outputHeight);
      recorder.setQuality(app.config.renderQuality);recorder.setFFmpegPath(descriptor.getString("ffmpegPath"));recorder.start();
      java.lang.reflect.Field processField=mathart.utils.VideoRecorder.class.getDeclaredField("ffmpeg");processField.setAccessible(true);Process encoder=(Process)processField.get(recorder);
      JSONObject encoderFacts=new JSONObject();encoderFacts.setLong("pid",encoder.pid());encoderFacts.setString("command",encoder.info().command().orElse(""));processing.data.JSONArray arguments=new processing.data.JSONArray();for(String argument:encoder.info().arguments().orElseThrow())arguments.append(argument);encoderFacts.setJSONArray("arguments",arguments);encoderFacts.setFloat("exportScaleFactor",app.config.exportScaleFactor);
      Files.writeString(output.resolve("encoder.json"),encoderFacts.toString());
      processing.data.JSONArray frames=new processing.data.JSONArray();boolean complete=false;
-     for(frame=0;frame<8;frame++){
-      frameOutput=output.resolve("frame-"+frame);Files.createDirectory(frameOutput);
+     for(frame=0;frame<maxActiveFrames;frame++){
+      frameOutput=output.resolve("frame-"+frame);Files.createDirectory(frameOutput);currentPixels=new JSONObject();
       // MathArt.draw updates the primary scene before beginning its export buffer.
       app.currentScene.update(false);
       buffer.beginDraw();app.currentScene.render(buffer);buffer.endDraw();check(d,"recordingFrame"+frame);
       if(!Files.exists(frameOutput.resolve("point-draw.json")))throw new IllegalStateException("Original particle draw telemetry missing");
       JSONObject point=JSONObject.parse(Files.readString(frameOutput.resolve("point-draw.json")));processing.data.JSONArray viewport=point.getJSONArray("viewport");
-      if(viewport.getInt(0)!=0||viewport.getInt(1)!=0||viewport.getInt(2)!=384||viewport.getInt(3)!=288)throw new IllegalStateException("Invalid original active particle viewport: "+viewport);
+      if(viewport.getInt(0)!=0||viewport.getInt(1)!=0||viewport.getInt(2)!=renderWidth||viewport.getInt(3)!=renderHeight)throw new IllegalStateException("Invalid original active particle viewport: "+viewport);
       if(point.getInt("count")!=json.getJSONObject("settings").getInt("particle_count")||point.getInt("simulationUpdates")!=frame+1)throw new IllegalStateException("Original count or update sequence mismatch");
-      if(!Files.exists(frameOutput.resolve("before-branding.rgba")))throw new IllegalStateException("Missing original branding boundary");
-      buffer.loadPixels();byte[] rgba=new byte[buffer.pixels.length*4];for(int i=0;i<buffer.pixels.length;i++){int c=buffer.pixels[i];rgba[4*i]=(byte)(c>>16);rgba[4*i+1]=(byte)(c>>8);rgba[4*i+2]=(byte)c;rgba[4*i+3]=(byte)(c>>24);}Files.write(frameOutput.resolve("final.rgba"),rgba);
+      if(!Files.exists(frameOutput.resolve(fullRecording?"artwork.png":"before-branding.rgba")))throw new IllegalStateException("Missing original branding boundary");
+      buffer.loadPixels();byte[] rgba=new byte[buffer.pixels.length*4];for(int i=0;i<buffer.pixels.length;i++){int c=buffer.pixels[i];rgba[4*i]=(byte)(c>>16);rgba[4*i+1]=(byte)(c>>8);rgba[4*i+2]=(byte)c;rgba[4*i+3]=(byte)(c>>24);}
+      if(fullRecording){currentPixels.setString("finalRgbaSha256",sha(rgba));currentPixels.setString("finalAlphaSha256",channelSha(rgba,true));}else Files.write(frameOutput.resolve("final.rgba"),rgba);
       BufferedImage raw=new BufferedImage(buffer.pixelWidth,buffer.pixelHeight,BufferedImage.TYPE_INT_ARGB);raw.setRGB(0,0,buffer.pixelWidth,buffer.pixelHeight,buffer.pixels,0,buffer.pixelWidth);ImageIO.write(raw,"png",frameOutput.resolve("final.png").toFile());
-      if(frame>0){recorder.recordFrame(buffer);java.lang.reflect.Field bytes=mathart.utils.VideoRecorder.class.getDeclaredField("resampleBuffer");bytes.setAccessible(true);Files.write(frameOutput.resolve("encoder-input.rgba"),((byte[])bytes.get(recorder)).clone());if(!recorder.isRecording)throw new IllegalStateException("Original recorder stopped unexpectedly");}
+      if(frame>0){recorder.recordFrame(buffer);java.lang.reflect.Field bytes=mathart.utils.VideoRecorder.class.getDeclaredField("resampleBuffer");bytes.setAccessible(true);byte[] input=(byte[])bytes.get(recorder);if(fullRecording){if(!java.util.Arrays.equals(input,rgba))throw new IllegalStateException("Original encoder input differs from final framebuffer");currentPixels.setString("encoderInputSha256",sha(input));}else Files.write(frameOutput.resolve("encoder-input.rgba"),input.clone());if(!recorder.isRecording)throw new IllegalStateException("Original recorder stopped unexpectedly");}
       complete=app.currentScene.isAutoRecordingComplete();JSONObject row=new JSONObject();row.setInt("frame",frame);row.setFloat("sceneTime",app.currentScene.getTime());row.setFloat("rawDt",app.currentScene.getFrameDeltaTime());row.setBoolean("complete",complete);row.setBoolean("encoded",frame>0);row.setInt("width",buffer.pixelWidth);row.setInt("height",buffer.pixelHeight);frames.append(row);
+      if(fullRecording)Files.writeString(frameOutput.resolve("pixels.json"),currentPixels.toString());
+      if(frame%60==0||complete)Files.writeString(output.resolve("progress.json"),row.toString());
       if(complete)break;
      }
      if(!complete)throw new IllegalStateException("Original recording did not complete");

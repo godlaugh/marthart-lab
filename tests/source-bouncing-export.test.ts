@@ -62,6 +62,16 @@ describe('source Bouncing export contract',()=>{
   expect(plan.frames.some(f=>f.simulationUpdates===plan.warmup!.simulationUpdates)).toBe(false);
   // The scene's unrelated duration90/loop:true never selects an encoded frame.
   expect(plan.frames.length).not.toBe(scene.timeline.duration*options.fps);
+  expect(plan.recording).toEqual({simulationFps:30,encodingFps:30});
+ });
+ it('preserves independently selected simulation and encoding rates without applying a license cap',()=>{
+  const {scene,presented}=fixture(),plan=unwrap(prepareSourceBouncingExport(scene,presented,{...options,fps:15,simulationFps:60}));
+  expect(plan.recording).toEqual({simulationFps:60,encodingFps:15});expect(plan.warmup?.sceneTime).toBe(Math.fround(1/60));expect(plan.frames).toHaveLength(60);expect(plan.frames.at(-1)).toMatchObject({simulationUpdates:78,sceneTime:1.0166664123535156});
+  expect(unwrap(prepareSourceBouncingExport(scene,presented,{...options,fps:60})).recording).toEqual({simulationFps:60,encodingFps:60});
+  scene.bouncingSource!.recordDuration=Math.fround(.1);
+  expect(prepareSourceBouncingExport(scene,presented,{...options,fps:60,simulationFps:1})).toMatchObject({ok:false,error:{path:['recordDuration']}});
+  expect(unwrap(prepareSourceBouncingExport(scene,presented,{...options,fps:1,simulationFps:60})).frames).toHaveLength(5);
+  for(const simulationFps of [0,121,1.5,NaN,Infinity,null])expect(prepareSourceBouncingExport(scene,presented,{...options,simulationFps:simulationFps as number})).toMatchObject({ok:false,error:{path:['simulationFps']}});
  });
  it('native seed video rebuilds author angles and zoom1 instead of retaining the paused view',()=>{
   const {scene,presented}=fixture(300);scene.bouncingSource!.camera={phi:.25,theta:-.5,gamma:.75};

@@ -921,7 +921,6 @@
   "当前状态（本地扩展）": "Current state (local extension)",
   "源录制时长（秒）": "Source recording duration (seconds)",
   "修改场景的源录制时长可改变停止条件。": "Change the scene's source recording duration to change when recording stops.",
-  "重建初始状态会按当前场景配置生成粒子、恢复作者相机角度并将缩放重置为 1；当前状态选项保留已呈现的粒子与视角。两种方式均将录制时钟清零，先推进并绘制 1 帧预热但不编码，再录制到源时长阈值；帧率同时用于模拟时钟和视频编码。": "Rebuilding the initial state generates particles from the current configuration, restores the authored camera angles, and resets zoom to 1. Current state keeps the displayed particles and view. Both options reset the recording clock, advance and draw one warmup frame without encoding it, then record until the source duration threshold. The frame rate controls both simulation and video encoding.",
   "原版着色需要已支持公式的原版数值规则。请选择对应公式后继续。": "Source coloring requires source numerical rules for a supported formula. Select the corresponding formula to continue.",
   "请输入数值": "Enter a number",
   "设置 Perlin 参数配置": "Configure Perlin parameters",

@@ -25,7 +25,7 @@ try{
  assert.equal(sha(await read(run.source)),run.sourceSha256);assert.equal(sha(await read(reference+'/NativeSceneProbe.java')),run.probeSha256);
  // Historical 12fps probe remains a valid reference after adding explicit
  // recording-clock inputs. Its observed bytes must still match its pinned hash.
- assert.ok(['9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac',sha(await readFile('tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java'))].includes(run.probeSha256));
+ assert.ok(['9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac','ed8783d84dc956c7b800a3a316d823b777150a6e6d0874ab73705318fb298a91',sha(await readFile('tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java'))].includes(run.probeSha256));
  assert.equal(descriptor.fps??12,12);
  const jar='../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar';assert.equal(sha(await read(jar)),'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018');
  const original=execFileSync('python3',['-c','import zipfile,sys;sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read(sys.argv[2]))',jar,run.sourceMember]),preset=sourceBouncingOriginalPreset(original),expected=JSON.parse(original);assert.equal(preset.sourceSha256,run.originalSourceSha256);expected.settings.record_duration=.3;assert.deepEqual(descriptor.project,expected);

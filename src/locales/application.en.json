@@ -1,5 +1,4 @@
 {
-  "源弹跳录制在预热帧内已结束，没有可编码帧；请延长源录制时长或提高导出帧率": "Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or export frame rate",
   "几何场景截图需要已暂停的主预览": "Pause the completed geometry preview before capturing it.",
   "几何场景 PNG 放大倍率必须为 1、3 或 5": "Geometry PNG upscale must be 1, 3, or 5.",
   "几何场景截图图像缓冲超过本地 256 MiB 预算": "Geometry capture image buffers exceed the local 256 MiB budget.",
@@ -1285,5 +1284,10 @@
   "隐式曲面视频模式": "Implicit surface video mode",
   "按动画队列录制": "Record animation queue",
   "从当前场景重新开始，预热后录到动画队列结束，保存后继续播放。帧率同时用于动画和视频编码。": "Restart the current scene, discard warmup, and record until the animation queue ends. Playback continues after saving. Frame rate controls both animation and video encoding.",
-  "录制结束后从当前动画继续运行。暂停保留进度；编辑场景或跳转时间会重新计算预览。": "Playback continues from the recorded animation. Pausing keeps its progress; editing the scene or seeking rebuilds the preview."
+  "录制结束后从当前动画继续运行。暂停保留进度；编辑场景或跳转时间会重新计算预览。": "Playback continues from the recorded animation. Pausing keeps its progress; editing the scene or seeking rebuilds the preview.",
+  "源弹跳录制在预热帧内已结束，没有可编码帧；请延长源录制时长或提高模拟帧率": "Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or simulation frame rate",
+  "重建初始状态会按当前场景配置生成粒子、恢复作者相机角度并将缩放重置为 1；当前状态选项保留已呈现的粒子与视角。两种方式均将录制时钟清零，先推进并绘制 1 帧预热但不编码，再录制到源时长阈值。": "Rebuild from seed uses the authored scene and camera angles at zoom 1; current state preserves the presented particles and view. Both reset the recording clock, advance one unencoded warmup frame, then record until the source duration is reached.",
+  "单独设置模拟帧率": "Separate simulation FPS",
+  "模拟帧率默认跟随导出帧率。单独设置时，模拟帧率决定每秒的物理更新次数，导出帧率决定视频播放速度。": "Simulation FPS follows export FPS by default. When set separately, simulation FPS controls physical updates per second and export FPS controls video playback speed.",
+  "源弹跳模拟帧率必须为 1–120 的整数": "Bouncing simulation FPS must be an integer from 1 to 120"
 }

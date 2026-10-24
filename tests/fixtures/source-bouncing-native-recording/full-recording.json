@@ -1,0 +1,563 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T00:49:38.936477+00:00",
+  "status": "verified-full-bouncing1",
+  "baseCommit": "57896c7b620f61c45cf362e22830669cfa7ff683",
+  "readableReport": "docs/source-bouncing-full-recording.zh-CN.md",
+  "scope": "Unmodified full2M bouncing1/10s, simulation60fps/default500x600 output/actual1500x1800. All600active artworkRGB/finalalpha/cameras/clocks. Original FREE VideoRecorder15fps; product explicitly selects same encoder rate. Encoding reuses original branded input; no product-branding or GUI-window claim.",
+  "original": {
+    "path": ".cache/bouncing-full-recording-20261024/reference-bouncing1/run.json",
+    "sha256": "aeb1e65a4d6fca52603aa660c0786e68984efcd53409a83939daa5b7f5fcda5c",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "presetSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+    "probeSha256": "56f0ed86b33436c7339bf00d95c2d34ca72e36be13bd8e9b1e7edc54d3a2a89a",
+    "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+    "ffmpeg": {
+      "selectedPath": "/opt/homebrew/bin/ffmpeg",
+      "resolvedPath": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg",
+      "sha256": "48cc76fa936aec61e6459da4366ad8d99da34e4a7f98be66ff5a9130d8ab366f"
+    },
+    "recording": {
+      "fps": 60,
+      "duration": 10,
+      "maxActiveFrames": 601,
+      "fullPreset": true,
+      "width": 500,
+      "height": 600,
+      "timeoutSeconds": 1800,
+      "requiredFreeBytes": 15643326848
+    },
+    "seconds": 190.93518666701857,
+    "exit": 0,
+    "reaped": true,
+    "processGroupExists": false,
+    "userFilesBefore": {
+      "scene_access_policies_cache.json": {
+        "exists": true,
+        "sha256": "53bd99fe73959051aa93c6649b62d0d4b3d48fbb19beb06377bc54aac0ffa85c"
+      },
+      "license.dat": {
+        "exists": false,
+        "sha256": null
+      },
+      "settings/settings.conf": {
+        "exists": true,
+        "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+      }
+    },
+    "userFilesAfter": {
+      "scene_access_policies_cache.json": {
+        "exists": true,
+        "sha256": "2e9e4e9c9ca35329916c651bd9bedb8d5883476f104e75dc88ba2d6bc4df8bcd"
+      },
+      "license.dat": {
+        "exists": false,
+        "sha256": null
+      },
+      "settings/settings.conf": {
+        "exists": true,
+        "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+      }
+    }
+  },
+  "fullComparison": {
+    "path": ".cache/bouncing-full-recording-20261024/verified-bouncing1/report.json",
+    "sha256": "2f8360da0b5493af38a7643a356284fbad2bdb7119e8c9ba91d23e60c6bfe9e9",
+    "activeFrames": 600,
+    "allArtworkRgbExact": true,
+    "allFinalAlphaExact": true,
+    "allCamerasAndClocksExact": true,
+    "plan": {
+      "width": 1500,
+      "height": 1800,
+      "viewport": {
+        "logicalWidth": 750,
+        "logicalHeight": 900,
+        "referenceLogicalHeight": 486,
+        "target": "offscreen",
+        "projectionPass": "perspective"
+      },
+      "view": {
+        "model": "source-bouncing-view-1.7.8",
+        "phi": 0,
+        "theta": 0,
+        "gamma": 0,
+        "zoom": 1
+      },
+      "recording": {
+        "simulationFps": 60,
+        "encodingFps": 15
+      },
+      "warmup": {
+        "model": "source-bouncing-clock-1.7.8",
+        "simulationUpdates": 1,
+        "sceneTime": 0.01666666753590107
+      },
+      "last": {
+        "model": "source-bouncing-clock-1.7.8",
+        "simulationUpdates": 600,
+        "sceneTime": 10.000019073486328
+      },
+      "encodedFrames": 599
+    },
+    "pngValidation": {
+      "status": "passed",
+      "python": "3.11.4",
+      "pillow": "10.4.0",
+      "frames": 600,
+      "elapsedSeconds": 74.78942566702608
+    },
+    "video": {
+      "original": ".cache/bouncing-full-recording-20261024/reference-bouncing1/original.mp4",
+      "product": ".cache/bouncing-full-recording-20261024/verified-bouncing1/service/0f801a2e-2bce-47c6-877f-fb4e0e45f2b2.mp4",
+      "originalSha256": "b072f0666aa0be0e17e7c4d084e0a6cb5502b70e8f37fa9b9172a95cc0ba9c6a",
+      "productSha256": "b072f0666aa0be0e17e7c4d084e0a6cb5502b70e8f37fa9b9172a95cc0ba9c6a",
+      "originalMetadata": {
+        "width": 500,
+        "height": 600,
+        "pix_fmt": "yuvj444p",
+        "color_range": "pc",
+        "color_space": "bt709",
+        "r_frame_rate": "15/1",
+        "nb_read_frames": "599"
+      },
+      "productMetadata": {
+        "width": 500,
+        "height": 600,
+        "pix_fmt": "yuvj444p",
+        "color_range": "pc",
+        "color_space": "bt709",
+        "r_frame_rate": "15/1",
+        "nb_read_frames": "599"
+      },
+      "decodedRgbHash": "SHA256=d6707467e24f372f60299dac87170fdb6241d273b6c866c33c5b8bcc1787463a",
+      "exactDecodedRgb": true,
+      "uploadedBytes": 253103643,
+      "decodedBytes": 539100000
+    },
+    "fileBytesAlsoExact": true,
+    "sourceStable": true,
+    "referencesStable": true,
+    "remainingProcesses": 0,
+    "elapsedMs": 124590.256792,
+    "processFamily": {
+      "rootPid": 48718,
+      "samples": 421,
+      "observedProcesses": 440,
+      "maxConcurrentProcesses": 12,
+      "sampledPeakRssKiB": 2953632,
+      "observedCpuMs": 206920,
+      "samplingErrors": []
+    }
+  },
+  "publicApp": {
+    "path": ".cache/bouncing-full-recording-20261024/public-final/report.json",
+    "sha256": "abbd3501b757b46076c025a4ae7e9f00800ae88347efdaf3a4fe4a42090174c6",
+    "checks": 168,
+    "particles": 512,
+    "separateFps": {
+      "path": ".cache/bouncing-full-recording-20261024/public-final/separate-fps.mp4",
+      "simulationFps": 60,
+      "encodingFps": 15,
+      "metadata": {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High 4:4:4 Predictive",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "width": 128,
+        "height": 96,
+        "coded_width": 128,
+        "coded_height": 96,
+        "closed_captions": 0,
+        "film_grain": 0,
+        "has_b_frames": 2,
+        "pix_fmt": "yuvj444p",
+        "level": 11,
+        "color_range": "pc",
+        "color_space": "bt709",
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "refs": 10,
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "15/1",
+        "avg_frame_rate": "15/1",
+        "time_base": "1/15360",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 17408,
+        "duration": "1.133333",
+        "bit_rate": "40920",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "17",
+        "nb_read_frames": "17",
+        "extradata_size": 50,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "language": "und",
+          "handler_name": "VideoHandler",
+          "vendor_id": "[0][0][0][0]",
+          "encoder": "Lavc61.19.101 libx264"
+        }
+      },
+      "frames": [
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 1,
+          "sceneTime": 0.01666666753590107
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 2,
+          "sceneTime": 0.03333333507180214
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 3,
+          "sceneTime": 0.05000000447034836
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 4,
+          "sceneTime": 0.06666667014360428
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 5,
+          "sceneTime": 0.0833333358168602
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 6,
+          "sceneTime": 0.10000000149011612
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 7,
+          "sceneTime": 0.11666666716337204
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 8,
+          "sceneTime": 0.13333334028720856
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 9,
+          "sceneTime": 0.15000000596046448
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 10,
+          "sceneTime": 0.1666666716337204
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 11,
+          "sceneTime": 0.18333333730697632
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 12,
+          "sceneTime": 0.20000000298023224
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 13,
+          "sceneTime": 0.21666666865348816
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 14,
+          "sceneTime": 0.23333333432674408
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 15,
+          "sceneTime": 0.25
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 16,
+          "sceneTime": 0.2666666805744171
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 17,
+          "sceneTime": 0.28333336114883423
+        },
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 18,
+          "sceneTime": 0.30000004172325134
+        }
+      ],
+      "couplingRestored": true
+    },
+    "warmupRejections": [
+      {
+        "duration": 0.3,
+        "fps": 1,
+        "start": "current",
+        "message": "Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or simulation frame rate",
+        "sessions": 0,
+        "uploads": 0,
+        "downloads": 0,
+        "exportGenerations": 0,
+        "checkpoint": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 3,
+          "sceneTime": 0.10000000894069672
+        }
+      },
+      {
+        "duration": 0.3,
+        "fps": 1,
+        "start": "seed",
+        "message": "Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or simulation frame rate",
+        "sessions": 0,
+        "uploads": 0,
+        "downloads": 0,
+        "exportGenerations": 0,
+        "checkpoint": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 3,
+          "sceneTime": 0.10000000894069672
+        }
+      },
+      {
+        "duration": 0.1,
+        "fps": 10,
+        "start": "current",
+        "message": "Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or simulation frame rate",
+        "sessions": 0,
+        "uploads": 0,
+        "downloads": 0,
+        "exportGenerations": 0,
+        "checkpoint": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 3,
+          "sceneTime": 0.10000000894069672
+        }
+      },
+      {
+        "duration": 0.1,
+        "fps": 10,
+        "start": "seed",
+        "message": "Bouncing recording finished during warmup with no frames to encode; increase the source recording duration or simulation frame rate",
+        "sessions": 0,
+        "uploads": 0,
+        "downloads": 0,
+        "exportGenerations": 0,
+        "checkpoint": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 3,
+          "sceneTime": 0.10000000894069672
+        }
+      }
+    ],
+    "sourceStable": true,
+    "remainingProcesses": 0
+  },
+  "encoderCost": {
+    "path": ".cache/bouncing-full-recording-20261024/encoder-comparison/report.json",
+    "sha256": "b05e649c5ac9da4a2784c6806ec404a9c86a5556de51b4429755407c42d2e3fe",
+    "scope": "Same complete original PNG sequence, size, FPS, high profile and FFmpeg. Before/after two export sessions each. Fresh encoder process on every run; repeated inputs may be OS-cache warm. No controlled OS-cold, GPU or token cost measurement. Sampled process-family CPU/RSS include HTTP input hashing/transport and encoding, exclude later output validation.",
+    "baseline": {
+      "path": ".cache/bouncing-full-recording-20261024/encoder-before-source.json",
+      "sha256": "ec3e921706f6b14c77655a9ea726ffb0322d6a3c007942d0b7bc244686d9f51b",
+      "bundle": {
+        "path": ".cache/bouncing-full-recording-20261024/encoder-before.mjs",
+        "sha256": "d7789f165145301b2ddbb02a8698dbb2d0e0fa690f3d9ecb45543f7b0dc46659"
+      },
+      "productionSource": {
+        "source": "server/index.mjs",
+        "sha256": "8b458df625138223865377f6ac44a59a0d1bc933b3c36b0ff559908f8e25186f",
+        "basis": "Actual production server before changing mathart profile output threads; regular profiles remain2."
+      }
+    },
+    "runs": [
+      {
+        "label": "before",
+        "iteration": 1,
+        "cacheState": "first measured session; OS cache not controlled",
+        "elapsedMs": 5314.721,
+        "path": ".cache/bouncing-full-recording-20261024/encoder-comparison/before-1/service/549e4e2d-3394-49bf-9f51-ddf513bc94a9.mp4",
+        "uploadedBytes": 253103643,
+        "processFamily": {
+          "rootPid": 46161,
+          "samples": 19,
+          "observedProcesses": 21,
+          "maxConcurrentProcesses": 3,
+          "sampledPeakRssKiB": 563328,
+          "observedCpuMs": 17439.999999999996,
+          "samplingErrors": []
+        },
+        "decodedRgbHash": "SHA256=3ff50e095fa85cd31b0370904d5a1d875ae988bc4069ca28c211f95f1277d216",
+        "exactOriginalRgb": false,
+        "sha256": "80e0f5167bf3b1cf8e60389fb7ef2450f22ccc3603e2d2e4a6719561663b9263",
+        "x264Options": "x264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=10 deblock=1:1:1 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=0.40:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=4 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=5 b_pyramid=2 b_adapt=1 b_bias=0 direct=3 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=15 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=18.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:0.60",
+        "remainingProcesses": 0
+      },
+      {
+        "label": "before",
+        "iteration": 2,
+        "cacheState": "repeat session/input; fresh encoder process",
+        "elapsedMs": 5282.999458,
+        "path": ".cache/bouncing-full-recording-20261024/encoder-comparison/before-2/service/bd3e4c3c-c1d5-4a05-bff6-073afa50d496.mp4",
+        "uploadedBytes": 253103643,
+        "processFamily": {
+          "rootPid": 46161,
+          "samples": 19,
+          "observedProcesses": 21,
+          "maxConcurrentProcesses": 3,
+          "sampledPeakRssKiB": 562336,
+          "observedCpuMs": 17150,
+          "samplingErrors": []
+        },
+        "decodedRgbHash": "SHA256=3ff50e095fa85cd31b0370904d5a1d875ae988bc4069ca28c211f95f1277d216",
+        "exactOriginalRgb": false,
+        "sha256": "80e0f5167bf3b1cf8e60389fb7ef2450f22ccc3603e2d2e4a6719561663b9263",
+        "x264Options": "x264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=10 deblock=1:1:1 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=0.40:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=4 threads=2 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=5 b_pyramid=2 b_adapt=1 b_bias=0 direct=3 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=15 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=18.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:0.60",
+        "remainingProcesses": 0
+      },
+      {
+        "label": "after",
+        "iteration": 1,
+        "cacheState": "first measured session; OS cache not controlled",
+        "elapsedMs": 3600.2755829999987,
+        "path": ".cache/bouncing-full-recording-20261024/encoder-comparison/after-1/service/49a409ca-bf8a-4404-ab2a-b204e168e27e.mp4",
+        "uploadedBytes": 253103643,
+        "processFamily": {
+          "rootPid": 46161,
+          "samples": 14,
+          "observedProcesses": 16,
+          "maxConcurrentProcesses": 3,
+          "sampledPeakRssKiB": 633888,
+          "observedCpuMs": 18100,
+          "samplingErrors": []
+        },
+        "decodedRgbHash": "SHA256=d6707467e24f372f60299dac87170fdb6241d273b6c866c33c5b8bcc1787463a",
+        "exactOriginalRgb": true,
+        "sha256": "b072f0666aa0be0e17e7c4d084e0a6cb5502b70e8f37fa9b9172a95cc0ba9c6a",
+        "x264Options": "x264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=10 deblock=1:1:1 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=0.40:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=4 threads=18 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=5 b_pyramid=2 b_adapt=1 b_bias=0 direct=3 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=15 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=18.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:0.60",
+        "remainingProcesses": 0
+      },
+      {
+        "label": "after",
+        "iteration": 2,
+        "cacheState": "repeat session/input; fresh encoder process",
+        "elapsedMs": 3610.6801250000026,
+        "path": ".cache/bouncing-full-recording-20261024/encoder-comparison/after-2/service/65a3c4fc-ed8d-4145-b2ef-2cca5fff18c7.mp4",
+        "uploadedBytes": 253103643,
+        "processFamily": {
+          "rootPid": 46161,
+          "samples": 14,
+          "observedProcesses": 16,
+          "maxConcurrentProcesses": 3,
+          "sampledPeakRssKiB": 665408,
+          "observedCpuMs": 17869.999999999996,
+          "samplingErrors": []
+        },
+        "decodedRgbHash": "SHA256=d6707467e24f372f60299dac87170fdb6241d273b6c866c33c5b8bcc1787463a",
+        "exactOriginalRgb": true,
+        "sha256": "b072f0666aa0be0e17e7c4d084e0a6cb5502b70e8f37fa9b9172a95cc0ba9c6a",
+        "x264Options": "x264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=1 ref=10 deblock=1:1:1 analyse=0x3:0x113 me=hex subme=8 psy=1 psy_rd=0.40:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=2 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=4 threads=18 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=5 b_pyramid=2 b_adapt=1 b_bias=0 direct=3 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=15 scenecut=40 intra_refresh=0 rc_lookahead=50 rc=crf mbtree=1 crf=18.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:0.60",
+        "remainingProcesses": 0
+      }
+    ],
+    "costLimits": "Each encoder process is fresh. No controlled OS-cold, GPU/VRAM or token measurements. Sampled process-family peaks may miss transients; not a broad speedup claim."
+  },
+  "discoveryEvidence": [
+    {
+      "path": ".cache/bouncing-full-recording-20261024/product-bouncing1/report.json",
+      "sha256": "1e4adda880cd54c282a1034a2b4302ef1f13e485643ab4bc7a8d964039d28818"
+    },
+    {
+      "path": ".cache/bouncing-full-recording-20261024/product-bouncing1-separated/report.json",
+      "sha256": "fb8b1c781736eaa1a07837de7e73ef7454195b6005d0cffe507b8e90b13a1993"
+    }
+  ],
+  "staticEvidence": [
+    {
+      "path": ".cache/bouncing-native-formulas-20261024/MathArt.javap.txt",
+      "sha256": "2bc833d2d377301ff21f99824631900bdb6b96f545bb90642745af28cd84d1b6",
+      "originJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+    },
+    {
+      "path": ".cache/bouncing-native-formulas-20261024/VideoRecorder.javap.txt",
+      "sha256": "52310bafac22c557d016bb3e70da8f243f4fa27593f4cfdd12c333ba2856b44f",
+      "originJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+    },
+    {
+      "path": ".cache/bouncing-native-formulas-20261024/MathArtConfig.javap.txt",
+      "sha256": "7e92071c10a9a23036bb2a47c6b064c5ec65028f638dda1e60e7aa8602d1c163",
+      "originJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+    }
+  ],
+  "validation": {
+    "tests": {
+      "path": ".cache/bouncing-full-recording-20261024/tests.log",
+      "sha256": "0fe3d1520819a90de388de030485487e73b6d32fd4e208beb41e6e122399abb3",
+      "files": 9,
+      "tests": 161
+    },
+    "serviceTests": {
+      "path": ".cache/bouncing-full-recording-20261024/export-tests.log",
+      "sha256": "b60ac58b36bd4f25c295ba944eeb3907dd7d9f211109a2c11d8a6d5755254dc6",
+      "tests": 39
+    },
+    "build": {
+      "path": ".cache/bouncing-full-recording-20261024/build.log",
+      "sha256": "2beb17f24dee496e1391c1ca9f54bba5314b2784440b683fdb4171723c4ac4a6",
+      "status": "passed",
+      "viteSeconds": 9.79
+    },
+    "i18n": {
+      "path": ".cache/bouncing-full-recording-20261024/i18n.log",
+      "sha256": "be657841256d6b31e1d85656826e35020e698356394f2bb56cd716e83f390342",
+      "status": "passed"
+    },
+    "shortRecordingRegression": {
+      "path": ".cache/bouncing-full-recording-20261024/short-regression-product/report.json",
+      "sha256": "e9136202cf875bfb1da7e718e2c82ec76e4c9dcd73c719753b5dd85ea81df2a9",
+      "activeFrames": 4,
+      "status": "passed",
+      "scope": "New probe/defaultshort pipeline before the automatic codec thread fix; current auto-thread profile is covered by full600frame replay, public168checks and39servicechecks."
+    },
+    "captureGuards": {
+      "path": ".cache/bouncing-full-recording-20261024/guards/report.json",
+      "sha256": "e224fa1da3cbc9f34d7aee5b7a9e3295219c3da6a6a14611d804363d73c45541",
+      "checks": 6
+    }
+  },
+  "remaining": [
+    "Full5M/60s and both formula full recordings are not established by this case.",
+    "Other2.0scene requirements and full videos remain; original GUI-window parity unproven.",
+    "Native backend remains a development opt-in; finalAppleSilicon packaging and installed1.0update not complete."
+  ]
+}

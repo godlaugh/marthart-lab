@@ -20,7 +20,7 @@ export function verifyRecordingVideo(file,settings,expectedFrames,referenceFile)
  assert.ok(Math.abs(Number(metadata.duration)-expectedFrames.length/fps)<=0.000001,'Video duration differs');
  const args=['-v','error','-nostdin','-y','-f','rawvideo','-pix_fmt','rgba','-s',`${inputWidth}x${inputHeight}`,'-framerate',String(fps),'-threads','2','-i','pipe:0','-an','-filter_threads','2','-filter_complex_threads','2'];
  if(inputWidth!==width||inputHeight!==height)args.push('-vf',`scale=${width}:${height}:flags=lanczos`);
- args.push('-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-movflags','+faststart+write_colr','-preset','slow','-crf','18','-tune','animation','-threads','2',referenceFile);
+ args.push('-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-movflags','+faststart+write_colr','-preset','slow','-crf','18','-tune','animation','-threads','0',referenceFile);
  execFileSync('ffmpeg',args,{input:Buffer.concat(expectedFrames),timeout:30000,maxBuffer:4*1024**2});
  const decode=path=>execFileSync('ffmpeg',['-v','error','-nostdin','-i',path,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{timeout:30000,maxBuffer:32*1024**2});
  const actual=decode(file),expected=decode(referenceFile);assert.equal(actual.length,outputBytes*expectedFrames.length);assert.equal(expected.length,actual.length);
