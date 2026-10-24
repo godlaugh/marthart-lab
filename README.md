@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+2026-10-24 Samila 已完成五个未改动原版预设、各三次暂停显示的完整 500×600 对照，15 帧均发现差异；后续独立实验确认有效样本分类与小数点径绘制存在两端差异。此次保留完整参考、纠正墨迹统计通道顺序，未修改产品源码，也未计为整图通过。整体仍在 M3，见[原版整图与驱动差异中文报告](docs/source-samila-native-reference-validation.zh-CN.md)。
+
 2026-10-24 对称混沌（Symmetry）与 Samila 的手动／Cosine／Curve 调色、原始颜色保存、完整应用和重置状态已接通；1275 项相关测试、421 项实际界面检查通过。保存重开与两个受控样例的完整画布对照通过；它们验证本地接线，尚不代表原版整图一致。整体仍在 M3，见[两类场景调色中文验收](docs/source-symmetry-samila-palette-ui.zh-CN.md)。
 
 2026-10-24 隐式曲面的手动／Cosine／Curve 调色界面已接通冷配置、热改色、完整应用和录制重置；572 项相关测试与 320 项实际界面检查通过，含两段 MP4 和两张暂停 PNG。整体仍在 M3，原版整图与 2.0 发行验收继续。见[调色界面中文验收](docs/source-implicit-palette-ui.zh-CN.md)；底层契约见[色板与录制状态记录](docs/source-implicit-palette-controls.zh-CN.md)。

@@ -1,0 +1,2111 @@
+{
+  "schemaVersion": 1,
+  "baseline": "1778fd0ad982a4a3ac632eade7d770d32d2ac926",
+  "scope": "Five unchanged original Samila presets, three sequential paused full500x600 frames each versus production import/session. Separate driver geometry and point probes. No parity pass or product change.",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "status": "different",
+  "presets": [
+    {
+      "name": "Samila",
+      "member": "data/samila/Samila.json",
+      "sourceSha256": "85024d0943309d95013bb92f1f7d676f252039a41601aa3d7b26c7f8fb5a9d06",
+      "batchSize": 1262144,
+      "nativeElapsedSeconds": 8.96719362505246,
+      "nativeChildCpuSeconds": 4.304337
+    },
+    {
+      "name": "samila1",
+      "member": "data/samila/samila1.json",
+      "sourceSha256": "3dbec56763726a4b99c07afd42397833ad17a1f4cb0476d6127db94e0181a79e",
+      "batchSize": 6562144,
+      "nativeElapsedSeconds": 7.633604375063442,
+      "nativeChildCpuSeconds": 4.426727
+    },
+    {
+      "name": "samila2",
+      "member": "data/samila/samila2.json",
+      "sourceSha256": "1b22305cf1bb276f1e9187ab20d0aa14b3c527348be67d4f1ae40b43d6d50397",
+      "batchSize": 3262144,
+      "nativeElapsedSeconds": 7.2996948750223964,
+      "nativeChildCpuSeconds": 4.515378
+    },
+    {
+      "name": "samila3",
+      "member": "data/samila/samila3.json",
+      "sourceSha256": "458d93c9283fb5d31c337f2f91f243906543b1a805f5ac4e2cdbfa9f9e481dfc",
+      "batchSize": 3262144,
+      "nativeElapsedSeconds": 8.208702374948189,
+      "nativeChildCpuSeconds": 4.350128
+    },
+    {
+      "name": "samila4",
+      "member": "data/samila/samila4.json",
+      "sourceSha256": "cf1f55cb2ad18526ab24e2d0e30d0864dfab8d61dc0003dae0c47d621c680741",
+      "batchSize": 3262144,
+      "nativeElapsedSeconds": 6.644437749986537,
+      "nativeChildCpuSeconds": 4.277305
+    }
+  ],
+  "fullFrames": [
+    {
+      "preset": "Samila",
+      "frame": 0,
+      "batchSize": 1262144,
+      "seed": -790889694,
+      "inkDifferentChannels": 258501,
+      "presentDifferentChannels": 107015,
+      "presentDifferentPixels": 37995,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "Samila",
+      "frame": 1,
+      "batchSize": 1262144,
+      "seed": 1411779198,
+      "inkDifferentChannels": 259128,
+      "presentDifferentChannels": 189582,
+      "presentDifferentPixels": 57490,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "Samila",
+      "frame": 2,
+      "batchSize": 1262144,
+      "seed": -1582925608,
+      "inkDifferentChannels": 259352,
+      "presentDifferentChannels": 212204,
+      "presentDifferentPixels": 59914,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila1",
+      "frame": 0,
+      "batchSize": 6562144,
+      "seed": 407895654,
+      "inkDifferentChannels": 254372,
+      "presentDifferentChannels": 156476,
+      "presentDifferentPixels": 43439,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila1",
+      "frame": 1,
+      "batchSize": 6562144,
+      "seed": -89415547,
+      "inkDifferentChannels": 254464,
+      "presentDifferentChannels": 207239,
+      "presentDifferentPixels": 57774,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila1",
+      "frame": 2,
+      "batchSize": 6562144,
+      "seed": 697777423,
+      "inkDifferentChannels": 254528,
+      "presentDifferentChannels": 234412,
+      "presentDifferentPixels": 62271,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila2",
+      "frame": 0,
+      "batchSize": 3262144,
+      "seed": 1791153417,
+      "inkDifferentChannels": 313604,
+      "presentDifferentChannels": 229469,
+      "presentDifferentPixels": 75259,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila2",
+      "frame": 1,
+      "batchSize": 3262144,
+      "seed": 327862589,
+      "inkDifferentChannels": 313788,
+      "presentDifferentChannels": 258919,
+      "presentDifferentPixels": 77898,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila2",
+      "frame": 2,
+      "batchSize": 3262144,
+      "seed": -732971006,
+      "inkDifferentChannels": 313836,
+      "presentDifferentChannels": 257285,
+      "presentDifferentPixels": 78155,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila3",
+      "frame": 0,
+      "batchSize": 3262144,
+      "seed": -456476802,
+      "inkDifferentChannels": 204888,
+      "presentDifferentChannels": 170264,
+      "presentDifferentPixels": 51213,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila3",
+      "frame": 1,
+      "batchSize": 3262144,
+      "seed": 1332101352,
+      "inkDifferentChannels": 205064,
+      "presentDifferentChannels": 170380,
+      "presentDifferentPixels": 51266,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila3",
+      "frame": 2,
+      "batchSize": 3262144,
+      "seed": 675861215,
+      "inkDifferentChannels": 205104,
+      "presentDifferentChannels": 171608,
+      "presentDifferentPixels": 51276,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila4",
+      "frame": 0,
+      "batchSize": 3262144,
+      "seed": 968741546,
+      "inkDifferentChannels": 245002,
+      "presentDifferentChannels": 197246,
+      "presentDifferentPixels": 60406,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila4",
+      "frame": 1,
+      "batchSize": 3262144,
+      "seed": 446321987,
+      "inkDifferentChannels": 245873,
+      "presentDifferentChannels": 231789,
+      "presentDifferentPixels": 61028,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    },
+    {
+      "preset": "samila4",
+      "frame": 2,
+      "batchSize": 3262144,
+      "seed": -1169220384,
+      "inkDifferentChannels": 246208,
+      "presentDifferentChannels": 236563,
+      "presentDifferentPixels": 61124,
+      "mappedUniformDifferences": 0,
+      "status": "different"
+    }
+  ],
+  "diagnosticSummary": {
+    "tf": [
+      {
+        "name": "samila1",
+        "records": 65536,
+        "validity": {
+          "bothValid": 16337,
+          "nativeValidOnly": 49199,
+          "webglValidOnly": 0,
+          "bothInvalid": 0
+        },
+        "derivedNearZeroInputs": 0
+      },
+      {
+        "name": "samila4",
+        "records": 65536,
+        "validity": {
+          "bothValid": 16200,
+          "nativeValidOnly": 49152,
+          "webglValidOnly": 1,
+          "bothInvalid": 183
+        },
+        "derivedNearZeroInputs": 0
+      }
+    ],
+    "points": {
+      "cases": 30,
+      "fullyExact": 6,
+      "coverageExact": 22
+    },
+    "nativeReport": ".cache/samila-driver-native-20261024/run2/native.json",
+    "webglReport": ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/report.json",
+    "comparison": ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/comparison.json"
+  },
+  "source": {
+    "src/engine/sourceSamilaGpuDirect.ts": "b4b215b07e84883b128abd915e121141482f0a7ce7bcbeb14552878541ad0dce",
+    "src/engine/sourceSamilaExpression.ts": "323fb9498d3b76ffdfe6e38c9e62eded1e5648734edcdf92fa4859c1391b7700",
+    "src/engine/iteratedGpuSamila.ts": "cd20cd1df88697e25f72efa01f17d28b8d2897b780a91851c8bba56b92fb0485",
+    "src/engine/sourceSamilaMath.ts": "6612cfb85b2c3ebb20ec9596a1e0cd6970c56689af5e6a67faf2bd037f02614d",
+    "src/engine/sourceSamilaSplat.ts": "1e5afb9be78fe8ff2d7acad8992acede26ba3b54d42c447b7276a74de5b7234a",
+    "src/engine/sourceSamilaSession.ts": "6ae25002ba995452fc0a3b22442638296a616e7e286d2f6c95b782dee01a5d69",
+    "src/engine/iteratedDensityGpu.ts": "a936703c4b32a5190df687a6e3444904e6b9ac1b8f521e28390837f4b68a370e",
+    "src/engine/densityGpuTone.ts": "31daee7287208903c65b1c1cafbaae89c4389a34f2a453624505f7aac1c90096",
+    "scripts/samila-validation-graphics.mjs": "95431084dbfdf68744e6d4a72a0f78e23666f680e73f94b9cae40804086749fc",
+    "desktop/graphics.mjs": "b1eeadab1acbaec76e229aaaf07b921a9861dbee11749cc916e77e7455daebfb"
+  },
+  "evidence": {
+    ".cache/samila-native-reference-20261024/NativeSceneProbe.java": {
+      "sha256": "301204f3082f6d1c3f04091a26d3ec5750a3067374c9e695d394dcacad1080ee",
+      "bytes": 14284
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/NativeSceneProbe.java": {
+      "sha256": "77720b8d6ab5c1ebe8c83a39885947b4f245bd814befe322452c32a3a862aa3b",
+      "bytes": 13886
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/compile.json": {
+      "sha256": "b6ae4d2ce7ce04529c0b5d093ad83450c9d95af89f16d721f6bafde146e80bf5",
+      "bytes": 597
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/artwork.rgba": {
+      "sha256": "9caca4793ef61827deede99d1618ef97b9e1db81fb37e7025f766e4c4c0063b3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/draw-0.rgba": {
+      "sha256": "61fff2faaf6ddcfa769eb8b37aeca30342bfa713f535114c6217d14b000aecb3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/draw-1.f32": {
+      "sha256": "4250ce46d98cdf21265f1db7de8117ecd5d5a8e454abb60ed3df2d0e2c8ca177",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/draw-2.rgba": {
+      "sha256": "9caca4793ef61827deede99d1618ef97b9e1db81fb37e7025f766e4c4c0063b3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/draws.json": {
+      "sha256": "287e5fe1508779f7b6524e3e71b60a2a1a327638c228b48bd77e6a1d5b667789",
+      "bytes": 6242
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/samila.json": {
+      "sha256": "cdaa211900c9e6dbd4d99e938d00d387d2bc8c1c3bdb25da7c2af7e91790c80b",
+      "bytes": 2378
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/scene.json": {
+      "sha256": "60795b2625834d062e37fb4bba8bdc5e7b5751a32e5e18ceae0e9ce316ea993c",
+      "bytes": 443
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/shader-1-35633.glsl": {
+      "sha256": "87368c6ff50a1057ceca68772c1ec0b7eff6adb171a95f2407f54762b12b2d69",
+      "bytes": 17242
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/frame-0/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/run.json": {
+      "sha256": "7caf09d2bba03ec20fd3a00ac9b8089bf50d77d33b3a898aa45c844871a360c8",
+      "bytes": 27212
+    },
+    ".cache/samila-native-reference-20261024/Samila-run1/source.json": {
+      "sha256": "85024d0943309d95013bb92f1f7d676f252039a41601aa3d7b26c7f8fb5a9d06",
+      "bytes": 1822
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/NativeSceneProbe.java": {
+      "sha256": "301204f3082f6d1c3f04091a26d3ec5750a3067374c9e695d394dcacad1080ee",
+      "bytes": 14284
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/compile.json": {
+      "sha256": "6cee5daa48ecfc328a61a64bf5f1a6a0e1632f5b40b500e643df7ab9afe97807",
+      "bytes": 597
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/artwork.rgba": {
+      "sha256": "a3880774e75e1efc1cb763b13665b66b1604aa4e546055a77d5a7766091cc61b",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/draw-0.rgba": {
+      "sha256": "61fff2faaf6ddcfa769eb8b37aeca30342bfa713f535114c6217d14b000aecb3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/draw-1.f32": {
+      "sha256": "d898103087526d2fb29f9454802383c864da2e471b7897dabe2b47982edfd95b",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/draw-2.rgba": {
+      "sha256": "a3880774e75e1efc1cb763b13665b66b1604aa4e546055a77d5a7766091cc61b",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/draws.json": {
+      "sha256": "c43bac3a9e4c71c4fcbc16f7748022ccbbb077021b318dd6e807c965ede37a46",
+      "bytes": 6242
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/enhanced.png": {
+      "sha256": "9e322d72d71c7bc1f3e121a5f91a6ef98e7e3490e17c8e0f66847e70fe26a3ed",
+      "bytes": 79181
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/raw.png": {
+      "sha256": "aa3581d842d31c4344b46ad271b399451c4bbd69bbb32ef0f198d52005b02b55",
+      "bytes": 61926
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/samila.json": {
+      "sha256": "cdaa211900c9e6dbd4d99e938d00d387d2bc8c1c3bdb25da7c2af7e91790c80b",
+      "bytes": 2378
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/scene.json": {
+      "sha256": "60795b2625834d062e37fb4bba8bdc5e7b5751a32e5e18ceae0e9ce316ea993c",
+      "bytes": 443
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/shader-1-35633.glsl": {
+      "sha256": "87368c6ff50a1057ceca68772c1ec0b7eff6adb171a95f2407f54762b12b2d69",
+      "bytes": 17242
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-0/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/artwork.rgba": {
+      "sha256": "06471a9685dd5bf2f9ae51e3ae33e95ee7372b5f7bdee9baef65375c65315abc",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/draw-0.rgba": {
+      "sha256": "c182c9bec30612925da51a59bb1b62175f63359c1e8ea18063e8ad0a61e5dc32",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/draw-1.f32": {
+      "sha256": "2795eb468712d79e73479a5cc593dd7dc2921e89e50136a892136264f28e21d1",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/draw-2.rgba": {
+      "sha256": "06471a9685dd5bf2f9ae51e3ae33e95ee7372b5f7bdee9baef65375c65315abc",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/draws.json": {
+      "sha256": "1d378382a68fca6d5f2baf9359f02966ed5d3a382de999b9fc7ee903ef435135",
+      "bytes": 6344
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/enhanced.png": {
+      "sha256": "f547109285c5657afc2f36c1d08031d70802671eff7d302b14dca84a6ce81413",
+      "bytes": 117877
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/raw.png": {
+      "sha256": "7ecdcdff580cc04426323ea7a5d65d4d8bbeafc888891cdbc3e5aef15590d96a",
+      "bytes": 95848
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/samila.json": {
+      "sha256": "6b0f9cef2662bc54c0a142b64e6247492ab7eef607b6fc22ebbbd261bc906413",
+      "bytes": 2378
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/scene.json": {
+      "sha256": "60795b2625834d062e37fb4bba8bdc5e7b5751a32e5e18ceae0e9ce316ea993c",
+      "bytes": 443
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/shader-1-35633.glsl": {
+      "sha256": "87368c6ff50a1057ceca68772c1ec0b7eff6adb171a95f2407f54762b12b2d69",
+      "bytes": 17242
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-1/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/artwork.rgba": {
+      "sha256": "e3ebfef3766ed61c8bec2455176f6834b4e2f54e9242e60858eaaa6264a55902",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/draw-0.rgba": {
+      "sha256": "ca0b6c26d8419672c829eff184e82598f693c6c96d997e2b72abbd14c644ccdc",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/draw-1.f32": {
+      "sha256": "97bb4477295f461fe2b6cd23999a1eca3b9f651423e4ef67f3e33f0912974e6a",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/draw-2.rgba": {
+      "sha256": "e3ebfef3766ed61c8bec2455176f6834b4e2f54e9242e60858eaaa6264a55902",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/draws.json": {
+      "sha256": "c87143196d8730b7affa4b49ffee544ee99321a3d53b11b2bae463959bc34db3",
+      "bytes": 6345
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/enhanced.png": {
+      "sha256": "6656057136973b588c4546abedd3dd26d9758de48fb49611aa5643cf45557168",
+      "bytes": 131357
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/raw.png": {
+      "sha256": "3a041d0fcb8ec66da894a4b3f434f8de44729dd95ebc55ff0eb405d4772bf3ff",
+      "bytes": 111012
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/samila.json": {
+      "sha256": "69f25de9745a3cf9dbe88c98006c29548cbc456f28340a6a0735c87b35a1ab8f",
+      "bytes": 2378
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/scene.json": {
+      "sha256": "60795b2625834d062e37fb4bba8bdc5e7b5751a32e5e18ceae0e9ce316ea993c",
+      "bytes": 443
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/shader-1-35633.glsl": {
+      "sha256": "87368c6ff50a1057ceca68772c1ec0b7eff6adb171a95f2407f54762b12b2d69",
+      "bytes": 17242
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/frame-2/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/run.json": {
+      "sha256": "f00e0a507c6010a7db112c806cf172a4f59fa9773633a005b8d3c961f438a5d0",
+      "bytes": 26447
+    },
+    ".cache/samila-native-reference-20261024/Samila-run2/source.json": {
+      "sha256": "85024d0943309d95013bb92f1f7d676f252039a41601aa3d7b26c7f8fb5a9d06",
+      "bytes": 1822
+    },
+    ".cache/samila-native-reference-20261024/build-evidence-index.py": {
+      "sha256": "a36fafd107b98e0a5cfecc141329009b4206045506cc10192ede1890356382d3",
+      "bytes": 7963
+    },
+    ".cache/samila-native-reference-20261024/capture-summary.json": {
+      "sha256": "6b2875be1f84dae1d43f6ff59721820d1a400279243908fa2f05cd162d26c6aa",
+      "bytes": 12491
+    },
+    ".cache/samila-native-reference-20261024/compare-angle-gl.mjs": {
+      "sha256": "ee490183f0b6058e4b34d522ab584b8e6a1f2ae14feef3530fca9b99a97a1163",
+      "bytes": 14883
+    },
+    ".cache/samila-native-reference-20261024/compare-buffers.mjs": {
+      "sha256": "0d7709d5d9ca7e64534c3c8dd65d4bd6af3f88e2cb44e6fba05d0298d5a6252c",
+      "bytes": 2447
+    },
+    ".cache/samila-native-reference-20261024/compare.mjs": {
+      "sha256": "08df589f53da7e8424e98cbf818c0d8a45aec411d570adac02acd74374f04a93",
+      "bytes": 13562
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/DIAGNOSIS.zh-CN.md": {
+      "sha256": "58dab43b9cecab8a827de8408a74a1b6c70e0d2299cb64c6429957e9095a8198",
+      "bytes": 1822
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/README.zh-CN.md": {
+      "sha256": "8fd7b15f9b80874431d44dff25db07d3983d8b3878b14ee48e2fab9bdda81ebc",
+      "bytes": 1597
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/derived-shader-facts.json": {
+      "sha256": "0bccbd0dccf5af815da668e2b37229275952621700eded66ec1ae1826a9e3aa5",
+      "bytes": 2628
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-0-comparison.json": {
+      "sha256": "3a37545390d3c25cc6d4decefc158cc600f6b4de050460b3d2072bd3ac4ac2fa",
+      "bytes": 48256
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-0-ink-normalized.json": {
+      "sha256": "4aaa951ca69dc8b123f420ea4c81e95e20678409183549ce0785154c2810148b",
+      "bytes": 24590
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-0.f32": {
+      "sha256": "4f7e4712575e165fbcabc82cb309390831da49450f3c8bbab8981ef74a30f5d7",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-0.png": {
+      "sha256": "eaa19777007eb5060ce7569589569bb881469f952f9353a9d1e9fe70e531c34e",
+      "bytes": 97991
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-0.rgba": {
+      "sha256": "bf12868d33d19fd8a172be698a932c51465d33ea27463fef2d8e3d7f2aad99f8",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-1-comparison.json": {
+      "sha256": "84e157867e413cc2569a0789854aa2fd1072082983a44f6ca62582a7b0466c65",
+      "bytes": 48278
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-1-ink-normalized.json": {
+      "sha256": "cf08b005c46dfe650db1f0535765ebecaf9cb4f1f08f98a84296ee12c5d3dbb2",
+      "bytes": 24561
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-1.f32": {
+      "sha256": "909eb17ddea0202cd7285a49d04b5ac70840069598f47bfedad83cfc461a11e2",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-1.png": {
+      "sha256": "e266bd0fbfd0399899068aba2e6fd109f4791d1d987bdee52ccf81d90584cc8e",
+      "bytes": 138685
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-1.rgba": {
+      "sha256": "1a91836aa3699b364b014c2e0470b00a73b3d418607df88e3a41ac4b4815e746",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-2-comparison.json": {
+      "sha256": "8e579c102aa196672c4c882eb9240a0c44099e5851baa8cfddfedea2e1110d9a",
+      "bytes": 48171
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-2-ink-normalized.json": {
+      "sha256": "eae0588ad05ca9821e2f531bdae1533ba96b1dbf1ed8999e4318f77c7d2d53a6",
+      "bytes": 24480
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-2.f32": {
+      "sha256": "ccb4f9c307a43a732f96d8a4479782f7235dc2dfa433ae7f6814b4ec876c59e3",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-2.png": {
+      "sha256": "e0775d1bdb71b1fe130a8b789fa6b103e3b69c641b7f2ff440ef0a753b1c2f03",
+      "bytes": 153280
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/frame-2.rgba": {
+      "sha256": "07c49be281351bbae28bb961a53b6647a42a1596e193d87400f3cbc77fa076c9",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/product-derived-fragment.glsl": {
+      "sha256": "0ee7e6c0af00473480e9ccb86f4690221171e89b35c3e19f6d74ce177dc678c7",
+      "bytes": 1132
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/product-derived-vertex.glsl": {
+      "sha256": "7f58da0b877c9e1e580a130696b7e3b40cfbbd87c9be44cd46dc7f81cd8eb900",
+      "bytes": 12516
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/Samila-run2/product-draws.json": {
+      "sha256": "e5f1c4cb4615306053777efe1f5688faf9a4186f97ddda4b51f14f3602675faf",
+      "bytes": 72143
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/compare-executed.mjs": {
+      "sha256": "27dfd2e9692156f500c24fb5c849be48fa5b35b66f7f590457d89c2ffbd05514",
+      "bytes": 15456
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/diagnosis.json": {
+      "sha256": "eab10dac404420fc81a1325fb8ee65ed39c278209c47b81b4a191b291e65e83b",
+      "bytes": 824750
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/report.json": {
+      "sha256": "b783a73553021abca543a4ae7371bb6c41d90d7385b3db05075f93db8f19c490",
+      "bytes": 1278008
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/derived-shader-facts.json": {
+      "sha256": "36547b4adba022907949145facbf1120dc2dd44b8b2f18d26df60bd6c5b2c186",
+      "bytes": 2765
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-0-comparison.json": {
+      "sha256": "ebf44775cbd8e448ffaf8388266e10a0d62d07d2a94e9ebc10a798e964ed77ad",
+      "bytes": 48603
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-0-ink-normalized.json": {
+      "sha256": "8bc8569cf0a53b8cdbae6d22a76f452ee05f96c1a903141d7f8a4f72c4891af9",
+      "bytes": 62495
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-0.f32": {
+      "sha256": "1ea8254ea8215e0160e97446414fcacd5141643a6ff66a20d75d024b999b6b66",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-0.png": {
+      "sha256": "a46b115d94c45561f4e57a3c0c83e726e4e8050af69dc86874f0624d788046e0",
+      "bytes": 41992
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-0.rgba": {
+      "sha256": "86b2cac858292ddda1cf1940ca2aa5e24c1098558b2d3aa8fc811f8f4e766188",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-1-comparison.json": {
+      "sha256": "4eb9cc838c916d0c56b3c8e70e0d0c7d81d380aead25d9f57cb42fb2607422c3",
+      "bytes": 48739
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-1-ink-normalized.json": {
+      "sha256": "66b24f7120261a6b3125e50b5110d03cdb210031a6224c74008cf823b511cccc",
+      "bytes": 62528
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-1.f32": {
+      "sha256": "a418cc94da95ae9c0a742e99b84239301bfdb2c321323ceb893e9d4e4069c5a6",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-1.png": {
+      "sha256": "8f0280b0ccf3fc248a8cbfc81696359b4a6c0584d6be5d02f42b8646fb75c6e3",
+      "bytes": 54379
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-1.rgba": {
+      "sha256": "4def9456215f6d7f8249f0d54f5b7f18944134f1e12ebacf890763f9eec5d738",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-2-comparison.json": {
+      "sha256": "7d37e5cc8e5f9b23d767d3e083148b32dbadbaf31907e653c126a750dc171654",
+      "bytes": 48859
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-2-ink-normalized.json": {
+      "sha256": "d5c4ab78335f37e90f7d0933db152547ea611b074b85dd1290c7f09a2edbe24c",
+      "bytes": 62552
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-2.f32": {
+      "sha256": "f092215e4882938d50354184d515e9a71af7e43edd0b0fb6d26121d1da295552",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-2.png": {
+      "sha256": "7b1a1d18779dc2aeb8ee0c10c00dafe97f701e1a6c720e65527cc85badeb9003",
+      "bytes": 61715
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/frame-2.rgba": {
+      "sha256": "7879939792051296d67caea9dbe32c99e6147ef0ca7c9b3ae1852b3a23145ebf",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/product-derived-fragment.glsl": {
+      "sha256": "0ee7e6c0af00473480e9ccb86f4690221171e89b35c3e19f6d74ce177dc678c7",
+      "bytes": 1132
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/product-derived-vertex.glsl": {
+      "sha256": "1c50be82f3a6f45ae55d38c0630dbeaf6eeeaba4931a78a391f43bcdfc15caff",
+      "bytes": 12572
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila1-run2/product-draws.json": {
+      "sha256": "3a453d986a26dbda40da05ab0cf684c06cb5cd1a71c60df5d5da9434ada2b629",
+      "bytes": 357894
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/derived-shader-facts.json": {
+      "sha256": "b20159d9bc4d5461073183eb1e71eaaf9aaba8cbf6c581fc2eb4737343baa075",
+      "bytes": 2672
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-0-comparison.json": {
+      "sha256": "fd9e3c69f497f9cb9776e0ca851d2d3490831bb3047688bef4080534f1b6c85a",
+      "bytes": 48324
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-0-ink-normalized.json": {
+      "sha256": "753091111abdf02300eab7ac8ebc09c783de6a2e3d3f78975689ba845693baa7",
+      "bytes": 38641
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-0.f32": {
+      "sha256": "aba0b49d5ad85b267cf71d2c0179fb1dda4d940bcc747321e1c350776519cf10",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-0.png": {
+      "sha256": "01feba915d2cc1aeea07c9d78d72b9df6776b0424f3d45b9ca168595bb93ada7",
+      "bytes": 136135
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-0.rgba": {
+      "sha256": "ec18a6098a4fb8133040b87369919aeec94535501b270e5015535b75043d90b8",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-1-comparison.json": {
+      "sha256": "eb9d9456d70c5f85d2b6f10f9fab8256a9cba075f0d5d2fcc6c53db26875f661",
+      "bytes": 48211
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-1-ink-normalized.json": {
+      "sha256": "6accfe8fc23a4b73ae8a1f5978c98ccf63cd8bb949a408a487d1499683ed8499",
+      "bytes": 38547
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-1.f32": {
+      "sha256": "58dda5733817a2b4e9398d496a25a1b07cf594bc9bcf7710ed3030199763a60d",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-1.png": {
+      "sha256": "1d0a17172c35cc8ed942db61354a6a0ad1264c83bc147c17bcf37355d0935be5",
+      "bytes": 146237
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-1.rgba": {
+      "sha256": "bab18445fde097cbca3c99e9b373b7e43879f1dc49e38b33e070908591def921",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-2-comparison.json": {
+      "sha256": "33f3ba126b135403fd970ff0183b7667e4c7644cad4ca5cdff5da3c4e26c8338",
+      "bytes": 48213
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-2-ink-normalized.json": {
+      "sha256": "35e40922ac7e47863df30e71824c604a4498988b8a1226b8c9c379d6ebb0018a",
+      "bytes": 38538
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-2.f32": {
+      "sha256": "b4a70d26ff1a5393594b984e8784366e41cae5a9e0c55b23a648e1d83b10e867",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-2.png": {
+      "sha256": "29d4f39baad3e52bf5c91d67dad317581e03fc6f226c6fb0d6da9f142f79ab9f",
+      "bytes": 149509
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/frame-2.rgba": {
+      "sha256": "8659807eacd09bad704c2b71d22459f144c04589f9b3e25bee22ebb384a2eddd",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/product-derived-fragment.glsl": {
+      "sha256": "0ee7e6c0af00473480e9ccb86f4690221171e89b35c3e19f6d74ce177dc678c7",
+      "bytes": 1132
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/product-derived-vertex.glsl": {
+      "sha256": "eb3b1b40b0d95fa8d9ffe87d6750f5d95b8ccbcaf63aec4271d348a704504f27",
+      "bytes": 12534
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila2-run2/product-draws.json": {
+      "sha256": "2d86ce6c98690b88c31de2d0b5b7279cbfc4f4c582ea01345929b051c7fc0bed",
+      "bytes": 176521
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/derived-shader-facts.json": {
+      "sha256": "58037c0147bbbb01498e724a8174f8895a05214b7ccc5636e38ab99570874769",
+      "bytes": 2951
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-0-comparison.json": {
+      "sha256": "49aea2e717f984d0b221dd67ecb9ce02fa297d1d8e446334579163306262f76d",
+      "bytes": 48027
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-0-ink-normalized.json": {
+      "sha256": "80feb5ee25087ed38e7976b369128b7adb1cf9af6632e93a64c711ada1d3e305",
+      "bytes": 38431
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-0.f32": {
+      "sha256": "e3ec1ec3af688d34d191a1f63b98aa05041c59a51333cb89e95431699aa88e76",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-0.png": {
+      "sha256": "fedb2c6b82bf58421ce282b9f614d4b0020dc54925916b88bdf408c8cdedf69c",
+      "bytes": 126750
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-0.rgba": {
+      "sha256": "ea9eefd922944083ac70285d8f00c26e46f1ce30715717623bb6ede80827a680",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-1-comparison.json": {
+      "sha256": "8e5eb3530e1d80f3f82fdf8ae0f0aa305b6e59d9f96c8ad1ec626ba7286d1e25",
+      "bytes": 47989
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-1-ink-normalized.json": {
+      "sha256": "af8c37ad4331e5130c490eb7f00d5b51187d7615f01d3a8f811824e6b8c5d6bf",
+      "bytes": 38395
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-1.f32": {
+      "sha256": "1862156e3ccefc66427fa70d615e8be5f76a832c67a798845c76f934c90a2162",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-1.png": {
+      "sha256": "53005dea35371693d127f0d7c63303be0cd2df91a5666694e49ff7455f138903",
+      "bytes": 129797
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-1.rgba": {
+      "sha256": "5e3060390030f2bd08020695f4b2bd4bd568ae13208b53df70d8b757673f4601",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-2-comparison.json": {
+      "sha256": "b118459069afdc6c96cc807433d6892fab7d9d87dd655fd4ab77d1463a95d0f4",
+      "bytes": 47979
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-2-ink-normalized.json": {
+      "sha256": "9f47027fccf3138a6abe56a412a13dad4f2bb29637a6bf70101496a694c94262",
+      "bytes": 38422
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-2.f32": {
+      "sha256": "3e9cb560bacce9253ff2f0a302fe926afe41736352096c966adc64669bab94a0",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-2.png": {
+      "sha256": "2e40c5baf094ce94ff92ef97a919ec3e266ce1677496c998aad57ccede1b8127",
+      "bytes": 131412
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/frame-2.rgba": {
+      "sha256": "db4723a3198bc1883b2960ce2d9643acd8ed63a520fc88d16d99e67dc6fc56e8",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/product-derived-fragment.glsl": {
+      "sha256": "0ee7e6c0af00473480e9ccb86f4690221171e89b35c3e19f6d74ce177dc678c7",
+      "bytes": 1132
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/product-derived-vertex.glsl": {
+      "sha256": "10601e1d7381b6173c0cbc5d4f8cffb413a0d35a1ba89033f358f73175146d91",
+      "bytes": 12747
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila3-run2/product-draws.json": {
+      "sha256": "de632f2fce83e379e6ec9d1dd6119370f0c813ba9c84b6698294adad03e169a0",
+      "bytes": 187522
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/derived-shader-facts.json": {
+      "sha256": "79ad8aa0ec5e2ee8f1cba1bbf4729248f9423c617fa1396f7e57052306d93b2d",
+      "bytes": 3117
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-0-comparison.json": {
+      "sha256": "5d4592fdd839dc30f14fe3124746e6830afa7f3cca1fcbe13afc7228029088c6",
+      "bytes": 48465
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-0-ink-normalized.json": {
+      "sha256": "5f0d57ea79856328a6758c075689cc2f870aa59520621a87c2aa0a3224549671",
+      "bytes": 38453
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-0.f32": {
+      "sha256": "472fff82cc9f9ca152fc8b90b899eecabfe7b4fd8b6bde11275737b6c01aaf6c",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-0.png": {
+      "sha256": "6e58a07596a8cb96938bb09d172d7e8978549675a0624d1e36cb1c38bdb56e57",
+      "bytes": 137376
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-0.rgba": {
+      "sha256": "521ec1d4c4b305a85b29038e50cd337b1b4eda81844aa91bdc52894cd9baf18e",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-1-comparison.json": {
+      "sha256": "f260aeaa0f98695aa91cd3bfe7e6fdb4845033f996c4b39f6a7e815fcf3f4abe",
+      "bytes": 48666
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-1-ink-normalized.json": {
+      "sha256": "064e4d64483f49d853ffff020883afd1498214953d953eb8861db503af4894d6",
+      "bytes": 38517
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-1.f32": {
+      "sha256": "83dddbe2915c8da4a7ee1851a018992a8cefb02951b63d10b13218695ddc0797",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-1.png": {
+      "sha256": "2a4c82abcb2e1b00799e8038edcf0c48066484652d3bb238bb86cb3f14a80756",
+      "bytes": 155032
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-1.rgba": {
+      "sha256": "e42418c0741f08949d9292658b036c7a75a063af23dd2266c421c1de3efbf96b",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-2-comparison.json": {
+      "sha256": "5f4eabef6831195573315acce0caa2c05f5e0cd0eb8d2d98d3a7d9ce3f67abf1",
+      "bytes": 48784
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-2-ink-normalized.json": {
+      "sha256": "6aff9dd4a0596a7a812f9f2a87b6f3e834c501d76ddcfcf3e16bb9b7a572f4d2",
+      "bytes": 38555
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-2.f32": {
+      "sha256": "9099fce32c260b31055a0975b118f1e57d92fefd794b53cc72f88f33a8d36442",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-2.png": {
+      "sha256": "923301a0bc6f97a6b54e493a64437b6b1fcec047c58e2ed83a64dd44f6fd7129",
+      "bytes": 166213
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/frame-2.rgba": {
+      "sha256": "ecf1ed4c1e6f6219c29b8e8a7553401dd35b176ac0f4119fe6e8b9c5a3038cdb",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/product-derived-fragment.glsl": {
+      "sha256": "0ee7e6c0af00473480e9ccb86f4690221171e89b35c3e19f6d74ce177dc678c7",
+      "bytes": 1132
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/product-derived-vertex.glsl": {
+      "sha256": "0d9404431447517cff28da7f9067baa7e558e76277c374da221c9c6e82109f8b",
+      "bytes": 12799
+    },
+    ".cache/samila-native-reference-20261024/comparison-2026-10-24T10-36-47-090Z/samila4-run2/product-draws.json": {
+      "sha256": "62241ee33dbddf094eeec972424b9a32c36326ffa6e1895bc6b2c747bd55b1d2",
+      "bytes": 163072
+    },
+    ".cache/samila-native-reference-20261024/comparison-angle-gl-2026-10-24T10-43-10-178Z/README.zh-CN.md": {
+      "sha256": "46ed4a059dfbe2ae9100f93cc6ee69b939010ad2e150674007be6e7e9b4677a8",
+      "bytes": 4544
+    },
+    ".cache/samila-native-reference-20261024/comparison-angle-gl-2026-10-24T10-43-10-178Z/executed-compare-buffers.mjs": {
+      "sha256": "0d7709d5d9ca7e64534c3c8dd65d4bd6af3f88e2cb44e6fba05d0298d5a6252c",
+      "bytes": 2447
+    },
+    ".cache/samila-native-reference-20261024/comparison-angle-gl-2026-10-24T10-43-10-178Z/executed-compare.mjs": {
+      "sha256": "ee490183f0b6058e4b34d522ab584b8e6a1f2ae14feef3530fca9b99a97a1163",
+      "bytes": 14883
+    },
+    ".cache/samila-native-reference-20261024/comparison-angle-gl-2026-10-24T10-43-10-178Z/report.json": {
+      "sha256": "d57a1669a499abd88130ef8a0e1413a871651d345ce1736fd253c6fbdb957718",
+      "bytes": 151070
+    },
+    ".cache/samila-native-reference-20261024/derive-shaders.mjs": {
+      "sha256": "1dc7b54c4e6b0321ea933d9dd363fa0c61780a348b6c3fa5e9c97aa874c099a5",
+      "bytes": 3591
+    },
+    ".cache/samila-native-reference-20261024/diagnose.mjs": {
+      "sha256": "8135f1710c7104bf1e8e6e70a95643a950dd94b5b2abcfeec6ad564de3fc3d41",
+      "bytes": 4966
+    },
+    ".cache/samila-native-reference-20261024/prepare-probe.py": {
+      "sha256": "ef81fcfb7fb207ada1ec8c4ab206737b1c57f62fa6267f9f746094f8c47b03d2",
+      "bytes": 8597
+    },
+    ".cache/samila-native-reference-20261024/run.py": {
+      "sha256": "7c5f35238c54db80a2deec343cc9c111dd5a38d05db197f82671126cbb669750",
+      "bytes": 4485
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/NativeSceneProbe.java": {
+      "sha256": "301204f3082f6d1c3f04091a26d3ec5750a3067374c9e695d394dcacad1080ee",
+      "bytes": 14284
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/compile.json": {
+      "sha256": "e3d5657ac0688cd30fbe8dfa1dcab45741b48adaf2e61ab93595a8c0a982b8fb",
+      "bytes": 599
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/artwork.rgba": {
+      "sha256": "09522de3d4e366d8fb078bdbca739c788d6e799c5522639ac84b617e8676b351",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/draw-0.rgba": {
+      "sha256": "61fff2faaf6ddcfa769eb8b37aeca30342bfa713f535114c6217d14b000aecb3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/draw-1.f32": {
+      "sha256": "3648722715ed1747df0d14aff7702d663b7a9bf858e4b4c8a1647c21eb8cdbaa",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/draw-2.rgba": {
+      "sha256": "09522de3d4e366d8fb078bdbca739c788d6e799c5522639ac84b617e8676b351",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/draws.json": {
+      "sha256": "470311c90ddc0178cb84d973485be4e0c0e84afeb7aaca47a0613063223ee846",
+      "bytes": 6327
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/enhanced.png": {
+      "sha256": "88b7f6c4d8ac5ac02a43ec90fa78255b46f62666afd96b188de3cd78650ab26c",
+      "bytes": 117971
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/raw.png": {
+      "sha256": "8fe21b3bb913b9a1a3b9fc960466e6e0490f2f3324e536622ed7303586d9f187",
+      "bytes": 94073
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/samila.json": {
+      "sha256": "aafdaa52025ed9335f21552f9f380134ec4416babcb765435a218ca940906cc6",
+      "bytes": 2366
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/shader-1-35633.glsl": {
+      "sha256": "5cdac72bc12fb4b014de757b24764e1f0d57c9421d768f7a0e636ec92597c71e",
+      "bytes": 17322
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-0/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/artwork.rgba": {
+      "sha256": "2a56e2189fbf030bf7b41734b0693b7ac4ee5d3e66a82677abc308b3d68442cc",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/draw-0.rgba": {
+      "sha256": "9e8dae8ff3af23fdcde6fa1c5cb5e5ee504fbce1c0fe9436bc3fbe9879ce5878",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/draw-1.f32": {
+      "sha256": "12c3113d1a51c085215725e3b4316b15500eb39d7a62bf56d7a7c63754856591",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/draw-2.rgba": {
+      "sha256": "2a56e2189fbf030bf7b41734b0693b7ac4ee5d3e66a82677abc308b3d68442cc",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/draws.json": {
+      "sha256": "d09b0660335109bd9646f9bb56d8f8c00833b00671d660dce6f57790cf0efef7",
+      "bytes": 6411
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/enhanced.png": {
+      "sha256": "c7a08bd324f164fa2a4e51e9a28bcddc2ad407ec11f25f52cdc0b385ff2fe90a",
+      "bytes": 141104
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/raw.png": {
+      "sha256": "6c34f19e631ce97696086b24f09bc918625d48e316f24bba99e6e395fe683374",
+      "bytes": 114348
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/samila.json": {
+      "sha256": "0975035391fd2ac41cefcaf409ff9a78c2e9ae9a72a3e0630f406bfb223196c0",
+      "bytes": 2366
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/shader-1-35633.glsl": {
+      "sha256": "5cdac72bc12fb4b014de757b24764e1f0d57c9421d768f7a0e636ec92597c71e",
+      "bytes": 17322
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-1/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/artwork.rgba": {
+      "sha256": "1d9bfb0b8ed2ea6af1f95ff0c172d3f4bf75f7177c2f46b195d6350c35e88924",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/draw-0.rgba": {
+      "sha256": "cf46f516d0cabd08be98867d9bbbb65db8af883b84f98df83d0fb8f68e8accf5",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/draw-1.f32": {
+      "sha256": "c78fb7b1e81ccf67083ff429f97760daf5fc132ae655890208f973a4f58f2611",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/draw-2.rgba": {
+      "sha256": "1d9bfb0b8ed2ea6af1f95ff0c172d3f4bf75f7177c2f46b195d6350c35e88924",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/draws.json": {
+      "sha256": "aefe4cb2306884c95a0ca882ed5fe98ea710652e51f045e1b8675e8f07f0f7ba",
+      "bytes": 6411
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/enhanced.png": {
+      "sha256": "ae6c2d31afecec6d9c9ad44266af8a580228655dc61162b8cb4a929a77cac24d",
+      "bytes": 149230
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/raw.png": {
+      "sha256": "57ac50a9686a3a279992838147732b8287b21faa119715846e5638d4ff7ec7c1",
+      "bytes": 123179
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/samila.json": {
+      "sha256": "8eac1bba1fa53e2812944de7f354caee93bd368fb7e718216fbcf666843af484",
+      "bytes": 2366
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/shader-1-35633.glsl": {
+      "sha256": "5cdac72bc12fb4b014de757b24764e1f0d57c9421d768f7a0e636ec92597c71e",
+      "bytes": 17322
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/frame-2/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/run.json": {
+      "sha256": "dfaff54d1a1e0325e9cac0bdfc40fcba8e1fd0d2a7643d0951a506f51b4aa153",
+      "bytes": 26456
+    },
+    ".cache/samila-native-reference-20261024/samila1-run2/source.json": {
+      "sha256": "3dbec56763726a4b99c07afd42397833ad17a1f4cb0476d6127db94e0181a79e",
+      "bytes": 3009
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/NativeSceneProbe.java": {
+      "sha256": "301204f3082f6d1c3f04091a26d3ec5750a3067374c9e695d394dcacad1080ee",
+      "bytes": 14284
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/compile.json": {
+      "sha256": "17fecbf9a147aebed70259923159a540e0d5955cb923254491e7ec616c66e987",
+      "bytes": 599
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/artwork.rgba": {
+      "sha256": "95d11e0918d73165bca0204d615c98dca885af2a658c581551e5c0a3adb8a4be",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/draw-0.rgba": {
+      "sha256": "61fff2faaf6ddcfa769eb8b37aeca30342bfa713f535114c6217d14b000aecb3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/draw-1.f32": {
+      "sha256": "5979ba85b41ded27588b7dcf9092d7ba7d57f64b408e9a3f6c195e0eae027aa9",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/draw-2.rgba": {
+      "sha256": "95d11e0918d73165bca0204d615c98dca885af2a658c581551e5c0a3adb8a4be",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/draws.json": {
+      "sha256": "ac2ab0642a1787e3c50edc17d91edc94991fe7fa957c402096c1ef23a434f399",
+      "bytes": 6247
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/enhanced.png": {
+      "sha256": "452dcba574a10fc7bc358fb55de084fdad006df41ab05bb6649da2571c68f18e",
+      "bytes": 134389
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/raw.png": {
+      "sha256": "b84b9333dccf4101edc06831ac1acf32d42c7dc0d8f8d0fce6fb5516b16cfb3c",
+      "bytes": 105169
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/samila.json": {
+      "sha256": "71e0faedd927ae167f04635b9e6d67744727c9cc54ab5c5eb0945a267924726f",
+      "bytes": 2359
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/scene.json": {
+      "sha256": "60795b2625834d062e37fb4bba8bdc5e7b5751a32e5e18ceae0e9ce316ea993c",
+      "bytes": 443
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/shader-1-35633.glsl": {
+      "sha256": "a2d27f40e685cfdb1513fdba86746bc3274e0fd39eb2c93b365823d868aa4bb7",
+      "bytes": 17260
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-0/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/artwork.rgba": {
+      "sha256": "6dd2b080049f367269b4e398b69c55c87a1ef6fa6c025d7cc9d0399bb9ed604c",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/draw-0.rgba": {
+      "sha256": "75df96656a410729f5517441d0513b2ee3fd99b7270df76ed28961be0815adef",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/draw-1.f32": {
+      "sha256": "2109fe9ddc73f84039a8309aa2b91e07d2ab2f9fa570ed35a7d976eac4e145cb",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/draw-2.rgba": {
+      "sha256": "6dd2b080049f367269b4e398b69c55c87a1ef6fa6c025d7cc9d0399bb9ed604c",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/draws.json": {
+      "sha256": "92ff6beac8a9b3e83912bce9ed3399676c6791852a367395a43b7930cc764e28",
+      "bytes": 6364
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/enhanced.png": {
+      "sha256": "1c57ceb806f60b21bfd8bbb4d8654b993176cad479ec3b61dc2bd00b9a6eb93b",
+      "bytes": 147261
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/raw.png": {
+      "sha256": "12ba1ee871abd7de790b569c1ef8cde95a042c718d9fc274a011d2f3d34c90f5",
+      "bytes": 117879
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/samila.json": {
+      "sha256": "83ffd1cee69830d715f675e68df754d88181c3d34af27a6276402fd2871d44ef",
+      "bytes": 2359
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/scene.json": {
+      "sha256": "60795b2625834d062e37fb4bba8bdc5e7b5751a32e5e18ceae0e9ce316ea993c",
+      "bytes": 443
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/shader-1-35633.glsl": {
+      "sha256": "a2d27f40e685cfdb1513fdba86746bc3274e0fd39eb2c93b365823d868aa4bb7",
+      "bytes": 17260
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-1/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/artwork.rgba": {
+      "sha256": "0c00dd38c3367a949be003786717bbfbdba87d12d496195f46533416b30ba774",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/draw-0.rgba": {
+      "sha256": "2b0b225023dfb755441112edbf75d735dc61717dc57d2812375eb9dd6beb1e08",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/draw-1.f32": {
+      "sha256": "cee02d2ae085d3a659664ad222d2cf322e631766f5ecbb6290fc98572925e758",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/draw-2.rgba": {
+      "sha256": "0c00dd38c3367a949be003786717bbfbdba87d12d496195f46533416b30ba774",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/draws.json": {
+      "sha256": "537c5006cf24e18db7d4a83d1e428dad0d3ac2fa114c1bce2a9b9b7a20553d01",
+      "bytes": 6365
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/enhanced.png": {
+      "sha256": "9c8cb1ce99b52465984ee419b24fb2dcff2ad98851c20a706b7c5e1f9f7badea",
+      "bytes": 152754
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/raw.png": {
+      "sha256": "6b5b6ba42eb62812464dd238c341566b50a716a02019bcc4b69487aa7e314a65",
+      "bytes": 123441
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/samila.json": {
+      "sha256": "2c18ad5b5b5d67794007ad98364ac53e477175e0a15322da22d95edff41cff25",
+      "bytes": 2359
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/scene.json": {
+      "sha256": "60795b2625834d062e37fb4bba8bdc5e7b5751a32e5e18ceae0e9ce316ea993c",
+      "bytes": 443
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/shader-1-35633.glsl": {
+      "sha256": "a2d27f40e685cfdb1513fdba86746bc3274e0fd39eb2c93b365823d868aa4bb7",
+      "bytes": 17260
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/frame-2/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/run.json": {
+      "sha256": "5b2fe9106e4fcdf1b4c2b0907d8affd286019324bfe14e418cc90348c8728849",
+      "bytes": 26454
+    },
+    ".cache/samila-native-reference-20261024/samila2-run2/source.json": {
+      "sha256": "1b22305cf1bb276f1e9187ab20d0aa14b3c527348be67d4f1ae40b43d6d50397",
+      "bytes": 1868
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/NativeSceneProbe.java": {
+      "sha256": "301204f3082f6d1c3f04091a26d3ec5750a3067374c9e695d394dcacad1080ee",
+      "bytes": 14284
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/compile.json": {
+      "sha256": "8dc8d22ef1207ddb42d221349275c65fbf02cd72607be65cf5e8d231ab5c45fe",
+      "bytes": 599
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/artwork.rgba": {
+      "sha256": "25ef6521db62b862181c96726a83db97ff0076eb6cb0d8bdbe9680e7b40336d8",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/draw-0.rgba": {
+      "sha256": "61fff2faaf6ddcfa769eb8b37aeca30342bfa713f535114c6217d14b000aecb3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/draw-1.f32": {
+      "sha256": "c16f1e88862bd1b32e5c1372961b07121b2666f1d7210df5b244cc94c3207cc6",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/draw-2.rgba": {
+      "sha256": "25ef6521db62b862181c96726a83db97ff0076eb6cb0d8bdbe9680e7b40336d8",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/draws.json": {
+      "sha256": "d4fc5812b71215d16d931b7a75d09b73a5720b27555bf18c52b1110952439572",
+      "bytes": 6387
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/enhanced.png": {
+      "sha256": "64604e4a4414ee5d07e9836ac18943f6ff494532d96140aefcc0fab78e69a78c",
+      "bytes": 135009
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/raw.png": {
+      "sha256": "59e330c73b58c585a4942b898ebbd90b5308686cfa6cffc9719df97597a60328",
+      "bytes": 111660
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/samila.json": {
+      "sha256": "6e6744ab680532dbb12f818daa0bc0d3c65566495b17a3789fb339a29a921f36",
+      "bytes": 2361
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/shader-1-35633.glsl": {
+      "sha256": "ec2ac26f271c2330338c2f40acc3bb3b752526f997c897ac06021e719b689e8f",
+      "bytes": 17329
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-0/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/artwork.rgba": {
+      "sha256": "3b9b62fb4e8933e7aa5f4c313f9c3bd6b9faf6cfb6cf39877d8696c15cf4b966",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/draw-0.rgba": {
+      "sha256": "a723f0e7e756a4b3d4c95344d6471a51bff5bbec6ad3fec1f2de8768ecccb641",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/draw-1.f32": {
+      "sha256": "0df5b296b9e4698463d7d8ef3d5841e7f1e5c0bbb7229b8656270b27da7301b1",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/draw-2.rgba": {
+      "sha256": "3b9b62fb4e8933e7aa5f4c313f9c3bd6b9faf6cfb6cf39877d8696c15cf4b966",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/draws.json": {
+      "sha256": "b8f1844744553cb7fb8a123225685329ffb1d9165ba56152d9910f287ccdbade",
+      "bytes": 6472
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/enhanced.png": {
+      "sha256": "6e9b2d6e627d7e5443d7747bcd653f46a04f3218e737f80b86ae3c741a000ca4",
+      "bytes": 141488
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/raw.png": {
+      "sha256": "1c7f7b10a4b5df3743b6440aff8934864dd24b8541ac5fa5884de789c540aff5",
+      "bytes": 118478
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/samila.json": {
+      "sha256": "9543e8c12a2a2a74e02b8da59db034fa14f88148b2e5d37a146c17f5585da2a2",
+      "bytes": 2361
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/shader-1-35633.glsl": {
+      "sha256": "ec2ac26f271c2330338c2f40acc3bb3b752526f997c897ac06021e719b689e8f",
+      "bytes": 17329
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-1/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/artwork.rgba": {
+      "sha256": "afd19bd123ddd4fa2337b28c55a2e80783fce1c0f2e3e05e2192d9a5a126e2fd",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/draw-0.rgba": {
+      "sha256": "4d49efbd14ecc4c175364b1ea02e7f7ccdd42e059ee6e57b086990f88d4101cc",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/draw-1.f32": {
+      "sha256": "5c3533b93255dd14ab3c19c560979034cc15045385df45f7fdbd1c560d5bfe68",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/draw-2.rgba": {
+      "sha256": "afd19bd123ddd4fa2337b28c55a2e80783fce1c0f2e3e05e2192d9a5a126e2fd",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/draws.json": {
+      "sha256": "feb8c04896912b33b8bcf95b04ef8801278eac7aac4f33600d2cc45bcbef35d4",
+      "bytes": 6471
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/enhanced.png": {
+      "sha256": "babe483eb07b4c010e2b5cb2bf28b48bb189373b4074e62abeb29a07b958fc8a",
+      "bytes": 145639
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/raw.png": {
+      "sha256": "cb19231786a0fc25f67a947b2ad8e8eb62244c100a0fb302ac90a26c24427ef5",
+      "bytes": 122496
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/samila.json": {
+      "sha256": "2c73442e12c4833567c84bc5692887979093ed666e268cdc163637086d58a022",
+      "bytes": 2361
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/shader-1-35633.glsl": {
+      "sha256": "ec2ac26f271c2330338c2f40acc3bb3b752526f997c897ac06021e719b689e8f",
+      "bytes": 17329
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/frame-2/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/run.json": {
+      "sha256": "d84428878a58087728ccc814f92aef0eae9a71a3b6f4437ef859236f115d4db6",
+      "bytes": 26446
+    },
+    ".cache/samila-native-reference-20261024/samila3-run2/source.json": {
+      "sha256": "458d93c9283fb5d31c337f2f91f243906543b1a805f5ac4e2cdbfa9f9e481dfc",
+      "bytes": 1714
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/NativeSceneProbe.java": {
+      "sha256": "301204f3082f6d1c3f04091a26d3ec5750a3067374c9e695d394dcacad1080ee",
+      "bytes": 14284
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/compile.json": {
+      "sha256": "02799b2ca5282c97c2b74642f768bbe766a68092fbb909b5387d8b19dd9cc551",
+      "bytes": 599
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/artwork.rgba": {
+      "sha256": "d282f734c99ad6dd7dac3deed5987b55b931a80ff1894d6a3f1049d389231714",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/draw-0.rgba": {
+      "sha256": "61fff2faaf6ddcfa769eb8b37aeca30342bfa713f535114c6217d14b000aecb3",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/draw-1.f32": {
+      "sha256": "32fe1bb5a47800b106fff275ec9a2ef6ac006b8f480b26af915e7582537b4f4a",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/draw-2.rgba": {
+      "sha256": "d282f734c99ad6dd7dac3deed5987b55b931a80ff1894d6a3f1049d389231714",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/draws.json": {
+      "sha256": "b2d5ea81c55e329ee6bb261fea2824d282e25077b80f664e67781fd49c909494",
+      "bytes": 6281
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/enhanced.png": {
+      "sha256": "b656010ae8bdd77357e26ee8229672647022ae3f285fe03e327acb2546510d00",
+      "bytes": 152065
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/raw.png": {
+      "sha256": "252f6573f5be415936810419873b1b2dc13dff95693d1b2c74e95a8352fd84db",
+      "bytes": 120237
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/samila.json": {
+      "sha256": "a7749bd0ae060314e795d62449f9202237d18de17a55a3cdb42fef52a2504940",
+      "bytes": 2355
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/shader-1-35633.glsl": {
+      "sha256": "f9a3c019ccae3a78f0112e05b35df872b1ac29207661eabc263e2080c3f3c450",
+      "bytes": 17447
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-0/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/artwork.rgba": {
+      "sha256": "196b923991aaad30d09dfccc249a706c13637a7f2ec5c36641893c618aa51624",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/draw-0.rgba": {
+      "sha256": "3e71a13aa53d158ebc189d89fa6eb87da396bafe69d9d709b756257099a52ed8",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/draw-1.f32": {
+      "sha256": "52551800832bc0ba50e5269b648a9484a54b931edbafac98b7e1ced500caae5c",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/draw-2.rgba": {
+      "sha256": "196b923991aaad30d09dfccc249a706c13637a7f2ec5c36641893c618aa51624",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/draws.json": {
+      "sha256": "805f7e1ec69fa750a1e765377afc852598c3de57b789440c6466e43cd6a0de8b",
+      "bytes": 6366
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/enhanced.png": {
+      "sha256": "29477183e4f188b2f2eeb78e41e6c83664e3e18eddb14fbb345c0d3791de63d2",
+      "bytes": 173829
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/raw.png": {
+      "sha256": "22b70c81b9481d781f7151aa197c8973268f0a8c4b57d3d5ea7e2962a0941ba8",
+      "bytes": 134166
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/samila.json": {
+      "sha256": "1e380cab05288dd73aca73f8c775747b7c00cc05e1952fe2eff64b1597ca5a4c",
+      "bytes": 2355
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/shader-1-35633.glsl": {
+      "sha256": "f9a3c019ccae3a78f0112e05b35df872b1ac29207661eabc263e2080c3f3c450",
+      "bytes": 17447
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-1/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/artwork-boundary.txt": {
+      "sha256": "b405444c09e2158ea240ea66b196ebd90ce06d3d36b512002a0beafeae60975c",
+      "bytes": 1110
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/artwork.rgba": {
+      "sha256": "6227dbf43a87c4c3be5561b9391cc0af27f3e74818b70e5d3587c4dba7d30200",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/draw-0.rgba": {
+      "sha256": "24a599aa96641b7e958d1e3b1b4a0dd92a86f7918d47668f07eb09db7abf92e6",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/draw-1.f32": {
+      "sha256": "ce71c045e3153d138651202c38e457e797fff8e67c7234b39ec70259b2f1400e",
+      "bytes": 4800000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/draw-2.rgba": {
+      "sha256": "6227dbf43a87c4c3be5561b9391cc0af27f3e74818b70e5d3587c4dba7d30200",
+      "bytes": 1200000
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/draws.json": {
+      "sha256": "afa5eafcd562d9e69940accec4d60eceb7aea4a82385c2cca81faa4abeae2235",
+      "bytes": 6368
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/enhanced.png": {
+      "sha256": "8a8cec2d1b2930f8d70a346032615f39ae7f6cd799e8bc22c7e94bdbbbc0c53e",
+      "bytes": 179992
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/raw.png": {
+      "sha256": "10a26dfce6c5b376d47107147acf2f69c17a44456913f98f5dcc203a5b72116e",
+      "bytes": 136773
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/samila.json": {
+      "sha256": "57897dac08cc8e6b5900d30039cae61b3c68310cc299351a0dc01098c553bca6",
+      "bytes": 2355
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/scene.json": {
+      "sha256": "9cfb7983a5ebcfecd9cbefb94676e817b6371e88162a408837b9033999e5eaa6",
+      "bytes": 450
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/shader-1-35632.glsl": {
+      "sha256": "4b825ae13512ffdafae7d641a93c7a8f2cd1ad1b34d1855b7d2fe0e0268da77f",
+      "bytes": 1988
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/shader-1-35633.glsl": {
+      "sha256": "f9a3c019ccae3a78f0112e05b35df872b1ac29207661eabc263e2080c3f3c450",
+      "bytes": 17447
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/shader-4-35632.glsl": {
+      "sha256": "84e5e4bb70c09a9383c170a721f76aad2de6821ada287726c514bca19aa46cda",
+      "bytes": 4644
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/frame-2/shader-4-35633.glsl": {
+      "sha256": "253a3648e424a8eacf9fae7bb4372ddc1be8ea96b63cb4188c25c131d188a136",
+      "bytes": 234
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/run.json": {
+      "sha256": "296ef143bfe975c9325e5f6ee8a350b944ef765545e0dc6f92c48b95d101f166",
+      "bytes": 26447
+    },
+    ".cache/samila-native-reference-20261024/samila4-run2/source.json": {
+      "sha256": "cf1f55cb2ad18526ab24e2d0e30d0864dfab8d61dc0003dae0c47d621c680741",
+      "bytes": 1836
+    },
+    ".cache/samila-driver-native-20261024/NativeSceneProbe.java": {
+      "sha256": "440eb25d2fb32434cbb8ae36f73ad8e8c963a5c4f3468d996c99b3634bf08963",
+      "bytes": 10779
+    },
+    ".cache/samila-driver-native-20261024/run.py": {
+      "sha256": "8847c60cec945d60e3b656a94f601cf9e9b1040890f0e579e0be8e12ba3800f4",
+      "bytes": 3418
+    },
+    ".cache/samila-driver-native-20261024/run1/NativeSceneProbe.java": {
+      "sha256": "8f8c525b675f985ae91218575dc9cfbfbb2a86a3c0bb0398a6acd820cef14861",
+      "bytes": 10608
+    },
+    ".cache/samila-driver-native-20261024/run1/compile.json": {
+      "sha256": "7e6b02f23a093c0d2d66f2c1a95ff1b53776b64a5fdd6596ea986b426142a45d",
+      "bytes": 577
+    },
+    ".cache/samila-driver-native-20261024/run1/run.json": {
+      "sha256": "7c8f50e62156903ece072228ea8b5ba087bdac972c112c1692da1dccbebbe266",
+      "bytes": 73329
+    },
+    ".cache/samila-driver-native-20261024/run1/samila1.tf32": {
+      "sha256": "dd961c6bbeba89c9e8e7aeb3b946548782baf92efa5de2fb410e2afc742dba6e",
+      "bytes": 1835008
+    },
+    ".cache/samila-driver-native-20261024/run2/NativeSceneProbe.java": {
+      "sha256": "440eb25d2fb32434cbb8ae36f73ad8e8c963a5c4f3468d996c99b3634bf08963",
+      "bytes": 10779
+    },
+    ".cache/samila-driver-native-20261024/run2/compile.json": {
+      "sha256": "7590ffc350ee9ebde11223107cd8c164061f0bb20eb02fe242100045ec21b380",
+      "bytes": 577
+    },
+    ".cache/samila-driver-native-20261024/run2/native.json": {
+      "sha256": "613771b912041dd4f2cf71bb60d35a268f153bb313f0bc7dde5d9c6767fbec3a",
+      "bytes": 4141
+    },
+    ".cache/samila-driver-native-20261024/run2/point-0.f32": {
+      "sha256": "f1d09d7679d7260ab723214b0303b5cd96156c1130b686e7e832f779b966563f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-1.f32": {
+      "sha256": "f1d09d7679d7260ab723214b0303b5cd96156c1130b686e7e832f779b966563f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-10.f32": {
+      "sha256": "b46139a99a9eaf6e6b4b4562a07997531210a102da59c070ea05f74a6f9c7fd8",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-11.f32": {
+      "sha256": "b46139a99a9eaf6e6b4b4562a07997531210a102da59c070ea05f74a6f9c7fd8",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-12.f32": {
+      "sha256": "b46139a99a9eaf6e6b4b4562a07997531210a102da59c070ea05f74a6f9c7fd8",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-13.f32": {
+      "sha256": "51272802d75d6101d77d7e3d479fc8ce80b1aaf87fd4ef36490be7efb8bda8ca",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-14.f32": {
+      "sha256": "51272802d75d6101d77d7e3d479fc8ce80b1aaf87fd4ef36490be7efb8bda8ca",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-15.f32": {
+      "sha256": "51272802d75d6101d77d7e3d479fc8ce80b1aaf87fd4ef36490be7efb8bda8ca",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-16.f32": {
+      "sha256": "51272802d75d6101d77d7e3d479fc8ce80b1aaf87fd4ef36490be7efb8bda8ca",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-17.f32": {
+      "sha256": "fe0ce167214032d37cae3c2b495de041a3cc30147ef1d5c8d993ba81ad6f93e3",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-18.f32": {
+      "sha256": "fe0ce167214032d37cae3c2b495de041a3cc30147ef1d5c8d993ba81ad6f93e3",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-19.f32": {
+      "sha256": "fe0ce167214032d37cae3c2b495de041a3cc30147ef1d5c8d993ba81ad6f93e3",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-2.f32": {
+      "sha256": "f1d09d7679d7260ab723214b0303b5cd96156c1130b686e7e832f779b966563f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-20.f32": {
+      "sha256": "84d7390bc0c4531c9f9db9830ceed4e8f625319f90a09a9511fd567f838bf194",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-21.f32": {
+      "sha256": "84d7390bc0c4531c9f9db9830ceed4e8f625319f90a09a9511fd567f838bf194",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-22.f32": {
+      "sha256": "84d7390bc0c4531c9f9db9830ceed4e8f625319f90a09a9511fd567f838bf194",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-23.f32": {
+      "sha256": "70b008458138577aa78c40f4ab5b2a1d3ed4e53c641e4bbbbebdb4a79ab4aad1",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-24.f32": {
+      "sha256": "70b008458138577aa78c40f4ab5b2a1d3ed4e53c641e4bbbbebdb4a79ab4aad1",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-25.f32": {
+      "sha256": "70b008458138577aa78c40f4ab5b2a1d3ed4e53c641e4bbbbebdb4a79ab4aad1",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-26.f32": {
+      "sha256": "70b008458138577aa78c40f4ab5b2a1d3ed4e53c641e4bbbbebdb4a79ab4aad1",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-27.f32": {
+      "sha256": "ce2abb986dff6098705b74001a66b3d7b20e6907feec9381403bfcf406e14e0f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-28.f32": {
+      "sha256": "ce2abb986dff6098705b74001a66b3d7b20e6907feec9381403bfcf406e14e0f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-29.f32": {
+      "sha256": "ce2abb986dff6098705b74001a66b3d7b20e6907feec9381403bfcf406e14e0f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-3.f32": {
+      "sha256": "ffdfe039ae39e6c68590e264fc6eeee3d44ace1027e5dfcec4c69ecdac2620bb",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-4.f32": {
+      "sha256": "ffdfe039ae39e6c68590e264fc6eeee3d44ace1027e5dfcec4c69ecdac2620bb",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-5.f32": {
+      "sha256": "ffdfe039ae39e6c68590e264fc6eeee3d44ace1027e5dfcec4c69ecdac2620bb",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-6.f32": {
+      "sha256": "ffdfe039ae39e6c68590e264fc6eeee3d44ace1027e5dfcec4c69ecdac2620bb",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-7.f32": {
+      "sha256": "49060cf7356552214a2488b2a3c6d4e77f87486779ab258f6cdf31cfd5808e73",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-8.f32": {
+      "sha256": "49060cf7356552214a2488b2a3c6d4e77f87486779ab258f6cdf31cfd5808e73",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point-9.f32": {
+      "sha256": "49060cf7356552214a2488b2a3c6d4e77f87486779ab258f6cdf31cfd5808e73",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-native-20261024/run2/point.frag": {
+      "sha256": "ca23053fd020755af97ee14e3999c679f5654c4af617b2d6af5ab5470b1363d1",
+      "bytes": 79
+    },
+    ".cache/samila-driver-native-20261024/run2/point.vert": {
+      "sha256": "fbcb9abe0715cf069c9d780247eb4839dd41fa9c4e244837d66b320b3e3ab9c8",
+      "bytes": 154
+    },
+    ".cache/samila-driver-native-20261024/run2/run.json": {
+      "sha256": "4e519ef75668467fcfca78741c8e21c20fd5bb9de333f3d4de8941591296c2a4",
+      "bytes": 76214
+    },
+    ".cache/samila-driver-native-20261024/run2/samila1.tf32": {
+      "sha256": "dd961c6bbeba89c9e8e7aeb3b946548782baf92efa5de2fb410e2afc742dba6e",
+      "bytes": 1835008
+    },
+    ".cache/samila-driver-native-20261024/run2/samila4.tf32": {
+      "sha256": "15a1eec609cbc937a825543b0a4cec0c465d9f87428bb483ba19f4858ccbe6cd",
+      "bytes": 1835008
+    },
+    ".cache/samila-driver-diagnostic-20261024/compare-diagnostic.mjs": {
+      "sha256": "26c6d635a1592a0b74e470e97435e3c849495a6986b994d6e79046f996514819",
+      "bytes": 7805
+    },
+    ".cache/samila-driver-diagnostic-20261024/inputs.json": {
+      "sha256": "edc5bb5a2fd75b5609370ad45d1b862bb1a45b631d5f7e0385beced95b7c2b04",
+      "bytes": 15859
+    },
+    ".cache/samila-driver-diagnostic-20261024/point-native-fragment.glsl": {
+      "sha256": "81c8fbf971e209872f6d7d35362d00371cbc33d9718768cead406d24c4755d69",
+      "bytes": 78
+    },
+    ".cache/samila-driver-diagnostic-20261024/point-native-vertex.glsl": {
+      "sha256": "c86c365d47a79c9eb08924dbc3ab9f551450edef7d1bb174dde232983f81d433",
+      "bytes": 149
+    },
+    ".cache/samila-driver-diagnostic-20261024/point-webgl-fragment.glsl": {
+      "sha256": "0baa5398d68de17cfeb92996a57275d2b271198da938b083727592b10b2f704a",
+      "bytes": 124
+    },
+    ".cache/samila-driver-diagnostic-20261024/point-webgl-vertex.glsl": {
+      "sha256": "f2204025764d974ec7ecfb281470f33a9c8119f3025fec83a123ae1c03cfe99f",
+      "bytes": 195
+    },
+    ".cache/samila-driver-diagnostic-20261024/prepare.mjs": {
+      "sha256": "5866f2df4a1a00858e4617fb57efc21b2352d60955b78b5b3a1005e9804c6423",
+      "bytes": 5747
+    },
+    ".cache/samila-driver-diagnostic-20261024/run-webgl.mjs": {
+      "sha256": "def6fad3d05b6d5d6476034d6f4bc5d910e3424b3d359ecd91e9e3bfad1ad5df",
+      "bytes": 9658
+    },
+    ".cache/samila-driver-diagnostic-20261024/samila1-product-fragment.glsl": {
+      "sha256": "0ee7e6c0af00473480e9ccb86f4690221171e89b35c3e19f6d74ce177dc678c7",
+      "bytes": 1132
+    },
+    ".cache/samila-driver-diagnostic-20261024/samila1-product-vertex.glsl": {
+      "sha256": "1c50be82f3a6f45ae55d38c0630dbeaf6eeeaba4931a78a391f43bcdfc15caff",
+      "bytes": 12572
+    },
+    ".cache/samila-driver-diagnostic-20261024/samila4-product-fragment.glsl": {
+      "sha256": "0ee7e6c0af00473480e9ccb86f4690221171e89b35c3e19f6d74ce177dc678c7",
+      "bytes": 1132
+    },
+    ".cache/samila-driver-diagnostic-20261024/samila4-product-vertex.glsl": {
+      "sha256": "0d9404431447517cff28da7f9067baa7e558e76277c374da221c9c6e82109f8b",
+      "bytes": 12799
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/README.zh-CN.md": {
+      "sha256": "2c37b45605d34dc5d55c3d454b168292cb9284e0f07e7e5b6bc09c905701a5c6",
+      "bytes": 1688
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/comparison.json": {
+      "sha256": "0f46b4738163685279583c4b6b80b5c93d699bb5f35eeb4243deabebab6c61ee",
+      "bytes": 177344
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/executed-run-webgl.mjs": {
+      "sha256": "def6fad3d05b6d5d6476034d6f4bc5d910e3424b3d359ecd91e9e3bfad1ad5df",
+      "bytes": 9658
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/inputs.json": {
+      "sha256": "edc5bb5a2fd75b5609370ad45d1b862bb1a45b631d5f7e0385beced95b7c2b04",
+      "bytes": 15859
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r00-c00.f32": {
+      "sha256": "f1d09d7679d7260ab723214b0303b5cd96156c1130b686e7e832f779b966563f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r00-c01.f32": {
+      "sha256": "b46139a99a9eaf6e6b4b4562a07997531210a102da59c070ea05f74a6f9c7fd8",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r00-c02.f32": {
+      "sha256": "84d7390bc0c4531c9f9db9830ceed4e8f625319f90a09a9511fd567f838bf194",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r01-c00.f32": {
+      "sha256": "92c857c400117ed503e6eb2fd5dcff12c830d2964c5c421c10770914b53b7fd3",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r01-c01.f32": {
+      "sha256": "855f100c4378760d4ed0572d8a31aab4a3dfc4a95a1c9fe6e39e7893edfdcda7",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r01-c02.f32": {
+      "sha256": "24377444c49523c6fa999d26097a8183f43b58880d20a4ee2aea7691e419db1c",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r02-c00.f32": {
+      "sha256": "07070ec26bc2dab6a959c173f661909e4a9cb3dce177b61442dd5ec0814763ef",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r02-c01.f32": {
+      "sha256": "543ba98726f1a4b5660324f917e0eff882d2d04a1f02d5bab02a105429814bf5",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r02-c02.f32": {
+      "sha256": "456e74f83222d81d5fd190b12e6218cececd1cfdeaab837f6e1a3d0cf40bb70f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r03-c00.f32": {
+      "sha256": "c77d9b1898768c7a1f23967d2af92cb9002776375d46dff58d3ee5fa148e6c45",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r03-c01.f32": {
+      "sha256": "840bf20566546063e9be8d33dae990e3f6a31dd984ff4f9d26c8a96021c448d4",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r03-c02.f32": {
+      "sha256": "7553a19473929ce0ee04b09170d052770542ad3f5a02e084fbd2d17d20899585",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r04-c00.f32": {
+      "sha256": "6116f354ce9c18289fade476285e7982a29cc2d9e386c264e802c6fa0e782cd1",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r04-c01.f32": {
+      "sha256": "2d2761cb6c2a858c8cbe3f2bb310757c3ac958a4a7e84ec96deff75096d2b475",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r04-c02.f32": {
+      "sha256": "f1503c28cc96dc6860dd4f5bb6963f0cab74ee82209e9596db686a8ebd901c04",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r05-c00.f32": {
+      "sha256": "ffdfe039ae39e6c68590e264fc6eeee3d44ace1027e5dfcec4c69ecdac2620bb",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r05-c01.f32": {
+      "sha256": "51272802d75d6101d77d7e3d479fc8ce80b1aaf87fd4ef36490be7efb8bda8ca",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r05-c02.f32": {
+      "sha256": "70b008458138577aa78c40f4ab5b2a1d3ed4e53c641e4bbbbebdb4a79ab4aad1",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r06-c00.f32": {
+      "sha256": "9eafc95c4f06483b616f62b2f3e162808ab7b879bfaf5667d4db073776ff9f0a",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r06-c01.f32": {
+      "sha256": "abd30075d2a7dda193070bad09865e6b87a2eb9e373a21a4ad1fa8c7e1cfc1f1",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r06-c02.f32": {
+      "sha256": "313289d94d62fb19e5401de273bd9998d3da02ee22463cb7ff3e59dfb87383ea",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r07-c00.f32": {
+      "sha256": "256f5b0e182d520ccd13f2dfe6b579af359c649cd19c1a8974a5d3133e7ca003",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r07-c01.f32": {
+      "sha256": "427c41e33bb37b48b86cf2166ae627c3d21e1ce70bb49620ec02a892c55c06da",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r07-c02.f32": {
+      "sha256": "4a2675d5021f1cb892b69bc4c5e16ff91f4790beca831d47c783111b1d419793",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r08-c00.f32": {
+      "sha256": "e4752dc295d66321035c62c5b2f5d55b32384344c7c43c2b0b756f441f8fd578",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r08-c01.f32": {
+      "sha256": "be131d4844bbf2dd40709f8618519b1039940a5c44d684335e0836559e3af2f9",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r08-c02.f32": {
+      "sha256": "26d9cdf488a722d0f0d733efe9a9ce5f2b83ca05406a71fc301a013e43a4d04f",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r09-c00.f32": {
+      "sha256": "2ce6874402d5f2a550e60c79c8e5e5c56b39254375d643bd38ba761e766a50c0",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r09-c01.f32": {
+      "sha256": "d2c218cb278ff3d0651d99f707f7d9433815f5e764713afcfe23858517a90397",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/point-r09-c02.f32": {
+      "sha256": "ade369be5ce5e394b24f4dc633bb85a49dd4556197390fca883926b3b11a332e",
+      "bytes": 16384
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/report.json": {
+      "sha256": "549219e0a74915e359e4056b887705f664751af536f644c26a7ed8a49ed84588",
+      "bytes": 57644
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/samila1-tf.f32": {
+      "sha256": "83796eae616d32e70ba3ace81c9a4039bf8ec4cc88cf5b002d5c1030f607133c",
+      "bytes": 1835008
+    },
+    ".cache/samila-driver-diagnostic-20261024/webgl-2026-10-24T10-52-23-157Z/samila4-tf.f32": {
+      "sha256": "90f6520e7fbc175ddb0312085864cf0651aac70ca1822e2cf01e4affbf5b4ede",
+      "bytes": 1835008
+    },
+    ".cache/symmetry-native-next-20261024/README.zh-CN.md": {
+      "sha256": "ccf9f93e476673095ab65c35092ca74500ec338a2ac5ac4aa15ef8bd0247cdb4",
+      "bytes": 8278
+    },
+    ".cache/symmetry-native-next-20261024/hash-index.json": {
+      "sha256": "08b43b68ceb1bae7836a7b6600fa84a70d131883f50c4a5725d0ec7ba83c349b",
+      "bytes": 10209
+    },
+    ".cache/samila-native-architecture-20261024/README.zh-CN.md": {
+      "sha256": "025ac40d6df5ce557b482e6719ae521df08ab1163ac9427ec890830b6c7611e8",
+      "bytes": 22930
+    },
+    ".cache/samila-native-architecture-20261024/sources.sha256.json": {
+      "sha256": "bab8728cb01dd1edb45eaa55cdcfc65b1b28145e06100337e1f025ba978478d4",
+      "bytes": 14243
+    }
+  },
+  "audit": {
+    "originalProductSourcePinsRehashed": 569,
+    "rawFramesIndependentlyRecounted": 15,
+    "diagnosticSamplesIndependentlyRecounted": 131072,
+    "pointCasesIndependentlyRecounted": 30,
+    "allChannelsAndPixelsCompared": true,
+    "elapsedSeconds": 2.503816167009063,
+    "measurementScope": "Offline evidence hashing and exact full-buffer recount only; CPU/family memory not measured."
+  },
+  "limitations": [
+    "Three paused draws are not a completed artwork or animation.",
+    "Original source/runtime/normal authorization differs from original GUI ProjectState flow.",
+    "Uniform equality does not establish LUT texels or equivalent split phases.",
+    "Original full-frame run did not query actual driver strings; separate driver diagnostics did.",
+    "Dummy textures and65536 sample prefixes diagnose geometry, not original app color/image parity.",
+    "Negative-base literal pow remains a strongly supported hypothesis, not an isolated-operation proof.",
+    "All original raw buffers and initially incorrect channel-order report remain retained; normalized diagnosis supersedes only initial ink statistics.",
+    "No product tests/build rerun because product source was unchanged."
+  ]
+}
