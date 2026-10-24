@@ -107,7 +107,8 @@ BASELINE_SERVER_BUNDLE` compares two completed exports per implementation, with
 the same full original inputs, and records sampled CPU/RSS and elapsed time.
 Each encoder is a fresh process; it does not claim controlled OS-cold caches.
 
-This is a short, bounded recording reference. It does not establish long videos,
-all sizes/parameters, cross-device behavior or original window presentation.
+The default capture is a short, bounded recording reference. Full mode validates
+the selected complete preset and duration; neither mode establishes all
+sizes/parameters, cross-device behavior or original window presentation.
 Raw vendor artifacts, captures, videos, state textures and executables stay in
 `.cache/`; only this diagnostic source and compact evidence indexes enter Git.

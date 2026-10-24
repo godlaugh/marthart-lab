@@ -1,0 +1,830 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T01:08:33.775756+00:00",
+  "baseCommit": "a6169694a4d92502ff5505882172e0699f82eb2a",
+  "status": "passed",
+  "readableReport": "docs/source-bouncing-native-seeds.zh-CN.md",
+  "scope": "88 bounded numerical producer cases. Complete original padded Float32 uploads versus production seeds; selected config fields compared separately. Two observed unsupported Math-prefix formulas must specifically reject. No GPU/frame/window or exhaustive parser claim.",
+  "totals": {
+    "cases": 88,
+    "exactNumericalCases": 86,
+    "explicitPrefixRejections": 2,
+    "particles": 1462,
+    "paddedChannels": 8600
+  },
+  "original": {
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home",
+    "javaVersion": "21.0.7",
+    "tier": "FREE",
+    "policySource": "REMOTE",
+    "seconds": 6.069315375061706,
+    "probeSha256": "64b2c04d5e839038fc030a436bd83888933fda4d572a9799dc9baef973e95c0e",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e"
+  },
+  "capture": {
+    "status": "passed",
+    "exit": 0,
+    "reaped": true,
+    "processGroupExists": false,
+    "timedOut": false,
+    "sourcesStable": true,
+    "originalFilesBefore": {
+      "scene_access_policies_cache.json": {
+        "exists": true,
+        "sha256": "4da94f463a632b91fac4fd21008f2d2ba3a6ff09f6fb5aee4d01b1576c4caee3"
+      },
+      "license.dat": {
+        "exists": false,
+        "sha256": null
+      },
+      "settings/settings.conf": {
+        "exists": true,
+        "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+      }
+    },
+    "originalFilesAfter": {
+      "scene_access_policies_cache.json": {
+        "exists": true,
+        "sha256": "4da94f463a632b91fac4fd21008f2d2ba3a6ff09f6fb5aee4d01b1576c4caee3"
+      },
+      "license.dat": {
+        "exists": false,
+        "sha256": null
+      },
+      "settings/settings.conf": {
+        "exists": true,
+        "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+      }
+    },
+    "copiedFilesAfter": {
+      "scene_access_policies_cache.json": {
+        "exists": true,
+        "sha256": "f1ff8760973ecb2523f9ca0f0d398287dc5db695e15a1b45b5ffbd4254e3e7f1"
+      },
+      "license.dat": {
+        "exists": false,
+        "sha256": null
+      },
+      "settings/settings.conf": {
+        "exists": true,
+        "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+      }
+    }
+  },
+  "comparison": {
+    "sourceStable": true,
+    "referencesStable": true,
+    "elapsedMs": 372.80070800000004
+  },
+  "files": {
+    ".cache/bouncing-native-seeds-20261024/reference/run.json": "8a36ea75abc2dcc7d7a19a11213de0fa5b852bd4764e7c7d285db7a29bae8903",
+    ".cache/bouncing-native-seeds-20261024/reference/compile.json": "05648e070007bfc0c453ab285ff712e0e20c3c8a65bb8bd54dc00a2f502d43ac",
+    ".cache/bouncing-native-seeds-20261024/reference/numerics.json": "f9dd2a4bb7756ec1a8bc377435396f4054d472cafb44ef762761fce6fc09121c",
+    ".cache/bouncing-native-seeds-20261024/reference/NativeSceneProbe.java": "64b2c04d5e839038fc030a436bd83888933fda4d572a9799dc9baef973e95c0e",
+    ".cache/bouncing-native-seeds-20261024/reference/inputs.json": "6f876935abf0e5e85009d915bc711755234e9512893d71eb743399afaa15beba",
+    ".cache/bouncing-native-seeds-20261024/verified/report.json": "6e085b9712132cf15c9475e88f0d8b025711d91ae50c3b41a31d9e51dac51535",
+    ".cache/bouncing-native-seeds-20261024/comparison.json": "9004f2864fc03ad459078dd406d573744c52b171ac49512b3299cda5f8f95c41",
+    ".cache/bouncing-native-seeds-20261024/original/run.json": "208b1987abbe5866ba95920638d017f99ba978e44508151c5e60f16280253ea7",
+    "scripts/capture-source-bouncing-seeds.py": "8ec99831f1a59a0b18891e3b01f1c70e124a97afb23e22f71b28f275401db0a9",
+    "scripts/verify-source-bouncing-native-seeds.mjs": "2f80a89f9d3001461b04070036bf94403a0ad0efbcfc6c30cd563f77b2e43cbe",
+    "tests/fixtures/source-bouncing-native-seeds/NativeSceneProbe.java": "64b2c04d5e839038fc030a436bd83888933fda4d572a9799dc9baef973e95c0e",
+    "tests/fixtures/source-bouncing-native-seeds/inputs.json": "6f876935abf0e5e85009d915bc711755234e9512893d71eb743399afaa15beba",
+    ".cache/bouncing-native-seeds-20261024/guards/report.json": "5cfc335d786b14f2fde256054ec90034fa4c599635cb5eac692d384a8d072d55"
+  },
+  "cases": [
+    {
+      "name": "default-settings-count17-seed12345",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "BOX-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "BOX-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "CIRCLE-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "CIRCLE-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "HEART-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "HEART-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "INFINITY-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "INFINITY-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RING-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RING-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "SPIRAL-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "SPIRAL-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "STAR-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "STAR-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "LISSAJOUS-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "LISSAJOUS-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "ROSE-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "ROSE-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "SUPERELLIPSE-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "SUPERELLIPSE-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "HYPOCYCLOID-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "HYPOCYCLOID-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "EPICYCLOID-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "EPICYCLOID-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "ARCHIMEDEAN_SPIRAL-FILL",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "ARCHIMEDEAN_SPIRAL-OUTLINE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "UNIFORM-noise0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "UNIFORM-noise0.13",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RADIAL_OUT-noise0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RADIAL_OUT-noise0.13",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RADIAL_IN-noise0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RADIAL_IN-noise0.13",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "TANGENTIAL_CW-noise0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "TANGENTIAL_CW-noise0.13",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "TANGENTIAL_CCW-noise0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "TANGENTIAL_CCW-noise0.13",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RANDOM-noise0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "RANDOM-noise0.13",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "seed--9223372036854775808",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "seed-9223372036854775807",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "seed-9007199254740993",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "seed--1",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "seed-0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "outer-512-fallback-CIRCLE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "outer-512-fallback-ELLIPSE",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "outer-512-fallback-POLYGON",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "velocity-degenerate",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "zero-speed-random",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "polygon-translated-concave",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"1\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"x+y\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"x*x+y*y<=0.2\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0/0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0/0!=0/0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0/0==0/0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0/0>=0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0/0<=0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0/0>0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-FILL-\"0/0<0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"1\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"x+y\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"x*x+y*y<=0.2\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0/0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0/0!=0/0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0/0==0/0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0/0>=0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0/0<=0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0/0>0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "FORMULA-OUTLINE-\"0/0<0\"",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-FILL-sin(150*x)*sin(150*y)>.5",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-OUTLINE-sin(150*x)*sin(150*y)>.5",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-FILL-cos(150*x*x)*cos(150*y*y)>.5",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-OUTLINE-cos(150*x*x)*cos(150*y*y)>.5",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-FILL-Math.sin(x*5)+Math.cos(y*3)>0",
+      "outcome": "rejected-unsupported-Math-prefix",
+      "channels": null,
+      "differenceCount": null,
+      "originalError": "Unknown variable: Math",
+      "productError": {
+        "kind": "input",
+        "path": [
+          "shapeFormula"
+        ],
+        "reason": "{\"kind\":\"input\",\"reason\":\"Invalid source formula\"}"
+      }
+    },
+    {
+      "name": "functions-OUTLINE-Math.sin(x*5)+Math.cos(y*3)>0",
+      "outcome": "rejected-unsupported-Math-prefix",
+      "channels": null,
+      "differenceCount": null,
+      "originalError": "Unknown variable: Math",
+      "productError": {
+        "kind": "input",
+        "path": [
+          "shapeFormula"
+        ],
+        "reason": "{\"kind\":\"input\",\"reason\":\"Invalid source formula\"}"
+      }
+    },
+    {
+      "name": "functions-FILL-tan(x)+sqrt(abs(y))>.5",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-OUTLINE-tan(x)+sqrt(abs(y))>.5",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-FILL-pow(x,2)+pow(y,2)<.2",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-OUTLINE-pow(x,2)+pow(y,2)<.2",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-FILL-log(abs(x)+.1)+exp(y)>0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-OUTLINE-log(abs(x)+.1)+exp(y)>0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-FILL-sin(PI*x)+cos(PI*y)>0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    },
+    {
+      "name": "functions-OUTLINE-sin(PI*x)+cos(PI*y)>0",
+      "outcome": "exact-numerics",
+      "channels": 100,
+      "differenceCount": 0,
+      "originalError": null,
+      "productError": null
+    }
+  ],
+  "limitations": [
+    "17 particles per successful numerical fixture; 86 exact cases do not establish all parameter combinations, transcendental edge cases or images.",
+    "Original final GL upload is captured without executing GPU commands. Original constructor and private upload producer execute unchanged.",
+    "Same exact isolated app-data files, normal license/policy startup; policy refresh may update isolated cache; original files unchanged.",
+    "Preliminary comparison.json deliberately remains failed because it initially treated all88inputs as valid; both Math-prefix cases actually reject in original and product.",
+    "No product source changes, no GUI/native rendering claim, no full parser/library certification.",
+    "Wall time only; no isolated cold/warm CPU/RSS/GPU/token measurement, no speed claim."
+  ],
+  "validation": {
+    "actualOriginalJVM": "passed",
+    "actualProductionImporterAndSeedGenerator": "passed",
+    "capturePreflightGuards": 3,
+    "existingEvidenceUnchanged": true,
+    "javascriptSyntax": "passed",
+    "pythonSyntax": "passed",
+    "javaCompile": "passed"
+  }
+}
