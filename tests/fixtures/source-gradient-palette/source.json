@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "scope": "61 original public pure-helper cases. No original GUI, persistence or whole-image parity claim.",
+  "original": {
+    "jar": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "classes": {
+      "mathart.ui.panels.inspector.GradientPaletteSupportKt": "92eac7040cdb41588c9952e122ba0d689bba9f5cbda229bcfb923e2c5fca7e49",
+      "mathart.ui.panels.inspector.GradientCosineState": "1cf7319745f9f12a8bfc531cb881453facfdb55ca4f98556e75b1c6e121cb6cb",
+      "mathart.ui.panels.inspector.GradientCurveState": "3effa0460e8c8806e44e028dc18f8fd6ab4146c743b8f3705f842390458d84fa",
+      "mathart.ui.state.CurvePoint": "30b3bcbd66f3886a225a7836a8e8d46c32ea5fc83c00b3e564421333008260d2"
+    }
+  },
+  "runtime": {
+    "classSha256": {
+      "mathart.ui.panels.inspector.GradientPaletteSupportKt": "92eac7040cdb41588c9952e122ba0d689bba9f5cbda229bcfb923e2c5fca7e49",
+      "mathart.ui.panels.inspector.GradientCosineState": "1cf7319745f9f12a8bfc531cb881453facfdb55ca4f98556e75b1c6e121cb6cb",
+      "mathart.ui.panels.inspector.GradientCurveState": "3effa0460e8c8806e44e028dc18f8fd6ab4146c743b8f3705f842390458d84fa",
+      "mathart.ui.state.CurvePoint": "30b3bcbd66f3886a225a7836a8e8d46c32ea5fc83c00b3e564421333008260d2"
+    },
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home",
+    "javaVersion": "21.0.7",
+    "headless": true,
+    "windowCount": 0
+  },
+  "coverage": {
+    "cases": 61,
+    "kinds": {
+      "cosine": 21,
+      "upper": 10,
+      "curve": 22,
+      "randomCosine": 5,
+      "randomCurve": 3
+    },
+    "randomCases": 8,
+    "nextBitsCalls": 206,
+    "expectedConstructorErrors": 5,
+    "expectedPaletteErrors": 3
+  },
+  "oracle": {
+    "path": "oracle.json",
+    "sha256": "4c119aaa13aed23f680e0f41e66b39fec11c799ee5543828d252ecae568bbc17"
+  },
+  "originalEvidence": ".cache/common-gradient-native-probe-20261024",
+  "validation": {
+    "schemaVersion": 1,
+    "status": "passed",
+    "at": "2026-10-24T03:59:22.444Z",
+    "targetExecuted": false,
+    "scope": "Validate and package already successful native output after command report path collided with native.json. No original methods rerun.",
+    "initializedOriginalClasses": [
+      "[0.052s][info][class,init] 570 Initializing 'mathart/ui/panels/inspector/GradientCosineState' (0x000000f001001000) by thread \"main\"",
+      "[0.077s][info][class,init] 681 Initializing 'mathart/ui/panels/inspector/GradientPaletteSupportKt'(no method) (0x000000f0010041f8) by thread \"main\"",
+      "[0.094s][info][class,init] 759 Initializing 'mathart/ui/panels/inspector/GradientCurveState' (0x000000f001014620) by thread \"main\"",
+      "[0.094s][info][class,init] 760 Initializing 'mathart/ui/state/CurvePoint' (0x000000f001014820) by thread \"main\"",
+      "[0.119s][info][class,init] 877 Initializing 'mathart/ui/panels/inspector/GradientPaletteSupportKt$normalizeGradientCurvePoints$$inlined$sortedBy$1'(no method) (0x000000f001014c08) by thread \"main\"",
+      "[0.120s][info][class,init] 881 Initializing 'mathart/ui/panels/inspector/GradientPaletteSupportKt$normalizeGradientCurvePoints$$inlined$sortedBy$2'(no method) (0x000000f001015670) by thread \"main\"",
+      "[0.120s][info][class,init] 882 Initializing 'mathart/ui/panels/inspector/GradientPaletteSupportKt$sampleGradientCurve$$inlined$sortedBy$1'(no method) (0x000000f0010158f8) by thread \"main\"",
+      "[0.157s][info][class,init] 980 Initializing 'mathart/ui/panels/inspector/GradientPaletteSupportKt$randomGradientCurvePoints$$inlined$sortedBy$1'(no method) (0x000000f001017d60) by thread \"main\""
+    ],
+    "cases": 61,
+    "randomCases": 8,
+    "randomWords": 206,
+    "expectedConstructorErrors": 5,
+    "expectedPaletteErrors": 3,
+    "sourceStable": true,
+    "elapsedMs": 186.346667,
+    "inputs": {
+      "native.json": "14571618c0fe489be9357a6d9bf11e5c209b072328e8ae2a125f28aedcd29aec",
+      "inputs.json": "aebc6712102ef6db99a3f46c98c6f8f5463a66a78b3daed71bb0967c47047ac4",
+      "source.json": "e1ad72341f3d5f6a23c65814dc991516ff4df3ea024e0ecb93070b0a1b4d14c4",
+      "class-init.log": "a7fc386c8098b9de0942ae3f2c1824bd90fc5aae9bfdd3c316dad70f35897081"
+    },
+    "scriptSha256": "494f1d36c3bcf3f29d8822d6080be17ead4e87805c6ab7f889606e503dd27caf"
+  },
+  "initialCaptureStatus": "failed",
+  "recordedPackagingFailure": "EEXIST native.json at command-report write; target execution completed once, output preserved.",
+  "commands": [
+    {
+      "label": "compile",
+      "runId": "f2c703f6-ed71-4294-bbfd-7b5548204042",
+      "ownership": {
+        "runId": "f2c703f6-ed71-4294-bbfd-7b5548204042",
+        "leaderPid": 57307,
+        "processGroupId": 57307,
+        "expectedParentPid": 57211,
+        "expectedCommand": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home/bin/javac"
+      },
+      "exitCode": 0,
+      "reaped": true,
+      "groupAfter": {
+        "state": "empty"
+      },
+      "elapsedMs": 1690.4699580000001
+    },
+    {
+      "label": "native",
+      "runId": "fbe78a07-3f3b-4775-906b-9018c5dc34c1",
+      "ownership": {
+        "runId": "fbe78a07-3f3b-4775-906b-9018c5dc34c1",
+        "leaderPid": 57335,
+        "processGroupId": 57335,
+        "expectedParentPid": 57211,
+        "expectedCommand": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home/bin/java"
+      },
+      "exitCode": 0,
+      "reaped": true,
+      "groupAfter": {
+        "state": "empty"
+      },
+      "elapsedMs": 378.7689590000002
+    }
+  ],
+  "staticUiAudit": {
+    "path": ".cache/bouncing-palette-audit-20261024/cosine-curve-ui-persistence-audit.md",
+    "sha256": "2ec0421a8daae331d37aae3070448bea43394158a57e752f892744bc8a10237c"
+  },
+  "limits": [
+    "Installed Temurin21.0.7, not bundled original JVM",
+    "Public numerical helpers and state constructors; no GUI/ProjectState/license/renderers",
+    "Finite cases, no NaN/Infinity behavior claim",
+    "New UUIDs retain actual strings, compared by fresh/preserved identity semantics",
+    "CPU, memory and token costs unmeasured"
+  ],
+  "appVerification": [
+    {
+      "path": ".cache/common-gradient-webgl-20261024-final/report.json",
+      "sha256": "b1b1e36b3ee6165f083c3066f4cf67cc4154bc26638e251d428822272504a329",
+      "status": "passed",
+      "checks": 96,
+      "scope": "Actual App Surface and Attractor source generator controls, rendered canvas changes, raw Manual restoration, bake, save/reload, project and PNG export. No original GUI or new whole-image parity claim.",
+      "backendPolicy": "webgl",
+      "sourceStable": true,
+      "remainingOwnedProcesses": 0,
+      "measurements": {
+        "elapsedMs": 41956.254833,
+        "processFamily": {
+          "rootPid": 93346,
+          "samples": 144,
+          "observedProcesses": 154,
+          "maxConcurrentProcesses": 11,
+          "sampledPeakRssKiB": 2289296,
+          "observedCpuMs": 89600,
+          "samplingErrors": []
+        }
+      }
+    },
+    {
+      "path": ".cache/common-gradient-native-20261024-final/report.json",
+      "sha256": "a110d75bfcde5c16d7a14a4dfd55925b5377340896e5d8a69ded3a65b147a21b",
+      "status": "passed",
+      "checks": 96,
+      "scope": "Actual App Surface and Attractor source generator controls, rendered canvas changes, raw Manual restoration, bake, save/reload, project and PNG export. No original GUI or new whole-image parity claim.",
+      "backendPolicy": "native",
+      "sourceStable": true,
+      "remainingOwnedProcesses": 0,
+      "measurements": {
+        "elapsedMs": 42079.91575,
+        "processFamily": {
+          "rootPid": 95989,
+          "samples": 145,
+          "observedProcesses": 155,
+          "maxConcurrentProcesses": 11,
+          "sampledPeakRssKiB": 2433744,
+          "observedCpuMs": 91020,
+          "samplingErrors": []
+        }
+      }
+    },
+    {
+      "path": ".cache/common-gradient-edges-20261024-reviewed/report.json",
+      "sha256": "1e0dffee954c0a7dfc9a71f63642fb5ab8809e9b3c2f169f1d3cc3437be62601",
+      "status": "passed",
+      "checks": 29,
+      "scope": "Actual App Surface and Attractor source generator controls, rendered canvas changes, raw Manual restoration, bake, save/reload, project and PNG export. No original GUI or new whole-image parity claim.",
+      "backendPolicy": "webgl",
+      "sourceStable": true,
+      "remainingOwnedProcesses": 0,
+      "measurements": {
+        "elapsedMs": 18847.1735,
+        "processFamily": {
+          "rootPid": 785,
+          "samples": 65,
+          "observedProcesses": 75,
+          "maxConcurrentProcesses": 11,
+          "sampledPeakRssKiB": 2391472,
+          "observedCpuMs": 51940,
+          "samplingErrors": []
+        }
+      }
+    }
+  ],
+  "appVerificationLimits": [
+    "Native policy uses CGL for Surface only; Attractor remains on its existing WebGL path.",
+    "CPU Attractor PNG checked for size, visible pixels and canonical palette, not per-pixel parity.",
+    "No original GUI or new whole-image parity claim.",
+    "Full 96+96 runs preceded only the final manual-random selection callback wiring. The final 29 edge checks verify that delta plus singleton and Attractor absent/empty persistence; core algorithms are identical."
+  ]
+}

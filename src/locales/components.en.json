@@ -1176,5 +1176,15 @@
   "主色 {0} RGB": "Primary color {0} RGB",
   "随机主色并替换色板": "Randomize primary colors and replace palette",
   "生成并替换色板": "Generate and replace palette",
-  "生成会替换整套色板，包含导入的额外颜色。设置仅作草稿，不随项目保存。": "Generation replaces the whole palette, including extra imported colors. Settings are drafts and are not saved with the project."
+  "生成会替换整套色板，包含导入的额外颜色。设置仅作草稿，不随项目保存。": "Generation replaces the whole palette, including extra imported colors. Settings are drafts and are not saved with the project.",
+  "源色板生成模式": "Source palette generation mode",
+  "生成颜色数量": "Generated color count",
+  "生成色板预览": "Generated palette preview",
+  "色板生成失败": "Palette generation failed",
+  "曲线通道": "Curve channel",
+  "源曲线节点 {0}": "Source curve point {0}",
+  "随机生成参数": "Randomize parameters",
+  "应用为手动色板": "Apply as manual palette",
+  "曲线按直线连接各节点。单击空白处添加、拖动调整、双击删除；缺少端点时延续最近颜色。": "Straight segments connect the curve points. Click empty space to add, drag to adjust, or double-click to remove; missing endpoints extend the nearest color.",
+  "参数修改立即更新作品。切回手动可恢复原色板；应用为手动会保留生成结果。重新打开项目保留颜色，生成参数恢复默认。": "Parameter edits update the artwork immediately. Switching back to Manual restores the previous palette; Apply as manual keeps the generated colors. Reopening retains colors and resets generator parameters."
 }

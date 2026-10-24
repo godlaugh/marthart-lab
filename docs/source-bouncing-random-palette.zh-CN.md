@@ -64,3 +64,5 @@
 - 全部其余 2.0 场景、通用能力及 Apple Silicon 正式集成与打包。已安装的 1.0 应用尚未更新。
 
 [查看随机配色面板截图](../.cache/bouncing-random-20261024-native-first/random-palette-editor.png) · [机器可复核证据索引](../tests/fixtures/source-manual-palette/source.json) · [完整弹跳验收清单](source-bouncing-acceptance.zh-CN.md)。本批没有移动桌面窗口或操作主屏。
+
+后续进度：共用 Cosine / Curve 已完成首批曲面与吸引子的接入和数值/页面验证，见 [色板生成器验收](source-gradient-generators.zh-CN.md)。原版 Bouncing 仍只提供 Manual；其余七类适用场景的接入仍在 2.0 范围内。
