@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "guide": {
+    "url": "https://www.mathartstudio.art/guide/bouncing",
+    "retainedPath": "../.cache/mathart-investigation/public-docs/guide__bouncing.json",
+    "sha256": "1187259ca5a3c44ae66f0f66c4f46960b0518e9eacb100f38b78b2149b46440a",
+    "rows": [
+      177,
+      179,
+      181
+    ]
+  },
+  "unspecifiedChoices": "All unspecified fields inherit the pinned bouncing2 project (seed2, shape radius0.26, step0.01, one substep, collision radius0.001, palette/camera/scale and duration). These are explicit reference choices, not values asserted by the guide. Uniform cases explicitly use zero noise/spread.",
+  "hexPolygonProvenance": {
+    "kind": "source-derived authored input",
+    "method": "BouncingParticlesSectionKt.setRegularPolygon: six points, float32 offsetPI/6, float32TAU*i/6, float32sin/cos times radius. Does not claim an original GUI action.",
+    "bytecode": ".cache/bouncing-controls-audit-20261024/BouncingParticlesSectionKt.javap.txt",
+    "sha256": "af9d20b54cb730d0695af86676918a85927f4765d7dc9610ae583dfc1eb4ac7f"
+  },
+  "cases": {
+    "guide-rose": {
+      "basePreset": "bouncing2",
+      "name": "Guide Rose",
+      "guideRow": 177,
+      "updatesPerFrame": 10,
+      "settings": {
+        "particle_count": 2000000,
+        "container_shape": "CIRCLE",
+        "circle_radius": 0.55,
+        "initial_position_mode": "ROSE",
+        "shape_rose_k": 7,
+        "initial_velocity_mode": "RADIAL_OUT",
+        "initial_speed": 0.2,
+        "velocity_noise": 0.4,
+        "dot_size": 0.1
+      }
+    },
+    "guide-hexagon": {
+      "basePreset": "bouncing2",
+      "name": "Guide Hexagon",
+      "guideRow": 179,
+      "updatesPerFrame": 10,
+      "settings": {
+        "particle_count": 500000,
+        "container_shape": "POLYGON",
+        "initial_position_mode": "CIRCLE",
+        "initial_circle_radius": 0.16,
+        "initial_velocity_mode": "UNIFORM",
+        "initial_speed": 0.2,
+        "velocity_noise": 0,
+        "initial_angle_spread": 0,
+        "dot_size": 0.1
+      },
+      "polygon": [
+        [
+          0.5369357466697693,
+          0.3100000023841858
+        ],
+        [
+          -2.7101060950940337e-08,
+          0.6200000047683716
+        ],
+        [
+          -0.5369357466697693,
+          0.3100000321865082
+        ],
+        [
+          -0.5369356870651245,
+          -0.31000012159347534
+        ],
+        [
+          7.393425871526915e-09,
+          -0.6200000047683716
+        ],
+        [
+          0.5369358658790588,
+          -0.30999985337257385
+        ]
+      ]
+    },
+    "guide-ellipse": {
+      "basePreset": "bouncing2",
+      "name": "Guide Ellipse",
+      "guideRow": 181,
+      "updatesPerFrame": 10,
+      "settings": {
+        "particle_count": 2000000,
+        "container_shape": "ELLIPSE",
+        "ellipse_semi_major_axis": 0.6,
+        "ellipse_semi_minor_axis": 0.55,
+        "initial_position_mode": "RING",
+        "shape_inner_ratio": 0.57,
+        "initial_velocity_mode": "UNIFORM",
+        "initial_speed": 0.2,
+        "velocity_noise": 0,
+        "initial_angle_spread": 0,
+        "dot_size": 1.25
+      }
+    }
+  }
+}

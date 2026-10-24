@@ -17,9 +17,11 @@ import time
 import zipfile
 
 PINS = json.loads((Path(__file__).resolve().parents[1] / 'tests/fixtures/source-bouncing-native-animation/presets.json').read_text())
+GUIDE_PATH = Path(__file__).resolve().parents[1] / 'tests/fixtures/source-bouncing-guide-compositions/cases.json'
+GUIDES = json.loads(GUIDE_PATH.read_text())['cases']
 JAR_SHA = 'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018'
 HOST_SHA = 'c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e'
-PROBE_SHA = '6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d'
+PROBE_SHA = '191c4260998b2c2f95602b2a670eccc485d729930cd29c940e9222cda93280ec'
 RECORDING_PROBE_SHA = '56f0ed86b33436c7339bf00d95c2d34ca72e36be13bd8e9b1e7edc54d3a2a89a'
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
@@ -32,7 +34,7 @@ def write(path, value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('preset', choices=PINS)
+    parser.add_argument('preset', choices=[*PINS, *GUIDES], help='Pinned shipped preset or explicit guide composition (animation only)')
     parser.add_argument('output', type=Path)
     parser.add_argument('--mode', choices=['animation', 'recording'], default='animation')
     parser.add_argument('--ffmpeg', type=Path, help='Existing encoder required for recording mode; no installation')
@@ -43,6 +45,8 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
     recording = args.mode == 'recording'
+    guide = GUIDES.get(args.preset)
+    require(not guide or not recording, 'Guide compositions currently require animation mode')
     require(recording == (args.ffmpeg is not None), '--ffmpeg is required only for recording mode')
     ffmpeg = args.ffmpeg.resolve() if recording else None
     if recording:
@@ -62,8 +66,11 @@ def main():
     require(not recording or args.full_recording or f32(duration) <= bound, 'Recording exceeds the eight-active-frame diagnostic capacity')
     app = (args.app_contents / 'app').resolve()
     jdk, host, data, out = [p.resolve() for p in [args.java_home, args.host, args.app_data, args.output]]
-    preset = PINS[args.preset]
-    member, count, source_sha = [preset[k] for k in ['member', 'particleCount', 'sourceSha256']]
+    preset = PINS[guide['basePreset'] if guide else args.preset]
+    member, original_count, source_sha = [preset[k] for k in ['member', 'particleCount', 'sourceSha256']]
+    count = guide['settings']['particle_count'] if guide else original_count
+    stride = guide['updatesPerFrame'] if guide else 1
+    require(stride in [1, 10] and 1 <= count <= 5000000, 'Reference count/stride outside reviewed capacity')
     jar = app / 'MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar'
     source = app / 'resources' / member
     probe = Path(__file__).resolve().parents[1] / ('tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java' if recording else 'tests/fixtures/source-bouncing-native-animation/NativeSceneProbe.java')
@@ -74,8 +81,8 @@ def main():
     with zipfile.ZipFile(jar) as archive:
         original = archive.read(member)
     require(sha(original) == source_sha and original == source.read_bytes(), 'Original preset identity mismatch')
-    require(json.loads(original)['settings']['particle_count'] == count, 'Original particle count mismatch')
-    width, height, max_active_frames, timeout = 128, 96, 8, 60
+    require(json.loads(original)['settings']['particle_count'] == original_count, 'Original particle count mismatch')
+    width, height, max_active_frames, timeout = 128, 96, 8, 180 if guide else 60
     if args.full_recording:
         duration = json.loads(original)['settings']['record_duration']
         require(isinstance(duration, (int, float)) and math.isfinite(duration) and .1 <= duration <= 60, 'Original duration outside full-reference capacity')
@@ -97,6 +104,15 @@ def main():
     require(shutil.disk_usage(out.parent).free >= required_bytes, 'Insufficient space for complete reference')
     out.mkdir()  # Never overwrite an earlier run.
     original_source = source
+    if guide:
+        project = json.loads(original)
+        project['settings'].update(guide['settings'])
+        project['name'] = guide['name']
+        if 'polygon' in guide:
+            project['polygon'] = guide['polygon']
+        source = out / 'project.json'
+        write(source, project)
+        write(out / 'input.json', {'project': project, 'updatesPerFrame': stride})
     if recording:
         project = json.loads(original)
         if not args.full_recording:
@@ -118,7 +134,7 @@ def main():
         shutil.copy2(policy, out / 'original-policy-cache.backup.json')
     write(out / 'user-files-before.json', before)
     classpath = ':'.join(str(p) for p in sorted(app.glob('*.jar'))) + ':' + str(out)
-    command = [str(host), str((app / '../runtime/Contents/Home/lib/server/libjvm.dylib').resolve()), classpath, str(out / 'logs'), str(source), str(out), str(data)]
+    command = [str(host), str((app / '../runtime/Contents/Home/lib/server/libjvm.dylib').resolve()), classpath, str(out / 'logs'), str(out / 'input.json' if guide else source), str(out), str(data)]
     started = time.monotonic()
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True, cwd=app,
         env={'PATH': str(jdk / 'bin') + ':/usr/bin:/bin', 'LANG': 'en_US.UTF-8', 'TMPDIR': str(out)})
@@ -149,6 +165,15 @@ def main():
         'scope': f'Original ensureRenderBuffer(default scale3), Scene.update(false) before buffer.beginDraw/render, and real VideoRecorder. Only original record_duration changed to {duration}s; all particles retained. Up to eight active384x288 frames at {fps}fps, first warmup not encoded; original completion checked after every display. 128x96 original high-quality MP4 using explicitly selected installed FFmpeg. Context-binding graphics allocation bridge; normal policy/license/branding, no AWT windows.' if recording else 'Original methods and unmodified preset; three initial paused frames and 60 fixed-60-fps updates, each followed by a paused redraw. Eleven complete state readbacks, full 500x600 artwork before normal branding, normal license/policy initialization, no AWT windows.',
         'command': command, 'exit': process.returncode, 'stdout': stdout, 'stderr': stderr, 'seconds': time.monotonic() - started,
         'pid': process.pid, 'reaped': True, 'processGroupExists': group_exists, 'timedOut': timed_out, 'userFilesBefore': before, 'userFilesAfter': facts()}
+    report['probeInput'] = command[4]
+    report['probeInputSha256'] = sha(Path(command[4]).read_bytes())
+    report['inputKind'] = 'guide-composition' if guide else 'packaged-preset'
+    if not recording:
+        report['animation'] = {'updatesPerFrame': stride, 'capturedArtworkFrames': 62, 'simulationUpdates': 60 * stride}
+    if guide:
+        report['guideCase'] = args.preset
+        report['guideRecipeSha256'] = sha(GUIDE_PATH.read_bytes())
+        report['scope'] = f'Explicit guide composition derived from pinned {guide["basePreset"]}; {count} particles. Original scene executes all {60 * stride} fixed60fps updates; 62 complete500x600 paused artwork samples and11complete state checkpoints. No skipped simulation steps, normallicense/policy/branding, no AWT windows; not a shipped preset or full video.'
     if recording:
         report['recording'] = {'fps': fps, 'duration': duration, 'maxActiveFrames': max_active_frames, 'fullPreset': args.full_recording, 'width': width, 'height': height, 'timeoutSeconds': timeout, 'requiredFreeBytes': required_bytes}
         if args.full_recording:

@@ -1,0 +1,340 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T01:57:13.314715+00:00",
+  "status": "three-guide-configurations-and-packaged-regression-passed",
+  "baseCommit": "ac0a9f94c6440972442f4d0a5b6dacfa269e46e4",
+  "readableReport": "docs/source-bouncing-guide-compositions.zh-CN.md",
+  "guideSource": {
+    "manifest": {
+      "path": "../.cache/mathart-investigation/public-docs/manifest.json",
+      "sha256": "2bd512ae12ecb7b8fe9abb1bd9ebcfb8b86d3204a65b4a22fe58efe9134c89d8"
+    },
+    "fetchedAt": "2026-10-14T15:33:16.974374+00:00",
+    "page": {
+      "url": "https://www.mathartstudio.art/guide/bouncing",
+      "resolved_url": "https://www.mathartstudio.art/guide/bouncing",
+      "title": "弹跳粒子 (Bouncing Particles) | MathArt Studio",
+      "sha256": "c0f9001a7edae08e235be47f879e64e23d7b12bb6b3bd2a71d1093266d587129",
+      "bytes": 63607,
+      "block_count": 228,
+      "local_key": "guide__bouncing"
+    },
+    "extracted": {
+      "path": "../.cache/mathart-investigation/public-docs/guide__bouncing.json",
+      "sha256": "1187259ca5a3c44ae66f0f66c4f46960b0518e9eacb100f38b78b2149b46440a"
+    }
+  },
+  "recipes": {
+    "path": "tests/fixtures/source-bouncing-guide-compositions/cases.json",
+    "sha256": "7f5fe3b0c424821d964819011ed1b30df26f6c190540ff649117f6008fe29b67"
+  },
+  "scope": "All guide-specified particles/settings, explicitly documented inherited unspecified values. Original runtime executes all600updates;62artwork samples/11complete padded states per guide. No original GUI action, full-video or exhaustive numerical-input claim. Brand remains on original images; artwork RGB is compared before branding and final alpha separately.",
+  "cases": [
+    {
+      "case": "bouncing1",
+      "kind": "packaged-preset",
+      "particles": 2000000,
+      "source": {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/resources/data/Bouncing/bouncing1.json",
+        "sha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480"
+      },
+      "originalRun": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-bouncing1/run.json",
+        "sha256": "ae0a5f328611f026a30066e7040dfc8967508a9ee1d003a6fb162d517c97cf8a"
+      },
+      "originalCaptureSeconds": 14.386623249971308,
+      "animation": {
+        "updatesPerFrame": 1,
+        "capturedArtworkFrames": 62,
+        "simulationUpdates": 60
+      },
+      "originalProbeSha256": "191c4260998b2c2f95602b2a670eccc485d729930cd29c940e9222cda93280ec",
+      "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+      "product": {
+        "path": ".cache/bouncing-guide-compositions-20261024/product-final-bouncing1/report.json",
+        "sha256": "34489e134300811b48b7df9894afec80b10fb8594faca9c1f65f9b87b990d984"
+      },
+      "stateComparison": {
+        "path": ".cache/bouncing-guide-compositions-20261024/state-bouncing1/report.json",
+        "sha256": "32bfc3663a9d4f2ebd69954a21f14c04e8c086682c17190fa234152743890011"
+      },
+      "allArtworkRgbFinalAlphaCameraExact": true,
+      "completeStateCheckpoints": 11,
+      "exactFloat32Channels": 88097900,
+      "originalAndProductCleanup": true,
+      "rejectedNativeRequests": 16,
+      "productElapsedMs": 6861.601791,
+      "productProcessFamily": {
+        "rootPid": 76571,
+        "samples": 16,
+        "observedProcesses": 26,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 2794224,
+        "observedCpuMs": 14270.000000000004,
+        "samplingErrors": []
+      },
+      "statePreparationMs": 1942.5490420000006,
+      "stateNativeMs": 1812.6690420000004,
+      "stateNativeProcessFamily": {
+        "rootPid": 72755,
+        "samples": 7,
+        "observedProcesses": 10,
+        "maxConcurrentProcesses": 4,
+        "sampledPeakRssKiB": 1110976,
+        "observedCpuMs": 649.9999999999998,
+        "samplingErrors": []
+      },
+      "finalOriginalImage": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-bouncing1/raw-frame-62.png",
+        "sha256": "1ccfeb51918250413eda606a5ce080a7210ec2b1fadf545aa6b2bdf619cb7cbc"
+      }
+    },
+    {
+      "case": "guide-rose",
+      "kind": "guide-composition",
+      "particles": 2000000,
+      "source": {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-guide-compositions-20261024/reference-guide-rose/project.json",
+        "sha256": "a01561f623371682a7aa49be5992d58fbed1aea9a8472089791b395b14a01546"
+      },
+      "originalRun": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-rose/run.json",
+        "sha256": "71c641c3cb2fc5d5f50fe79ba0dfd7605b41fd9bf0d51592226ca1c31b0d6e04"
+      },
+      "originalCaptureSeconds": 14.01011787506286,
+      "animation": {
+        "updatesPerFrame": 10,
+        "capturedArtworkFrames": 62,
+        "simulationUpdates": 600
+      },
+      "originalProbeSha256": "191c4260998b2c2f95602b2a670eccc485d729930cd29c940e9222cda93280ec",
+      "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+      "product": {
+        "path": ".cache/bouncing-guide-compositions-20261024/product-final-guide-rose/report.json",
+        "sha256": "7eba13c6b9647f5da4402af38c4fb1a2725df50b6be0f1f24e25cefd5dd160a0"
+      },
+      "stateComparison": {
+        "path": ".cache/bouncing-guide-compositions-20261024/state-guide-rose/report.json",
+        "sha256": "de3df8ea6eec310b5980b5ad2a6fb8502214659391e3f51df5b71b6a09fab6d1"
+      },
+      "allArtworkRgbFinalAlphaCameraExact": true,
+      "completeStateCheckpoints": 11,
+      "exactFloat32Channels": 88097900,
+      "originalAndProductCleanup": true,
+      "rejectedNativeRequests": 16,
+      "productElapsedMs": 7114.666625,
+      "productProcessFamily": {
+        "rootPid": 76859,
+        "samples": 18,
+        "observedProcesses": 29,
+        "maxConcurrentProcesses": 12,
+        "sampledPeakRssKiB": 2277472,
+        "observedCpuMs": 15509.999999999998,
+        "samplingErrors": []
+      },
+      "statePreparationMs": 2183.439458,
+      "stateNativeMs": 1849.9941250000002,
+      "stateNativeProcessFamily": {
+        "rootPid": 73594,
+        "samples": 8,
+        "observedProcesses": 11,
+        "maxConcurrentProcesses": 4,
+        "sampledPeakRssKiB": 1153328,
+        "observedCpuMs": 830.0000000000006,
+        "samplingErrors": []
+      },
+      "finalOriginalImage": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-rose/raw-frame-62.png",
+        "sha256": "fd0eec5c4ac1f856ac3c1d991fd2c8149a1176fea69785bcb74b100f2e293787"
+      }
+    },
+    {
+      "case": "guide-hexagon",
+      "kind": "guide-composition",
+      "particles": 500000,
+      "source": {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-guide-compositions-20261024/reference-guide-hexagon/project.json",
+        "sha256": "1b472f3d06a0a7e190a18435729559bf66cfb59df366690aa04b8579d78a56ce"
+      },
+      "originalRun": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-hexagon/run.json",
+        "sha256": "46592a92999abb5ab7ad6662a742f2981d96440ab961a522dbec98276b4c89a2"
+      },
+      "originalCaptureSeconds": 11.29105137498118,
+      "animation": {
+        "updatesPerFrame": 10,
+        "capturedArtworkFrames": 62,
+        "simulationUpdates": 600
+      },
+      "originalProbeSha256": "191c4260998b2c2f95602b2a670eccc485d729930cd29c940e9222cda93280ec",
+      "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+      "product": {
+        "path": ".cache/bouncing-guide-compositions-20261024/product-final-guide-hexagon/report.json",
+        "sha256": "02032504ff5607d0531e1d664ea09782dfb8ae3d1d3ad7c7171464c822026fbd"
+      },
+      "stateComparison": {
+        "path": ".cache/bouncing-guide-compositions-20261024/state-guide-hexagon/report.json",
+        "sha256": "95de0bd1ecd1dbfa83882930086a2fb1de1db72c807e65531e8a69d15dd7797c"
+      },
+      "allArtworkRgbFinalAlphaCameraExact": true,
+      "completeStateCheckpoints": 11,
+      "exactFloat32Channels": 22055616,
+      "originalAndProductCleanup": true,
+      "rejectedNativeRequests": 16,
+      "productElapsedMs": 4554.039375,
+      "productProcessFamily": {
+        "rootPid": 77171,
+        "samples": 12,
+        "observedProcesses": 22,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 2154672,
+        "observedCpuMs": 10440,
+        "samplingErrors": []
+      },
+      "statePreparationMs": 1533.5218330000002,
+      "stateNativeMs": 1206.9056659999997,
+      "stateNativeProcessFamily": {
+        "rootPid": 74303,
+        "samples": 5,
+        "observedProcesses": 8,
+        "maxConcurrentProcesses": 4,
+        "sampledPeakRssKiB": 994768,
+        "observedCpuMs": 340,
+        "samplingErrors": []
+      },
+      "finalOriginalImage": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-hexagon/raw-frame-62.png",
+        "sha256": "19ee7b56b654d5d11f7c107d3e33335f5005036dcfc7fb30883af32d0dad14f0"
+      }
+    },
+    {
+      "case": "guide-ellipse",
+      "kind": "guide-composition",
+      "particles": 2000000,
+      "source": {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-guide-compositions-20261024/reference-guide-ellipse/project.json",
+        "sha256": "9599a5e7eec9687b30ae5928977e75a3958cc9dbab1468eed73fb469d3d3face"
+      },
+      "originalRun": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-ellipse/run.json",
+        "sha256": "8aed74605fd65512a05a0470abb6bc28ff8aca21637ef4cd008980c64b047063"
+      },
+      "originalCaptureSeconds": 15.073138750041835,
+      "animation": {
+        "updatesPerFrame": 10,
+        "capturedArtworkFrames": 62,
+        "simulationUpdates": 600
+      },
+      "originalProbeSha256": "191c4260998b2c2f95602b2a670eccc485d729930cd29c940e9222cda93280ec",
+      "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+      "product": {
+        "path": ".cache/bouncing-guide-compositions-20261024/product-final-guide-ellipse/report.json",
+        "sha256": "cb31f071fd259b6b4d8c3e57c53da0106f1de7382e4ce49376f87901232e74cf"
+      },
+      "stateComparison": {
+        "path": ".cache/bouncing-guide-compositions-20261024/state-guide-ellipse/report.json",
+        "sha256": "0730a5bd97108cf8c3fa25999f323d892bdf71c639cd5ce4020de0d059fbad22"
+      },
+      "allArtworkRgbFinalAlphaCameraExact": true,
+      "completeStateCheckpoints": 11,
+      "exactFloat32Channels": 88097900,
+      "originalAndProductCleanup": true,
+      "rejectedNativeRequests": 16,
+      "productElapsedMs": 6500.194625,
+      "productProcessFamily": {
+        "rootPid": 77400,
+        "samples": 16,
+        "observedProcesses": 26,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 2331904,
+        "observedCpuMs": 14159.999999999998,
+        "samplingErrors": []
+      },
+      "statePreparationMs": 1887.4917079999998,
+      "stateNativeMs": 1647.8853750000003,
+      "stateNativeProcessFamily": {
+        "rootPid": 74956,
+        "samples": 7,
+        "observedProcesses": 10,
+        "maxConcurrentProcesses": 4,
+        "sampledPeakRssKiB": 1150560,
+        "observedCpuMs": 719.9999999999998,
+        "samplingErrors": []
+      },
+      "finalOriginalImage": {
+        "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-ellipse/raw-frame-62.png",
+        "sha256": "bd33eb48a0d1be8e78ffabebe4e4dafb34f5eabf4e0a140ec2c809abd62fa00f"
+      }
+    }
+  ],
+  "reflectionCoverage": {
+    "evidence": {
+      "path": ".cache/bouncing-guide-compositions-20261024/reflection-coverage.json",
+      "sha256": "43fd0a0b73b76b93020a401dc5f218fedcb869a9478a752f790bd5e2d965a82a"
+    },
+    "cases": [
+      {
+        "case": "guide-rose",
+        "particles": 2000000,
+        "updates": 600,
+        "particlesWithChangedVelocityBits": 2000000,
+        "scope": "Observed final velocity differs from initial for these particles; not an exact collision-event count. Original constant-velocity dynamics changes velocity at reflections.",
+        "before": {
+          "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-rose/frame-1/state.f32",
+          "sha256": "d42b6e967a5dd547b836c0fa625974ba0ba390f31221c76a3792894d33eb8af7"
+        },
+        "after": {
+          "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-rose/frame-62/paused/state.f32",
+          "sha256": "29f0a047154559d51aa9a3f4aa316e525240d372fa3a0202b65861ea7575d792"
+        }
+      },
+      {
+        "case": "guide-hexagon",
+        "particles": 500000,
+        "updates": 600,
+        "particlesWithChangedVelocityBits": 500000,
+        "scope": "Observed final velocity differs from initial for these particles; not an exact collision-event count. Original constant-velocity dynamics changes velocity at reflections.",
+        "before": {
+          "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-hexagon/frame-1/state.f32",
+          "sha256": "bbaeec806f330a11abdd56f3e3c34cd1bcbd1114704e5ff0138640f7b24ddec6"
+        },
+        "after": {
+          "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-hexagon/frame-62/paused/state.f32",
+          "sha256": "e76f006cb8466106758b296550a8b9ca13ec3b1e466ba0595772b18255df219a"
+        }
+      },
+      {
+        "case": "guide-ellipse",
+        "particles": 2000000,
+        "updates": 600,
+        "particlesWithChangedVelocityBits": 2000000,
+        "scope": "Observed final velocity differs from initial for these particles; not an exact collision-event count. Original constant-velocity dynamics changes velocity at reflections.",
+        "before": {
+          "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-ellipse/frame-1/state.f32",
+          "sha256": "53d3d1a2e6e6be9ce372b916c619f924314896a5d1c62f6487683ad0a55c4e93"
+        },
+        "after": {
+          "path": ".cache/bouncing-guide-compositions-20261024/reference-guide-ellipse/frame-62/paused/state.f32",
+          "sha256": "f885ad46e7ea4828e9b3f8292805b527fc1813cb160144343f34c604ff3068e2"
+        }
+      }
+    ]
+  },
+  "guards": {
+    "preflight": {
+      "path": ".cache/bouncing-guide-compositions-20261024/preflight-guards.json",
+      "sha256": "3f466c20f2e5fcc3701028b28369ec7711fc689e0a24e27125c51d80051e7b11"
+    },
+    "preflightCount": 3,
+    "inputIdentity": {
+      "path": ".cache/bouncing-guide-compositions-20261024/input-guards.json",
+      "sha256": "6205c967efecb7ca7c3def6500947f02a4ac3203e28849fc5fcef64f94c7819d"
+    },
+    "inputIdentityCount": 7
+  },
+  "costLimits": "Sequential completed runs; no controlled OS-cold cache, no comparable performance change, no GPU/VRAM/token measurements. Product process-family samples include browser/native workflow. State timing/RSS covers the native comparator and its separate synthetic5M exercise; preparation time is separate. Sampling can miss transient peaks.",
+  "remaining": [
+    "Other explicit Bouncing inspector/clock/configuration acceptance rows need individual verification.",
+    "All other2.0families and finalnativeAppleSilicon integration/package remain under the active goal."
+  ]
+}

@@ -28,7 +28,10 @@ public final class NativeSceneProbe {
  public static void main(String[] args)throws Exception {
   if(args.length!=3)throw new IllegalArgumentException("scene JSON, new output directory, original app data directory required");
   windows("entry");
-  Path output=Path.of(args[1]);JSONObject json=JSONObject.parse(Files.readString(Path.of(args[0])));
+  Path output=Path.of(args[1]);JSONObject input=JSONObject.parse(Files.readString(Path.of(args[0])));
+  final int updatesPerFrame=input.hasKey("project")?input.getInt("updatesPerFrame"):1;
+  if(updatesPerFrame!=1&&updatesPerFrame!=10)throw new IllegalArgumentException("Unsupported diagnostic update stride");
+  JSONObject json=input.hasKey("project")?input.getJSONObject("project"):input;
   System.setProperty("mathart.app.data.dir",args[2]);System.setProperty("mathart.license.cache.path",Path.of(args[2],"license.dat").toString());System.setProperty("mathart.app.version","1.7.8");
   LicenseManager license=LicenseManager.getInstance();license.init();
   SceneAccessPolicyService policy=SceneAccessPolicyService.INSTANCE;
@@ -96,6 +99,9 @@ public final class NativeSceneProbe {
      app.currentScene.setRenderMode(60f);
      for(int warm=0;warm<63;warm++){
       frame=warm;frameOutput=output.resolve("frame-"+warm);Files.createDirectory(frameOutput);
+      // Advance through every original update, sampling artwork every ten
+      // updates for guide compositions so the reference spans collisions.
+      if(warm>=3)for(int step=1;step<updatesPerFrame;step++)app.currentScene.update(false);
       buffer.beginDraw();app.currentScene.runFrame(buffer,warm<3);buffer.endDraw();
       if(warm>=3){frameOutput=output.resolve("frame-"+warm).resolve("paused");Files.createDirectory(frameOutput);buffer.beginDraw();app.currentScene.runFrame(buffer,true);buffer.endDraw();}
       System.out.println("font="+buffer.textFont.getName()+",ps="+buffer.textFont.getPostScriptName()+",size="+buffer.textFont.getSize()+",smooth="+buffer.textFont.isSmooth()+",native="+buffer.textFont.getNative());

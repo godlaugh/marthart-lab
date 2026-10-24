@@ -1,5 +1,10 @@
 # Original Bouncing animation reference
 
+The current probe additionally accepts an explicit guide-composition wrapper
+with ten original updates per artwork sample. Raw packaged projects retain the
+one-update default described below. See the [guide-composition reference](../source-bouncing-guide-compositions/README.md)
+for input identity, the fresh default regression and 600-update results.
+
 This probe runs the original `Bouncing/bouncing1.json` with all 2,000,000 particles.
 It uses the original bundled JVM and normal license/policy initialization. The
 original input, shaders, geometry, permissions and watermark behavior are not
