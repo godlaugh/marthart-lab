@@ -1,0 +1,1257 @@
+{
+  "schemaVersion": 1,
+  "scope": "Only insertManualPaletteAfterSelected original outputs; other input strings remain unmodified.",
+  "runtime": {
+    "classSha256": "a5cf77c18ee417dad41bbab3615fb0c6ede5ce9b3a5ce3b524189a8b46c5ce4b",
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home",
+    "javaVersion": "21.0.7",
+    "javaVendor": "Eclipse Adoptium",
+    "headless": true,
+    "windowCount": 0
+  },
+  "executions": [
+    "run/source.json",
+    "unicode-run/source.json"
+  ],
+  "cases": [
+    {
+      "id": "after-25-0",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          " #ab00ef "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#040302",
+        "palette": [
+          "#000000",
+          "#040302",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          " #ab00ef "
+        ]
+      }
+    },
+    {
+      "id": "after-25-12",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          " #ab00ef "
+        ],
+        "selectedIndex": 12
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 13,
+        "insertedColor": "#583F26",
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#583F26",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          " #ab00ef "
+        ]
+      }
+    },
+    {
+      "id": "after-25-24",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          " #ab00ef "
+        ],
+        "selectedIndex": 24
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 25,
+        "insertedColor": "#000000",
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          " #ab00ef ",
+          "#000000"
+        ]
+      }
+    },
+    {
+      "id": "after-32-0",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          "#a87848",
+          "#af7d4b",
+          "#b6824e",
+          "#bd8751",
+          "#c48c54",
+          "#cb9157",
+          "#d2965a",
+          " #ab00ef "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#040302",
+        "palette": [
+          "#000000",
+          "#040302",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          "#a87848",
+          "#af7d4b",
+          "#b6824e",
+          "#bd8751",
+          "#c48c54",
+          "#cb9157",
+          "#d2965a",
+          " #ab00ef "
+        ]
+      }
+    },
+    {
+      "id": "after-32-16",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          "#a87848",
+          "#af7d4b",
+          "#b6824e",
+          "#bd8751",
+          "#c48c54",
+          "#cb9157",
+          "#d2965a",
+          " #ab00ef "
+        ],
+        "selectedIndex": 16
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 17,
+        "insertedColor": "#745332",
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#745332",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          "#a87848",
+          "#af7d4b",
+          "#b6824e",
+          "#bd8751",
+          "#c48c54",
+          "#cb9157",
+          "#d2965a",
+          " #ab00ef "
+        ]
+      }
+    },
+    {
+      "id": "after-32-31",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          "#a87848",
+          "#af7d4b",
+          "#b6824e",
+          "#bd8751",
+          "#c48c54",
+          "#cb9157",
+          "#d2965a",
+          " #ab00ef "
+        ],
+        "selectedIndex": 31
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 32,
+        "insertedColor": "#000000",
+        "palette": [
+          "#000000",
+          "#070503",
+          "#0e0a06",
+          "#150f09",
+          "#1c140c",
+          "#23190f",
+          "#2a1e12",
+          "#312315",
+          "#382818",
+          "#3f2d1b",
+          "#46321e",
+          "#4d3721",
+          "#543c24",
+          "#5b4127",
+          "#62462a",
+          "#694b2d",
+          "#705030",
+          "#775533",
+          "#7e5a36",
+          "#855f39",
+          "#8c643c",
+          "#93693f",
+          "#9a6e42",
+          "#a17345",
+          "#a87848",
+          "#af7d4b",
+          "#b6824e",
+          "#bd8751",
+          "#c48c54",
+          "#cb9157",
+          "#d2965a",
+          " #ab00ef ",
+          "#000000"
+        ]
+      }
+    },
+    {
+      "id": "after-empty--1-20",
+      "kind": "after",
+      "input": {
+        "palette": [],
+        "selectedIndex": -1
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": null,
+        "palette": [
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-empty-0-21",
+      "kind": "after",
+      "input": {
+        "palette": [],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": null,
+        "palette": [
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-empty--1-22",
+      "kind": "after",
+      "input": {
+        "palette": [],
+        "selectedIndex": -1
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": null,
+        "palette": [
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-empty-0-23",
+      "kind": "after",
+      "input": {
+        "palette": [],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": null,
+        "palette": [
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-one--1-24",
+      "kind": "after",
+      "input": {
+        "palette": [
+          " #ab00ef "
+        ],
+        "selectedIndex": -1
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#FFFFFF",
+        "palette": [
+          " #ab00ef ",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-one-0-25",
+      "kind": "after",
+      "input": {
+        "palette": [
+          " #ab00ef "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#FFFFFF",
+        "palette": [
+          " #ab00ef ",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-one-0-26",
+      "kind": "after",
+      "input": {
+        "palette": [
+          " #ab00ef "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#FFFFFF",
+        "palette": [
+          " #ab00ef ",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-one-1-27",
+      "kind": "after",
+      "input": {
+        "palette": [
+          " #ab00ef "
+        ],
+        "selectedIndex": 1
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#FFFFFF",
+        "palette": [
+          " #ab00ef ",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-two--1-28",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "selectedIndex": -1
+      },
+      "output": {
+        "status": "threw",
+        "exception": "java.lang.IndexOutOfBoundsException",
+        "message": "Index -1 out of bounds for length 2",
+        "palette": [
+          "#000000",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-two-0-29",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#808080",
+        "palette": [
+          "#000000",
+          "#808080",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-two-1-30",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "selectedIndex": 1
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 2,
+        "insertedColor": "#FFFFFF",
+        "palette": [
+          "#000000",
+          "#FFFFFF",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-two-2-31",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#FFFFFF"
+        ],
+        "selectedIndex": 2
+      },
+      "output": {
+        "status": "threw",
+        "exception": "java.lang.IndexOutOfBoundsException",
+        "message": "Index 2 out of bounds for length 2",
+        "palette": [
+          "#000000",
+          "#FFFFFF"
+        ]
+      }
+    },
+    {
+      "id": "after-three--1-32",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#010203",
+          "#EFA267",
+          "#090807"
+        ],
+        "selectedIndex": -1
+      },
+      "output": {
+        "status": "threw",
+        "exception": "java.lang.IndexOutOfBoundsException",
+        "message": "Index -1 out of bounds for length 3",
+        "palette": [
+          "#010203",
+          "#EFA267",
+          "#090807"
+        ]
+      }
+    },
+    {
+      "id": "after-three-0-33",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#010203",
+          "#EFA267",
+          "#090807"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#785235",
+        "palette": [
+          "#010203",
+          "#785235",
+          "#EFA267",
+          "#090807"
+        ]
+      }
+    },
+    {
+      "id": "after-three-2-34",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#010203",
+          "#EFA267",
+          "#090807"
+        ],
+        "selectedIndex": 2
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 3,
+        "insertedColor": "#090807",
+        "palette": [
+          "#010203",
+          "#EFA267",
+          "#090807",
+          "#090807"
+        ]
+      }
+    },
+    {
+      "id": "after-three-3-35",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#010203",
+          "#EFA267",
+          "#090807"
+        ],
+        "selectedIndex": 3
+      },
+      "output": {
+        "status": "threw",
+        "exception": "java.lang.IndexOutOfBoundsException",
+        "message": "Index 3 out of bounds for length 3",
+        "palette": [
+          "#010203",
+          "#EFA267",
+          "#090807"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-black-white",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#FFFFFF",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#808080",
+        "palette": [
+          "#000000",
+          "#808080",
+          "#FFFFFF",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-white-black",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#FFFFFF",
+          "#000000",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#808080",
+        "palette": [
+          "#FFFFFF",
+          "#808080",
+          "#000000",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-odd-low",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#000000",
+          "#010305",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#010203",
+        "palette": [
+          "#000000",
+          "#010203",
+          "#010305",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-odd-high",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#FEFCFA",
+          "#FFFFFF",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#FFFEFD",
+        "palette": [
+          "#FEFCFA",
+          "#FFFEFD",
+          "#FFFFFF",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-mixed",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#13B72D",
+          "#D402EF",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#745D8E",
+        "palette": [
+          "#13B72D",
+          "#745D8E",
+          "#D402EF",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-alpha",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#00112233",
+          "#FF445566",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#2B3C4D",
+        "palette": [
+          "#00112233",
+          "#2B3C4D",
+          "#FF445566",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-alpha-same-rgb",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#00123456",
+          "#80123456",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#123456",
+        "palette": [
+          "#00123456",
+          "#123456",
+          "#80123456",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-whitespace",
+      "kind": "after",
+      "input": {
+        "palette": [
+          " #ff0000 ",
+          "#00ff00",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#008000",
+        "palette": [
+          " #ff0000 ",
+          "#008000",
+          "#00ff00",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-bad",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#GGGGGG",
+          "#FFFFFF",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#808080",
+        "palette": [
+          "#GGGGGG",
+          "#808080",
+          "#FFFFFF",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-short",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#fff",
+          "#FFFFFF",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#808080",
+        "palette": [
+          "#fff",
+          "#808080",
+          "#FFFFFF",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-no-hash",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "112233",
+          "445566",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#2B3C4D",
+        "palette": [
+          "112233",
+          "#2B3C4D",
+          "445566",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-signed-plus",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#+0000F",
+          "#000000",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#000008",
+        "palette": [
+          "#+0000F",
+          "#000008",
+          "#000000",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "after-pair-signed-minus",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#-00001",
+          "#000000",
+          "raw untouched tail"
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#808080",
+        "palette": [
+          "#-00001",
+          "#808080",
+          "#000000",
+          "raw untouched tail"
+        ]
+      }
+    },
+    {
+      "id": "unicode-fullwidth-digits",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#１２３４５６",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#091A2B",
+        "palette": [
+          "#１２３４５６",
+          "#091A2B",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    },
+    {
+      "id": "unicode-arabic-digits",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#١٢٣٤٥٦",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#091A2B",
+        "palette": [
+          "#١٢٣٤٥٦",
+          "#091A2B",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    },
+    {
+      "id": "unicode-fullwidth-letters",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#ａｂｃｄｅｆ",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#566778",
+        "palette": [
+          "#ａｂｃｄｅｆ",
+          "#566778",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    },
+    {
+      "id": "unicode-fullwidth-alpha",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#８０ｆｆ００００",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#800000",
+        "palette": [
+          "#８０ｆｆ００００",
+          "#800000",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    },
+    {
+      "id": "ascii-plus-unicode-digits",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#+１２３４５",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#011223",
+        "palette": [
+          "#+１２３４５",
+          "#011223",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    },
+    {
+      "id": "ascii-minus-unicode-digits",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#-００００１",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#808080",
+        "palette": [
+          "#-００００１",
+          "#808080",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    },
+    {
+      "id": "unicode-minus",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#−００００１",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#000000",
+        "palette": [
+          "#−００００１",
+          "#000000",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    },
+    {
+      "id": "unicode-plus",
+      "kind": "after",
+      "input": {
+        "palette": [
+          "#＋００００１",
+          "#000000",
+          " raw tail "
+        ],
+        "selectedIndex": 0
+      },
+      "output": {
+        "status": "returned",
+        "insertedIndex": 1,
+        "insertedColor": "#000000",
+        "palette": [
+          "#＋００００１",
+          "#000000",
+          "#000000",
+          " raw tail "
+        ]
+      }
+    }
+  ]
+}

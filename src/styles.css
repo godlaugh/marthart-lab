@@ -1501,3 +1501,9 @@ html[lang="en"] .category-grid { grid-template-columns: 1fr; }
 .source-number-input {display:grid;grid-template-columns:minmax(0,1fr) 25px 25px;gap:3px;min-width:0}
 .source-number-input input {min-width:0;width:100%}
 .source-number-input button {padding:0;min-width:0;justify-content:center}
+.source-palette-editor{display:grid;gap:9px;min-width:0}
+.source-palette-swatches{display:flex;gap:4px;flex-wrap:wrap}
+.source-palette-swatches button{width:27px;height:27px;min-width:0;padding:0;color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;border:2px solid transparent}
+.source-palette-swatches button[aria-pressed=true]{border-color:var(--accent)}
+.source-palette-color{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px}
+.source-palette-color input{min-width:0;width:100%}

@@ -6,6 +6,7 @@ import {SOURCE_BOUNCING_POSITION_MODES,type SourceBouncingConfiguration,type Sou
 import {sourceBouncingRadiansToDegrees,sourceBouncingDegreesToRadians} from './sourceBouncingAngles';
 import {BouncingPolygonEditor} from './BouncingPolygonEditor';
 import {SourceBouncingNumberField} from './SourceBouncingNumberField';
+import {SourceBouncingPaletteEditor} from './SourceBouncingPaletteEditor';
 import {bouncingNumberRules} from './sourceBouncingNumbers';
 
 type Props={scene:SceneDocument;onChange:(scene:SceneDocument)=>void;tab?:'geometry'|'appearance'};
@@ -92,7 +93,8 @@ export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
    </>)}
    {section('palette','速度色板',<>
     {select('palette-kind','色板来源',v.palette.kind,[['absent','原版默认色板'],['colors','自定义色板']],kind=>({...source,visual:{...v,palette:kind==='absent'?{kind:'absent'}:{kind:'colors',colors:[]}}}))}
-    {v.palette.kind==='colors'&&json('palette-colors','颜色文本数组',v.palette.colors,colors=>({...source,visual:{...v,palette:{kind:'colors',colors:colors as string[]}}}))}
+    <SourceBouncingPaletteEditor palette={v.palette} onChange={palette=>setError(emit({...source,visual:{...v,palette}})??'')}/>
+    {v.palette.kind==='colors'&&<details data-testid="source-bouncing-palette-advanced"><summary>{t('高级色板数据')}</summary>{json('palette-colors','颜色文本数组',v.palette.colors,colors=>({...source,visual:{...v,palette:{kind:'colors',colors:colors as string[]}}}))}</details>}
     <p className="muted">{t('GPU 使用前 25 色；空数组使用白色。原始颜色文本按源规则解析，无法解析时使用白色。')}</p>
    </>)}
    {section('transform','显示变换',<>{(['X','Y','Z'] as const).map(axis=><div key={axis}>

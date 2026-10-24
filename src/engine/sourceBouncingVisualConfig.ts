@@ -33,7 +33,12 @@ function fields(raw:Record<string,unknown>,keys:readonly string[],path:readonly 
 function finite(raw:unknown,path:readonly string[]):number{if(typeof raw!=='number')fail('input',path,'必须为数值');const value=F(raw);if(!Number.isFinite(value))fail('nonfinite',path,'源显示值必须为有限 Float32');return value;}
 function text(raw:unknown,path:readonly string[]):string{if(typeof raw!=='string')fail('input',path,'必须为字符串');if(raw.length>SOURCE_COLOR_TEXT_BUDGET)fail('capacity',path,'颜色文本超过本地 1 MiB 预算');return raw;}
 function colors(raw:unknown):string[]{if(!Array.isArray(raw))fail('input',['palette'],'源 palette 必须为数组');if(raw.length>SOURCE_BOUNCING_VISUAL_LIMITS.paletteColors)fail('capacity',['palette'],'色板超过本地 65536 色预算');let size=0;return Array.from(raw,(value,i)=>{const color=text(value,['palette',String(i)]);size+=color.length;if(size>SOURCE_COLOR_TEXT_BUDGET)fail('capacity',['palette'],'色板文本超过本地 1 MiB 预算');return color;});}
-function packed(raw:string,path:string,diagnostics:string[]):number{try{return sourceConfigPackedColor(raw);}catch(error){if(!(error instanceof SourceConfigColorError))throw error;diagnostics.push(`${path}: 源颜色解析失败，采用白色；调用者保留原文。`);return 0xffffffff;}}
+/** The display and inspector share this source recovery rule. The caller
+ * retains the authored string; decoding is never a replacement serialization. */
+export function sourceBouncingPaletteColor(raw:string):{packed:number;valid:boolean}{
+ try{return{packed:sourceConfigPackedColor(raw),valid:true};}catch(error){if(!(error instanceof SourceConfigColorError))throw error;return{packed:0xffffffff,valid:false};}
+}
+function packed(raw:string,path:string,diagnostics:string[]):number{const result=sourceBouncingPaletteColor(raw);if(!result.valid)diagnostics.push(`${path}: 源颜色解析失败，采用白色；调用者保留原文。`);return result.packed;}
 function defaults():SourceBouncingVisualConfiguration{return{model:SOURCE_BOUNCING_VISUAL_MODEL,settingsPresence:'absent',dotSize:1.25,lineWeight:1,transform:{scaleX:360,scaleY:360,scaleZ:1,offsetX:0,offsetY:0,offsetZ:0},backgroundColor:0xff000000,boundaryColor:'#FFFFFF',palette:{kind:'absent'}};}
 const transforms={scaleX:'scale_x',scaleY:'scale_y',scaleZ:'scale_z',offsetX:'offset_x',offsetY:'offset_y',offsetZ:'offset_z'} as const;
 /** Visual projection only. Palette is parsed before settings, matching the

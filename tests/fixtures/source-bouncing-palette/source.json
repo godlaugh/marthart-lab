@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T03:11:21.419282+00:00",
+  "status": "passed-listed-manual-palette-cases-goal-incomplete",
+  "scope": "Actual App source Manual palette editing, retained simulation, original strings/alpha/tail, save/reload, project download, PNG and actual preview recovery. 64 particles; no new original artwork or GUI parity claim.",
+  "original": {
+    "jar": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "manualClass": "mathart/ui/components/ManualGradientPaletteEditorKt.class",
+    "manualClassSha256": "a5cf77c18ee417dad41bbab3615fb0c6ede5ce9b3a5ce3b524189a8b46c5ce4b",
+    "runtime": "Existing Temurin 21.0.7; headless, windowCount 0; not the bundled JVM",
+    "method": "insertManualPaletteAfterSelected(Ljava/util/List;I)I",
+    "afterCases": 43,
+    "allProbeCases": 96,
+    "allProbeKinds": {
+      "normalize": 8,
+      "after": 43,
+      "at": 45
+    },
+    "productComparison": "All 43 after cases: exact resulting palette, preserved caller inputs, invalid index rejection; empty input selects valid index0 rather than original helper invalid1. Other probe kinds retained only.",
+    "staticClassIdentities": {
+      "mathart/ui/panels/inspector/GradientPaletteSupportKt.class": "92eac7040cdb41588c9952e122ba0d689bba9f5cbda229bcfb923e2c5fca7e49",
+      "mathart/ui/panels/inspector/GradientCosineState.class": "1cf7319745f9f12a8bfc531cb881453facfdb55ca4f98556e75b1c6e121cb6cb",
+      "mathart/ui/panels/inspector/GradientCurveState.class": "3effa0460e8c8806e44e028dc18f8fd6ab4146c743b8f3705f842390458d84fa",
+      "mathart/ui/panels/inspector/GradientColorsEditorState.class": "48a162ab2d953400c15df2d80f9a1a249e3abb67e0487c96943958edfa039ec3",
+      "mathart/ui/panels/inspector/GradientColorsEditorKt.class": "bcd5c0b5b77a4fa8cc7b935de0b8ad239dbff0f1716b18d9ca686871921a212c",
+      "mathart/ui/components/ManualGradientPaletteEditorKt.class": "a5cf77c18ee417dad41bbab3615fb0c6ede5ce9b3a5ce3b524189a8b46c5ce4b",
+      "mathart/ui/panels/inspector/AppearanceSectionKt.class": "641606c695b4891c5d1036e7588d284fc1c96a53f1b68f38aae244785074ee87",
+      "mathart/ui/components/ManualPaletteGenerationKt.class": "9d4860cac89b05a7b696a2bcc11074a14c5aee5cb8894e42c131173723378543",
+      "mathart/ui/state/CurvePoint.class": "30b3bcbd66f3886a225a7836a8e8d46c32ea5fc83c00b3e564421333008260d2"
+    }
+  },
+  "evidence": {
+    ".cache/bouncing-palette-20261024-native-accepted/report.json": "43eebb2fcc398d9f9894147117ace3fa3d76e81fb98e8f66d75a52decf8b3e8a",
+    ".cache/bouncing-palette-20261024-native-final/report.json": "56d01826a85bbface0ba8233961abe4a820b474e7e44fab8ccd4042d0f727e73",
+    ".cache/bouncing-palette-20261024-native-final-r2/report.json": "0b4c5ef3692aa8f8df21d3f9681130db00bdeae56cdad57ca5a42f346e282e4a",
+    ".cache/bouncing-palette-20261024-native-first/report.json": "6afef436b51d73b0b054aa319832d6cd15685b13b4f59c2e5409d5f7d052210b",
+    ".cache/bouncing-palette-20261024-native-r2/report.json": "4391b6c06a810d4808d954114830b401947cd8edbfaf96c309a55c6472f10934",
+    ".cache/bouncing-palette-20261024-native-r3/report.json": "509907681ba5cf1ff67c097e5e3cec9dc9340ae19c3e4dfb8e96aa837f37e972",
+    ".cache/bouncing-palette-20261024-native-r4/report.json": "7658b335060bd0347ffa24d371799233dbbedd65d9f833979168b4413449aa99",
+    ".cache/bouncing-palette-20261024-webgl/report.json": "da354472f988a52b2790960ba3a17c46a9fa266414f5f2f4344fd41cce23872a",
+    ".cache/bouncing-palette-20261024-webgl-accepted/report.json": "c891e9f8e3a018d663da2dcf6437956083b2f0ce44d866cf9378ec021a201427",
+    ".cache/bouncing-palette-20261024-webgl-final/report.json": "fcb1b5dda19d679848be8b427a47d4393f46443244f71143c163ad4634620d41",
+    ".cache/bouncing-palette-20261024-webgl-final-r2/report.json": "2717e0014ade447c0ca2153e14c6d222deb7127f681cc419679b691a188facea",
+    ".cache/bouncing-palette-20261024-webgl-r2/report.json": "002e9c7194bb61a395f7b5877d8d5db6ba26a871b0d285a229fa0a4823c51bf5",
+    ".cache/bouncing-palette-tests-20261024-r2.log": "5a1de79c134a511ef761d70b669826fbef692638bce816fb6c7b2767e3608011",
+    ".cache/bouncing-palette-build-20261024-final.log": "fb0e2b527edbd3a5657e8318e7426fc917cdc96f2e524e4c17be64b980db45bd",
+    ".cache/bouncing-palette-i18n-20261024-final.log": "523d31fae18e3f2107885ac2d65e1b6d5454d54da25f7d5f7bc58ec1af65bb4c",
+    ".cache/bouncing-palette-audit-20261024/manifest.json": "c1c32b7dac4da28b7c849cb6603078820b4971f1b1b9c5ca9fa3bba91f35915f",
+    ".cache/bouncing-palette-audit-20261024/README.md": "3647c98f43fdb71c5ce6c9d901fa1042d853bafc696c0e6eb2c7530f0fc760a8",
+    ".cache/bouncing-manual-insertion-probe-20261024/manifest.json": "34e542836e4a2ec12123e32962beb0a2e4d9b7da132de604ac0645176b68e650",
+    ".cache/bouncing-manual-insertion-probe-20261024/README.md": "8ea7a8ca41863ee833142546a577f637f6daa2bdad094315b64647c47e7e73af",
+    ".cache/bouncing-manual-insertion-probe-20261024/run/source.json": "0f651ca4e9b6302995a9f521093ed875bbef5f1a77ae105fce58dca8ffa1d021",
+    ".cache/bouncing-manual-insertion-probe-20261024/unicode-run/source.json": "9cee00e40b611c408b22c2f13460addbb0a0129a5cb1a5cc166d48bc657a27f2",
+    "tests/fixtures/source-bouncing-palette/manual-after.json": "bc4ad2eb0da0203cbe018845b0fb18dfc89ca9fe3b58973cdd5fe3fdf46a4639"
+  },
+  "commands": [
+    "PATH=\"$PWD/../.cache/local-toolchain/node_modules/.bin:$PATH\" MATHART_SOURCE_RENDERER_BACKEND=\"$PWD/.cache/bouncing-state-protocol-20261024/backend.json\" node scripts/verify-bouncing-palette.mjs NEW_OUTPUT",
+    "PATH=\"$PWD/../.cache/local-toolchain/node_modules/.bin:$PATH\" node scripts/verify-bouncing-palette.mjs NEW_OUTPUT --webgl",
+    "npm test -- tests/source-bouncing-palette-editing.test.ts tests/source-bouncing-visual-config.test.ts tests/source-bouncing-boundary.test.ts tests/source-bouncing-controls.test.tsx tests/source-bouncing-document.test.ts tests/i18n.test.tsx",
+    "npm run build:v2",
+    "node scripts/check-i18n.mjs --self-test"
+  ],
+  "validation": {
+    "originalAddAfterCases": 43,
+    "nativeAppChecks": 40,
+    "webglAppChecks": 40,
+    "tests": 45,
+    "testFiles": 6,
+    "build": "passed; existing chunk-size warning",
+    "i18n": "passed; no required gaps",
+    "sourceAndReferenceStable": true,
+    "remainingOwnedProcesses": 0
+  },
+  "measurements": {
+    "native": {
+      "elapsedMs": 6661.274708,
+      "processFamily": {
+        "rootPid": 87805,
+        "samples": 24,
+        "observedProcesses": 35,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 2053808,
+        "observedCpuMs": 14360.000000000002,
+        "samplingErrors": []
+      }
+    },
+    "webgl": {
+      "elapsedMs": 7190.543457999999,
+      "processFamily": {
+        "rootPid": 88873,
+        "samples": 26,
+        "observedProcesses": 36,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 2053520,
+        "observedCpuMs": 16749.999999999996,
+        "samplingErrors": []
+      }
+    }
+  },
+  "measurementLimits": [
+    "No cold/warm separation or comparable old workflow.",
+    "GPU/VRAM and token costs not measured.",
+    "Original helpers capture elapsed2.276624s and1.699176s only; CPU/RSS not measured."
+  ],
+  "guideConflicts": [
+    "Bouncing not in original AppearanceSection supportsGeneratorModes list; Manual only, unlike guide MAS-BOU-019.",
+    "Shared original Curve is Float32 piecewise linear, not current local PCHIP or guide Bezier."
+  ],
+  "preservationPolicy": [
+    "Do not normalize unedited source strings on editor mount or edit.",
+    "Preserve selected alpha in RGB picker; original picker strips it.",
+    "Keep absent/empty/singleton/tail distinct; original GUI local normalization expands empty/singleton and rewrites spelling.",
+    "Preview uses source configuration recovery to white; inserted midpoint uses the distinct original Manual raw-hex parser with black recovery."
+  ],
+  "remaining": [
+    "Original Manual random strategies and main-tone editing.",
+    "Original window event timing, position field and complete GUI comparison.",
+    "General Cosine/Curve algorithm, randomization and apply workflows; preserve guide conflict with actual Bouncing Manual-only UI.",
+    "All 11 remaining 2.0 scene families, general capabilities and Apple Silicon integration/package."
+  ],
+  "readableReport": "docs/source-bouncing-palette.zh-CN.md"
+}
