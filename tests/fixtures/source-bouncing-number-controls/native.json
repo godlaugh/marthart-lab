@@ -1,0 +1,2055 @@
+{
+  "schemaVersion": 1,
+  "scope": "Finite direct calls to three original NumberDragger static helpers; no application, project, session, renderer or original GUI lifecycle.",
+  "runtime": {
+    "classSha256": "2232b74b091cb54b5960331e1d5338d35fb15dea6b6bdc9d2b78ae3857571b79",
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home",
+    "javaVersion": "21.0.7",
+    "javaVendor": "Eclipse Adoptium",
+    "headless": true,
+    "windowCount": 0
+  },
+  "cases": [
+    {
+      "id": "zero",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0",
+          "bits": "0000000000000000"
+        }
+      },
+      "output": {
+        "text": "0"
+      }
+    },
+    {
+      "id": "negative-zero",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "-0",
+          "bits": "8000000000000000"
+        }
+      },
+      "output": {
+        "text": "0"
+      }
+    },
+    {
+      "id": "time-step-f32",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 4,
+        "value": {
+          "text": "0.012000000104308128",
+          "bits": "3f889374c0000000"
+        }
+      },
+      "output": {
+        "text": "0.012"
+      }
+    },
+    {
+      "id": "time-step-double",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 4,
+        "value": {
+          "text": "0.012",
+          "bits": "3f889374bc6a7efa"
+        }
+      },
+      "output": {
+        "text": "0.012"
+      }
+    },
+    {
+      "id": "radius-f32",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.006000000052154064",
+          "bits": "3f789374c0000000"
+        }
+      },
+      "output": {
+        "text": "0.006"
+      }
+    },
+    {
+      "id": "radius-double",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.006",
+          "bits": "3f789374bc6a7efa"
+        }
+      },
+      "output": {
+        "text": "0.006"
+      }
+    },
+    {
+      "id": "direction-original-converted",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 1,
+        "value": {
+          "text": "134.39297485351562",
+          "bits": "4060cc9340000000"
+        }
+      },
+      "output": {
+        "text": "134.4"
+      }
+    },
+    {
+      "id": "tie-positive-p1",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 1,
+        "value": {
+          "text": "0.0625",
+          "bits": "3fb0000000000000"
+        }
+      },
+      "output": {
+        "text": "0.1"
+      }
+    },
+    {
+      "id": "tie-negative-p1",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 1,
+        "value": {
+          "text": "-0.0625",
+          "bits": "bfb0000000000000"
+        }
+      },
+      "output": {
+        "text": "-0.1"
+      }
+    },
+    {
+      "id": "tie-positive-p2",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "0.0625",
+          "bits": "3fb0000000000000"
+        }
+      },
+      "output": {
+        "text": "0.06"
+      }
+    },
+    {
+      "id": "tie-negative-p2",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "-0.0625",
+          "bits": "bfb0000000000000"
+        }
+      },
+      "output": {
+        "text": "-0.06"
+      }
+    },
+    {
+      "id": "tie-positive-p3",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.0625",
+          "bits": "3fb0000000000000"
+        }
+      },
+      "output": {
+        "text": "0.063"
+      }
+    },
+    {
+      "id": "tie-negative-p3",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "-0.0625",
+          "bits": "bfb0000000000000"
+        }
+      },
+      "output": {
+        "text": "-0.063"
+      }
+    },
+    {
+      "id": "round-0.06249999999999999",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.06249999999999999",
+          "bits": "3fafffffffffffff"
+        }
+      },
+      "output": {
+        "text": "0.062"
+      }
+    },
+    {
+      "id": "round-0.06250000000000001",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.06250000000000001",
+          "bits": "3fb0000000000001"
+        }
+      },
+      "output": {
+        "text": "0.063"
+      }
+    },
+    {
+      "id": "round-0.0004999999999999999",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.0004999999999999999",
+          "bits": "3f40624dd2f1a9fb"
+        }
+      },
+      "output": {
+        "text": "0"
+      }
+    },
+    {
+      "id": "round-0.0005",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.0005",
+          "bits": "3f40624dd2f1a9fc"
+        }
+      },
+      "output": {
+        "text": "0.001"
+      }
+    },
+    {
+      "id": "round-0.0005000000000000001",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "0.0005000000000000001",
+          "bits": "3f40624dd2f1a9fd"
+        }
+      },
+      "output": {
+        "text": "0.001"
+      }
+    },
+    {
+      "id": "round-1.005",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "1.005",
+          "bits": "3ff0147ae147ae14"
+        }
+      },
+      "output": {
+        "text": "1.005"
+      }
+    },
+    {
+      "id": "round-2.675",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "2.675",
+          "bits": "4005666666666666"
+        }
+      },
+      "output": {
+        "text": "2.675"
+      }
+    },
+    {
+      "id": "round-p2-double-1.005",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "1.005",
+          "bits": "3ff0147ae147ae14"
+        }
+      },
+      "output": {
+        "text": "1.01"
+      }
+    },
+    {
+      "id": "round-p2-f32-1.005",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "1.0049999952316284",
+          "bits": "3ff0147ae0000000"
+        }
+      },
+      "output": {
+        "text": "1"
+      }
+    },
+    {
+      "id": "round-p2-double-2.675",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "2.675",
+          "bits": "4005666666666666"
+        }
+      },
+      "output": {
+        "text": "2.68"
+      }
+    },
+    {
+      "id": "round-p2-f32-2.675",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "2.674999952316284",
+          "bits": "4005666660000000"
+        }
+      },
+      "output": {
+        "text": "2.67"
+      }
+    },
+    {
+      "id": "round-p2-double--1.005",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "-1.005",
+          "bits": "bff0147ae147ae14"
+        }
+      },
+      "output": {
+        "text": "-1.01"
+      }
+    },
+    {
+      "id": "round-p2-f32--1.005",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "-1.0049999952316284",
+          "bits": "bff0147ae0000000"
+        }
+      },
+      "output": {
+        "text": "-1"
+      }
+    },
+    {
+      "id": "round-p2-double--2.675",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "-2.675",
+          "bits": "c005666666666666"
+        }
+      },
+      "output": {
+        "text": "-2.68"
+      }
+    },
+    {
+      "id": "round-p2-f32--2.675",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 2,
+        "value": {
+          "text": "-2.674999952316284",
+          "bits": "c005666660000000"
+        }
+      },
+      "output": {
+        "text": "-2.67"
+      }
+    },
+    {
+      "id": "small-negative-zero",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "-0.00001",
+          "bits": "bee4f8b588e368f1"
+        }
+      },
+      "output": {
+        "text": "0"
+      }
+    },
+    {
+      "id": "large-finite-f32",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        }
+      },
+      "output": {
+        "text": "340282346638528860000000000000000000000"
+      }
+    },
+    {
+      "id": "large-finite-double",
+      "kind": "format",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "value": {
+          "text": "1e+25",
+          "bits": "45208b2a2c280291"
+        }
+      },
+      "output": {
+        "text": "10000000000000000000000000"
+      }
+    },
+    {
+      "id": "integer-trunc-positive",
+      "kind": "format",
+      "input": {
+        "isInteger": true,
+        "precision": 0,
+        "value": {
+          "text": "3.9",
+          "bits": "400f333333333333"
+        }
+      },
+      "output": {
+        "text": "3"
+      }
+    },
+    {
+      "id": "integer-trunc-negative",
+      "kind": "format",
+      "input": {
+        "isInteger": true,
+        "precision": 0,
+        "value": {
+          "text": "-3.9",
+          "bits": "c00f333333333333"
+        }
+      },
+      "output": {
+        "text": "-3"
+      }
+    },
+    {
+      "id": "integer-3.9",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "3.9"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "3.0",
+          "bits": "4008000000000000"
+        },
+        "float32": {
+          "text": "3.0",
+          "bits": "40400000"
+        }
+      }
+    },
+    {
+      "id": "integer--3.9",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "-3.9"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "-3.0",
+          "bits": "c008000000000000"
+        },
+        "float32": {
+          "text": "-3.0",
+          "bits": "c0400000"
+        }
+      }
+    },
+    {
+      "id": "integer-3+0.9",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "3+0.9"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "3.0",
+          "bits": "4008000000000000"
+        },
+        "float32": {
+          "text": "3.0",
+          "bits": "40400000"
+        }
+      }
+    },
+    {
+      "id": "integer--3-0.9",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "-3-0.9"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "-3.0",
+          "bits": "c008000000000000"
+        },
+        "float32": {
+          "text": "-3.0",
+          "bits": "c0400000"
+        }
+      }
+    },
+    {
+      "id": "integer-0",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "0"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0",
+          "bits": "0000000000000000"
+        },
+        "float32": {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      }
+    },
+    {
+      "id": "integer-1",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "1"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0",
+          "bits": "3ff0000000000000"
+        },
+        "float32": {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      }
+    },
+    {
+      "id": "integer-16",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "16"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "16.0",
+          "bits": "4030000000000000"
+        },
+        "float32": {
+          "text": "16.0",
+          "bits": "41800000"
+        }
+      }
+    },
+    {
+      "id": "integer-17",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "17"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "17.0",
+          "bits": "4031000000000000"
+        },
+        "float32": {
+          "text": "17.0",
+          "bits": "41880000"
+        }
+      }
+    },
+    {
+      "id": "integer-2147483648",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "2147483648"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "2.147483647E9",
+          "bits": "41dfffffffc00000"
+        },
+        "float32": {
+          "text": "2.1474836E9",
+          "bits": "4f000000"
+        }
+      }
+    },
+    {
+      "id": "integer-bad",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": "bad"
+      },
+      "output": {
+        "isNull": true
+      }
+    },
+    {
+      "id": "integer-empty",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "-2147483648",
+          "bits": "c1e0000000000000"
+        },
+        "high": {
+          "text": "2147483647",
+          "bits": "41dfffffffc00000"
+        },
+        "text": ""
+      },
+      "output": {
+        "isNull": true
+      }
+    },
+    {
+      "id": "substeps-0",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "high": {
+          "text": "16",
+          "bits": "4030000000000000"
+        },
+        "text": "0"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0",
+          "bits": "3ff0000000000000"
+        },
+        "float32": {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      }
+    },
+    {
+      "id": "substeps-1",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "high": {
+          "text": "16",
+          "bits": "4030000000000000"
+        },
+        "text": "1"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0",
+          "bits": "3ff0000000000000"
+        },
+        "float32": {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      }
+    },
+    {
+      "id": "substeps-16",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "high": {
+          "text": "16",
+          "bits": "4030000000000000"
+        },
+        "text": "16"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "16.0",
+          "bits": "4030000000000000"
+        },
+        "float32": {
+          "text": "16.0",
+          "bits": "41800000"
+        }
+      }
+    },
+    {
+      "id": "substeps-17",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "high": {
+          "text": "16",
+          "bits": "4030000000000000"
+        },
+        "text": "17"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "16.0",
+          "bits": "4030000000000000"
+        },
+        "float32": {
+          "text": "16.0",
+          "bits": "41800000"
+        }
+      }
+    },
+    {
+      "id": "substeps-3.9",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "high": {
+          "text": "16",
+          "bits": "4030000000000000"
+        },
+        "text": "3.9"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "3.0",
+          "bits": "4008000000000000"
+        },
+        "float32": {
+          "text": "3.0",
+          "bits": "40400000"
+        }
+      }
+    },
+    {
+      "id": "substeps--3.9",
+      "kind": "parse",
+      "input": {
+        "isInteger": true,
+        "low": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "high": {
+          "text": "16",
+          "bits": "4030000000000000"
+        },
+        "text": "-3.9"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0",
+          "bits": "3ff0000000000000"
+        },
+        "float32": {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      }
+    },
+    {
+      "id": "time-step-0",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": "0"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "9.999999747378752E-5",
+          "bits": "3f1a36e2e0000000"
+        },
+        "float32": {
+          "text": "1.0E-4",
+          "bits": "38d1b717"
+        }
+      }
+    },
+    {
+      "id": "time-step-.0001",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": ".0001"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0E-4",
+          "bits": "3f1a36e2eb1c432d"
+        },
+        "float32": {
+          "text": "1.0E-4",
+          "bits": "38d1b717"
+        }
+      }
+    },
+    {
+      "id": "time-step-.012",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": ".012"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.012",
+          "bits": "3f889374bc6a7efa"
+        },
+        "float32": {
+          "text": "0.012",
+          "bits": "3c449ba6"
+        }
+      }
+    },
+    {
+      "id": "time-step-.25",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": ".25"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "float32": {
+          "text": "0.25",
+          "bits": "3e800000"
+        }
+      }
+    },
+    {
+      "id": "time-step-.3",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": ".3"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "float32": {
+          "text": "0.25",
+          "bits": "3e800000"
+        }
+      }
+    },
+    {
+      "id": "time-step-1/100",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": "1/100"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.01",
+          "bits": "3f847ae147ae147b"
+        },
+        "float32": {
+          "text": "0.01",
+          "bits": "3c23d70a"
+        }
+      }
+    },
+    {
+      "id": "time-step-garbage",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": "garbage"
+      },
+      "output": {
+        "isNull": true
+      }
+    },
+    {
+      "id": "time-step-empty",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": ""
+      },
+      "output": {
+        "isNull": true
+      }
+    },
+    {
+      "id": "time-step-   ",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": "   "
+      },
+      "output": {
+        "isNull": true
+      }
+    },
+    {
+      "id": "time-step-  .012  ",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0.00009999999747378752",
+          "bits": "3f1a36e2e0000000"
+        },
+        "high": {
+          "text": "0.25",
+          "bits": "3fd0000000000000"
+        },
+        "text": "  .012  "
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.012",
+          "bits": "3f889374bc6a7efa"
+        },
+        "float32": {
+          "text": "0.012",
+          "bits": "3c449ba6"
+        }
+      }
+    },
+    {
+      "id": "speed--1",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "-1"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0",
+          "bits": "0000000000000000"
+        },
+        "float32": {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      }
+    },
+    {
+      "id": "speed-0",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "0"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0",
+          "bits": "0000000000000000"
+        },
+        "float32": {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      }
+    },
+    {
+      "id": "speed-.2",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": ".2"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.2",
+          "bits": "3fc999999999999a"
+        },
+        "float32": {
+          "text": "0.2",
+          "bits": "3e4ccccd"
+        }
+      }
+    },
+    {
+      "id": "speed-100",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "100"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "100.0",
+          "bits": "4059000000000000"
+        },
+        "float32": {
+          "text": "100.0",
+          "bits": "42c80000"
+        }
+      }
+    },
+    {
+      "id": "speed-101",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "101"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "101.0",
+          "bits": "4059400000000000"
+        },
+        "float32": {
+          "text": "101.0",
+          "bits": "42ca0000"
+        }
+      }
+    },
+    {
+      "id": "speed-1/20",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "1/20"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.05",
+          "bits": "3fa999999999999a"
+        },
+        "float32": {
+          "text": "0.05",
+          "bits": "3d4ccccd"
+        }
+      }
+    },
+    {
+      "id": "direction--90",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "-90"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "-90.0",
+          "bits": "c056800000000000"
+        },
+        "float32": {
+          "text": "-90.0",
+          "bits": "c2b40000"
+        }
+      }
+    },
+    {
+      "id": "direction-0",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "0"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0",
+          "bits": "0000000000000000"
+        },
+        "float32": {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      }
+    },
+    {
+      "id": "direction-360",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "360"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "360.0",
+          "bits": "4076800000000000"
+        },
+        "float32": {
+          "text": "360.0",
+          "bits": "43b40000"
+        }
+      }
+    },
+    {
+      "id": "direction-720",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "720"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "720.0",
+          "bits": "4086800000000000"
+        },
+        "float32": {
+          "text": "720.0",
+          "bits": "44340000"
+        }
+      }
+    },
+    {
+      "id": "direction-PI/4",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "PI/4"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.7853981633974483",
+          "bits": "3fe921fb54442d18"
+        },
+        "float32": {
+          "text": "0.7853982",
+          "bits": "3f490fdb"
+        }
+      }
+    },
+    {
+      "id": "spread--90",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "360",
+          "bits": "4076800000000000"
+        },
+        "text": "-90"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0",
+          "bits": "0000000000000000"
+        },
+        "float32": {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      }
+    },
+    {
+      "id": "spread-0",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "360",
+          "bits": "4076800000000000"
+        },
+        "text": "0"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0",
+          "bits": "0000000000000000"
+        },
+        "float32": {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      }
+    },
+    {
+      "id": "spread-360",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "360",
+          "bits": "4076800000000000"
+        },
+        "text": "360"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "360.0",
+          "bits": "4076800000000000"
+        },
+        "float32": {
+          "text": "360.0",
+          "bits": "43b40000"
+        }
+      }
+    },
+    {
+      "id": "spread-450",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "high": {
+          "text": "360",
+          "bits": "4076800000000000"
+        },
+        "text": "450"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "360.0",
+          "bits": "4076800000000000"
+        },
+        "float32": {
+          "text": "360.0",
+          "bits": "43b40000"
+        }
+      }
+    },
+    {
+      "id": "unbounded-.0625",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": ".0625"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0625",
+          "bits": "3fb0000000000000"
+        },
+        "float32": {
+          "text": "0.0625",
+          "bits": "3d800000"
+        }
+      }
+    },
+    {
+      "id": "unbounded-1.005",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "1.005"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.005",
+          "bits": "3ff0147ae147ae14"
+        },
+        "float32": {
+          "text": "1.005",
+          "bits": "3f80a3d7"
+        }
+      }
+    },
+    {
+      "id": "unbounded-2.675",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "2.675"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "2.675",
+          "bits": "4005666666666666"
+        },
+        "float32": {
+          "text": "2.675",
+          "bits": "402b3333"
+        }
+      }
+    },
+    {
+      "id": "unbounded-1/3",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "1/3"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.3333333333333333",
+          "bits": "3fd5555555555555"
+        },
+        "float32": {
+          "text": "0.33333334",
+          "bits": "3eaaaaab"
+        }
+      }
+    },
+    {
+      "id": "unbounded-1e-20",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "1e-20"
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0E-20",
+          "bits": "3bc79ca10c924223"
+        },
+        "float32": {
+          "text": "1.0E-20",
+          "bits": "1e3ce508"
+        }
+      }
+    },
+    {
+      "id": "unbounded-bad",
+      "kind": "parse",
+      "input": {
+        "isInteger": false,
+        "low": {
+          "text": "-3.4028234663852886e+38",
+          "bits": "c7efffffe0000000"
+        },
+        "high": {
+          "text": "3.4028234663852886e+38",
+          "bits": "47efffffe0000000"
+        },
+        "text": "bad"
+      },
+      "output": {
+        "isNull": true
+      }
+    },
+    {
+      "id": "step-substeps-1",
+      "kind": "step",
+      "input": {
+        "isInteger": true,
+        "precision": 0,
+        "minimumPrecisionStep": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "value": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "explicitStep": null
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0",
+          "bits": "3ff0000000000000"
+        },
+        "float32": {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      }
+    },
+    {
+      "id": "step-substeps-14",
+      "kind": "step",
+      "input": {
+        "isInteger": true,
+        "precision": 0,
+        "minimumPrecisionStep": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "value": {
+          "text": "14",
+          "bits": "402c000000000000"
+        },
+        "explicitStep": null
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1.0",
+          "bits": "3ff0000000000000"
+        },
+        "float32": {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      }
+    },
+    {
+      "id": "step-substeps-15",
+      "kind": "step",
+      "input": {
+        "isInteger": true,
+        "precision": 0,
+        "minimumPrecisionStep": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "value": {
+          "text": "15",
+          "bits": "402e000000000000"
+        },
+        "explicitStep": null
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "2.0",
+          "bits": "4000000000000000"
+        },
+        "float32": {
+          "text": "2.0",
+          "bits": "40000000"
+        }
+      }
+    },
+    {
+      "id": "step-substeps-16",
+      "kind": "step",
+      "input": {
+        "isInteger": true,
+        "precision": 0,
+        "minimumPrecisionStep": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "value": {
+          "text": "16",
+          "bits": "4030000000000000"
+        },
+        "explicitStep": null
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "2.0",
+          "bits": "4000000000000000"
+        },
+        "float32": {
+          "text": "2.0",
+          "bits": "40000000"
+        }
+      }
+    },
+    {
+      "id": "step-particles",
+      "kind": "step",
+      "input": {
+        "isInteger": true,
+        "precision": 0,
+        "minimumPrecisionStep": {
+          "text": "1",
+          "bits": "3ff0000000000000"
+        },
+        "value": {
+          "text": "200000",
+          "bits": "41086a0000000000"
+        },
+        "explicitStep": {
+          "text": "1000",
+          "bits": "408f400000000000"
+        }
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "1000.0",
+          "bits": "408f400000000000"
+        },
+        "float32": {
+          "text": "1000.0",
+          "bits": "447a0000"
+        }
+      }
+    },
+    {
+      "id": "step-time-step",
+      "kind": "step",
+      "input": {
+        "isInteger": false,
+        "precision": 4,
+        "minimumPrecisionStep": {
+          "text": "0.0001",
+          "bits": "3f1a36e2eb1c432d"
+        },
+        "value": {
+          "text": "0.012000000104308128",
+          "bits": "3f889374c0000000"
+        },
+        "explicitStep": {
+          "text": "0.0010000000474974513",
+          "bits": "3f50624de0000000"
+        }
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.0010000000474974513",
+          "bits": "3f50624de0000000"
+        },
+        "float32": {
+          "text": "0.001",
+          "bits": "3a83126f"
+        }
+      }
+    },
+    {
+      "id": "step-speed",
+      "kind": "step",
+      "input": {
+        "isInteger": false,
+        "precision": 3,
+        "minimumPrecisionStep": {
+          "text": "0.001",
+          "bits": "3f50624dd2f1a9fc"
+        },
+        "value": {
+          "text": "0.20000000298023224",
+          "bits": "3fc99999a0000000"
+        },
+        "explicitStep": {
+          "text": "0.05000000074505806",
+          "bits": "3fa99999a0000000"
+        }
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "0.05000000074505806",
+          "bits": "3fa99999a0000000"
+        },
+        "float32": {
+          "text": "0.05",
+          "bits": "3d4ccccd"
+        }
+      }
+    },
+    {
+      "id": "step-direction",
+      "kind": "step",
+      "input": {
+        "isInteger": false,
+        "precision": 1,
+        "minimumPrecisionStep": {
+          "text": "0.1",
+          "bits": "3fb999999999999a"
+        },
+        "value": {
+          "text": "134.39297485351562",
+          "bits": "4060cc9340000000"
+        },
+        "explicitStep": {
+          "text": "5",
+          "bits": "4014000000000000"
+        }
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "5.0",
+          "bits": "4014000000000000"
+        },
+        "float32": {
+          "text": "5.0",
+          "bits": "40a00000"
+        }
+      }
+    },
+    {
+      "id": "step-spread",
+      "kind": "step",
+      "input": {
+        "isInteger": false,
+        "precision": 1,
+        "minimumPrecisionStep": {
+          "text": "0.1",
+          "bits": "3fb999999999999a"
+        },
+        "value": {
+          "text": "0",
+          "bits": "0000000000000000"
+        },
+        "explicitStep": {
+          "text": "5",
+          "bits": "4014000000000000"
+        }
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "5.0",
+          "bits": "4014000000000000"
+        },
+        "float32": {
+          "text": "5.0",
+          "bits": "40a00000"
+        }
+      }
+    },
+    {
+      "id": "step-lissajous-delta",
+      "kind": "step",
+      "input": {
+        "isInteger": false,
+        "precision": 1,
+        "minimumPrecisionStep": {
+          "text": "0.1",
+          "bits": "3fb999999999999a"
+        },
+        "value": {
+          "text": "90",
+          "bits": "4056800000000000"
+        },
+        "explicitStep": {
+          "text": "15",
+          "bits": "402e000000000000"
+        }
+      },
+      "output": {
+        "isNull": false,
+        "double": {
+          "text": "15.0",
+          "bits": "402e000000000000"
+        },
+        "float32": {
+          "text": "15.0",
+          "bits": "41700000"
+        }
+      }
+    }
+  ]
+}

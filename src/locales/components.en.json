@@ -1153,5 +1153,13 @@
   "拖尾线宽": "Trail line width",
   "显示拖尾": "Show trails",
   "拖尾渐隐": "Fade trails",
-  "曲面背景颜色 ARGB": "Surface background color ARGB"
+  "曲面背景颜色 ARGB": "Surface background color ARGB",
+  "减少 {name}": "Decrease {name}",
+  "增加 {name}": "Increase {name}",
+  "相位差（度）": "Phase difference (degrees)",
+  "高级顶点数据": "Advanced vertex data",
+  "拖动结束或提交坐标后更新边界。Y 轴向下；编辑坐标范围为 −2 到 2。方向键微调，Shift 加速。": "The boundary updates when you finish dragging or commit coordinates. Y points downward; edited coordinates are limited to −2 through 2. Arrow keys nudge; Shift moves faster.",
+  "三角形容器": "Triangle boundary",
+  "正六边形容器": "Regular hexagon boundary",
+  "规则多边形半径": "Regular polygon radius"
 }

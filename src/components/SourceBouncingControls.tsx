@@ -4,6 +4,9 @@ import {useI18n} from '../i18n';
 import {usesSourceBouncing,parseSourceBouncingDocument,type SourceBouncingDocumentPayload} from '../engine/sourceBouncingDocument';
 import {SOURCE_BOUNCING_POSITION_MODES,type SourceBouncingConfiguration,type SourceBouncingVelocityMode} from '../engine/sourceBouncingConfig';
 import {sourceBouncingRadiansToDegrees,sourceBouncingDegreesToRadians} from './sourceBouncingAngles';
+import {BouncingPolygonEditor} from './BouncingPolygonEditor';
+import {SourceBouncingNumberField} from './SourceBouncingNumberField';
+import {bouncingNumberRules} from './sourceBouncingNumbers';
 
 type Props={scene:SceneDocument;onChange:(scene:SceneDocument)=>void;tab?:'geometry'|'appearance'};
 type Commit=(text:string)=>string|undefined;
@@ -31,21 +34,12 @@ export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
  const numberText=(value:number)=>Object.is(value,-0)?'-0':String(value);
  const commitNumber=(raw:string,accept:(n:number)=>string|undefined)=>{if(raw.trim()==='')return t('请输入数值');const n=Number(raw);if(!Number.isFinite(n))return t('请输入有限数值');return accept(n);};
  const number=(id:string,label:string,value:number,change:(n:number)=>SourceBouncingDocumentPayload)=><DraftField key={id} id={id} label={t(label)} value={numberText(value)} numeric commit={raw=>commitNumber(raw,n=>emit(change(n)))}/>;
- const configNumber=(key:{[K in keyof SourceBouncingConfiguration]:SourceBouncingConfiguration[K] extends number?K:never}[keyof SourceBouncingConfiguration],label:string)=>number(key,label,c[key],n=>({...source,configuration:{...c,[key]:n}}));
- const configDegrees=(key:'initialAngle'|'initialAngleSpread',label:string)=>{
-  const degrees=sourceBouncingRadiansToDegrees(c[key]),display=numberText(degrees);
-  return <DraftField key={key} id={key} label={t(label)} value={display} numeric commit={raw=>{
-   // Conversion is not bitwise invertible. Focusing and leaving an unchanged
-   // display must not replace an imported radian value with a rounded trip.
-   if(raw.trim()===display)return undefined;
-   return commitNumber(raw,input=>{
-    const value=Math.fround(input);if(!Number.isFinite(value))return t('请输入有限数值');
-    const bounded=key==='initialAngleSpread'?(value<0?0:value>360?360:value):value;
-    if(Object.is(bounded,degrees))return undefined;
-    return emit({...source,configuration:{...c,[key]:sourceBouncingDegreesToRadians(bounded)}});
-   });
-  }}/>;
+ const configNumber=(key:{[K in keyof SourceBouncingConfiguration]:SourceBouncingConfiguration[K] extends number?K:never}[keyof SourceBouncingConfiguration],label:string)=>{
+  const change=(n:number)=>({...source,configuration:{...c,[key]:n}});
+  if(key==='particleCount'||key==='subSteps'||key==='timeStep'||key==='initialSpeed')return <SourceBouncingNumberField key={key} id={key} label={t(label)} value={c[key]} rules={bouncingNumberRules[key]} onCommit={n=>emit(change(n))}/>;
+  return number(key,label,c[key],change);
  };
+ const configDegrees=(key:'initialAngle'|'initialAngleSpread'|'shapeLissajousDelta',label:string)=><SourceBouncingNumberField key={key} id={key} label={t(label)} value={sourceBouncingRadiansToDegrees(c[key])} rules={bouncingNumberRules[key]} onCommit={n=>emit({...source,configuration:{...c,[key]:sourceBouncingDegreesToRadians(n)}})}/>;
  const select=(id:string,label:string,value:string,choices:readonly(readonly[string,string])[],change:(value:string)=>SourceBouncingDocumentPayload)=><label key={id} className="field"><span>{t(label)}</span><select data-testid={`source-bouncing-${id}`} aria-label={t(label)} value={value} onChange={event=>setError(emit(change(event.target.value))??'')}>{choices.map(([key,name])=><option key={key} value={key}>{t(name)}</option>)}</select></label>;
  const section=(id:string,label:string,children:ReactNode,open=true)=><details key={id} className="inspector-section" open={open}><summary>{t(label)}</summary><div className="section-body">{children}</div></details>;
  const mode=c.initialPositionMode,box=mode==='BOX'||mode==='ARCHIMEDEAN_SPIRAL';
@@ -63,7 +57,7 @@ export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
     {configNumber('boundaryCenterX','容器中心 X')}{configNumber('boundaryCenterY','容器中心 Y')}
     {c.containerShape==='CIRCLE'&&configNumber('circleRadius','容器半径')}
     {c.containerShape==='ELLIPSE'&&<>{configNumber('ellipseSemiMajorAxis','椭圆 X 半轴')}{configNumber('ellipseSemiMinorAxis','椭圆 Y 半轴')}</>}
-    {c.containerShape==='POLYGON'&&<>{json('polygonVertices','顶点坐标 [x, y, x, y, …]',c.polygonVertices,polygonVertices=>({...source,configuration:{...c,polygonVertices:polygonVertices as number[]}}))}<p className="muted">{t('按输入顺序连接并闭合，保留凹角、重复点和退化边。支持 3–64 个顶点。')}</p></>}
+    {c.containerShape==='POLYGON'&&<><BouncingPolygonEditor source={c} onApply={polygonVertices=>setError(emit({...source,configuration:{...c,polygonVertices}})??'')}/><details><summary>{t('高级顶点数据')}</summary>{json('polygonVertices','顶点坐标 [x, y, x, y, …]',c.polygonVertices,polygonVertices=>({...source,configuration:{...c,polygonVertices:polygonVertices as number[]}}))}</details><p className="muted">{t('按输入顺序连接并闭合，保留凹角、重复点和退化边。支持 3–64 个顶点。')}</p></>}
    </>)}
    {section('initial','初始位置',<>
     {select('initialPositionMode','初始形状',mode,SOURCE_BOUNCING_POSITION_MODES.map(key=>[key,shapeNames[key]]),initialPositionMode=>({...source,configuration:{...c,initialPositionMode:initialPositionMode as typeof mode}}))}
@@ -75,7 +69,7 @@ export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
     {(mode==='RING'||mode==='STAR')&&configNumber('shapeInnerRatio','内半径比例')}
     {mode==='STAR'&&configNumber('shapeNumPoints','星形角数')}
     {mode==='SPIRAL'&&<>{configNumber('shapeNumTurns','螺旋圈数')}{configNumber('shapeTightness','螺旋紧密度')}</>}
-    {mode==='LISSAJOUS'&&<>{configNumber('shapeLissajousA','X 频率')}{configNumber('shapeLissajousB','Y 频率')}{configNumber('shapeLissajousDelta','相位差（弧度）')}</>}
+    {mode==='LISSAJOUS'&&<>{configNumber('shapeLissajousA','X 频率')}{configNumber('shapeLissajousB','Y 频率')}{configDegrees('shapeLissajousDelta','相位差（度）')}</>}
     {mode==='ROSE'&&configNumber('shapeRoseK','玫瑰系数 K')}
     {mode==='SUPERELLIPSE'&&configNumber('shapeSuperellipseN','超椭圆指数 N')}
     {(mode==='HYPOCYCLOID'||mode==='EPICYCLOID')&&configNumber('shapeK','摆线系数 K')}

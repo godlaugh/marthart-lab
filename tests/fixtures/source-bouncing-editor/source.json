@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T02:43:12.280181+00:00",
+  "status": "passed-listed-editing-cases-goal-incomplete",
+  "scope": "Actual App editor, canonical persistence and real renderer with 64 authored particles (particle step also reaches 1003). Pure original numerical helpers are a separate bounded oracle; polygon rules are source-derived. No original GUI or new artwork pixel parity claim.",
+  "evidence": {
+    ".cache/bouncing-editor-20261024-native-r2/report.json": "9422144aa775300fe336f664a1e66fb7e40c4c69a0994e97e722898c9bd87bbe",
+    ".cache/bouncing-editor-20261024-webgl/report.json": "a8b6dba88375d3fd1ed7b24eac28f22d1869e64b4e2ba16de47b6b173649367f",
+    ".cache/bouncing-editor-20261024-native-first/report.json": "8e45fdf801f2b75b7a679b4595219fff18c658ce895a266aac77a6f211bd8e57",
+    ".cache/bouncing-editor-tests-20261024.log": "7d55e939188f474ed68ce43a0a6a5aa037f82c59b57a2afb62fa20dac8cdc2b4",
+    ".cache/bouncing-editor-build-20261024.log": "fcdf10ffd888b6dd1c8a0c74b4d115ddf55494144077753ba6c8da835ca6729b",
+    ".cache/bouncing-editor-i18n-20261024.log": "80402793b159d9f6f6bf6bcee2706eac0b0e93eb78aed586e18f8fb70d89f406",
+    "tests/fixtures/source-bouncing-number-controls/source.json": "95ca19744d34ca037d233dbebb804571fff2bf5d134df9482bc4a7e60fe6bc5b",
+    "tests/fixtures/source-bouncing-number-controls/native.json": "480d37bcbaff8c78955396676ad26b621d4a9e3e17a0d6b2629d333f7b36b562",
+    "tests/fixtures/source-bouncing-guide-compositions/cases.json": "7f5fe3b0c424821d964819011ed1b30df26f6c190540ff649117f6008fe29b67",
+    ".cache/bouncing-controls-audit-20261024/BouncingParticlesSectionKt.javap.txt": "af9d20b54cb730d0695af86676918a85927f4765d7dc9610ae583dfc1eb4ac7f"
+  },
+  "commands": [
+    "PATH=\"$PWD/../.cache/local-toolchain/node_modules/.bin:$PATH\" MATHART_SOURCE_RENDERER_BACKEND=\"$PWD/.cache/bouncing-state-protocol-20261024/backend.json\" node scripts/verify-bouncing-editor.mjs NEW_OUTPUT",
+    "PATH=\"$PWD/../.cache/local-toolchain/node_modules/.bin:$PATH\" node scripts/verify-bouncing-editor.mjs NEW_OUTPUT --webgl",
+    "npm test -- tests/source-bouncing-numbers.test.ts tests/source-bouncing-polygon-editor.test.ts tests/source-bouncing-controls.test.tsx tests/polygonEditor.test.tsx tests/source-bouncing-document.test.ts tests/source-bouncing-config.test.ts tests/i18n.test.tsx",
+    "npm run build:v2",
+    "node scripts/check-i18n.mjs --self-test"
+  ],
+  "validation": {
+    "originalNumericCases": 91,
+    "nativeAppChecks": 48,
+    "webglAppChecks": 47,
+    "tests": 50,
+    "testFiles": 7,
+    "build": "passed; existing chunk-size warning",
+    "i18n": "passed; no required gaps",
+    "sourceStable": true,
+    "remainingOwnedProcesses": 0
+  },
+  "measurements": {
+    "native": {
+      "elapsedMs": 10320.161417,
+      "processFamily": {
+        "rootPid": 41835,
+        "samples": 37,
+        "observedProcesses": 48,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 2084912,
+        "observedCpuMs": 19740,
+        "samplingErrors": []
+      }
+    },
+    "webgl": {
+      "elapsedMs": 9455.889083,
+      "processFamily": {
+        "rootPid": 42862,
+        "samples": 34,
+        "observedProcesses": 44,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 1996992,
+        "observedCpuMs": 17709.999999999996,
+        "samplingErrors": []
+      }
+    }
+  },
+  "measurementLimits": [
+    "No cold/warm cache separation or comparable old workflow.",
+    "GPU/VRAM and token costs not measured.",
+    "Original helper capture has elapsed time only; CPU/RSS not measured."
+  ],
+  "remaining": [
+    "Separate authored speed over100 from bounded simulation configuration.",
+    "Original window number dragging, input sanitization and event policies.",
+    "Polygon product UX differs in fit view, cancel rollback, visible coordinate list and inferred radius.",
+    "Palette editor, other scene families, general capabilities and Apple Silicon integration/package."
+  ],
+  "readableReport": "docs/source-bouncing-editor.zh-CN.md"
+}

@@ -10,13 +10,13 @@ import type {SceneDocument} from '../src/types';
 import originalAngles from './fixtures/source-bouncing-angle-controls/native.json';
 import {sourceBouncingRadiansToDegrees,sourceBouncingDegreesToRadians} from '../src/components/sourceBouncingAngles';
 const setter=vi.hoisted(()=>vi.fn());
-vi.mock('react',async load=>({...await load<typeof import('react')>(),useState:(initial:unknown)=>[initial,setter]}));
+vi.mock('react',async load=>({...await load<typeof import('react')>(),useState:(initial:unknown)=>[typeof initial==='function'?initial():initial,setter],useRef:(initial:unknown)=>({current:initial}),useEffect:()=>{}}));
 vi.mock('../src/i18n',()=>({useI18n:()=>({t:(text:string)=>text})}));
 type Node=ReactElement<Record<string,any>>;
 function flatten(node:ReactNode):Node[]{if(Array.isArray(node))return node.flatMap(flatten);if(!isValidElement(node))return[];const e=node as Node;if(typeof e.type==='function')return flatten((e.type as(p:unknown)=>ReactNode)(e.props));return[e,...flatten(e.props.children)];}
 function field(tree:ReactNode,id:string){const node=flatten(tree).find(n=>n.props['data-testid']===`source-bouncing-${id}`);expect(node,id).toBeDefined();return node!.props;}
 function scene(){const s=createScene(definition('bouncing')),p=importSourceBouncingDocument({settings:{particle_count:4},palette:['#123456','#80112233']});if(!p.ok)throw Error('fixture');s.bouncingSource=p.value.payload;s.settings={};s.equations={};s.parameters={};s.timeline.tracks=[];return s;}
-const blur=(tree:ReactNode,id:string,value:string)=>field(tree,id).onBlur({currentTarget:{value}});
+const blur=(tree:ReactNode,id:string,value:string)=>{const props=field(tree,id);if(props.value!==undefined)props.onChange?.({currentTarget:{value},target:{value}});props.onBlur({currentTarget:{value}});};
 describe('source Bouncing canonical inspector',()=>{
  it('matches the original JVM inspector angle conversions, including signed zero and Float32 extremes',()=>{
   const fromBits=(bits:number)=>new Float32Array(new Uint32Array([bits]).buffer)[0],toBits=(value:number)=>new Uint32Array(new Float32Array([value]).buffer)[0];
@@ -24,9 +24,9 @@ describe('source Bouncing canonical inspector',()=>{
  });
  it('edits degrees while retaining radian storage and unchanged imported precision',()=>{
   const initial=scene(),onChange=vi.fn();initial.bouncingSource!.configuration.initialAngle=Math.fround(2.3456);
-  const tree=<SourceBouncingControls scene={initial} onChange={onChange}/>,display=field(tree,'initialAngle').defaultValue;
-  expect(display).toBe('134.39297485351562');expect(sourceBouncingDegreesToRadians(Number(display))).not.toBe(initial.bouncingSource!.configuration.initialAngle);
-  blur(tree,'initialAngle',display);expect(onChange).not.toHaveBeenCalled();
+  const tree=<SourceBouncingControls scene={initial} onChange={onChange}/>,display=field(tree,'initialAngle').value;
+  expect(display).toBe('134.4');expect(sourceBouncingDegreesToRadians(Number(display))).not.toBe(initial.bouncingSource!.configuration.initialAngle);
+  field(tree,'initialAngle').onBlur({currentTarget:{value:display}});expect(onChange).not.toHaveBeenCalled();
   blur(tree,'initialAngle','45');expect(onChange.mock.lastCall![0].bouncingSource.configuration.initialAngle).toBe(Math.fround(Math.PI/4));
   blur(tree,'initialAngleSpread','450');expect(onChange.mock.lastCall![0].bouncingSource.configuration.initialAngleSpread).toBe(Math.fround(2*Math.PI));
   expect(initial.bouncingSource!.configuration.initialAngle).toBe(Math.fround(2.3456));
@@ -34,7 +34,7 @@ describe('source Bouncing canonical inspector',()=>{
  });
  it('commits valid drafts only on blur, preserving signed64 and unrelated canonical fields',()=>{
   const initial=scene(),before=structuredClone(initial),onChange=vi.fn(),tree=<SourceBouncingControls scene={initial} onChange={onChange}/>;
-  expect(field(tree,'particleCount').onChange).toBeUndefined();expect(field(tree,'particleCount').value).toBeUndefined();
+  expect(field(tree,'particleCount').onChange).toBeTypeOf('function');expect(field(tree,'particleCount').value).toBe('4');
   blur(tree,'particleCount','1234');expect(onChange.mock.lastCall![0].bouncingSource.configuration.particleCount).toBe(1234);
   blur(tree,'seed','-9223372036854775808');expect(onChange.mock.lastCall![0].bouncingSource.configuration.seed).toBe('-9223372036854775808');
   blur(tree,'timeStep','0.024');const next=onChange.mock.lastCall![0] as SceneDocument;
@@ -42,8 +42,12 @@ describe('source Bouncing canonical inspector',()=>{
  });
  it('keeps invalid draft errors out of the document and uses canonical validation',()=>{
   const onChange=vi.fn(),tree=<SourceBouncingControls scene={scene()} onChange={onChange}/>;
-  for(const [id,value]of [['particleCount','1.5'],['particleCount',''],['subSteps','17'],['seed','9223372036854775808'],['timeStep','Infinity'],['initialXMin','999'],['polygonVertices','[1,2,3]']]as const){blur(tree,id,value);expect(onChange).not.toHaveBeenCalled();expect(setter.mock.lastCall![0]).not.toBe('');}
-  expect(field(tree,'particleCount').defaultValue).toBe('4');
+  for(const [id,value]of [['particleCount','bad'],['particleCount',''],['subSteps','bad'],['seed','9223372036854775808'],['timeStep','Infinity'],['initialXMin','999'],['polygonVertices','[1,2,3]']]as const){blur(tree,id,value);expect(onChange).not.toHaveBeenCalled();expect(setter.mock.lastCall![0]).not.toBe('');}
+  expect(field(tree,'particleCount').value).toBe('4');
+ });
+ it('uses integer truncation and inspector clamps before canonical conversion',()=>{
+  const onChange=vi.fn(),tree=<SourceBouncingControls scene={scene()} onChange={onChange}/>;
+  for(const [id,input,expected]of [['particleCount','3.9',3],['subSteps','17',16],['subSteps','0',1],['timeStep','0',Math.fround(.0001)],['timeStep','.3',.25],['initialSpeed','-1',0]]as const){blur(tree,id,input);expect(onChange.mock.lastCall![0].bouncingSource.configuration[id]).toBe(expected);}
  });
  it('exposes all source initialization modes with only their related shape fields',()=>{
   const expected:Partial<Record<typeof SOURCE_BOUNCING_POSITION_MODES[number],string[]>>={STAR:['shapeInnerRatio','shapeNumPoints'],RING:['shapeInnerRatio'],SPIRAL:['shapeNumTurns','shapeTightness'],LISSAJOUS:['shapeLissajousA','shapeLissajousB','shapeLissajousDelta'],ROSE:['shapeRoseK'],SUPERELLIPSE:['shapeSuperellipseN'],HYPOCYCLOID:['shapeK'],EPICYCLOID:['shapeK'],FORMULA:['shapeFormula']};
