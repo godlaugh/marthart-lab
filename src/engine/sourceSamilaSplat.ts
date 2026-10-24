@@ -4,6 +4,18 @@ import type {Palette,SceneDocument,SceneOutput,Settings} from '../types';
 export const SAMILA_SOURCE_SPLAT_MODEL='samila-splat-1.7.8' as const;
 export type SourceSamilaSplatFacts=NonNullable<Extract<SceneOutput,{type:'raster'}>['samilaSplat']>;
 const F=Math.fround,clamp=(v:number)=>Math.max(0,Math.min(1,v));
+/** SamilaMobject's LUT uniforms stay runtime operands even when their values
+ * are fixed. Folding them into GLSL constants changes native RGB-mass bits. */
+export const SOURCE_SAMILA_NOISE_UNIFORMS=Object.freeze({noiseFrequency:F(.1),noiseAmplitude:F(.5),noiseLutScale:1});
+export const SOURCE_SAMILA_NOISE_GLSL=`
+${Object.keys(SOURCE_SAMILA_NOISE_UNIFORMS).map(name=>`uniform float ${name};`).join('\n')}
+uniform sampler2D noiseLUT;
+float sourceSamilaNoisePaletteCoordinate(vec2 ndc){
+ vec2 noiseUv=ndc*noiseFrequency*noiseLutScale+.5;
+ float noiseVal=texture(noiseLUT,noiseUv).r;noiseVal=isnan(noiseVal)?0.:noiseVal;noiseVal*=noiseAmplitude;
+ return clamp((noiseVal+noiseAmplitude*.85)/(noiseAmplitude*1.7),0.,1.);
+}
+`;
 export function usesSourceSamilaSplat(scene:Pick<SceneDocument,'kind'|'settings'>):boolean{return scene.kind==='samila'&&scene.settings.samilaSplatModel===SAMILA_SOURCE_SPLAT_MODEL;}
 export function sourceSamilaFloat(settings:Settings,key:string,fallback:number):number {
  const value=settings[key]??fallback;if(typeof value!=='number'||!Number.isFinite(value)||!Number.isFinite(F(value)))throw Error(`源 Samila ${key} 必须为有限 float32`);return F(value);
@@ -58,10 +70,11 @@ export function sourceSamilaNoiseLut():Float32Array {
 }
 /** GL normalized LINEAR/CLAMP sampling, before amplitude and palette mapping. */
 export function sourceSamilaPaletteCoordinate(ndcX:number,ndcY:number):number {
- const lut=sourceSamilaNoiseLut(),x=F(F(F(ndcX)*F(.1))+.5)*256-.5,y=F(F(F(ndcY)*F(.1))+.5)*256-.5;
+ const {noiseFrequency,noiseAmplitude,noiseLutScale}=SOURCE_SAMILA_NOISE_UNIFORMS;
+ const lut=sourceSamilaNoiseLut(),x=F(F(F(F(ndcX)*noiseFrequency)*noiseLutScale)+.5)*256-.5,y=F(F(F(F(ndcY)*noiseFrequency)*noiseLutScale)+.5)*256-.5;
  const ix=Math.floor(x),iy=Math.floor(y),tx=x-ix,ty=y-iy,at=(a:number,b:number)=>lut[Math.max(0,Math.min(255,b))*256+Math.max(0,Math.min(255,a))];
  const n=(at(ix,iy)*(1-tx)+at(ix+1,iy)*tx)*(1-ty)+(at(ix,iy+1)*(1-tx)+at(ix+1,iy+1)*tx)*ty;
- return clamp(F(F(F(n*.5)+F(.5*F(.85)))/F(.5*F(1.7))));
+ return clamp(F(F(F(n*noiseAmplitude)+F(noiseAmplitude*F(.85)))/F(noiseAmplitude*F(1.7))));
 }
 export function sourceSamilaPointDiameter(facts:SourceSamilaSplatFacts):number{return facts.path==='quad'?Math.max(F(facts.radius*F(.6)),F(.8)):Math.max(facts.radius,1);}
 const smooth=(lo:number,hi:number,x:number)=>{const t=clamp((x-lo)/(hi-lo));return t*t*(3-2*t);};

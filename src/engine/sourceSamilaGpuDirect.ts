@@ -2,6 +2,7 @@ import type {IteratedField} from '../scenes/iteratedDensity';
 import {prepareSourceSamilaGpuMath} from './iteratedGpuSamila';
 import {sourceSamilaMathGlsl} from './sourceSamilaMath';
 import {SOURCE_SAMILA_PCG_GLSL} from './sourceSamilaSampling';
+import {SOURCE_SAMILA_NOISE_GLSL,SOURCE_SAMILA_NOISE_UNIFORMS} from './sourceSamilaSplat';
 
 const HEADER='#version 300 es\nprecision highp float;precision highp int;precision highp sampler2D;\n';
 /** One actual draw's borrowed TF observations. Values contain every vertex's
@@ -15,11 +16,10 @@ export const SOURCE_SAMILA_DIRECT_VERTICES=65532; // divisible by six: a chunk n
  * preserves the source vertex→fragment stages; only output channel order is
  * adapted from native (mass,rgbMass) to the local (rgbMass,mass) ink ABI. */
 export function compileSourceSamilaDirect(field:Extract<IteratedField,{kind:'samila'}>){
- const {selection,expressions,uniforms}=prepareSourceSamilaGpuMath(field);
- const vertex=HEADER+Object.keys(uniforms).map(n=>`uniform float ${n};`).join('\n')+sourceSamilaMathGlsl+SOURCE_SAMILA_PCG_GLSL+`
+ const {selection,expressions,uniforms:mathUniforms}=prepareSourceSamilaGpuMath(field),uniforms:Record<string,number>={...mathUniforms,...SOURCE_SAMILA_NOISE_UNIFORMS};
+ const vertex=HEADER+Object.keys(mathUniforms).map(n=>`uniform float ${n};`).join('\n')+sourceSamilaMathGlsl+SOURCE_SAMILA_PCG_GLSL+SOURCE_SAMILA_NOISE_GLSL+`
 uniform float u_rangeStart,u_rangeStop;uniform int u_frameSeed,u_particleCount;
 uniform vec2 scale,offset,u_viewportSize;uniform float u_aspectRatio,radius;uniform bool u_quadSplat;
-uniform sampler2D noiseLUT;
 out vec2 vTexCoord,vNdcCoord,vQuadLocal;out float vValidFlag,vLocalRadius,vPointDiameter,vPaletteU;
 flat out uvec4 sourceStats;
 const vec2 QUAD_CORNERS[6]=vec2[6](vec2(-1.,-1.),vec2(1.,-1.),vec2(-1.,1.),vec2(-1.,1.),vec2(1.,-1.),vec2(1.,1.));
@@ -45,8 +45,7 @@ void main(){
  if(u_quadSplat){vec2 local=QUAD_CORNERS[cornerId];float pointDiameter=max(radius*.6,.8);vec2 pixelToNdc=vec2(2./max(u_viewportSize.x,1.),2./max(u_viewportSize.y,1.));gl_Position=vec4(ndc+local*pointDiameter*.5*pixelToNdc,0.,1.);gl_PointSize=1.;vLocalRadius=1.;vQuadLocal=local;vPointDiameter=pointDiameter;}
  else{gl_Position=vec4(ndc,0.,1.);gl_PointSize=max(radius,1.);vLocalRadius=min(radius,1.);vQuadLocal=vec2(0.);vPointDiameter=max(radius,1.);}
  vTexCoord=vec2(transformX,transformY);vNdcCoord=ndc;
- vec2 noiseUv=ndc*.1*1.+.5;float noiseVal=texture(noiseLUT,noiseUv).r;noiseVal=isnan(noiseVal)?0.:noiseVal;noiseVal*=.5;
- vPaletteU=clamp((noiseVal+.5*.85)/(.5*1.7),0.,1.);vValidFlag=1.;
+ vPaletteU=sourceSamilaNoisePaletteCoordinate(ndc);vValidFlag=1.;
  // Local diagnostics observe the same computed point without altering the
  // source's clipping/fragment validity path. Counts describe candidate coverage.
  if(countSample){if(any(isnan(ndc))||any(isinf(ndc)))sourceStats.x=1u;

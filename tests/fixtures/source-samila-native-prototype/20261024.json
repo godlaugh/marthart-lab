@@ -1,0 +1,857 @@
+{
+  "schemaVersion": 1,
+  "baseline": "f7bf6d75f4654a42775a0e4c9e624f2594c6f82f",
+  "status": "prototype-exact-product-webgl-different",
+  "milestone": "M3",
+  "scope": "Five unchanged original Samila presets, three sequential paused complete 500x600 displays each. Production shader/noise uniform fix. Independent native prototype only; integrated application still WebGL and differs.",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "dimensions": {
+    "width": 500,
+    "height": 600,
+    "primaryPixelHeight": 972,
+    "pixelDensity": 2
+  },
+  "comparison": {
+    "pixelsPerStage": 300000,
+    "floatComponentsPerStage": 1200000,
+    "floatBytesPerStage": 4800000,
+    "rgbaBytesPerStage": 1200000,
+    "tolerance": 0,
+    "channelMapping": [
+      1,
+      2,
+      3,
+      0
+    ],
+    "rowFlip": false,
+    "initialHistory": "two independent zero RGBA32F textures; no expected intermediate history uploaded",
+    "totalSamplesPerFivePresetMatrix": 52832160
+  },
+  "presets": [
+    {
+      "name": "Samila",
+      "sourceMember": "data/samila/Samila.json",
+      "sourceSha256": "85024d0943309d95013bb92f1f7d676f252039a41601aa3d7b26c7f8fb5a9d06",
+      "batchSize": 1262144,
+      "frameSeedsSigned": [
+        641462530,
+        366543848,
+        1194106542
+      ],
+      "originalContext": {
+        "renderer": "Apple M2 Max",
+        "vendor": "Apple",
+        "version": "4.1 Metal - 90.5",
+        "glsl": "4.10"
+      },
+      "originalProgramReplay": {
+        "exactStages": 9,
+        "report": ".cache/samila-native-prototype-20261024/Samila-original-run1/run.json"
+      },
+      "productBeforeFix": {
+        "differentBytesByStage": [
+          0,
+          27892,
+          0,
+          27775,
+          42267,
+          0,
+          41988,
+          49733,
+          1
+        ],
+        "report": ".cache/samila-native-prototype-20261024/Samila-product-run1/run.json"
+      },
+      "productAfterFixNativePrototype": {
+        "exactFloatStages": 6,
+        "exactRgbaStages": 3,
+        "differentBytesByStage": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/runner-v3/Samila-product-run1/run.json",
+        "context": {
+          "vendor": "Apple",
+          "renderer": "Apple M2 Max",
+          "version": "4.1 Metal - 90.5"
+        },
+        "cleanup": {
+          "checked": true,
+          "errors": []
+        }
+      },
+      "productionWebgl": {
+        "status": "different",
+        "differentRgbaPixels": [
+          38018,
+          57449,
+          59892
+        ],
+        "driver": {
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+        }
+      }
+    },
+    {
+      "name": "samila1",
+      "sourceMember": "data/samila/samila1.json",
+      "sourceSha256": "3dbec56763726a4b99c07afd42397833ad17a1f4cb0476d6127db94e0181a79e",
+      "batchSize": 6562144,
+      "frameSeedsSigned": [
+        -419114588,
+        727812187,
+        1966892682
+      ],
+      "originalContext": {
+        "renderer": "Apple M2 Max",
+        "vendor": "Apple",
+        "version": "4.1 Metal - 90.5",
+        "glsl": "4.10"
+      },
+      "originalProgramReplay": {
+        "exactStages": 9,
+        "report": ".cache/samila-native-prototype-20261024/samila1-original-run1/run.json"
+      },
+      "productBeforeFix": {
+        "differentBytesByStage": [
+          0,
+          59615,
+          0,
+          59272,
+          75012,
+          0,
+          74588,
+          83573,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/samila1-product-run1/run.json"
+      },
+      "productAfterFixNativePrototype": {
+        "exactFloatStages": 6,
+        "exactRgbaStages": 3,
+        "differentBytesByStage": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/runner-v3/samila1-product-run1/run.json",
+        "context": {
+          "vendor": "Apple",
+          "renderer": "Apple M2 Max",
+          "version": "4.1 Metal - 90.5"
+        },
+        "cleanup": {
+          "checked": true,
+          "errors": []
+        }
+      },
+      "productionWebgl": {
+        "status": "different",
+        "differentRgbaPixels": [
+          43490,
+          57773,
+          62296
+        ],
+        "driver": {
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+        }
+      }
+    },
+    {
+      "name": "samila2",
+      "sourceMember": "data/samila/samila2.json",
+      "sourceSha256": "1b22305cf1bb276f1e9187ab20d0aa14b3c527348be67d4f1ae40b43d6d50397",
+      "batchSize": 3262144,
+      "frameSeedsSigned": [
+        -1950053576,
+        -1083673433,
+        266227914
+      ],
+      "originalContext": {
+        "renderer": "Apple M2 Max",
+        "vendor": "Apple",
+        "version": "4.1 Metal - 90.5",
+        "glsl": "4.10"
+      },
+      "originalProgramReplay": {
+        "exactStages": 9,
+        "report": ".cache/samila-native-prototype-20261024/samila2-original-run1/run.json"
+      },
+      "productBeforeFix": {
+        "differentBytesByStage": [
+          0,
+          49081,
+          0,
+          48885,
+          67883,
+          0,
+          67501,
+          78177,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/samila2-product-run1/run.json"
+      },
+      "productAfterFixNativePrototype": {
+        "exactFloatStages": 6,
+        "exactRgbaStages": 3,
+        "differentBytesByStage": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/runner-v3/samila2-product-run1/run.json",
+        "context": {
+          "vendor": "Apple",
+          "renderer": "Apple M2 Max",
+          "version": "4.1 Metal - 90.5"
+        },
+        "cleanup": {
+          "checked": true,
+          "errors": []
+        }
+      },
+      "productionWebgl": {
+        "status": "different",
+        "differentRgbaPixels": [
+          75195,
+          77907,
+          78148
+        ],
+        "driver": {
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+        }
+      }
+    },
+    {
+      "name": "samila3",
+      "sourceMember": "data/samila/samila3.json",
+      "sourceSha256": "458d93c9283fb5d31c337f2f91f243906543b1a805f5ac4e2cdbfa9f9e481dfc",
+      "batchSize": 3262144,
+      "frameSeedsSigned": [
+        -1547253001,
+        -1252824463,
+        -827387050
+      ],
+      "originalContext": {
+        "renderer": "Apple M2 Max",
+        "vendor": "Apple",
+        "version": "4.1 Metal - 90.5",
+        "glsl": "4.10"
+      },
+      "originalProgramReplay": {
+        "exactStages": 9,
+        "report": ".cache/samila-native-prototype-20261024/samila3-original-run1/run.json"
+      },
+      "productBeforeFix": {
+        "differentBytesByStage": [
+          0,
+          62364,
+          1,
+          61860,
+          72484,
+          1,
+          71963,
+          76268,
+          1
+        ],
+        "report": ".cache/samila-native-prototype-20261024/samila3-product-run1/run.json"
+      },
+      "productAfterFixNativePrototype": {
+        "exactFloatStages": 6,
+        "exactRgbaStages": 3,
+        "differentBytesByStage": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/runner-v3/samila3-product-run1/run.json",
+        "context": {
+          "vendor": "Apple",
+          "renderer": "Apple M2 Max",
+          "version": "4.1 Metal - 90.5"
+        },
+        "cleanup": {
+          "checked": true,
+          "errors": []
+        }
+      },
+      "productionWebgl": {
+        "status": "different",
+        "differentRgbaPixels": [
+          51220,
+          51264,
+          51277
+        ],
+        "driver": {
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+        }
+      }
+    },
+    {
+      "name": "samila4",
+      "sourceMember": "data/samila/samila4.json",
+      "sourceSha256": "cf1f55cb2ad18526ab24e2d0e30d0864dfab8d61dc0003dae0c47d621c680741",
+      "batchSize": 3262144,
+      "frameSeedsSigned": [
+        1622860899,
+        1986492014,
+        -959754844
+      ],
+      "originalContext": {
+        "renderer": "Apple M2 Max",
+        "vendor": "Apple",
+        "version": "4.1 Metal - 90.5",
+        "glsl": "4.10"
+      },
+      "originalProgramReplay": {
+        "exactStages": 9,
+        "report": ".cache/samila-native-prototype-20261024/samila4-original-run1/run.json"
+      },
+      "productBeforeFix": {
+        "differentBytesByStage": [
+          0,
+          16835,
+          0,
+          16771,
+          26331,
+          0,
+          26202,
+          32820,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/samila4-product-run1/run.json"
+      },
+      "productAfterFixNativePrototype": {
+        "exactFloatStages": 6,
+        "exactRgbaStages": 3,
+        "differentBytesByStage": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "report": ".cache/samila-native-prototype-20261024/runner-v3/samila4-product-run1/run.json",
+        "context": {
+          "vendor": "Apple",
+          "renderer": "Apple M2 Max",
+          "version": "4.1 Metal - 90.5"
+        },
+        "cleanup": {
+          "checked": true,
+          "errors": []
+        }
+      },
+      "productionWebgl": {
+        "status": "different",
+        "differentRgbaPixels": [
+          60406,
+          61031,
+          61158
+        ],
+        "driver": {
+          "vendor": "WebKit",
+          "renderer": "WebKit WebGL",
+          "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "unmaskedVendor": "Google Inc. (Apple)",
+          "unmaskedRenderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max, Unspecified Version)"
+        }
+      }
+    }
+  ],
+  "sourceFix": {
+    "src/engine/iteratedDensityGpu.ts": "bed294311f77b48ec399e96f1a83a25478e8f5c9b3e40d57f56b360f033c91d1",
+    "src/engine/sourceSamilaGpuDirect.ts": "975f7de43a00103078e2d19fca136dabbcb155aa605d13451c402a15f1f577ab",
+    "src/engine/sourceSamilaSplat.ts": "bdc1d60bc232b5c60bfca64b7afebf744b84c98bd9cf02bc93cd6ef92c2d4ae3"
+  },
+  "checks": {
+    "testFiles": 32,
+    "testsPassed": 386,
+    "buildV2": "passed",
+    "legacyGpuCasesPassed": 120,
+    "legacyGpuAssertions": 788,
+    "legacyGpuScope": "Existing independent Chrome shader oracle, fixed numerical tolerances; not native full-frame parity",
+    "sourcePinsRehashed": 566,
+    "originalPendingGl1282Draws": 45,
+    "subsequentUniformObservationErrors": 0,
+    "coverageRejections": ".cache/samila-native-prototype-20261024/runner-v3/cpu-rejections/report.json",
+    "webglErrors": []
+  },
+  "measurements": {
+    "originalCapture": {
+      "elapsedSeconds": 49.4898375000339,
+      "childCpuSeconds": 22.402216,
+      "scope": "Five new original processes; excludes javac and offline comparisons"
+    },
+    "finalNativePrototype": {
+      "elapsedSeconds": 8.386200499138795,
+      "childCpuSeconds": 0.38711999999999996,
+      "scope": "Five v3 runner tasks, includes input validation, renderer, complete comparison, final hash checks; child CPU is renderer only"
+    },
+    "productionWebgl": {
+      "elapsedSeconds": 16.602733208,
+      "nodeCpuMicros": {
+        "user": 7657848,
+        "system": 4077930
+      }
+    },
+    "cpuPreparation": {
+      "elapsedSeconds": 2.67856,
+      "nodeCpuMicros": {
+        "user": 2947703,
+        "system": 1186552
+      },
+      "nodeMaxRssKiB": 557024
+    },
+    "legacyGpuElapsedMs": 8946.085834,
+    "unmeasured": [
+      "process-family peak memory",
+      "browser process-family CPU",
+      "GPU time and VRAM",
+      "agent token cost"
+    ],
+    "performanceComparison": false,
+    "cachePolicy": "New processes; OS/module/driver caches not cleared. No controlled cold/warm or before/after speed claim."
+  },
+  "evidence": {
+    "webglReport": ".cache/samila-native-prototype-20261024/webgl-postfix-2026-10-24T11-36-44-333Z/report.json",
+    "legacyGpuReport": ".cache/samila-native-prototype-20261024/legacy-splat-postfix/report.json",
+    "productionPreparation": ".cache/samila-native-prototype-20261024/product-preparation-postfix/manifest.json",
+    "checks": ".cache/samila-native-prototype-20261024/product-checks.json",
+    "finalRunner": ".cache/samila-native-prototype-20261024/runner-v3/run.py"
+  },
+  "limitations": [
+    "Native prototype borrows captured peripheral GL state and target connections; no production native retained protocol has been integrated.",
+    "Three paused frames per preset do not establish animation, parameter compensation, resize, screenshot, recording or full-family acceptance.",
+    "Original pending GL1282 was consumed by observation; its origin is unknown and the observation is not established completely nonperturbing.",
+    "Original branding/enhanced export retained separately; exact comparison concerns the complete art rendering stages.",
+    "Controlled local replay harness is not an arbitrary-input production protocol. Historical failed captures and older runner limitations remain retained."
+  ],
+  "artifactHashes": {
+    ".cache/samila-native-prototype-20261024/summarize.py": {
+      "sha256": "f0bdad98df023ede4072cd7b81483733d5a18338bb6b3040dcd81c00fec56a30",
+      "bytes": 9577
+    },
+    ".cache/samila-native-prototype-20261024/product-preparation-postfix/manifest.json": {
+      "sha256": "f66d976b3ff138b95469a5447efc3a4067bc0105a3f25cec2a0d2ff5f2acabc5",
+      "bytes": 429666
+    },
+    ".cache/samila-native-prototype-20261024/webgl-postfix-2026-10-24T11-36-44-333Z/report.json": {
+      "sha256": "fe29cec978065338d6761e58b8430ffd377f0a9e105ec2f4c156886c30fb0388",
+      "bytes": 1278099
+    },
+    ".cache/samila-native-prototype-20261024/legacy-splat-postfix/report.json": {
+      "sha256": "9f2b5928ccf49c2e6623d4d143cd3b4789e5d1a0ed03337d992ee10774950abb",
+      "bytes": 412546
+    },
+    ".cache/samila-native-prototype-20261024/product-checks.json": {
+      "sha256": "ff8faaf273fb3df7428528b59e652606647516c17eaa1ed5945fd3ae8b1bbe28",
+      "bytes": 941
+    },
+    ".cache/samila-native-prototype-20261024/tests.log": {
+      "sha256": "b6c240ce930f13aafed26ea0c2aaa453f8cf90886e3e40022a8f0f8c2530a0d1",
+      "bytes": 3335
+    },
+    ".cache/samila-native-prototype-20261024/build-v2.log": {
+      "sha256": "6fa5c108302c6855753b73f89db3bdf2772fd15a19933457bef9edcfad4e5de0",
+      "bytes": 1575
+    },
+    ".cache/samila-native-prototype-20261024/compare-webgl-postfix.mjs": {
+      "sha256": "38d68eeef9c5858c4116324baa3ed51467c0fb1161c0ad4e356dcaa68b39f4bd",
+      "bytes": 14027
+    },
+    ".cache/samila-native-prototype-20261024/prepare-original.py": {
+      "sha256": "529c8d8f382d42811421f230037d3290d7d79d02154fc92a925ca742d199bba1",
+      "bytes": 3405
+    },
+    ".cache/samila-native-prototype-20261024/prepare-product-replay.mjs": {
+      "sha256": "e212546f8f22a76148a3a3fa99f3a5aeba3730f3abd2ddd01d90fe578adbfaf3",
+      "bytes": 15704
+    },
+    ".cache/samila-native-prototype-20261024/prepare-product-replay-v2.mjs": {
+      "sha256": "d80120a73c1ef27ad96b7a2120e224f5030579d05ed609ed2423efa5bc303c16",
+      "bytes": 15817
+    },
+    ".cache/samila-native-prototype-20261024/run.py": {
+      "sha256": "d25f363c1e500459fdcb61e05035e3ba5987b544b2171df0f937893f854cdaf3",
+      "bytes": 2257
+    },
+    ".cache/samila-native-prototype-20261024/replay.m": {
+      "sha256": "1f116110cd8e5194c013dd002087b3f4ca1698c83d0cb6d082212526b09a5cbc",
+      "bytes": 10495
+    },
+    ".cache/samila-native-prototype-20261024/product-preparation/manifest.json": {
+      "sha256": "c66cdd69dbb8bbc9b7684f206c5f1217962e995beab1c4dc6ad2f7e7a0b03df7",
+      "bytes": 424919
+    },
+    ".cache/samila-native-state-20261024/NativeSceneProbe.java": {
+      "sha256": "233b792e563eaa5b113c5e3a047689e9bc2a68b632d2ac12d44246955a95b362",
+      "bytes": 23153
+    },
+    ".cache/samila-native-state-20261024/run.py": {
+      "sha256": "5005c5edab9bc0177b5183caebebe422b11391784dbb653761b9f6b5cb67f6b2",
+      "bytes": 4545
+    },
+    ".cache/samila-native-prototype-20261024/runner-v2/replay.m": {
+      "sha256": "be78c44a16df2b445b3a776259824d2b0bc882a46da4eb7fa27fd48a76b49c82",
+      "bytes": 11298
+    },
+    ".cache/samila-native-prototype-20261024/runner-v2/run.py": {
+      "sha256": "ab90d9ac6f73475f2e1efb012d6d70353e62ba0a939467ffec2877f4ab741d34",
+      "bytes": 2968
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/replay.m": {
+      "sha256": "be78c44a16df2b445b3a776259824d2b0bc882a46da4eb7fa27fd48a76b49c82",
+      "bytes": 11298
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/run.py": {
+      "sha256": "74ada6515a47c795280fca73d2030b4c804e8ad79686949fe011d3743e8f3b34",
+      "bytes": 7290
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/cpu-rejections/report.json": {
+      "sha256": "fa6a55c42d0eee268167d31489e553d66c995cd2712c5ad12fb67448922efb3a",
+      "bytes": 4157
+    },
+    ".cache/samila-native-state-20261024/Samila-run5/run.json": {
+      "sha256": "1651d99a5036dfae90a04cdec1ccad6b7d46c9576b8ab8d755206fe9e3593eba",
+      "bytes": 26479
+    },
+    ".cache/samila-native-state-20261024/Samila-run5/driver.json": {
+      "sha256": "70c4fc4deb4a0c4d840736764a5dfefb83667f76899391ed4048d88ce82d40da",
+      "bytes": 104
+    },
+    ".cache/samila-native-prototype-20261024/Samila-original-run1/run.json": {
+      "sha256": "3812b225f8dbb67cb5df12b18a20695b2a52eaa7db314438d60abdd5bc2f7c62",
+      "bytes": 21539
+    },
+    ".cache/samila-native-prototype-20261024/Samila-product-run1/run.json": {
+      "sha256": "a261bfd9fcd61d088591b039e65d5844e69f89fb299cea1eb5e45c352b1d3fa4",
+      "bytes": 206255
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/Samila-product-run1/run.json": {
+      "sha256": "359e921234335ca1368b30d8708904e07892059c2073b90a14b97f67c1ee7039",
+      "bytes": 206782
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/Samila-product-run1/report.json": {
+      "sha256": "0f96ce70079fc63953a395b28331ab631ed805dcd6032825e0464087d5b9052a",
+      "bytes": 1972
+    },
+    ".cache/samila-native-prototype-20261024/postfix/Samila-run5-product-manifest.json": {
+      "sha256": "ae0bbe3c62caa51de874acdec4392c4cba60ff33ac5704ae2bd14816ce3fb784",
+      "bytes": 151995
+    },
+    ".cache/samila-native-prototype-20261024/postfix/Samila-run5-product-inputs/audit.json": {
+      "sha256": "5160eb94ec46c1fd81212ce09c096b74dc4bd420b0c80ac3798dd15b2c852f71",
+      "bytes": 26754
+    },
+    ".cache/samila-native-prototype-20261024/postfix/Samila-run5-texture-state-audit.json": {
+      "sha256": "530c8c349a473b93bafabf47d8884c4ff7241ca85d5730c1445b5215eae15d1f",
+      "bytes": 13481
+    },
+    ".cache/samila-native-state-20261024/Samila-run5/frame-0/draws.json": {
+      "sha256": "433a4ddc57d2920365ee13518f88a4086f8e31d69c66b868ea38c743acaff12a",
+      "bytes": 14673
+    },
+    ".cache/samila-native-state-20261024/Samila-run5/frame-1/draws.json": {
+      "sha256": "1df24d1cdee1f4727cde403d27cbc6bacd312afe13309c63ebde722667d9480b",
+      "bytes": 14778
+    },
+    ".cache/samila-native-state-20261024/Samila-run5/frame-2/draws.json": {
+      "sha256": "495e42a1c3c77a3be46d5cd713b399fe5634c6540dfdcfa55d6c3ea3c38cf535",
+      "bytes": 14779
+    },
+    ".cache/samila-native-state-20261024/samila1-run5/run.json": {
+      "sha256": "b36b702f02338677bebb1b8278ab02ecd0e4bd5d5186b767a5cd81f31b4dfd59",
+      "bytes": 26497
+    },
+    ".cache/samila-native-state-20261024/samila1-run5/driver.json": {
+      "sha256": "70c4fc4deb4a0c4d840736764a5dfefb83667f76899391ed4048d88ce82d40da",
+      "bytes": 104
+    },
+    ".cache/samila-native-prototype-20261024/samila1-original-run1/run.json": {
+      "sha256": "7d58430fbab68f78d4107e0ae7371f0295cccced2834a8bc9a3da4402c21d598",
+      "bytes": 21616
+    },
+    ".cache/samila-native-prototype-20261024/samila1-product-run1/run.json": {
+      "sha256": "551544d738f12e4b1985f1bcd6b47ba2865ea3bdc3f556cfe4cad4b3ede18f60",
+      "bytes": 206386
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila1-product-run1/run.json": {
+      "sha256": "e7afda7de7400a42c6f0d768ef8943dd74696256af72df8d07526f2f4707c0ff",
+      "bytes": 206913
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila1-product-run1/report.json": {
+      "sha256": "01c71e017d9c4c355093ca2cfc539931ab2399d65e328820a17e73e59222419e",
+      "bytes": 1975
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila1-run5-product-manifest.json": {
+      "sha256": "2fa1e20bde6bbeb6e30b56fb20bedc901bb6e996de03f5091c16c7c3840eada4",
+      "bytes": 169263
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila1-run5-product-inputs/audit.json": {
+      "sha256": "f63f4bb11649fc84e09bd44c1802bc920b1f8511b8699ed5321e4539a8245e0f",
+      "bytes": 26797
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila1-run5-texture-state-audit.json": {
+      "sha256": "a6ea63bcc137ee387f7d597e2e009bddee436841b084c9c0f72f6c8d5f4d5f03",
+      "bytes": 13483
+    },
+    ".cache/samila-native-state-20261024/samila1-run5/frame-0/draws.json": {
+      "sha256": "0d7cb8c341178d5d3115828f85275b141eda192073523e00e6b6b86585d0917d",
+      "bytes": 14760
+    },
+    ".cache/samila-native-state-20261024/samila1-run5/frame-1/draws.json": {
+      "sha256": "7a09debe4b095e858d92520815daa4e6fe52d461033d9edce9276f2bb3932522",
+      "bytes": 14846
+    },
+    ".cache/samila-native-state-20261024/samila1-run5/frame-2/draws.json": {
+      "sha256": "2852a0d15f602fdce8a3ce5518ec5f8e077a39d396c0b806dd964437711106f6",
+      "bytes": 14847
+    },
+    ".cache/samila-native-state-20261024/samila2-run5/run.json": {
+      "sha256": "0bdee6e38a65a84cbdcf7c3beca36897a60389ec952bac7d537705749bea24b9",
+      "bytes": 26486
+    },
+    ".cache/samila-native-state-20261024/samila2-run5/driver.json": {
+      "sha256": "70c4fc4deb4a0c4d840736764a5dfefb83667f76899391ed4048d88ce82d40da",
+      "bytes": 104
+    },
+    ".cache/samila-native-prototype-20261024/samila2-original-run1/run.json": {
+      "sha256": "e1f39d1ab7b301cf8d5977b8bdbfbfaf9476376ec5d3718e7c5c35f4d7af240d",
+      "bytes": 21616
+    },
+    ".cache/samila-native-prototype-20261024/samila2-product-run1/run.json": {
+      "sha256": "32f86d928d6c05abe24ff8467a67d3842d830b54d108cb827b1566a557dc4f38",
+      "bytes": 206374
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila2-product-run1/run.json": {
+      "sha256": "c8e54669f2af508c83370e8b32604d4c45177e495ea13b48a2934bcea72a08ee",
+      "bytes": 206903
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila2-product-run1/report.json": {
+      "sha256": "0845a0acfe2db9614dbc7d02e0c4a0f8cb754247fecce2041900471b334d4b7b",
+      "bytes": 1972
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila2-run5-product-manifest.json": {
+      "sha256": "861fd24201984b5b1a6942db89990f9cbb1ba2941a3d5f56d94c646154962edd",
+      "bytes": 158309
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila2-run5-product-inputs/audit.json": {
+      "sha256": "38a0fa683571ceae63b7d92d7256efbb5fca6be3455f8ff4d5baf5f3734042b8",
+      "bytes": 26799
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila2-run5-texture-state-audit.json": {
+      "sha256": "342732d42b4622fd954b57807b447671264450fdf067a9ef100c698324695513",
+      "bytes": 13483
+    },
+    ".cache/samila-native-state-20261024/samila2-run5/frame-0/draws.json": {
+      "sha256": "e95252caa37891b2c972c175e98fa0baf9ff257573d8cecc5f36a34baf4152b5",
+      "bytes": 14680
+    },
+    ".cache/samila-native-state-20261024/samila2-run5/frame-1/draws.json": {
+      "sha256": "8a93570eb647e0610ddf192c2663dd2a6122ed50918473bc864270f5e14d7eda",
+      "bytes": 14801
+    },
+    ".cache/samila-native-state-20261024/samila2-run5/frame-2/draws.json": {
+      "sha256": "ce8f4308c5868078836f1ecb3cbef0f3fc5ca0c7a14ae09d943d6d7b5b213386",
+      "bytes": 14799
+    },
+    ".cache/samila-native-state-20261024/samila3-run5/run.json": {
+      "sha256": "741336ea57aa05b1c6deb3007c552ab470537f08836fbe590fe05edcf9ccb59a",
+      "bytes": 26478
+    },
+    ".cache/samila-native-state-20261024/samila3-run5/driver.json": {
+      "sha256": "70c4fc4deb4a0c4d840736764a5dfefb83667f76899391ed4048d88ce82d40da",
+      "bytes": 104
+    },
+    ".cache/samila-native-prototype-20261024/samila3-original-run1/run.json": {
+      "sha256": "e738504ad0ea4303a535216517421461a2a8311912f8ff600ea9809eadd1b435",
+      "bytes": 21627
+    },
+    ".cache/samila-native-prototype-20261024/samila3-product-run1/run.json": {
+      "sha256": "3714a0a7228c9823cf17097a80cdad5be1ae12266701e1df8072a1e681c97239",
+      "bytes": 206377
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila3-product-run1/run.json": {
+      "sha256": "885c9e26892b1eed5c4d670dec7b0c094e8edf216728b84bfda7296ea1178de7",
+      "bytes": 206903
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila3-product-run1/report.json": {
+      "sha256": "0845a0acfe2db9614dbc7d02e0c4a0f8cb754247fecce2041900471b334d4b7b",
+      "bytes": 1972
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila3-run5-product-manifest.json": {
+      "sha256": "53072bbde1727efab2942fb584131dcbaf06727ac187aaadc8321dd0b3addde5",
+      "bytes": 159063
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila3-run5-product-inputs/audit.json": {
+      "sha256": "217919f2014b757ce0335bf7a5ce377e685fcffd9e3ab010c535125651b1a350",
+      "bytes": 26800
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila3-run5-texture-state-audit.json": {
+      "sha256": "995821f8eca4335559f326ff57dddb13291c7bfc6a6edf92622f59164a00362e",
+      "bytes": 13483
+    },
+    ".cache/samila-native-state-20261024/samila3-run5/frame-0/draws.json": {
+      "sha256": "a4f068a9a20c23855a677bfaeca586abb582cafb157c8a5f828bdb3448309bec",
+      "bytes": 14820
+    },
+    ".cache/samila-native-state-20261024/samila3-run5/frame-1/draws.json": {
+      "sha256": "f2923ebd007dd848c23c16eb7955b71fc360594d6dc85e80c441c1194002c431",
+      "bytes": 14908
+    },
+    ".cache/samila-native-state-20261024/samila3-run5/frame-2/draws.json": {
+      "sha256": "4e886757cd43b87a04e6f028b8e58c1fb59cb45561e79794f2d02a224a7cf3ab",
+      "bytes": 14907
+    },
+    ".cache/samila-native-state-20261024/samila4-run5/run.json": {
+      "sha256": "c1e2cf1cf68b0a8edd10e7a6da08be7dff3df961bf51e1c22e4011277cb3877a",
+      "bytes": 26478
+    },
+    ".cache/samila-native-state-20261024/samila4-run5/driver.json": {
+      "sha256": "70c4fc4deb4a0c4d840736764a5dfefb83667f76899391ed4048d88ce82d40da",
+      "bytes": 104
+    },
+    ".cache/samila-native-prototype-20261024/samila4-original-run1/run.json": {
+      "sha256": "b591e76d69448970067af359332ae29271595288f8778a6d4c91e9fd8bac36de",
+      "bytes": 21627
+    },
+    ".cache/samila-native-prototype-20261024/samila4-product-run1/run.json": {
+      "sha256": "955ee4a7e7cb406de69f34c18fb0e951045e929d5c79096ead56a606c02b60eb",
+      "bytes": 206386
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila4-product-run1/run.json": {
+      "sha256": "5d7bc554f79f1051e4356b6107f10bcdf910c5a0a6c5a9318f9b5f081d594254",
+      "bytes": 206903
+    },
+    ".cache/samila-native-prototype-20261024/runner-v3/samila4-product-run1/report.json": {
+      "sha256": "0845a0acfe2db9614dbc7d02e0c4a0f8cb754247fecce2041900471b334d4b7b",
+      "bytes": 1972
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila4-run5-product-manifest.json": {
+      "sha256": "61091fa5a686fee1baa8d4df85e7cb8b0777a823fb51579454619cd5fee1afc2",
+      "bytes": 158569
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila4-run5-product-inputs/audit.json": {
+      "sha256": "83c54b6094c6912d0de50f6fddc5531eebd3cc8c3b5e646e3a2a047649ec0f47",
+      "bytes": 26798
+    },
+    ".cache/samila-native-prototype-20261024/postfix/samila4-run5-texture-state-audit.json": {
+      "sha256": "5b3c367fe5764132b2ce738cf9dcae17516fef4fd8ce500e43267fb17f2e13b3",
+      "bytes": 13483
+    },
+    ".cache/samila-native-state-20261024/samila4-run5/frame-0/draws.json": {
+      "sha256": "6aa2102072acb6d5ac6a32eaf5ab5c3d728b9e41c411fbc0227876d2f4a257ce",
+      "bytes": 14714
+    },
+    ".cache/samila-native-state-20261024/samila4-run5/frame-1/draws.json": {
+      "sha256": "4fe1257677abd4335bc3c9b020a58402d7119c6e6c286d51534f18f36b6452fa",
+      "bytes": 14802
+    },
+    ".cache/samila-native-state-20261024/samila4-run5/frame-2/draws.json": {
+      "sha256": "12902c42e0b4982ead809b9e9410c6a5f7c3df7f654a3db8813520c72fd688e1",
+      "bytes": 14802
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/artifact-hashes.json": {
+      "sha256": "3f4b7179ed7a137539250ccbbeb490e1234d2119301e55fef813bfa1b49c1665",
+      "bytes": 749
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/audit.json": {
+      "sha256": "23a5202ee9ab3538fe54acb9e5ccb12285e005f198e505d5a6c9abb459d6be1f",
+      "bytes": 93297
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/noise-uniform.diff": {
+      "sha256": "54ae0745baaaab374c7d7d65ad14f557cdc0c08a22a6eb8da942cf2d189e8850",
+      "bytes": 2038
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/verify-postfix.py": {
+      "sha256": "d84db4cd095d7e756d66e9f08c94437565191223fe1ffcad138163f908aaf010",
+      "bytes": 9578
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/POSTFIX-ADDENDUM.zh-CN.md": {
+      "sha256": "774462e4a20f9b485ff3f3fce05aa260a467a8b65a007a3a807aecd57d3ace4d",
+      "bytes": 7553
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/postfix-audit.json": {
+      "sha256": "cf045e532635e5b2682b8b72874d6015c1860f0f78da75b1a374c0358bb8b3a9",
+      "bytes": 41721
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/README.zh-CN.md": {
+      "sha256": "637b83dbfe0cb270a62e1501a080e522e78bddae20d43e923171d358b9767c38",
+      "bytes": 13461
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/postfix-artifact-hashes.json": {
+      "sha256": "e38e564fd8700e4ef520ccecf7584d38d11e01eaecf7b3268f6830b2eb830cd9",
+      "bytes": 2051
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/verify.py": {
+      "sha256": "f24eed9be320bb3ea85e0c8634833085f61ec984c059ac186b347a03bd111175",
+      "bytes": 13764
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/snapshot-check.json": {
+      "sha256": "264854797559bce33ab49ac0686aa19d37db8ad3b45b0f08025d9e5a8c8c3794",
+      "bytes": 140
+    },
+    ".cache/samila-native-prototype-20261024/independent-audit/postfix-snapshot.json": {
+      "sha256": "0f00d2b0482bf0ddd50c11113ffd38ca95127906f3c5815ee70704e2a5088ded",
+      "bytes": 149
+    },
+    ".cache/samila-native-prototype-20261024/Samila-product-noise-uniform-run1/run.json": {
+      "sha256": "820398dbef4450a3e924bf4d5277c5e09ce9d488d182326b06ef490735f859d8",
+      "bytes": 206400
+    },
+    ".cache/samila-native-prototype-20261024/Samila-product-single-draw-run1/run.json": {
+      "sha256": "0d75190eb73dcf0b0812813e891efd8cee3d2e3689ba8e7d31266b6a7003be38",
+      "bytes": 206407
+    },
+    ".cache/samila-native-prototype-20261024/Samila-product-run1/float-diagnosis.json": {
+      "sha256": "f4fa7e9b770091abc42f119f9525201da3f215f3a69978663bea913b98f86c03",
+      "bytes": 70307
+    }
+  }
+}

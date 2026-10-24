@@ -4,7 +4,7 @@ import {sourceDensityPointDiameter,sourceDensitySplatPixelTests} from './sourceD
 import {compileSourceSamilaDirect,type SourceSamilaDrawObserver} from './sourceSamilaGpuDirect';
 import {SourceSamilaGpuResources,sourceSamilaDirectGpuPlan} from './sourceSamilaGpuResources';
 import {validateSourceSamilaSamplingBatch} from './sourceSamilaSampling';
-import {sourceSamilaNoiseLut,sourceSamilaPaletteLut,sourceSamilaPointDiameter} from './sourceSamilaSplat';
+import {sourceSamilaNoiseLut,sourceSamilaPaletteLut,sourceSamilaPointDiameter,SOURCE_SAMILA_NOISE_GLSL,SOURCE_SAMILA_NOISE_UNIFORMS} from './sourceSamilaSplat';
 import {SAMILA_NDC_POSITION_GLSL} from './samilaProjection';
 import {isCapturedDensityView,type PreparedDensityView} from './densityPresentation';
 import type {DensityBounds,DensityProjection} from '../types';
@@ -134,12 +134,12 @@ if(densitySplat){vec2 p=quadSplat?localPoint:gl_PointCoord*2.-1.;float r2=dot(p,
 mass=quadSplat?(1.-smoothstep(-.75,.75,(sqrt(r2)-1.)*max(diameter*.5,.4)))*exp(-.45*r2):1.-smoothstep(.75,1.,r2);
 }else mass=clamp(radius+.5-length(gl_FragCoord.xy-center),0.,1.)*alpha;result=vec4(tint*mass,mass);}`;
 
-const SOURCE_DRAW_VERTEX=HEADER+TRANSFORM+`
-uniform sampler2D states,noiseLUT,palette;uniform usampler2D counters;uniform int stateWidth,particleOffset;uniform ivec2 size;uniform float radius,colorPhase;uniform bool quadSplat,usePaletteLut;
+const SOURCE_DRAW_VERTEX=HEADER+TRANSFORM+SOURCE_SAMILA_NOISE_GLSL+`
+uniform sampler2D states,palette;uniform usampler2D counters;uniform int stateWidth,particleOffset;uniform ivec2 size;uniform float radius,colorPhase;uniform bool quadSplat,usePaletteLut;
 out vec2 localPoint;flat out vec3 tint;flat out float localRadius,diameter;
 void main(){int id=particleOffset+gl_InstanceID;ivec2 at=ivec2(id%stateWidth,id/stateWidth);vec4 particle=texelFetch(states,at,0);vec3 p=transformed(particle.xyz);vec2 ndc;
 if(invalidPosition(particle,p,texelFetch(counters,at,0).g)||!densityPosition(p,ndc)){gl_Position=vec4(2.,2.,0.,1.);gl_PointSize=1.;localPoint=vec2(0.);localRadius=0.;diameter=1.;tint=vec3(0.);return;}
-float n=texture(noiseLUT,ndc*.1+.5).r;n=isnan(n)?0.:n;n*=.5;float u=clamp((n+.5*.85)/(.5*1.7),0.,1.);tint=usePaletteLut?texture(palette,vec2(u,.5)).rgb:.5+.5*cos(6.283185307179586*(vec3(u)-vec3(0.,1./3.,2./3.))-colorPhase);
+float u=sourceSamilaNoisePaletteCoordinate(ndc);tint=usePaletteLut?texture(palette,vec2(u,.5)).rgb:.5+.5*cos(6.283185307179586*(vec3(u)-vec3(0.,1./3.,2./3.))-colorPhase);
 vec2 corners[6]=vec2[6](vec2(-1.,-1.),vec2(1.,-1.),vec2(-1.,1.),vec2(-1.,1.),vec2(1.,-1.),vec2(1.,1.));
 diameter=quadSplat?max(radius*.6,.8):max(radius,1.);localRadius=quadSplat?1.:min(radius,1.);localPoint=quadSplat?corners[gl_VertexID]:vec2(0.);gl_PointSize=max(radius,1.);gl_Position=vec4(ndc+(quadSplat?localPoint*diameter*.5*2./vec2(size):vec2(0.)),0.,1.);}`;
 const SOURCE_DRAW_FRAGMENT=HEADER+`
@@ -440,7 +440,7 @@ export class IteratedDensityGpu {
 
   if(cfg.record){
    const sourceSplat=job.samilaSplat,pointSplat=sourceSplat??job.densitySplat,p=sourceSplat?this.program('source-samila-draw',SOURCE_DRAW_VERTEX,SOURCE_DRAW_FRAGMENT):this.program('draw',DRAW_VERTEX,DRAW_FRAGMENT);gl.useProgram(p.value);this.target(r.ink,r.width,r.height);this.transform(p,job,options.projection);this.setBounds(p,bounds);this.iv(p,'size',r.width,r.height);this.i(p,'count',cfg.count);this.f(p,'radius',pointSplat?.radius??cfg.pointSize/2);this.i(p,'densitySplat',job.densitySplat?1:0);this.i(p,'mapCosine',job.densitySplat?.model==='map-splat-1.7.8'?1:0);this.i(p,'quadSplat',pointSplat?.path==='quad'?1:0);this.i(p,'usePaletteLut',cfg.sourcePaletteLut?1:0);this.f(p,'alpha',cfg.alpha);this.f(p,'metricMin',cfg.metricMin);this.f(p,'metricRange',cfg.metricMax-cfg.metricMin);this.i(p,'metricMode',cfg.metricMode==='robust'?1:0);this.i(p,'colorMode',['step','index','radius','angle','height','noise'].indexOf(cfg.color));this.f(p,'colorSpeed',cfg.colorSpeed);this.f(p,'colorPhase',cfg.colorPhase);this.f(p,'paletteCycles',job.palette.cycles);this.f(p,'paletteOffset',job.palette.offset);
-   if(sourceSplat){this.texture(r.sourcePalette!,2);this.i(p,'palette',2);this.texture(r.sourceNoise!,3);this.i(p,'noiseLUT',3);}else{if(job.densitySplat?.model!=='map-splat-1.7.8')this.prepareDrawPalette(job);else this.texture(r.palette,2);this.i(p,'palette',2);this.i(p,'symmetryLut',job.symmetryPalette?.model==='source-rgb1024'?1:0);this.texture(r.noise,3);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,256,1,gl.RED_INTEGER,gl.UNSIGNED_BYTE,createNoisePermutation(cfg.seed));this.i(p,'noisePermutation',3);}
+   if(sourceSplat){this.texture(r.sourcePalette!,2);this.i(p,'palette',2);this.texture(r.sourceNoise!,3);this.i(p,'noiseLUT',3);for(const [name,value]of Object.entries(SOURCE_SAMILA_NOISE_UNIFORMS))this.f(p,name,value);}else{if(job.densitySplat?.model!=='map-splat-1.7.8')this.prepareDrawPalette(job);else this.texture(r.palette,2);this.i(p,'palette',2);this.i(p,'symmetryLut',job.symmetryPalette?.model==='source-rgb1024'?1:0);this.texture(r.noise,3);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,256,1,gl.RED_INTEGER,gl.UNSIGNED_BYTE,createNoisePermutation(cfg.seed));this.i(p,'noisePermutation',3);}
    gl.bindVertexArray(r.drawVao);this.texture(this.stateTexture(),0);this.i(p,'states',0);this.texture(this.counterTexture(),1);this.i(p,'counters',1);this.i(p,'stateWidth',r.tw);gl.enable(gl.BLEND);gl.blendEquation(gl.FUNC_ADD);gl.blendFunc(gl.ONE,gl.ONE);
    try{for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);this.i(p,'particleOffset',offset);gl.drawArraysInstanced(pointSplat?.path==='points'?gl.POINTS:gl.TRIANGLES,0,pointSplat?.path==='points'?1:6,Math.min(CHUNK,cfg.count-offset));}}finally{gl.disable(gl.BLEND);gl.bindVertexArray(null);}
   }
