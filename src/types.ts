@@ -1,4 +1,5 @@
 import type {DomainPaletteEditorState} from './engine/domainPaletteEditing';
+import type {ImplicitPaletteEditorState} from './engine/implicitPaletteEditing';
 import type {SourceFractalRecordingFrameInput,SourceFractalRecordingFrame} from './engine/sourceFractalRecording';
 import type {SourceFractalZoomTarget} from './engine/sourceFractalZoom';
 import type {SourceFractalDocumentPayload,SourceFractalActionsPayload} from './engine/sourceFractalDocument';
@@ -255,6 +256,8 @@ export interface SceneDocument {
   /** Raw source colors; cold Apply retains ARGB and hot commands use the
    * separate runtime parser without changing this authored payload. */
   implicitSourcePalette?: {colors:string[]};
+  /** Open-project palette controls; independent of cold/current runtime state. */
+  implicitPaletteEditor?: ImplicitPaletteEditorState;
   surfaceSourcePalette?: SourceSurfacePalette;
   /** Canonical source mesh settings, independent of local mesh controls. */
   surfaceSource?: SourceSurfaceMeshConfiguration;

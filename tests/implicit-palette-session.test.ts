@@ -1,3 +1,4 @@
+import {sourcePaletteRuntimeScene} from '../src/engine/sourcePaletteRuntimeScene';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {SourceImplicitRecordingSession} from '../src/engine/sourceImplicitRecording';
 import {generateScene} from '../src/engine/temporal';
@@ -64,10 +65,10 @@ describe('Implicit cold recording reset and controlled continuation',()=>{
   const f=fixture(),cold=run(f),staged=structuredClone(f.scene);staged.parameters.unapplied=123;staged.equations.f='x';staged.timeline.tracks=[];staged.implicitSourcePalette={colors:['#80ff0000']};const update=hot(f,['#8000ff00'],staged);
   vi.spyOn(geometry,'generateImplicit').mockImplementationOnce(()=>{throw Error('warmup failure');});expect(()=>f.owner.beginRecording(staged,update.context,f.options)).toThrow('warmup failure');expect(f.owner.matchesCompletedPrimary(staged,update.context)).toBe(true);
   expect(run(f,staged,update.context).implicitControls).toMatchObject({revision:2,resetRevision:1});
-  const start=f.owner.beginRecording(staged,update.context,f.options);expect(start.scene).toEqual(staged);expect(start.warmup.implicitControls).toMatchObject({revision:2,applyRevision:1,resetRevision:2});expect(start.warmup.sourceImplicitParameters?.values).not.toHaveProperty('unapplied');
+  const start=f.owner.beginRecording(staged,update.context,f.options);expect(start.scene).toEqual(sourcePaletteRuntimeScene(staged));expect(start.warmup.implicitControls).toMatchObject({revision:2,applyRevision:1,resetRevision:2});expect(start.warmup.sourceImplicitParameters?.values).not.toHaveProperty('unapplied');
   expect(start.warmup.positions).toEqual(cold.positions);expect(start.warmup.sourceImplicitPresentation!.fillColors).toEqual(cold.sourceImplicitPresentation!.fillColors);expect(start.clock.encodedFrames).toBeGreaterThan(0);expect(start.context.implicitControls).toEqual({sessionId:'palette-test',acknowledgedRevision:2,commands:[]});
   const frame=f.owner.nextRecordingFrame(start.handle,1,12);expect(frame.implicitControls).toEqual(start.warmup.implicitControls);
-  const stop=f.owner.finishRecording(start.handle,1000);expect(stop.scene).toEqual(staged);expect(stop.context.implicitControls).toEqual(start.context.implicitControls);expect(stop.preview.implicitControls).toEqual(start.warmup.implicitControls);expect(stop.preview.sourceCameraFrame?.frameIndex).toBe(1);f.owner.reset();
+  const stop=f.owner.finishRecording(start.handle,1000);expect(stop.scene).toEqual(sourcePaletteRuntimeScene(staged));expect(stop.context.implicitControls).toEqual(start.context.implicitControls);expect(stop.preview.implicitControls).toEqual(start.warmup.implicitControls);expect(stop.preview.sourceCameraFrame?.frameIndex).toBe(1);f.owner.reset();
  });
  it('does not revive old unacknowledged hot colors after recording and keeps the held queue for new hot colors/capture/pause',()=>{
   const f=fixture();run(f);const staged=structuredClone(f.scene);staged.implicitSourcePalette={colors:['#80ff0000']};const update=hot(f,['#8000ff00'],staged),start=f.owner.beginRecording(staged,update.context,f.options),stop=f.owner.finishRecording(start.handle,1000);
@@ -76,7 +77,7 @@ describe('Implicit cold recording reset and controlled continuation',()=>{
   expect(original.sourceImplicitPresentation!.fillColors).toEqual(stop.preview.sourceImplicitPresentation!.fillColors);expect(original.sourceImplicitPresentation!.fillColors).not.toEqual(update.output.sourceImplicitPresentation!.fillColors);
   const next={...paused,implicitControls:{sessionId:'palette-test',acknowledgedRevision:2,commands:[{kind:'palette' as const,revision:3,colors:['#80abcdef']}]}};
   const changed=run(f,stop.scene,next);expect(changed.implicitControls).toMatchObject({revision:3,applyRevision:1,resetRevision:2});expect(changed.sourceCameraFrame).toEqual(stop.preview.sourceCameraFrame);expect(changed.implicitLive?.renderKind).toBe('snapshot');
-  const capture=f.owner.capturePaused(stop.scene,next,{width:64,height:48},1);expect(capture.scene).toEqual(staged);expect(capture.capture.implicitControls).toEqual(changed.implicitControls);expect(capture.preview.sourceCameraFrame).toEqual(changed.sourceCameraFrame);
+  const capture=f.owner.capturePaused(stop.scene,next,{width:64,height:48},1);expect(capture.scene).toEqual(sourcePaletteRuntimeScene(staged));expect(capture.capture.implicitControls).toEqual(changed.implicitControls);expect(capture.preview.sourceCameraFrame).toEqual(changed.sourceCameraFrame);
   const resumed=f.owner.setPaused(stop.scene,next,false,2000),context={...resumed,implicitControls:{sessionId:'palette-test',acknowledgedRevision:3,commands:[]},implicitLive:{...resumed.implicitLive!,clock:{paused:false,timestampMs:2125}}};
   const continued=run(f,stop.scene,context);expect(continued.sourceCameraFrame).toMatchObject({frameIndex:1,sceneTime:.375,rawDt:.125});expect(continued.implicitControls).toEqual(changed.implicitControls);f.owner.reset();
  });

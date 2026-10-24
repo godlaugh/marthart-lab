@@ -1292,5 +1292,6 @@
   "源弹跳模拟帧率必须为 1–120 的整数": "Bouncing simulation FPS must be an integer from 1 to 120",
   "请先应用场景以重新建立预览。": "Apply the scene to rebuild its preview first.",
   "源色板保留颜色原文与顺序；热更新使用完整色表。空列表或省略色板不会改变当前配色；应用场景后，省略值使用四色默认，空列表使用白色。": "The source palette retains its original text and order. Live updates use the full color list. An empty or omitted palette keeps the current colors; after Apply Scene, omission uses four default colors and an empty list uses white.",
-  "空源色板暂不改变当前配色；应用场景后使用白色纹理。": "An empty source palette keeps the current colors until Apply Scene, which uses a white texture."
+  "空源色板暂不改变当前配色；应用场景后使用白色纹理。": "An empty source palette keeps the current colors until Apply Scene, which uses a white texture.",
+  "源 Implicit 运行配置不读取通用 color；颜色来自根 palette，原对象保留": "Source Implicit runtime configuration reads colors from the root palette, not the shared color fields. The original object is retained."
 }

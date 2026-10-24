@@ -1,3 +1,4 @@
+import {sourcePaletteRuntimeScene} from '../src/engine/sourcePaletteRuntimeScene';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {implicitCameraFrame} from '../src/engine/sourceImplicitResponse';
 import {Generator} from '../src/engine/client';
@@ -31,10 +32,10 @@ async function setup(name='fps4-varying'){
 describe('Implicit public recording client',()=>{
  for(const name of ['fps4-varying','empty-queue'])it('delivers original ordinals and physical dimensions, then restores and records again: '+name,async()=>{
   const f=await setup(name),start=await f.generator.beginSourceRecording(f.output,f.options);
-  expect(start.scene).toEqual(f.scene);expect(start.warmup).toMatchObject({width:384,height:288,implicitRecording:{displayFrame:0,warmup:true}});
+  expect(start.scene).toEqual(sourcePaletteRuntimeScene(f.scene));expect(start.warmup).toMatchObject({width:384,height:288,implicitRecording:{displayFrame:0,warmup:true}});
   if(start.clock.completionReason!=='animation-queue')throw Error('clock');expect(start.clock.updates).toBe(f.ref.frames.length);
   for(let i=1;i<start.clock.updates;i++){const out=await f.generator.nextSourceRecordingFrame(start.handle,i,f.ref.input.steps[i].actualFrameRate);expect(out.sourceCameraFrame).toMatchObject({sceneTime:f.ref.frames[i].sceneTime,viewport:{logicalWidth:384,logicalHeight:288}});}
-  const stop=await f.generator.finishSourceRecording(start.handle);expect(stop.preview.type).toBe('geometry');expect(stop.context.time).toBe(f.ref.frames.at(-1)!.sceneTime);expect(stop.scene).toEqual(f.scene);expect(draw.created).toBe(1);expect(draw.disposed).toBe(1);
+  const stop=await f.generator.finishSourceRecording(start.handle);expect(stop.preview.type).toBe('geometry');expect(stop.context.time).toBe(f.ref.frames.at(-1)!.sceneTime);expect(stop.scene).toEqual(sourcePaletteRuntimeScene(f.scene));expect(draw.created).toBe(1);expect(draw.disposed).toBe(1);
   const again=await f.generator.beginSourceRecording(stop.preview,f.options);expect(again.warmup.implicitRecording?.displayFrame).toBe(0);await f.generator.finishSourceRecording(again.handle);f.generator.dispose();
  });
  it('retries client drawing without another numerical update and rejects changed observation',async()=>{

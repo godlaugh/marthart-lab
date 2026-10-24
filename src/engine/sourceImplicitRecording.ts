@@ -1,4 +1,5 @@
 import {createSourceImplicitTimeline} from './sourceImplicitTimeline';
+import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {sourceGeometryCapturePlan,type SourceGeometryCapturePreparation} from './sourceGeometryCapture';
 import {SourceSceneHostClock} from './sourceSceneHostClock';
 import {sameSourceRecordingValue} from './sourceRecordingValue';
@@ -46,7 +47,7 @@ export class SourceImplicitRecordingSession {
   if(context.implicitControls){if(this.control?.sessionId!==context.implicitControls.sessionId||output.implicitControls?.sessionId!==this.control.sessionId)throw Error('隐式色板主预览缺少已提交的控制状态');}
   else this.control=undefined;
   this.clearContinuation();
-  this.primary={scene,context,anchor:structuredClone(this.control?.coldScene??scene),input:snapshotGenerationInput(context)};
+  this.primary={scene,context,anchor:structuredClone(this.control?.coldScene??sourcePaletteRuntimeScene(scene)),input:snapshotGenerationInput(context)};
  }
  /** Control preparation is transactional. Neither staged author fields nor
   * failed rendering may replace the effective scene or the cold reset anchor. */
@@ -106,7 +107,7 @@ export class SourceImplicitRecordingSession {
   check(context.isCancelled);const observed=rate(options.actualFrameRate),fps=options.simulationFps;
   if(!Number.isSafeInteger(fps)||fps<1||fps>120)throw Error('隐式录制帧率必须为 1–120 的整数');
   const control=this.control,prepared=control?.prepareRecordingReset(context.isCancelled);
-  const author=structuredClone(prepared?.current??this.primary!.anchor),callerAuthor=structuredClone(scene),camera=ordinarySourceCameraInitial(author);
+  const author=structuredClone(prepared?.current??this.primary!.anchor),callerAuthor=structuredClone(sourcePaletteRuntimeScene(scene)),camera=ordinarySourceCameraInitial(author);
   if(!camera||author.timeline.schedule!=='ordinary-camera-sequence-v1')throw Error('隐式录制缺少源相机与顺序队列');
   const layout=resolveOrdinarySourceCameraTimeline(camera,author.timeline.tracks,fps,{isCancelled:context.isCancelled,particleActions:'implicit'});
   if(layout.diagnostics.some(d=>d.code==='noncamera-clock'||d.code==='tracking-target-ignored'))throw Error('隐式录制尚未实现此非相机动作，不能忽略后继续录制');
@@ -166,7 +167,7 @@ export class SourceImplicitRecordingSession {
  }
  private continued(scene:SceneDocument,context:GenerationInput):Recording {
   const record=this.continuation,live=context.implicitLive;validateSourceImplicitLiveContext(live!);
-  const sameAuthor=record?.control?record.control===this.control&&context.implicitControls?.sessionId===record.control.sessionId:sameSourceRecordingValue(scene,record?.callerAuthor);
+  const sameAuthor=record?.control?record.control===this.control&&context.implicitControls?.sessionId===record.control.sessionId:sameSourceRecordingValue(sourcePaletteRuntimeScene(scene),record?.callerAuthor);
   if(this.recording||this.busy||!record||record.liveFailed||record.primary.implicitLive?.sessionId!==live!.sessionId||!sameAuthor)throw Error('隐式继续播放需要原录制持有的场景，不能重建或套用到其它配置');
   if(context.sourceViewport?.target!=='primary'||context.domainLive||context.surfaceLive||context.fractalLive||context.perlinLive||context.rootsLive||context.samilaLive||context.mapLive||context.symmetryLive||context.fractalRecording)throw Error('隐式继续播放只接受自身主视口');
   record.liveClock!.assertPaused(live!.clock.paused);return record;
@@ -182,7 +183,7 @@ export class SourceImplicitRecordingSession {
    const frame=snapshot?record.queue.display():record.queue.step(record.liveClock!.update(live.clock),{actualFrameRate:observed});
    record.frame=frame;record.actualFrameRate=observed;
    const output=this.display(record,frame,context,false,observed,context.isCancelled,prepared);output.implicitLive!.renderKind=snapshot?'snapshot':'update';
-   const anchor=structuredClone(record.control?.coldScene??record.author),input=snapshotGenerationInput(context),callerAuthor=structuredClone(scene);
+   const anchor=structuredClone(record.control?.coldScene??record.author),input=snapshotGenerationInput(context),callerAuthor=structuredClone(sourcePaletteRuntimeScene(scene));
    commit?.();record.callerAuthor=callerAuthor;
    this.primary={scene,context,anchor,input};return output;
   }catch(error){record.liveFailed=true;throw error;}finally{this.busy=false;this.cancel=undefined;}

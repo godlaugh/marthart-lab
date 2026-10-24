@@ -3,6 +3,8 @@ import {Generator} from '../src/engine/client';
 import {GenerationQueue} from '../src/engine/generationQueue';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
+import {implicitPaletteEditorState} from '../src/engine/implicitPaletteEditing';
+import {sourcePaletteRuntimeScene} from '../src/engine/sourcePaletteRuntimeScene';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../src/types';
 import type {GenerationRequest,GenerationResponse} from '../src/engine/generationProtocol';
 import native from './fixtures/source-implicit-presentation/recording-clock.json';
@@ -13,6 +15,9 @@ vi.mock('../src/engine/renderGeometryRecording',()=>({GeometryRecordingRenderer:
  async render(output:Extract<SceneOutput,{type:'geometry'}>){return{type:'raster',width:this.size.width,height:this.size.height,pixels:new Uint8ClampedArray(this.size.width*this.size.height*4),stats:output.stats,implicitControls:output.implicitControls,implicitRecording:output.implicitRecording,sourceImplicitParameters:output.sourceImplicitParameters,sourceCameraFrame:output.sourceCameraFrame,formulaPresentation:output.formulaPresentation};}
  dispose(){}
 }}));
+// Stop after real capture admission. The native App workflow verifies pixels;
+// this fixture checks that a drawing failure retains the validated capability.
+vi.mock('../src/engine/renderGeometryCapture',()=>({renderGeometryCapture:async()=>{throw Error('native capture fixture failed after admission');}}));
 let worker:{onmessage?:(event:MessageEvent<GenerationRequest>)=>void;postMessage:(data:GenerationResponse,options:{transfer:Transferable[]})=>void},port:Transport;
 let corrupt:((message:GenerationResponse)=>void)|undefined,hold=false,held:GenerationResponse[]=[];
 class Transport{
@@ -37,13 +42,34 @@ const hot=(context:GenerationInput,revision:number,colors=['#aabbcc']):Generatio
 const rgba=(output:SceneOutput)=>{if(output.type!=='geometry')throw Error('geometry');return [...output.sourceImplicitPresentation!.fillColors.slice(0,4)];};
 const color=(r:number,g:number,b:number,a=255)=>[r,g,b,a].map(v=>Math.fround(v/255));
 describe('Implicit control public client and queue transport',()=>{
+ it('admits a held capture after restoring the author editor state and retains it if drawing fails',async()=>{
+  const f=await setup();expect(f.scene.implicitPaletteEditor).toBeDefined();
+  try{
+   const start=await f.g.beginSourceRecording(f.output,f.options),stop=await f.g.finishSourceRecording(start.handle,1000);
+   await f.g.setImplicitPaused(stop.preview,true,1100);
+   const output=await f.g.generate(f.scene,{...stop.context,implicitLive:{...stop.context.implicitLive!,clock:{paused:true,timestampMs:1200}}});
+   await expect(f.g.captureImplicitPaused(output,{width:65,height:49})).rejects.toMatchObject({message:'native capture fixture failed after admission',previewRetained:true});
+   expect(port.terminated).toBe(false);
+  }finally{f.g.dispose();}
+ });
+ it('projects the author and nested Apply before a real Worker request without changing authored editor state',async()=>{
+  const f=fixture();f.scene.implicitPaletteEditor={...implicitPaletteEditorState(f.scene),colorCount:19,manualColors:['#80112233']};
+  const g=new Generator();try{
+   const output=await g.generate(f.scene,f.context);
+   const request=port.sent.find((entry):entry is Extract<GenerationRequest,{operation:'generate'}>=>entry.operation==='generate')!;
+   expect(request.scene).not.toHaveProperty('implicitPaletteEditor');
+   const apply=request.context.implicitControls!.commands[0];expect(apply.kind==='apply'&&apply.scene).not.toHaveProperty('implicitPaletteEditor');
+   expect(f.scene.implicitPaletteEditor.colorCount).toBe(19);expect(rgba(output)).toEqual(color(17,34,51,128));
+   const start=await g.beginSourceRecording(output,f.options);await g.finishSourceRecording(start.handle,1000);
+  }finally{g.dispose();}
+ });
  it('retains the completed hot preview after failed Apply, records cold, and accepts a fresh same-value hot continuation',async()=>{
   const f=await setup(),author={...f.scene,implicitSourcePalette:{colors:['#aabbcc']},settings:{...f.scene.settings,background:'#ff0000'}},context=hot(f.context,2);
   const output=await f.g.generate(author,context);expect(rgba(output)).toEqual(color(170,187,204));
   const bad=structuredClone(author);bad.equations.f='invalid(';const invalid:GenerationInput={...context,implicitControls:{sessionId:'client-palette',acknowledgedRevision:2,commands:[{kind:'apply',revision:3,scene:bad}]}};
   await expect(f.g.generate(bad,invalid)).rejects.toMatchObject({previewRetained:true});expect(port.terminated).toBe(false);
-  const start=await f.g.beginSourceRecording(output,f.options);expect(start.scene).toEqual(author);expect(start.warmup.implicitControls).toEqual({sessionId:'client-palette',revision:2,applyRevision:1,resetRevision:2});
-  const stop=await f.g.finishSourceRecording(start.handle,1000);expect(stop.scene).toEqual(author);expect(rgba(stop.preview)).toEqual(color(17,34,51,128));expect(stop.context.implicitControls).toEqual({sessionId:'client-palette',acknowledgedRevision:2,commands:[]});
+  const start=await f.g.beginSourceRecording(output,f.options);expect(start.scene).toEqual(sourcePaletteRuntimeScene(author));expect(start.warmup.implicitControls).toEqual({sessionId:'client-palette',revision:2,applyRevision:1,resetRevision:2});
+  const stop=await f.g.finishSourceRecording(start.handle,1000);expect(stop.scene).toEqual(sourcePaletteRuntimeScene(author));expect(rgba(stop.preview)).toEqual(color(17,34,51,128));expect(stop.context.implicitControls).toEqual({sessionId:'client-palette',acknowledgedRevision:2,commands:[]});
   const next=await f.g.generate(author,{...hot(stop.context,3),implicitLive:{...stop.context.implicitLive!,clock:{paused:false,timestampMs:1125}}});expect(rgba(next)).toEqual(color(170,187,204));expect(next.implicitControls).toMatchObject({revision:3,applyRevision:1,resetRevision:2});f.g.dispose();
  });
  it('keeps Queue completed ownership after a rejected Apply while preserving the rejected author draft',async()=>{

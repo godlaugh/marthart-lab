@@ -1,4 +1,4 @@
-import {domainPaletteRuntimeScene} from './domainPaletteEditing';
+import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {replaySourceImplicitTimeline} from './sourceImplicitTimeline';
 import {usesSourceImplicitCpuMesh,usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 import {SourceFractalFreshRecordingSession} from './sourceFractalFreshRecording';
@@ -97,7 +97,7 @@ export class TemporalGenerationSession {
   private clearFrames(){this.frames.clear();this.bytes=0;this.simulation=undefined;this.cacheHits=0;this.perlin.reset();this.tracking.reset();}
   reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{ this.key = ''; this.selectedKind=undefined;this.selectedDensity=false;this.selectedRoots=false;this.clearFrames();this.sourcePerlinGpu.reset();this.sourcePerlin.reset();this.sourceAttractor.reset();this.sourceBouncing.reset();this.bouncing.reset();this.iterated.reset();this.sourceSymmetry.reset();this.sourceMap.reset();this.sourceSamila.reset();this.sourceFractal.reset();this.sourceFractalFreshRecording.reset();this.sourceDomain.reset();this.sourceSurface.reset();this.sourceImplicit.reset();this.roots.reset();this.rootsNative.reset();this.attractor.reset();this.domain.reset();this.spirograph.reset(); },failures);}
   select(scene: SceneDocument, context: GenerateContext) {
-    scene=domainPaletteRuntimeScene(scene);
+    scene=sourcePaletteRuntimeScene(scene);
     this.cleanup.prepare();
     if(!usesSourceImplicitPresentation(scene))this.sourceImplicit.reset();
     if(context.surfaceLive===undefined)this.sourceSurface.reset();
@@ -405,7 +405,7 @@ function generateImplicitFrame(scene:SceneDocument,context:GenerateContext):Extr
       return bind(definition(scene.kind).generate(current,{...context,onProgress:context.onProgress?output=>context.onProgress!(bind(output)):undefined}));
 }
 export function generateScene(scene:SceneDocument,context:GenerateContext,session?:TemporalGenerationSession):SceneOutput{
-  scene=domainPaletteRuntimeScene(scene);
+  scene=sourcePaletteRuntimeScene(scene);
   if(context.fractalRecording!==undefined&&!usesSourceFractal(scene))throw Error('分形录制帧只能用于完整源分形场景');
   if((context.sourceBouncingFrame!==undefined||context.sourceBouncingView!==undefined)&&!usesSourceBouncing(scene))throw new Error('源弹跳检查点只能用于带源弹跳配置的场景');
   if(scene.bouncingSource!==undefined&&!usesSourceBouncing(scene))throw new Error('源弹跳配置只能用于弹跳场景');

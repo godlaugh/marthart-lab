@@ -20,6 +20,7 @@ function palette(s:SceneDocument):unknown{
   case 'attractor':return s.attractorSource?.visual.palette.kind==='colors'?s.attractorSource.visual.palette.colors:undefined;
   case 'roots':return s.rootsSourcePalette?.colors;
   case 'domain':return s.domainSourcePalette?.colors;
+  case 'implicit':return s.implicitSourcePalette?.colors;
   case 'fractal':return s.fractalSourceColor?.palette.colors;
   case 'perlin':return s.perlinSource?.palette;
   default:return s.palette.stops;

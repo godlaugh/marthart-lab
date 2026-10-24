@@ -1,5 +1,7 @@
 # Implicit 色板与录制状态验收（2026-10-24）
 
+后续界面接入和实际 PNG／MP4 验收已完成，见[调色界面记录](source-implicit-palette-ui.zh-CN.md)。下文保留本批后端验收时的范围。
+
 本批完成源 Implicit CPU 网格的显式运行控制：编辑中的作者文档、当前热色板、最后完整应用的冷配置各自保留。开始录制会恢复冷配置，结束后保留作者草稿。**这是后端与公共生成／录制接口接入；App 的 Implicit 色板生成器界面尚未接入。**
 
 基线为 `5dd5b8d4e6c8018ba5a8aa9bc338a7bde1e70f23`。原版依据来自固定 MathArt 1.7.8 JAR 的已校验静态证据，本批没有新增原版 JVM 或桌面窗口执行。源码摘要、原方法位置与验证记录见[证据索引](../tests/fixtures/source-implicit-controls/backend-20261024.json)。

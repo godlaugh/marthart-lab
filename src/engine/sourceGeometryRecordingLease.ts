@@ -1,4 +1,5 @@
 import {sameSourceRecordingValue as same} from './sourceRecordingValue';
+import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {implicitPaletteControlReceiptMatches,validateImplicitPaletteControlReceipt,type ImplicitPaletteControlReceipt} from './implicitPaletteControl';
 import {validateSourceImplicitLiveContext} from './sourceImplicitLive';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
@@ -34,7 +35,7 @@ export class SourceGeometryRecordingLease {
  private attempt?:{index:number;rate:number};private next=1;private warmupDelivered=false;
  private renderer?:GeometryRecordingRenderer;private stopping=false;private drawing=false;
  constructor(scene:SceneDocument,input:GenerationInput,output:Geometry,options:SourceRecordingOptions,private readonly signal?:AbortSignal){
-  this.implicit=usesSourceImplicitCpuMesh(scene);this.anchor=this.implicit?structuredClone(scene):undefined;
+  this.implicit=usesSourceImplicitCpuMesh(scene);this.anchor=this.implicit?structuredClone(sourcePaletteRuntimeScene(scene)):undefined;
   if((this.implicit?!validSourceImplicitOutput(output,input,true):!validSourceSurfacePresentation(output,input)||!usesSourceSurfaceGeometry(scene))||output.sourceCameraFrame?.viewport.target!=='primary')throw Error('几何录制需要已完成的源主预览');
   if(this.implicit&&input.implicitControls){
    const {sessionId,...request}=input.implicitControls,receipt=output.implicitControls;

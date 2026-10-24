@@ -1,3 +1,4 @@
+import {sourcePaletteRuntimeScene} from '../src/engine/sourcePaletteRuntimeScene';
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {SourceImplicitRecordingSession} from '../src/engine/sourceImplicitRecording';
 import {generateScene} from '../src/engine/temporal';
@@ -31,7 +32,7 @@ describe('Implicit numerical recording ownership',()=>{
  it('retries failed stop materialization at the same frame and keeps the original authored FPS',()=>{
   const f=setup(),start=f.owner.beginRecording(f.scene,f.context,f.options);const original=structuredClone(f.scene);
   vi.spyOn(geometry,'generateImplicit').mockImplementationOnce(()=>{throw Error('stop geometry failure');});expect(()=>f.owner.finishRecording(start.handle)).toThrow('stop geometry failure');expect(f.owner.ownsRecording(start.handle)).toBe(true);expect(()=>f.owner.nextRecordingFrame(start.handle,1,12)).toThrow('连续帧');
-  const stop=f.owner.finishRecording(start.handle);expect(stop.preview.sourceCameraFrame?.frameIndex).toBe(0);expect(stop.scene).toEqual(original);expect(stop.scene.timeline.fps).toBe(30);
+  const stop=f.owner.finishRecording(start.handle);expect(stop.preview.sourceCameraFrame?.frameIndex).toBe(0);expect(stop.scene).toEqual(sourcePaletteRuntimeScene(original));expect(stop.scene.timeline.fps).toBe(30);
   const replay=f.owner.finishRecording(start.handle);expect(replay.preview.positions).toEqual(stop.preview.positions);expect(replay.preview.sourceCameraFrame).toEqual(stop.preview.sourceCameraFrame);f.owner.reset();expect(()=>f.owner.finishRecording(start.handle)).toThrow('身份');
  });
 });

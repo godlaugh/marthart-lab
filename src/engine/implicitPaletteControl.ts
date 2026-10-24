@@ -1,4 +1,5 @@
 import type {SceneDocument} from '../types';
+import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {rootsControlRepresentationBytes,ROOTS_CONTROL_MAX_BYTES} from './rootsControl';
 import {prepareImplicitPalette,validateImplicitPaletteColors,validateImplicitSourcePalette,ImplicitPaletteControlError,type ImplicitPaletteFacts} from './sourceImplicitPalette';
 export {prepareImplicitPalette,ImplicitPaletteControlError,type ImplicitPaletteFacts} from './sourceImplicitPalette';
@@ -47,8 +48,18 @@ function validateCommand(raw:unknown):asserts raw is ImplicitPaletteControlComma
 export function validateImplicitPaletteControls(raw:unknown):ImplicitPaletteControls {
  if(!object(raw)||!natural(raw.acknowledgedRevision)||!Array.isArray(raw.commands))return fail('Implicit controls require acknowledgedRevision and commands');
  exact(raw,['acknowledgedRevision','commands'],'controls');implicitPaletteControlRepresentationBytes(raw);
- let previous=raw.acknowledgedRevision;for(const command of raw.commands){validateCommand(command);if(command.revision!==previous+1)fail('Implicit command revision gap: commands must follow acknowledgement contiguously');previous=command.revision;}
- return raw as unknown as ImplicitPaletteControls;
+ let previous=raw.acknowledgedRevision,commands:ImplicitPaletteControlCommand[]|undefined;
+ for(let index=0;index<raw.commands.length;index++){
+  const command=raw.commands[index];validateCommand(command);
+  if(command.revision!==previous+1)fail('Implicit command revision gap: commands must follow acknowledgement contiguously');previous=command.revision;
+  if(command.kind==='apply'){
+   const scene=sourcePaletteRuntimeScene(command.scene);
+   if(scene!==command.scene){commands??=[...raw.commands];commands[index]={...command,scene};}
+  }
+ }
+ // The command contract owns this projection once. Fingerprints, journal
+ // snapshots and direct producers all consume the same runtime-only facts.
+ return commands?{acknowledgedRevision:raw.acknowledgedRevision,commands}:raw as unknown as ImplicitPaletteControls;
 }
 export function validateImplicitPaletteControlReceipt(raw:unknown):ImplicitPaletteControlReceipt {
  if(!object(raw)||!natural(raw.revision)||!natural(raw.applyRevision)||!natural(raw.resetRevision)||raw.revision<1||raw.applyRevision<1||raw.applyRevision>raw.revision||raw.resetRevision<1)return fail('Invalid Implicit control receipt');

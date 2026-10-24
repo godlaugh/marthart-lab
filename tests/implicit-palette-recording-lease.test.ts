@@ -1,3 +1,4 @@
+import {sourcePaletteRuntimeScene} from '../src/engine/sourcePaletteRuntimeScene';
 import {describe,it,expect} from 'vitest';
 import {SourceGeometryRecordingLease} from '../src/engine/sourceGeometryRecordingLease';
 import {SourceImplicitRecordingSession} from '../src/engine/sourceImplicitRecording';
@@ -31,12 +32,12 @@ describe('Implicit explicit palette recording lease',()=>{
  it('retains staged author while accepting cold warmup, canonical acknowledgement, frames and stop',async()=>{
   const f=setup();expect(f.output.implicitControls).toEqual({sessionId:'palette-lease',revision:2,applyRevision:1,resetRevision:1});
   expect(f.output.sourceImplicitPresentation!.fillColors.slice(0,4)).toEqual(new Float32Array([170/255,187/255,204/255,1]));
-  expect(f.start.scene).toEqual(f.author);expect(f.start.warmup.sourceBackgroundColor).toBe(0xff000000);
+  expect(f.start.scene).toEqual(sourcePaletteRuntimeScene(f.author));expect(f.start.warmup.sourceBackgroundColor).toBe(0xff000000);
   expect(f.start.warmup.sourceImplicitPresentation!.fillColors.slice(0,4)).toEqual(new Float32Array([17/255,34/255,51/255,128/255]));
   expect(f.start.context.implicitControls).toEqual({sessionId:'palette-lease',acknowledgedRevision:2,commands:[]});
-  f.lease.acceptStart(f.start);expect(f.lease.scene).toEqual(f.author);await draw(f.lease);
+  f.lease.acceptStart(f.start);expect(f.lease.scene).toEqual(sourcePaletteRuntimeScene(f.author));await draw(f.lease);
   f.lease.requestFrame(1,12);const frame=f.owner.nextRecordingFrame(f.start.handle,1,12);f.lease.acceptFrame(frame,1);expect((await draw(f.lease)).implicitControls).toEqual(f.start.warmup.implicitControls);
-  const stop=f.owner.finishRecording(f.start.handle);f.lease.acceptStop(stop);expect(stop.scene).toEqual(f.author);expect(stop.preview.implicitControls).toEqual(f.start.warmup.implicitControls);
+  const stop=f.owner.finishRecording(f.start.handle);f.lease.acceptStop(stop);expect(stop.scene).toEqual(sourcePaletteRuntimeScene(f.author));expect(stop.preview.implicitControls).toEqual(f.start.warmup.implicitControls);
  });
  it.each(['sessionId','revision','applyRevision','resetRevision','missing'] as const)('rejects a forged start %s without consuming the valid start',key=>{
   const f=setup(),bad=structuredClone(f.start);

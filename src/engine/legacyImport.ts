@@ -1,4 +1,6 @@
 import {domainPaletteEditorState} from './domainPaletteEditing';
+import {implicitPaletteEditorState,SOURCE_IMPLICIT_DEFAULT_COLORS} from './implicitPaletteEditing';
+import {validateImplicitSourcePalette} from './sourceImplicitPalette';
 import {importSourcePaletteGenerator} from './sourcePaletteGeneratorImport';
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {prepareSourceProjectPalette,type SourceProjectPalette} from './sourceProjectPalette';
@@ -296,7 +298,7 @@ function common(r:Reader,s:SceneDocument){
  const description=r.str('description');if(description!==undefined){if(description.length>8192)fail('description 超过 8192 字符');s.description=description;}
  const bg=firstPath(r,['settings.background_color','settings.backgroundColor']);if(bg&&!s.mapSource&&!usesSourceSamilaSplat(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)){const value=r.str(bg)!;if(!/^#[0-9a-f]{6}$/i.test(value))fail(`${bg} 应为 #RRGGBB`);s.settings.background=value;}
  if(!s.mapSource&&!usesSourceSymmetryProject(s)&&s.kind!=='roots'&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))numberTo(r,s,'settings.dot_size','pointSize',{min:0,max:1000});
- if(!s.mapSource&&!usesSourceSymmetryProject(s)&&!['domain','roots','fractal'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
+ if(!s.mapSource&&!usesSourceSymmetryProject(s)&&!['domain','roots','fractal','implicit'].includes(s.kind)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSourceSamilaSplat(s))commonLocalPalette(r,s);
  if(!usesSourceSymmetryProject(s)&&!usesSourceSurfaceGeometry(s)&&!usesSourceAttractor(s)&&!usesSourcePerlin(s)&&!usesSamilaSourceProjection(s)&&['surface','attractor','implicit','map','symmetry','perlin','spirograph','samila'].includes(s.kind))for(const axis of ['X','Y','Z']){numberTo(r,s,`settings.scale_${axis.toLowerCase()}`,`scale${axis}`);numberTo(r,s,`settings.offset_${axis.toLowerCase()}`,`offset${axis}`);}
  if(!['samila','roots','surface','implicit','attractor','perlin','map','symmetry'].includes(s.kind)&&r.has('camera'))r.acknowledge('camera','原版 phi/theta/gamma 与当前轨道相机的约定尚未核对；使用当前相机并由视口适配几何');
  if(!usesSourcePerlin(s)&&r.has('settings.render_mode')&&!['surface','attractor','implicit','map','symmetry','samila','domain','roots'].includes(s.kind))r.acknowledge('settings.render_mode','CPU/GPU 后端选择不移植，使用当前真实实现，不能保证密度和精度相同');
@@ -477,7 +479,18 @@ function implicit(r:Reader,s:SceneDocument){
   s.settings.sourceImplicitIsoThreshold=r.has('settings.iso_threshold')?Math.max(Math.fround(1e-5),Math.fround(Number(s.settings.isoLevel))):Math.fround(.06);s.settings.isoLevel=0;
   s.settings.meshFill=s.settings.meshFill??true;s.settings.meshWireframe=s.settings.meshWireframe??false;
   numberTo(r,s,'settings.line_weight','meshWireframeWidth',{min:.1,max:32});
- }
+  // The CPU source path owns the exact root array. Do not route ARGB, invalid
+  // strings, empty/single lists or tails through the local RGB Palette schema.
+  const rawPalette=r.usePalette(),colors=rawPalette===undefined?[...SOURCE_IMPLICIT_DEFAULT_COLORS]:rawPalette;
+  try{s.implicitSourcePalette=validateImplicitSourcePalette({colors});}catch(error){fail(error instanceof Error?error.message:String(error));}
+  if(r.entry==='project'){
+   const generator=importSourcePaletteGenerator(r.peek(['color']),'project');
+   if(!generator.ok)fail(`${generator.error.path}: ${generator.error.reason}`);
+   // ProjectState reads parameters, then clears these flags for Implicit.
+   s.implicitPaletteEditor={...implicitPaletteEditorState(s),...generator.value.configuration,useCosine:false,useCurve:false};
+   for(const path of generator.value.consumedPaths)r.use(path);
+  }else if(r.has('color'))r.acknowledge('color','源 Implicit 运行配置不读取通用 color；颜色来自根 palette，原对象保留');
+ }else commonLocalPalette(r,s);
 
 }
 function symmetry(r:Reader,s:SceneDocument){

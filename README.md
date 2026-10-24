@@ -25,7 +25,7 @@ npm run server
 
 ## 2.0 创作预览
 
-2026-10-24 隐式曲面已接通冷配置、热改色和录制重置的后端控制；真实 Worker 与录制帧验证通过，生成器界面接入仍待继续。见[隐式色板与录制状态验收](docs/source-implicit-palette-controls.zh-CN.md)。
+2026-10-24 隐式曲面的手动／Cosine／Curve 调色界面已接通冷配置、热改色、完整应用和录制重置；572 项相关测试与 320 项实际界面检查通过，含两段 MP4 和两张暂停 PNG。整体仍在 M3，原版整图与 2.0 发行验收继续。见[调色界面中文验收](docs/source-implicit-palette-ui.zh-CN.md)；底层契约见[色板与录制状态记录](docs/source-implicit-palette-controls.zh-CN.md)。
 
 2026-10-24 最新弹跳进展：四个内置预设已取得实际原版 JVM 的完整状态与艺术画面对照；200 万粒子预设的完整 10 秒模拟、600 帧艺术画面及使用相同原版完成帧的编码结果均通过。更早调查中的失败与限制保留在各历史记录中，当前剩余范围见[弹跳验收清单](docs/source-bouncing-acceptance.zh-CN.md)和[完整录像报告](docs/source-bouncing-full-recording.zh-CN.md)。整类与整版验收仍在进行。
 
