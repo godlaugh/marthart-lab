@@ -3,6 +3,7 @@ import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
 import {usesSourceBouncing,parseSourceBouncingDocument,type SourceBouncingDocumentPayload} from '../engine/sourceBouncingDocument';
 import {SOURCE_BOUNCING_POSITION_MODES,type SourceBouncingConfiguration,type SourceBouncingVelocityMode} from '../engine/sourceBouncingConfig';
+import {sourceBouncingRadiansToDegrees,sourceBouncingDegreesToRadians} from './sourceBouncingAngles';
 
 type Props={scene:SceneDocument;onChange:(scene:SceneDocument)=>void;tab?:'geometry'|'appearance'};
 type Commit=(text:string)=>string|undefined;
@@ -27,8 +28,24 @@ export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
   onChange({...scene,bouncingSource:parsed.value});setError('');return undefined;
  };
  const text=(id:string,label:string,value:string,commit:Commit,multiline=false)=><DraftField key={id} id={id} label={t(label)} value={value} commit={commit} multiline={multiline}/>;
- const number=(id:string,label:string,value:number,change:(n:number)=>SourceBouncingDocumentPayload)=><DraftField key={id} id={id} label={t(label)} value={Object.is(value,-0)?'-0':String(value)} numeric commit={raw=>{if(raw.trim()==='')return t('请输入数值');const n=Number(raw);if(!Number.isFinite(n))return t('请输入有限数值');return emit(change(n));}}/>;
+ const numberText=(value:number)=>Object.is(value,-0)?'-0':String(value);
+ const commitNumber=(raw:string,accept:(n:number)=>string|undefined)=>{if(raw.trim()==='')return t('请输入数值');const n=Number(raw);if(!Number.isFinite(n))return t('请输入有限数值');return accept(n);};
+ const number=(id:string,label:string,value:number,change:(n:number)=>SourceBouncingDocumentPayload)=><DraftField key={id} id={id} label={t(label)} value={numberText(value)} numeric commit={raw=>commitNumber(raw,n=>emit(change(n)))}/>;
  const configNumber=(key:{[K in keyof SourceBouncingConfiguration]:SourceBouncingConfiguration[K] extends number?K:never}[keyof SourceBouncingConfiguration],label:string)=>number(key,label,c[key],n=>({...source,configuration:{...c,[key]:n}}));
+ const configDegrees=(key:'initialAngle'|'initialAngleSpread',label:string)=>{
+  const degrees=sourceBouncingRadiansToDegrees(c[key]),display=numberText(degrees);
+  return <DraftField key={key} id={key} label={t(label)} value={display} numeric commit={raw=>{
+   // Conversion is not bitwise invertible. Focusing and leaving an unchanged
+   // display must not replace an imported radian value with a rounded trip.
+   if(raw.trim()===display)return undefined;
+   return commitNumber(raw,input=>{
+    const value=Math.fround(input);if(!Number.isFinite(value))return t('请输入有限数值');
+    const bounded=key==='initialAngleSpread'?(value<0?0:value>360?360:value):value;
+    if(Object.is(bounded,degrees))return undefined;
+    return emit({...source,configuration:{...c,[key]:sourceBouncingDegreesToRadians(bounded)}});
+   });
+  }}/>;
+ };
  const select=(id:string,label:string,value:string,choices:readonly(readonly[string,string])[],change:(value:string)=>SourceBouncingDocumentPayload)=><label key={id} className="field"><span>{t(label)}</span><select data-testid={`source-bouncing-${id}`} aria-label={t(label)} value={value} onChange={event=>setError(emit(change(event.target.value))??'')}>{choices.map(([key,name])=><option key={key} value={key}>{t(name)}</option>)}</select></label>;
  const section=(id:string,label:string,children:ReactNode,open=true)=><details key={id} className="inspector-section" open={open}><summary>{t(label)}</summary><div className="section-body">{children}</div></details>;
  const mode=c.initialPositionMode,box=mode==='BOX'||mode==='ARCHIMEDEAN_SPIRAL';
@@ -68,8 +85,8 @@ export function SourceBouncingControls({scene,onChange,tab='geometry'}:Props){
     {select('initialVelocityMode','速度方向',c.initialVelocityMode,Object.entries(velocityNames),initialVelocityMode=>({...source,configuration:{...c,initialVelocityMode:initialVelocityMode as SourceBouncingVelocityMode}}))}
     {configNumber('initialSpeed','初始速率')}
     {c.initialVelocityMode!=='UNIFORM'&&c.initialVelocityMode!=='RANDOM'&&<>{configNumber('velocityCenterX','速度中心 X')}{configNumber('velocityCenterY','速度中心 Y')}</>}
-    {c.initialVelocityMode!=='RANDOM'&&configNumber('initialAngle','初始方向 / 零向量回退（弧度）')}
-    {configNumber('initialAngleSpread','方向散布（弧度）')}{configNumber('velocityNoise','方向噪声')}
+    {c.initialVelocityMode!=='RANDOM'&&configDegrees('initialAngle','初始方向 / 零向量回退（度）')}
+    {configDegrees('initialAngleSpread','方向散布（度）')}{configNumber('velocityNoise','方向噪声')}
    </>)}
   </>:<>
    {section('style','点与边界',<>

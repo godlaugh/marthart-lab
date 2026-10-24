@@ -14,8 +14,10 @@ const out=process.argv[2]??'.cache/bouncing-native-export-20261024';
 const presetAt=process.argv.indexOf('--preset'),presetName=presetAt>=0?process.argv[presetAt+1]:process.argv.includes('--five-million')?'bouncing2':undefined;
 const warmupBoundaries=process.argv.includes('--warmup-boundaries');
 const separateFps=process.argv.includes('--separate-fps');
+const angleControls=process.argv.includes('--angle-controls');
 if(presetAt>=0&&!presetName||presetName&&!/^[a-z0-9_]+$/.test(presetName))throw Error('--preset requires a packaged preset basename');
 if(presetAt>=0&&process.argv.includes('--five-million'))throw Error('Select one preset option');
+if(angleControls&&presetName)throw Error('Angle control edits use the explicit synthetic fixture');
 await mkdir(out,{recursive:true});
 const backend=JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND,'utf8'));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -63,13 +65,14 @@ Generator.prototype.generate=async function(scene,input,...rest){
 };`});
  });
  const origin=server.resolvedUrls.local[0];await page.route('**/fixture',route=>route.fulfill({contentType:'text/html',body:'<html></html>'}));await page.goto(origin+'fixture');
- await page.evaluate(async()=>{
+ await page.evaluate(async angleControls=>{
   const[{createScene,saveWorkspace},{definition},{importSourceBouncingDocument}]=await Promise.all([import('/src/engine/document.ts'),import('/src/scenes/index.ts'),import('/src/engine/sourceBouncingDocument.ts')]);
   const scene=createScene(definition('bouncing')),parsed=importSourceBouncingDocument({settings:{particle_count:512,seed:1}});if(!parsed.ok)throw Error(JSON.stringify(parsed.error));
   scene.bouncingSource=parsed.value.payload;scene.bouncingSource.recordDuration=Math.fround(.3);scene.bouncingSource.visual.dotSize=4;scene.bouncingSource.configuration.initialSpeed=.3;
+  if(angleControls)scene.bouncingSource.configuration.initialAngle=Math.fround(2.3456);
   scene.settings={};scene.equations={};scene.parameters={};scene.timeline={duration:10,fps:30,loop:false,tracks:[]};scene.projectResolution={width:384,height:256};
   saveWorkspace(localStorage,{scenes:[scene],active:scene.id,theme:'dark',language:'en',render:{quality:'standard',frameRate:30}});
- });
+ },angleControls);
  await page.goto(origin);
  const ready=()=>page.waitForFunction(()=>{
   const a=window.__nativeExportAudit,c=a.calls.findLast(c=>c.input.quality!=='export');
@@ -97,6 +100,18 @@ Generator.prototype.generate=async function(scene,input,...rest){
   await seek(prior);
  };
  await ready();check((await snapshot()).output.backend==='native','App generates native Bouncing pixels');check(await page.getByTestId('native-art-canvas').isVisible(),'native canvas visible');
+ if(angleControls){
+  phase='degree-controls';const angle=page.getByTestId('source-bouncing-initialAngle'),spread=page.getByTestId('source-bouncing-initialAngleSpread');
+  check((await angle.getAttribute('aria-label')).includes('(degrees)'),'angle unit is visible in English');check(await angle.inputValue()==='134.39297485351562','original Float32 radians display as original inspector degrees');
+  const before=await snapshot(),calls=await begin();await angle.focus();await angle.blur();await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  check((await snapshot()).scene.bouncingSource.configuration.initialAngle===before.scene.bouncingSource.configuration.initialAngle,'unchanged degree focus/blur preserves exact imported radian value');check(await begin()===calls,'unchanged degree display does not reseed native simulation');
+  const edit=async(field,value,key,expected)=>{await field.fill(value);await field.blur();await page.waitForFunction(({key,expected})=>{const c=window.__nativeExportAudit.calls.findLast(c=>c.input.quality!=='export');return c?.scene.bouncingSource.configuration[key]===expected&&c.output;},{key,expected});await ready();};
+  await edit(angle,'45','initialAngle',Math.fround(Math.PI/4));check((await snapshot()).scene.bouncingSource.configuration.initialAngle===Math.fround(Math.PI/4),'45 degree edit stores source Float32 radians');
+  await edit(spread,'450','initialAngleSpread',Math.fround(2*Math.PI));check(await spread.inputValue()==='360','spread clamps to original 360 degree maximum');
+  const valid=await snapshot();await angle.fill('not a number');await angle.blur();check(await angle.getAttribute('aria-invalid')==='true'&&await angle.inputValue()==='not a number','invalid angle remains a visible draft');check((await snapshot()).scene.bouncingSource.configuration.initialAngle===valid.scene.bouncingSource.configuration.initialAngle,'invalid degree draft leaves canonical radians unchanged');
+  await angle.fill('45.0000');await angle.blur();check(await angle.getAttribute('aria-invalid')==='false','equivalent valid degree text clears the draft error');
+  await edit(angle,'90','initialAngle',Math.fround(Math.PI/2));await edit(spread,'0','initialAngleSpread',0);await page.screenshot({path:out+'/degree-controls.png'});report.angleControls={status:'passed',originalImportedRadians:before.scene.bouncingSource.configuration.initialAngle,unchangedRoundTripPreserved:true,storedRadians:Math.fround(Math.PI/2),spread:0};
+ }
  if(presetName){
   phase='original-'+presetName+'-import';const jar='../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar',member='data/Bouncing/'+presetName+'.json';
   const jarSha=sha(await readFile(jar));check(jarSha==='a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018','original JAR hash matches');

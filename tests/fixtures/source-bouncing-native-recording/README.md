@@ -112,3 +112,24 @@ the selected complete preset and duration; neither mode establishes all
 sizes/parameters, cross-device behavior or original window presentation.
 Raw vendor artifacts, captures, videos, state textures and executables stay in
 `.cache/`; only this diagnostic source and compact evidence indexes enter Git.
+
+### Reuse a completed PNG validation phase
+
+The optional `--reuse-png-validation PREVIOUS_REPORT` accepts an existing terminal
+full-comparison report whose PNG validation completed, even if subsequent video
+encoding failed. It rehashes every retained frame input and checks the original
+manifest/run, completed validation metadata, decoder code and Python/Pillow
+versions before reuse. An altered input, unfinished run or unstable source is
+rejected. Reusing a previously reused validation follows its recorded source
+directory. Product generation, every frame comparison and complete encoding
+always run again; the output directory must be new.
+
+The full 5M recording supplies 6,338,671,659 bytes of PNG input. The production
+service's default cumulative streaming input allowance is now 8 GiB; per-frame,
+pixel, concurrency, output, disk and deadline limits remain independently
+enforced. This is a transfer allowance, not a whole-movie memory allocation.
+
+`full-recording-continuation.json` indexes the completed full recordings of all
+four original presets, the retained 4 GiB failure, the successful 8 GiB retry,
+cache rejection checks and current public App validation. The earlier
+`full-recording.json` remains the historical 2M and encoder-thread investigation.

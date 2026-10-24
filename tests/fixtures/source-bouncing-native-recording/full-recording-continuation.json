@@ -1,0 +1,416 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T01:40:37.613482+00:00",
+  "status": "four-full-original-presets-passed",
+  "baseCommit": "47e0f6535323a2248185994e27c45a2644bcf2ac",
+  "readableReport": "docs/source-bouncing-full-recording.zh-CN.md",
+  "scope": "Unmodified original 2M/10s,5M/60s and two1M/10s presets. Full artwork RGB/final alpha/cameras/clocks at1500x1800. Same original branded PNGs through production HTTP encoder; complete500x600 decodedRGB and MP4 bytes match. Original license/policy/branding preserved. Not original GUI presentation, all parameters or final packaging.",
+  "cases": [
+    {
+      "preset": "bouncing1",
+      "particles": 2000000,
+      "durationSeconds": 10,
+      "original": {
+        "path": ".cache/bouncing-full-recording-20261024/reference-bouncing1/run.json",
+        "sha256": "aeb1e65a4d6fca52603aa660c0786e68984efcd53409a83939daa5b7f5fcda5c"
+      },
+      "presetSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+      "comparison": {
+        "path": ".cache/bouncing-full-recording-20261024/verified-bouncing1-cache/report.json",
+        "sha256": "82a5b15651ff7695f397c4fcccfdb7fd6df0defed99dd8795035f86c2a9ed6c6"
+      },
+      "activeFrames": 600,
+      "encodedFrames": 599,
+      "allArtworkRgbExact": true,
+      "allFinalAlphaExact": true,
+      "allCamerasAndClocksExact": true,
+      "lastCheckpoint": {
+        "model": "source-bouncing-clock-1.7.8",
+        "simulationUpdates": 600,
+        "sceneTime": 10.000019073486328
+      },
+      "simulationFps": 60,
+      "encodingFps": 15,
+      "video": {
+        "original": ".cache/bouncing-full-recording-20261024/reference-bouncing1/original.mp4",
+        "product": ".cache/bouncing-full-recording-20261024/verified-bouncing1-cache/service/acc0c0f4-15ab-46a6-bcf9-1989766be8dc.mp4",
+        "originalSha256": "b072f0666aa0be0e17e7c4d084e0a6cb5502b70e8f37fa9b9172a95cc0ba9c6a",
+        "productSha256": "b072f0666aa0be0e17e7c4d084e0a6cb5502b70e8f37fa9b9172a95cc0ba9c6a",
+        "originalMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "599"
+        },
+        "productMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "599"
+        },
+        "decodedRgbHash": "SHA256=d6707467e24f372f60299dac87170fdb6241d273b6c866c33c5b8bcc1787463a",
+        "exactDecodedRgb": true,
+        "uploadedBytes": 253103643,
+        "decodedBytes": 539100000
+      },
+      "originalCaptureSeconds": 190.93518666701857,
+      "comparisonElapsedMs": 53087.193916000004,
+      "processFamily": {
+        "rootPid": 38019,
+        "samples": 174,
+        "observedProcesses": 192,
+        "maxConcurrentProcesses": 12,
+        "sampledPeakRssKiB": 2901600,
+        "observedCpuMs": 140790,
+        "samplingErrors": []
+      },
+      "pngValidation": {
+        "status": "passed",
+        "python": "3.11.4",
+        "pillow": "10.4.0",
+        "frames": 600,
+        "elapsedSeconds": 74.78942566702608
+      },
+      "pngValidationReuse": {
+        "previousReport": ".cache/bouncing-full-recording-20261024/verified-bouncing1/report.json",
+        "checkedFiles": 3000,
+        "checkedBytes": 548752964,
+        "elapsedMs": 1501.192416,
+        "versions": {
+          "python": "3.11.4",
+          "pillow": "10.4.0"
+        },
+        "scope": "Unchanged input bytes, original manifest/run, completed validation metadata, helper code and Python/Pillow versions. Product generation and encoding are always rerun."
+      },
+      "sourceStable": true,
+      "referencesStable": true,
+      "remainingProcesses": 0
+    },
+    {
+      "preset": "bouncing1_formula1",
+      "particles": 1000000,
+      "durationSeconds": 10,
+      "original": {
+        "path": ".cache/bouncing-full-recording-20261024/reference-bouncing1_formula1/run.json",
+        "sha256": "145c681abf48788e6e23f793a7a3096b16dec9f83fdc829a8c3d499f4cca6411"
+      },
+      "presetSha256": "98f9fcfe70fd0e7e3b2030eb30a6ffdc9ab504cfebc3d0501c2f290a8731404f",
+      "comparison": {
+        "path": ".cache/bouncing-full-recording-20261024/verified-bouncing1_formula1/report.json",
+        "sha256": "4db9e184555c56c5ec15872ef1ab3c16d7b1bd9bb5069136ec50ce9e7da780c4"
+      },
+      "activeFrames": 600,
+      "encodedFrames": 599,
+      "allArtworkRgbExact": true,
+      "allFinalAlphaExact": true,
+      "allCamerasAndClocksExact": true,
+      "lastCheckpoint": {
+        "model": "source-bouncing-clock-1.7.8",
+        "simulationUpdates": 600,
+        "sceneTime": 10.000019073486328
+      },
+      "simulationFps": 60,
+      "encodingFps": 15,
+      "video": {
+        "original": ".cache/bouncing-full-recording-20261024/reference-bouncing1_formula1/original.mp4",
+        "product": ".cache/bouncing-full-recording-20261024/verified-bouncing1_formula1/service/daab6318-9327-4eb0-ad4e-a09aaca38dc1.mp4",
+        "originalSha256": "400b639a4695eb3ee42a9de3be2a73be150a7aa3cc08517c41587cb631f3f427",
+        "productSha256": "400b639a4695eb3ee42a9de3be2a73be150a7aa3cc08517c41587cb631f3f427",
+        "originalMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "599"
+        },
+        "productMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "599"
+        },
+        "decodedRgbHash": "SHA256=42d8f91fd422c87bf8a446d99574a61720042b77740f12ae0cc1952001b08ce9",
+        "exactDecodedRgb": true,
+        "uploadedBytes": 781169039,
+        "decodedBytes": 539100000
+      },
+      "originalCaptureSeconds": 225.4324462079676,
+      "comparisonElapsedMs": 154653.722292,
+      "processFamily": {
+        "rootPid": 95087,
+        "samples": 518,
+        "observedProcesses": 535,
+        "maxConcurrentProcesses": 12,
+        "sampledPeakRssKiB": 2812144,
+        "observedCpuMs": 300919.99999999994,
+        "samplingErrors": []
+      },
+      "pngValidation": {
+        "status": "passed",
+        "python": "3.11.4",
+        "pillow": "10.4.0",
+        "frames": 600,
+        "elapsedSeconds": 92.70418516709469
+      },
+      "pngValidationReuse": null,
+      "sourceStable": true,
+      "referencesStable": true,
+      "remainingProcesses": 0
+    },
+    {
+      "preset": "bouncing1_formula2",
+      "particles": 1000000,
+      "durationSeconds": 10,
+      "original": {
+        "path": ".cache/bouncing-full-recording-20261024/reference-bouncing1_formula2/run.json",
+        "sha256": "cf85de5f59fe17007277153e4ceb3972b3f99974e0fb7c652c9b14364feba544"
+      },
+      "presetSha256": "b820c544a0186df77a1eadd5117054e965ff8832a9b8f2873bb9aad5eceb191b",
+      "comparison": {
+        "path": ".cache/bouncing-full-recording-20261024/verified-bouncing1_formula2/report.json",
+        "sha256": "80f0fb3eb752a7d75873580fd73c661c64aabfa58735a0d310b0f00f717edd61"
+      },
+      "activeFrames": 600,
+      "encodedFrames": 599,
+      "allArtworkRgbExact": true,
+      "allFinalAlphaExact": true,
+      "allCamerasAndClocksExact": true,
+      "lastCheckpoint": {
+        "model": "source-bouncing-clock-1.7.8",
+        "simulationUpdates": 600,
+        "sceneTime": 10.000019073486328
+      },
+      "simulationFps": 60,
+      "encodingFps": 15,
+      "video": {
+        "original": ".cache/bouncing-full-recording-20261024/reference-bouncing1_formula2/original.mp4",
+        "product": ".cache/bouncing-full-recording-20261024/verified-bouncing1_formula2/service/e5303e04-0f2f-4adb-8962-175bbae0a9e2.mp4",
+        "originalSha256": "2c66109a615732fb3b65a224e0b45143550bde47b9996d29a3c2d2cd7da1ea95",
+        "productSha256": "2c66109a615732fb3b65a224e0b45143550bde47b9996d29a3c2d2cd7da1ea95",
+        "originalMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "599"
+        },
+        "productMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "599"
+        },
+        "decodedRgbHash": "SHA256=6b7c92200d4606ad1fb06dc79ea3f67dc8a5817a9934a63893fa3e6840d70349",
+        "exactDecodedRgb": true,
+        "uploadedBytes": 681895763,
+        "decodedBytes": 539100000
+      },
+      "originalCaptureSeconds": 220.11821850005072,
+      "comparisonElapsedMs": 157258.260709,
+      "processFamily": {
+        "rootPid": 16538,
+        "samples": 521,
+        "observedProcesses": 538,
+        "maxConcurrentProcesses": 12,
+        "sampledPeakRssKiB": 2898784,
+        "observedCpuMs": 285390,
+        "samplingErrors": []
+      },
+      "pngValidation": {
+        "status": "passed",
+        "python": "3.11.4",
+        "pillow": "10.4.0",
+        "frames": 600,
+        "elapsedSeconds": 91.6281163750682
+      },
+      "pngValidationReuse": null,
+      "sourceStable": true,
+      "referencesStable": true,
+      "remainingProcesses": 0
+    },
+    {
+      "preset": "bouncing2",
+      "particles": 5000000,
+      "durationSeconds": 60.0,
+      "original": {
+        "path": ".cache/bouncing-full-recording-20261024/reference-bouncing2/run.json",
+        "sha256": "4f865272aa697677569230f2aace6fdaa6250a56d6929ab567c6eb314a8ca895"
+      },
+      "presetSha256": "9de55d50efb24bab3ced5ca17483256b782e916c9221a219e4df06e82b9e2537",
+      "comparison": {
+        "path": ".cache/bouncing-full-recording-20261024/verified-bouncing2-budget/report.json",
+        "sha256": "868e8968f053c3fcdb65c4a92101c1175a9f3ce69c633b8ed4059f5a50a1c630"
+      },
+      "activeFrames": 3601,
+      "encodedFrames": 3600,
+      "allArtworkRgbExact": true,
+      "allFinalAlphaExact": true,
+      "allCamerasAndClocksExact": true,
+      "lastCheckpoint": {
+        "model": "source-bouncing-clock-1.7.8",
+        "simulationUpdates": 3601,
+        "sceneTime": 60.01592254638672
+      },
+      "simulationFps": 60,
+      "encodingFps": 15,
+      "video": {
+        "original": ".cache/bouncing-full-recording-20261024/reference-bouncing2/original.mp4",
+        "product": ".cache/bouncing-full-recording-20261024/verified-bouncing2-budget/service/a3b1b03d-e42f-48b5-bb41-edcf883a5eef.mp4",
+        "originalSha256": "9653a6c9ea55e2b370dd2788ee404feb436cb728c243def4b3682143c99ca653",
+        "productSha256": "9653a6c9ea55e2b370dd2788ee404feb436cb728c243def4b3682143c99ca653",
+        "originalMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "3600"
+        },
+        "productMetadata": {
+          "width": 500,
+          "height": 600,
+          "pix_fmt": "yuvj444p",
+          "color_range": "pc",
+          "color_space": "bt709",
+          "r_frame_rate": "15/1",
+          "nb_read_frames": "3600"
+        },
+        "decodedRgbHash": "SHA256=f3c73d8ad8fd38bfb73c334d025c42f54e58f4b74d5df4e6ef3a4d97eb4743c9",
+        "exactDecodedRgb": true,
+        "uploadedBytes": 6338671659,
+        "decodedBytes": 3240000000
+      },
+      "originalCaptureSeconds": 1575.4053759169765,
+      "comparisonElapsedMs": 444508.089125,
+      "processFamily": {
+        "rootPid": 37851,
+        "samples": 1439,
+        "observedProcesses": 1457,
+        "maxConcurrentProcesses": 13,
+        "sampledPeakRssKiB": 3452528,
+        "observedCpuMs": 1125290.0000000002,
+        "samplingErrors": []
+      },
+      "pngValidation": {
+        "status": "passed",
+        "python": "3.11.4",
+        "pillow": "10.4.0",
+        "frames": 3601,
+        "elapsedSeconds": 629.0319091660203
+      },
+      "pngValidationReuse": {
+        "previousReport": ".cache/bouncing-full-recording-20261024/verified-bouncing2/report.json",
+        "checkedFiles": 18005,
+        "checkedBytes": 13720120538,
+        "elapsedMs": 27039.17525,
+        "versions": {
+          "python": "3.11.4",
+          "pillow": "10.4.0"
+        },
+        "scope": "Unchanged input bytes, original manifest/run, completed validation metadata, helper code and Python/Pillow versions. Product generation and encoding are always rerun."
+      },
+      "sourceStable": true,
+      "referencesStable": true,
+      "remainingProcesses": 0
+    }
+  ],
+  "capacityFailure": {
+    "evidence": {
+      "path": ".cache/bouncing-full-recording-20261024/verified-bouncing2/report.json",
+      "sha256": "04459b9f732ed378624663df5162372aabc3ebbc0c3553e9c6938c64bec16f45"
+    },
+    "inputBudgetEvidence": {
+      "path": ".cache/bouncing-full-recording-20261024/five-million-input-budget.json",
+      "sha256": "dce64e4c391d586d7fe46e2ea74f3bc0d056c88fb135841eb094d60ce130745d"
+    },
+    "observedError": "累计帧数据超过资源上限",
+    "comparedActiveFrames": 2756,
+    "rejectedActiveFrameIndex": 2755,
+    "rejectedUploadIndex": 2754,
+    "requiredTotalInputBytes": 6338671659,
+    "oldInputBudgetBytes": 4294967296,
+    "newInputBudgetBytes": 8589934592,
+    "sourceStable": true,
+    "referencesStable": true,
+    "remainingProcesses": 0,
+    "retainedPngValidation": {
+      "status": "passed",
+      "python": "3.11.4",
+      "pillow": "10.4.0",
+      "frames": 3601,
+      "elapsedSeconds": 629.0319091660203
+    }
+  },
+  "cacheGuards": {
+    "path": ".cache/bouncing-full-recording-20261024/png-cache-final-guards.json",
+    "sha256": "689047a514c2bc7acfa4220b6d0b513dc1e37f21ed68ec4c0392d2c5a8906f6d",
+    "checks": 8,
+    "scope": "Corruption injection affects read buffers only; retained references unchanged. Reuse chain rehashes real completed original recording."
+  },
+  "publicApp": {
+    "path": ".cache/bouncing-full-recording-20261024/public-budget-angle/report.json",
+    "sha256": "53733c96e7ad7a67a3d52edee8ab37a965a270cf23fdf88fe209e50ee22d202a",
+    "checks": 177,
+    "particles": 512,
+    "angleControls": {
+      "status": "passed",
+      "originalImportedRadians": 2.345599889755249,
+      "unchangedRoundTripPreserved": true,
+      "storedRadians": 1.5707963705062866,
+      "spread": 0
+    },
+    "sourceStable": true,
+    "remainingProcesses": 0
+  },
+  "angleGolden": {
+    "path": "tests/fixtures/source-bouncing-angle-controls/native.json",
+    "sha256": "ecb78fb609ec5ea7b55f602d99925a50e523002d25c86608405dd3771f834728"
+  },
+  "validation": {
+    "sourceTests": {
+      "path": ".cache/bouncing-full-recording-20261024/continuation-tests.log",
+      "sha256": "0761cec8d5ee016086ef764decbf8c218110aa3c94ce4d2acb0dd13610a5f625",
+      "files": 4,
+      "tests": 44
+    },
+    "serviceTests": {
+      "path": ".cache/bouncing-full-recording-20261024/continuation-export-tests.log",
+      "sha256": "09060f7f2a959e7514ce12b726a885f6ee13f3d4582734f4aa77bc45497356dc",
+      "tests": 39
+    },
+    "build": {
+      "path": ".cache/bouncing-full-recording-20261024/continuation-build.log",
+      "sha256": "334be68ee04ec0f314ccec6ade531eb8e102f5de7b1ffaeffd2d00822612546c",
+      "status": "passed",
+      "existingLargeChunkWarning": true
+    },
+    "i18n": {
+      "path": ".cache/bouncing-full-recording-20261024/continuation-i18n.log",
+      "sha256": "edda8079df9141a4646bdeef6071307046d5cc189e3d748058b7ae2f25386cbc",
+      "status": "passed"
+    }
+  },
+  "costLimits": "Reported elapsed and sampled process-family CPU/RSS apply to these completed tasks. PNG-cache retry rehashes every retained file. Product generation/encoding always rerun. OS cold caches not controlled; other jobs ran concurrently; no isolated speedup or GPU/VRAM/token measurement. Original capture wall time is separate. Failed run has no complete process-family cost summary.",
+  "remaining": [
+    "Guide Rose/Hex/Ellipse compositions, original variable-clock window and further Bouncing parameters/interaction.",
+    "All11remaining2.0scene families remain under acceptance review.",
+    "Final native AppleSilicon integration/package and installed1.0update remain."
+  ]
+}

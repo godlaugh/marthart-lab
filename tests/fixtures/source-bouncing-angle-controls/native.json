@@ -1,0 +1,202 @@
+{
+  "cases": [
+    {
+      "method": "degreesToRadians",
+      "inputBits": 0,
+      "outputBits": 0
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 2147483648,
+      "outputBits": 2147483648
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1065353216,
+      "outputBits": 1016003125
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 3212836864,
+      "outputBits": 3163486773
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1084227584,
+      "outputBits": 1035122883
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1110704128,
+      "outputBits": 1061752795
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1119092736,
+      "outputBits": 1070141403
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1127481344,
+      "outputBits": 1078530011
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1132920832,
+      "outputBits": 1083624420
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1135869952,
+      "outputBits": 1086918619
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1144258560,
+      "outputBits": 1095307227
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 3266576384,
+      "outputBits": 3217625051
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1036831949,
+      "outputBits": 988070793
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1078530011,
+      "outputBits": 1029740190
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1070141403,
+      "outputBits": 1021351582
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1067320913,
+      "outputBits": 1018201064
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 2139095039,
+      "outputBits": 2139095040
+    },
+    {
+      "method": "degreesToRadians",
+      "inputBits": 1,
+      "outputBits": 0
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 0,
+      "outputBits": 0
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 2147483648,
+      "outputBits": 2147483648
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1065353216,
+      "outputBits": 1113927392
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 3212836864,
+      "outputBits": 3261411040
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1084227584,
+      "outputBits": 1133460812
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1110704128,
+      "outputBits": 1159800054
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1119092736,
+      "outputBits": 1168188662
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1127481344,
+      "outputBits": 1176577270
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1132920832,
+      "outputBits": 1181857649
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1135869952,
+      "outputBits": 1184965878
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1144258560,
+      "outputBits": 1193354486
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 3266576384,
+      "outputBits": 3315672310
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1036831949,
+      "outputBits": 1085757620
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1078530011,
+      "outputBits": 1127481344
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1070141403,
+      "outputBits": 1119092736
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1067320913,
+      "outputBits": 1116567702
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 2139095039,
+      "outputBits": 2139095040
+    },
+    {
+      "method": "radiansToDegrees",
+      "inputBits": 1,
+      "outputBits": 57
+    }
+  ],
+  "javaVersion": "21.0.7",
+  "windowCount": 0,
+  "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/runtime/Contents/Home",
+  "scope": "Two pure private angle conversion methods in original UI class, no scene or project instance or protected operation; static conversions only. Original JVM, no window or app-data access requested.",
+  "provenance": {
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+    "probeSha256": "a04b37922ac121036784dfc4db6f554a2f5bccda767fb20ca19647c4390445cf",
+    "exit": 0,
+    "reaped": true,
+    "processGroupExists": false,
+    "seconds": 2.490367833059281
+  },
+  "evidence": {
+    ".cache/bouncing-controls-audit-20261024/angle-runtime/run.json": "3c6ca819d02ac392e60bdf0f2c157b92bdc37fdb36ac730f6694bfed1a1372f9",
+    ".cache/bouncing-controls-audit-20261024/angle-runtime/numerics.json": "123f754e9c5810d98e725a4cbb0b639e3030e1ac267e7ba59874f72f3fe78ba7",
+    ".cache/bouncing-controls-audit-20261024/BouncingParticlesSectionKt.javap.txt": "af9d20b54cb730d0695af86676918a85927f4765d7dc9610ae583dfc1eb4ac7f"
+  }
+}

@@ -26,7 +26,11 @@ function encoderArguments(format,profile,scale,quality){
 const imageFormats={'image/png':'png','image/jpeg':'jpg'};
 const uuidPattern='[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
 const ownedName=new RegExp(`^${uuidPattern}\\.(png|jpg|mp4|webm|gif)$`);
-const defaults={maxActive:2,maxUploads:2,maxRecords:128,maxFiles:10000,maxImageBytes:64*1024**2,maxFrameBytes:64*1024**2,maxPixels:7680*4320,maxFrames:432000,maxFramePixels:100e9,maxInputBytes:4*1024**3,maxOutputBytes:2*1024**3,maxDiskBytes:8*1024**3,bodyTimeoutMs:60000,idleTimeoutMs:300000,finishTimeoutMs:120000,writeTimeoutMs:60000,killGraceMs:1500,healthTimeoutMs:3000};
+// PNG input is streamed to FFmpeg, not retained as a whole movie. The complete
+// original 5M/60s recording needs 6.34 GB of PNGs at its default 3x render size.
+// Keep a finite 8 GiB transfer budget independently of per-frame memory, total
+// pixels, concurrent uploads/jobs and reserved output/disk limits.
+const defaults={maxActive:2,maxUploads:2,maxRecords:128,maxFiles:10000,maxImageBytes:64*1024**2,maxFrameBytes:64*1024**2,maxPixels:7680*4320,maxFrames:432000,maxFramePixels:100e9,maxInputBytes:8*1024**3,maxOutputBytes:2*1024**3,maxDiskBytes:8*1024**3,bodyTimeoutMs:60000,idleTimeoutMs:300000,finishTimeoutMs:120000,writeTimeoutMs:60000,killGraceMs:1500,healthTimeoutMs:3000};
 class HttpError extends Error {constructor(status,message){super(message);this.status=status;}}
 function json(res,status,data){if(res.destroyed||res.writableEnded)return;res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify(data));}
 function mediaType(req){return req.headers['content-type']?.split(';')[0].trim().toLowerCase();}

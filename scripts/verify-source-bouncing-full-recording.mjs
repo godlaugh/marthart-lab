@@ -13,10 +13,11 @@ import {chromium} from '@playwright/test';
 import {createExportServer} from '../server/index.mjs';
 import {sourceBouncingOriginalPreset} from './lib/source-bouncing-original.mjs';
 import {measureFamily} from './browser-process-cost.mjs';
-const execute=promisify(execFile),[reference,out]=process.argv.slice(2);assert.ok(reference&&out,'Reference and new output required');await mkdir(out);
+import {reuseSourceBouncingRecordingPngs} from './lib/source-bouncing-recording-png-cache.mjs';
+const execute=promisify(execFile),[reference,out,cacheFlag,previousReport,...extra]=process.argv.slice(2);assert.ok(reference&&out,'Reference and new output required');assert.ok(cacheFlag===undefined||cacheFlag==='--reuse-png-validation'&&previousReport&&!extra.length,'Optional --reuse-png-validation requires one completed report');await mkdir(out);
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex'),references={};
 const read=async path=>{const bytes=await readFile(path);references[path]=sha(bytes);return bytes;};
-const paths=(await readdir('src',{recursive:true})).filter(p=>/\.(ts|tsx|json)$/.test(p)).map(p=>'src/'+p).concat('scripts/verify-source-bouncing-full-recording.mjs','scripts/lib/source-bouncing-recording-pngs.py','scripts/capture-source-bouncing-original.py','scripts/lib/source-bouncing-original.mjs','scripts/browser-process-cost.mjs','tests/fixtures/source-bouncing-native-animation/presets.json','tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java','server/index.mjs','server/source-renderer.mjs','server/render/SourceCglRenderer.m','server/render/SourceCglBouncingState.h');
+const paths=(await readdir('src',{recursive:true})).filter(p=>/\.(ts|tsx|json)$/.test(p)).map(p=>'src/'+p).concat('scripts/verify-source-bouncing-full-recording.mjs','scripts/lib/source-bouncing-recording-png-cache.mjs','scripts/lib/source-bouncing-recording-pngs.py','scripts/capture-source-bouncing-original.py','scripts/lib/source-bouncing-original.mjs','scripts/browser-process-cost.mjs','tests/fixtures/source-bouncing-native-animation/presets.json','tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java','server/index.mjs','server/source-renderer.mjs','server/render/SourceCglRenderer.m','server/render/SourceCglBouncingState.h');
 const hashes=async()=>Object.fromEntries(await Promise.all(paths.sort().map(async p=>[p,sha(await readFile(p))])));
 const report={status:'running',at:new Date().toISOString(),scope:'Unmodified original full preset/duration, configured simulation60fps, original default500x600 output/default3x1500x1800 render. Original effective encoderFPS is observed from its real argv; product explicitly selects that encoding rate separately from simulation. Every active artwork RGB/finalalpha/camera/clock versus real product Generator; identical original branded PNGs encoded with the same rates and compared over every decoded RGB byte by SHA256. No product branding or original GUI-window claim.',sourceBefore:await hashes(),references,frames:[],pageErrors:[]};
 let service,server,browser,page,exportId;const started=performance.now();
@@ -33,9 +34,14 @@ try{
  for(const name of ['license.dat','settings/settings.conf'])assert.deepEqual(run.userFilesBefore[name],run.userFilesAfter[name]);
  report.original={preset,duration:run.recording.duration,simulationFps:descriptor.fps,encodingFps,frames:frames.length,encodedFrames:frames.length-1,seconds:run.seconds,probeSha256:run.probeSha256,encoder};
  const measured=await measureFamily(process.pid,async()=>{
-  await execute('python3',['scripts/lib/source-bouncing-recording-pngs.py',reference,out+'/png-validation'],{timeout:900000,maxBuffer:1024*1024});
-  const validation=JSON.parse(await read(out+'/png-validation/report.json'));assert.equal(validation.status,'passed');assert.equal(validation.frames,frames.length);report.pngValidation=validation;
-  const pixels=String(await read(out+'/png-validation/frames.jsonl')).trim().split('\n').map(line=>JSON.parse(line));assert.equal(pixels.length,frames.length);for(const row of pixels)Object.assign(references,row.files);
+  let validation,pixels;
+  if(previousReport){
+   const cached=await reuseSourceBouncingRecordingPngs(reference,frames,previousReport,read);({validation,pixels}=cached);report.pngValidationSource=cached.source;report.pngValidationReuse=cached.reuse;
+  }else{
+   await execute('python3',['scripts/lib/source-bouncing-recording-pngs.py',reference,out+'/png-validation'],{timeout:900000,maxBuffer:1024*1024});
+   validation=JSON.parse(await read(out+'/png-validation/report.json'));pixels=String(await read(out+'/png-validation/frames.jsonl')).trim().split('\n').map(line=>JSON.parse(line));report.pngValidationSource={directory:out+'/png-validation'};
+  }
+  assert.equal(validation.status,'passed');assert.equal(validation.frames,frames.length);report.pngValidation=validation;assert.equal(pixels.length,frames.length);for(const row of pixels)Object.assign(references,row.files);
   const backend=JSON.parse(await read(process.env.MATHART_SOURCE_RENDERER_BACKEND));report.backend=backend;
   const port=await new Promise((resolve,reject)=>{const s=tcpServer();s.once('error',reject);s.listen(0,'127.0.0.1',()=>{const port=s.address().port;s.close(error=>error?reject(error):resolve(port));});});
   service=await createExportServer({root:out+'/service',ffmpegPath:encoder.command,sourceRendererBackend:backend,allowedOrigins:[`http://127.0.0.1:${port}`]});const address=await service.listen(0);
