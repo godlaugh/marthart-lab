@@ -134,6 +134,7 @@ export function parseSceneValue(data: unknown): SceneDocument {
   delete data.evaluatedDomainScene;
   delete data.evaluatedFractalGradient;
   delete data.runtimeSamilaViewport;
+  delete data.domainPaletteEditor;
   delete data.domainRender; // Delivered execution facts are not authored rules.
   delete data.rootsColor;
   delete data.evaluatedSpirographRotationRadians;
@@ -359,7 +360,7 @@ export interface SavedWorkspace {
   recovered?: boolean;
   startupError?: string;
 }
-export function persistentScene(scene:SceneDocument):SceneDocument {const {evaluatedDomainScene:_domainScene,evaluatedFractalScene:_fractalScene,evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _domainScene;void _fractalScene;void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
+export function persistentScene(scene:SceneDocument):SceneDocument {const {domainPaletteEditor:_domainPaletteEditor,evaluatedDomainScene:_domainScene,evaluatedFractalScene:_fractalScene,evaluatedSourceCamera:_sourceCamera,evaluatedCamera:_runtime,evaluatedRootsCamera:_rootsCamera,evaluatedDomainGradient:_gradient,evaluatedFractalGradient:_fractalGradient,runtimeSamilaViewport:_viewport,domainRender:_domainRender,rootsColor:_rootsColor,evaluatedSpirographRotationRadians:_spirograph,evaluatedSpirographFrame:_spirographFrame,...document}=scene as SceneDocument&{domainRender?:unknown;rootsColor?:unknown};void _domainPaletteEditor;void _domainScene;void _fractalScene;void _sourceCamera;void _runtime;void _rootsCamera;void _gradient;void _fractalGradient;void _viewport;void _domainRender;void _rootsColor;void _spirograph;void _spirographFrame;return document;}
 /** JSON numbers retain negative zero on parse, but stringify ordinarily loses it.
  * Source animation division observes that sign. Keep the standard serializer
  * and inject only the standard raw numeric token, never a shadow field. */

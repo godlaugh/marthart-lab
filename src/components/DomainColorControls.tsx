@@ -1,3 +1,6 @@
+import {SourceGradientPaletteEditor,type SourceGradientPaletteController} from './SourceGradientPaletteEditor';
+import {domainPaletteEditorState,domainPaletteEditorMode,commitDomainSourcePalette,restoreDomainSourceManualPalette,changeDomainSourcePalette} from '../engine/domainPaletteEditing';
+import type {SourcePaletteGenerationResult} from '../engine/sourceGradientPaletteGeneration';
 import {useState} from 'react';
 import {useI18n} from '../i18n';
 import type {SceneDocument,RasterOutput} from '../types';
@@ -6,7 +9,7 @@ import {parseDomainRenderPolicy} from '../engine/domainRenderPolicy';
 import {parseDomainIterationVersion} from '../engine/domainSourceIteration';
 import {parseDomainModel} from '../engine/domainModel';
 import {parseDomainViewportVersion} from '../engine/domainViewport';
-import {DEFAULT_DOMAIN_SOURCE_COLORS,domainSourceColorRgbHex,parseDomainColorVersion,parseDomainSourcePalette,withDomainSourceColorRgb} from '../engine/domainSourceColor';
+import {DEFAULT_DOMAIN_SOURCE_COLORS,domainSourceColorRgbHex,parseDomainColorVersion,withDomainSourceColorRgb} from '../engine/domainSourceColor';
 import {PALETTES} from '../engine/palette';
 
 type Props={scene:SceneDocument;onChange:(next:SceneDocument)=>void};
@@ -59,10 +62,14 @@ export function DomainColorControls({scene,onChange,renderFacts,renderTime,onRet
 export function DomainSourcePaletteEditor({scene,onChange,usage}:Props&{usage?:'cpu-fallback'}){
  const {t}=useI18n(),[selected,setSelected]=useState(0),[error,setError]=useState('');
  const colors=scene.domainSourcePalette?.colors??DEFAULT_DOMAIN_SOURCE_COLORS,index=Math.min(selected,Math.max(0,colors.length-1)),current=colors[index];
- const emit=(next:readonly string[])=>{try{onChange({...scene,domainSourcePalette:parseDomainSourcePalette({colors:[...next]})});setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
+ const state=domainPaletteEditorState(scene);
+ const accept=(result:SourcePaletteGenerationResult<SceneDocument>)=>{if(!result.ok){setError(result.error.reason);return result.error.reason;}onChange(result.value);setError('');return undefined;};
+ const emit=(next:readonly string[],resetSelection=false)=>{const failure=accept(changeDomainSourcePalette(scene,next));if(!failure&&resetSelection)setSelected(0);return failure;};
+ const controller:SourceGradientPaletteController={ownsManualSnapshot:true,mode:domainPaletteEditorMode(state),colorCount:state.colorCount,cosine:state.cosine,curve:state.curves??{},onCommit:commit=>accept(commitDomainSourcePalette(scene,commit)),description:'修改立即更新作品。主色板与 CPU 回退共用生成参数；保存仅保留颜色，重新打开项目回到手动模式。'};
  const version=usage==='cpu-fallback'?'mathart-1.7.8-cpu':parseDomainColorVersion(scene.settings.domainColorVersion);
  const preview=colors.length?`linear-gradient(90deg,${(colors.length===1?[colors[0],colors[0]]:colors).slice(0,16).map(domainSourceColorRgbHex).join(',')})`:'#000000';
- return <div style={{display:'grid',gap:10}}>
+ return <div style={{display:'grid',gap:10}} data-testid={usage==='cpu-fallback'?'domain-source-palette-cpu-fallback':'domain-source-palette-main'}>
+  <SourceGradientPaletteEditor source={colors} colors={colors} onGenerate={emit} onRestore={()=>accept(restoreDomainSourceManualPalette(scene))} controller={controller}>
   <p className="muted">{t(version==='mathart-1.7.8-gpu'?'GPU 着色使用前 16 色；渐变运行时按所选插值补色。':'CPU 着色使用完整色板；渐变运行时循环插值。')}</p>
   <div role="img" aria-label={t('前 16 个颜色预览')} style={{height:25,borderRadius:5,background:preview,border:'1px solid var(--border)'}}/>
   <label className="field"><span>{t('色板预设')}</span><select aria-label={t('源色板预设')} value="" onChange={e=>{const p=PALETTES[Number(e.target.value)];if(p){emit(p.stops);setSelected(0);}}}><option value="" disabled>{t('选择预设…')}</option>{PALETTES.map((p,i)=><option key={p.name} value={i}>{t(p.name)}</option>)}</select></label>
@@ -72,6 +79,7 @@ export function DomainSourcePaletteEditor({scene,onChange,usage}:Props&{usage?:'
    <div style={{display:'flex',gap:8,alignItems:'center'}}><input aria-label={t('源颜色')} type="color" value={domainSourceColorRgbHex(current)} onChange={e=>emit(colors.map((c,i)=>i===index?withDomainSourceColorRgb(c,e.target.value):c))}/><code style={{overflowWrap:'anywhere'}}>{current}</code><button onClick={()=>{emit(colors.filter((_,i)=>i!==index));setSelected(Math.max(0,index-1));}}>{t('删除颜色')}</button></div>
   </>:<p className="muted">{t('空色板以黑色为基色；亮度偏置仍会应用。')}</p>}
   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button onClick={()=>{emit([...colors,current??'#ffffff']);setSelected(colors.length);}}>{t('添加颜色')}</button><button onClick={()=>{emit([...colors].reverse());setSelected(0);}} disabled={colors.length<2}>{t('反转')}</button><button onClick={()=>{emit(DEFAULT_DOMAIN_SOURCE_COLORS);setSelected(0);}}>{t('恢复六色默认')}</button></div>
+  </SourceGradientPaletteEditor>
   {error&&<p role="alert" className="export-error">{t(error)}</p>}
  </div>;
 }

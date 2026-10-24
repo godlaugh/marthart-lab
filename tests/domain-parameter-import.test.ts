@@ -1,6 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {parseProjectFile} from '../src/engine/legacyImport';
-import {parseScene} from '../src/engine/document';
+import {parseScene,persistentScene} from '../src/engine/document';
+import {domainPaletteRuntimeScene} from '../src/engine/domainPaletteEditing';
 import {sceneAtTime} from '../src/engine/timeline';
 
 const base={config_version:'1.0.0',type:'DOMAIN_COLORING',name:'Source parameter import',domainColoring:{formula:'z'},settings:{render_mode:'CPU'}};
@@ -66,7 +67,7 @@ describe('public Domain source registry import',()=>{
   const later=sceneAtTime(scene,.1);expect(later.parameters['a.b']).toBe(20);expect(later.parameters.__proto__).toBe(23);expect(Object.getPrototypeOf(later.parameters)).toBe(Object.prototype);
   expect(later.parameters['']).toBe(parameters['']);expect(later.parameters['\u00a0']).toBe(25);expect(later.parameters['\u0000']).toBe(26);expect(later.parameters[' scale ']).toBe(27);
   expect(later.settings.scale).toBe(2);expect(later.settings.phaseDensity).toBe(5);expect(later.parameters.scale).toBe(99);expect(later.parameters.phaseDensity).toBe(88);expect(later.parameters['new-name']).toBe(7);
-  expect(sceneAtTime(parseScene(JSON.stringify(scene)),.1)).toEqual(later);expect(sceneAtTime(scene,0).parameters).toEqual(start.parameters);expect(scene.parameters).toEqual(parameters);
+  expect(sceneAtTime(parseScene(JSON.stringify(scene)),.1)).toEqual(domainPaletteRuntimeScene(later));expect(sceneAtTime(scene,0).parameters).toEqual(start.parameters);expect(scene.parameters).toEqual(parameters);
  });
  it('keeps a disabled-only named Stop from becoming StopAll',()=>{
   const {scene}=read({parameters:{x:0},timeline:[clip([action('paramStart',{parameters:{x:{min:-1,max:1,step:.01}}})],{duration:0}),clip([action('paramStop',{parameters:{x:{enable:false}}})]),{type:'wait',duration:2}]});
@@ -95,7 +96,7 @@ describe('public Domain source registry import',()=>{
  });
  it('preserves 128 named operations in one action rather than expanding past the 64-action limit',()=>{
   const parameters=Object.fromEntries(Array.from({length:128},(_,i)=>['x'+i,{}]));
-  const {scene}=imported('paramStart',{parameters});expect(scene.timeline.tracks[0].actions).toHaveLength(1);expect(scene.timeline.tracks[0].actions![0].domainParameters).toHaveLength(128);expect(parseScene(JSON.stringify(scene))).toEqual(scene);
+  const {scene}=imported('paramStart',{parameters});expect(scene.timeline.tracks[0].actions).toHaveLength(1);expect(scene.timeline.tracks[0].actions![0].domainParameters).toHaveLength(128);expect(parseScene(JSON.stringify(scene))).toEqual(persistentScene(scene));
   parameters.extra={};expect(()=>specs('paramStart',{parameters})).toThrow('128');
  });
  it('uses source scalar fallback for formula parameters and preserves their original text',()=>{

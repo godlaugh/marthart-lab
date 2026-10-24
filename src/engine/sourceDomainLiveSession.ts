@@ -1,3 +1,4 @@
+import {domainPaletteRuntimeScene} from './domainPaletteEditing';
 import {validateSourceDomainFrameRate} from './sourceDomainClockInput';
 import type {PausedCaptureResult,SourceRecordingOptions} from './generationProtocol';
 import type {FormulaPresentation,GenerateContext,GenerationInput,SceneDocument,SceneOutput} from '../types';
@@ -61,7 +62,7 @@ function context(c:GenerateContext):SourceDomainLiveContext {
  validateRasterRequest(c);return v;
 }
 function clean(scene:SceneDocument):SceneDocument {
- const result=copy(scene);delete result.evaluatedDomainScene;delete result.evaluatedDomainGradient;return result;
+ const result=copy(domainPaletteRuntimeScene(scene));delete result.evaluatedDomainScene;delete result.evaluatedDomainGradient;return result;
 }
 function display(scene:SceneDocument,snapshot:SourceDomainHostSnapshot):SceneDocument {
  const result=clean(scene);

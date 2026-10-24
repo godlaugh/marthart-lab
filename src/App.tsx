@@ -1,3 +1,4 @@
+import {domainPaletteRuntimeScene,retainDomainPaletteEditorOnSave} from './engine/domainPaletteEditing';
 import {usesSourceImplicitCpuMesh} from './engine/sourceImplicitPresentation';
 import {implicitCameraFrame} from './engine/sourceImplicitResponse';
 import type {SourceImplicitLiveContext} from './engine/sourceImplicitLive';
@@ -347,7 +348,7 @@ export default function App() {
       if(currentLive!=='domain'||current.id!==next.id)replaceLiveSession(undefined);
       if(intent!=='domain-parameters'&&intent!=='domain-metadata'){
         pendingParameterWrites.current.clear();
-        domainEdit.current={revision:domainEdit.current.revision+1,configuration:structuredClone(next)};
+        domainEdit.current={revision:domainEdit.current.revision+1,configuration:structuredClone(domainPaletteRuntimeScene(next))};
         liveDisplayRequested.current=true;setGenerationRevision(value=>value+1);
       }
     }
@@ -585,7 +586,7 @@ export default function App() {
     const builtin=isBuiltinCreationScene(scene);
     const item = parseScene(serializeScene({ ...workingDocument(scene),id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
     if(builtin)drafts.current[scene.id]=workingDocument(scene);
-    setScene(retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':undefined);camera.current=item.camera;
+    setScene(retainDomainPaletteEditorOnSave(scene,retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item))),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':sourceLivePreviewKind(scene)==='domain'?'domain-metadata':undefined);camera.current=item.camera;
     setSaved((current) => {
       const others = current.filter((s) => s.id !== item.id);
       return [...others, item];

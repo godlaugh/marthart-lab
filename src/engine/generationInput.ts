@@ -1,3 +1,4 @@
+import {domainPaletteRuntimeScene} from './domainPaletteEditing';
 import type {GenerationInput} from '../types';
 /** One exhaustive transport boundary shared by queued and direct generation.
  * New GenerateContext inputs must be deliberately registered here. Callbacks
@@ -11,7 +12,8 @@ const fields:{[K in keyof GenerationInput]-?:true}={
 export function snapshotGenerationInput(context:GenerationInput):GenerationInput {
  const result:Partial<GenerationInput>={};
  for(const key of Object.keys(fields) as (keyof GenerationInput)[]){
-  const value=context[key];
+  let value=context[key];
+  if(key==='domainLive'&&context.domainLive?.configuration){value={...context.domainLive,configuration:domainPaletteRuntimeScene(context.domainLive.configuration)};}
   // Preserve malformed-but-present inputs for the owning worker's validator.
   // Deep-copy nested viewport facts so later callers cannot mutate a request.
   if(value!==undefined)Object.assign(result,{[key]:typeof value==='object'&&value!==null?structuredClone(value):value});

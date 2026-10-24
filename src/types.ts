@@ -1,3 +1,4 @@
+import type {DomainPaletteEditorState} from './engine/domainPaletteEditing';
 import type {SourceFractalRecordingFrameInput,SourceFractalRecordingFrame} from './engine/sourceFractalRecording';
 import type {SourceFractalZoomTarget} from './engine/sourceFractalZoom';
 import type {SourceFractalDocumentPayload,SourceFractalActionsPayload} from './engine/sourceFractalDocument';
@@ -245,6 +246,8 @@ export interface SceneDocument {
   /** Explicit project canvas dimensions; omission retains existing sizing. */
   projectResolution?: ProjectResolution;
   domainSourcePalette?: DomainSourcePalette;
+  /** Open-project editor state only; never persisted or sent to renderers. */
+  domainPaletteEditor?: DomainPaletteEditorState;
   /** Independent authored source colors. The profile selects execution;
    * switching to local keeps this configuration available for restoration. */
   fractalSourceColor?: FractalSourceColorConfiguration;

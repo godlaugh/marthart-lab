@@ -1,5 +1,6 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {Generator} from '../src/engine/client';
+import {GenerationQueue} from '../src/engine/generationQueue';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import type {GenerationInput,SceneOutput} from '../src/types';
 import type {GenerationRequest,GenerationResponse,SourceRecordingOptions} from '../src/engine/generationProtocol';
@@ -38,6 +39,24 @@ async function setup(empty=false){
  const g=new Generator(),output=await g.generate(scene,context);return{g,scene,context,output};
 }
 describe('Domain recording production transport',()=>{
+ it.each([false,true])('retains the exact opened editor at queue recording stop, including a deferred edit (%s)',async deferred=>{
+  const f=await setup(),callbacks={output:vi.fn(),error:vi.fn(),busy:vi.fn(),recordingStopped:vi.fn()},q=new GenerationQueue(f.g,callbacks);
+  q.request(f.scene,f.context);await vi.waitFor(()=>expect(callbacks.output).toHaveBeenCalled());
+  const output=callbacks.output.mock.calls.at(-1)![0] as SceneOutput;
+  const edited={...f.scene,domainSourcePalette:{colors:['#80112233','#aBcDeF']},domainPaletteEditor:{...f.scene.domainPaletteEditor!,useCosine:true,colorCount:5}};
+  await q.recordSource(output,options,{actualFrameRate:()=>37,frame:()=>{},start:()=>{
+   if(deferred)q.request(edited,{...f.context,domainLive:{...f.context.domainLive!,revision:1,configuration:edited}});
+  }});
+  expect(callbacks.error).not.toHaveBeenCalled();expect(callbacks.recordingStopped).toHaveBeenCalledOnce();
+  const stopped=callbacks.recordingStopped.mock.calls[0][0],expected=deferred?edited:f.scene;
+  expect(stopped.scene).toBe(expected);expect(stopped.scene.domainPaletteEditor).toBe(expected.domainPaletteEditor);
+  if(deferred)await vi.waitFor(()=>expect(callbacks.output.mock.calls.at(-1)?.[2]).toBe(edited));
+  for(const request of port.sent)if(request.operation==='generate'){
+   expect(request.scene).not.toHaveProperty('domainPaletteEditor');
+   if(request.context.domainLive?.configuration)expect(request.context.domainLive.configuration).not.toHaveProperty('domainPaletteEditor');
+  }
+  q.dispose();
+ });
  it('preserves signed zero observations instead of substituting simulation FPS',async()=>{
   const f=await setup(),start=await f.g.beginSourceRecording(f.output,{...options,actualFrameRate:-0});
   expect(Object.is(start.warmup.domainLive!.actualFrameRate,-0)).toBe(true);

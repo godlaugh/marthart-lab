@@ -1,3 +1,4 @@
+import {domainPaletteRuntimeScene} from '../src/engine/domainPaletteEditing';
 import {describe,expect,it,vi} from 'vitest';
 import {SourceDomainLiveSession} from '../src/engine/sourceDomainLiveSession';
 import {planDomainRecordingClock} from '../src/engine/sourceDomainRecording';
@@ -43,7 +44,7 @@ describe('Domain retained recording',()=>{
   expect(start.warmup.domainLive.presentation.parameters.a).toBeCloseTo(f.row.frames[0].state.values.a.value,13);
   expect(start.warmup.domainLive.presentation.settings.centerX).toBe(f.scene.settings.centerX);expect(start.warmup.formulaPresentation.labels[0].latex).toBe('captured');
   expect(f.render.mock.calls.at(-1)![2]).not.toBe(oldRenderer);expect(start.scene.equations.f).toBe(f.scene.equations.f);
-  const stop=f.owner.finishRecording(start.handle,2000);expect(stop.scene).toEqual(draft);expect(stop.preview.domainLive.presentation.equations.f).toBe(f.scene.equations.f);
+  const stop=f.owner.finishRecording(start.handle,2000);expect(stop.scene).toEqual(domainPaletteRuntimeScene(draft));expect(stop.scene).not.toHaveProperty('domainPaletteEditor');expect(draft.domainPaletteEditor).toBeDefined();expect(stop.preview.domainLive.presentation.equations.f).toBe(f.scene.equations.f);
   const snapshot=f.owner.diagnostics().host;f.owner.finishRecording(start.handle,9999);expect(f.owner.diagnostics().host).toEqual(snapshot);
   f.owner.setPaused(true,2100);expect(()=>f.owner.finishRecording(start.handle)).toThrow('身份');
  });

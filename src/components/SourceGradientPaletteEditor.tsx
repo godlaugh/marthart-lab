@@ -9,6 +9,10 @@ export interface SourceGradientPaletteController {
  mode:Mode;cosine:Omit<SourceCosinePaletteState,'colorCount'>;curve:Partial<Omit<SourceCurvePaletteState,'colorCount'>>;
  onCommit:(commit:SourceGradientPaletteCommit)=>string|undefined;
  description:string;
+ /** Optional opened-project count shared by multiple editor surfaces. */
+ colorCount?:number;
+ /** Shared owner keeps the Manual snapshot; avoid duplicating it per surface. */
+ ownsManualSnapshot?:boolean;
 }
 type Channel='red'|'green'|'blue';
 const channels:readonly Channel[]=['red','green','blue'];
@@ -21,11 +25,12 @@ const scalarRules={min:0,max:1,precision:3,step:.01},frequencyRules={...scalarRu
  * Controlled callers own flags/parameters and receive one atomic user action.
  * Count and Manual snapshot are always transient; hydration never commits. */
 export function SourceGradientPaletteEditor<T>({source,colors,onGenerate,onRestore,children,controller}:{controller?:SourceGradientPaletteController;source:T;colors:readonly string[];onGenerate:(colors:string[],resetSelection?:boolean)=>string|undefined;onRestore:(source:T)=>string|undefined;children:ReactNode}){
- const {t}=useI18n(),[localMode,setMode]=useState<Mode>('manual'),[count,setCount]=useState(()=>clamp(colors.length>=2?colors.length:8,2,25));
+ const {t}=useI18n(),[localMode,setMode]=useState<Mode>('manual'),[localCount,setCount]=useState(()=>clamp(colors.length>=2?colors.length:8,2,25));
  const [localCosine,setCosine]=useState(defaultSourceCosinePalette),[localCurve,setCurve]=useState(defaultSourceCurvePalette),[channel,setChannel]=useState<Channel>('red'),[selected,setSelected]=useState<string|null>(null),[error,setError]=useState('');
  // Missing authored channels use constructor ramps, never a previous edit.
  // Keep this seed separate from the transient draft owned by generic callers.
  const curveDefaults=useRef(localCurve);
+ const count=controller?.colorCount??localCount;
  const mode=controller?.mode??localMode,cosine:SourceCosinePaletteState=controller?{...controller.cosine,colorCount:count}:localCosine,curve:SourceCurvePaletteState=controller?{...curveDefaults.current,...controller.curve,colorCount:count}:localCurve;
  const manual=useRef<{value:T}|null>(null),svg=useRef<SVGSVGElement>(null),drag=useRef<string|null>(null);
  const current=useRef({curve,channel});current.current={curve,channel};
@@ -40,15 +45,15 @@ export function SourceGradientPaletteEditor<T>({source,colors,onGenerate,onResto
   const commit:SourceGradientPaletteCommit=nextMode==='cosine'?{kind,mode:nextMode,state:normalized.value as SourceCosinePaletteState,colors:generated.value}:{kind,mode:nextMode,state:normalized.value as SourceCurvePaletteState,colors:generated.value};
   const failure=controller?controller.onCommit(commit):onGenerate(generated.value);if(failure){setError(failure);return false;}
   if(!controller){if(nextMode==='cosine')setCosine(normalized.value as SourceCosinePaletteState);else setCurve(normalized.value as SourceCurvePaletteState);}
-  setCount(nextCount);setError('');return true;
+  if(controller?.colorCount===undefined)setCount(nextCount);setError('');return true;
  }
  function changeMode(next:Mode){
   if(next===mode)return;
   if(next==='manual'){
-   const failure=manual.current?onRestore(manual.current.value):controller?onRestore(source):undefined;if(failure){setError(failure);return;}
+   const failure=controller?.ownsManualSnapshot?onRestore(source):manual.current?onRestore(manual.current.value):controller?onRestore(source):undefined;if(failure){setError(failure);return;}
    manual.current=null;setMode(next);setError('');return;
   }
-  const snapshot=mode==='manual'?{value:structuredClone(source)}:manual.current;
+  const snapshot=controller?.ownsManualSnapshot?null:mode==='manual'?{value:structuredClone(source)}:manual.current;
   const nextCurve=next==='curve'&&[curve.red,curve.green,curve.blue].every(points=>points.length===0)?randomizeSourceCurvePalette(curve):undefined;
   if(nextCurve&&!nextCurve.ok){setError(nextCurve.error.reason);return;}
   if(apply(next,cosine,nextCurve?.ok?nextCurve.value:curve,count,'mode')){manual.current=snapshot;setMode(next);}

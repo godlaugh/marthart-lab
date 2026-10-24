@@ -1,0 +1,343 @@
+{
+  "date": "2026-10-24",
+  "baseCommit": "511dee4237f7441441f6190d31ab79297c62e9ef",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "evidenceKinds": {
+    "original": "Reused pinned classfile generator audit and prior numerical vectors; new static InspectorPanel and Roots routing audit only. No original JVM/GUI execution this batch.",
+    "local": "Production boundaries, real headless App/Worker/rendering and PNG. These do not prove original whole-image parity."
+  },
+  "claims": [
+    "Domain colors are the sole rendering/persistent owner; generator flags, coefficients, curves, count and Manual snapshot belong to the open editor session.",
+    "ProjectState imports literal Float32 coefficients; direct Fractal runtime-config retains expression parsing. Import preserves omission/raw order/dual flags and never generates.",
+    "Main and CPU-fallback surfaces share one session owner; save retains the open state, persisted/reopened local files omit it, provenance is not rehydrated.",
+    "CPU uses complete color lists and GPU first16. Paused and playing explicit generator edits fully apply; Manual restores colors only.",
+    "Wire/runtime/cache projections strip the editor before cloning; production normal/deferred recording stop preserves latest UI ownership.",
+    "Additional Roots audit distinguishes actual full-apply keys from staged mode/camera/timeline and hot visual paths; no Roots product change in this batch."
+  ],
+  "validation": {
+    "testFiles": 37,
+    "tests": 666,
+    "buildV2": "passed; existing chunk warning",
+    "i18n": "3312 catalog entries, no required UI gaps",
+    "domainApp": {
+      "cases": 2,
+      "checks": 426,
+      "pngs": [
+        {
+          "backend": "cpu",
+          "width": 256,
+          "height": 192,
+          "rgbaSha256": "dde0b6527ff60a4f33d1628a6ee284fa731a39ebc6a6b75dc33eeaa92dbac1c8"
+        },
+        {
+          "backend": "gpu",
+          "width": 256,
+          "height": 192,
+          "rgbaSha256": "ba2add466d90682eb7536a0ac3fae223b67380ce7b38ac077a8d98d5076ab0b5"
+        }
+      ],
+      "measurements": {
+        "elapsedMs": 28645.04475,
+        "costScope": "Two-case public App workflow after Vite/export service/browser setup",
+        "processFamily": {
+          "rootPid": 10500,
+          "samples": 98,
+          "observedProcesses": 109,
+          "maxConcurrentProcesses": 10,
+          "sampledPeakRssKiB": 2679984,
+          "observedCpuMs": 41949.999999999985,
+          "samplingErrors": []
+        }
+      },
+      "sourceStable": true,
+      "finalSourcesMatch": true,
+      "remainingServiceProcesses": 0
+    },
+    "fractalRegression": {
+      "cases": 2,
+      "checks": 185,
+      "measurements": {
+        "elapsedMs": 41404.695792,
+        "costScope": "Two-case public App workflow after Vite/export service/browser setup",
+        "processFamily": {
+          "rootPid": 99740,
+          "samples": 141,
+          "observedProcesses": 152,
+          "maxConcurrentProcesses": 11,
+          "sampledPeakRssKiB": 2325328,
+          "observedCpuMs": 47229.99999999999,
+          "samplingErrors": []
+        }
+      },
+      "sourceStableDuringRun": true,
+      "laterChangedSourcePaths": [
+        "src/components/DomainColorControls.tsx"
+      ],
+      "laterChange": "Domain-only typed controller declaration hoisted out of JSX; Fractal component/importer unchanged. Final Domain App rerun passed."
+    }
+  },
+  "costComparison": {
+    "report": ".cache/domain-palette-editor-cost-20261024/run-shPKJQ/report.json",
+    "scope": "Only App.tsx and DomainColorControls.tsx are replaced with pinned baseline sources; every other dependency is current for both variants. This isolates App/editor owner cost, not two complete historical versions.",
+    "measurement": "Cold includes App navigation/module import, initial render and Appearance opening after empty-page workspace preparation. Warm includes six UI edits and completed Worker/renderer delivery, with full RGBA SHA256. Browser launch, Vite setup and fixture preparation excluded. Chrome family ps CPU deltas/RSS sampled at boundaries and every250ms; missed short-lived children/transient peaks possible. No OS/driver cache flush. One sample per variant; no generalized speedup claim.",
+    "baseline": "511dee4237f7441441f6190d31ab79297c62e9ef",
+    "phases": [
+      {
+        "variant": "before",
+        "phases": [
+          {
+            "phase": "cold-app-and-appearance",
+            "elapsedMs": 1625.1904999999997,
+            "processFamily": {
+              "rootPid": 9444,
+              "samples": 7,
+              "observedProcesses": 7,
+              "maxConcurrentProcesses": 7,
+              "sampledPeakRssKiB": 1416192,
+              "observedCpuMs": 3090,
+              "samplingErrors": []
+            }
+          },
+          {
+            "phase": "warm-six-manual-edits",
+            "elapsedMs": 1559.624875,
+            "processFamily": {
+              "rootPid": 9444,
+              "samples": 7,
+              "observedProcesses": 7,
+              "maxConcurrentProcesses": 7,
+              "sampledPeakRssKiB": 1485296,
+              "observedCpuMs": 1630.0000000000002,
+              "samplingErrors": []
+            }
+          }
+        ],
+        "cleanup": [
+          {
+            "resource": "browser",
+            "status": "fulfilled"
+          },
+          {
+            "resource": "ownedChromeFamily",
+            "status": "fulfilled"
+          },
+          {
+            "resource": "vite",
+            "status": "fulfilled"
+          }
+        ],
+        "chromeExit": {
+          "exitCode": 0,
+          "signalCode": null
+        }
+      },
+      {
+        "variant": "after",
+        "phases": [
+          {
+            "phase": "cold-app-and-appearance",
+            "elapsedMs": 1583.3943750000008,
+            "processFamily": {
+              "rootPid": 9642,
+              "samples": 7,
+              "observedProcesses": 7,
+              "maxConcurrentProcesses": 7,
+              "sampledPeakRssKiB": 1417072,
+              "observedCpuMs": 3110,
+              "samplingErrors": []
+            }
+          },
+          {
+            "phase": "warm-six-manual-edits",
+            "elapsedMs": 1540.1876669999992,
+            "processFamily": {
+              "rootPid": 9642,
+              "samples": 7,
+              "observedProcesses": 7,
+              "maxConcurrentProcesses": 7,
+              "sampledPeakRssKiB": 1482256,
+              "observedCpuMs": 1609.9999999999998,
+              "samplingErrors": []
+            }
+          }
+        ],
+        "cleanup": [
+          {
+            "resource": "browser",
+            "status": "fulfilled"
+          },
+          {
+            "resource": "ownedChromeFamily",
+            "status": "fulfilled"
+          },
+          {
+            "resource": "vite",
+            "status": "fulfilled"
+          }
+        ],
+        "chromeExit": {
+          "exitCode": 0,
+          "signalCode": null
+        }
+      }
+    ],
+    "rgbaSequencesEqual": true,
+    "sourceStable": true,
+    "unmeasured": [
+      "Agent tokens",
+      "Node/Vite CPU and memory",
+      "GPU device time/VRAM",
+      "Original application cost or effects",
+      "Browser launch/Vite setup/fixture preparation"
+    ]
+  },
+  "failuresRetained": [
+    {
+      "report": ".cache/domain-palette-editor-cost-20261024/run-BdDqfQ/report.json",
+      "reason": "Initial startAt=0 reconstruction is not an explicit full apply time-zero frame; both variants rejected the mistaken initial assertion."
+    },
+    {
+      "report": ".cache/domain-gradient-app-1792824003675/report.json",
+      "reason": "Verifier dispatched both input/change as separate submissions, creating two Undo entries. Single public color change event used in final verification."
+    },
+    {
+      "report": ".cache/domain-generator-validation-20261024/regression.log",
+      "reason": "Two equality assertions included transient Domain state; five independent-palette tests used Mandelbrot after it moved to source routing. Full pinned source baseline reproduced all five; Phoenix now exercises the intended fallback without removing checks."
+    },
+    {
+      "report": ".cache/domain-generator-validation-20261024/i18n.log",
+      "reason": "Inline controller description was classified as raw JSX; typed controller declaration moved outside JSX, keeping shared component as translation owner."
+    }
+  ],
+  "sourcePins": {
+    "scripts/benchmark-domain-palette-editor.mjs": "803f5eaa482c4b3a9d8c6e394e1f57711972c7746e391561badde02c4209b004",
+    "scripts/verify-domain-gradient-palette.mjs": "f9fec2404332c13371c853e290f345cc69ef814e1ac5bb9c4d21c805b43a583c",
+    "src/App.tsx": "c5222a57999557c473c2237fedcd06811c5c6d3c9138d2cfae65b863cc32e31a",
+    "src/components/DomainColorControls.tsx": "999b40537d979a91633b211129d6e3d0b441a44aa709552e94ea6e51eddc8458",
+    "src/components/SourceGradientPaletteEditor.tsx": "ee577895cfae2f063d1306e0d2e3c411e2033c87d615819413f8d885f9efbc13",
+    "src/engine/client.ts": "a606a9e4cb43fdca106a29071c830df2ac5e734ead04674c1cdc609bbe608f8d",
+    "src/engine/document.ts": "d26b30f4b934c66cd56bfb62256d05575738d93262c015a9aae0525fdbdbe6c3",
+    "src/engine/domain.ts": "44b42f3f490b30a7a57f7685d620429f9572142258c136cf8ffbc8dc42908f08",
+    "src/engine/domainPaletteEditing.ts": "3250ce2b37582a5fa14cb1d17323f629b7a98741d35529621cb24834831d622f",
+    "src/engine/fractalSourceColor.ts": "42f0cc1fc3ff3c160f2cf9def69641bc71415d83fd472002ac3fa6dc253a57d1",
+    "src/engine/generationInput.ts": "1c37872687aae31dea19952b38af50b406f990fa7ee30b376c5b65e6d9335302",
+    "src/engine/legacyImport.ts": "59c9b95efda2666377f8ca91d9f587508d0cb99cded7454456d42205cf5f3003",
+    "src/engine/sourceDomainLiveSession.ts": "d5e02eb6da4d5bee7d9211fb90b49cb54c288fa9b8bf091141f602a066e6c5d5",
+    "src/engine/sourcePaletteGeneratorImport.ts": "606c85f9e3b1649f980b813521d8e93b82ca77b91a965d667aacf89fb3287d27",
+    "src/engine/temporal.ts": "f9350811a7fc378e14143a28bd15ef6b90002244199207c849996f5c1fe21c64",
+    "src/types.ts": "3f82a8f7a2516ddec1b4dc4adaceca9371c51e26e88ca15ec3c65a82890fa49d",
+    "tests/domain-palette-controls.test.tsx": "aaed38a5eeb040bc81b19844f4e583ef1805966d2f0dfd799f85e2980942f213",
+    "tests/domain-palette-generator.test.ts": "d4047da58cf71a40a8102275102b7ddfd4356f3f31ea1d750f71a2e9a287c415",
+    "tests/domain-parameter-import.test.ts": "c6f267559923af9b142f6a8ac16082c7ad254b51ff6e2044f12c3577c1d18ad5",
+    "tests/domain-recording-transport.test.ts": "5bf6990334b954aad588f16452b6c91bc52eafb0a8daadea2046fb3b7cbfa83d",
+    "tests/domain-render-policy-authoring.test.ts": "8ac99cc585647f6bcc1966662a88a7eda79e6163c8552ea62b90d9527d8725aa",
+    "tests/generation-client-domain.test.ts": "62949d4eb4722aafc100d0bf65626db957e3b1f67c7a103401e5302a74784b84",
+    "tests/palette-legacy.test.ts": "a6f46185c5cdd43fe0bb9d81cce254dee95eb560fbf9ddb187d566f803d0c424",
+    "tests/source-domain-live-recording.test.ts": "985829e5266169ee669ded7222b6bd11bd376b921f163a9de8964361d87d2ecc"
+  },
+  "artifacts": [
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/report.json",
+      "sha256": "6b91f92a5f6f80160ceadcea15a840d3023339b6e35ea5ff62840c1889a5110f"
+    },
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/README.md",
+      "sha256": "a0e388476a6a9bd529f9a3368807cb37a0228bc6c86e6849ffbeec19464f1b7c"
+    },
+    {
+      "path": ".cache/domain-palette-editor-cost-20261024/run-shPKJQ/report.json",
+      "sha256": "a98ec4d56893fb8de22cf510b9e2391d99a45aa2c204dc9e03a1bfcee9731152"
+    },
+    {
+      "path": ".cache/fractal-gradient-app-domain-regression-20261024/report.json",
+      "sha256": "b73c278e4bc0ff2a9934331ea94a9a097dd0bd5f2d81573a609475728a29e914"
+    },
+    {
+      "path": ".cache/domain-generator-validation-20261024/final-build.log",
+      "sha256": "a76c6ccc4d1c5c7839ea43d5d774f62a456b5fc6df2396b6c6644623fa2024dc"
+    },
+    {
+      "path": ".cache/domain-generator-validation-20261024/final-regression.log",
+      "sha256": "c5554f16a31d5a3759ef71a503d7f880746c1b66b3438265658b28be40c9b20c"
+    },
+    {
+      "path": ".cache/domain-generator-validation-20261024/final-i18n.json",
+      "sha256": "ba4525e46daaab1f2529d0fc3a0af43d0953187f2e99be123f4c451466679940"
+    },
+    {
+      "path": ".cache/domain-generator-validation-20261024/palette-baseline-b58pzccq/result.json",
+      "sha256": "b436c3a8ca6e6d7e3421a56f04c57064419424c0776cc31f454fdacbfd19b6a2"
+    },
+    {
+      "path": ".cache/domain-generator-validation-20261024/palette-baseline-b58pzccq/baseline.log",
+      "sha256": "4dd08a11231132c1d8463349f85cb899b1c0e78051ad9ecbabb1fe5c3f30b081"
+    },
+    {
+      "path": ".cache/domain-palette-editor-implementation-20261024/manifest.json",
+      "sha256": "7425f44e98abe5aa0958dc7467235e90633d91a7396a3fda42b8f47911ff9acd"
+    },
+    {
+      "path": ".cache/domain-palette-editor-implementation-20261024/followup-checks.json",
+      "sha256": "fe892d197010b6911ed807475575f67bc75c22565f17331e2682be24a42b4c8b"
+    },
+    {
+      "path": ".cache/domain-palette-owner-independent-review-20261024/manifest.final.json",
+      "sha256": "5b27837dcaf247fc453324c76169a1af083125e93ff5f3905af38c833411f8a1"
+    },
+    {
+      "path": ".cache/domain-palette-owner-independent-review-20261024/README.md",
+      "sha256": "4a28844d8b9e1bad69d50bf33215aba33ae5c262f224a226e76c716b884a76c2"
+    },
+    {
+      "path": ".cache/fractal-domain-generator-owner-review-20261024/manifest.json",
+      "sha256": "6d06ef7f1534dd088d6f9c9267360d618c3acfbafdbcddda2ddbc6c7d25388d2"
+    },
+    {
+      "path": ".cache/roots-control-command-routing-review-20261024/manifest.json",
+      "sha256": "8266791f9e36013c6f3ba0da3a13dbab14ace537262b61d48a171e432eb3fe86"
+    },
+    {
+      "path": ".cache/roots-control-command-routing-review-20261024/selected-evidence.json",
+      "sha256": "048cda48b0c8bb344cb8bad348db8438983afe71f63bbcf894d47746438dd09c"
+    },
+    {
+      "path": ".cache/roots-control-command-routing-review-20261024/review.zh-CN.md",
+      "sha256": "c2cb95d292b617f797695f50da9fdf9d67c35e22a711a694d570761107f0421c"
+    },
+    {
+      "path": ".cache/domain-generator-composition-lifetime-20261024/manifest.json",
+      "sha256": "4746334e4c0d6c614093e5f133843f57c9033e892c7ab6596715e87fa1f5c327"
+    },
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/domain-cpu-full-palette.png",
+      "sha256": "392df19f413db2bfd13a623bbab6ebf57aef9619c20bd4b89a7d2e0f200210ce"
+    },
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/domain-cpu-full-palette-app.png",
+      "sha256": "8932b683232181f5452d187f8ae00efd1711d505fcb3b7f9479ca4773de99dfb"
+    },
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/domain-cpu-full-palette-project.json",
+      "sha256": "9b220f985d9a99e12fd22c8b5f433b652a97d8f0b2b42ac1542bfd42558cf91a"
+    },
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/domain-gpu-prefix-palette.png",
+      "sha256": "8a1a93cd6a1a5f8b1115ffe558f114c1bcdfb2354e46066002cd0a54bdf77f57"
+    },
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/domain-gpu-prefix-palette-app.png",
+      "sha256": "22a2082fb6e5cc0d4441aea305501c4508e78fbf5f80c12f66753d2db681af33"
+    },
+    {
+      "path": ".cache/domain-gradient-app-final-20261024/domain-gpu-prefix-palette-project.json",
+      "sha256": "281cff01c8d285d6b8e190dc1a06d9c9c4ff251b2fd0d430a8322bab44e7821a"
+    }
+  ],
+  "remaining": [
+    "Original matched whole images, long-running/all-formula animation and actual App recording.",
+    "Original short/empty palette Appearance mutation and whole Inspector remember lifetime.",
+    "Domain final wire trace retains post-reopen observed requests only, with production boundary tests covering transport owner stripping.",
+    "Roots cold/current palette and recording ownership, exact event ordering and unsupported manual offset mapping remain open.",
+    "Implicit, Symmetry and Samila generator integrations; all11 remaining scene family requirements, general capabilities and Apple Silicon final integration/package."
+  ]
+}

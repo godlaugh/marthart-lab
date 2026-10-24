@@ -1,3 +1,4 @@
+import {domainPaletteRuntimeScene} from './domainPaletteEditing';
 import {prepareDomainRasterTarget,admitDomainTarget,presentDomainRgbLinear,type DomainRasterTarget} from './domainRasterTarget';
 import type {DomainRepairPixel} from './domainGpuRaster';
 import type {GenerateContext,SceneDocument,SceneOutput} from '../types';
@@ -17,6 +18,7 @@ type DomainOutput=Extract<SceneOutput,{type:'raster'}>&{backend?:'cpu'|'webgl2'}
 type RenderedDomain=DomainOutput & {domainPresentation?:'webgl-linear'|'software-linear'|'direct'};
 
 export function generateDomain(scene:SceneDocument,context:GenerateContext,session?:DomainRenderSession):DomainOutput{
+ scene=domainPaletteRuntimeScene(scene);
  if(context.isCancelled?.())throw new DOMException('域着色计算已取消','AbortError');
  validateRasterRequest(context);
  const target=prepareDomainRasterTarget(context);

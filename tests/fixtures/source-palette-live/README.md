@@ -9,3 +9,9 @@ The local production owner is exercised by `tests/source-perlin-live.test.ts` an
 See [Chinese acceptance record](../../../docs/source-roots-perlin-gradient-generators.zh-CN.md) for actual App coverage, corrected findings and unresolved boundaries. No original executable/classfiles or generated captures are committed here.
 
 `followup-20261024.json` records the subsequent explicit Perlin palette-command fix and Fractal controlled-generator integration. It pins local production/App reports and reused static evidence separately; it is an evidence index, not an original pixel oracle. See the [Perlin command record](../../../docs/source-perlin-palette-commands.zh-CN.md) and [Fractal generator record](../../../docs/source-fractal-gradient-generators.zh-CN.md) for current coverage and limits.
+
+`domain-20261024.json` records the Domain opened-project generator owner, its
+shared importer and runtime projection, actual CPU/GPU App workflows and an
+equal-workload cost comparison. It also pins the additional static Roots control
+routing audit for later work; Roots runtime ownership is not fixed by this batch.
+See the [Chinese Domain acceptance record](../../../docs/source-domain-gradient-generators.zh-CN.md).

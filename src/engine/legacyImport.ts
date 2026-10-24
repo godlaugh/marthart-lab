@@ -1,3 +1,5 @@
+import {domainPaletteEditorState} from './domainPaletteEditing';
+import {importSourcePaletteGenerator} from './sourcePaletteGeneratorImport';
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
 import {prepareSourceProjectPalette,type SourceProjectPalette} from './sourceProjectPalette';
 import {usesSourceImplicitPresentation,SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
@@ -602,6 +604,12 @@ function domain(r:Reader,s:SceneDocument){
  s.settings.domainColorVersion=sourceCpu?'mathart-1.7.8-cpu':'mathart-1.7.8-gpu';s.settings.domainViewportVersion=sourceCpu?'mathart-1.7.8-cpu':'mathart-1.7.8-gpu';s.settings.domainIterationVersion=sourceCpu?'mathart-1.7.8-cpu':'mathart-1.7.8-gpu';s.settings.domainSourceImportPath='runtime-config';
  if(!sourceCpu){s.settings.domainRenderPolicy='source-cpu-on-gpu-failure-v1';r.warnings.push('新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。');}
  const sourcePalette=r.usePalette();if(sourcePalette!==undefined){try{s.domainSourcePalette=parseDomainSourcePalette({colors:sourcePalette});}catch(error){fail(error instanceof Error?error.message:String(error));}}
+ if(r.entry==='project'){
+  const generator=importSourcePaletteGenerator(r.peek(['color']),'project');
+  if(!generator.ok)fail(generator.error.path+': '+generator.error.reason);
+  s.domainPaletteEditor={...domainPaletteEditorState(s),...generator.value.configuration};
+  for(const path of generator.value.consumedPaths)r.use(path);
+ }
  s.settings.iterationSteps=1;s.settings.iterationMaxSteps=64;
  const rawFormula=r.use('domainColoring.formula');
  if(rawFormula===undefined||rawFormula===null)s.equations.f='z^3 - 1';

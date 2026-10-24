@@ -1,3 +1,4 @@
+import {domainPaletteRuntimeScene} from './domainPaletteEditing';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
@@ -555,7 +556,7 @@ export class Generator {
       const d=context.domainLive,domain=d?{sessionId:d.sessionId,revision:d.revision,paused:d.clock?.paused,actualFrameRate:d.actualFrameRate}:undefined;
       const v=context.fractalLive,fractal=v?{sessionId:v.sessionId,revision:v.revision,paused:v.clock?.paused,actualFrameRate:v.actualFrameRate}:undefined;
       try { const input=snapshotGenerationInput(context);this.pending.set(id, { operation: 'generate', scene,context:input,fractal,domain,source:fractal?source:undefined, resolve, reject, onProgress, onStatus });
-      const request: GenerationRequest = { operation: 'generate', sessionId: this.sessionId, id, scene, ...(onStatus?{wantsStatus:true as const}:{}), context: input };
+      const request: GenerationRequest = { operation: 'generate', sessionId: this.sessionId, id, scene:domainPaletteRuntimeScene(scene), ...(onStatus?{wantsStatus:true as const}:{}), context: input };
       this.worker!.postMessage(request); } catch (error) { this.pending.delete(id); reject(error); }
     });
   }
@@ -599,7 +600,7 @@ export class Generator {
     const source=this.completed;
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||source.scene.kind!=='domain'||output.type!=='raster'||output.domainLive?.target!=='primary')return Promise.reject(new Error('域着色参数更新需要当前已完成的主预览'));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
-    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'domain-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'domain-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene,writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
+    return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'domain-parameters',source,scene,resolve,reject});try{this.worker!.postMessage({operation:'domain-parameters',sessionId:this.sessionId,id,sourceId:source.id,scene:domainPaletteRuntimeScene(scene),writes} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
   }
   navigateSurfacePaused(output:SceneOutput,event:SourceViewportNavigationEvent):Promise<SceneOutput>{
     const source=this.completed;

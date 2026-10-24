@@ -36,7 +36,7 @@ describe('explicit Domain whole-chain recovery authoring',()=>{
    const result=parseProjectFile('// actual file entry\n'+JSON.stringify(raw)),s=result.scene;
    expect(s.settings.domainRenderPolicy).toBe(mode==='GPU'?'source-cpu-on-gpu-failure-v1':undefined);expect(s.provenance?.original).toEqual(raw);
    expect(result.warnings.some(w=>w.includes('恢复策略为本地显式规则'))).toBe(mode==='GPU');
-   expect(parseProjectFile(JSON.stringify(s)).scene).toEqual(s);
+   expect(parseProjectFile(JSON.stringify(s)).scene).toEqual(persistentScene(s));
   }
  });
  it('does not materialize a fallback palette and preserves policy during independent version edits',()=>{

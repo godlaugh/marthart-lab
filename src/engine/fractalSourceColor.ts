@@ -2,7 +2,8 @@ import {SOURCE_GENERATOR_POINT_BUDGET,type SourceCurvePoint} from './sourceGradi
 import type {SourceProjectPalette} from './sourceProjectPalette';
 import {prepareSourcePaletteRuntime,type SourcePaletteUniforms,type SourcePaletteRuntimeConfiguration,type SourcePaletteRuntimeState} from './sourcePaletteRuntime';
 import {sourceConfigPackedColor,SOURCE_COLOR_TEXT_BUDGET,SourceConfigColorError} from './sourceConfigColor';
-import {parseDomainSourceFloat,prepareDomainSourceScalar} from './domainSourceScalar';
+import {prepareDomainSourceScalar} from './domainSourceScalar';
+import {importSourcePaletteGenerator} from './sourcePaletteGeneratorImport';
 import {javaTrim,isJavaBlank} from './sourceJavaText';
 
 export const FRACTAL_SOURCE_COLOR_PROFILE='mathart-1.7.8-v1' as const;
@@ -201,7 +202,6 @@ export function prepareFractalSourceColorImport(value:unknown,projectPalette?:So
  const read=(o:Record<string,unknown>,key:string,path:string[])=>{if(!own(o,key))return undefined;const value=o[key];if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length===0)consumedPaths.push([...path,key]);return value;};
  const has=(o:Record<string,unknown>,key:string)=>own(o,key);
  const getString=(raw:unknown,fallback:string)=>typeof raw==='string'?raw:raw==null?fallback:typeof raw==='boolean'?String(raw):'';
- const getBoolean=(raw:unknown,fallback:boolean,field:string)=>{if(raw===undefined)return fallback;if(typeof raw==='boolean')return raw;if(typeof raw==='string'&&/^(true|false)$/i.test(raw))return raw.toLowerCase()==='true';return fail(field,'source boolean required');};
  const finiteScalar=(raw:unknown,fallback:number,field:string)=>number(scalar(raw,fallback),field);
  function importParameters(raw:Record<string,unknown>|undefined,id:FractalSourceColorAlgorithm,path?:string[]):Record<string,FractalSourceColorParameter>{
   const values:Record<string,FractalSourceColorParameter>=Object.create(null);
@@ -217,24 +217,9 @@ export function prepareFractalSourceColorImport(value:unknown,projectPalette?:So
   const offset=scalar(read(color,'palette_offset',path),p.offset);if(Number.isFinite(offset))p.offset=offset;else diagnostics.push('Nonfinite source palette offset retains its default.');
   const gamma=scalar(read(color,'palette_gamma',path),p.gamma);if(Number.isFinite(gamma))p.gamma=Math.max(F(.01),gamma);else diagnostics.push('Nonfinite source palette gamma retains its default.');
   if(has(color,'palette_space')){const raw=string(read(color,'palette_space',path),'color.palette_space'),space=javaTrim(raw).toLowerCase();if(space==='rgb'||space==='hsv')p.space=space;else diagnostics.push('Unknown source palette space retains RGB.');}
-  if(has(color,'use_cosine_palette'))p.useCosine=getBoolean(read(color,'use_cosine_palette',path),p.useCosine,'color.use_cosine_palette');
-  if(has(color,'use_curve_palette'))p.useCurve=getBoolean(read(color,'use_curve_palette',path),false,'color.use_curve_palette');
-  let curvePoints=0;
-  for(const channel of ['red','green','blue'] as const){
-   const field='curve_'+channel;if(!has(color,field))continue;
-   const raw=read(color,field,path);if(!Array.isArray(raw))return fail('color.'+field,'source array required');
-   curvePoints+=raw.length;if(curvePoints+6>SOURCE_GENERATOR_POINT_BUDGET)throw new FractalSourceColorError('capacity','color.'+field,'local 65536-point preparation budget exceeded');
-   const component=(raw:unknown,at:string)=>{
-    if(typeof raw==='number')return f32(number(raw,at),at);
-    if(typeof raw==='string'){const parsed=parseDomainSourceFloat(raw);if(parsed.ok&&parsed.classification==='finite')return parsed.value;if(!parsed.ok&&parsed.error.kind==='capacity')throw new FractalSourceColorError('capacity',at,'source float text budget exceeded');}
-    return fail(at,'finite source Float required');
-   };
-   (p.curves??={})[channel]=raw.map((value,i)=>{const at=`color.${field}[${i}]`,point=object(value,at);return{id:crypto.randomUUID(),x:component(point.x,at+'.x'),y:component(point.y,at+'.y')};});
-  }
-  for(const key of ['a','b','c','d'] as const){
-   const field='cosine_'+key;if(!has(color,field))continue;const raw=read(color,field,path);if(!Array.isArray(raw))return fail('color.'+field,'source array required');
-   if(raw.length>=3)p.cosine[key]=raw.slice(0,3).map((v,i)=>number(scalar(v==null?String(v):typeof v==='object'||typeof v==='boolean'?String(v):v,p.cosine[key][i]),'color.'+field)) as [number,number,number];
-  }
+  const generator=importSourcePaletteGenerator(color,projectPalette?'project':'runtime-config');
+  if(!generator.ok)throw new FractalSourceColorError(generator.error.kind==='capacity'?'capacity':'input',generator.error.path,generator.error.reason);
+  Object.assign(p,generator.value.configuration);consumedPaths.push(...generator.value.consumedPaths);
   const mode=getString(read(color,'coloring_mode',path),'NORMAL');
   let directId:FractalSourceColorAlgorithm='direct_domain',directParams:Record<string,unknown>={};
   if(has(color,'direct')){

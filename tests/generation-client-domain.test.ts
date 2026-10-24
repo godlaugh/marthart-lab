@@ -27,6 +27,9 @@ describe('Domain live transport identity and failure boundary',()=>{
   const f=fixture(),configuration=structuredClone(f.scene);f.context.domainLive!.configuration=configuration;
   const pending=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];configuration.settings.centerX=999;
   expect(r.operation==='generate'&&r.context.domainLive!.configuration!.settings.centerX).not.toBe(999);
+  expect(f.scene.domainPaletteEditor).toBeDefined();
+  expect(r.operation==='generate'&&r.scene).not.toHaveProperty('domainPaletteEditor');
+  expect(r.operation==='generate'&&r.context.domainLive!.configuration).not.toHaveProperty('domainPaletteEditor');
   w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});expect(await pending).toBe(f.output);expect(f.output.domainLive!.actualFrameRate).toBe(Math.fround(29.97));f.g.dispose();
  });
  const mutations:Record<string,(o:Extract<SceneOutput,{type:'raster'}>)=>void>={
@@ -61,6 +64,7 @@ describe('Domain live transport identity and failure boundary',()=>{
    const f=fixture(),first=f.g.generate(f.scene,f.context),w=Transport.instances[0],r=w.messages[0];w.emit({operation:'generate',sessionId:r.sessionId,id:r.id,output:f.output});await first;
    const next={...f.scene,parameters:{...f.scene.parameters,a:.7}};
    const pending=kind==='parameters'?f.g.updateDomainParameters(f.output,next,[['a',.7]]):f.g.navigateDomainPaused(f.output,{kind:'pan',dx:1,dy:2}),caught=pending.catch(e=>e),p=w.messages.at(-1)!;
+   if(p.operation==='domain-parameters')expect(p.scene).not.toHaveProperty('domainPaletteEditor');
    if(kind==='parameters')w.emit({operation:'domain-parameters',sessionId:p.sessionId,id:p.id,sourceId:r.id+1});
    else{const changed=structuredClone(f.output);changed.domainLive!.renderKind='snapshot';changed.domainLive!.updateOrdinal++;w.emit({operation:'domain-navigation',sessionId:p.sessionId,id:p.id,sourceId:r.id,output:changed});}
    expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);await expect(f.g.navigateDomainPaused(f.output,{kind:'wheel',count:1})).rejects.toThrow();f.g.dispose();
