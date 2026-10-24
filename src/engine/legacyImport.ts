@@ -1,4 +1,5 @@
 import {usesSourceCenteredFormulaLayout} from './sourceFormulaIdentity';
+import {prepareSourceProjectPalette,type SourceProjectPalette} from './sourceProjectPalette';
 import {usesSourceImplicitPresentation,SOURCE_IMPLICIT_PRESENTATION} from './sourceImplicitPresentation';
 import type {FormulaConfig} from '../types';
 import {DOMAIN_SCENE_SEQUENCE} from './sourceDomainTimeline';
@@ -121,7 +122,17 @@ function withoutComments(text:string):string {
 class Reader {
  readonly warnings:string[]=[];private used=new Set<string>();private aliasesReported=new Set<string>();
  readonly sourceNumberTokens:SourceNumberToken[]=[];private nativeOrders=new WeakMap<object,readonly string[]>();
- constructor(readonly root:ObjectValue,private readonly metadata:SourceMetadata=new WeakMap(),private readonly sourceText?:string){}
+ private projectPaletteFacts?:SourceProjectPalette;
+ constructor(readonly root:ObjectValue,private readonly metadata:SourceMetadata=new WeakMap(),private readonly sourceText?:string,readonly entry:'runtime-config'|'project'='runtime-config'){}
+ /** Parsed once at the project boundary; source objects/metadata stay intact.
+  * Mark source paths consumed only when a scene actually uses the palette. */
+ projectPalette():SourceProjectPalette|undefined {
+  if(this.entry!=='project')return undefined;
+  if(!this.projectPaletteFacts){const parsed=prepareSourceProjectPalette(this.peek(['palette']));if(!parsed.ok)fail(parsed.error.path.join('.')+': '+parsed.error.reason);this.projectPaletteFacts=parsed.value;}
+  return this.projectPaletteFacts;
+ }
+ palette():unknown {return this.projectPalette()?.colors??this.peek(['palette']);}
+ usePalette():unknown {this.use(['palette']);return this.palette();}
  resolve(path:ReaderPath):{value:unknown;equivalentPaths:string[][];parent?:object;key?:string}|undefined {
   let current:unknown=this.root,parts:string[]=[],equivalentPaths:string[][]=[[]];const segments=pathSegments(path),exact=typeof path!=='string';
   let parent:object|undefined,key:string|undefined;
@@ -264,7 +275,7 @@ function numericParameters(r:Reader,path:string,symmetry=false):Record<string,nu
 function count(r:Reader,s:SceneDocument,path:string,key:string,max:number,min=1){numberTo(r,s,path,key,{min,max,integer:true,limit:true});}
 function seed(r:Reader,s:SceneDocument,path:string,key='seed'){const n=r.num(path);if(n===undefined)return;if(!Number.isSafeInteger(n)||n<0)fail(`${path} 应为非负安全整数`);s.settings[key]=n>>>0;if(n>0xffffffff)r.warnings.push(`${path} 的 ${n} 为超过 32 位的种子，当前随机数生成器使用低 32 位 ${n>>>0}；随机分布不保证与原版相同。`);}
 function commonLocalPalette(r:Reader,s:SceneDocument){
- const palette=r.use('palette');if(palette!==undefined){if(!Array.isArray(palette)||!palette.length||palette.length>MAX_PALETTE_STOPS||palette.some(v=>typeof v!=='string'||!/^#[0-9a-f]{6}$/i.test(v)))fail(`palette 应为 1 至 ${MAX_PALETTE_STOPS} 个 #RRGGBB 色标`);const stops=palette.length===1?[palette[0],palette[0]]:palette;s.palette={name:'原版导入',stops:[...stops] as string[],mode:'linear',offset:0,cycles:1};}
+ const palette=r.usePalette();if(palette!==undefined){if(!Array.isArray(palette)||!palette.length||palette.length>MAX_PALETTE_STOPS||palette.some(v=>typeof v!=='string'||!/^#[0-9a-f]{6}$/i.test(v)))fail(`palette 应为 1 至 ${MAX_PALETTE_STOPS} 个 #RRGGBB 色标`);const stops=palette.length===1?[palette[0],palette[0]]:palette;s.palette={name:'原版导入',stops:[...stops] as string[],mode:'linear',offset:0,cycles:1};}
  const cosineEnabled=r.bool('color.use_cosine_palette'),curveEnabled=r.bool('color.use_curve_palette');
  if(cosineEnabled&&curveEnabled)fail('color 同时启用 Cosine 和 Curve，原版优先级未知；请明确保留一种模式');
  const cosineKeys=['a','b','c','d'] as const,curveKeys=['red','green','blue'] as const;
@@ -373,7 +384,7 @@ function attractor(r:Reader,s:SceneDocument){
 }
 function ordinaryAttractorGeometry(r:Reader,s:SceneDocument):void {
  const numeric=importSourceAttractorConfig(r.peek(['settings']),r.peek(['initialization']),{numberToken:path=>r.numberToken(path)});
- const visual=importSourceAttractorVisualConfig(r.peek(['settings']),r.peek(['palette']));
+ const visual=importSourceAttractorVisualConfig(r.peek(['settings']),r.palette());
  if(!numeric.ok)fail(`原版吸引子 ${numeric.error.path.join('.')}：${numeric.error.reason}`);
  if(!visual.ok)fail(`原版吸引子 ${visual.error.path.join('.')}：${visual.error.reason}`);
  const consumed=new Map<string,string[]>(),numbers=new Map<string,string[]>();
@@ -590,7 +601,7 @@ function domain(r:Reader,s:SceneDocument){
  if(renderMode!==undefined&&renderMode!==null)sourceCpu=typeof renderMode!=='string'||renderMode.toUpperCase()!=='GPU';
  s.settings.domainColorVersion=sourceCpu?'mathart-1.7.8-cpu':'mathart-1.7.8-gpu';s.settings.domainViewportVersion=sourceCpu?'mathart-1.7.8-cpu':'mathart-1.7.8-gpu';s.settings.domainIterationVersion=sourceCpu?'mathart-1.7.8-cpu':'mathart-1.7.8-gpu';s.settings.domainSourceImportPath='runtime-config';
  if(!sourceCpu){s.settings.domainRenderPolicy='source-cpu-on-gpu-failure-v1';r.warnings.push('新导入的 GPU 域着色在 GPU 故障后使用原产物 CPU 公式、视口与着色整链；三项作者选择和原文保留。恢复策略为本地显式规则，旧保存作品不会自动升级。');}
- const sourcePalette=r.use('palette');if(sourcePalette!==undefined){try{s.domainSourcePalette=parseDomainSourcePalette({colors:sourcePalette});}catch(error){fail(error instanceof Error?error.message:String(error));}}
+ const sourcePalette=r.usePalette();if(sourcePalette!==undefined){try{s.domainSourcePalette=parseDomainSourcePalette({colors:sourcePalette});}catch(error){fail(error instanceof Error?error.message:String(error));}}
  s.settings.iterationSteps=1;s.settings.iterationMaxSteps=64;
  const rawFormula=r.use('domainColoring.formula');
  if(rawFormula===undefined||rawFormula===null)s.equations.f='z^3 - 1';
@@ -621,7 +632,7 @@ function domain(r:Reader,s:SceneDocument){
   r.object('domainColoring.sampling');numberTo(r,s,'domainColoring.sampling.iterations','iterationSteps',{integer:true});numberTo(r,s,'domainColoring.sampling.maxIterations','iterationMaxSteps',{integer:true});numberTo(r,s,'domainColoring.sampling.clampMagnitude','bailout');
   s.settings.iterationEnabled=Number(s.settings.iterationSteps)>1;
  }
- r.warnings.push('Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。');
+ r.warnings.push(r.entry==='project'?'Domain 项目色板经过原版 ProjectState 缺省七色规则；其他字段仍采用运行时配置解释。原版项目入口的完整默认值与整图尚未验收。':'Domain 按 MathArt 1.7.8 运行时配置导入：缺省使用 GPU 公式、着色与视口规则、六色色板及缩放 2.5。源 CPU/GPU 规则独立于本机计算后端；原版界面导入的缺省值可能不同，尚未进行原版运行像素对照。');
 }
 const bulbParameterAliases:Record<string,string>={phase_shift:'bulbPhaseShift',phase_speed:'bulbPhaseSpeed',camera_pitch:'bulbCameraPitch',surface_epsilon:'bulbSurfaceEpsilon',shadow_strength:'bulbShadowStrength'};
 /** Fresh native formula authoring is independent from dormant local settings. */
@@ -638,7 +649,7 @@ function sourceFractal(r:Reader,s:SceneDocument):void {
  r.retainNumberToken('fractal.iterations');r.retainNumberToken('fractal.rotation');
  const render=r.str('fractal.render_method'),methods:Record<string,string>={ONEPASS:'one-pass',MULTIPASS:'multi-pass',GUESSING:'guessing'};if(render){const method=methods[render.toUpperCase()];if(method)s.settings.renderMethod=method;else r.warnings.push('未识别的 render_method 保留来源，使用既有渲染方法。');}
  const precision=r.use('fractal.perturbation_precision');s.settings.perturbationPrecision=precision==null?'medium':typeof precision==='string'&&['LOW','MEDIUM','HIGH','ULTRA'].includes(precision.toUpperCase())?precision.toLowerCase():String(precision);
- const color=prepareFractalSourceColorImport(r.root);s.settings.fractalColorProfile=FRACTAL_SOURCE_COLOR_PROFILE;s.fractalSourceColor=color.configuration;for(const path of color.consumedPaths)r.use(path);r.warnings.push(...color.diagnostics);
+ const color=prepareFractalSourceColorImport(r.root,r.projectPalette());s.settings.fractalColorProfile=FRACTAL_SOURCE_COLOR_PROFILE;s.fractalSourceColor=color.configuration;for(const path of color.consumedPaths)r.use(path);r.warnings.push(...color.diagnostics);
  s.timeline={...s.timeline,schedule:FRACTAL_SCENE_SEQUENCE,tracks:[]};
  r.warnings.push('分形采用原版公式参数集合、普通动画和逐帧队列；固定帧回放会在时间 0 执行首个更新。初始中心只读取 center，高低位中心仅支持时间线目标。Nova 阈值使用请求画布尺寸；原版使用逻辑 PGraphics 尺寸，DPI 语义和原版像素一致性未验证。原版整窗口与录像时钟仍待验证。');
 }
@@ -717,7 +728,7 @@ function fractal(r:Reader,s:SceneDocument){
  if(f==='phoenix'){numberTo(r,s,'fractal.parameters.exponent2','phoenixPower2');numberTo(r,s,'fractal.parameters.exponent1','power');}
  numberTo(r,s,'fractal.parameters.singularity_guard_eps','singularityGuard');pair(r,s,'fractal.parameters.quad_coeff','quadReal','quadImag');pair(r,s,'fractal.parameters.const_term','constReal','constImag');pair(r,s,'fractal.parameters.z0_coeff','z0Real','z0Imag');numberTo(r,s,'fractal.parameters.denom_offset','denomOffset');if(Array.isArray(r.peek('fractal.parameters.distortion')))pair(r,s,'fractal.parameters.distortion','feedback','feedbackImag');else numberTo(r,s,'fractal.parameters.distortion','feedback');
  if(sourceNumerics){
-  const prepared=prepareFractalSourceColorImport(r.root);
+  const prepared=prepareFractalSourceColorImport(r.root,r.projectPalette());
   s.settings.fractalColorProfile=FRACTAL_SOURCE_COLOR_PROFILE;s.fractalSourceColor=prepared.configuration;
   for(const path of prepared.consumedPaths)r.use(path);
   r.warnings.push(...prepared.diagnostics);
@@ -815,7 +826,7 @@ function roots(r:Reader,s:SceneDocument){
  if(backgroundPath)r.retainNumberToken(backgroundPath);
  s.settings.background=background.value;r.warnings.push(...background.diagnostics);
  const metric=normalizeRootsSourceMetric(r.use('settings.color_metric'));s.settings.rootColor=metric.metric;r.warnings.push(...metric.diagnostics);
- if(r.has('palette'))s.rootsSourcePalette=parseRootsSourcePalette({colors:r.use('palette')});
+ const sourcePalette=r.usePalette();if(sourcePalette!==undefined)s.rootsSourcePalette=parseRootsSourcePalette({colors:sourcePalette});
  const presentation=prepareRootsPresentationImport((path,kind)=>{
   const raw=r.use(path);if(kind==='scalar'||kind==='integer')r.retainNumberToken(path);return raw;
  },{numberToken:path=>r.numberToken(path)});
@@ -1057,7 +1068,7 @@ function ordinarySurfaceHostGeometry(r:Reader,s:SceneDocument):void {
  r.warnings.push(...facts.diagnostics);
  Object.assign(s.settings,{surfaceGeometryVersion:SOURCE_SURFACE_HOST,renderMode:facts.configuration.mode,computeBackend:facts.configuration.nativeBackend==='gpu'?'webgl2':'cpu',scale:1,rotateX:0,rotateY:0,rotateZ:0,opacity:1,
   background:'#'+(facts.configuration.backgroundColor&0xffffff).toString(16).padStart(6,'0')});
- s.surfaceSourcePalette=parseSourceSurfacePalette({colors:r.has('palette')?r.use('palette'):[...DEFAULT_SOURCE_SURFACE_COLORS]});
+ const palette=r.usePalette();s.surfaceSourcePalette=parseSourceSurfacePalette({colors:palette===undefined?[...DEFAULT_SOURCE_SURFACE_COLORS]:palette});
  r.warnings.push(facts.configuration.nativeBackend==='gpu'&&facts.configuration.mode==='mesh'?'曲面使用源 GPU 网格着色器；参数更新不会重建三角拓扑，独立线框在此模式下不显示。原版完整画面尚未验收。':facts.configuration.nativeBackend==='gpu'?'曲面使用源 GPU 点着色器；相机跟踪按源 CPU 状态推进，点颜色绑定初始色板，不显示拖尾。原版完整画面尚未验收。':'曲面使用源 CPU 点／网格与切换队列；参数、渐变和跟踪动作保留初始对象绑定。原版完整画面尚未验收。');
 }
 function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
@@ -1087,7 +1098,7 @@ function ordinarySurfaceParticleGeometry(r:Reader,s:SceneDocument):void {
  settings.showTrails=r.domainBoolean(['settings','show_trails'],true);
  settings.fadeTrails=r.domainBoolean(['settings','fade_trails'],true);
  settings.fadePoints=true; // BaseSurfaceConfig default; JsonSurfaceConfig does not read fade_points.
- s.surfaceSourcePalette=parseSourceSurfacePalette({colors:r.has('palette')?r.use('palette'):[...DEFAULT_SOURCE_SURFACE_COLORS]});
+ const palette=r.usePalette();s.surfaceSourcePalette=parseSourceSurfacePalette({colors:palette===undefined?[...DEFAULT_SOURCE_SURFACE_COLORS]:palette});
  settings.trailLifetime=Math.fround(r.domainDouble(['settings','trail_lifetime'],4));
  settings.trailWidth=Math.fround(r.domainDouble(['settings','line_weight'],1));
  settings.recordTrails=true; // Native constructor records even when display is hidden; no JSON record_trails read.
@@ -1543,8 +1554,9 @@ function projectResolution(r:Reader,scene:SceneDocument):void {
  else if(facts.status==='ignored')r.warnings.push('resolution 未同时提供源整数规则下 64 至 8192 的宽高，按原版 ProjectState 保留无分辨率覆盖；原值保留在 source。');
 }
 function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},metadata?:SourceMetadata,sourceText?:string):{scene:SceneDocument;warnings:string[];source:unknown;sourceNumberTokens?:SourceNumberToken[]} {
- const r=new Reader(source,metadata,sourceText),version=r.str('config_version',true);if(version!=='1.0.0'&&version!=='1.0')fail(`不支持 config_version=${version}`);
+ const r=new Reader(source,metadata,sourceText,options.sourceEntry),version=r.str('config_version',true);if(version!=='1.0.0'&&version!=='1.0')fail(`不支持 config_version=${version}`);
  const type=r.str('type',true)!,kind=TYPES[type.toUpperCase()];if(!kind)fail(`未知场景类型 ${type}`);const def=definitions.find(d=>d.kind===kind)!;const scene=createScene(def);
+ r.projectPalette(); // fromJson validates this even when a renderer ignores it.
  if(ordinaryFamily(kind)||kind==='samila'&&options.samilaProjection!=='legacy-v1'&&options.samilaCamera!=='legacy-v1')r.validateNativeObjects();
  const ordinaryScope=ordinaryFamily(kind)?ordinaryResult(prepareOrdinarySourceScalarScope(kind,{parameters:r.peek(['parameters']),memberOrder:(kind==='surface'||kind==='implicit')&&r.has(['parameters'])?r.sourceKeys(['parameters']):undefined})):undefined;
  if(ordinaryScope)r.warnings.push(...ordinaryScope.diagnostics);
@@ -1587,7 +1599,7 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
  // runtime-config adapter retains its existing local compatibility semantics.
  else if(kind==='surface'&&(options.sourceEntry==='project'||ordinaryStructure?.some(clip=>clip.type==='trails'||clip.surfaceParameterClip!==undefined||clip.actions.some(action=>action.method==='track'&&Array.isArray(action.raw)&&action.raw.length>0||action.method==='gradientStop'||action.surfaceGradient?.kind==='start'||!!action.surfaceParameters?.length))))scene.settings.surfaceGeometryVersion=SOURCE_SURFACE_PARTICLES;
  if(kind==='perlin'){
-  const parsed=importSourcePerlinDocument(r.peek(['settings']),r.peek(['palette']),{defaultSeed:String(Date.now()),numberToken:path=>r.numberToken(path)});
+  const parsed=importSourcePerlinDocument(r.peek(['settings']),r.palette(),{defaultSeed:String(Date.now()),numberToken:path=>r.numberToken(path)});
   if(!parsed.ok)fail(`源 Perlin ${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   const facts=parsed.value;scene.perlinSource=facts.configuration;
   for(const path of facts.consumedPaths)r.use(path);
@@ -1612,13 +1624,13 @@ function importLegacyValue(source:ObjectValue,options:LegacyImportOptions={},met
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);
   Object.assign(scene.settings,parsed.value.settings);
   for(const path of parsed.value.consumedPaths)r.use(path);for(const path of parsed.value.numericPaths)r.retainNumberToken(path);r.warnings.push(...parsed.value.warnings);
-  const color=importSourceSamilaPalette(r.has('palette')?r.use('palette'):undefined);if(!color.ok)fail(color.error.reason);scene.palette=color.value.palette;scene.settings.samilaUsePaletteLut=color.value.useLut;r.warnings.push(...color.value.warnings);
+  const color=importSourceSamilaPalette(r.usePalette());if(!color.ok)fail(color.error.reason);scene.palette=color.value.palette;scene.settings.samilaUsePaletteLut=color.value.useLut;r.warnings.push(...color.value.warnings);
   if(r.has('color'))r.acknowledge('color','源 Samila JSON 不读取通用 color 对象；配色来自根 palette，原对象保留');
   if(r.has(['settings','dot_size']))r.acknowledge(['settings','dot_size'],'Samila 活动绘制使用 spot_size；通用 dot_size 保留但不参与散点半径');
  }
  if(usesSourceSymmetryProject(scene)){
   scene.settings.symmetryParameterModel=SOURCE_SYMMETRY_PARAMETER_MODEL;scene.settings.symmetryGradientModel=SOURCE_SYMMETRY_GRADIENT_MODEL;scene.settings.symmetryPresentationModel=SOURCE_SYMMETRY_PRESENTATION_MODEL;scene.settings.densityToneModel='normalized-v2';if(!r.has(['settings','background_color']))scene.settings.background='#000000';
-  const palette=importSourceSymmetryProjectPalette(r.use(['palette']));if(!palette.ok)fail(palette.error.reason);scene.palette=palette.value.palette;r.warnings.push(...palette.value.warnings);
+  const palette=importSourceSymmetryProjectPalette(r.usePalette());if(!palette.ok)fail(palette.error.reason);scene.palette=palette.value.palette;r.warnings.push(...palette.value.warnings);
   if(r.has(['color']))r.acknowledge(['color'],'原版 Symmetry 项目不输出通用 color 配置；运行时配色可在本地检查器编辑');
   const parsed=importSourceSymmetryProjectVisual(r.peek(['settings']),path=>r.numberToken(path));
   if(!parsed.ok)fail(`${parsed.error.path.join('.')}: ${parsed.error.reason}`);

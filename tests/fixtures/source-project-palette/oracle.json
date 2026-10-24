@@ -1,0 +1,2377 @@
+{
+  "scope": "Actual original ProjectState constructor, fromJson/toJson, and getters; 12 scene types, 7 palette inputs each; headless, no GUI or graphics. Source report initially failed its overly narrow initializer allowlist; see independently reviewed finalization provenance.",
+  "runtime": {
+    "headless": true,
+    "javaVersion": "21.0.7",
+    "finalWindowCount": 0,
+    "classSha256": {
+      "processing.data.JSONArray": "821d1af889e3d5e1b90e96943960f78944205362708572fb38edab3e89b03913",
+      "processing.data.JSONObject": "1d3979ec438b30a5e39ebaca98a0fe9600678cd117e3e958b3d7c1d8d2e4bfc7",
+      "mathart.ui.state.ProjectState": "14804c181e4cc0911ccfc219736381c432998d6d5c9b4e41b2072a03c2cce9d5"
+    },
+    "windowCount": 0,
+    "constructorPalette": [
+      "#FC6255",
+      "#FF862F",
+      "#FFFF00",
+      "#59743E",
+      "#83C167",
+      "#1D4A81",
+      "#9A72AC"
+    ]
+  },
+  "cases": [
+    {
+      "input": {
+        "id": "FRACTAL-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette FRACTAL",
+          "type": "FRACTAL"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "savedColor": {
+          "use_curve_palette": false,
+          "outside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "smooth_mandelbrot",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_a": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "curve_green": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "cosine_b": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "inside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "none",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_c": [
+            1,
+            1,
+            1
+          ],
+          "use_cosine_palette": false,
+          "cosine_d": [
+            0,
+            0.3330000042915344,
+            0.6669999957084656
+          ],
+          "curve_red": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "curve_blue": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ]
+        },
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "FRACTAL-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "FRACTAL-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette FRACTAL",
+          "type": "FRACTAL",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "savedColor": {
+          "use_curve_palette": false,
+          "outside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "smooth_mandelbrot",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_a": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "curve_green": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "cosine_b": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "inside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "none",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_c": [
+            1,
+            1,
+            1
+          ],
+          "use_cosine_palette": false,
+          "cosine_d": [
+            0,
+            0.3330000042915344,
+            0.6669999957084656
+          ],
+          "curve_red": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "curve_blue": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ]
+        },
+        "palette": [],
+        "savedPalette": [],
+        "id": "FRACTAL-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "FRACTAL-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette FRACTAL",
+          "type": "FRACTAL",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "savedColor": {
+          "use_curve_palette": false,
+          "outside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "smooth_mandelbrot",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_a": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "curve_green": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "cosine_b": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "inside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "none",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_c": [
+            1,
+            1,
+            1
+          ],
+          "use_cosine_palette": false,
+          "cosine_d": [
+            0,
+            0.3330000042915344,
+            0.6669999957084656
+          ],
+          "curve_red": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "curve_blue": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ]
+        },
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "FRACTAL-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "FRACTAL-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette FRACTAL",
+          "type": "FRACTAL",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "savedColor": {
+          "use_curve_palette": false,
+          "outside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "smooth_mandelbrot",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_a": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "curve_green": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "cosine_b": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "inside": {
+            "gradient_offset": 0,
+            "color_density": 1,
+            "transfer_function": "LINEAR",
+            "algorithm_params": {},
+            "algorithm_id": "none",
+            "solid_color": "#000000",
+            "repeat_gradient": true
+          },
+          "cosine_c": [
+            1,
+            1,
+            1
+          ],
+          "use_cosine_palette": false,
+          "cosine_d": [
+            0,
+            0.3330000042915344,
+            0.6669999957084656
+          ],
+          "curve_red": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ],
+          "curve_blue": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 1,
+              "y": 1
+            }
+          ]
+        },
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "FRACTAL-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "FRACTAL-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette FRACTAL",
+          "type": "FRACTAL",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "FRACTAL-null"
+      }
+    },
+    {
+      "input": {
+        "id": "FRACTAL-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette FRACTAL",
+          "type": "FRACTAL",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "FRACTAL-object"
+      }
+    },
+    {
+      "input": {
+        "id": "FRACTAL-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette FRACTAL",
+          "type": "FRACTAL",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "FRACTAL-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "SURFACE-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SURFACE",
+          "type": "SURFACE"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "SURFACE-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SURFACE-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SURFACE",
+          "type": "SURFACE",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "SURFACE-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SURFACE-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SURFACE",
+          "type": "SURFACE",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "SURFACE-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SURFACE-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SURFACE",
+          "type": "SURFACE",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "SURFACE-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SURFACE-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SURFACE",
+          "type": "SURFACE",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SURFACE-null"
+      }
+    },
+    {
+      "input": {
+        "id": "SURFACE-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SURFACE",
+          "type": "SURFACE",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SURFACE-object"
+      }
+    },
+    {
+      "input": {
+        "id": "SURFACE-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SURFACE",
+          "type": "SURFACE",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "SURFACE-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "ATTRACTOR-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette ATTRACTOR",
+          "type": "ATTRACTOR"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "ATTRACTOR-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "ATTRACTOR-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette ATTRACTOR",
+          "type": "ATTRACTOR",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "ATTRACTOR-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "ATTRACTOR-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette ATTRACTOR",
+          "type": "ATTRACTOR",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "ATTRACTOR-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "ATTRACTOR-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette ATTRACTOR",
+          "type": "ATTRACTOR",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "ATTRACTOR-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "ATTRACTOR-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette ATTRACTOR",
+          "type": "ATTRACTOR",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "ATTRACTOR-null"
+      }
+    },
+    {
+      "input": {
+        "id": "ATTRACTOR-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette ATTRACTOR",
+          "type": "ATTRACTOR",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "ATTRACTOR-object"
+      }
+    },
+    {
+      "input": {
+        "id": "ATTRACTOR-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette ATTRACTOR",
+          "type": "ATTRACTOR",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "ATTRACTOR-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "IMPLICIT-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette IMPLICIT",
+          "type": "IMPLICIT"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "IMPLICIT-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "IMPLICIT-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette IMPLICIT",
+          "type": "IMPLICIT",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "IMPLICIT-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "IMPLICIT-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette IMPLICIT",
+          "type": "IMPLICIT",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "IMPLICIT-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "IMPLICIT-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette IMPLICIT",
+          "type": "IMPLICIT",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "IMPLICIT-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "IMPLICIT-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette IMPLICIT",
+          "type": "IMPLICIT",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "IMPLICIT-null"
+      }
+    },
+    {
+      "input": {
+        "id": "IMPLICIT-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette IMPLICIT",
+          "type": "IMPLICIT",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "IMPLICIT-object"
+      }
+    },
+    {
+      "input": {
+        "id": "IMPLICIT-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette IMPLICIT",
+          "type": "IMPLICIT",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "IMPLICIT-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "PERLIN-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette PERLIN",
+          "type": "PERLIN"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "PERLIN-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "PERLIN-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette PERLIN",
+          "type": "PERLIN",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "PERLIN-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "PERLIN-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette PERLIN",
+          "type": "PERLIN",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "PERLIN-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "PERLIN-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette PERLIN",
+          "type": "PERLIN",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "PERLIN-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "PERLIN-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette PERLIN",
+          "type": "PERLIN",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "PERLIN-null"
+      }
+    },
+    {
+      "input": {
+        "id": "PERLIN-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette PERLIN",
+          "type": "PERLIN",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "PERLIN-object"
+      }
+    },
+    {
+      "input": {
+        "id": "PERLIN-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette PERLIN",
+          "type": "PERLIN",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "PERLIN-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "DOMAIN_COLORING-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette DOMAIN_COLORING",
+          "type": "DOMAIN_COLORING"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "DOMAIN_COLORING-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "DOMAIN_COLORING-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette DOMAIN_COLORING",
+          "type": "DOMAIN_COLORING",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "DOMAIN_COLORING-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "DOMAIN_COLORING-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette DOMAIN_COLORING",
+          "type": "DOMAIN_COLORING",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "DOMAIN_COLORING-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "DOMAIN_COLORING-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette DOMAIN_COLORING",
+          "type": "DOMAIN_COLORING",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "DOMAIN_COLORING-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "DOMAIN_COLORING-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette DOMAIN_COLORING",
+          "type": "DOMAIN_COLORING",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "DOMAIN_COLORING-null"
+      }
+    },
+    {
+      "input": {
+        "id": "DOMAIN_COLORING-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette DOMAIN_COLORING",
+          "type": "DOMAIN_COLORING",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "DOMAIN_COLORING-object"
+      }
+    },
+    {
+      "input": {
+        "id": "DOMAIN_COLORING-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette DOMAIN_COLORING",
+          "type": "DOMAIN_COLORING",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "DOMAIN_COLORING-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "SYMMETRY_CHAOS-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SYMMETRY_CHAOS",
+          "type": "SYMMETRY_CHAOS"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "SYMMETRY_CHAOS-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SYMMETRY_CHAOS-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SYMMETRY_CHAOS",
+          "type": "SYMMETRY_CHAOS",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "SYMMETRY_CHAOS-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SYMMETRY_CHAOS-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SYMMETRY_CHAOS",
+          "type": "SYMMETRY_CHAOS",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "SYMMETRY_CHAOS-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SYMMETRY_CHAOS-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SYMMETRY_CHAOS",
+          "type": "SYMMETRY_CHAOS",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "SYMMETRY_CHAOS-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SYMMETRY_CHAOS-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SYMMETRY_CHAOS",
+          "type": "SYMMETRY_CHAOS",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SYMMETRY_CHAOS-null"
+      }
+    },
+    {
+      "input": {
+        "id": "SYMMETRY_CHAOS-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SYMMETRY_CHAOS",
+          "type": "SYMMETRY_CHAOS",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SYMMETRY_CHAOS-object"
+      }
+    },
+    {
+      "input": {
+        "id": "SYMMETRY_CHAOS-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SYMMETRY_CHAOS",
+          "type": "SYMMETRY_CHAOS",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "SYMMETRY_CHAOS-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "SAMILA-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SAMILA",
+          "type": "SAMILA"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "SAMILA-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SAMILA-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SAMILA",
+          "type": "SAMILA",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "SAMILA-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SAMILA-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SAMILA",
+          "type": "SAMILA",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "SAMILA-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SAMILA-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SAMILA",
+          "type": "SAMILA",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "SAMILA-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SAMILA-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SAMILA",
+          "type": "SAMILA",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SAMILA-null"
+      }
+    },
+    {
+      "input": {
+        "id": "SAMILA-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SAMILA",
+          "type": "SAMILA",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SAMILA-object"
+      }
+    },
+    {
+      "input": {
+        "id": "SAMILA-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SAMILA",
+          "type": "SAMILA",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "SAMILA-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "COMPLEX_ROOTS-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette COMPLEX_ROOTS",
+          "type": "COMPLEX_ROOTS"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "COMPLEX_ROOTS-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "COMPLEX_ROOTS-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette COMPLEX_ROOTS",
+          "type": "COMPLEX_ROOTS",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "COMPLEX_ROOTS-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "COMPLEX_ROOTS-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette COMPLEX_ROOTS",
+          "type": "COMPLEX_ROOTS",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "COMPLEX_ROOTS-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "COMPLEX_ROOTS-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette COMPLEX_ROOTS",
+          "type": "COMPLEX_ROOTS",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "COMPLEX_ROOTS-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "COMPLEX_ROOTS-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette COMPLEX_ROOTS",
+          "type": "COMPLEX_ROOTS",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "COMPLEX_ROOTS-null"
+      }
+    },
+    {
+      "input": {
+        "id": "COMPLEX_ROOTS-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette COMPLEX_ROOTS",
+          "type": "COMPLEX_ROOTS",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "COMPLEX_ROOTS-object"
+      }
+    },
+    {
+      "input": {
+        "id": "COMPLEX_ROOTS-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette COMPLEX_ROOTS",
+          "type": "COMPLEX_ROOTS",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "COMPLEX_ROOTS-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "MAP_ATTRACTOR-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette MAP_ATTRACTOR",
+          "type": "MAP_ATTRACTOR"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "MAP_ATTRACTOR-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "MAP_ATTRACTOR-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette MAP_ATTRACTOR",
+          "type": "MAP_ATTRACTOR",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "MAP_ATTRACTOR-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "MAP_ATTRACTOR-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette MAP_ATTRACTOR",
+          "type": "MAP_ATTRACTOR",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "MAP_ATTRACTOR-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "MAP_ATTRACTOR-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette MAP_ATTRACTOR",
+          "type": "MAP_ATTRACTOR",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "MAP_ATTRACTOR-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "MAP_ATTRACTOR-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette MAP_ATTRACTOR",
+          "type": "MAP_ATTRACTOR",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "MAP_ATTRACTOR-null"
+      }
+    },
+    {
+      "input": {
+        "id": "MAP_ATTRACTOR-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette MAP_ATTRACTOR",
+          "type": "MAP_ATTRACTOR",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "MAP_ATTRACTOR-object"
+      }
+    },
+    {
+      "input": {
+        "id": "MAP_ATTRACTOR-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette MAP_ATTRACTOR",
+          "type": "MAP_ATTRACTOR",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "MAP_ATTRACTOR-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "SPIROGRAPH-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SPIROGRAPH",
+          "type": "SPIROGRAPH"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "SPIROGRAPH-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SPIROGRAPH-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SPIROGRAPH",
+          "type": "SPIROGRAPH",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "SPIROGRAPH-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SPIROGRAPH-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SPIROGRAPH",
+          "type": "SPIROGRAPH",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "SPIROGRAPH-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SPIROGRAPH-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SPIROGRAPH",
+          "type": "SPIROGRAPH",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "SPIROGRAPH-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "SPIROGRAPH-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SPIROGRAPH",
+          "type": "SPIROGRAPH",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SPIROGRAPH-null"
+      }
+    },
+    {
+      "input": {
+        "id": "SPIROGRAPH-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SPIROGRAPH",
+          "type": "SPIROGRAPH",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "SPIROGRAPH-object"
+      }
+    },
+    {
+      "input": {
+        "id": "SPIROGRAPH-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette SPIROGRAPH",
+          "type": "SPIROGRAPH",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "SPIROGRAPH-mixed"
+      }
+    },
+    {
+      "input": {
+        "id": "BOUNCING_PARTICLES-absent",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette BOUNCING_PARTICLES",
+          "type": "BOUNCING_PARTICLES"
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "savedPalette": [
+          "#FC6255",
+          "#FF862F",
+          "#FFFF00",
+          "#59743E",
+          "#83C167",
+          "#1D4A81",
+          "#9A72AC"
+        ],
+        "id": "BOUNCING_PARTICLES-absent",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "BOUNCING_PARTICLES-empty",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette BOUNCING_PARTICLES",
+          "type": "BOUNCING_PARTICLES",
+          "palette": []
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [],
+        "savedPalette": [],
+        "id": "BOUNCING_PARTICLES-empty",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "BOUNCING_PARTICLES-single",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette BOUNCING_PARTICLES",
+          "type": "BOUNCING_PARTICLES",
+          "palette": [
+            "#80112233"
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "#80112233"
+        ],
+        "savedPalette": [
+          "#80112233"
+        ],
+        "id": "BOUNCING_PARTICLES-single",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "BOUNCING_PARTICLES-raw",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette BOUNCING_PARTICLES",
+          "type": "BOUNCING_PARTICLES",
+          "palette": [
+            "not-a-color",
+            "-65536",
+            "#AbCdEf",
+            "#010203",
+            ""
+          ]
+        }
+      },
+      "output": {
+        "savedPalettePresent": true,
+        "curveFlag": false,
+        "palette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "savedPalette": [
+          "not-a-color",
+          "-65536",
+          "#AbCdEf",
+          "#010203",
+          ""
+        ],
+        "id": "BOUNCING_PARTICLES-raw",
+        "cosineFlag": false
+      }
+    },
+    {
+      "input": {
+        "id": "BOUNCING_PARTICLES-null",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette BOUNCING_PARTICLES",
+          "type": "BOUNCING_PARTICLES",
+          "palette": null
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "BOUNCING_PARTICLES-null"
+      }
+    },
+    {
+      "input": {
+        "id": "BOUNCING_PARTICLES-object",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette BOUNCING_PARTICLES",
+          "type": "BOUNCING_PARTICLES",
+          "palette": {}
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONObject[\"palette\"] is not a JSONArray.",
+        "partialPalette": [],
+        "id": "BOUNCING_PARTICLES-object"
+      }
+    },
+    {
+      "input": {
+        "id": "BOUNCING_PARTICLES-mixed",
+        "document": {
+          "config_version": "1.0.0",
+          "name": "Source palette BOUNCING_PARTICLES",
+          "type": "BOUNCING_PARTICLES",
+          "palette": [
+            "#123456",
+            4,
+            "#abcdef"
+          ]
+        }
+      },
+      "output": {
+        "errorClass": "java.lang.RuntimeException",
+        "errorMessage": "JSONArray[1] not a string.",
+        "partialPalette": [
+          "#123456"
+        ],
+        "id": "BOUNCING_PARTICLES-mixed"
+      }
+    }
+  ]
+}

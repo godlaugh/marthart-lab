@@ -1,0 +1,18 @@
+{
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "classSha256": {
+    "processing.data.JSONArray": "821d1af889e3d5e1b90e96943960f78944205362708572fb38edab3e89b03913",
+    "processing.data.JSONObject": "1d3979ec438b30a5e39ebaca98a0fe9600678cd117e3e958b3d7c1d8d2e4bfc7",
+    "mathart.ui.state.ProjectState": "14804c181e4cc0911ccfc219736381c432998d6d5c9b4e41b2072a03c2cce9d5"
+  },
+  "javaVersion": "21.0.7",
+  "captureHarnessSha256": "8df9debf88b0b6dc5c1d3d458026520260135c23eaa514f31c86118aba096484",
+  "captureScriptSha256": "669783f500e92ec5e6fcaa611bf76409f55deab8342d4768b697e4baaa3e3f53",
+  "oracleSha256": "22c9b01a19c93e8270c58a734fe119f04da1ffbf85c256eb7b17aadf9e2a0292",
+  "inputSha256": "f607683e8baf5bb7c20fa6069b00e4f63aeffaa0e1e67bca3578e6b3ed3abb8c",
+  "rawReportSha256": "c1a531f05b712a4c6d9f977d86d4e1ee22c093678b9d0b72ba94caf7bb48d3a3",
+  "finalValidationSha256": "a112f47e47d1a2695c6b96890a52572ee1c1fd097343c705bd877ca4b097b2c9",
+  "independentAuditSha256": "1befdf7ef531aa3c543e20c50bb0b488f25e951741c2dfe68102aa80913de600",
+  "status": "passed-after-read-only-initializer-review",
+  "scope": "Actual public ProjectState constructor/fromJson/toJson/getters only, headless; no application entry point, bridge, graphics, window input, or persistence."
+}

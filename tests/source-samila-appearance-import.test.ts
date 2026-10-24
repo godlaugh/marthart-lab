@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {parseLegacyScene,parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,serializeScene} from '../src/engine/document';
-import {DEFAULT_SOURCE_SURFACE_COLORS} from '../src/engine/sourceSurfaceColor';
+import {SOURCE_PROJECT_PALETTE_COLORS} from '../src/engine/sourceProjectPalette';
 const raw=(patch:Record<string,unknown>={})=>({config_version:'1.0.0',type:'SAMILA',name:'Source appearance',...patch});
 const parse=(patch:Record<string,unknown>={})=>parseProjectFile(JSON.stringify(raw(patch)));
 describe('source Samila appearance import',()=>{
@@ -18,13 +18,13 @@ describe('source Samila appearance import',()=>{
   expect(result.scene.palette).toMatchObject({mode:'linear',cycles:1,stops:['#ff0000','#ffffff','#123456']});
   expect(result.scene.settings.samilaSpotSize).toBe(Math.fround(.03));expect(result.scene.settings.iteratedBackend).toBe('gpu');
   expect(result.scene.provenance?.original).toEqual(value);
-  expect(parse().scene.palette.stops).toEqual(DEFAULT_SOURCE_SURFACE_COLORS.map(c=>c.toLowerCase()));
+  expect(parse().scene.palette.stops).toEqual(SOURCE_PROJECT_PALETTE_COLORS.map(c=>c.toLowerCase()));
  });
  it('preserves empty palette fallback through saving and reopening',()=>{
   const scene=parse({palette:[]}).scene;expect(scene.settings.samilaUsePaletteLut).toBe(false);
   const reopened=parseScene(serializeScene(scene));expect(reopened.settings.samilaUsePaletteLut).toBe(false);expect(reopened.palette).toEqual(scene.palette);
   expect(parse({palette:['#abc']}).scene.palette.stops).toEqual(['#0ffabc','#0ffabc']);
-  for(const palette of [null,{},[1]])expect(()=>parse({palette})).toThrow('字符串数组');
+  for(const palette of [null,{},[1]])expect(()=>parse({palette})).toThrow('字符串');
  });
  it('keeps previous saved rendering versions opt-in and preserves numeric provenance',()=>{
   const text=JSON.stringify(raw({settings:{batch_size:1,spot_size:.03,alpha:-0.0}})).replace('"alpha":0','"alpha":-0.0');

@@ -3,11 +3,9 @@ import type {Palette} from '../types';
 import {importSourceConfigPalette} from './sourceConfigPalette';
 import {prepareSourcePaletteRuntime} from './sourcePaletteRuntime';
 import {DEFAULT_COSINE} from './palette';
+import {SOURCE_PROJECT_PALETTE_COLORS} from './sourceProjectPalette';
 
-/** ProjectState reset palette, observed through original fromJson/toJson.
- * It differs from the generic visual config and Samila defaults. */
-export const SOURCE_SYMMETRY_PROJECT_COLORS=['#FC6255','#FF862F','#FFFF00','#59743E','#83C167','#1D4A81','#9A72AC'] as const;
-export function importSourceSymmetryProjectPalette(raw:unknown){return importSourceConfigPalette(raw,SOURCE_SYMMETRY_PROJECT_COLORS,'Symmetry');}
+export function importSourceSymmetryProjectPalette(raw:unknown){return importSourceConfigPalette(raw,SOURCE_PROJECT_PALETTE_COLORS,'Symmetry');}
 export type SourceSymmetryPaletteFacts = {model:'source-rgb1024';entries:1024;filter:'linear-repeat';frame?:SourceSymmetryPaletteFrame}|{model:'local-rgba4097';entries:4097;filter:'manual'};
 /** Rich local palettes remain explicit extensions; do not silently discard
  * cycles, HSV, curves, or authored stop positions to force a native claim. */

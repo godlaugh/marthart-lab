@@ -1,3 +1,4 @@
+import type {SourceProjectPalette} from './sourceProjectPalette';
 import {prepareSourcePaletteRuntime,type SourcePaletteUniforms,type SourcePaletteRuntimeConfiguration,type SourcePaletteRuntimeState} from './sourcePaletteRuntime';
 import {sourceConfigPackedColor,SOURCE_COLOR_TEXT_BUDGET,SourceConfigColorError} from './sourceConfigColor';
 import {prepareDomainSourceScalar} from './domainSourceScalar';
@@ -172,8 +173,11 @@ export interface FractalSourceColorImport {
 /** Native JsonComplexFractalConfig color boundary. Raw source remains the
  * document importer's provenance; this returns its independently usable,
  * JSON-safe runtime configuration without interpreting the local color model. */
-export function prepareFractalSourceColorImport(value:unknown):FractalSourceColorImport {
+export function prepareFractalSourceColorImport(value:unknown,projectPalette?:SourceProjectPalette):FractalSourceColorImport {
  const root=object(value,'source'),configuration=createDefaultFractalSourceColorConfiguration(),consumedPaths:string[][]=[],diagnostics:string[]=[];
+ // ProjectState starts Manual and always exports this flag. Direct runtime
+ // configuration starts Cosine. Neither path generates new colors on load.
+ if(projectPalette)configuration.palette.useCosine=false;
  const read=(o:Record<string,unknown>,key:string,path:string[])=>{if(!own(o,key))return undefined;const value=o[key];if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).length===0)consumedPaths.push([...path,key]);return value;};
  const has=(o:Record<string,unknown>,key:string)=>own(o,key);
  const getString=(raw:unknown,fallback:string)=>typeof raw==='string'?raw:raw==null?fallback:typeof raw==='boolean'?String(raw):'';
@@ -228,7 +232,8 @@ export function prepareFractalSourceColorImport(value:unknown):FractalSourceColo
   }
   if(mode.toUpperCase()==='DIRECT')for(const key of ['inside','outside'] as const){configuration[key].algorithm=directId;configuration[key].parameters=importParameters(directParams,directId);}
  }
- if(has(root,'palette')){const raw=read(root,'palette',[]);if(!Array.isArray(raw))return fail('palette','source array required');if(raw.length>MAX_COLORS)throw new FractalSourceColorError('capacity','palette','local 65536-color preparation budget exceeded');configuration.palette.colors=raw.map((v,i)=>string(v,`palette[${i}]`));}
+ if(projectPalette){configuration.palette.colors=[...projectPalette.colors];if(projectPalette.origin==='authored')read(root,'palette',[]);}
+ else if(has(root,'palette')){const raw=read(root,'palette',[]);if(!Array.isArray(raw))return fail('palette','source array required');if(raw.length>MAX_COLORS)throw new FractalSourceColorError('capacity','palette','local 65536-color preparation budget exceeded');configuration.palette.colors=raw.map((v,i)=>string(v,`palette[${i}]`));}
  // Preserve valid source color spelling, including invalid strings whose source
  // parser recovers to white; diagnostics are observed without baking RGB.
  const parsed=parseFractalSourceColorConfiguration(configuration);
