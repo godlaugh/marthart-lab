@@ -48,10 +48,20 @@ export function sourceManualPalettePackedColor(value:string):number {
  catch(error){if(error instanceof SourceConfigColorError)return 0xff000000;throw error;}
 }
 
+/** Manual random-generator main tones: six-digit Integer / eight-digit Long,
+ * no trimming, one optional #, discarded alpha, null on failed parsing. */
+export function sourceManualMainToneRgb(value:string):number|null {
+ const raw=value.startsWith('#')?value.slice(1):value;
+ if(raw.length!==6&&raw.length!==8)return null;
+ const normalized=javaHexText(raw);if(normalized===undefined)return null;
+ try{return Number(BigInt.asUintN(24,integer(normalized,16,raw.length===6?32:64)));}
+ catch(error){if(error instanceof SourceConfigColorError)return null;throw error;}
+}
+
 /** BouncingBoundaryMobject.parseColor is a distinct source format: remove all
  * hashes after Java trim, then Integer.parseInt(hex), not PApplet.unhex(long).
  * Java radix-16 digits include BMP decimal digits and fullwidth A–F. Only this
- * boundary and the Manual insertion parser use those mappings; ConfigUtils
+ * boundary and the Manual palette parsers use those mappings; ConfigUtils
  * callers keep their existing scope.
  * Invalid/overflow colors recover to source white. */
 export function sourceBouncingBoundaryPackedColor(value:string):number {

@@ -1,0 +1,592 @@
+{
+  "schemaVersion": 1,
+  "provenance": "Original returned palettes with Math.random actual return values observed read-only through JDI MethodExitEvent.",
+  "runtime": {
+    "classSha256": "9d4860cac89b05a7b696a2bcc11074a14c5aee5cb8894e42c131173723378543",
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home",
+    "javaVersion": "21.0.7",
+    "headless": true,
+    "windowCount": 0
+  },
+  "cases": [
+    {
+      "id": "main-tones-2",
+      "kind": "mainTones",
+      "input": {
+        "count": 2
+      },
+      "expectedRandomCalls": 7,
+      "randomReturns": [
+        {
+          "text": "0.8288931511278773",
+          "bits": "3fea864aedff1fb1"
+        },
+        {
+          "text": "0.2388309242628054",
+          "bits": "3fce9203007db8cc"
+        },
+        {
+          "text": "0.6485643989756196",
+          "bits": "3fe4c10a205e67e4"
+        },
+        {
+          "text": "0.2526128042135001",
+          "bits": "3fd02acee529761c"
+        },
+        {
+          "text": "0.7611887557437269",
+          "bits": "3fe85ba885801258"
+        },
+        {
+          "text": "0.28381759018241437",
+          "bits": "3fd22a1140f73b66"
+        },
+        {
+          "text": "0.889512466015294",
+          "bits": "3fec76e2d8dd70a2"
+        }
+      ],
+      "output": [
+        "#CC66CF",
+        "#A2D668",
+        "#6BDEA1"
+      ]
+    },
+    {
+      "id": "main-tones-3",
+      "kind": "mainTones",
+      "input": {
+        "count": 3
+      },
+      "expectedRandomCalls": 7,
+      "randomReturns": [
+        {
+          "text": "0.718586808244002",
+          "bits": "3fe6fea9c317d723"
+        },
+        {
+          "text": "0.6881857726843896",
+          "bits": "3fe6059e2b680fec"
+        },
+        {
+          "text": "0.606760964700314",
+          "bits": "3fe36a95f87c1282"
+        },
+        {
+          "text": "0.40726261793662866",
+          "bits": "3fda10973a3af456"
+        },
+        {
+          "text": "0.402159762775248",
+          "bits": "3fd9bcfc4d38c178"
+        },
+        {
+          "text": "0.6747206602939795",
+          "bits": "3fe5974fc83cbdca"
+        },
+        {
+          "text": "0.6110245850544798",
+          "bits": "3fe38d836e3b8cfe"
+        }
+      ],
+      "output": [
+        "#754DCC",
+        "#BFAB56",
+        "#66CD4E"
+      ]
+    },
+    {
+      "id": "main-tones-4",
+      "kind": "mainTones",
+      "input": {
+        "count": 4
+      },
+      "expectedRandomCalls": 9,
+      "randomReturns": [
+        {
+          "text": "0.9999718115900837",
+          "bits": "3fefffc4e27670ea"
+        },
+        {
+          "text": "0.09855951584779665",
+          "bits": "3fb93b324946a018"
+        },
+        {
+          "text": "0.07871504630086568",
+          "bits": "3fb426ab5590ba60"
+        },
+        {
+          "text": "0.6918320550906405",
+          "bits": "3fe6237cfa5e0a6a"
+        },
+        {
+          "text": "0.36490945697835553",
+          "bits": "3fd75aad31ee4830"
+        },
+        {
+          "text": "0.8764320193940922",
+          "bits": "3fec0bbb298ee02a"
+        },
+        {
+          "text": "0.4776842587035206",
+          "bits": "3fde9260ff3c851c"
+        },
+        {
+          "text": "0.3191214406593106",
+          "bits": "3fd46c7c55c5629c"
+        },
+        {
+          "text": "0.34235123587958416",
+          "bits": "3fd5e91528764590"
+        }
+      ],
+      "output": [
+        "#AB5A5A",
+        "#47BD82",
+        "#41C4C4",
+        "#588ABC"
+      ]
+    },
+    {
+      "id": "main-tones-5",
+      "kind": "mainTones",
+      "input": {
+        "count": 5
+      },
+      "expectedRandomCalls": 11,
+      "randomReturns": [
+        {
+          "text": "0.9922445365606917",
+          "bits": "3fefc0779d45360b"
+        },
+        {
+          "text": "0.9911628922107442",
+          "bits": "3fefb79b3de1b9b5"
+        },
+        {
+          "text": "0.23904106109257484",
+          "bits": "3fce98e5c1e59980"
+        },
+        {
+          "text": "0.34001194096132903",
+          "bits": "3fd5c2c171ab6ac2"
+        },
+        {
+          "text": "0.9414736340333808",
+          "bits": "3fee208d50870751"
+        },
+        {
+          "text": "0.13396545460161313",
+          "bits": "3fc125c7af2762c0"
+        },
+        {
+          "text": "0.3511249552873864",
+          "bits": "3fd678d4cdf133ce"
+        },
+        {
+          "text": "0.4425647187236924",
+          "bits": "3fdc52faf8520756"
+        },
+        {
+          "text": "0.2646501484470629",
+          "bits": "3fd0f0072d1d8c2c"
+        },
+        {
+          "text": "0.3635206970347865",
+          "bits": "3fd743ec504bbefe"
+        },
+        {
+          "text": "0.2918172824565093",
+          "bits": "3fd2ad226523bb38"
+        }
+      ],
+      "output": [
+        "#B5373D",
+        "#E2A069",
+        "#61BC8A",
+        "#50B7B2",
+        "#558BB8"
+      ]
+    },
+    {
+      "id": "main-tones-6",
+      "kind": "mainTones",
+      "input": {
+        "count": 6
+      },
+      "expectedRandomCalls": 13,
+      "randomReturns": [
+        {
+          "text": "0.9422388269046935",
+          "bits": "3fee26d20a52774e"
+        },
+        {
+          "text": "0.5280914546725923",
+          "bits": "3fe0e6200ce3b50c"
+        },
+        {
+          "text": "0.1690885018940932",
+          "bits": "3fc5a4b128e1e3cc"
+        },
+        {
+          "text": "0.13489948706282662",
+          "bits": "3fc14462ea974c48"
+        },
+        {
+          "text": "0.4141839368342868",
+          "bits": "3fda81fd57ced5ac"
+        },
+        {
+          "text": "0.10715946197047177",
+          "bits": "3fbb6ecd709ec0f8"
+        },
+        {
+          "text": "0.8914883600215817",
+          "bits": "3fec871298e1d5f4"
+        },
+        {
+          "text": "0.9055052708864249",
+          "bits": "3fecf9e6309a0296"
+        },
+        {
+          "text": "0.004233858658756806",
+          "bits": "3f715785c79a9c80"
+        },
+        {
+          "text": "0.014139838209916822",
+          "bits": "3f8cf558f5756640"
+        },
+        {
+          "text": "0.45903908240453795",
+          "bits": "3fdd60e575a0da8e"
+        },
+        {
+          "text": "0.796792516173201",
+          "bits": "3fe97f5304d52a98"
+        },
+        {
+          "text": "0.2968981305139622",
+          "bits": "3fd30061043343b4"
+        }
+      ],
+      "output": [
+        "#B14A6D",
+        "#C07163",
+        "#DFBA74",
+        "#36A647",
+        "#6BC3A4",
+        "#41A6B9"
+      ]
+    },
+    {
+      "id": "main-tones-7",
+      "kind": "mainTones",
+      "input": {
+        "count": 7
+      },
+      "expectedRandomCalls": 13,
+      "randomReturns": [
+        {
+          "text": "0.03334667987905304",
+          "bits": "3fa112d0e7057c50"
+        },
+        {
+          "text": "0.8787292972588094",
+          "bits": "3fec1e8ce7386fd0"
+        },
+        {
+          "text": "0.07697324088506818",
+          "bits": "3fb3b484b044bc48"
+        },
+        {
+          "text": "0.9878552230285622",
+          "bits": "3fef9c828e82e50e"
+        },
+        {
+          "text": "0.8528137940920455",
+          "bits": "3feb4a4027667f16"
+        },
+        {
+          "text": "0.6312090168067165",
+          "bits": "3fe432dd40840153"
+        },
+        {
+          "text": "0.6792861059008223",
+          "bits": "3fe5bcb6372f1445"
+        },
+        {
+          "text": "0.5979160636788127",
+          "bits": "3fe32220de681d1d"
+        },
+        {
+          "text": "0.714942261190708",
+          "bits": "3fe6e0ce97caf4c9"
+        },
+        {
+          "text": "0.08401261386659786",
+          "bits": "3fb581d9c5022df8"
+        },
+        {
+          "text": "0.3786281033827362",
+          "bits": "3fd83b715e5805e2"
+        },
+        {
+          "text": "0.6343726269074008",
+          "bits": "3fe44cc7d2c16fca"
+        },
+        {
+          "text": "0.3477314249407193",
+          "bits": "3fd6413b4e7a5c0c"
+        }
+      ],
+      "output": [
+        "#AB4F38",
+        "#DCAE43",
+        "#B8D152",
+        "#55D3AD",
+        "#64ACBE",
+        "#4A6CBC"
+      ]
+    },
+    {
+      "id": "split-default-raw-four",
+      "kind": "generator",
+      "input": {
+        "count": 16,
+        "strategy": 3,
+        "mainToneCount": 5,
+        "mainTones": [
+          "#FF7A59",
+          "#F9C74F",
+          "#43AA8B",
+          "#577590"
+        ]
+      },
+      "expectedRandomCalls": 16,
+      "randomReturns": [
+        {
+          "text": "0.6594938207223016",
+          "bits": "3fe51a92c8fd52ec"
+        },
+        {
+          "text": "0.2759458454615469",
+          "bits": "3fd1a918c36e5ccc"
+        },
+        {
+          "text": "0.9308409025603719",
+          "bits": "3fedc972dc48d456"
+        },
+        {
+          "text": "0.5837281634335212",
+          "bits": "3fe2ade6af766f8c"
+        },
+        {
+          "text": "0.7722739261305059",
+          "bits": "3fe8b677cf0916e1"
+        },
+        {
+          "text": "0.03511854310556983",
+          "bits": "3fa1fb0ec43e40e0"
+        },
+        {
+          "text": "0.3781531206812473",
+          "bits": "3fd833a9258d33fe"
+        },
+        {
+          "text": "0.125587451141706",
+          "bits": "3fc0133fe5b8872c"
+        },
+        {
+          "text": "0.4855743513854407",
+          "bits": "3fdf13a671be8534"
+        },
+        {
+          "text": "0.9469484888533742",
+          "bits": "3fee4d66ead3e64d"
+        },
+        {
+          "text": "0.8965497958614336",
+          "bits": "3fecb089328ebb0d"
+        },
+        {
+          "text": "0.3751447284523003",
+          "bits": "3fd8025f08fe0b26"
+        },
+        {
+          "text": "0.42662554439656575",
+          "bits": "3fdb4dd53a349292"
+        },
+        {
+          "text": "0.43100734084712766",
+          "bits": "3fdb959fd0518ec2"
+        },
+        {
+          "text": "0.29336684159387416",
+          "bits": "3fd2c685b798189c"
+        },
+        {
+          "text": "0.1071585968082096",
+          "bits": "3fbb6ebeecc6c960"
+        }
+      ],
+      "output": [
+        "#5D67D9",
+        "#7671DD",
+        "#8E7BE1",
+        "#A684E4",
+        "#B789DD",
+        "#B584B4",
+        "#B37D8A",
+        "#B2745E",
+        "#B47A46",
+        "#B8904A",
+        "#BBA54E",
+        "#BDBB52",
+        "#ADB84F",
+        "#99AD49",
+        "#84A243",
+        "#6F973D"
+      ]
+    },
+    {
+      "id": "split-take-three-of-six",
+      "kind": "generator",
+      "input": {
+        "count": 8,
+        "strategy": 3,
+        "mainToneCount": 3,
+        "mainTones": [
+          "#FF0000",
+          "#00FF00",
+          "#0000FF",
+          "#FFFF00",
+          "#00FFFF",
+          "#FF00FF"
+        ]
+      },
+      "expectedRandomCalls": 10,
+      "randomReturns": [
+        {
+          "text": "0.7484136747917802",
+          "bits": "3fe7f3013c23841a"
+        },
+        {
+          "text": "0.028469164915713496",
+          "bits": "3f9d270551079920"
+        },
+        {
+          "text": "0.6006087805751895",
+          "bits": "3fe3382fe7c8591f"
+        },
+        {
+          "text": "0.03939003575936839",
+          "bits": "3fa42aee46bfe040"
+        },
+        {
+          "text": "0.8283479680724916",
+          "bits": "3fea81d399128a79"
+        },
+        {
+          "text": "0.2876941902357876",
+          "bits": "3fd26994e493f656"
+        },
+        {
+          "text": "0.5932441525109174",
+          "bits": "3fe2fbdb29327beb"
+        },
+        {
+          "text": "0.027442288808254167",
+          "bits": "3f9c19d4d3d5d9c0"
+        },
+        {
+          "text": "0.9540007340096632",
+          "bits": "3fee872c8c1dced6"
+        },
+        {
+          "text": "0.1992100508044441",
+          "bits": "3fc97fb7069eaac0"
+        }
+      ],
+      "output": [
+        "#F11829",
+        "#DE7A2A",
+        "#BDB22A",
+        "#7CE327",
+        "#12E478",
+        "#0FB6B0",
+        "#1187D7",
+        "#192AF6"
+      ]
+    },
+    {
+      "id": "split-invalid-before-valid-tail",
+      "kind": "generator",
+      "input": {
+        "count": 8,
+        "strategy": 3,
+        "mainToneCount": 3,
+        "mainTones": [
+          "#GGGGGG",
+          "#FF0000",
+          "#00FF00",
+          "#0000FF",
+          "#FFFF00",
+          "#00FFFF"
+        ]
+      },
+      "expectedRandomCalls": 10,
+      "randomReturns": [
+        {
+          "text": "0.4517547589895007",
+          "bits": "3fdce98ccaeb066e"
+        },
+        {
+          "text": "0.695793251487605",
+          "bits": "3fe643f0357d5627"
+        },
+        {
+          "text": "0.4618933812057521",
+          "bits": "3fdd8fa941a11fce"
+        },
+        {
+          "text": "0.9978701580076843",
+          "bits": "3fefee8d65c983f2"
+        },
+        {
+          "text": "0.9514152529151009",
+          "bits": "3fee71fe6685f31d"
+        },
+        {
+          "text": "0.805710005061591",
+          "bits": "3fe9c860593995bb"
+        },
+        {
+          "text": "0.6673715834926505",
+          "bits": "3fe55b1ba6ac2e6d"
+        },
+        {
+          "text": "0.2173511829179614",
+          "bits": "3fcbd229df30955c"
+        },
+        {
+          "text": "0.13597561066999708",
+          "bits": "3fc167a61870cd54"
+        },
+        {
+          "text": "0.5562432216069596",
+          "bits": "3fe1ccbe95ad8de7"
+        }
+      ],
+      "output": [
+        "#6FE5C7",
+        "#95B8B6",
+        "#A58AA4",
+        "#A95892",
+        "#A73F80",
+        "#A6486F",
+        "#A64F5C",
+        "#A55546"
+      ]
+    }
+  ]
+}

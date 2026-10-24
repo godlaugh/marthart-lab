@@ -2,6 +2,7 @@ import {useRef,useState} from 'react';
 import {useI18n} from '../i18n';
 import {sourceBouncingPaletteColor,type SourceBouncingPalette} from '../engine/sourceBouncingVisualConfig';
 import {insertSourceBouncingColor,moveSourceBouncingColor,sourceBouncingEditableColors,sourceBouncingPaletteRgb,sourceBouncingReplaceRgb} from '../engine/sourceBouncingPaletteEditing';
+import {SourceManualPaletteGenerator} from './SourceManualPaletteGenerator';
 /** Source strings are the authored palette. Selection/drag state never changes
  * spelling, alpha, omitted/empty distinction or unedited imported tail colors. */
 export function SourceBouncingPaletteEditor({palette,onChange}:{palette:SourceBouncingPalette;onChange:(palette:SourceBouncingPalette)=>void}){
@@ -24,5 +25,6 @@ export function SourceBouncingPaletteEditor({palette,onChange}:{palette:SourceBo
   <div className="explore-actions"><button disabled={colors.length>=25} onClick={()=>{const next=insertSourceBouncingColor(colors,index);emit(next.colors);setSelected(next.selected);}}>{t('添加颜色')}</button><button disabled={colors.length<2} onClick={()=>{emit([...colors].reverse());setSelected(0);}}>{t('反转')}</button><button onClick={()=>{emit([]);setSelected(0);}}>{t('清空色板')}</button><button onClick={()=>{onChange({kind:'absent'});setSelected(0);}}>{t('恢复默认六色')}</button></div>
   <p className="muted">{t('拖拽颜色或用方向键排序。显示前 25 色；更多导入颜色保留，可按序号编辑。')}</p>
   <p className="muted">{t('已保存 {count} 个颜色',{count:palette.kind==='colors'?colors.length:0})}</p>
+  <SourceManualPaletteGenerator colors={colors} onGenerate={(next,resetSelection)=>{emit(next);if(resetSelection)setSelected(0);}}/>
  </div>;
 }

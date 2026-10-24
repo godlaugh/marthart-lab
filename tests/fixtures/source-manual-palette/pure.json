@@ -1,0 +1,1644 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "classSha256": "9d4860cac89b05a7b696a2bcc11074a14c5aee5cb8894e42c131173723378543",
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home",
+    "javaVersion": "21.0.7",
+    "headless": true,
+    "windowCount": 0
+  },
+  "cases": [
+    {
+      "id": "parse-#123456",
+      "kind": "parse",
+      "input": {
+        "text": "#123456"
+      },
+      "output": {
+        "rgb": [
+          18,
+          52,
+          86
+        ],
+        "alpha": 255,
+        "hex": "#123456"
+      }
+    },
+    {
+      "id": "parse-#80123456",
+      "kind": "parse",
+      "input": {
+        "text": "#80123456"
+      },
+      "output": {
+        "rgb": [
+          18,
+          52,
+          86
+        ],
+        "alpha": 255,
+        "hex": "#123456"
+      }
+    },
+    {
+      "id": "parse-123456",
+      "kind": "parse",
+      "input": {
+        "text": "123456"
+      },
+      "output": {
+        "rgb": [
+          18,
+          52,
+          86
+        ],
+        "alpha": 255,
+        "hex": "#123456"
+      }
+    },
+    {
+      "id": "parse-80123456",
+      "kind": "parse",
+      "input": {
+        "text": "80123456"
+      },
+      "output": {
+        "rgb": [
+          18,
+          52,
+          86
+        ],
+        "alpha": 255,
+        "hex": "#123456"
+      }
+    },
+    {
+      "id": "parse- #123456 ",
+      "kind": "parse",
+      "input": {
+        "text": " #123456 "
+      },
+      "output": null
+    },
+    {
+      "id": "parse-#GGGGGG",
+      "kind": "parse",
+      "input": {
+        "text": "#GGGGGG"
+      },
+      "output": null
+    },
+    {
+      "id": "parse-#fff",
+      "kind": "parse",
+      "input": {
+        "text": "#fff"
+      },
+      "output": null
+    },
+    {
+      "id": "parse-#+0000F",
+      "kind": "parse",
+      "input": {
+        "text": "#+0000F"
+      },
+      "output": {
+        "rgb": [
+          0,
+          0,
+          15
+        ],
+        "alpha": 255,
+        "hex": "#00000F"
+      }
+    },
+    {
+      "id": "parse-#-00001",
+      "kind": "parse",
+      "input": {
+        "text": "#-00001"
+      },
+      "output": {
+        "rgb": [
+          255,
+          255,
+          255
+        ],
+        "alpha": 255,
+        "hex": "#FFFFFF"
+      }
+    },
+    {
+      "id": "parse-#+000000F",
+      "kind": "parse",
+      "input": {
+        "text": "#+000000F"
+      },
+      "output": {
+        "rgb": [
+          0,
+          0,
+          15
+        ],
+        "alpha": 255,
+        "hex": "#00000F"
+      }
+    },
+    {
+      "id": "parse-#-0000001",
+      "kind": "parse",
+      "input": {
+        "text": "#-0000001"
+      },
+      "output": {
+        "rgb": [
+          255,
+          255,
+          255
+        ],
+        "alpha": 255,
+        "hex": "#FFFFFF"
+      }
+    },
+    {
+      "id": "parse-#１２３４５６",
+      "kind": "parse",
+      "input": {
+        "text": "#１２３４５６"
+      },
+      "output": {
+        "rgb": [
+          18,
+          52,
+          86
+        ],
+        "alpha": 255,
+        "hex": "#123456"
+      }
+    },
+    {
+      "id": "parse-#١٢٣٤٥٦",
+      "kind": "parse",
+      "input": {
+        "text": "#١٢٣٤٥٦"
+      },
+      "output": {
+        "rgb": [
+          18,
+          52,
+          86
+        ],
+        "alpha": 255,
+        "hex": "#123456"
+      }
+    },
+    {
+      "id": "parse-#ａｂｃｄｅｆ",
+      "kind": "parse",
+      "input": {
+        "text": "#ａｂｃｄｅｆ"
+      },
+      "output": {
+        "rgb": [
+          171,
+          205,
+          239
+        ],
+        "alpha": 255,
+        "hex": "#ABCDEF"
+      }
+    },
+    {
+      "id": "parse-#８０ｆｆ００００",
+      "kind": "parse",
+      "input": {
+        "text": "#８０ｆｆ００００"
+      },
+      "output": {
+        "rgb": [
+          255,
+          0,
+          0
+        ],
+        "alpha": 255,
+        "hex": "#FF0000"
+      }
+    },
+    {
+      "id": "linear--1",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "-1",
+            "bits": "bf800000"
+          }
+        ]
+      },
+      "output": {
+        "text": "-0.07739938",
+        "bits": "bd9e8391"
+      }
+    },
+    {
+      "id": "linear-0",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.0",
+        "bits": "00000000"
+      }
+    },
+    {
+      "id": "linear-0.0031307998",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.0031307998578995466",
+            "bits": "3b4d2e1b"
+          }
+        ]
+      },
+      "output": {
+        "text": "2.4232197E-4",
+        "bits": "397e17cf"
+      }
+    },
+    {
+      "id": "linear-0.0031308",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.0031308000907301903",
+            "bits": "3b4d2e1c"
+          }
+        ]
+      },
+      "output": {
+        "text": "2.4232198E-4",
+        "bits": "397e17d0"
+      }
+    },
+    {
+      "id": "linear-0.0031308003",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.003130800323560834",
+            "bits": "3b4d2e1d"
+          }
+        ]
+      },
+      "output": {
+        "text": "2.42322E-4",
+        "bits": "397e17d1"
+      }
+    },
+    {
+      "id": "linear-0.040449995",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.040449995547533035",
+            "bits": "3d25aee5"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.0031308045",
+        "bits": "3b4d2e2f"
+      }
+    },
+    {
+      "id": "linear-0.04045",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.040449999272823334",
+            "bits": "3d25aee6"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.003130805",
+        "bits": "3b4d2e31"
+      }
+    },
+    {
+      "id": "linear-0.040450003",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.04045000299811363",
+            "bits": "3d25aee7"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.0031308066",
+        "bits": "3b4d2e38"
+      }
+    },
+    {
+      "id": "linear-0.1",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.10000000149011612",
+            "bits": "3dcccccd"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.010022826",
+        "bits": "3c2436c7"
+      }
+    },
+    {
+      "id": "linear-0.5",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.21404114",
+        "bits": "3e5b2d9a"
+      }
+    },
+    {
+      "id": "linear-1",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          }
+        ]
+      },
+      "output": {
+        "text": "1.0",
+        "bits": "3f800000"
+      }
+    },
+    {
+      "id": "linear-2",
+      "kind": "linear",
+      "input": {
+        "values": [
+          {
+            "text": "2",
+            "bits": "40000000"
+          }
+        ]
+      },
+      "output": {
+        "text": "4.9538474",
+        "bits": "409e85eb"
+      }
+    },
+    {
+      "id": "srgb--1",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "-1",
+            "bits": "bf800000"
+          }
+        ]
+      },
+      "output": {
+        "text": "-12.92",
+        "bits": "c14eb852"
+      }
+    },
+    {
+      "id": "srgb-0",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.0",
+        "bits": "00000000"
+      }
+    },
+    {
+      "id": "srgb-0.0031307998",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.0031307998578995466",
+            "bits": "3b4d2e1b"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.040449936",
+        "bits": "3d25aed5"
+      }
+    },
+    {
+      "id": "srgb-0.0031308",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.0031308000907301903",
+            "bits": "3b4d2e1c"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.040449936",
+        "bits": "3d25aed5"
+      }
+    },
+    {
+      "id": "srgb-0.0031308003",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.003130800323560834",
+            "bits": "3b4d2e1d"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.04044991",
+        "bits": "3d25aece"
+      }
+    },
+    {
+      "id": "srgb-0.040449995",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.040449995547533035",
+            "bits": "3d25aee5"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.22220546",
+        "bits": "3e6389d4"
+      }
+    },
+    {
+      "id": "srgb-0.04045",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.040449999272823334",
+            "bits": "3d25aee6"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.22220546",
+        "bits": "3e6389d4"
+      }
+    },
+    {
+      "id": "srgb-0.040450003",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.04045000299811363",
+            "bits": "3d25aee7"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.22220552",
+        "bits": "3e6389d8"
+      }
+    },
+    {
+      "id": "srgb-0.1",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.10000000149011612",
+            "bits": "3dcccccd"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.34919018",
+        "bits": "3eb2c90e"
+      }
+    },
+    {
+      "id": "srgb-0.5",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.7353569",
+        "bits": "3f3c405a"
+      }
+    },
+    {
+      "id": "srgb-1",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          }
+        ]
+      },
+      "output": {
+        "text": "0.99999994",
+        "bits": "3f7fffff"
+      }
+    },
+    {
+      "id": "srgb-2",
+      "kind": "srgb",
+      "input": {
+        "values": [
+          {
+            "text": "2",
+            "bits": "40000000"
+          }
+        ]
+      },
+      "output": {
+        "text": "1.353256",
+        "bits": "3fad377e"
+      }
+    },
+    {
+      "id": "rgb-0",
+      "kind": "rgb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      ]
+    },
+    {
+      "id": "rgb-1",
+      "kind": "rgb",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "1",
+            "bits": "3f800000"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "1.0",
+          "bits": "3f800000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "5.9604645E-8",
+          "bits": "33800000"
+        }
+      ]
+    },
+    {
+      "id": "rgb-2",
+      "kind": "rgb",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.6279554",
+          "bits": "3f20c1af"
+        },
+        {
+          "text": "0.22486295",
+          "bits": "3e664279"
+        },
+        {
+          "text": "0.1258463",
+          "bits": "3e00ddda"
+        }
+      ]
+    },
+    {
+      "id": "rgb-3",
+      "kind": "rgb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.8664396",
+          "bits": "3f5dcefc"
+        },
+        {
+          "text": "-0.2338874",
+          "bits": "be6f802e"
+        },
+        {
+          "text": "0.1794985",
+          "bits": "3e37ce74"
+        }
+      ]
+    },
+    {
+      "id": "rgb-4",
+      "kind": "rgb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "1",
+            "bits": "3f800000"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.4520137",
+          "bits": "3ee76e57"
+        },
+        {
+          "text": "-0.032456964",
+          "bits": "bd04f198"
+        },
+        {
+          "text": "-0.31152815",
+          "bits": "be9f809e"
+        }
+      ]
+    },
+    {
+      "id": "rgb-5",
+      "kind": "rgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.25",
+            "bits": "3e800000"
+          },
+          {
+            "text": "0.75",
+            "bits": "3f400000"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.5152236",
+          "bits": "3f03e5b2"
+        },
+        {
+          "text": "0.10492909",
+          "bits": "3dd6e510"
+        },
+        {
+          "text": "-0.1603803",
+          "bits": "be243abc"
+        }
+      ]
+    },
+    {
+      "id": "rgb-6",
+      "kind": "rgb",
+      "input": {
+        "values": [
+          {
+            "text": "0.07000000029802322",
+            "bits": "3d8f5c29"
+          },
+          {
+            "text": "0.7099999785423279",
+            "bits": "3f35c28f"
+          },
+          {
+            "text": "0.18000000715255737",
+            "bits": "3e3851ec"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.6729647",
+          "bits": "3f2c476a"
+        },
+        {
+          "text": "-0.17183697",
+          "bits": "be2ff608"
+        },
+        {
+          "text": "0.12347889",
+          "bits": "3dfce280"
+        }
+      ]
+    },
+    {
+      "id": "hsb-0",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.630832",
+          "bits": "3f217e35"
+        },
+        {
+          "text": "0.1208041",
+          "bits": "3df76824"
+        },
+        {
+          "text": "0.0474326",
+          "bits": "3d4248b0"
+        }
+      ]
+    },
+    {
+      "id": "awtHsb-0",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "hsb-1",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "180",
+            "bits": "43340000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.7845275",
+          "bits": "3f48d6cb"
+        },
+        {
+          "text": "-0.091765404",
+          "bits": "bdbbef80"
+        },
+        {
+          "text": "-0.025254428",
+          "bits": "bccee260"
+        }
+      ]
+    },
+    {
+      "id": "awtHsb-1",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          102,
+          204,
+          204
+        ],
+        "alpha": 255,
+        "hex": "#66CCCC"
+      }
+    },
+    {
+      "id": "hsb-2",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "360",
+            "bits": "43b40000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.630832",
+          "bits": "3f217e35"
+        },
+        {
+          "text": "0.1208041",
+          "bits": "3df76824"
+        },
+        {
+          "text": "0.0474326",
+          "bits": "3d4248b0"
+        }
+      ]
+    },
+    {
+      "id": "awtHsb-2",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "hsb-3",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "-30",
+            "bits": "c1f00000"
+          },
+          {
+            "text": "0.6000000238418579",
+            "bits": "3f19999a"
+          },
+          {
+            "text": "0.8999999761581421",
+            "bits": "3f666666"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.6709701",
+          "bits": "3f2bc4b2"
+        },
+        {
+          "text": "0.18283653",
+          "bits": "3e3b3980"
+        },
+        {
+          "text": "-0.025247574",
+          "bits": "bcced400"
+        }
+      ]
+    },
+    {
+      "id": "awtHsb-3",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "-0.0833333358168602",
+            "bits": "bdaaaaab"
+          },
+          {
+            "text": "0.6000000238418579",
+            "bits": "3f19999a"
+          },
+          {
+            "text": "0.8999999761581421",
+            "bits": "3f666666"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          230,
+          92,
+          161
+        ],
+        "alpha": 255,
+        "hex": "#E65CA1"
+      }
+    },
+    {
+      "id": "hsb-4",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "390",
+            "bits": "43c30000"
+          },
+          {
+            "text": "0.6000000238418579",
+            "bits": "3f19999a"
+          },
+          {
+            "text": "0.8999999761581421",
+            "bits": "3f666666"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.76218736",
+          "bits": "3f431eb6"
+        },
+        {
+          "text": "0.051317096",
+          "bits": "3d5231e0"
+        },
+        {
+          "text": "0.106962025",
+          "bits": "3ddb0ee8"
+        }
+      ]
+    },
+    {
+      "id": "awtHsb-4",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "1.0833333730697632",
+            "bits": "3f8aaaab"
+          },
+          {
+            "text": "0.6000000238418579",
+            "bits": "3f19999a"
+          },
+          {
+            "text": "0.8999999761581421",
+            "bits": "3f666666"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          230,
+          161,
+          92
+        ],
+        "alpha": 255,
+        "hex": "#E6A15C"
+      }
+    },
+    {
+      "id": "hsb-5",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "123.45600128173828",
+            "bits": "42f6e979"
+          },
+          {
+            "text": "0.3330000042915344",
+            "bits": "3eaa7efa"
+          },
+          {
+            "text": "0.6669999957084656",
+            "bits": "3f2ac083"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.6843804",
+          "bits": "3f2f338e"
+        },
+        {
+          "text": "-0.080929965",
+          "bits": "bda5be9c"
+        },
+        {
+          "text": "0.054409385",
+          "bits": "3d5edc60"
+        }
+      ]
+    },
+    {
+      "id": "awtHsb-5",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "0.34293332695961",
+            "bits": "3eaf94f5"
+          },
+          {
+            "text": "0.3330000042915344",
+            "bits": "3eaa7efa"
+          },
+          {
+            "text": "0.6669999957084656",
+            "bits": "3f2ac083"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          113,
+          170,
+          117
+        ],
+        "alpha": 255,
+        "hex": "#71AA75"
+      }
+    },
+    {
+      "id": "hsb-6",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "1",
+            "bits": "3f800000"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "1.0",
+          "bits": "3f800000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "5.9604645E-8",
+          "bits": "33800000"
+        }
+      ]
+    },
+    {
+      "id": "awtHsb-6",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "0.0027777778450399637",
+            "bits": "3b360b61"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "1",
+            "bits": "3f800000"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          255,
+          255,
+          255
+        ],
+        "alpha": 255,
+        "hex": "#FFFFFF"
+      }
+    },
+    {
+      "id": "lab-0",
+      "kind": "lab",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          0,
+          0,
+          0
+        ],
+        "alpha": 255,
+        "hex": "#000000"
+      }
+    },
+    {
+      "id": "lab-1",
+      "kind": "lab",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          255,
+          255,
+          255
+        ],
+        "alpha": 255,
+        "hex": "#FFFFFF"
+      }
+    },
+    {
+      "id": "lab-2",
+      "kind": "lab",
+      "input": {
+        "values": [
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0",
+            "bits": "00000000"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          99,
+          99,
+          99
+        ],
+        "alpha": 255,
+        "hex": "#636363"
+      }
+    },
+    {
+      "id": "lab-3",
+      "kind": "lab",
+      "input": {
+        "values": [
+          {
+            "text": "0.699999988079071",
+            "bits": "3f333333"
+          },
+          {
+            "text": "0.10000000149011612",
+            "bits": "3dcccccd"
+          },
+          {
+            "text": "-0.20000000298023224",
+            "bits": "be4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          175,
+          119,
+          255
+        ],
+        "alpha": 255,
+        "hex": "#AF77FF"
+      }
+    },
+    {
+      "id": "lab-4",
+      "kind": "lab",
+      "input": {
+        "values": [
+          {
+            "text": "0.6000000238418579",
+            "bits": "3f19999a"
+          },
+          {
+            "text": "-0.20000000298023224",
+            "bits": "be4ccccd"
+          },
+          {
+            "text": "0.10000000149011612",
+            "bits": "3dcccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          0,
+          163,
+          53
+        ],
+        "alpha": 255,
+        "hex": "#00A335"
+      }
+    },
+    {
+      "id": "lab-5",
+      "kind": "lab",
+      "input": {
+        "values": [
+          {
+            "text": "1.100000023841858",
+            "bits": "3f8ccccd"
+          },
+          {
+            "text": "0.4000000059604645",
+            "bits": "3ecccccd"
+          },
+          {
+            "text": "0.4000000059604645",
+            "bits": "3ecccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          255,
+          0,
+          0
+        ],
+        "alpha": 255,
+        "hex": "#FF0000"
+      }
+    },
+    {
+      "id": "lab-6",
+      "kind": "lab",
+      "input": {
+        "values": [
+          {
+            "text": "-0.10000000149011612",
+            "bits": "bdcccccd"
+          },
+          {
+            "text": "-0.4000000059604645",
+            "bits": "becccccd"
+          },
+          {
+            "text": "-0.4000000059604645",
+            "bits": "becccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          0,
+          39,
+          111
+        ],
+        "alpha": 255,
+        "hex": "#00276F"
+      }
+    },
+    {
+      "id": "awtRgb-0",
+      "kind": "awtRgb",
+      "input": {
+        "integers": [
+          0,
+          0,
+          0
+        ]
+      },
+      "output": [
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      ]
+    },
+    {
+      "id": "awtRgb-1",
+      "kind": "awtRgb",
+      "input": {
+        "integers": [
+          255,
+          255,
+          255
+        ]
+      },
+      "output": [
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      ]
+    },
+    {
+      "id": "awtRgb-2",
+      "kind": "awtRgb",
+      "input": {
+        "integers": [
+          128,
+          128,
+          128
+        ]
+      },
+      "output": [
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.5019608",
+          "bits": "3f008081"
+        }
+      ]
+    },
+    {
+      "id": "awtRgb-3",
+      "kind": "awtRgb",
+      "input": {
+        "integers": [
+          255,
+          0,
+          0
+        ]
+      },
+      "output": [
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "1.0",
+          "bits": "3f800000"
+        },
+        {
+          "text": "1.0",
+          "bits": "3f800000"
+        }
+      ]
+    },
+    {
+      "id": "awtRgb-4",
+      "kind": "awtRgb",
+      "input": {
+        "integers": [
+          18,
+          52,
+          86
+        ]
+      },
+      "output": [
+        {
+          "text": "0.5833333",
+          "bits": "3f155555"
+        },
+        {
+          "text": "0.7906977",
+          "bits": "3f4a6b2a"
+        },
+        {
+          "text": "0.3372549",
+          "bits": "3eacacad"
+        }
+      ]
+    },
+    {
+      "id": "awtRgb-5",
+      "kind": "awtRgb",
+      "input": {
+        "integers": [
+          171,
+          205,
+          239
+        ]
+      },
+      "output": [
+        {
+          "text": "0.5833333",
+          "bits": "3f155555"
+        },
+        {
+          "text": "0.28451884",
+          "bits": "3e91ac74"
+        },
+        {
+          "text": "0.9372549",
+          "bits": "3f6feff0"
+        }
+      ]
+    }
+  ]
+}

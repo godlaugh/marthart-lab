@@ -1507,3 +1507,5 @@ html[lang="en"] .category-grid { grid-template-columns: 1fr; }
 .source-palette-swatches button[aria-pressed=true]{border-color:var(--accent)}
 .source-palette-color{display:grid;grid-template-columns:34px minmax(0,1fr);gap:6px}
 .source-palette-color input{min-width:0;width:100%}
+.source-palette-random>div{padding-top:9px}
+.source-palette-main-tones{display:grid;gap:6px}

@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T03:49:49.137444+00:00",
+  "status": "passed-listed-random-palette-cases-goal-incomplete",
+  "scope": "Original Manual numeric and random generation cases; actual App draft/apply/save/export on native and WebGL paths. No new original GUI/artwork parity claim.",
+  "original": {
+    "jar": "/Users/hoo/AIStudio/mathartstudio-rea/.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "classEntry": "mathart/ui/components/ManualPaletteGenerationKt.class",
+    "classSha256": "9d4860cac89b05a7b696a2bcc11074a14c5aee5cb8894e42c131173723378543"
+  },
+  "runtime": {
+    "classSha256": "9d4860cac89b05a7b696a2bcc11074a14c5aee5cb8894e42c131173723378543",
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home",
+    "javaVersion": "21.0.7",
+    "headless": true,
+    "windowCount": 0
+  },
+  "originalCoverage": {
+    "pureCases": 85,
+    "fullPaletteCases": 12,
+    "mainToneCases": 6,
+    "actualRandomReturns": 226
+  },
+  "fixtures": {
+    "pure.json": {
+      "source": ".cache/bouncing-manual-random-probe-20261024/run/pure-oracle.json",
+      "sha256": "5483f23c468cf91277cb0afe3ef5b62c59668adddc2331b9a9fc973655607268"
+    },
+    "pure-edges.json": {
+      "source": ".cache/bouncing-manual-random-probe-20261024/edge-run/pure-oracle.json",
+      "sha256": "61dce2fae28b145e8833f6d5aabda7846ff432cc15e8011df073cab8eed0cb9e"
+    },
+    "random.json": {
+      "source": ".cache/bouncing-manual-random-probe-20261024/run/generator-oracle.json",
+      "sha256": "8188a6ad1b83851e86126485c21d4be1be118ff7304a9ba78358caf2f96020ce"
+    },
+    "random-edges.json": {
+      "source": ".cache/bouncing-manual-random-probe-20261024/edge-generator-run/generator-oracle.json",
+      "sha256": "6818a3da5246ae0a808f97dd77aea6db72b40846641d6a8e6e5f3d972fb5075d"
+    }
+  },
+  "evidence": {
+    ".cache/bouncing-manual-random-probe-20261024/manifest.json": "edef7297127cd3f89776e7e597064d359c0aaa52228567ad55deb0170fdea197",
+    ".cache/bouncing-manual-random-probe-20261024/README.md": "3dc256f605fac07ba201d39ff9d4dc5668731535d215b40010df8400e6f825cd",
+    ".cache/bouncing-manual-random-probe-20261024/closure-review.md": "33b5106ee51afdb9a75b164bc41c6a13c7d4169de59e13c8c7d3d5144b6e556b",
+    ".cache/bouncing-manual-random-probe-20261024/run/source.json": "44c804c623592f56af1f69e6b353054648132f4033ea86903ec1541e4886d284",
+    ".cache/bouncing-manual-random-probe-20261024/run/random-trace.json": "492ff620ca7df6551c900940ce03be00dae2d0281ff193f87e5fe87991cc4963",
+    ".cache/bouncing-manual-random-probe-20261024/edge-run/source.json": "7dfc37224d76b7f05a7e82feb578c923c7a44f2434f0b06ec7ddb1931ab6cfe7",
+    ".cache/bouncing-manual-random-probe-20261024/edge-run/cleanup-verification.json": "192063ad757fb5626494475c815ce8a8fc5e584e899d5e8e68965e84201bb64a",
+    ".cache/bouncing-manual-random-probe-20261024/edge-generator-run/source.json": "dadb62c2267547820dc5d37809decfdca249079a366e54a9028e558a9f820eb3",
+    ".cache/bouncing-manual-random-probe-20261024/edge-generator-run/random-trace.json": "e43bfa0845fee826bafb689849fafec83bdfd08bcd93f23912dc4b101d921578",
+    ".cache/bouncing-palette-audit-20261024/manual-random-ui-audit.md": "16f26f988669c1718b24dee899b65337966f831b6b1ea505400857b1bf43bfb9",
+    ".cache/bouncing-palette-audit-20261024/manifest.json": "c1c32b7dac4da28b7c849cb6603078820b4971f1b1b9c5ca9fa3bba91f35915f",
+    ".cache/bouncing-palette-audit-20261024/ColorPickerKt.javap.txt": "d086ddbd27720b67fbc0e294dbc99c5b41484d8477836855e3e21392fe1d36e0",
+    ".cache/bouncing-random-20261024-native-first/report.json": "5fc638a431e246b26006e263ec60895b60d4f636a4eec23d333a02c7a5c0218b",
+    ".cache/bouncing-random-20261024-webgl-first/report.json": "6af7fd8874d1779e320dc6de1f82e4509b574792752e91e76655c6a28b847c45",
+    ".cache/bouncing-random-tests-final-20261024.log": "d98f199f52f84c911a63d4c8dff15a44ef14781758a3ac3786c9dac7bcdbc9f1",
+    ".cache/bouncing-random-build-20261024.log": "242b72f5dbdfb6a0378970db7362cd6b209ac8915ab99f334b4ac3d239cc7220",
+    ".cache/bouncing-random-i18n-20261024.log": "b4892316c525a99b78e482a297d1de515e893e21776883baa04d5b1a05eb8996"
+  },
+  "commands": [
+    "PATH=\"$PWD/../.cache/local-toolchain/node_modules/.bin:$PATH\" MATHART_SOURCE_RENDERER_BACKEND=\"$PWD/.cache/bouncing-state-protocol-20261024/backend.json\" node scripts/verify-bouncing-palette.mjs NEW_OUTPUT --random",
+    "PATH=\"$PWD/../.cache/local-toolchain/node_modules/.bin:$PATH\" node scripts/verify-bouncing-palette.mjs NEW_OUTPUT --random --webgl",
+    "npm test -- tests/source-manual-palette-generation.test.ts tests/source-bouncing-palette-editing.test.ts tests/source-bouncing-visual-config.test.ts tests/source-bouncing-boundary.test.ts tests/source-bouncing-controls.test.tsx tests/source-bouncing-document.test.ts tests/i18n.test.tsx",
+    "npm run build:v2",
+    "node scripts/check-i18n.mjs --self-test"
+  ],
+  "validation": {
+    "originalPureCases": 85,
+    "originalFullPaletteCases": 12,
+    "originalMainToneCases": 6,
+    "observedRandomReturns": 226,
+    "nativeAppChecks": 84,
+    "webglAppChecks": 84,
+    "tests": 149,
+    "testFiles": 7,
+    "build": "passed; existing chunk-size warning",
+    "i18n": "passed; no required gaps",
+    "sourceAndReferenceStableDuringRuns": true,
+    "remainingOwnedProcesses": 0
+  },
+  "measurements": {
+    "native": {
+      "elapsedMs": 8782.291874999999,
+      "processFamily": {
+        "rootPid": 34980,
+        "samples": 31,
+        "observedProcesses": 43,
+        "maxConcurrentProcesses": 12,
+        "sampledPeakRssKiB": 2047328,
+        "observedCpuMs": 16700.000000000004,
+        "samplingErrors": []
+      }
+    },
+    "webgl": {
+      "elapsedMs": 9790.142042,
+      "processFamily": {
+        "rootPid": 35948,
+        "samples": 35,
+        "observedProcesses": 44,
+        "maxConcurrentProcesses": 10,
+        "sampledPeakRssKiB": 2086192,
+        "observedCpuMs": 18930,
+        "samplingErrors": []
+      }
+    }
+  },
+  "originalCaptureRuns": [
+    {
+      "path": "run",
+      "status": "passed",
+      "sourceStable": true,
+      "elapsedMs": 9125.3245,
+      "commands": [
+        {
+          "label": "compile",
+          "runId": "5de51ac8-5b49-42f7-b5dc-25025d90f53e",
+          "exitCode": 0,
+          "reaped": true,
+          "groupAfter": {
+            "state": "empty"
+          },
+          "elapsedMs": 1336.46025
+        },
+        {
+          "label": "pure",
+          "runId": "2d42f43b-f6c4-494c-8647-9badd9ff0aa5",
+          "exitCode": 0,
+          "reaped": true,
+          "groupAfter": {
+            "state": "empty"
+          },
+          "elapsedMs": 308.61191699999995
+        },
+        {
+          "label": "observe-random",
+          "runId": "18f22e0f-9f7f-451b-bb54-c8607d8b9146",
+          "exitCode": 0,
+          "reaped": true,
+          "groupAfter": {
+            "state": "empty"
+          },
+          "elapsedMs": 7311.735250000001
+        }
+      ]
+    },
+    {
+      "path": "edge-run",
+      "status": "failed",
+      "sourceStable": true,
+      "elapsedMs": 2940.004958,
+      "commands": [
+        {
+          "label": "compile",
+          "runId": "84d6de9a-2667-4ddb-8dff-e40219d9cf02",
+          "exitCode": 0,
+          "reaped": true,
+          "groupAfter": {
+            "state": "empty"
+          },
+          "elapsedMs": 1476.660584
+        },
+        {
+          "label": "pure",
+          "runId": "3d13df73-7e96-4441-9951-ab08ff866aad",
+          "exitCode": 0,
+          "reaped": true,
+          "groupAfter": {
+            "state": "empty"
+          },
+          "elapsedMs": 301.3435840000002
+        },
+        {
+          "label": "observe-random",
+          "runId": "21eb93aa-3469-49e1-a246-f6d093b323a1",
+          "exitCode": 1,
+          "reaped": null,
+          "groupAfter": null,
+          "elapsedMs": 994.4299579999997
+        }
+      ]
+    },
+    {
+      "path": "edge-generator-run",
+      "status": "passed",
+      "sourceStable": true,
+      "elapsedMs": 8189.8237500000005,
+      "commands": [
+        {
+          "label": "observe-random",
+          "runId": "d0a4ef6e-0549-46b3-9a59-fa3a14d75f4a",
+          "exitCode": 0,
+          "reaped": true,
+          "groupAfter": {
+            "state": "empty"
+          },
+          "elapsedMs": 8022.943415999999
+        }
+      ]
+    }
+  ],
+  "recoveredFailure": {
+    "stage": "edge-run observe-random",
+    "reason": "Harness mainTones TSV rows were encoded as comma-separated arrays due missing parentheses; failed before original generator method call. Prior pure output valid.",
+    "rngEvents": 0,
+    "cleanup": "edge-run/cleanup-verification.json",
+    "retry": "edge-generator-run/source.json"
+  },
+  "behavior": [
+    "Four original strategies with AWT byte quantization and stepwise Float32 HSB/OKLab operations; observed source RNG replayed only into candidate implementation.",
+    "Source main-tone parsing remains distinct from manual insertion and configuration recovery; raw input unchanged.",
+    "UI defaults count16/analogous/mainCount5/raw4. Display padding is derived and not passed as raw draft.",
+    "Draft controls do not apply; explicit full replacement changes palette only, retaining simulation checkpoint. Random main-tone action immediately applies.",
+    "Source random UI drafts are local and not persisted; generated palette is saved.",
+    "Guide MAS-BOU-019 conflicts with actual original Bouncing Manual-only applicability; general Cosine/Curve retained in scope."
+  ],
+  "limits": [
+    "Finite original helpers on existing Temurin21.0.7, not bundled JVM or original GUI.",
+    "Actual App checks use64particles; no new capacity or original artwork parity claim.",
+    "No cold/warm comparison or equivalent baseline; original CPU/RSS, tokens and GPU/VRAM unmeasured.",
+    "App reports retain source hashes at execution; later sourceConfigColor comment-only update does not change behavior."
+  ],
+  "remaining": [
+    "Original Manual complete GUI events and position controls.",
+    "General Cosine/Curve source sampling, randomization and apply workflows.",
+    "All11 remaining2.0 scene families, general capabilities, Apple Silicon integration/package; installed1.0 unchanged."
+  ],
+  "readableReport": "docs/source-bouncing-random-palette.zh-CN.md"
+}

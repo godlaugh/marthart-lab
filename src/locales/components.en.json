@@ -1172,5 +1172,9 @@
   "颜色后移": "Move color later",
   "拖拽颜色或用方向键排序。显示前 25 色；更多导入颜色保留，可按序号编辑。": "Drag colors or use arrow keys to reorder. The first 25 colors are shown; additional imported colors are retained and can be selected by index.",
   "清空色板": "Clear palette",
-  "高级色板数据": "Advanced palette data"
+  "高级色板数据": "Advanced palette data",
+  "主色 {0} RGB": "Primary color {0} RGB",
+  "随机主色并替换色板": "Randomize primary colors and replace palette",
+  "生成并替换色板": "Generate and replace palette",
+  "生成会替换整套色板，包含导入的额外颜色。设置仅作草稿，不随项目保存。": "Generation replaces the whole palette, including extra imported colors. Settings are drafts and are not saved with the project."
 }

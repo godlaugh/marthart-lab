@@ -1,0 +1,370 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "classSha256": "9d4860cac89b05a7b696a2bcc11074a14c5aee5cb8894e42c131173723378543",
+    "javaHome": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/surface-glyph-parity-20261022/backend-options/temurin-21.0.7/jdk/jdk-21.0.7+6/Contents/Home",
+    "javaVersion": "21.0.7",
+    "headless": true,
+    "windowCount": 0
+  },
+  "cases": [
+    {
+      "id": "awt-hue-00000000",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "00000000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "awt-hue-80000000",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "0",
+            "bits": "80000000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "awt-hue-00000001",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "1.401298464324817e-45",
+            "bits": "00000001"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "awt-hue-80000001",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "-1.401298464324817e-45",
+            "bits": "80000001"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          0,
+          0,
+          0
+        ],
+        "alpha": 255,
+        "hex": "#000000"
+      }
+    },
+    {
+      "id": "awt-hue-b2ffffff",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "-2.9802320611338473e-8",
+            "bits": "b2ffffff"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          0,
+          0,
+          0
+        ],
+        "alpha": 255,
+        "hex": "#000000"
+      }
+    },
+    {
+      "id": "awt-hue-b3000000",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "-2.9802322387695312e-8",
+            "bits": "b3000000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          0,
+          0,
+          0
+        ],
+        "alpha": 255,
+        "hex": "#000000"
+      }
+    },
+    {
+      "id": "awt-hue-b3000001",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "-2.980232594040899e-8",
+            "bits": "b3000001"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "awt-hue-b3d6bf95",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "-1.0000000116860974e-7",
+            "bits": "b3d6bf95"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "awt-hue-3f800000",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "1",
+            "bits": "3f800000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "awt-hue-bf800000",
+      "kind": "awtHsb",
+      "input": {
+        "values": [
+          {
+            "text": "-1",
+            "bits": "bf800000"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": {
+        "rgb": [
+          204,
+          102,
+          102
+        ],
+        "alpha": 255,
+        "hex": "#CC6666"
+      }
+    },
+    {
+      "id": "anchor-tiny-negative-degrees",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "-9.999999974752427e-7",
+            "bits": "b58637bd"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        },
+        {
+          "text": "0.0",
+          "bits": "00000000"
+        }
+      ]
+    },
+    {
+      "id": "anchor-negative-degrees",
+      "kind": "hsb",
+      "input": {
+        "values": [
+          {
+            "text": "-0.0010000000474974513",
+            "bits": "ba83126f"
+          },
+          {
+            "text": "0.5",
+            "bits": "3f000000"
+          },
+          {
+            "text": "0.800000011920929",
+            "bits": "3f4ccccd"
+          }
+        ]
+      },
+      "output": [
+        {
+          "text": "0.630832",
+          "bits": "3f217e35"
+        },
+        {
+          "text": "0.1208041",
+          "bits": "3df76824"
+        },
+        {
+          "text": "0.0474326",
+          "bits": "3d4248b0"
+        }
+      ]
+    }
+  ]
+}
