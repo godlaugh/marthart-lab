@@ -71,12 +71,15 @@ export class SourcePerlinSession{
  private constructions=0;private work=0;
  private exportTarget?:SourcePerlinCpuTarget;private releasingExportTarget?:SourcePerlinCpuTarget;
  private configuration?:Configuration;private applied?:Configuration;private observedDocumentKey='';
+ // A receipt survives recording's cold reconstruction. It describes the
+ // author's last command, not the palette currently installed in the model.
+ private paletteCommand?:{sessionId:string;revision:number;colors:readonly number[]};
  private binding?:Binding;private recording?:Recording;private primaryNeedsDraw=false;
  private live?:{context:SourcePerlinLiveContext;clock:SourceSceneHostClock};
  private handoff?:{handle:object;scene:SceneDocument;context:GenerateContext;frame:OrdinarySourceCameraFrame;displayed:boolean};
  private completed?:{identity:string;context:GenerateContext;metadata:Omit<Raster,'pixels'>;background:readonly[number,number,number,number]};
  constructor(private readonly options:{now?:()=>number}={}){}
- private requestIdentity(scene:SceneDocument,c:GenerateContext){return identity([scene.id,scene.perlinSource,scene.perlinCpuSource,scene.sourceCamera,scene.settings.sourceCameraProjection,scene.timeline,c.time,c.sourcePerlinViewport,c.sourceViewport?.referenceLogicalHeight,c.sourceViewport?.projectionPass,c.perlinLive?.sessionId,c.perlinLive?.startAt]);}
+ private requestIdentity(scene:SceneDocument,c:GenerateContext){return identity([scene.id,scene.perlinSource,scene.perlinCpuSource,scene.sourceCamera,scene.settings.sourceCameraProjection,scene.timeline,c.time,c.sourcePerlinViewport,c.sourceViewport?.referenceLogicalHeight,c.sourceViewport?.projectionPass,c.perlinLive?.sessionId,c.perlinLive?.startAt,c.perlinLive?.paletteRevision]);}
  matchesCompletedPrimary(scene:SceneDocument,c:GenerateContext):boolean{
   try{return !this.recording&&!!this.completed&&!!this.target?.diagnostics().initialized&&this.completed.identity===this.requestIdentity(scene,c);}catch{return false;}
  }
@@ -148,7 +151,7 @@ export class SourcePerlinSession{
   this.timeline?.reset();this.timeline=undefined;this.configuration=undefined;this.binding=undefined;this.key='';this.primaryNeedsDraw=false;this.constructions=0;this.live=undefined;this.handoff=undefined;
  }
  reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{
-  this.recording=undefined;this.releaseRuntime();this.applied=undefined;this.observedDocumentKey='';this.cancelled=undefined;
+  this.recording=undefined;this.releaseRuntime();this.applied=undefined;this.observedDocumentKey='';this.paletteCommand=undefined;this.cancelled=undefined;
  },failures);}
  diagnostics(){return{constructions:this.constructions,target:this.target?.diagnostics(),exportTarget:this.exportTarget?.diagnostics(),model:this.model?.diagnostics(),flow:this.flow?.diagnostics(),appliedBackend:this.applied?.complete?.backend,live:this.live?{sessionId:this.live.context.sessionId,...this.live.clock.diagnostics()}:undefined,recording:this.recording?{nextFrame:this.recording.next,complete:this.recording.frame?.queueComplete}:undefined};}
  diagnosticSnapshot(){return this.model?.diagnosticSnapshot();}
@@ -199,7 +202,7 @@ export class SourcePerlinSession{
  }
  private liveFacts(frame:OrdinarySourceCameraFrame,renderKind:'update'|'snapshot'):SourcePerlinLiveFacts {
   const live=this.live!,clock=live.clock.diagnostics();
-  return{sessionId:live.context.sessionId,paused:this.recording?false:clock.paused,clockSource:this.recording?'fixed-step':clock.clockSource,renderKind,sceneTime:frame.sceneTime,constructions:this.constructions,frame:structuredClone(frame)};
+  return{sessionId:live.context.sessionId,...(live.context.paletteRevision===undefined?{}:{paletteRevision:live.context.paletteRevision}),paused:this.recording?false:clock.paused,clockSource:this.recording?'fixed-step':clock.clockSource,renderKind,sceneTime:frame.sceneTime,constructions:this.constructions,frame:structuredClone(frame)};
  }
  private renderOutput(scene:SceneDocument,context:GenerateContext,frame:OrdinarySourceCameraFrame,target:SourcePerlinCpuTarget,kind:'primary'|'offscreen',started:number,renderKind:'update'|'snapshot'='update'):Raster{
   const {config}=this.configuration!,view=this.binding!.view,facts=this.model!.diagnostics();
@@ -220,8 +223,17 @@ export class SourcePerlinSession{
   this.requireIdle();this.cleanup.prepare();const started=performance.now();
   const live=context.perlinLive===undefined?undefined:validateSourcePerlinLiveContext(context.perlinLive);
   if(live&&context.sourceViewport?.target!=='primary')throw Error('Perlin 实时预览需要主画布目标');
+  const prepared=prepareConfiguration(scene),previous=live&&this.paletteCommand?.sessionId===live.sessionId?this.paletteCommand:undefined;
+  // Validate before touching a completed capability. A revision is bound to
+  // the exact canonical palette; retries cannot silently change its payload.
+  if(previous){
+   if(live!.paletteRevision===undefined||live!.paletteRevision<previous.revision)throw Error('Perlin 色板命令序号已过期或缺失');
+   if(live!.paletteRevision===previous.revision&&(prepared.config.palette.length!==previous.colors.length||prepared.config.palette.some((color,index)=>color!==previous.colors[index])))throw Error('Perlin 同一色板命令序号不能更换颜色');
+  }
+  const command=live?.paletteRevision===undefined?undefined:{sessionId:live.sessionId,revision:live.paletteRevision,colors:prepared.config.palette};
+  const paletteCommandChanged=!!command&&(!previous||command.revision>previous.revision);
   try{
-   const prepared=prepareConfiguration(scene),view=viewport(context),initial=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera:prepared.camera}},context),kind=initial.viewport.target;
+   const view=viewport(context),initial=ordinarySourceCameraFrame({...scene,evaluatedSourceCamera:{time:0,frameIndex:0,camera:prepared.camera}},context),kind=initial.viewport.target;
    if(kind!=='primary'&&kind!=='offscreen')throw new Error('源 Perlin CPU 需要明确的显示目标');
    const density=view.pixelDensity,width=kind==='primary'?initial.viewport.logicalWidth:Math.round(context.width/density),height=kind==='primary'?initial.viewport.logicalHeight:Math.round(context.height/density);
    if(width<1||height<1)throw new Error('Perlin 导出尺寸小于一个逻辑像素');
@@ -239,9 +251,9 @@ export class SourcePerlinSession{
     this.releaseRuntime();this.key=key;this.initializeTimeline(ownConfiguration(prepared),binding,false);
     if(live)this.live={context:live,clock:new SourceSceneHostClock(live.clock.paused,prepared.camera,this.options.now)};
    }
-   if(live)this.live!.clock.assertPaused(live.clock.paused);
+   if(live){this.live!.clock.assertPaused(live.clock.paused);this.live!.context=live;}
    this.completed=undefined;this.handoff=undefined;this.cancelled=context.isCancelled;this.work=0;
-   if(live&&!rebuild&&edited){
+   if(live&&!rebuild&&(command?paletteCommandChanged:edited)){
     // Canonical values are already parsed ARGB. The UI hot path discards alpha;
     // saved/imported colors and the cold snapshot keep their authored bytes.
     // The canonical document parser already requires a nonempty palette.
@@ -266,6 +278,7 @@ export class SourcePerlinSession{
    if((switched||this.primaryNeedsDraw)&&target.diagnostics().draws===previousDraws)this.display(target,kind,true);
    this.primaryNeedsDraw=false;
    const output=this.renderOutput(scene,context,frame,target,kind,started,renderKind);
+   if(command)this.paletteCommand=command;
    if(kind==='primary')this.remember(scene,context,output);return output;
   }catch(error){this.reset([error]);throw error;}finally{this.cancelled=undefined;}
  }
@@ -332,7 +345,7 @@ export class SourcePerlinSession{
   try{
    if(this.live){
     const frame=this.timeline!.resumeLive();this.live.clock.resetTime();
-    this.live.context={sessionId:this.live.context.sessionId,clock:{paused:false}};
+    this.live.context={sessionId:this.live.context.sessionId,...(this.live.context.paletteRevision===undefined?{}:{paletteRevision:this.live.context.paletteRevision}),clock:{paused:false}};
     context.time=frame.sceneTime;context.perlinLive={...this.live.context,clock:{paused:false}};
     this.key=this.runtimeKey(this.configuration!,this.binding!,this.live.context);
     this.recording=undefined;this.primaryNeedsDraw=false;

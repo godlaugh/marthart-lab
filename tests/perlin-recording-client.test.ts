@@ -17,6 +17,26 @@ async function setup(){vi.stubGlobal('Worker',FakeWorker);const g=new Generator(
 async function start(){const state=await setup(),p=state.g.beginSourceRecording(state.output,options),r=state.w.messages.at(-1)!;state.w.emit({operation:'source-recording-begin',sessionId:r.sessionId,id:r.id,recordingId:r.id,result:{scene,context,clock,warmup:raster()}});return{...state,started:await p};}
 afterEach(()=>vi.unstubAllGlobals());
 describe('Perlin recording client lease',()=>{
+ it.each(['generate','begin','finish'] as const)('rejects a forged palette command receipt at %s',async phase=>{
+  vi.stubGlobal('Worker',FakeWorker);
+  const g=new Generator(),input:GenerationInput={...context,time:0,sourcePerlinViewport:{width:2,height:2,pixelDensity:1},sourceViewport:{logicalWidth:2,logicalHeight:2,referenceLogicalHeight:2,target:'primary',projectionPass:'perspective'},perlinLive:{sessionId:'palette-lease',paletteRevision:7,clock:{paused:true}}};
+  const live=(paused:boolean,recording=false):NonNullable<Extract<SceneOutput,{type:'raster'}>['perlinLive']>=>({sessionId:'palette-lease',paletteRevision:7,paused,clockSource:recording?'fixed-step':'worker-wall-clock',renderKind:recording?'update':'snapshot',sceneTime:0,constructions:1,frame:{time:0,sceneTime:0,frameIndex:0,queueIndex:0,queueComplete:false,rawDt:0,activeDt:0,rates:[0,0,0],diagnostics:[],camera:{phi:0,theta:0,gamma:0,center:[0,0,0],zoom:1,focalDistance:20}}});
+  const output={...raster(),perlinLive:live(true)},pending=g.generate(scene,input),caught=pending.catch(e=>e),w=FakeWorker.all.at(-1)!,request=w.messages.at(-1)!;
+  if(phase==='generate')output.perlinLive.paletteRevision=6;
+  w.emit({operation:'generate',sessionId:request.sessionId,id:request.id,output});
+  if(phase==='generate'){expect(await caught).toBeInstanceOf(Error);expect(w.terminated).toBe(true);g.dispose();return;}
+  await pending;
+  const recordingInput={...input,perlinLive:{...input.perlinLive!,clock:{paused:false}}},begin=g.beginSourceRecording(output,options),beginCaught=begin.catch(e=>e),b=w.messages.at(-1)!;
+  const beginInput=structuredClone(recordingInput);if(phase==='begin')beginInput.perlinLive.paletteRevision=6;
+  w.emit({operation:'source-recording-begin',sessionId:b.sessionId,id:b.id,recordingId:b.id,result:{scene,context:beginInput,clock,warmup:{...raster(),perlinLive:live(false,true)}}});
+  if(phase==='begin'){expect(await beginCaught).toMatchObject({recordingRetained:false});expect(w.terminated).toBe(true);g.dispose();return;}
+  const started=await begin,finish=g.finishSourceRecording(started.handle),finishCaught=finish.catch(e=>e),f=w.messages.at(-1)!;
+  // Make the returned context and raster agree with each other, but disagree
+  // with the actual recording lease. Paired validation alone must not pass.
+  const forgedInput={...recordingInput,perlinLive:{...recordingInput.perlinLive,paletteRevision:8}};
+  w.emit({operation:'source-recording-finish',sessionId:f.sessionId,id:f.id,recordingId:started.handle.recordingId,result:{scene,context:forgedInput,preview:{...raster(),perlinLive:{...live(false),paletteRevision:8}}}});
+  expect(await finishCaught).toMatchObject({recordingRetained:false});expect(w.terminated).toBe(true);g.dispose();
+ });
  it('locks the exact completed preview, preserves the worker on cancel and publishes finish preview capability',async()=>{
   const {g,w,output}=await setup();await expect(g.beginSourceRecording({...output},options)).rejects.toThrow('主预览');
   const pending=g.beginSourceRecording(output,options),r=w.messages.at(-1)!,before=w.messages.length;

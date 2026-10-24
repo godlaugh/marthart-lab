@@ -11,7 +11,7 @@ import type {SceneDocument} from '../src/types';
 
 // Component callbacks are exercised as controlled authoring boundaries. This is
 // not a mounted-browser or GPU-pixel claim; root owns the real App verifier.
-vi.mock('react',async load=>({...await load<typeof import('react')>(),useState:(initial:unknown)=>[typeof initial==='function'?initial():initial,vi.fn()]}));
+vi.mock('react',async load=>({...await load<typeof import('react')>(),useState:(initial:unknown)=>[typeof initial==='function'?initial():initial,vi.fn()],useRef:(current:unknown)=>({current}),useEffect:vi.fn()}));
 vi.mock('../src/i18n',async load=>({...await load<typeof import('../src/i18n')>(),useI18n:()=>({t:(s:string,args?:Record<string,string|number>)=>s.replace(/\{(\w+)\}/g,(_,k)=>String(args?.[k]??`{${k}}`))})}));
 const local=()=>createScene(definition('fractal'));
 const source=()=>{const scene=local();scene.settings={...scene.settings,formula:'newton',fractalNumericProfile:FRACTAL_SOURCE_NUMERIC_PROFILE,fractalColorProfile:FRACTAL_SOURCE_COLOR_PROFILE};scene.fractalSourceColor=createDefaultFractalSourceColorConfiguration();return scene;};
@@ -75,8 +75,21 @@ describe('source color authoring surface',()=>{
 describe('independent source palette editor',()=>{
  it('shows cosine channels and hides inactive manual palette fields without mutating them',()=>{
   const scene=source(),change=vi.fn(),before=structuredClone(scene),tree=<FractalSourcePaletteEditor scene={scene} onChange={change}/>;const text=renderToStaticMarkup(tree);
-  expect(text).toContain('aria-label="余弦 a · R"');expect(text).toContain('aria-label="余弦 d · B"');expect(text).not.toContain('分形源颜色序号');expect(text).not.toContain('原版色板伽马');expect(change).not.toHaveBeenCalled();expect(scene).toEqual(before);
-  byLabel(tree,'余弦 d · B').onChange({target:{value:'0.25'}});const next=change.mock.calls[0][0] as SceneDocument;expect(next.fractalSourceColor!.palette.cosine.d[2]).toBe(.25);expect(next.fractalSourceColor!.palette.colors).toEqual(before.fractalSourceColor!.palette.colors);expect(next.palette).toEqual(before.palette);
+  expect(text).toContain('aria-label="A R"');expect(text).toContain('aria-label="D B"');expect(text).not.toContain('分形源颜色序号');expect(text).not.toContain('原版色板伽马');expect(change).not.toHaveBeenCalled();expect(scene).toEqual(before);
+  byLabel(tree,'增加 D B').onClick();const next=change.mock.calls[0][0] as SceneDocument;expect(next.fractalSourceColor!.palette.cosine.d[2]).toBe(Math.fround(Math.fround(.667)+.01));expect(next.fractalSourceColor!.palette.colors).not.toEqual(before.fractalSourceColor!.palette.colors);expect(next.fractalSourceColor!.palette.colors).toHaveLength(6);expect(next.palette).toEqual(before.palette);
+ });
+ it('hydrates both imported flags without committing and keeps a Curve count edit distinct from mode selection',()=>{
+  const scene=source(),change=vi.fn();scene.fractalSourceColor!.palette.useCurve=true;scene.fractalSourceColor!.palette.curves={red:[],green:[],blue:[]};
+  const tree=<FractalSourcePaletteEditor scene={scene} onChange={change}/>;
+  expect(renderToStaticMarkup(tree)).toContain('作品仍使用连续余弦');expect(byLabel(tree,'源色板生成模式').value).toBe('curve');expect(change).not.toHaveBeenCalled();
+  byLabel(tree,'源色板生成模式').onChange({target:{value:'curve'}});expect(change).not.toHaveBeenCalled();
+  byLabel(tree,'增加 生成颜色数量').onClick();expect(change).toHaveBeenCalledTimes(1);expect(change.mock.calls[0][0].fractalSourceColor.palette).toMatchObject({useCosine:true,useCurve:true});expect(change.mock.calls[0][0].fractalSourceColor.palette.colors).toHaveLength(7);
+  byLabel(tree,'源色板生成模式').onChange({target:{value:'cosine'}});expect(change).toHaveBeenCalledTimes(2);expect(change.mock.calls[1][0].fractalSourceColor.palette).toMatchObject({useCosine:true,useCurve:false});
+ });
+ it('returning an initially loaded generator to Manual keeps its current colors, while bake keeps new generated colors',()=>{
+  const scene=source(),change=vi.fn(),tree=<FractalSourcePaletteEditor scene={scene} onChange={change}/>;
+  byLabel(tree,'源色板生成模式').onChange({target:{value:'manual'}});expect(change.mock.calls[0][0].fractalSourceColor.palette.colors).toEqual(scene.fractalSourceColor!.palette.colors);expect(change.mock.calls[0][0].fractalSourceColor.palette).toMatchObject({useCosine:false,useCurve:false});
+  button(tree,'应用为手动色板').onClick();expect(change.mock.calls[1][0].fractalSourceColor.palette).toMatchObject({useCosine:false,useCurve:false});expect(change.mock.calls[1][0].fractalSourceColor.palette.colors).not.toEqual(scene.fractalSourceColor!.palette.colors);
  });
  it('edits raw manual colors and interpolation while keeping the local palette and opposite fields intact',()=>{
   const scene=source(),change=vi.fn();scene.fractalSourceColor!.palette.useCosine=false;scene.fractalSourceColor!.palette.colors=['#80123456','#abcdef'];const tree=<FractalSourcePaletteEditor scene={scene} onChange={change}/>;

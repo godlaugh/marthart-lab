@@ -5,6 +5,11 @@ export type SourceGeneratorTriple=[number,number,number];
 export interface SourceCosinePaletteState {colorCount:number;a:SourceGeneratorTriple;b:SourceGeneratorTriple;c:SourceGeneratorTriple;d:SourceGeneratorTriple;}
 export interface SourceCurvePoint {id:string;x:number;y:number;}
 export interface SourceCurvePaletteState {colorCount:number;red:SourceCurvePoint[];green:SourceCurvePoint[];blue:SourceCurvePoint[];}
+export type SourceGradientPaletteMode='manual'|'cosine'|'curve';
+/** User actions remain distinct: editing an imported Curve must not silently
+ * change independently authored renderer flags. */
+export type SourceGradientPaletteCommit={kind:'mode'|'change'|'bake';colors:string[]} & (
+ {mode:'cosine';state:SourceCosinePaletteState}|{mode:'curve';state:SourceCurvePaletteState});
 export type SourcePaletteGenerationResult<T>={ok:true;value:T}|{ok:false;error:{kind:'input'|'capacity'|'random';path:string;reason:string}};
 export interface SourcePaletteRandom {nextDouble(from:number,until:number):number;nextFloat():number;nextInt(from:number,until:number):number;}
 export const SOURCE_GENERATOR_POINT_BUDGET=65_536;

@@ -1,3 +1,5 @@
+import {SourceGradientPaletteEditor} from './SourceGradientPaletteEditor';
+import {commitFractalSourcePalette,restoreFractalSourceManualPalette,fractalSourcePaletteMode} from '../engine/fractalSourcePaletteEditing';
 import {useState} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
@@ -58,19 +60,25 @@ export function FractalSourceColorControls({scene,onChange,onStage}:Props&{onSta
 
 export function FractalSourcePaletteEditor({scene,onChange}:Props){
  const {t}=useI18n(),[selected,setSelected]=useState(0),[error,setError]=useState(''),color=authoredFractalSourceColor(scene),palette=color.palette,index=Math.min(selected,Math.max(0,palette.colors.length-1)),current=palette.colors[index];
- const emit=(change:(copy:FractalSourceColorConfiguration['palette'])=>void)=>{try{const copy=structuredClone(color);change(copy.palette);onChange({...scene,fractalSourceColor:parseFractalSourceColorConfiguration(copy)});setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
+ const emit=(change:(copy:FractalSourceColorConfiguration['palette'])=>void)=>{try{const copy=structuredClone(color);change(copy.palette);onChange({...scene,fractalSourceColor:parseFractalSourceColorConfiguration(copy)});setError('');return undefined;}catch(e){const reason=e instanceof Error?e.message:String(e);setError(reason);return reason;}};
+ const publish=(result:ReturnType<typeof commitFractalSourcePalette>)=>{if(!result.ok){setError(result.error.reason);return result.error.reason;}onChange({...scene,fractalSourceColor:result.value});setError('');return undefined;};
  return <div data-testid="fractal-source-palette" style={{display:'grid',gap:10}}>
   <p className="muted">{t('原版色板生成 1024 色纹理；本地色板保留，当前不参与着色。')}</p>
-  <label className="field toggle-field"><span>{t('使用余弦色板')}</span><input type="checkbox" aria-label={t('使用余弦色板')} checked={palette.useCosine} onChange={e=>emit(p=>{p.useCosine=e.target.checked;})}/></label>
+  {palette.useCurve&&palette.useCosine&&<p role="status">{t('导入的 Curve 与 Cosine 标志均开启：编辑器显示曲线，作品仍使用连续余弦；显式切换模式后统一。')}</p>}
   <NumberField label={t('原版色板偏移')} value={palette.offset} onChange={v=>emit(p=>{p.offset=v;})}/>
-  {palette.useCosine?<>{(['a','b','c','d'] as const).map(key=><fieldset key={key}><legend>{t('余弦参数 {name}',{name:key})}</legend>{([0,1,2] as const).map(i=><NumberField key={i} label={t('余弦 {name} · {channel}',{name:key,channel:['R','G','B'][i]})} value={palette.cosine[key][i]} onChange={v=>emit(p=>{p.cosine[key][i]=v;})}/>)}</fieldset>)}</>:<>
+  {!palette.useCosine&&<>
    <NumberField label={t('原版色板伽马')} value={palette.gamma} onChange={v=>emit(p=>{p.gamma=v;})}/>
    <label className="field"><span>{t('色板插值空间')}</span><select aria-label={t('色板插值空间')} value={palette.space} onChange={e=>emit(p=>{p.space=e.target.value as 'rgb'|'hsv';})}><option value="rgb">RGB</option><option value="hsv">HSV</option></select></label>
+  </>}
+  <SourceGradientPaletteEditor source={palette.colors} colors={palette.colors}
+   controller={{mode:fractalSourcePaletteMode(palette),cosine:palette.cosine,curve:palette.curves??{},onCommit:commit=>publish(commitFractalSourcePalette(color,commit)),description:t('生成参数和颜色随分形项目保存。切回手动仅恢复颜色；应用为手动保留生成结果。暂停时保留动画进度，播放时重新开始。')}}
+   onGenerate={(colors,reset)=>{const failure=emit(p=>{p.colors=[...colors];});if(!failure&&reset)setSelected(0);return failure;}}
+   onRestore={colors=>publish(restoreFractalSourceManualPalette(color,colors))}>
    <p>{t('已保存 {count} 个颜色',{count:palette.colors.length})}</p>
    {current!==undefined?<><label className="field"><span>{t('选择颜色')}</span><input type="number" aria-label={t('分形源颜色序号')} min={1} max={palette.colors.length} step={1} value={index+1} onChange={e=>{const v=Number(e.target.value);if(Number.isInteger(v)&&v>=1&&v<=palette.colors.length)setSelected(v-1);}}/></label><ColorText label={t('分形源颜色原文')} value={current} onChange={v=>emit(p=>{p.colors[index]=v;})}/><button onClick={()=>{emit(p=>{p.colors.splice(index,1);});setSelected(Math.max(0,index-1));}}>{t('删除颜色')}</button></>:<p role="status">{t('空原版色板使用黑色纹理。')}</p>}
    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button onClick={()=>{emit(p=>{p.colors.push(current??'#ffffff');});setSelected(palette.colors.length);}}>{t('添加颜色')}</button><button disabled={palette.colors.length<2} onClick={()=>{emit(p=>{p.colors.reverse();});setSelected(0);}}>{t('反转')}</button></div>
-  </>}
-  <button onClick={()=>{emit(p=>Object.assign(p,createDefaultFractalSourceColorConfiguration().palette));setSelected(0);}}>{t('恢复原版色板默认')}</button>
+  </SourceGradientPaletteEditor>
+  <button onClick={()=>{emit(p=>{delete p.useCurve;delete p.curves;Object.assign(p,createDefaultFractalSourceColorConfiguration().palette);});setSelected(0);}}>{t('恢复原版色板默认')}</button>
   {error&&<p role="alert">{t(error)}</p>}
  </div>;
 }

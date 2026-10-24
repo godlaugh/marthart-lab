@@ -7,7 +7,8 @@ export function validSourcePerlinLiveOutput(output:SceneOutput,input:GenerationI
   const live=output.perlinLive,frame=live?.frame,source=output.sourcePerlinFrame;
   const [width,height]=options.dimensions??[input.width,input.height];
   if(!live||!frame||!source||output.width!==width||output.height!==height||!(output.pixels instanceof Uint8ClampedArray)||output.pixels.length!==width*height*4)return false;
-  if(live.sessionId!==input.perlinLive.sessionId||live.paused!==(options.paused??input.perlinLive.clock.paused)||!Number.isSafeInteger(live.constructions)||live.constructions<1||!['update','snapshot'].includes(live.renderKind))return false;
+  if(live.sessionId!==input.perlinLive.sessionId||live.paletteRevision!==input.perlinLive.paletteRevision||live.paused!==(options.paused??input.perlinLive.clock.paused)||!Number.isSafeInteger(live.constructions)||live.constructions<1||!['update','snapshot'].includes(live.renderKind))return false;
+  if(live.paletteRevision!==undefined&&(!Number.isSafeInteger(live.paletteRevision)||live.paletteRevision<0))return false;
   // Snapshots retain the last actual clock observation; an unused request
   // timestamp is not evidence that the owner read an injected clock.
   if(!(options.recording?live.clockSource==='fixed-step':['worker-wall-clock','injected'].includes(live.clockSource))||!Number.isFinite(live.sceneTime)||live.sceneTime<0||live.sceneTime!==frame.sceneTime||live.sceneTime!==source.sceneTime)return false;

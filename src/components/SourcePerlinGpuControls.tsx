@@ -7,7 +7,7 @@ import {parseSourcePerlinGpuDocument, type SourcePerlinGpuDocumentPayload} from 
 
 import {usesSourcePerlinGpu,sourcePerlinGpuConfiguration} from '../engine/sourcePerlinIdentity';
 
-type Props = {scene:SceneDocument; onChange:(scene:SceneDocument)=>void; tab?:'geometry'|'appearance'|'all'};
+type Props = {scene:SceneDocument; onChange:(scene:SceneDocument,intent?:'perlin-palette')=>void; tab?:'geometry'|'appearance'|'all'};
 type Commit = (text:string)=>string|undefined;
 type UniformKey = keyof SourcePerlinGpuDocumentPayload['uniforms'];
 
@@ -26,11 +26,11 @@ export function SourcePerlinGpuControls({scene,onChange,tab='all'}:Props){
  const {t}=useI18n(),[error,setError]=useState('');
  const source=sourcePerlinGpuConfiguration(scene);
  if(!usesSourcePerlinGpu(scene)||!source)return null;
- const emit=(candidate:SourcePerlinGpuDocumentPayload):string|undefined=>{
+ const emit=(candidate:SourcePerlinGpuDocumentPayload,intent?:'perlin-palette'):string|undefined=>{
   const parsed=parseSourcePerlinGpuDocument(candidate);
   if(!parsed.ok){const path=parsed.error.path.join('.');return path?`${path}: ${t(parsed.error.reason)}`:t(parsed.error.reason);}
   const {textureStyle,uniforms,...common}=parsed.value;
-  onChange(scene.perlinSource?{...scene,perlinSource:{...scene.perlinSource,...common,gpu:{textureStyle,uniforms}}}:{...scene,perlinGpuSource:parsed.value});setError('');return undefined;
+  onChange(scene.perlinSource?{...scene,perlinSource:{...scene.perlinSource,...common,gpu:{textureStyle,uniforms}}}:{...scene,perlinGpuSource:parsed.value},intent);setError('');return undefined;
  };
  const field=(id:string,label:string,value:string,commit:Commit,multiline=false,numeric=false)=><SourcePerlinDraftField
   key={`${id}:${value}`} id={id} label={t(label)} value={value} commit={commit} multiline={multiline} numeric={numeric}/>;
@@ -64,7 +64,7 @@ export function SourcePerlinGpuControls({scene,onChange,tab='all'}:Props){
   {(tab==='all'||tab==='appearance')&&<>
    {section('appearance','画面外观',<>{appearanceFields.map(([key,label])=>uniform(key,label))}</>)}
    {section('palette','纹理色板',<>
-    <SourcePerlinPaletteEditor palette={source.palette} prefix="source-perlin-gpu" onChange={palette=>emit({...source,palette})}/>
+    <SourcePerlinPaletteEditor palette={source.palette} prefix="source-perlin-gpu" onChange={palette=>emit({...source,palette},'perlin-palette')}/>
     <p className="muted">{t('每行一个颜色，也可用空格或逗号分隔。前两位为透明度；此画面最终输出为不透明。')}</p>
    </>)}
   </>}

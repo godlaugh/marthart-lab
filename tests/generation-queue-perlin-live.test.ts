@@ -47,4 +47,17 @@ describe('Perlin live queue ordering and recording handoff',()=>{
   f.queue.request(f.scene,{...f.input,perlinLive:{sessionId:'new',clock:{paused:true}}});gate.resolve();await task;await flush();
   expect(f.callbacks.recordingStopped).not.toHaveBeenCalled();expect(f.port.generate.mock.calls.at(-1)![1].perlinLive!.sessionId).toBe('new');f.queue.dispose();
  });
+ it.each([1,2])('retains palette revision %s across a recording handoff without replaying an old command',async revision=>{
+  const f=await setup(),gate=deferred<void>();
+  f.input.perlinLive!.paletteRevision=1;f.stop.context.perlinLive!.paletteRevision=1;
+  f.queue.request(f.scene,f.input);await flush();
+  const task=f.queue.recordSource(f.output,{width:2,height:2,simulationFps:24},{start:()=>gate.promise,frame:()=>{}});await flush();
+  const colors=revision===1?f.scene.perlinSource!.palette:[0xff123456];
+  const next={...f.scene,perlinSource:{...f.scene.perlinSource!,palette:colors}};
+  f.queue.request(next,{...f.input,perlinLive:{...f.input.perlinLive!,paletteRevision:revision}});
+  gate.resolve();await task;await flush();
+  const [doc,input]=f.port.generate.mock.calls.at(-1)!;
+  expect(doc.perlinSource!.palette).toEqual(colors);expect(input.perlinLive).toEqual({sessionId:'retained',paletteRevision:revision,clock:{paused:false}});
+  expect(f.port.cancel).not.toHaveBeenCalled();f.queue.dispose();
+ });
 });

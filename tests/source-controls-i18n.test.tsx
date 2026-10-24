@@ -12,6 +12,7 @@ import {SourcePerlinBackendControls} from '../src/components/SourcePerlinBackend
 import {PerlinParameterActionsEditor} from '../src/components/PerlinParameterActionsEditor';
 import {SourceSurfaceControls} from '../src/components/SourceSurfaceControls';
 import {SourceSurfacePaletteEditor} from '../src/components/SourceSurfacePaletteEditor';
+import {FractalSourcePaletteEditor} from '../src/components/FractalSourceColorControls';
 import {SOURCE_BOUNCING_POSITION_MODES} from '../src/engine/sourceBouncingConfig';
 const noop=()=>{};
 const parse=(type:string,extra:Record<string,unknown>={})=>parseProjectFile(JSON.stringify({config_version:'1.0.0',type,name:'Author title',...extra})).scene;
@@ -22,6 +23,11 @@ function english(node:ReactNode){
  return out;
 }
 describe('source controls use their real translation owners',()=>{
+ it('renders Fractal generator persistence and independent imported flags in English without a commit',()=>{
+  const scene=parse('FRACTAL',{fractal:{formula_id:'newton'},color:{use_cosine_palette:true,use_curve_palette:true}}),before=JSON.stringify(scene);let calls=0;
+  const out=english(<FractalSourcePaletteEditor scene={scene} onChange={()=>{calls++;}}/>);
+  expect(out).toContain('Both imported Curve and Cosine flags');expect(out).toContain('Generator parameters and colors are saved');expect(calls).toBe(0);expect(JSON.stringify(scene)).toBe(before);
+ });
  it.each(['mandelbrot','julia','newton','nova'])('renders %s formula, legacy, viewport and dynamic action controls in English',formula_id=>{
   const scene=parse('FRACTAL',{fractal:{formula_id},timeline:[{type:'animate',duration:1,actions:[{method:'center',args:[1,2]},{method:'ambient',args:[.1,.2,.3]},{method:'paramStart',args:{parameters:{bailout:{min:1,max:4,step:.1}}}},{method:'gradientStart',args:{mode:'HUE_ROTATE',speed:30}}]}]});
   const before=JSON.stringify(scene),markup=english(<><SourceFractalControls scene={scene} onChange={noop}/><SourceFractalClipEditor scene={scene} track={scene.timeline.tracks[0]} onChange={noop}/></>);

@@ -438,8 +438,9 @@ export class GenerationQueue {
           }
           const nextFractal=fractal&&queued&&queued.revision>fractal.revision?{...fractal,revision:queued.revision,intent:queued.intent,configuration:queued.configuration}:fractal;
           const nextDomain=domain&&queuedDomain?{...domain,viewport:queuedDomain.viewport,actualFrameRate:queuedDomain.actualFrameRate,...(queuedDomain.revision>domain.revision?{revision:queuedDomain.revision,configuration:queuedDomain.configuration}:{})}:domain;
+          const nextPerlin=perlin&&samePerlin&&queuedPerlin?.paletteRevision!==undefined&&queuedPerlin.paletteRevision>(perlin.paletteRevision??-1)?{...perlin,paletteRevision:queuedPerlin.paletteRevision}:perlin;
           const nextSurface=surface&&queuedSurface?{...surface,actualFrameRate:queuedSurface.actualFrameRate,...(queuedSurface.revision>surface.revision?{revision:queuedSurface.revision,configuration:queuedSurface.configuration,startAt:queuedSurface.startAt}:{})}:surface;
-          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,implicitLive:latest?.scene===owner.request.scene?stop.context.implicitLive:latest?.context.implicitLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:perlin}:stop.context);
+          const context=snapshotGenerationInput(deferred?{...latest!.context,time:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,implicitLive:latest?.scene===owner.request.scene?stop.context.implicitLive:latest?.context.implicitLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:nextPerlin}:stop.context);
           this.latest=expected={scene:stop.scene,context};
           if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);

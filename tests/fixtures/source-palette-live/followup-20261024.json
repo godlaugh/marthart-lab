@@ -1,0 +1,167 @@
+{
+  "date": "2026-10-24",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "evidenceKinds": {
+    "original": "Reused static classfile audit and previously executed numerical oracle. No new original runtime or GUI execution.",
+    "local": "Production tests, real headless App/Worker/WebGL2 workflows, decoded PNG and MP4; no original whole-image parity claim."
+  },
+  "claims": [
+    {
+      "owner": "Perlin live palette command",
+      "fact": "Monotonic receipt binds author colors separately from cold/runtime palette. Same-value new commands execute; repeats are idempotent; stale/missing/reused payloads reject before invalidating completed preview. Recording and queue preserve receipt ownership."
+    },
+    {
+      "owner": "Fractal authoring palette",
+      "fact": "Canonical optional Curve fields persist without hydration edits. Curve takes editor priority; renderer independently consumes useCosine. Mode/bake events change flags atomically, parameter edits preserve imported dual flags."
+    },
+    {
+      "owner": "Fractal continuous palette renderer",
+      "fact": "Generator count only changes authored discrete colors; continuous Cosine LUT remains 1024 samples. Curve author fields do not enter renderer identity."
+    },
+    {
+      "owner": "Fractal default curves",
+      "fact": "Absent channels retain constructor ramps (0,0),(1,1); explicit empty channels remain distinct. ProjectState constructor PCs4214-4346, fromJson PCs1306-1413, parseCurve PC1; numerical case FRACTAL-absent."
+    }
+  ],
+  "validation": {
+    "buildV2": "passed; existing chunk size warning",
+    "testFiles": 25,
+    "tests": 653,
+    "perlinWorkerChecks": 43,
+    "rootsPerlinApp": {
+      "cases": 5,
+      "checks": 269
+    },
+    "fractalApp": {
+      "cases": 2,
+      "checks": 185
+    },
+    "surfaceAttractorApp": {
+      "cases": 4,
+      "checks": 96
+    },
+    "gpuRecording": {
+      "width": 192,
+      "height": 128,
+      "fps": "6/1",
+      "decodedFrames": 11,
+      "encodedClockFrames": 11
+    },
+    "allSourcesStable": true,
+    "ownedServiceProcessesAfterCleanup": 0,
+    "fractalColorRegression": {
+      "stages": 9,
+      "checkGroups": 16,
+      "elapsedMs": 59433.284125,
+      "freshPng": [
+        257,
+        193
+      ],
+      "fixture": "Constant-color input; decoded RGBA hash equals actual fresh Worker output",
+      "sourceStable": true,
+      "browserClosed": true,
+      "viteClosed": true,
+      "cpuAndMemory": "not separately measured"
+    }
+  },
+  "costComparison": {
+    "baselineCommit": "09482b86d435be3452fb834a8036a43a8241af5b",
+    "scope": "Only SourcePerlinSession replaced; current other dependencies both variants. Separate sequential Chrome families, equal8 changed-palette workload, 48x36 GPU,128particles.",
+    "cold": {
+      "beforeMs": 1101.7,
+      "afterMs": 1091.4,
+      "beforeCpuMs": 1640,
+      "afterCpuMs": 1670,
+      "beforePeakRssKiB": 1218432,
+      "afterPeakRssKiB": 1223456
+    },
+    "warm": {
+      "beforeMs": 19.7,
+      "afterMs": 19.5,
+      "beforeCpuMs": 10,
+      "afterCpuMs": 20,
+      "beforePeakRssKiB": 1218336,
+      "afterPeakRssKiB": 1224480
+    },
+    "rgbaSequencesEqual": true,
+    "limitations": [
+      "Single sample per variant; ps granularity limits short CPU phase",
+      "No flushed OS/driver caches; browser launch and main-module import excluded",
+      "Node/Vite CPU/RSS, GPU time/VRAM and agent tokens unmeasured",
+      "No generalized speedup claim"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": ".cache/perlin-palette-commands-20261024/build.log",
+      "sha256": "35800610385f140008dab9f75849e3f534e49410745f91e4cedeca2a334616c9"
+    },
+    {
+      "path": ".cache/perlin-palette-commands-20261024/regression.log",
+      "sha256": "e67b9691f5fb0c0cc10e17b718de3450eb05eb55a3624fb8d011d13b21c4c0d5"
+    },
+    {
+      "path": ".cache/perlin-palette-command-worker-20261024-final.json",
+      "sha256": "31cd6566cea6130e7524b5af00b1abdcd4c368e98228d7b688c5e46f9d57718a"
+    },
+    {
+      "path": ".cache/roots-perlin-gradient-app-commands-20261024-r1/report.json",
+      "sha256": "e9d6b7fe6ef2e4b0a2f4b5648e1f5729e13e11227be8d23d30ab11096a1cf1ab"
+    },
+    {
+      "path": ".cache/roots-perlin-gradient-app-commands-20261024-r1/perlin-gpu-command.ffprobe.json",
+      "sha256": "d4ec56e7ca539609f40e611e443b99a085917079e41ad844dc4f27f6ee906f34"
+    },
+    {
+      "path": ".cache/roots-perlin-gradient-app-commands-20261024-r1/perlin-gpu-command.mp4",
+      "sha256": "2405e4d02f5e0419f795a28597594618ebf01ffb7325451ca3a27839e749cc6d"
+    },
+    {
+      "path": ".cache/fractal-gradient-app-1792821696724/report.json",
+      "sha256": "6417eb5dbd61aabdf453f659f18523066e903db5975e6c30481837c10d927525"
+    },
+    {
+      "path": ".cache/fractal-gradient-app-1792821696724/README.md",
+      "sha256": "10fc8bd0e35514343e4b247d4bfd4c42608737262eb2c1cc91456e7a03c08603"
+    },
+    {
+      "path": ".cache/shared-gradient-command-regression-20261024/report.json",
+      "sha256": "6dd11044d7c6923306fb8cd4311ccb0e9f73938c7ad64d1a7708d94ba09e1597"
+    },
+    {
+      "path": ".cache/perlin-palette-command-cost-20261024/run-ANnAG9/report.json",
+      "sha256": "2c3bf346f952eb9b04a56166bdac8caf10f294f02a60e0a3b189e7bdd6a887a6"
+    },
+    {
+      "path": ".cache/fractal-domain-generator-owner-review-20261024/manifest.json",
+      "sha256": "6d06ef7f1534dd088d6f9c9267360d618c3acfbafdbcddda2ddbc6c7d25388d2"
+    },
+    {
+      "path": ".cache/fractal-domain-generator-owner-review-20261024/README.md",
+      "sha256": "ef34b11f22bbcbe4716b10a666e0c8374c8556aa28e60d0eacff3acb5eb67471"
+    },
+    {
+      "path": ".cache/fractal-generator-controller-independent-review-20261024/review.zh-CN.md",
+      "sha256": "cd23121131308fab55cf2cf735d570a800ec6cf206d1a4474cad5c8f894053a4"
+    },
+    {
+      "path": ".cache/source-project-palette-20261024/run/oracle.json",
+      "sha256": "a17c2425961ecc6803086a2496db313b4732ffca701222a674deee7c25f0cd52"
+    },
+    {
+      "path": ".cache/fractal-source-color-ui-run-1792822518120/report.json",
+      "sha256": "a840458de5d45d9ee52a9d1cd3c6cafb0ee0a677cee5014b18526ce09eb34d80"
+    },
+    {
+      "path": ".cache/fractal-source-color-ui-run-1792822518120/source-color.png",
+      "sha256": "8279e49efecf28b630d736c15780b619eaa306d62ca62e58c0316290d2fcf306"
+    }
+  ],
+  "remaining": [
+    "Roots cold palette/recording ownership and same-value event semantics",
+    "Short/empty palettes and raw hot color-string parsing",
+    "Explicit full-apply/resize/structural ordering versus hot palette commands",
+    "Domain, Implicit, Symmetry, Samila generator integration",
+    "Original matched effects, all11 family requirements, general capabilities and Apple Silicon final package"
+  ]
+}

@@ -69,7 +69,7 @@
   ],
   "limits": [
     "Short authored palette padding remains different locally.",
-    "Empty hot commands and same-value UI recommits are not covered by the current canonical scene-change contract.",
+    "Empty hot commands remain open; same-value Perlin UI recommits are covered by the explicit command followup indexed in followup-20261024.json.",
     "Roots hash collision semantics are not reproduced.",
     "Recording call ordering is static evidence; real browser tests establish local behavior only."
   ]

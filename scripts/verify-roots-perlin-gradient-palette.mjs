@@ -31,7 +31,7 @@ function fixture(spec){return spec.kind==='roots'?{
  }:{config_version:'1.0.0',type:'PERLIN',name:spec.name,palette:perlinColors,settings:{render_mode:spec.mode,cpu_render_style:spec.style,curve_color_mode:'INDEX',seed:'1771842692935',particle_count:128,step_size:.75,curve_count:32,curve_length:40,curve_step_size:2,field_cell_size:32,line_weight:12,dot_size:12,use_accumulation_buffer:false,background_color:'#000000'},timeline:[{type:'wait',duration:3}]};}
 const paletteOf=scene=>scene.kind==='roots'?scene.rootsSourcePalette:scene.perlinSource?.palette;
 const rgbOf=scene=>scene.kind==='roots'?scene.rootsSourcePalette.colors:scene.perlinSource.palette.map(c=>'#'+(c&0xffffff).toString(16).padStart(6,'0').toUpperCase());
-const report={status:'running',at:new Date().toISOString(),directory:out,scope:'Five actual App source imports, Cosine/Curve controls, renderer delivery, paused session retention, exact Manual restoration, bake, Save/reload, project export and real paused PNG. Synthetic small fixtures; no original JVM/GUI or original pixel-parity claim.',limits:['Empty/single-color padding remains outside this normal >=2-color matrix.','No recording or cold snapshot behavior claim.','Roots PNG uses the current physical viewport size: paused density capture at a different size clears the retained density target after sampling is drained; resized capture is not claimed.','Process-family CPU and peak RSS are sampled estimates; no before/after performance comparison or token measurement.'],checks:[],cases:[],pageErrors:[]};
+const report={status:'running',at:new Date().toISOString(),directory:out,scope:'Five actual App source imports, Cosine/Curve controls, renderer delivery, paused session retention, exact Manual restoration, bake, Save/reload, project export and real paused PNG. Synthetic small fixtures; no original JVM/GUI or original pixel-parity claim.',limits:['Empty/single-color padding remains outside this normal >=2-color matrix.','One GPU actual UI retained-recording/reapply path is checked; CPU recording command state is covered separately by tests, not this App matrix.','Roots PNG uses the current physical viewport size: paused density capture at a different size clears the retained density target after sampling is drained; resized capture is not claimed.','Process-family CPU and peak RSS are sampled estimates; no before/after performance comparison or token measurement.'],checks:[],cases:[],pageErrors:[]};
 const check=(v,m)=>{assert.ok(v,m);report.checks.push(m);};
 await writeFile(out+'/verifier.mjs',await readFile(script));report.sourceBefore=await hashes();report.priorVerifierFindings=[{report:'.cache/roots-perlin-gradient-app-1792818876368/report.json',reason:'Synthetic planar roots fixture omitted camera; default phi=pi/2 viewed the z=0 unit circle from the side. Explicit phi=0 establishes the intended face-on fixture.'},{report:'.cache/roots-perlin-gradient-app-1792818980798/report.json',reason:'After all 512 roots were drained, resizing the paused density target to 256x192 cleared its retained ink (clearReasons physical-size, submittedFinitePointCount 0), and the exact captured RGBA/PNG were uniform. This script now verifies same-physical-size Roots capture, preserving the retained buffer. Resized capture is an explicit limit, not a passed case.'}];
 let browser,server,service,page,phase='setup';const started=performance.now();
@@ -43,6 +43,16 @@ Generator.prototype.generate=async function(scene,input,...args){
  try{const o=await nativeGenerate.call(this,scene,input,...args);entry.output=audit.meta(o);audit.owners.set(o,{sequence:entry.sequence,role:'preview'});return o;}
  catch(e){entry.error=String(e);throw e;}
 };
+for(const name of ['beginSourceRecording','finishSourceRecording']){
+ const native=Generator.prototype[name];Generator.prototype[name]=async function(...args){
+  const row={sequence:++audit.sequence,method:name};audit.recordings.push(row);
+  try{const result=await native.apply(this,args);row.scene=structuredClone(result.scene);row.context=structuredClone(result.context);row.clock=result.clock;row.completed=true;
+   if(result.warmup)row.warmup=audit.meta(result.warmup);
+   if(result.preview){row.output=audit.meta(result.preview);audit.owners.set(result.preview,{sequence:row.sequence,role:'preview'});}
+   return result;
+  }catch(e){row.error=String(e);throw e;}
+ };
+}
 for(const name of ['setRootsPaused','setPerlinPaused']){const native=Generator.prototype[name];Generator.prototype[name]=async function(output,paused,...args){const row={sequence:++audit.sequence,method:name,paused,owner:audit.owners.get(output)};audit.controls.push(row);try{const result=await native.call(this,output,paused,...args);row.completed=true;return result;}catch(e){row.error=String(e);throw e;}};}
 for(const name of ['captureRootsPaused','capturePerlinPaused']){
  const native=Generator.prototype[name];Generator.prototype[name]=async function(output,...args){
@@ -56,7 +66,7 @@ for(const name of ['captureRootsPaused','capturePerlinPaused']){
 `;
 function installAudit(){
  const fnv=p=>{let n=2166136261;for(const b of p??[]){n^=b;n=Math.imul(n,16777619);}return n>>>0;};
- window.__gradientAudit={sequence:0,calls:[],captures:[],controls:[],renders:[],owners:new WeakMap(),meta:o=>({type:o.type,backend:o.backend,width:o.width,height:o.height,pixelHash:fnv(o.pixels),roots:o.roots,rootsPresentation:o.rootsPresentation,rootsLive:o.rootsLive,perlinLive:o.perlinLive,sourcePerlinFrame:o.sourcePerlinFrame,sourcePausedImage:o.sourcePausedImage})};
+ window.__gradientAudit={sequence:0,calls:[],captures:[],controls:[],recordings:[],renders:[],owners:new WeakMap(),meta:o=>({type:o.type,backend:o.backend,width:o.width,height:o.height,pixelHash:fnv(o.pixels),roots:o.roots,rootsPresentation:o.rootsPresentation,rootsLive:o.rootsLive,perlinLive:o.perlinLive,sourcePerlinFrame:o.sourcePerlinFrame,sourcePausedImage:o.sourcePausedImage})};
 }
 const rendererInstrumentation=`
 if(typeof window!=='undefined'){
@@ -90,6 +100,27 @@ async function canvasPixels(){return page.locator('canvas[data-testid="art-canva
  });}
 async function edit(spec,baseline,action,expected,label){const after=await page.evaluate(()=>window.__gradientAudit.sequence);await action();const state=await ready(spec.name,expected,after);retained(spec,baseline,state,spec.name+': '+label);return state;}
 async function commit(key,value){await field(key).fill(String(value));await field(key).press('Enter');}
+async function recordAndReapply(spec,before){
+ const control=page.getByTestId('source-perlin-gpu-palette'),colors=[0xff112233,0xff112233];
+ const hot=await edit(spec,before,async()=>{await control.fill('#FF112233\n#FF112233');await control.press('Control+Enter');},colors,'pre-recording hot palette');
+ await button('Export artwork').click();await button('Animation video').click();
+ await page.getByRole('combobox',{name:'Perlin video mode',exact:true}).selectOption('retained');
+ await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');
+ await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('192');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('128');
+ await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill('6');await page.getByRole('spinbutton',{name:'Recording simulation FPS',exact:true}).fill('4');
+ const sequence=await page.evaluate(()=>window.__gradientAudit.sequence),download=page.waitForEvent('download',{timeout:60000});
+ await button('Start export').click();const videoPath=out+'/perlin-gpu-command.mp4';await(await download).saveAs(videoPath);
+ await page.waitForFunction(n=>window.__gradientAudit.recordings.some(r=>r.sequence>n&&r.method==='finishSourceRecording'&&r.completed),sequence);
+ const records=await page.evaluate(n=>window.__gradientAudit.recordings.filter(r=>r.sequence>n),sequence);
+ for(const row of records){assert.deepEqual(row.scene.perlinSource.palette,colors);check(row.context.perlinLive.paletteRevision===hot.input.perlinLive.paletteRevision,spec.name+': '+row.method+' retains authored palette command');}
+ await button('Close export').click();await button('Pause').click();await button('Play').waitFor();
+ await page.waitForFunction(()=>window.__gradientAudit.controls.at(-1)?.completed&&window.__gradientAudit.controls.at(-1).paused===true);
+ const stopped=await ready(spec.name,colors),revision=stopped.input.perlinLive.paletteRevision;
+ const reapplied=await edit(spec,stopped,async()=>{await control.focus();await control.press('Control+Enter');},colors,'same palette reapplied after actual recording');
+ check(reapplied.input.perlinLive.paletteRevision===revision+1&&reapplied.output.perlinLive.paletteRevision===revision+1,spec.name+': actual recording handoff preserves next command identity');
+ check(reapplied.output.pixelHash!==stopped.output.pixelHash,spec.name+': same colors after actual recording change delivered GPU pixels');
+ return{videoPath,hot,records,stopped,reapplied,scope:'Actual App + Generator + Worker + export service; MP4 downloaded, no new ffprobe or original-pixel claim.'};
+}
 async function exportPng(spec,before){
  const [width,height]=spec.kind==='roots'?[before.output.width,before.output.height]:[256,192];
  await button('Export artwork').click();await button('Still image').click();
@@ -138,13 +169,19 @@ try{
    await button('Add node').click();check(await page.getByTestId('source-gradient-curve').locator('circle').count()===3,spec.name+': curve node added');state=await edit(spec,baseline,()=>commit('point-y',.9),undefined,'Curve point');check(rgbOf(state.scene)[4]==='#E68080',spec.name+': Curve point immediately affects only red');
    const curveCanvas=await canvasPixels();check(curveCanvas.hash!==cosineCanvas.hash,spec.name+': Curve changes presented canvas');
    phase=spec.name+':restore';state=await edit(spec,baseline,()=>mode().selectOption('manual'),original,'Manual restore');assert.deepEqual(paletteOf(state.scene),original);check(true,spec.name+': Manual restores every canonical color and alpha');
+   if(spec.kind==='perlin'){
+    const revision=state.input.perlinLive.paletteRevision;
+    const control=page.getByTestId(`source-perlin-${spec.mode==='CPU'?'cpu':'gpu'}-palette`);
+    state=await edit(spec,baseline,async()=>{await control.focus();await control.press('Control+Enter');},original,'same Manual colors submitted again');
+    check(state.input.perlinLive.paletteRevision===revision+1&&state.output.perlinLive.paletteRevision===revision+1,spec.name+': unchanged Manual submit has a new acknowledged command');
+   }
    state=await edit(spec,baseline,()=>mode().selectOption('curve'),undefined,'Curve revisit');const baked=paletteOf(state.scene);await button('Apply as manual palette').click();await mode().waitFor();check(await mode().inputValue()==='manual',spec.name+': Apply switches to Manual');await ready(spec.name,baked);
    await edit(spec,baseline,()=>mode().selectOption('cosine'),undefined,'Cosine after bake');state=await edit(spec,baseline,()=>mode().selectOption('manual'),baked,'Baked Manual restore');assert.deepEqual(paletteOf(state.scene),baked);check(true,spec.name+': Apply replaces Manual restoration snapshot');
    const pausedControls=await page.evaluate(()=>window.__gradientAudit.controls),beforeSave=state;phase=spec.name+':save';await button('Save').click();await page.reload();state=await ready(spec.name,baked);if(spec.kind==='roots'){await page.waitForFunction(()=>window.__gradientAudit.calls.findLast(c=>c.output)?.output.rootsLive?.stream.canFinishAfterDisplay);state=await ready(spec.name,baked);}
    await button('Appearance').click();check(await mode().inputValue()==='manual',spec.name+': Save/reload retains palette and resets mode');
    const download=page.waitForEvent('download');await page.getByTitle('Export project JSON',{exact:true}).click();const projectPath=out+'/'+spec.name+'-project.json';await(await download).saveAs(projectPath);const project=JSON.parse(await readFile(projectPath,'utf8'));assert.deepEqual(paletteOf(project),baked);assert.deepEqual(project.provenance.original,source);check(true,spec.name+': exported project retains baked palette and raw input');
-   phase=spec.name+':png';if(spec.kind==='perlin'){await button('Play').click();await page.waitForFunction(()=>{const c=window.__gradientAudit.calls.findLast(c=>c.output);return c?.output.perlinLive?.sceneTime>=.4&&c.output.sourcePerlinFrame.updates>=12;});await button('Pause').click();await button('Play').waitFor();await page.waitForFunction(()=>window.__gradientAudit.controls.at(-1)?.completed&&window.__gradientAudit.controls.at(-1).paused===true);state=await ready(spec.name,baked);}const png=await exportPng(spec,state);await page.screenshot({path:out+'/'+spec.name+'-app.png'});
-   report.cases.push({spec,baseline,initialCanvas,cosineCanvas,curveCanvas,original,baked,pausedControls,beforeSave,reopened:state,projectPath,png});
+   phase=spec.name+':png';if(spec.kind==='perlin'){await button('Play').click();await page.waitForFunction(()=>{const c=window.__gradientAudit.calls.findLast(c=>c.output);return c?.output.perlinLive?.sceneTime>=.4&&c.output.sourcePerlinFrame.updates>=12;});await button('Pause').click();await button('Play').waitFor();await page.waitForFunction(()=>window.__gradientAudit.controls.at(-1)?.completed&&window.__gradientAudit.controls.at(-1).paused===true);state=await ready(spec.name,baked);}const png=await exportPng(spec,state);const recording=spec.name==='perlin-gpu'?await recordAndReapply(spec,state):undefined;await page.screenshot({path:out+'/'+spec.name+'-app.png'});
+   report.cases.push({spec,baseline,initialCanvas,cosineCanvas,curveCanvas,original,baked,pausedControls,beforeSave,reopened:state,projectPath,png,recording});
   }
   return{elapsedMs:performance.now()-begin,costScope:'Five-case public App workflow after Vite/export service/browser setup'};
  });

@@ -5,6 +5,7 @@ import {parseProjectFile} from '../src/engine/legacyImport';
 import {ordinarySourceCameraInitial} from '../src/engine/ordinarySourceCamera';
 import {OrdinarySourceCameraTimelineSession} from '../src/engine/ordinarySourceCameraTimeline';
 import {validateSourcePerlinLiveContext} from '../src/engine/sourcePerlinLive';
+import {validSourcePerlinLiveOutput} from '../src/engine/sourcePerlinResponse';
 
 // Only graphics execution is replaced. The real shared timeline, CPU model,
 // noise resources, parameters, gradient, particle motion and trails run here.
@@ -128,6 +129,52 @@ describe('Perlin retained live owner',()=>{
   const seek=generate(owner,s,c);expect(seek.perlinLive!.frame.camera.theta).not.toBe(ordinarySourceCameraInitial(s)!.theta);
   owner.setPaused(false,2000);const next=generate(owner,s,{...c,perlinLive:{...c.perlinLive!,clock:{paused:false,timestampMs:2000}}});
   expect(next.perlinLive!.frame.camera).toEqual(seek.perlinLive!.frame.camera);expect(next.perlinLive!.frame.rawDt).toBe(0);owner.reset();
+ });
+ it.each(['cpu','gpu'] as const)('reapplies equal %s colors only on a fresh explicit command after recording',backend=>{
+  const s=scene();s.timeline.tracks=[track(.5)];s.perlinSource!.backend=backend;s.perlinSource!.palette=[0x40123456];
+  const owner=new SourcePerlinSession(),c=context(1000,true);c.perlinLive!.paletteRevision=0;
+  generate(owner,s,c);const cold=owner.diagnosticSnapshot()!.particleColors!.packed;
+  s.perlinSource!.palette=[0x20112233];c.perlinLive!.paletteRevision=1;
+  expect(generate(owner,s,c).perlinLive!.paletteRevision).toBe(1);
+  const hot=owner.diagnosticSnapshot()!.particleColors!.packed;expect(hot).not.toEqual(cold);
+  const record=owner.beginRecording(s,c,{width:4,height:4,simulationFps:4});
+  expect(record.context.perlinLive!.paletteRevision).toBe(1);expect(record.warmup.perlinLive!.paletteRevision).toBe(1);
+  owner.nextRecordingFrame(record.handle,1);const stop=owner.finishRecording(record.handle);
+  expect(stop.context.perlinLive!.paletteRevision).toBe(1);expect(stop.scene.perlinSource!.palette).toEqual([0x20112233]);
+  owner.setPaused(true,2000);const paused={...stop.context,perlinLive:{...stop.context.perlinLive!,clock:{paused:true,timestampMs:2000}}};
+  const before=generate(owner,stop.scene,paused),state=numeric(owner),targets=[...graphics.targets];
+  expect(owner.diagnosticSnapshot()!.particleColors!.packed).toEqual(cold);
+  const revision=owner.diagnosticSnapshot()!.colors.revision;
+  paused.perlinLive.paletteRevision=2;expect(owner.matchesCompletedPrimary(stop.scene,paused)).toBe(false);
+  const reapplied=generate(owner,stop.scene,paused);
+  expect(reapplied.perlinLive).toEqual({...before.perlinLive,paletteRevision:2});
+  expect(validSourcePerlinLiveOutput(reapplied,paused)).toBe(true);
+  for(const paletteRevision of [undefined,1,3])expect(validSourcePerlinLiveOutput({...reapplied,perlinLive:{...reapplied.perlinLive!,paletteRevision}},paused)).toBe(false);
+  expect(owner.diagnosticSnapshot()!.particleColors!.packed).toEqual(hot);expect(numeric(owner)).toEqual(state);expect(graphics.targets).toEqual(targets);
+  expect(owner.diagnosticSnapshot()!.colors.revision).toBe(revision+1);
+  generate(owner,stop.scene,paused);expect(owner.diagnosticSnapshot()!.colors.revision).toBe(revision+1);
+  paused.perlinLive.paletteRevision=3;generate(owner,stop.scene,paused);expect(owner.diagnosticSnapshot()!.colors.revision).toBe(revision+2);
+  owner.reset();
+ });
+ it('rejects stale, missing and reused palette command identities before touching the completed preview',()=>{
+  const s=scene(),owner=new SourcePerlinSession(),c=context(1000,true);c.perlinLive!.paletteRevision=5;
+  generate(owner,s,c);const before=owner.diagnosticSnapshot(),targets=[...graphics.targets];
+  for(const paletteRevision of [4,undefined,-1,Number.MAX_SAFE_INTEGER+1,NaN]){
+   expect(()=>owner.generate(s,{...c,perlinLive:{...c.perlinLive!,paletteRevision}})).toThrow('序号');
+   expect(owner.matchesCompletedPrimary(s,c)).toBe(true);expect(owner.diagnosticSnapshot()).toEqual(before);
+  }
+  const changed={...s,perlinSource:{...s.perlinSource!,palette:[0xff123456]}};
+  expect(()=>owner.generate(changed,c)).toThrow('不能更换颜色');expect(owner.matchesCompletedPrimary(s,c)).toBe(true);expect(graphics.targets).toEqual(targets);
+  // A new session may start its sequence from zero and initialize raw ARGB.
+  const fresh={...c,perlinLive:{...c.perlinLive!,sessionId:'next-document',paletteRevision:0}};
+  expect(generate(owner,changed,fresh).perlinLive!.paletteRevision).toBe(0);owner.reset();
+ });
+ it('accepts the first explicit command on an existing legacy live session without silently acknowledging it',()=>{
+  const s=scene(),owner=new SourcePerlinSession(),c=context(1000,true);s.perlinSource!.palette=[0x40112233];
+  const first=generate(owner,s,c),state=numeric(owner),target=graphics.targets[0];
+  c.perlinLive!.paletteRevision=0;const output=generate(owner,s,c);
+  expect(output.perlinLive).toEqual({...first.perlinLive,paletteRevision:0});expect(numeric(owner)).toEqual(state);
+  expect([...owner.diagnosticSnapshot()!.particleColors!.packed]).toEqual([0xff112233,0xff112233,0xff112233]);expect(graphics.targets).toEqual([target]);owner.reset();
  });
  it('recording resets simulation once but retains canvases; finish resumes that instance without another update',()=>{
   let now=1000;const s=scene();s.timeline.tracks=[track(.25),track(.25)];

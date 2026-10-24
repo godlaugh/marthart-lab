@@ -6,12 +6,12 @@ import {SourcePerlinPaletteEditor} from './SourcePerlinPaletteEditor';
 import {usesSourcePerlinCpu,sourcePerlinCpuConfiguration} from '../engine/sourcePerlinIdentity';
 import {parseSourcePerlinCpuDocument,type SourcePerlinCpuDocumentPayload as Config} from '../engine/sourcePerlinCpuDocument';
 
-type Props={scene:SceneDocument;onChange:(scene:SceneDocument)=>void;tab?:'geometry'|'appearance'|'all'};
+type Props={scene:SceneDocument;onChange:(scene:SceneDocument,intent?:'perlin-palette')=>void;tab?:'geometry'|'appearance'|'all'};
 export function SourcePerlinCpuControls({scene,onChange,tab='all'}:Props){
  const {t}=useI18n(),[error,setError]=useState('');
  const source=sourcePerlinCpuConfiguration(scene);
  if(!usesSourcePerlinCpu(scene)||!source)return null;
- const emit=(candidate:Config)=>{const parsed=parseSourcePerlinCpuDocument(candidate);if(!parsed.ok)return `${parsed.error.path.join('.')}: ${t(parsed.error.reason)}`;onChange(scene.perlinSource?{...scene,perlinSource:{...scene.perlinSource,...parsed.value}}:{...scene,perlinCpuSource:parsed.value});setError('');return undefined;};
+ const emit=(candidate:Config,intent?:'perlin-palette')=>{const parsed=parseSourcePerlinCpuDocument(candidate);if(!parsed.ok)return `${parsed.error.path.join('.')}: ${t(parsed.error.reason)}`;onChange(scene.perlinSource?{...scene,perlinSource:{...scene.perlinSource,...parsed.value}}:{...scene,perlinCpuSource:parsed.value},intent);setError('');return undefined;};
  const field=(id:string,label:string,value:string,commit:(text:string)=>string|undefined,multiline=false)=><SourcePerlinDraftField key={`${id}:${value}`} prefix="source-perlin-cpu" id={id} label={t(label)} value={value} commit={commit} multiline={multiline}/>;
  const numeric=<K extends 'particles'|'curves'|'display'|'parameters'>(group:K,key:keyof Config[K],id:string,label:string)=>field(id,label,String(source[group][key]),raw=>{
   if(!raw.trim()||!Number.isFinite(Number(raw)))return t('请输入有限数值');
@@ -44,7 +44,7 @@ export function SourcePerlinCpuControls({scene,onChange,tab='all'}:Props){
  {source.cpuStyle==='particles'?<>{numeric('display','dotSize','dot-size','点大小')}{numeric('display','trailLifetime','trail-lifetime','轨迹保留时长')}{flag('showTrails','显示与记录轨迹')}{flag('fadeTrails','轨迹渐隐')}</>:numeric('curves','alpha','curve-alpha','曲线透明度')}
  {flag('accumulation','累积画面')}{source.display.accumulation&&numeric('display','accumulationFadeAlpha','fade-alpha','每帧背景淡出（0–255）')}
  {field('background','背景颜色（#AARRGGBB）','#'+source.display.backgroundColor.toString(16).padStart(8,'0').toUpperCase(),raw=>/^#[\da-f]{8}$/i.test(raw)?emit({...source,display:{...source.display,backgroundColor:parseInt(raw.slice(1),16)}}):t('请输入完整的 #AARRGGBB 颜色'))}
- <SourcePerlinPaletteEditor palette={source.palette} prefix="source-perlin-cpu" onChange={palette=>emit({...source,palette})}/>
+ <SourcePerlinPaletteEditor palette={source.palette} prefix="source-perlin-cpu" onChange={palette=>emit({...source,palette},'perlin-palette')}/>
  </div></details>}
  <p className="muted">{t('输入后按 Enter 或移出输入框应用；颜色列表使用 Ctrl / ⌘ + Enter。')}</p>
  {error&&<p role="alert">{error}</p>}

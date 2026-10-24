@@ -16,6 +16,7 @@ import {measureFamily} from './browser-process-cost.mjs';
 
 const {values}=parseArgs({options:{
  'prepare-only':{type:'boolean',default:false},
+ commands:{type:'boolean',default:false},
  directory:{type:'string',default:'.cache/perlin-palette-cost-20261024'},
  edits:{type:'string',default:'8'},
 }});
@@ -25,7 +26,7 @@ const scriptPath=fileURLToPath(import.meta.url),root=resolve(dirname(scriptPath)
 const requestedDirectory=resolve(root,values.directory),sourcePath=resolve(root,'src/scenes/sourcePerlin.ts');
 const sourceName='src/scenes/sourcePerlin.ts',sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',maxBuffer:16*1024*1024});
-const baselineCommit=git(['rev-parse','78767059^{commit}']).trim();
+const baselineCommit=git(['rev-parse',(values.commands?'09482b86':'78767059')+'^{commit}']).trim();
 const source={before:git(['show',baselineCommit+':'+sourceName]),after:await readFile(sourcePath,'utf8')};
 if(source.before===source.after)throw Error('Before/after SourcePerlinSession sources are identical');
 const sourceHashes=async()=>{
@@ -44,7 +45,7 @@ const report={status:'prepared',at:new Date().toISOString(),baselineCommit,head:
  scope:'Actual production Generator -> module Worker -> SourcePerlinSession -> WebGL2 GPU backend, fixed 48x36 density1, seed 1771842692935, 128 CPU particles allocated by the common source model. Initial preview, one controlled 100ms live tick, pause, then equal nonempty palette edits while paused.',
  comparison:'Only src/scenes/sourcePerlin.ts is replaced by its pinned baseline via a Vite load plugin. Every other dependency is current working source for both variants. This isolates the session change; it is not a checkout or benchmark of the entire historical revision.',
  measurement:'Separate sequential Chrome family and Vite server for each variant/case. Cold phase includes first Worker import, initialization, initial preview, one running frame, pause controls and paused anchor. Warm phase is all palette edits on that retained owner. Every requested raster is fully delivered/read back and SHA256 hashed. Browser phase elapsed excludes process launch and page/main-module import. ps samples at boundaries and every250ms: CPU deltas by PID/start-time, summed RSS peak; sampling can miss transient peaks/short-lived children. Node/Vite CPU and memory are excluded. OS/driver caches are not flushed; warm RSS is total family RSS, not allocation delta. One sample per case/variant, no statistical speedup claim.',
- semanticDifference:'The baseline rebuilds source simulation/resources after each palette edit; the candidate retains the paused simulation and clock while recoloring. Actions and dimensions match, but resulting state/work and pixels need not match. No cross-version pixel-equivalence or native-parity claim.',
+ semanticDifference:values.commands?'The baseline already retains palette state and detects edits by value difference. The candidate sends explicit monotonically increasing paletteRevision for the same changed-color workload; repeated equal-color commands are covered separately by the functional verifier.':'The baseline rebuilds source simulation/resources after each palette edit; the candidate retains the paused simulation and clock while recoloring. Actions and dimensions match, but resulting state/work and pixels need not match. No cross-version pixel-equivalence or native-parity claim.',
  unmeasured:['Agent token usage','GPU device time and VRAM','Original JVM/JOGL behavior and cost','Visible App/Inspector acceptance','Browser launch and page/main-module import cost','Node/Vite process cost','Flushed filesystem/driver-cache cold performance'],
  sourceSessionSha256:{before:sha(source.before),after:sha(source.after)},scriptSha256:beforeHashes['scripts/benchmark-source-perlin-palette.mjs'],sourceBefore:beforeHashes,
  node:process.version,results:[],failures:[],nativeParity:false,pixelEquivalenceClaim:false,
@@ -80,7 +81,7 @@ if(values['prepare-only']){
    deadline=setTimeout(()=>{row.deadlineExpired=true;void browserServer?.close().catch(e=>row.errors.push(String(e)));},120000);
    await page.route('**/perlin-palette-cost',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>Perlin palette cost</title>'}));
    await page.goto(server.resolvedUrls.local[0]+'perlin-palette-cost');
-   await page.evaluate(async({fixture,edits})=>{
+   await page.evaluate(async({fixture,edits,explicit})=>{
     const {Generator}=await import('/src/engine/client.ts'),{parseLegacyScene}=await import('/src/engine/legacyImport.ts');
     const audit=globalThis.__perlinPaletteCost={workers:{created:0,terminated:0},frames:[],phases:[],disposed:false};
     const NativeWorker=globalThis.Worker;
@@ -95,11 +96,11 @@ if(values['prepare-only']){
     if(!scene.perlinSource||scene.perlinSource.backend!==fixture.backend.toLowerCase()||scene.perlinSource.cpuStyle!==(fixture.style==='FIELD_CURVES'?'field-curves':'particles')||scene.perlinSource.particles.count!==128||scene.perlinSource.curves.count!==12||scene.perlinSource.curves.length!==12)throw Error('Benchmark fixture was not imported exactly');
     const context={time:0,quality:'preview',width:48,height:36,sourcePerlinViewport:{width:48,height:36,pixelDensity:1},
      sourceViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:36,target:'primary',projectionPass:'perspective'},
-     perlinLive:{sessionId:'palette-cost-'+fixture.id,clock:{paused:true,timestampMs:1000}}};
+     perlinLive:{sessionId:'palette-cost-'+fixture.id,...(explicit?{paletteRevision:0}:{}),clock:{paused:true,timestampMs:1000}}};
     const generator=new Generator();let latest;
     const hash=async pixels=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',pixels))).map(n=>n.toString(16).padStart(2,'0')).join('');
     const frame=async(label,palette)=>{
-     const started=performance.now();if(palette)scene.perlinSource.palette=[...palette];
+     const started=performance.now();if(palette){scene.perlinSource.palette=[...palette];if(explicit)context.perlinLive.paletteRevision++;}
      const output=await generator.generate(scene,context);latest=output;
      if(output.type!=='raster'||output.backend!=='webgl2'||output.width!==48||output.height!==36||output.pixels.byteLength!==48*36*4||!output.perlinLive||!output.sourcePerlinFrame)throw Error(label+': incomplete actual WebGL2 delivery');
      const evidence={label,palette:[...scene.perlinSource.palette],live:output.perlinLive,frame:output.sourcePerlinFrame,
@@ -125,7 +126,7 @@ if(values['prepare-only']){
      audit.phases.push(result);return result;
     };
     globalThis.__disposePerlinPaletteCost=()=>{generator.dispose();audit.disposed=true;return{workers:{...audit.workers},disposed:audit.disposed};};
-   },{fixture,edits});
+   },{fixture,edits,explicit:values.commands&&variant==='after'});
    for(const phase of ['cold-initialization-and-paused-anchor','warm-paused-palette-edits']){
     const start=performance.now();const measured=await measureFamily(rootPid,()=>page.evaluate(p=>globalThis.__perlinPalettePhase(p),phase));
     row.phases.push({...measured,controllerElapsedMs:performance.now()-start});await persist();
@@ -143,8 +144,8 @@ if(values['prepare-only']){
    const initial=cold.frames[0];
    row.observed.constructionCounterMeaning='Current runtime counter; baseline releaseRuntime resets it, so equal counters alone do not prove retained resources.';
    row.observed.editsResetToInitial=warm.frames.map(f=>f.live.sceneTime===initial.live.sceneTime&&f.frame.updates===initial.frame.updates&&f.frame.frameIndex===initial.frame.frameIndex);
-   if(variant==='before'&&row.observed.editsResetToInitial.some(v=>!v))throw Error('Baseline palette edit did not reproduce the initial clock/update state');
-   if(variant==='after'&&warm.frames.some(f=>f.live.constructions!==anchor.live.constructions||f.live.sceneTime!==anchor.live.sceneTime||f.frame.updates!==anchor.frame.updates||f.frame.frameIndex!==anchor.frame.frameIndex))throw Error('Candidate changed paused construction/clock/update state');
+   if(variant==='before'&&!values.commands&&row.observed.editsResetToInitial.some(v=>!v))throw Error('Baseline palette edit did not reproduce the initial clock/update state');
+   if((variant==='after'||values.commands)&&warm.frames.some(f=>f.live.constructions!==anchor.live.constructions||f.live.sceneTime!==anchor.live.sceneTime||f.frame.updates!==anchor.frame.updates||f.frame.frameIndex!==anchor.frame.frameIndex))throw Error('Candidate changed paused construction/clock/update state');
    if(warm.frames.some(f=>!f.live.paused)||row.errors.length)throw Error('Playback/page error during paused workload');
    row.workerCleanup=await page.evaluate(()=>globalThis.__disposePerlinPaletteCost());
    if(row.workerCleanup.workers.created!==1||row.workerCleanup.workers.terminated!==1)throw Error('Expected one owned real Worker, disposed at completion');
@@ -168,7 +169,9 @@ if(values['prepare-only']){
  if(!report.sourceStable)report.failures.push('Working sources changed during the comparison');
  report.comparisons=cases.map(c=>{
   const pair=report.results.filter(r=>r.case===c.id),a=pair.find(r=>r.variant==='before'),b=pair.find(r=>r.variant==='after');
-  return{case:c.id,complete:a?.status==='completed'&&b?.status==='completed',equalRequestedEdits:edits,pixelEquivalenceClaim:false,
+  const pixelSequencesEqual=JSON.stringify(a?.phases.flatMap(p=>p.frames.map(f=>f.rgbaSha256)))===JSON.stringify(b?.phases.flatMap(p=>p.frames.map(f=>f.rgbaSha256)));
+  if(values.commands&&!pixelSequencesEqual)report.failures.push(c.id+': command comparison pixel sequences differ');
+  return{case:c.id,comparisonMode:values.commands?'retained-vs-command':'rebuild-vs-retained',pixelSequencesEqual,complete:a?.status==='completed'&&b?.status==='completed',equalRequestedEdits:edits,pixelEquivalenceClaim:false,
    phases:['cold-initialization-and-paused-anchor','warm-paused-palette-edits'].map(phase=>{
     const before=a?.phases.find(p=>p.phase===phase),after=b?.phases.find(p=>p.phase===phase);
     const facts=p=>p?{elapsedMs:p.elapsedMs,observedCpuMs:p.processFamily.observedCpuMs,sampledPeakRssKiB:p.processFamily.sampledPeakRssKiB,completedFrames:p.frames.length}:null;

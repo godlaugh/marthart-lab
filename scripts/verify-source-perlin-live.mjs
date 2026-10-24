@@ -17,15 +17,15 @@ try{
   const check=(v,id)=>{if(!v)throw Error(id);result.checks.push(id);};
   const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),hash=async pixels=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',pixels))).map(n=>n.toString(16).padStart(2,'0')).join('');
   const scene=()=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'PERLIN',name:'live transport',settings:{render_mode:'GPU',seed:'1771842692935',particle_count:12,gpu_texture_style:3},timeline:[{type:'wait',duration:.2}]})).scene;
-  const context=(token='live')=>({time:999,quality:'preview',width:48,height:36,sourcePerlinViewport:{width:48,height:36,pixelDensity:1},sourceViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:36,target:'primary',projectionPass:'perspective'},perlinLive:{sessionId:token,clock:{paused:true,timestampMs:1000}}});
+  const context=(token='live')=>({time:999,quality:'preview',width:48,height:36,sourcePerlinViewport:{width:48,height:36,pixelDensity:1},sourceViewport:{logicalWidth:48,logicalHeight:36,referenceLogicalHeight:36,target:'primary',projectionPass:'perspective'},perlinLive:{sessionId:token,paletteRevision:0,clock:{paused:true,timestampMs:1000}}});
   const g=new Generator(),s=scene(),c=context(),cold=structuredClone(s);let queue,control;
   const record=async(label,o)=>{check(o.type==='raster'&&o.backend==='webgl2'&&o.perlinLive&&o.sourcePerlinFrame,label+' actual GPU raster');result.frames.push({label,live:o.perlinLive,frame:o.sourcePerlinFrame,width:o.width,height:o.height,rgbaSha256:await hash(o.pixels)});};
   try{
    let o=await g.generate(s,c);await record('initial',o);check(o.perlinLive.sceneTime===0,'initial paused uses retained source time instead of UI time999');
    await g.setPerlinPaused(o,false,1000);c.perlinLive.clock={paused:false,timestampMs:1100};o=await g.generate(s,c);await record('running',o);check(o.perlinLive.renderKind==='update'&&o.perlinLive.sceneTime>0,'injected live update advances');
    await g.setPerlinPaused(o,true,1100);c.perlinLive.clock={paused:true,timestampMs:9000};const paused=await g.generate(s,c);await record('paused',paused);check(same(o.perlinLive.frame,paused.perlinLive.frame)&&paused.perlinLive.renderKind==='snapshot','pause snapshot preserves actual frame');
-   s.perlinSource.palette=[0x40112233,0x80112233];const hot=await g.generate(s,c);await record('hot-palette',hot);
-   check(same(hot.perlinLive,paused.perlinLive)&&same(hot.sourcePerlinFrame,paused.sourcePerlinFrame),'hot palette keeps live clock, construction and updates');
+   s.perlinSource.palette=[0x40112233,0x80112233];c.perlinLive.paletteRevision=1;const hot=await g.generate(s,c);await record('hot-palette',hot);
+   check(same(hot.perlinLive,{...paused.perlinLive,paletteRevision:1})&&same(hot.sourcePerlinFrame,paused.sourcePerlinFrame),'hot palette keeps live clock, construction and updates');
    check(await hash(hot.pixels)!==await hash(paused.pixels),'hot palette changes actual GPU pixels');
    const capture=await g.capturePerlinPaused(hot,{width:19,height:13},1);await record('capture-preview',capture.preview);check(same(capture.capture.perlinLive.frame,paused.perlinLive.frame)&&same(capture.preview.perlinLive.frame,paused.perlinLive.frame),'capture and primary preserve paused frame');check(capture.capture.width===19&&capture.capture.height===13,'capture requested size');
    control=new Generator();const controlPreview=await control.generate(cold,context('cold-reference'));
@@ -38,7 +38,13 @@ try{
    const stopped=await g.finishSourceRecording(recording.handle);await record('stopped',stopped.preview);check(stopped.context.perlinLive.sessionId===c.perlinLive.sessionId&&!stopped.context.perlinLive.clock.paused&&stopped.context.perlinLive.startAt===undefined,'recording restores live token and running clock');check(stopped.preview.perlinLive.renderKind==='snapshot'&&stopped.preview.perlinLive.constructions===recording.warmup.perlinLive.constructions,'finish redraw does not reconstruct');
    await g.setPerlinPaused(stopped.preview,true);check(true,'finished preview grants playback capability');
    const afterStop=await g.generate(stopped.scene,{...stopped.context,perlinLive:{...stopped.context.perlinLive,clock:{paused:true}}});await record('after-stop',afterStop);
-   check(await hash(afterStop.pixels)===await hash(stopped.preview.pixels),'authored palette is not silently reapplied after recording handoff');g.dispose();
+   check(await hash(afterStop.pixels)===await hash(stopped.preview.pixels),'authored palette is not silently reapplied after recording handoff');
+   const reapplyContext={...stopped.context,perlinLive:{...stopped.context.perlinLive,paletteRevision:2,clock:{paused:true}}};
+   const reapplied=await g.generate(stopped.scene,reapplyContext);await record('equal-palette-reapplied',reapplied);
+   check(same(reapplied.perlinLive,{...afterStop.perlinLive,paletteRevision:2})&&same(reapplied.sourcePerlinFrame,afterStop.sourcePerlinFrame),'equal-color command preserves model, clock and camera');
+   check(await hash(reapplied.pixels)!==await hash(afterStop.pixels),'equal-color command after recording changes actual GPU pixels');
+   const retry=await g.generate(stopped.scene,reapplyContext);await record('equal-command-retry',retry);
+   check(same(retry.perlinLive,reapplied.perlinLive)&&await hash(retry.pixels)===await hash(reapplied.pixels),'retrying the same command preserves delivered pixels and revision');g.dispose();
    const qg=new Generator(),qs=scene(),qc=context('queue');let latest,resolveOutput,busy=false;const outputs=[],errors=[];
    queue=new GenerationQueue(qg,{output:(o,time,doc)=>{latest=o;outputs.push({time,name:doc.name,width:o.width,live:o.perlinLive});resolveOutput?.();},error:e=>errors.push(e.message),busy:value=>{busy=value;}});
    const next=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('queue response deadline')),10000);resolveOutput=()=>{clearTimeout(timer);resolveOutput=undefined;resolve();};});
@@ -49,6 +55,16 @@ try{
    const deferred={...renamed,name:'explicit deferred rename'};queue.request(deferred,{...qc,width:50});release();await recordingTask;
    for(let i=0;i<300&&(outputs.at(-1)?.name!==deferred.name||latest.width!==50);i++)await new Promise(r=>setTimeout(r,10));
    check(!errors.length,'queue no errors');check(outputs.at(-1)?.name===deferred.name,'deferred authored rename survives recording');check(latest.width===50,'deferred viewport generation completes');check(latest.perlinLive.sessionId==='queue','deferred request retains source live session');check(outputs.at(-1).time===latest.perlinLive.sceneTime,'queue publishes delivered source time');
+   // A newer hot command authored during recording must survive the stop
+   // context, which still acknowledges the older sequence.
+   let releaseHot,enteredHot;const hotGate=new Promise(r=>releaseHot=r),hotStart=new Promise(r=>enteredHot=r);
+   const hotRecording=queue.recordSource(latest,{width:24,height:18,simulationFps:30},{start:()=>{enteredHot();return hotGate;},frame:()=>{}});
+   await Promise.race([hotStart,hotRecording.then(()=>{throw Error('recording ended before hot consumer start');})]);
+   const deferredHot={...deferred,perlinSource:{...deferred.perlinSource,palette:[0x20123456,0x20123456]}};
+   queue.request(deferredHot,{...qc,width:50,perlinLive:{...qc.perlinLive,paletteRevision:1}});releaseHot();await hotRecording;
+   for(let i=0;i<300&&latest.perlinLive.paletteRevision!==1;i++)await new Promise(r=>setTimeout(r,10));
+   check(latest.perlinLive.paletteRevision===1,'new palette command authored during recording survives handoff');
+   check(!errors.length,'deferred palette command produces no queue errors');
    queue.dispose();queue=undefined;check(result.workers.created===result.workers.terminated,'all owned workers terminated');result.queueOutputs=outputs;return result;
   }finally{queue?.dispose();control?.dispose();g.dispose();}
  });
