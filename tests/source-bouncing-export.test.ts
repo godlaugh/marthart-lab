@@ -42,10 +42,10 @@ describe('source Bouncing export contract',()=>{
   const display=unwrap(prepareSourceBouncingDisplay(scene.bouncingSource!.visual,{initialSpeed:scene.bouncingSource!.configuration.initialSpeed},camera.plan.displayScale));
   expect(display.radius).toBe(Math.fround(1.25*Math.fround(300/486)));
   expect(sourceBouncingExportContext(plan,plan.frames[0]).sourcePointPixelDensity).toBe(2);
-  for(const kind of ['image','video'] as const){
-   const rounded=unwrap(prepareSourceBouncingExport(scene,presented,{...options,kind,width:321,height:181}));
-   expect(rounded).toMatchObject({requestedSize:{width:321,height:181},width:322,height:182,viewport:{logicalWidth:161,logicalHeight:91}});
-  }
+  const image=unwrap(prepareSourceBouncingExport(scene,presented,{...options,kind:'image',width:321,height:181}));
+  expect(image).toMatchObject({requestedSize:{width:321,height:181},width:322,height:182,viewport:{logicalWidth:161,logicalHeight:91}});
+  const video=unwrap(prepareSourceBouncingExport(scene,presented,{...options,width:321,height:181}));
+  expect(video).toMatchObject({requestedSize:{width:321,height:181},width:964,height:544,viewport:{logicalWidth:482,logicalHeight:272}});
   // Density is delivered runtime state, not an authored or migrated scene field.
   expect(scene).toEqual(before);expect(scene.bouncingSource).not.toHaveProperty('pixelDensity');
  });
@@ -110,7 +110,8 @@ describe('source Bouncing export contract',()=>{
  it('checks warmup and every delivered frame before PNG encoding or upload',()=>{
   const {scene,presented}=fixture(),plan=unwrap(prepareSourceBouncingExport(scene,presented,options));
   const frame=plan.frames[0],camera={phi:plan.view.phi,theta:plan.view.theta,gamma:plan.view.gamma,zoom:plan.view.zoom,center:[0,0,0] as [number,number,number],focalDistance:20};
-  const output:SceneOutput={type:'raster',width:320,height:180,pixels:new Uint8ClampedArray(320*180*4),cameraResolved:true,backend:'webgl2',sourceBouncingFrame:{pixelDensity:plan.pixelDensity,checkpoint:frame,camera,viewport:plan.viewport},stats:{samples:1,generated:1,invalid:0}};
+  expect(plan).toMatchObject({requestedSize:{width:320,height:180},width:960,height:540});
+  const output:SceneOutput={type:'raster',width:960,height:540,pixels:new Uint8ClampedArray(960*540*4),cameraResolved:true,backend:'webgl2',sourceBouncingFrame:{pixelDensity:plan.pixelDensity,checkpoint:frame,camera,viewport:plan.viewport},stats:{samples:1,generated:1,invalid:0}};
   expect(()=>assertSourceBouncingExportFrame(output,plan,frame)).not.toThrow();
   expect(()=>assertSourceBouncingExportFrame(output,plan,plan.warmup!)).toThrow('不一致');
   expect(()=>assertSourceBouncingExportFrame({...output,backend:'native'},plan,frame)).toThrow('来源');

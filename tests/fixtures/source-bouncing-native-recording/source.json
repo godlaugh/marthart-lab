@@ -1,0 +1,1161 @@
+{
+  "at": "2026-10-24T00:05:14.661561+00:00",
+  "status": "3x recording correction and selected reference workflows passed; separate early-completion difference remains",
+  "cases": [
+    {
+      "preset": "bouncing1",
+      "particleCount": 2000000,
+      "originalIdentity": {
+        "originalSourceSha256": "2110d387e9afa680ec1102dc892f3c6e3975c4f0654f6c00232826980326f480",
+        "sourceSha256": "0613c0686ad10724c0cfcee17f917ba814b4de0e9573c6c3f237d93ee9c6858f",
+        "sourceMember": "data/Bouncing/bouncing1.json",
+        "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac",
+        "seconds": 7.126723041059449,
+        "exit": 0,
+        "timedOut": false,
+        "reaped": true,
+        "processGroupExists": false,
+        "ffmpeg": {
+          "selectedPath": "/opt/homebrew/bin/ffmpeg",
+          "resolvedPath": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg",
+          "sha256": "48cc76fa936aec61e6459da4366ad8d99da34e4a7f98be66ff5a9130d8ab366f"
+        }
+      },
+      "originalFrameCount": 4,
+      "productFrames": [
+        {
+          "frame": 0,
+          "warmup": true,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 1,
+            "sceneTime": 0.0833333358168602
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "994e79b399fe3785aca064daa57a585739c69a361f896facd5f1ac76cc62b393",
+          "referenceSha256": "0645b9f5886490b7d01c7317a848353e520a41d6f4ff83e63e0d0132f7953b9c"
+        },
+        {
+          "frame": 1,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "9aafe88d140b9c212ed0a64d162e5c51d54d2553e14c9ccd78bd23f589485ddc",
+          "referenceSha256": "1cbb2cd777b4ff56a9b836be106dab982e14c457be7810b16c374fc21629b2a1"
+        },
+        {
+          "frame": 2,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "bf27e0740d86f6139dd3705801fd7447e5446777e52d9288f5a8b23adc8e33b5",
+          "referenceSha256": "96fb79738ba8c443113d8e08b7339968d86a32b956afe0d7db14eec4dec56e52"
+        },
+        {
+          "frame": 3,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "f52d3e4a75205b7280e0cd0f72b33fa557390384e947a6d6cf3c83d7a10b94b7",
+          "referenceSha256": "35fcd05398b5d797641cce3d4c19cd2b41fac5c6b782267b5fa89b544f111064"
+        }
+      ],
+      "plan": {
+        "requestedSize": {
+          "width": 128,
+          "height": 96
+        },
+        "width": 384,
+        "height": 288,
+        "pixelDensity": 2,
+        "viewport": {
+          "logicalWidth": 192,
+          "logicalHeight": 144,
+          "referenceLogicalHeight": 486,
+          "target": "offscreen",
+          "projectionPass": "perspective"
+        },
+        "view": {
+          "model": "source-bouncing-view-1.7.8",
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0,
+          "zoom": 1
+        },
+        "warmup": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 1,
+          "sceneTime": 0.0833333358168602
+        },
+        "frames": [
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          }
+        ]
+      },
+      "video": {
+        "original": ".cache/bouncing-native-recording-20261024/reference-bouncing1/original.mp4",
+        "product": ".cache/bouncing-native-recording-20261024/verified-bouncing1/service/c65fa3c2-2c2c-45e3-9b4a-e7c92df50f22.mp4",
+        "originalSha256": "806eac92566b556cd5ce4019636a477d545f9aa0c8f2e0c87ac13fbc7adc8c93",
+        "productSha256": "5c9fbfe21a610b8af0a32f0f9234fc379b5bee00d624f28ce01ee338942eb832",
+        "decodedBytes": 110592,
+        "differentComponents": 0,
+        "maxDelta": 0,
+        "exactDecodedRgb": true
+      },
+      "originalEncoder": {
+        "exit": 0,
+        "exportScaleFactor": 3,
+        "aliveAfterFinish": false,
+        "pid": 87008,
+        "arguments": [
+          "-y",
+          "-f",
+          "rawvideo",
+          "-vcodec",
+          "rawvideo",
+          "-s",
+          "384x288",
+          "-r",
+          "12.0",
+          "-pix_fmt",
+          "rgba",
+          "-i",
+          "-",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv444p",
+          "-color_range",
+          "pc",
+          "-colorspace",
+          "bt709",
+          "-color_primaries",
+          "bt709",
+          "-color_trc",
+          "iec61966-2-1",
+          "-tune",
+          "animation",
+          "-crf",
+          "18",
+          "-preset",
+          "slow",
+          "-movflags",
+          "+faststart+write_colr",
+          "-vf",
+          "scale=128:96:flags=lanczos",
+          "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-native-recording-20261024/reference-bouncing1/original.mp4"
+        ],
+        "command": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg"
+      },
+      "originalUserFilesBefore": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "f7374ce959ae814c4b3c94597d02b848422498cf22b25bba07026bef07009029"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "originalUserFilesAfter": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "70b72eeb212dc95428c6833dbaf3662a418e91d3ead06c9824a5fc0c97c83fca"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "elapsedMs": 5731.770125,
+      "processFamily": {
+        "rootPid": 98342,
+        "samples": 16,
+        "observedProcesses": 28,
+        "maxConcurrentProcesses": 12,
+        "sampledPeakRssKiB": 2457824,
+        "observedCpuMs": 11489.999999999998,
+        "samplingErrors": []
+      },
+      "resourcesRetired": true
+    },
+    {
+      "preset": "bouncing2",
+      "particleCount": 5000000,
+      "originalIdentity": {
+        "originalSourceSha256": "9de55d50efb24bab3ced5ca17483256b782e916c9221a219e4df06e82b9e2537",
+        "sourceSha256": "85eeb2d35e3f0d0801e49d4f8d2da63a4286d0b06fd5b17f0060b60ead8c0a34",
+        "sourceMember": "data/Bouncing/bouncing2.json",
+        "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac",
+        "seconds": 8.50874499999918,
+        "exit": 0,
+        "timedOut": false,
+        "reaped": true,
+        "processGroupExists": false,
+        "ffmpeg": {
+          "selectedPath": "/opt/homebrew/bin/ffmpeg",
+          "resolvedPath": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg",
+          "sha256": "48cc76fa936aec61e6459da4366ad8d99da34e4a7f98be66ff5a9130d8ab366f"
+        }
+      },
+      "originalFrameCount": 4,
+      "productFrames": [
+        {
+          "frame": 0,
+          "warmup": true,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 1,
+            "sceneTime": 0.0833333358168602
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "58c60344304e8082f0073809f37ba009f70e7409e180b052a014e40bfe2f4659",
+          "referenceSha256": "be893867972e830afe4d8465d8111990686c628dfbfa139682c958f0693e3aec"
+        },
+        {
+          "frame": 1,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "fcaf83fed02f89c635f9a90020f25943d5c49cfe73d02a576ac89e4a7c9625ae",
+          "referenceSha256": "bb4d19e57a0d8dd42c2eac5e92e0fd453f61766f3d7bf9b4eb4bbedb5e0d0009"
+        },
+        {
+          "frame": 2,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "c4705eb364447571a80cbeed3752a7c5d4fd0c8d242eda5c2ef3fc42e9bfd9fd",
+          "referenceSha256": "70881a4bbcba28e596059467ac31ee168e6180997e97f152f1f05dcc7bfe883f"
+        },
+        {
+          "frame": 3,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "d488418b768445bb8cf41636748272b026a610a7760a407dea6f037b0c191305",
+          "referenceSha256": "59887130dc03ca2833e760018daa2767131f9cd944f61fec3565981ee6ee1a89"
+        }
+      ],
+      "plan": {
+        "requestedSize": {
+          "width": 128,
+          "height": 96
+        },
+        "width": 384,
+        "height": 288,
+        "pixelDensity": 2,
+        "viewport": {
+          "logicalWidth": 192,
+          "logicalHeight": 144,
+          "referenceLogicalHeight": 486,
+          "target": "offscreen",
+          "projectionPass": "perspective"
+        },
+        "view": {
+          "model": "source-bouncing-view-1.7.8",
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0,
+          "zoom": 1
+        },
+        "warmup": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 1,
+          "sceneTime": 0.0833333358168602
+        },
+        "frames": [
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          }
+        ]
+      },
+      "video": {
+        "original": ".cache/bouncing-native-recording-20261024/reference-bouncing2/original.mp4",
+        "product": ".cache/bouncing-native-recording-20261024/verified-bouncing2/service/b6e89ba2-80a7-4e73-a18e-770f4c764eea.mp4",
+        "originalSha256": "a43f48d6e9189a0e144dbd52d649b279446beddd888905d1a6fd4ccf111ba103",
+        "productSha256": "ff49b0943be05337aa13d945b0774909e8f32178d28ce0473910fe2a471b9e28",
+        "decodedBytes": 110592,
+        "differentComponents": 0,
+        "maxDelta": 0,
+        "exactDecodedRgb": true
+      },
+      "originalEncoder": {
+        "exit": 0,
+        "exportScaleFactor": 3,
+        "aliveAfterFinish": false,
+        "pid": 90376,
+        "arguments": [
+          "-y",
+          "-f",
+          "rawvideo",
+          "-vcodec",
+          "rawvideo",
+          "-s",
+          "384x288",
+          "-r",
+          "12.0",
+          "-pix_fmt",
+          "rgba",
+          "-i",
+          "-",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv444p",
+          "-color_range",
+          "pc",
+          "-colorspace",
+          "bt709",
+          "-color_primaries",
+          "bt709",
+          "-color_trc",
+          "iec61966-2-1",
+          "-tune",
+          "animation",
+          "-crf",
+          "18",
+          "-preset",
+          "slow",
+          "-movflags",
+          "+faststart+write_colr",
+          "-vf",
+          "scale=128:96:flags=lanczos",
+          "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-native-recording-20261024/reference-bouncing2/original.mp4"
+        ],
+        "command": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg"
+      },
+      "originalUserFilesBefore": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "70b72eeb212dc95428c6833dbaf3662a418e91d3ead06c9824a5fc0c97c83fca"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "originalUserFilesAfter": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "dc1bcf35e3a50de6a11d21a8cebb6ebbd4a1b69f90e013b2ed5f73b2b6aca2ab"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "elapsedMs": 11547.728374999999,
+      "processFamily": {
+        "rootPid": 98661,
+        "samples": 36,
+        "observedProcesses": 48,
+        "maxConcurrentProcesses": 12,
+        "sampledPeakRssKiB": 2255632,
+        "observedCpuMs": 19640,
+        "samplingErrors": []
+      },
+      "resourcesRetired": true
+    },
+    {
+      "preset": "bouncing1_formula1",
+      "particleCount": 1000000,
+      "originalIdentity": {
+        "originalSourceSha256": "98f9fcfe70fd0e7e3b2030eb30a6ffdc9ab504cfebc3d0501c2f290a8731404f",
+        "sourceSha256": "da17d650ed71024ff1f924d839402c5bc3bd5a5661e19f0f3b1870bd38ba1524",
+        "sourceMember": "data/Bouncing/bouncing1_formula1.json",
+        "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac",
+        "seconds": 7.5365806659683585,
+        "exit": 0,
+        "timedOut": false,
+        "reaped": true,
+        "processGroupExists": false,
+        "ffmpeg": {
+          "selectedPath": "/opt/homebrew/bin/ffmpeg",
+          "resolvedPath": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg",
+          "sha256": "48cc76fa936aec61e6459da4366ad8d99da34e4a7f98be66ff5a9130d8ab366f"
+        }
+      },
+      "originalFrameCount": 4,
+      "productFrames": [
+        {
+          "frame": 0,
+          "warmup": true,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 1,
+            "sceneTime": 0.0833333358168602
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "eca9decbb6b2a8d28c3f77635483f4b4cfd5654ae51f0b41e45a07598407d02e",
+          "referenceSha256": "a9797e45dff1168426d7f3c05d005d8acfc9abd57d7c29ed8f670e8fd9b223dd"
+        },
+        {
+          "frame": 1,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "98f65a5b09e8b9cdf9f91323f6b062f13b0625da4927383ba74d02239de9a136",
+          "referenceSha256": "d50d81451b618a630b7c36ae3c75ecf32797e21e58766157be83aab3161694bc"
+        },
+        {
+          "frame": 2,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "ea6a9de43a36944926a44423a6138815012862cb98a5a6845f0397cca2b8040c",
+          "referenceSha256": "3a63818ae926e18828ba4779cab257f355a7fde1437ff2a5fffe3816e7bae0ca"
+        },
+        {
+          "frame": 3,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "5a7f287158ae6ef1eaad35c301d76b0dc39fe8bd7811a4bdc32269c5f0781d9d",
+          "referenceSha256": "cf25f23157db4d80f98949e10040bc711f7e729cab13f5106ec7fa4ad8e02ecb"
+        }
+      ],
+      "plan": {
+        "requestedSize": {
+          "width": 128,
+          "height": 96
+        },
+        "width": 384,
+        "height": 288,
+        "pixelDensity": 2,
+        "viewport": {
+          "logicalWidth": 192,
+          "logicalHeight": 144,
+          "referenceLogicalHeight": 486,
+          "target": "offscreen",
+          "projectionPass": "perspective"
+        },
+        "view": {
+          "model": "source-bouncing-view-1.7.8",
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0,
+          "zoom": 1
+        },
+        "warmup": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 1,
+          "sceneTime": 0.0833333358168602
+        },
+        "frames": [
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          }
+        ]
+      },
+      "video": {
+        "original": ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula1/original.mp4",
+        "product": ".cache/bouncing-native-recording-20261024/verified-bouncing1_formula1/service/3c45e818-8065-4703-9023-a414ffe3c553.mp4",
+        "originalSha256": "f929c94fe87dd704fe5e9eb05d9d112f935f8df2db8efd2b794576137b7d011d",
+        "productSha256": "e9f853b8cb14da6059f08defdeb3110b33f3a1ac51be55c09d84640223722cbf",
+        "decodedBytes": 110592,
+        "differentComponents": 0,
+        "maxDelta": 0,
+        "exactDecodedRgb": true
+      },
+      "originalEncoder": {
+        "exit": 0,
+        "exportScaleFactor": 3,
+        "aliveAfterFinish": false,
+        "pid": 91161,
+        "arguments": [
+          "-y",
+          "-f",
+          "rawvideo",
+          "-vcodec",
+          "rawvideo",
+          "-s",
+          "384x288",
+          "-r",
+          "12.0",
+          "-pix_fmt",
+          "rgba",
+          "-i",
+          "-",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv444p",
+          "-color_range",
+          "pc",
+          "-colorspace",
+          "bt709",
+          "-color_primaries",
+          "bt709",
+          "-color_trc",
+          "iec61966-2-1",
+          "-tune",
+          "animation",
+          "-crf",
+          "18",
+          "-preset",
+          "slow",
+          "-movflags",
+          "+faststart+write_colr",
+          "-vf",
+          "scale=128:96:flags=lanczos",
+          "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-native-recording-20261024/reference-bouncing1_formula1/original.mp4"
+        ],
+        "command": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg"
+      },
+      "originalUserFilesBefore": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "dc1bcf35e3a50de6a11d21a8cebb6ebbd4a1b69f90e013b2ed5f73b2b6aca2ab"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "originalUserFilesAfter": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "975941aaad79cb66a3988c944e09166d3add7ec6f928feb736515a5a839d75c2"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "elapsedMs": 7560.087042,
+      "processFamily": {
+        "rootPid": 99292,
+        "samples": 24,
+        "observedProcesses": 34,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 1874304,
+        "observedCpuMs": 12530,
+        "samplingErrors": []
+      },
+      "resourcesRetired": true
+    },
+    {
+      "preset": "bouncing1_formula2",
+      "particleCount": 1000000,
+      "originalIdentity": {
+        "originalSourceSha256": "b820c544a0186df77a1eadd5117054e965ff8832a9b8f2873bb9aad5eceb191b",
+        "sourceSha256": "c79c08734dd48c13c6d2efc49f210f7e8158febf6a6cf6bc6b0eb44f92ee115c",
+        "sourceMember": "data/Bouncing/bouncing1_formula2.json",
+        "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+        "hostSha256": "c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e",
+        "probeSha256": "9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac",
+        "seconds": 7.022421624977142,
+        "exit": 0,
+        "timedOut": false,
+        "reaped": true,
+        "processGroupExists": false,
+        "ffmpeg": {
+          "selectedPath": "/opt/homebrew/bin/ffmpeg",
+          "resolvedPath": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg",
+          "sha256": "48cc76fa936aec61e6459da4366ad8d99da34e4a7f98be66ff5a9130d8ab366f"
+        }
+      },
+      "originalFrameCount": 4,
+      "productFrames": [
+        {
+          "frame": 0,
+          "warmup": true,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 1,
+            "sceneTime": 0.0833333358168602
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "1c016ba49c77b4d11d96c34c996c8e8bc3d2ec5d0c33cec4c3ef1b76d578786e",
+          "referenceSha256": "54a5cf451ba18c453b9d352226d507bfc64e6c7c079a01d57f2064406704b71c"
+        },
+        {
+          "frame": 1,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "b4d685c23d45139fa124cac1fa3633a8b8ab4b2200cd65c4c7b046efa1bb0bfb",
+          "referenceSha256": "25c8199e225bc7186b7dd6ae1c1e320d2ba44f15e3dc336b3c30c5d9653ec7ac"
+        },
+        {
+          "frame": 2,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "4cf62d64c898bf7656b4be57e1a8c9fd23f7e2615b440ed697a27278b3d3569e",
+          "referenceSha256": "e5d522fb558f81ae16389e13c803a461750ba6d6a1abb6421632797aa3a7dcbc"
+        },
+        {
+          "frame": 3,
+          "warmup": false,
+          "checkpoint": {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          },
+          "width": 384,
+          "height": 288,
+          "rgbPixels": 0,
+          "alphaPixels": 0,
+          "maxDelta": 0,
+          "examples": [],
+          "cameraMatricesExact": true,
+          "actualSha256": "1b81315dd78da14d8566fe487762f02649fee1439b4686f16265bf9c62b4c09d",
+          "referenceSha256": "afaf9dd2a87c821929d08b76efea17cd6fa08f5df7a246314bdc7ab2ffd5f238"
+        }
+      ],
+      "plan": {
+        "requestedSize": {
+          "width": 128,
+          "height": 96
+        },
+        "width": 384,
+        "height": 288,
+        "pixelDensity": 2,
+        "viewport": {
+          "logicalWidth": 192,
+          "logicalHeight": 144,
+          "referenceLogicalHeight": 486,
+          "target": "offscreen",
+          "projectionPass": "perspective"
+        },
+        "view": {
+          "model": "source-bouncing-view-1.7.8",
+          "phi": 0,
+          "theta": 0,
+          "gamma": 0,
+          "zoom": 1
+        },
+        "warmup": {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 1,
+          "sceneTime": 0.0833333358168602
+        },
+        "frames": [
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 2,
+            "sceneTime": 0.1666666716337204
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 3,
+            "sceneTime": 0.25
+          },
+          {
+            "model": "source-bouncing-clock-1.7.8",
+            "simulationUpdates": 4,
+            "sceneTime": 0.3333333432674408
+          }
+        ]
+      },
+      "video": {
+        "original": ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula2/original.mp4",
+        "product": ".cache/bouncing-native-recording-20261024/verified-bouncing1_formula2/service/245cc22b-0bfa-49a4-afd1-4ed53ef4813a.mp4",
+        "originalSha256": "0da989f9f32cfc35dfad70ec2137ba88295f205d65002c69441c5555c1d20375",
+        "productSha256": "772817a1c335434624bf7ecff4494b89d406396a0f4fa187cda546c0045ae8cf",
+        "decodedBytes": 110592,
+        "differentComponents": 0,
+        "maxDelta": 0,
+        "exactDecodedRgb": true
+      },
+      "originalEncoder": {
+        "exit": 0,
+        "exportScaleFactor": 3,
+        "aliveAfterFinish": false,
+        "pid": 91674,
+        "arguments": [
+          "-y",
+          "-f",
+          "rawvideo",
+          "-vcodec",
+          "rawvideo",
+          "-s",
+          "384x288",
+          "-r",
+          "12.0",
+          "-pix_fmt",
+          "rgba",
+          "-i",
+          "-",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv444p",
+          "-color_range",
+          "pc",
+          "-colorspace",
+          "bt709",
+          "-color_primaries",
+          "bt709",
+          "-color_trc",
+          "iec61966-2-1",
+          "-tune",
+          "animation",
+          "-crf",
+          "18",
+          "-preset",
+          "slow",
+          "-movflags",
+          "+faststart+write_colr",
+          "-vf",
+          "scale=128:96:flags=lanczos",
+          "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/bouncing-native-recording-20261024/reference-bouncing1_formula2/original.mp4"
+        ],
+        "command": "/opt/homebrew/Cellar/ffmpeg/7.1.1_2/bin/ffmpeg"
+      },
+      "originalUserFilesBefore": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "975941aaad79cb66a3988c944e09166d3add7ec6f928feb736515a5a839d75c2"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "originalUserFilesAfter": {
+        "scene_access_policies_cache.json": {
+          "exists": true,
+          "sha256": "e5e3934f1194f446d94b9472c43986a0893b7c3a170bb387a96056db15c265b7"
+        },
+        "license.dat": {
+          "exists": false,
+          "sha256": null
+        },
+        "settings/settings.conf": {
+          "exists": true,
+          "sha256": "6bbae3340c7189d267fa169e28633a30cf548902b6b4c9de772a113e21d61f26"
+        }
+      },
+      "elapsedMs": 7205.583416,
+      "processFamily": {
+        "rootPid": 99690,
+        "samples": 23,
+        "observedProcesses": 33,
+        "maxConcurrentProcesses": 11,
+        "sampledPeakRssKiB": 1874496,
+        "observedCpuMs": 12290.000000000002,
+        "samplingErrors": []
+      },
+      "resourcesRetired": true
+    }
+  ],
+  "publicExport": [
+    {
+      "preset": "bouncing1_formula1",
+      "checks": 87,
+      "videos": [
+        {
+          "start": "current",
+          "quality": "high",
+          "inputWidth": 768,
+          "inputHeight": 576,
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "pix_fmt": "yuvj444p",
+            "color_range": "pc",
+            "color_space": "bt709",
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "decodedOriginalProfileExact": true,
+          "meanRgbErrors": [
+            1.1636013454861112,
+            1.4901665581597223,
+            1.4409993489583333
+          ]
+        },
+        {
+          "start": "seed",
+          "quality": "production",
+          "inputWidth": 768,
+          "inputHeight": 576,
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "pix_fmt": "yuvj444p",
+            "color_range": "pc",
+            "color_space": "bt709",
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "decodedOriginalProfileExact": true,
+          "meanRgbErrors": [
+            0.6282687717013888,
+            0.7506171332465278,
+            0.7429267035590278
+          ]
+        }
+      ],
+      "remainingProcesses": 0
+    },
+    {
+      "preset": "bouncing2",
+      "checks": 87,
+      "videos": [
+        {
+          "start": "current",
+          "quality": "high",
+          "inputWidth": 768,
+          "inputHeight": 576,
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "pix_fmt": "yuvj444p",
+            "color_range": "pc",
+            "color_space": "bt709",
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "decodedOriginalProfileExact": true,
+          "meanRgbErrors": [
+            0.19099256727430555,
+            0.2143283420138889,
+            0.21140543619791666
+          ]
+        },
+        {
+          "start": "seed",
+          "quality": "production",
+          "inputWidth": 768,
+          "inputHeight": 576,
+          "metadata": {
+            "width": 256,
+            "height": 192,
+            "pix_fmt": "yuvj444p",
+            "color_range": "pc",
+            "color_space": "bt709",
+            "r_frame_rate": "12/1",
+            "nb_read_frames": "3"
+          },
+          "decodedOriginalProfileExact": true,
+          "meanRgbErrors": [
+            0.09117974175347222,
+            0.10826280381944445,
+            0.1100735134548611
+          ]
+        }
+      ],
+      "remainingProcesses": 0
+    }
+  ],
+  "validation": {
+    "testFiles": 8,
+    "tests": 149,
+    "lifecycleChecks": 24,
+    "captureRejections": 6,
+    "buildV2": "passed; Vite9.96s"
+  },
+  "earlyCompletion": {
+    "status": "known-difference",
+    "scope": "Original Scene completion and VideoRecorder at1fps/0.3s versus current product planner; no product export claim.",
+    "originalFrames": [
+      {
+        "width": 384,
+        "sceneTime": 1,
+        "rawDt": 1,
+        "complete": true,
+        "frame": 0,
+        "encoded": false,
+        "height": 288
+      }
+    ],
+    "originalVideoProbe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": []
+    },
+    "localPlan": {
+      "requestedSize": {
+        "width": 128,
+        "height": 96
+      },
+      "width": 384,
+      "height": 288,
+      "pixelDensity": 2,
+      "viewport": {
+        "logicalWidth": 192,
+        "logicalHeight": 144,
+        "referenceLogicalHeight": 486,
+        "target": "offscreen",
+        "projectionPass": "perspective"
+      },
+      "view": {
+        "model": "source-bouncing-view-1.7.8",
+        "phi": 0,
+        "theta": 0,
+        "gamma": 0,
+        "zoom": 1
+      },
+      "warmup": {
+        "model": "source-bouncing-clock-1.7.8",
+        "simulationUpdates": 1,
+        "sceneTime": 1
+      },
+      "frames": [
+        {
+          "model": "source-bouncing-clock-1.7.8",
+          "simulationUpdates": 2,
+          "sceneTime": 2
+        }
+      ]
+    },
+    "reference": ".cache/bouncing-native-recording-20261024/early-completion/native-bouncing1-short"
+  },
+  "artifactHashes": {
+    ".cache/bouncing-native-recording-20261024/verified-bouncing1/report.json": "0a534aa5762465d276bb679bd484aa88499bbdd7cb455b0335964168807f9ad3",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1/run.json": "5def84df33094001d23b6782bae7bb191ff0d9fda668e8db5871e6c803012b49",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1/encoder.json": "4956d9c828b0e49207e3a98d7145fe8d4fc201ae225ef3c98cf25ecfc268b08e",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1/frames.json": "533ca96efbe36394dbdc00d488eacd741e9713c365c6230821262125290779aa",
+    ".cache/bouncing-native-recording-20261024/verified-bouncing2/report.json": "a16e38d4f5a921314ba382b9b529cec1ad7d26d5a5797108cbc40aff5a48f1af",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing2/run.json": "f5bcc5b4dbe26ddccb67db7b07b2d6da2cbf0aa7fc2476a048c6068a8de7fb91",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing2/encoder.json": "1831eff8d9ee712c96ed6ac3c719a58f9947c59956f1789d7b79b1f1282632c0",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing2/frames.json": "533ca96efbe36394dbdc00d488eacd741e9713c365c6230821262125290779aa",
+    ".cache/bouncing-native-recording-20261024/verified-bouncing1_formula1/report.json": "7beacbdaf4413497ee355d220b43d21ae95038a316f08800ee8ed0fd07ac2afc",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula1/run.json": "047a44a62be8ad8708e08cb489912d2ff19e8ee3c27f99296a4da27b19a1f224",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula1/encoder.json": "43e27ad97f23f749b0da497e9f79c8f5c0c067d2b24dd5f385a79a25dbb01a10",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula1/frames.json": "533ca96efbe36394dbdc00d488eacd741e9713c365c6230821262125290779aa",
+    ".cache/bouncing-native-recording-20261024/verified-bouncing1_formula2/report.json": "fbf59601ef4e0b43303e3de47be804ab67ffde216f462151d816d1a4975a7e30",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula2/run.json": "09cc8f4c3f40a6920b3615fc1e7e4f65adb67bcbdc68a5e01b42f30355a37e7a",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula2/encoder.json": "77b264150a25e57082a6e73b657d564774f37e50d94566d619c4841b113afcca",
+    ".cache/bouncing-native-recording-20261024/reference-bouncing1_formula2/frames.json": "533ca96efbe36394dbdc00d488eacd741e9713c365c6230821262125290779aa",
+    ".cache/bouncing-native-recording-20261024/public-bouncing1_formula1/report.json": "143a3176924354c11954aaa5831d19b73076b7bc85b4d5c1d4f06c895f11c61a",
+    ".cache/bouncing-native-recording-20261024/public-bouncing2/report.json": "f05dc1aeb34590cf661cbf7e12baa86cbc497ffcce0b27dcc9206c9910511b2e",
+    ".cache/bouncing-native-recording-20261024/planner-regression.json": "f0bb9d70d125394d58465bf3661970f2c8f4611db77076abdb90f4dec2936127",
+    ".cache/bouncing-native-recording-20261024/capture-guards.json": "ebdc2929c08eceb98d95061ba3de61cd1270da0df0970ee798e5ef26918b9b8d",
+    ".cache/bouncing-native-recording-20261024/tests.log": "c6ad85985693cbdd191ad9f9261a05545a1e2777a056dc52be518853d792a35c",
+    ".cache/bouncing-native-recording-20261024/build.log": "78c9cb959b5abe9f35c4a9fffc09fcbc593612ad5ffe10ed3a9fad1d66f099b6",
+    ".cache/bouncing-native-recording-20261024/lifecycle/report.json": "0f4b57a10b34d3f35e42bfc72f663d498a905cf7e5c1a3622715eeda937cf045",
+    ".cache/bouncing-native-recording-20261024/early-completion-difference.json": "fb6bc12ee8271af0e7f4cb7f39183360b62659beebd67abd3a3d6809778e3368",
+    ".cache/bouncing-native-recording-20261024/early-completion/native-bouncing1-short/run.json": "ba5484838f326a632caa9b633723bbb7e687b65cf65d41e4b18b4a4d03b4bfdf",
+    ".cache/bouncing-native-recording-20261024/early-completion/native-bouncing1-short/frames.json": "0da08b18c5bdedeb9c7dc7d97076a46f6fc3384e86b2adc9ca9b422944e458b9",
+    ".cache/bouncing-native-recording-20261024/early-completion/native-bouncing1-short/encoder.json": "a5b886f97fa9227d3764a2b4dd9845f8b87bf1c97fbd842b2359b934754d57a5"
+  },
+  "sourceHashes": {
+    "src/engine/sourceBouncingExport.ts": "65788de5711fcdd2058a65bdd39c85c28440a787f39294cb89daa71aebed1fd2",
+    "src/engine/sourceRecordingSize.ts": "aca370d8382d7df3ba446e035b9df369b7ebdd64bb7f4642e75e713d3a522a3b",
+    "scripts/capture-source-bouncing-original.py": "8a639f5351df1edd77de1e2a7380c0cc5fd57e8c7ef7469eed268e0dbd1bc521",
+    "scripts/verify-source-bouncing-recording-parity.mjs": "2353547134e081e803ea941196fa9446dfafabe2083dae35773bb2df2d06442a",
+    "scripts/verify-source-bouncing-native-export.mjs": "25c948ba6e0846bf56a9074cb45c08f9289eae49249271ee5b27318b2011f24a",
+    "tests/source-bouncing-export.test.ts": "6939316dc45729c533bf94539e3bc2c85ea3b7f1e629bfa228eb25528aadf151",
+    "tests/source-recording-size.test.ts": "815472fe560b3f2f371ec4e5624d8a65b3e0761eb60b1dfa147158749c90ec68",
+    "tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java": "9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac"
+  },
+  "limits": [
+    "Four active frames per original preset at12fps/0.3s; first warmup not encoded; all original particle counts retained. Not long-video or all-parameter coverage.",
+    "Artwork RGB captured before normal branding, completed alpha checked separately. Original branding is not implemented or removed by the product comparison.",
+    "Encoder comparison uses exactly the original final branded PNGs as service input, not product-generated branded frames. Same explicit installed FFmpeg; exact decoded RGB, not byte-identical MP4 containers.",
+    "Original1fps/0.3s completes in warmup with zero encoded frames. Current planner erroneously advances/encodes one additional frame; verified separately, pending a distinct completion-rule fix.",
+    "Seed captures are offscreen with a graphics-context allocation bridge; no original GUI window comparison.",
+    "Sampled process-family CPU/RSS may miss short peaks; no equivalent pre-fix performance baseline, strict cold/warm, GPU/VRAM or token measurement.",
+    "Default backend and installed1.0 are not updated; final Apple Silicon packaging and remaining2.0 requirements remain incomplete."
+  ]
+}

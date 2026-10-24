@@ -15,6 +15,10 @@ describe('shared MathArt recording render-buffer dimensions',()=>{
  it('inherits the existing physical target budget without silently reducing scale',()=>{
   expect(sourceRecordingSize({width:960,height:540},2)).toEqual({logicalWidth:1440,logicalHeight:810,width:2880,height:1620,density:2});
   expect(()=>sourceRecordingSize({width:1920,height:1080},2)).toThrow('预算');
+  // A caller that already owns the shared128MiB raster budget keeps that
+  // admission policy, while still rendering the full original3x input.
+  expect(sourceRecordingSize({width:1920,height:1080},2,33_554_432)).toEqual({logicalWidth:2880,logicalHeight:1620,width:5760,height:3240,density:2});
+  expect(()=>sourceRecordingSize({width:3840,height:2160},2,33_554_432)).toThrow('预算');
  });
  it.each([[0,13,1],[-1,13,1],[17.5,13,1],[17,Infinity,1],[17,13,0],[17,13,1.5],[17,13,NaN],[1,1,10],[6000,1,1],[Number.MAX_SAFE_INTEGER,13,1]])('rejects unsupported dimensions %s×%s at density %s',(width,height,density)=>{
   expect(()=>sourceRecordingSize({width,height},density)).toThrow();

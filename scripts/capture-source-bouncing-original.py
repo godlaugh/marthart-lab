@@ -1,4 +1,4 @@
-"""Run the unchanged diagnostic probe against one pinned original Bouncing preset.
+"""Run a pinned diagnostic probe against one pinned original Bouncing preset.
 
 Requires an operator-supplied original app, JDK and previously verified macOS
 staged-loader host. No engine/JDK installation, bytecode patch or policy override.
@@ -18,6 +18,7 @@ PINS = json.loads((Path(__file__).resolve().parents[1] / 'tests/fixtures/source-
 JAR_SHA = 'a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018'
 HOST_SHA = 'c8c08517e92499bb45762a1fe2ed9ffc5f08c357aff11bcd8f03ab860c6d057e'
 PROBE_SHA = '6d3a5f36b76beb5f8cfd7d3a0b86ef37fca3b4bb63ff344540748bad77013e1d'
+RECORDING_PROBE_SHA = '9c4c311c493ca322c9c1ea73466af27ecba4d60d9537ec9076b5ad060cb88eac'
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
 def require(condition, message):
@@ -31,19 +32,27 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('preset', choices=PINS)
     parser.add_argument('output', type=Path)
+    parser.add_argument('--mode', choices=['animation', 'recording'], default='animation')
+    parser.add_argument('--ffmpeg', type=Path, help='Existing encoder required for recording mode; no installation')
     for name in ['app-contents', 'java-home', 'host', 'app-data']:
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
+    recording = args.mode == 'recording'
+    require(recording == (args.ffmpeg is not None), '--ffmpeg is required only for recording mode')
+    ffmpeg = args.ffmpeg.resolve() if recording else None
+    if recording:
+        require(ffmpeg.is_file() and os.access(ffmpeg, os.X_OK), 'Selected FFmpeg must be an existing executable')
     app = (args.app_contents / 'app').resolve()
     jdk, host, data, out = [p.resolve() for p in [args.java_home, args.host, args.app_data, args.output]]
     preset = PINS[args.preset]
     member, count, source_sha = [preset[k] for k in ['member', 'particleCount', 'sourceSha256']]
     jar = app / 'MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar'
     source = app / 'resources' / member
-    probe = Path(__file__).resolve().parents[1] / 'tests/fixtures/source-bouncing-native-animation/NativeSceneProbe.java'
+    probe = Path(__file__).resolve().parents[1] / ('tests/fixtures/source-bouncing-native-recording/NativeSceneProbe.java' if recording else 'tests/fixtures/source-bouncing-native-animation/NativeSceneProbe.java')
+    probe_sha = RECORDING_PROBE_SHA if recording else PROBE_SHA
     require(sha(jar.read_bytes()) == JAR_SHA, 'Original JAR changed')
     require(sha(host.read_bytes()) == HOST_SHA, 'Offscreen host changed; review before running')
-    require(sha(probe.read_bytes()) == PROBE_SHA, 'Diagnostic probe changed; review before running')
+    require(sha(probe.read_bytes()) == probe_sha, 'Diagnostic probe changed; review before running')
     with zipfile.ZipFile(jar) as archive:
         original = archive.read(member)
     require(sha(original) == source_sha and original == source.read_bytes(), 'Original preset identity mismatch')
@@ -53,6 +62,12 @@ def main():
     required_bytes = 24 * ((int(count ** .5) + 1) ** 2 * 16) + 512 * 1024 ** 2
     require(shutil.disk_usage(out.parent).free >= required_bytes, 'Insufficient space for complete reference')
     out.mkdir()  # Never overwrite an earlier run.
+    original_source = source
+    if recording:
+        project = json.loads(original)
+        project['settings']['record_duration'] = .3
+        source = out / 'input.json'
+        write(source, {'project': project, 'ffmpegPath': str(ffmpeg)})
     shutil.copy2(probe, out / probe.name)
     command = [str(jdk / 'bin/javac'), '-proc:none', '-cp', str(app / '*'), '-d', str(out), str(out / probe.name)]
     compiled = subprocess.run(command, capture_output=True, text=True, timeout=30)
@@ -94,13 +109,17 @@ def main():
     except ProcessLookupError:
         group_exists = False
     report = {'case': args.preset, 'particleCount': count, 'sourceMember': member,
-        'source': str(source), 'sourceSha256': source_sha, 'jarSha256': JAR_SHA, 'hostSha256': HOST_SHA, 'probeSha256': PROBE_SHA,
-        'scope': 'Original methods and unmodified preset; three initial paused frames and 60 fixed-60-fps updates, each followed by a paused redraw. Eleven complete state readbacks, full 500x600 artwork before normal branding, normal license/policy initialization, no AWT windows.',
+        'mode': args.mode, 'source': str(source), 'sourceSha256': sha(source.read_bytes()), 'originalSource': str(original_source), 'originalSourceSha256': source_sha,
+        'jarSha256': JAR_SHA, 'hostSha256': HOST_SHA, 'probeSha256': probe_sha,
+        'scope': 'Original ensureRenderBuffer(default scale3), Scene.update(false) before buffer.beginDraw/render, and real VideoRecorder. Only original record_duration changed to0.3s; all particles retained. Four active384x288 frames at12fps, first warmup not encoded;128x96 original high-quality MP4 using explicitly selected installed FFmpeg. Context-binding graphics allocation bridge; normal policy/license/branding, no AWT windows.' if recording else 'Original methods and unmodified preset; three initial paused frames and 60 fixed-60-fps updates, each followed by a paused redraw. Eleven complete state readbacks, full 500x600 artwork before normal branding, normal license/policy initialization, no AWT windows.',
         'command': command, 'exit': process.returncode, 'stdout': stdout, 'stderr': stderr, 'seconds': time.monotonic() - started,
         'pid': process.pid, 'reaped': True, 'processGroupExists': group_exists, 'timedOut': timed_out, 'userFilesBefore': before, 'userFilesAfter': facts()}
+    if recording:
+        report['ffmpeg'] = {'selectedPath': str(args.ffmpeg), 'resolvedPath': str(ffmpeg), 'sha256': sha(ffmpeg.read_bytes())}
+    report['captureStatus'] = 'failed' if process.returncode or timed_out or group_exists or ' ERROR ' in stdout else 'passed'
     write(out / 'run.json', report)
     print(json.dumps({'case': args.preset, 'exit': report['exit'], 'seconds': report['seconds'], 'timedOut': timed_out, 'reaped': True, 'processGroupExists': group_exists, 'stderr': stderr, 'report': str(out / 'run.json')}), flush=True)
-    if process.returncode or timed_out or group_exists:
+    if report['captureStatus'] != 'passed':
         raise SystemExit(1)
 
 if __name__ == '__main__':

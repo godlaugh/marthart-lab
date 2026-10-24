@@ -1,4 +1,5 @@
 import {prepareSourcePausedCaptureSize} from './sourcePausedCaptureSize';
+import {sourceRecordingSize} from './sourceRecordingSize';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import type {SourceBouncingPresentationFrame} from '../scenes/sourceBouncing';
@@ -27,7 +28,7 @@ export function prepareSourceBouncingExport(scene:SceneDocument,presented:Source
  const pixelDensity=presented.frame.pixelDensity;
  if(!Number.isSafeInteger(pixelDensity)||pixelDensity<1)return{ok:false,error:{kind:'input',path:['frame','pixelDensity'],reason:'源弹跳导出缺少已呈现帧的实测正整数像素密度，请重新生成预览'}};
  let size:ReturnType<typeof prepareSourcePausedCaptureSize>;
- try{size=prepareSourcePausedCaptureSize(options,pixelDensity,MAX_RASTER_PIXELS);}catch(error){return{ok:false,error:{kind:'capacity',path:['size'],reason:error instanceof Error?error.message:String(error)}};}
+ try{size=options.kind==='video'?sourceRecordingSize(options,pixelDensity,MAX_RASTER_PIXELS):prepareSourcePausedCaptureSize(options,pixelDensity,MAX_RASTER_PIXELS);}catch(error){return{ok:false,error:{kind:'capacity',path:['size'],reason:error instanceof Error?error.message:String(error)}};}
  const target={requestedSize:{width:options.width,height:options.height},width:size.width,height:size.height,pixelDensity};
  const viewport:SourceCameraViewport={logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,referenceLogicalHeight:presented.frame.viewport.referenceLogicalHeight,target:'offscreen',projectionPass:'perspective'};
  // PNG and the local current-state recording extension retain the delivered

@@ -136,6 +136,8 @@ Generator.prototype.generate=async function(scene,input,...rest){
   await openExport('Animation video');const quality=start==='seed'?'production':'high';check(await page.getByRole('combobox',{name:'Video quality',exact:true}).inputValue()==='high','Bouncing video defaults to original high quality');await page.getByRole('combobox',{name:'Video quality',exact:true}).selectOption(quality);await dimensions(256,192);await page.getByRole('spinbutton',{name:'Export frame rate',exact:true}).fill('12');await page.locator('select').filter({has:page.locator('option[value="seed"]')}).selectOption(start);
   const path=await download(start+'.mp4');await settledExport();page.off('request',capture);
   check(sessions.length===1&&sessions[0].profile==='mathart'&&sessions[0].quality===quality,start+' video sends selected original encoding profile');
+  const inputWidth=768,inputHeight=576;
+  check(sessions[0].inputWidth===inputWidth&&sessions[0].inputHeight===inputHeight,start+' video sends original 3x render input dimensions');
   const calls=await exportsSince(requestBegin),n=start==='current'?presented.output.frame.checkpoint.simulationUpdates:0,step=Math.fround(1/12),expected=[];let time=step,index=n+1;
   const expectedCamera=start==='current'?presented.output.frame.camera:{...presented.scene.bouncingSource.camera,zoom:1};
   check(calls.every(c=>['phi','theta','gamma','zoom'].every(key=>c.output.frame.camera[key]===expectedCamera[key])),start+' video uses correct current/authored camera');
@@ -148,21 +150,25 @@ Generator.prototype.generate=async function(scene,input,...rest){
   check(metadata.width===256&&metadata.height===192&&Number(metadata.nb_read_frames)===expected.length&&metadata.r_frame_rate==='12/1',start+' MP4 dimensions, FPS and frame count match');
   // Independent argv from original VideoRecorder, fed the same real uploaded RGBA.
   const referencePath=out+'/'+start+'-profile-reference.mp4';
-  execFileSync('ffmpeg',['-v','error','-y','-f','rawvideo','-vcodec','rawvideo','-s','256x192','-r','12','-pix_fmt','rgba','-i','pipe:0','-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-tune','animation','-crf',quality==='production'?'10':'18','-preset',quality==='production'?'veryslow':'slow','-movflags','+faststart+write_colr','-threads','2',referencePath],{input:Buffer.concat(uploads.map(u=>decodePng(u.png).rgba)),maxBuffer:1024*1024});
+  const uploadedRgba=Buffer.concat(uploads.map(u=>decodePng(u.png).rgba));
+  execFileSync('ffmpeg',['-v','error','-y','-f','rawvideo','-vcodec','rawvideo','-s',inputWidth+'x'+inputHeight,'-r','12','-pix_fmt','rgba','-i','pipe:0','-c:v','libx264','-pix_fmt','yuv444p','-color_range','pc','-colorspace','bt709','-color_primaries','bt709','-color_trc','iec61966-2-1','-tune','animation','-crf',quality==='production'?'10':'18','-preset',quality==='production'?'veryslow':'slow','-movflags','+faststart+write_colr','-vf','scale=256:192:flags=lanczos','-threads','2',referencePath],{input:uploadedRgba,maxBuffer:1024*1024});
+  // The lossy-error check needs the same output grid. Independently resize raw
+  // RGB without H.264; never compare an output pixel with an unrelated 3x pixel.
+  const scaledRgb=execFileSync('ffmpeg',['-v','error','-f','rawvideo','-s',inputWidth+'x'+inputHeight,'-pix_fmt','rgba','-i','pipe:0','-vf','scale=256:192:flags=lanczos','-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{input:uploadedRgba,maxBuffer:32*1024*1024});
   // Compare all emitted metadata, preserving omitted fields as unknown. This
   // installed FFmpeg does not emit transfer/primaries even for the original argv.
   const referenceMetadata=probe(referencePath);check(JSON.stringify(metadata)===JSON.stringify(referenceMetadata),start+' MP4 metadata equals independent original-profile encode exactly');
   const referenceRgb=execFileSync('ffmpeg',['-v','error','-i',referencePath,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{maxBuffer:32*1024*1024});
-  const rgb=execFileSync('ffmpeg',['-v','error','-i',path,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{maxBuffer:32*1024*1024}),stride=256*192*3,frames=[];check(rgb.length===stride*expected.length,start+' MP4 fully decodes');check(rgb.equals(referenceRgb),start+' MP4 decoded frames equal independent original-profile encode exactly');
+  const rgb=execFileSync('ffmpeg',['-v','error','-i',path,'-f','rawvideo','-pix_fmt','rgb24','pipe:1'],{maxBuffer:32*1024*1024}),stride=256*192*3,frames=[];check(rgb.length===stride*expected.length&&scaledRgb.length===rgb.length,start+' MP4 and unencoded resize have complete output grids');check(rgb.equals(referenceRgb),start+' MP4 decoded frames equal independent original-profile encode exactly');
   for(let i=0;i<expected.length;i++){
    const call=calls[i+1],png=decodePng(uploads[i].png),cp=call.output.frame.checkpoint;
    check(cp.simulationUpdates===expected[i].simulationUpdates&&cp.sceneTime===expected[i].sceneTime,start+' frame '+i+' matches Float32 recording clock');
-   check(call.output.backend==='native'&&sha(png.rgba)===call.output.pixelSha&&png.width===256&&png.height===192,start+' frame '+i+' uploads exact native RGBA');
-   let total=0,max=0;for(let j=0;j<stride;j++){const delta=Math.abs(rgb[i*stride+j]-png.rgba[Math.floor(j/3)*4+j%3]);total+=delta;max=Math.max(max,delta);}const mean=total/stride;
+   check(call.output.backend==='native'&&sha(png.rgba)===call.output.pixelSha&&png.width===inputWidth&&png.height===inputHeight,start+' frame '+i+' uploads exact native 3x RGBA');
+   let total=0,max=0;for(let j=0;j<stride;j++){const delta=Math.abs(rgb[i*stride+j]-scaledRgb[i*stride+j]);total+=delta;max=Math.max(max,delta);}const mean=total/stride;
    check(mean<6,start+' frame '+i+' decoded H.264 mean RGB error '+mean+' below 6/255');frames.push({index:i,checkpoint:cp,rgbaSha:sha(png.rgba),meanAbsoluteRgbError:mean,maxAbsoluteRgbError:max});
   }
   check(new Set(frames.map(f=>f.rgbaSha)).size===frames.length,start+' video frames visibly evolve');
-  check(!(await diagnostics()).owned,start+' video retires native resource');report.videos.push({start,path,quality,referencePath,referenceMetadata,decodedOriginalProfileExact:true,metadata,warmup:calls[0].output.frame.checkpoint,frames});await recoverPreview(presented,start+' MP4');
+  check(!(await diagnostics()).owned,start+' video retires native resource');report.videos.push({start,path,quality,inputWidth,inputHeight,referencePath,referenceMetadata,decodedOriginalProfileExact:true,metadata,warmup:calls[0].output.frame.checkpoint,frames});await recoverPreview(presented,start+' MP4');
  }
  phase='cleanup-failure';const failurePreview=await snapshot();await openExport('Still image');await dimensions(256,192);
  await page.evaluate(()=>window.__nativeExportAudit.failRelease=true);const savedDespiteFailure=await download('cleanup-failure.png');await settledExport();
