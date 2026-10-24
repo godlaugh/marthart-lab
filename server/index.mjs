@@ -209,7 +209,7 @@ export async function createExportServer(options={}){
    const token=url.pathname.slice('/api/source-renderer/lease/'.length);if(!/^[a-f0-9]{32}$/.test(token))throw new HttpError(400,'原生页面身份无效');
    if(nativeLease?.closed){const old=nativeLease;await old.cleanup;if(nativeLease===old){const retried=await native.reset();if(retried.ok&&nativeLease===old)nativeLease=undefined;}}
    // Never acquire or retire a legacy caller's already-owned state.
-   if(nativeLease||nativeBusy||native.retainedResource)return json(res,429,{kind:'capacity',retryable:!!nativeLease?.closed,error:'原生页面连接正在使用或清理'});
+   if(nativeLease||nativeBusy||!native.canAcquireLease)return json(res,429,{kind:'capacity',retryable:!!nativeLease?.closed,error:'原生页面连接正在使用或清理'});
    if(req.aborted||res.destroyed||closing)throw new HttpError(499,'原生页面连接已取消');
    const lease={token,res,closed:false};nativeLease=lease;
    const heartbeat=setInterval(()=>{if(!res.destroyed&&!res.write('.\n'))res.destroy();},15000);heartbeat.unref();
@@ -238,7 +238,7 @@ export async function createExportServer(options={}){
      const done=()=>{clearTimeout(timer);res.off('finish',done);res.off('close',done);res.off('error',failed);resolve();};
      const failed=error=>{clearTimeout(timer);res.off('finish',done);res.off('close',done);res.off('error',failed);reject(error);};
      const timer=setTimeout(()=>{controller.abort();res.destroy();done();},limits.writeTimeoutMs);timer.unref();res.once('finish',done);res.once('close',done);res.once('error',failed);
-     res.writeHead(200,{'content-type':'application/octet-stream','content-length':image.pixels.length,'cache-control':'no-store','x-content-type-options':'nosniff','x-source-generation':parsed.value.generation,'x-source-sequence':parsed.value.sequence,'x-source-width':image.width,'x-source-height':image.height,'x-source-format':image.format,'x-source-row-order':image.rowOrder,'x-source-renderer':image.rendererIdentity});res.end(image.pixels);
+     res.writeHead(200,{'content-type':'application/octet-stream','content-length':image.pixels.length,'cache-control':'no-store','x-content-type-options':'nosniff','x-source-generation':parsed.value.generation,'x-source-sequence':parsed.value.sequence,'x-source-width':image.width,'x-source-height':image.height,'x-source-format':image.format,'x-source-row-order':image.rowOrder,'x-source-renderer':image.rendererIdentity,'x-source-context':image.contextSerial,'x-source-session':image.sessionSerial});res.end(image.pixels);
     });
    });}finally{nativeBusy=false;nativeControllers.delete(controller);req.off('aborted',disconnected);res.off('close',disconnected);}
   }

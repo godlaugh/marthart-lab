@@ -12,23 +12,38 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
+ if(version===5){
+  const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex'),control=operation!==2;
+  if(b.readUInt32LE(60)!==1||operation<1||operation>3||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0)||control&&(width!==1||height!==1)||operation===2&&b.length<108)return failure('input','Samila 原生帧头部无效');
+  const expectedIndex=operation===2?b.readUInt32LE(88):undefined,baseBatch=operation===2?b.readUInt32LE(96):0,passes=operation===2?b.readUInt32LE(100):0;
+  if(operation===2&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||baseBatch<1||baseBatch>8000000||![1,6].includes(passes)))return failure('input','Samila 原生显示检查点无效');
+  if(b.length*6+width*height*8+64>BUDGET)return failure('capacity','Samila 原生帧容量无效');
+  return {ok:true,value:{generation,sequence,width,height,samples,control,operation,resource,family:'samila',expectedIndex,steps:baseBatch*passes}};
+ }
  const operation=version===4?b.readUInt32LE(60):undefined;if(operation!==undefined&&(operation<1||operation>4))return failure('input','原生状态操作无效');
  const control=operation!==undefined&&operation!==3;if(control&&(width!==1||height!==1))return failure('input','原生状态确认尺寸无效');
  const resource=operation===undefined?undefined:b.subarray(68,84).toString('hex');if(operation!==undefined&&(b.readUInt32LE(64)!==16||resource==='0'.repeat(32)))return failure('input','原生状态资源身份无效');
- return {ok:true,value:{generation,sequence,width,height,samples,control,operation,resource}};
+ return {ok:true,value:{generation,sequence,width,height,samples,control,operation,resource,family:operation===undefined?undefined:'bouncing'}};
 }
 function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
  const length=bytes.readUInt32LE(8),generation=bytes.readUInt32LE(12),sequence=bytes.readUInt32LE(16),width=bytes.readUInt32LE(20),height=bytes.readUInt32LE(24),status=bytes.readUInt32LE(28),format=bytes.readUInt32LE(32),payloadBytes=bytes.readUInt32LE(36),contextSerial=bytes.readUInt32LE(40);
  if(generation!==expected.generation||sequence!==expected.sequence||width!==expected.width||height!==expected.height)return failure('protocol','原生响应不属于当前帧');
- if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.control?2:1)||!contextSerial||payloadBytes!==(expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
+ if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
  return {ok:true,value:{generation,sequence,width,height,status,format,payloadBytes,contextSerial}};
+}
+function samilaResponse(payload,expected){
+ const word=n=>payload.readUInt32LE(n),index=word(24),disposition=word(28),steps=word(32),accepted=word(36),clipped=word(40),invalid=word(44),occupied=word(48),maxCount=payload.readFloatLE(52),invalidInk=word(56);
+ if(word(0)!==1||word(4)!==expected.operation||payload.subarray(8,24).toString('hex')!==expected.resource||word(60)!==0||!Number.isFinite(maxCount)||maxCount<0)return failure('protocol','Samila 原生响应身份或统计无效');
+ if(expected.operation===2){if(disposition!==0||index!==expected.expectedIndex+1||steps!==expected.steps||accepted+clipped+invalid!==steps||occupied>expected.width*expected.height||invalidInk!==0)return failure('protocol','Samila 原生响应检查点或覆盖无效');}
+ else if(!payload.subarray(32,64).every(n=>n===0)||expected.operation===1&&(index!==0||disposition!==0)||expected.operation===3&&(disposition!==1&&disposition!==2||disposition===2&&index!==0))return failure('protocol','Samila 原生控制响应无效');
+ return {ok:true,value:{index,disposition}};
 }
 /** Owns the actual ChildProcess handle until close, never locates/kills a PID.
  * This helper executes no shell and spawns no subprocesses. A failed cleanup
@@ -43,7 +58,7 @@ export async function createSourceRendererService({executablePath,executableSha2
  const bytes=await readFile(executable),identity=await stat(executable);
  if(!sameFile(before,identity)||sha(bytes)!==executableSha256)throw Error('原生渲染程序身份不符');
  const rendererIdentity=sha(JSON.stringify({executable,executableSha256,host:[process.platform,process.arch,os.release(),os.version()]}));
- let owner,job,closing=false,closePromise,resetPromise,retainedResource,sessionStarts=0;
+ let owner,job,closing=false,closePromise,resetPromise,sessionStarts=0;const retainedResources=new Map();
  const finish=(j,result)=>{
   if(j.finished)return;j.finished=true;clearTimeout(j.timer);j.signal?.removeEventListener('abort',j.cancel);
   if(job===j)job=undefined;j.resolve(result);
@@ -78,15 +93,16 @@ export async function createSourceRendererService({executablePath,executableSha2
      if(offset!==chunk.length){retire(o,failure('protocol','原生响应附带额外字节'));return;}
      const meta=o.response,pixels=o.payload;o.headerUsed=0;o.payload=undefined;o.response=undefined;
      let result;if(meta.status){let message;try{message=new TextDecoder('utf-8',{fatal:true}).decode(pixels);}catch{retire(o,failure('protocol','原生错误消息不是 UTF-8'));return;}result=failure({1:'input',2:'unsupported',3:'capacity',4:'runtime',5:'state-lost',6:'ownership'}[meta.status],message);}
+     else if(j.expected.family==='samila'){const parsed=samilaResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'samila-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:meta.format===2?'u32le':'rgba8',rowOrder:meta.format===2?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};
-     if(meta.status===4||result.ok&&j.expected.operation===4)retainedResource=undefined;
-     if(result.ok&&j.expected.operation===1)retainedResource=j.expected.resource;
+     if(meta.status===4)retainedResources.clear();
+     if(result.ok&&j.expected.family){const key=j.expected.family+':'+j.expected.resource;if(j.expected.operation===(j.expected.family==='samila'?3:4))retainedResources.delete(key);else if(j.expected.operation===1)retainedResources.set(key,j.expected.resource);}
      finish(j,result);return;
     }
    }
   });
   child.once('close',()=>{
-   o.closed=true;clearTimeout(o.force);clearTimeout(o.cleanup);if(owner===o){owner=undefined;retainedResource=undefined;}
+   o.closed=true;clearTimeout(o.force);clearTimeout(o.cleanup);if(owner===o){owner=undefined;retainedResources.clear();}
    if(job?.owner===o)finish(job,o.reason??failure('runtime','原生进程在交付完整帧前退出'));done();
   });
   return o;
@@ -127,7 +143,7 @@ export async function createSourceRendererService({executablePath,executableSha2
   const o=owner;if(job&&!job.owner)finish(job,reason);if(o){retire(o,reason);if(o.cleanupExpired)kill(o,'SIGKILL');}
   if(!o)return{ok:true};let timer;const result=await Promise.race([o.done.then(()=>({ok:true})),new Promise(resolve=>{timer=setTimeout(()=>resolve(failure('cleanup','原生进程未确认退出，仍由服务持有')),cleanupMs);})]);clearTimeout(timer);return result;
  }
- return{render,health,rendererIdentity,get retainedResource(){return retainedResource;},get processCount(){return owner?1:0;},get processObservation(){return owner?{pid:owner.child.pid,sessionSerial:owner.serial,retiring:!!owner.reason}:null;},get activeCount(){return job?1:0;},get sessionStarts(){return sessionStarts;},
+ return{render,health,rendererIdentity,get retainedResource(){return retainedResources.values().next().value;},get retainedResourceCount(){return retainedResources.size;},get canAcquireLease(){return !closing&&!job&&!owner?.reason&&!resetPromise&&!retainedResources.size;},get processCount(){return owner?1:0;},get processObservation(){return owner?{pid:owner.child.pid,sessionSerial:owner.serial,retiring:!!owner.reason}:null;},get activeCount(){return job?1:0;},get sessionStarts(){return sessionStarts;},
   reset(){
    if(closing)return Promise.resolve(failure('closed','原生渲染服务已关闭'));
    if(!resetPromise)resetPromise=retireAndWait(failure('state-lost','原生页面连接已关闭')).finally(()=>{resetPromise=undefined;});return resetPromise;

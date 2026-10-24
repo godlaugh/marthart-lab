@@ -1,4 +1,5 @@
 import {SOURCE_MAP_PRESENT_GLSL} from './sourceMapPresentation';
+import {DENSITY_FULLSCREEN_VERTEX_GLSL,DENSITY_PRESENT_VERTEX_GLSL} from './densityGpuShaders';
 import {sourceIteratedBrightnessUniform} from './sourceIteratedPresentation';
 import {SOURCE_SYMMETRY_PRESENT_GLSL} from './sourceSymmetryPresentation';
 import {isCapturedDensityView,validateDensityView,type PreparedDensityView} from './densityPresentation';
@@ -10,7 +11,7 @@ import {samilaSourceIndex} from './samilaCamera';
 
 export const DENSITY_TONE_TILE=512;
 const REDUCE=4,HEADER='#version 300 es\nprecision highp float;precision highp int;precision highp sampler2D;precision highp usampler2D;\n';
-const QUAD=HEADER+'void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}';
+const QUAD=HEADER+DENSITY_FULLSCREEN_VERTEX_GLSL;
 const finite=(v:number)=>Number.isFinite(v)&&Number.isFinite(Math.fround(v));
 const require=(condition:boolean,message:string)=>{if(!condition)throw new Error(message);};
 const cancel=(fn?:()=>boolean)=>{if(fn?.())throw new DOMException('GPU 密度调色已取消','AbortError');};
@@ -189,7 +190,7 @@ export class DensityGpuTone {
   const gl=this.gl,job=plan.job,symmetry=plan.sourceFamily==='symmetry',map=plan.sourceFamily==='map',iterated=symmetry||map;if(job.model==='white-point-v1'||(iterated?job.model!=='normalized-v2':job.model!=='samila-normalized-v2'))throw Error('源密度呈现调色类型无效');
   if(iterated){if(symmetry)require(Boolean(gl.getExtension('OES_texture_float_linear')),'源 Symmetry 呈现需要浮点线性采样');if(view&&(!isCapturedDensityView(view)||view.family!==(map?'map':'symmetry')))throw Error('源迭代密度呈现相机类型不匹配');}else if(view&&isCapturedDensityView(view))throw Error('源密度呈现相机类型不匹配');
   const transform=iterated?{delta:view&&isCapturedDensityView(view)?view.rotation:0,aspect:Math.fround(width/height)}:sourceSamilaDisplayTransform(view&&!isCapturedDensityView(view)?view:undefined,width,height),{output,statistics}=this.ensureSourceTarget(width,height),[,,reductionA,reductionB]=this.textures,reduce=this.programs[1];
-  const vertex=HEADER+'out vec2 texCoord;void main(){float x=float((gl_VertexID&1)<<1)-1.;float y=float(gl_VertexID&2)-1.;gl_Position=vec4(x,y,0.,1.);texCoord=vec2((x+1.)*.5,(y+1.)*.5);}';
+  const vertex=HEADER+DENSITY_PRESENT_VERTEX_GLSL;
   const tone=map?(this.mapToneProgram??(this.mapToneProgram=this.program(vertex,HEADER+SOURCE_MAP_PRESENT_GLSL))):symmetry?(this.symmetryToneProgram??(this.symmetryToneProgram=this.program(vertex,HEADER+SOURCE_SYMMETRY_PRESENT_GLSL))):(this.sourceToneProgram??(this.sourceToneProgram=this.program(vertex,HEADER+SOURCE_SAMILA_PRESENT_GLSL)));
   const pixels=new Uint8ClampedArray(width*height*4),scratch=new Uint8Array(DENSITY_TONE_TILE**2*4),facts=new Uint32Array(4);let occupiedPixels=0,maxBits=0;
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.DITHER);gl.pixelStorei(gl.PACK_ALIGNMENT,1);gl.pixelStorei(gl.PACK_ROW_LENGTH,0);gl.pixelStorei(gl.PACK_SKIP_PIXELS,0);gl.pixelStorei(gl.PACK_SKIP_ROWS,0);

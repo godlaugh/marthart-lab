@@ -41,6 +41,7 @@ interface GeneratorPort {
   setFractalPaused?(output:SceneOutput,paused:boolean):Promise<void>;
   cancel():void;
   dispose():void;
+  settledNativeCleanup?():Promise<void>;
   captureImplicitPaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5,signal?:AbortSignal):Promise<SourceGeometryPausedCaptureResult>;
   captureSurfacePaused?(output:SceneOutput,size:PausedCaptureSize,scale?:1|3|5,signal?:AbortSignal):Promise<SourceGeometryPausedCaptureResult>;
   captureRootsPaused?(output:SceneOutput,size:RootsPausedCaptureSize,scale?:1|3|5):Promise<RootsPausedCaptureResult>;
@@ -97,9 +98,11 @@ const retiredQueues=new Set<GenerationQueue>();
  * Never merge deltas, which would alter Float32 and ink-clear ordering. */
 export const MAX_PENDING_SOURCE_NAVIGATION=8;
 export async function retryRetiredGenerationQueueCleanup():Promise<void>{
-  const results=await Promise.allSettled([...retiredQueues].map(queue=>queue.retrySourceRecordingCleanup()));
-  const errors=results.flatMap(result=>result.status==='rejected'?[result.reason]:[]);
-  if(errors.length)throw new AggregateError(errors,'已卸载预览的源场景录制清理仍未完成');
+  // Native owners share one transport slot; cleanup must not compete with
+  // another retired owner. A failure still leaves later owners retryable.
+  const errors:unknown[]=[];
+  for(const queue of [...retiredQueues])try{await queue.retrySourceRecordingCleanup();}catch(error){errors.push(error);}
+  if(errors.length)throw new AggregateError(errors,'已卸载预览的源场景资源清理仍未完成');
 }
 /** Coalesce time changes while retaining the latest requested frame. Domain
  * native Roots and continuous Map/Symmetry edits retain their renderer instance; an
@@ -110,6 +113,9 @@ export class GenerationQueue {
   private completedLive?:{request:Request;output:SceneOutput};
   private timer:ReturnType<typeof setTimeout>|undefined;
   private disposed=false;
+  private generatorDisposed=false;
+  private disposalComplete=false;
+  private disposalCleanup?:Promise<void>;
   private captureOwner?:{retire:boolean};
   private recordingOwner?:RecordingOwner;
   private playbackOwner?:PlaybackOwner;
@@ -346,6 +352,7 @@ export class GenerationQueue {
     const cached=this.completedLive;this.completedLive=undefined;
     const ticket={retire:false};this.captureOwner=ticket;this.callbacks.busy(true);
     const current=()=>!this.disposed&&this.captureOwner===ticket;
+    let failed=false,failure:unknown;
     try{
       const result=method==='captureSurfacePaused'||method==='captureImplicitPaused'?await this.generator[method]!(output,size,scale,signal):await this.generator[method]!(output,size,scale);
       if(current()&&liveKey(request))this.completedLive={request,output:result.preview};
@@ -355,13 +362,16 @@ export class GenerationQueue {
       this.callbacks.output(result.preview,this.outputTime(result.preview,request),request.scene);
       return result.capture;
     }catch(error){
+      failed=true;failure=error;
       if(current()&&error instanceof contract.Error&&error.previewRetained)this.completedLive=cached;
       if(current()&&this.latest===request&&error instanceof Error&&error.name!=='AbortError'&&!(error instanceof contract.Error&&error.previewRetained))this.callbacks.error(error);
       throw error;
     }finally{
       if(this.captureOwner===ticket){
         this.captureOwner=undefined;
-        if(this.disposed)this.generator.dispose();
+        if(this.disposed){
+          try{await this.disposeGenerator();}catch(cleanupError){if(failed)throw new AggregateError([failure,cleanupError],'源场景截图失败且资源清理未完成');throw cleanupError;}
+        }
         else {
           if(ticket.retire){this.completedLive=undefined;this.generator.cancel();}
           if(this.latest&&this.latest!==request)this.start();else this.callbacks.busy(false);
@@ -417,11 +427,12 @@ export class GenerationQueue {
     }
     if(failed)throw failure;
   }
-  /** A failed finish keeps its handle and worker owned. Retrying is explicit
-   * and also happens on the next request/cancel/dispose, never via terminate. */
+  /** A failed finish keeps its handle and worker owned. Retired queues also
+   * retain native release failures after that recording lease has ended. */
   retrySourceRecordingCleanup():Promise<void>{
     const owner=this.recordingOwner;
-    if(!owner)return Promise.resolve();
+    if(this.captureOwner)return Promise.reject(new Error('源场景截图仍在处理帧'));
+    if(!owner)return this.disposed?this.disposeGenerator():Promise.resolve();
     if(owner.active)return Promise.reject(new Error('源场景录制仍在处理帧'));
     return this.finishRecordingOwner(owner);
   }
@@ -440,7 +451,8 @@ export class GenerationQueue {
         // stays reachable here, even during unmount, until cleanup succeeds.
         if(owner.handle&&this.generator.hasSourceRecording!(owner.handle)){if(this.disposed)retiredQueues.add(this);throw error;}
         if(!this.disposed&&this.latest===owner.request)this.callbacks.error(error instanceof Error?error:new Error(String(error)));
-        this.releaseRecordingOwner(owner);throw error;
+        try{await this.releaseRecordingOwner(owner);}catch(cleanupError){throw new AggregateError([error,cleanupError],'源场景录制停止失败且资源清理未完成');}
+        throw error;
       }
       let expected=this.latest,deferred=this.latest!==owner.request;
       try{
@@ -488,15 +500,28 @@ export class GenerationQueue {
           this.callbacks.recordingStopped?.(stop,owner.request.scene);
           if(this.latest?.scene===stop.scene)this.callbacks.output(stop.preview,stop.context.time,stop.scene);
         }
-      }finally{this.releaseRecordingOwner(owner,deferred||this.latest!==expected);}
+      }finally{await this.releaseRecordingOwner(owner,deferred||this.latest!==expected);}
     };
     owner.cleanup=cleanup().finally(()=>{owner.cleanup=undefined;});return owner.cleanup;
   }
   private releaseRecordingOwner(owner:RecordingOwner,deferred=this.latest!==owner.request){
     if(this.recordingOwner!==owner)return;
     this.recordingOwner=undefined;
-    if(this.disposed){this.generator.dispose();retiredQueues.delete(this);return;}
+    if(this.disposed)return this.disposeGenerator();
     if(deferred&&this.latest)this.start();else this.callbacks.busy(false);
+  }
+  /** Disposal is a release request, not proof that the native owner is gone.
+   * Keep this queue reachable until its existing cleanup boundary confirms it. */
+  private disposeGenerator():Promise<void>{
+    if(this.disposalComplete)return Promise.resolve();
+    if(this.disposalCleanup)return this.disposalCleanup;
+    retiredQueues.add(this);
+    const cleanup=async()=>{
+      if(!this.generatorDisposed){this.generator.dispose();this.generatorDisposed=true;}
+      if(this.generator.settledNativeCleanup)await this.generator.settledNativeCleanup();
+      this.disposalComplete=true;retiredQueues.delete(this);
+    };
+    this.disposalCleanup=cleanup().finally(()=>{this.disposalCleanup=undefined;});return this.disposalCleanup;
   }
   /** Stop pending and active work without disposing the reusable scheduler.
    * Invalidate request ownership before cancellation rejects its promise. */
@@ -511,6 +536,6 @@ export class GenerationQueue {
   dispose(){this.rejectPlayback();this.completedLive=undefined;this.navigationOwner=undefined;this.disposed=true;clearTimeout(this.timer);this.timer=undefined;this.latest=null;this.running=null;
     if(this.captureOwner){this.captureOwner.retire=true;return;}
     if(this.recordingOwner){this.recordingOwner.stop=true;this.recordingOwner.controller.abort();this.retryRecordingInBackground();return;}
-    this.generator.dispose();
+    void this.disposeGenerator().catch(()=>{/* The retired owner remains available for an explicit retry. */});
   }
 }

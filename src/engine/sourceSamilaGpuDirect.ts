@@ -15,9 +15,10 @@ export const SOURCE_SAMILA_DIRECT_VERTICES=65532; // divisible by six: a chunk n
 /** The common source AST/math owners supply formulas and uniforms. This owner
  * preserves the source vertex→fragment stages; only output channel order is
  * adapted from native (mass,rgbMass) to the local (rgbMass,mass) ink ABI. */
-export function compileSourceSamilaDirect(field:Extract<IteratedField,{kind:'samila'}>){
+export function compileSourceSamilaDirect(field:Extract<IteratedField,{kind:'samila'}>,profile:'webgl2'|'native'='webgl2'){
  const {selection,expressions,uniforms:mathUniforms}=prepareSourceSamilaGpuMath(field),uniforms:Record<string,number>={...mathUniforms,...SOURCE_SAMILA_NOISE_UNIFORMS};
- const vertex=HEADER+Object.keys(mathUniforms).map(n=>`uniform float ${n};`).join('\n')+sourceSamilaMathGlsl+SOURCE_SAMILA_PCG_GLSL+SOURCE_SAMILA_NOISE_GLSL+`
+ const header=profile==='native'?'':HEADER;
+ const vertex=header+Object.keys(mathUniforms).map(n=>`uniform float ${n};`).join('\n')+sourceSamilaMathGlsl+SOURCE_SAMILA_PCG_GLSL+SOURCE_SAMILA_NOISE_GLSL+`
 uniform float u_rangeStart,u_rangeStop;uniform int u_frameSeed,u_particleCount;
 uniform vec2 scale,offset,u_viewportSize;uniform float u_aspectRatio,radius;uniform bool u_quadSplat;
 out vec2 vTexCoord,vNdcCoord,vQuadLocal;out float vValidFlag,vLocalRadius,vPointDiameter,vPaletteU;
@@ -53,7 +54,7 @@ void main(){
  else{vec2 pixel=(ndc+1.)*.5*u_viewportSize-.5;float extent=vPointDiameter*.5;
  vec2 lo=max(vec2(0.),ceil(pixel-extent)),hi=min(u_viewportSize-1.,floor(pixel+extent));if(any(greaterThan(lo,hi)))sourceStats.w=1u;else sourceStats.z=1u;}}
 }`;
- const fragment=HEADER+`
+ const fragment=header+`
 uniform float colorPhase,alpha;uniform sampler2D paletteLUT;uniform bool useLUT,u_quadSplat;
 in vec2 vTexCoord,vNdcCoord,vQuadLocal;in float vValidFlag,vLocalRadius,vPointDiameter,vPaletteU;out vec4 result;
 const float PI=3.14159265358979323846;

@@ -1,0 +1,697 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-24",
+  "status": "verified-increment-goal-active",
+  "milestone": "M3",
+  "baseCommit": "5fed0f36547c045787a92ad25d0034f925e47f24",
+  "scope": "Opt-in native retained Samila live preview and paused capture; cold replay export, hot recording and release packaging remain.",
+  "policy": "VITE_SOURCE_RENDERER=native plus an explicitly configured local native service; default entry and installed 1.0 unchanged.",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "referenceOrigin": "Retained actual original run5; no original app execution in this integration validation.",
+  "originalObservationLimit": "45 original draws had pending GL1282 before uniform observation; subsequent checks zero. Origin and complete observer nonperturbation unknown.",
+  "nativeExecutableSha256": "30a6222d40bf51da1d460b784f58b0f6daf0a4e1d428d84a6021a3506e50908c",
+  "productFiles": {
+    "server/index.mjs": "3c3c012a484f499d0c1f8b0094c016b8dd98152cc6d5c51cb77f5c4233a1ad75",
+    "server/render/SourceCglRenderer.m": "579a7d030309ea69096b7d671ade1ad6e946911698f1d21b7aa6adb7d1ab01d5",
+    "server/source-renderer.mjs": "4defc071ad57680b81cf86441232ef05009412dfeba9c58a3d7326ca15e1a99f",
+    "src/engine/client.ts": "2646ffb3c1c14513bf01db9e2c1feb0923d1fc6207406359d372ed2bc5197b17",
+    "src/engine/densityGpuTone.ts": "3b881902ade599c793cc53ab5abb42692161c2cfd4f79ee905298624946874a9",
+    "src/engine/generationQueue.ts": "cada870c5d4363f5b49edbf652548f496c51af23a6ad65c0ecc15ae864b5b690",
+    "src/engine/iteratedDensityGpu.ts": "56870f20ff94b30e0ca8baab0c4dadaf86756c55fb0c8d8a1630818d8dab6ce1",
+    "src/engine/sourceNativeClient.ts": "10f635c38b71456a72c434b19846b4e7a9a0372f6932b177a2536492c7af0d50",
+    "src/engine/sourceSamilaGpuDirect.ts": "a1a47b45441b1b1271a5e7b6e4709d3ca61339302018c9307711acd032724127",
+    "src/engine/sourceSamilaPresentation.ts": "9d9a7f2e23f6fa6554ddca1523852fc783cb088ffed3a078482492b582836c38",
+    "src/engine/sourceSamilaSession.ts": "e3ae444c20cc3ae1527b5916fa40d61d64f3a395775a9e24ff588d20f77997d6",
+    "src/engine/sourceSceneHostClock.ts": "127d5acd49c693962b153253a6faeeadad98792837b702bb6a008536a954036e",
+    "src/types.ts": "dfb3a4ab36e5bbd03c5ec6184e9d625aab974ac5559bd24d3e5226d9d0ecadbc",
+    "server/render/SourceCglSamilaState.h": "388d662564dc606d6b13eb9653c978d1a877a3f274d879c0d7696665916fd2f3",
+    "src/engine/densityGpuShaders.ts": "f2c37c57493e8e9535093d092ac61fd96ad02860c7d023f441b0f6e2055199d1",
+    "src/engine/sourceSamilaAsyncSession.ts": "b796bad2fc1d0cca3d1ccd350a4c29ee76d90db0623025e7127597588037f325",
+    "src/engine/sourceSamilaNativeBackend.ts": "ccfbc5da12825989c18b8f491be248482dd73221e99db553f1cf22b130a8d46a",
+    "src/engine/sourceSamilaNativeProgram.ts": "845261ac3cadd0b7e37e0fd58c88aa00acf428e4296f326b3ec0e4b4dccabada",
+    "src/engine/sourceSamilaNativeProtocol.ts": "2f596cdb2267241330bd5695e3e4eee37513b7b0747f0ca734355212a7b45a38"
+  },
+  "artifacts": [
+    {
+      "path": ".cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/report.json",
+      "sha256": "b561724b3833ff6a5a04916a528b6484125f041bdc124725d3cee876f25194b3",
+      "bytes": 189762
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/lifecycle-2026-10-24T12-57-04.652Z/report.json",
+      "sha256": "a7577ff958eb518ba81a0b485576444effa013c59a4cf5f15156d8239a62993b",
+      "bytes": 144706
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/display-2026-10-24T12-57-08.092Z/report.json",
+      "sha256": "cac7c3293c1aae2323e9aa8ec46ada8eae6270da498a7c10dc275391084f009b",
+      "bytes": 128270
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/native-lifecycle-test-result.json",
+      "sha256": "3b6efd125dff4e1159d65fad32f3c0e5ba1793f646f019f6e747b91548ff0434",
+      "bytes": 3246
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/final-tests.log",
+      "sha256": "e6d0713c37854bc014ee489f94363c8ea32cd4f3c5d98c9b07b5c8ff65242ced",
+      "bytes": 8858
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/shared-native-regressions.log",
+      "sha256": "a95ef597ceb17911e888b39124fe38a2961dc315c94fde6d6d55dacadda37cec",
+      "bytes": 1525
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/build-v2-final.log",
+      "sha256": "3caed6b7d37399bb30bb2909042fa66dc315d926bdf7e4cb8fda93e69542f8fc",
+      "bytes": 1574
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/verify-production.mjs",
+      "sha256": "41e1101520da7b46a08798cf22c0b38844cb3724f59449aadc41779b6dddfbaf",
+      "bytes": 7385
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/verify-lifecycle.mjs",
+      "sha256": "0cbcb71990a2b11b78820ac2bffa3989ef71939ebae1fba0ab489fac9bc018ec",
+      "bytes": 11412
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/verify-display.mjs",
+      "sha256": "aa2c1d442e705165ba2e31c57fbbef9d087ff19ee28f167f64b808011768ceda",
+      "bytes": 6205
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/production-time.log",
+      "sha256": "f1b239d7caf89d70edd4e940d28ebbb3891999349231dd97e05893aca33dbfc3",
+      "bytes": 777
+    },
+    {
+      "path": ".cache/samila-native-integration-20261024/lifecycle-time.log",
+      "sha256": "a707719473b99acbe97e3c498de1f7cab89fcb57f777b53828b230f026845b53",
+      "bytes": 777
+    }
+  ],
+  "validation": {
+    "testFiles": 69,
+    "testsPassed": 1010,
+    "cpuRelated": {
+      "files": 64,
+      "passed": 965,
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--maxWorkers=2",
+        "tests/density-presentation.test.ts",
+        "tests/density.test.ts",
+        "tests/densityGpuTone.test.ts",
+        "tests/densityToneLocale.test.ts",
+        "tests/domain-render-queue.test.ts",
+        "tests/generation-queue-perlin-live.test.ts",
+        "tests/generation-queue-perlin-recording.test.ts",
+        "tests/generation-queue-roots-controls.test.ts",
+        "tests/generation-queue-roots-live.test.ts",
+        "tests/generation-queue-surface.test.ts",
+        "tests/generationQueue.test.ts",
+        "tests/iterated-density-gpu.test.ts",
+        "tests/iterated-gpu-samila.test.ts",
+        "tests/roots-camera-clock.test.ts",
+        "tests/roots-density-authoring.test.ts",
+        "tests/roots-density-color.test.ts",
+        "tests/roots-density-source.test.ts",
+        "tests/roots-density.test.ts",
+        "tests/roots-native-presentation-queue.test.ts",
+        "tests/roots-scene-clock.test.ts",
+        "tests/samila-cpu-cache.test.ts",
+        "tests/samila-history.test.ts",
+        "tests/samila-source-projection.test.ts",
+        "tests/samila.test.ts",
+        "tests/samilaCamera.test.ts",
+        "tests/samilaInkView.test.ts",
+        "tests/samilaTone.test.ts",
+        "tests/samilaToneImport.test.ts",
+        "tests/samilaViewport.test.ts",
+        "tests/samilaViewportImport.test.ts",
+        "tests/source-bouncing-native-protocol.test.ts",
+        "tests/source-density-camera.test.ts",
+        "tests/source-density-pipeline.test.ts",
+        "tests/source-domain-host-live.test.ts",
+        "tests/source-domain-host-recording.test.ts",
+        "tests/source-domain-host-session.test.ts",
+        "tests/source-fractal-host-session.test.ts",
+        "tests/source-fractal-scene-clock.test.ts",
+        "tests/source-iterated-navigation-queue.test.ts",
+        "tests/source-native-client.test.ts",
+        "tests/source-perlin-queue.test.ts",
+        "tests/source-recording-clock.test.ts",
+        "tests/source-samila-appearance-import.test.ts",
+        "tests/source-samila-async-session.test.ts",
+        "tests/source-samila-config.test.ts",
+        "tests/source-samila-gpu-direct.test.ts",
+        "tests/source-samila-host-clock.test.ts",
+        "tests/source-samila-live-queue.test.ts",
+        "tests/source-samila-math.test.ts",
+        "tests/source-samila-native-backend.test.ts",
+        "tests/source-samila-native-client.test.ts",
+        "tests/source-samila-native-service.test.ts",
+        "tests/source-samila-palette-generator.test.ts",
+        "tests/source-samila-palette-owner.test.ts",
+        "tests/source-samila-presentation.test.ts",
+        "tests/source-samila-sampling.test.ts",
+        "tests/source-samila-session.test.ts",
+        "tests/source-samila-splat.test.ts",
+        "tests/source-samila-timeline-import.test.ts",
+        "tests/source-samila-timeline.test.ts",
+        "tests/source-surface-host.test.ts",
+        "tests/source-surface-observed-clock.test.ts",
+        "tests/source-surface-scene-clock.test.ts",
+        "tests/spirograph-clock-oracle.test.ts"
+      ]
+    },
+    "sharedNative": {
+      "files": 4,
+      "passed": 41,
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--maxWorkers=1",
+        "tests/source-renderer-session.test.ts",
+        "tests/source-renderer-http.test.ts",
+        "tests/source-native-capture.test.ts",
+        "tests/source-native-viewport.test.ts"
+      ]
+    },
+    "samilaActualCgl": {
+      "files": 1,
+      "passed": 4,
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "tests/source-samila-native-lifecycle.test.ts"
+      ]
+    },
+    "buildV2": "passed; existing chunk-size warning",
+    "sourceAndReferencePinsRechecked": true,
+    "fullFrame": {
+      "size": [
+        500,
+        600
+      ],
+      "time": 0,
+      "primaryPixelHeight": 972,
+      "exactFrames": 15,
+      "rawReferenceRowOrder": "bottom-up",
+      "productRowOrder": "top-down",
+      "comparison": "One row reversal only, complete RGBA bytes, no crop/mask/tolerance/alpha correction.",
+      "referenceInputs": {
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/source.json": "85024d0943309d95013bb92f1f7d676f252039a41601aa3d7b26c7f8fb5a9d06",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-0/draws.json": "433a4ddc57d2920365ee13518f88a4086f8e31d69c66b868ea38c743acaff12a",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-1/draws.json": "1df24d1cdee1f4727cde403d27cbc6bacd312afe13309c63ebde722667d9480b",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-2/draws.json": "495e42a1c3c77a3be46d5cd713b399fe5634c6540dfdcfa55d6c3ea3c38cf535",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-0/draw-2.rgba": "2b635a0b5dc431a1e003b673375a992433ff5e08763f85516fd87c125d64d673",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-0/draw-1.f32": "61b5e5e057e93061e89ec55654c670a1f61e4df6f4dbf82c1c3e9c3d2f36877a",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-1/draw-2.rgba": "bf640ff4621a8bb04d04eeb00f1939f279c64b7a1a88a18242e934c8fb9dc091",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-1/draw-1.f32": "1761e7128254088f682b6ab3c3f60a82eb75160e57b3bf2d638eef79b2e7efd9",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-2/draw-2.rgba": "8debbdfcdccce566076b7bf2fb26c8a518313c051bc7a86a8b978d94457667c3",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-2/draw-1.f32": "e4a7fd8c2256e46eee71eaf6b1f14fa8cd8a7df19017085210b163b6e9da84c3",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/source.json": "3dbec56763726a4b99c07afd42397833ad17a1f4cb0476d6127db94e0181a79e",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-0/draws.json": "0d7cb8c341178d5d3115828f85275b141eda192073523e00e6b6b86585d0917d",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-1/draws.json": "7a09debe4b095e858d92520815daa4e6fe52d461033d9edce9276f2bb3932522",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-2/draws.json": "2852a0d15f602fdce8a3ce5518ec5f8e077a39d396c0b806dd964437711106f6",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-0/draw-2.rgba": "ecf9dc2a5954afcd2db31c85d9a64250fe744410907ecb32358ae72850e9a4f8",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-0/draw-1.f32": "38c7b557f5a28a2e2d34f68bb2f6eeeb3ac5fe4df6677a07fc6f2e9c01010153",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-1/draw-2.rgba": "d75b0e2f67dc4ea27212c9e2589b1e085959bfd3382fd7f5a606e3a0300c6e90",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-1/draw-1.f32": "13bf53fce22db0ae4b8f55e4373bc15a347a9a491bbf3a17f7841f5373cb03bb",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-2/draw-2.rgba": "90c2aa2655d24570f3d7c631b8bd3ce1d83a58872ac01d48f73de9aa06426064",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-2/draw-1.f32": "626f43b59b49c535a267dd101ac0e749c028acd8b12bff604b9bb2debf025141",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/source.json": "1b22305cf1bb276f1e9187ab20d0aa14b3c527348be67d4f1ae40b43d6d50397",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-0/draws.json": "e95252caa37891b2c972c175e98fa0baf9ff257573d8cecc5f36a34baf4152b5",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-1/draws.json": "8a93570eb647e0610ddf192c2663dd2a6122ed50918473bc864270f5e14d7eda",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-2/draws.json": "ce8f4308c5868078836f1ecb3cbef0f3fc5ca0c7a14ae09d943d6d7b5b213386",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-0/draw-2.rgba": "e72cba1c7ca7926757aad0ef87eca78ae5a0f990c67cc7d8ae25248623415762",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-0/draw-1.f32": "53400cbc32ab9f47ec17aef2a54f7a00014ff42dd0b90c4c73644f29054ed475",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-1/draw-2.rgba": "16c866b3af1633f35d73c1db8e112ce2da44d4eecae754993844c392ec7173cd",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-1/draw-1.f32": "74d6eabadef75dd8f7aac0a0bfa066299105625c35887f8ebed065fb931b2e82",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-2/draw-2.rgba": "3f2cd4b256a223509e25b6666cc3891ed3695bee066f4685516ca705b175af78",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-2/draw-1.f32": "38bc70e33c9ef1a54db56190073561b9f64c791a53f05cedfe9128e9d0308b26",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/source.json": "458d93c9283fb5d31c337f2f91f243906543b1a805f5ac4e2cdbfa9f9e481dfc",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-0/draws.json": "a4f068a9a20c23855a677bfaeca586abb582cafb157c8a5f828bdb3448309bec",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-1/draws.json": "f2923ebd007dd848c23c16eb7955b71fc360594d6dc85e80c441c1194002c431",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-2/draws.json": "4e886757cd43b87a04e6f028b8e58c1fb59cb45561e79794f2d02a224a7cf3ab",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-0/draw-2.rgba": "c5037b950d36020d89a979855507575f94da94052e8d4e18a63e9721c9a27c67",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-0/draw-1.f32": "0623899bed59c2625ae56d8a02496f135256a7258b23f3e540d467ed45c44a66",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-1/draw-2.rgba": "0455b4e9a768ca7ceb64be4d6f646bca79ab898a33cc2fab4d38f5ba38c321e0",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-1/draw-1.f32": "6d2ec5d1fa27c5fc59047d61de4fade30db729439362884541c33ff76f098854",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-2/draw-2.rgba": "651c855b50704ecd66cbea714940afa1e9b1b71cc53c4866611306acb9b2c986",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-2/draw-1.f32": "2a522226e20f09f7568eb8caf84d0196d10b0ec357f6ed35d318c60e09dbc74e",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/source.json": "cf1f55cb2ad18526ab24e2d0e30d0864dfab8d61dc0003dae0c47d621c680741",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-0/draws.json": "6aa2102072acb6d5ac6a32eaf5ab5c3d728b9e41c411fbc0227876d2f4a257ce",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-1/draws.json": "4fe1257677abd4335bc3c9b020a58402d7119c6e6c286d51534f18f36b6452fa",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-2/draws.json": "12902c42e0b4982ead809b9e9410c6a5f7c3df7f654a3db8813520c72fd688e1",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-0/draw-2.rgba": "a11d12d5af3dd2f228eca7edab6b06b7d0acce04ed7943a9e54ba52de0921d27",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-0/draw-1.f32": "b456fcaca466e6a21f7708e964e9deedbb199a190ae9cfc62aedd6ea7d38e4be",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-1/draw-2.rgba": "a5caedbd4bb98eab08e5cbb0aab20d5dbd0d09aa67a42ce12eb7bd4fa726b2bb",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-1/draw-1.f32": "1c3ec38c90580f4ca0aaa685491e9d3b21d612c02def1e9a98b9a4208243380e",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-2/draw-2.rgba": "34cdba0445ab26cdc2a292c0b0338cafdf80d0d67c0ff232cc2046339b4280e9",
+        "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-2/draw-1.f32": "d6b9f3eecaaf54939b70e1fbbc1b6a1ad26e1eb688168f4082200fcc3db65731"
+      },
+      "cases": [
+        {
+          "name": "Samila",
+          "source": {
+            "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/source.json",
+            "sha256": "85024d0943309d95013bb92f1f7d676f252039a41601aa3d7b26c7f8fb5a9d06"
+          },
+          "seeds": [
+            641462530,
+            366543848,
+            1194106542
+          ],
+          "frames": [
+            {
+              "index": 0,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-0/draw-2.rgba",
+                "sha256": "2b635a0b5dc431a1e003b673375a992433ff5e08763f85516fd87c125d64d673"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/Samila-0.rgba",
+                "sha256": "6d3b7eb5ea40177c520367954d7a6af5104669db8f1ed0a09849c79bc9dd74ed"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 1262144,
+                "generated": 1262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 63317,
+              "maxCount": 77.12484741210938
+            },
+            {
+              "index": 1,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-1/draw-2.rgba",
+                "sha256": "bf640ff4621a8bb04d04eeb00f1939f279c64b7a1a88a18242e934c8fb9dc091"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/Samila-1.rgba",
+                "sha256": "89042bb8566e70a9c2ad939ba78f5a81b0f3eb51084528e58b5c0109535e7ef0"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 1262144,
+                "generated": 1262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 63458,
+              "maxCount": 151.66000366210938
+            },
+            {
+              "index": 2,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/Samila-run5/frame-2/draw-2.rgba",
+                "sha256": "8debbdfcdccce566076b7bf2fb26c8a518313c051bc7a86a8b978d94457667c3"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/Samila-2.rgba",
+                "sha256": "a2f00ec945c5b1cf1addb7d728588db9e518a2bd322c5e73edd9b68b79f65e64"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 1262144,
+                "generated": 1262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 63509,
+              "maxCount": 225.10333251953125
+            }
+          ]
+        },
+        {
+          "name": "samila1",
+          "source": {
+            "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/source.json",
+            "sha256": "3dbec56763726a4b99c07afd42397833ad17a1f4cb0476d6127db94e0181a79e"
+          },
+          "seeds": [
+            3875852708,
+            727812187,
+            1966892682
+          ],
+          "frames": [
+            {
+              "index": 0,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-0/draw-2.rgba",
+                "sha256": "ecf9dc2a5954afcd2db31c85d9a64250fe744410907ecb32358ae72850e9a4f8"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila1-0.rgba",
+                "sha256": "550c9d61c218b0f3f71a523d423379ec1f50b2940d372c55ee9512d39d71b7be"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 6562144,
+                "generated": 6562144,
+                "invalid": 0
+              },
+              "occupiedPixels": 63586,
+              "maxCount": 34.111045837402344
+            },
+            {
+              "index": 1,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-1/draw-2.rgba",
+                "sha256": "d75b0e2f67dc4ea27212c9e2589b1e085959bfd3382fd7f5a606e3a0300c6e90"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila1-1.rgba",
+                "sha256": "d6980b19ec26c47b18f86d74d82fd313ca174088ea66f942cd0ba4374faa8224"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 6562144,
+                "generated": 6562144,
+                "invalid": 0
+              },
+              "occupiedPixels": 63617,
+              "maxCount": 67.50521087646484
+            },
+            {
+              "index": 2,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila1-run5/frame-2/draw-2.rgba",
+                "sha256": "90c2aa2655d24570f3d7c631b8bd3ce1d83a58872ac01d48f73de9aa06426064"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila1-2.rgba",
+                "sha256": "50f3966980752d5a46f2eb1e5c0a9c7d74c45126968dc3fa239070a3b92adc1f"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 6562144,
+                "generated": 6562144,
+                "invalid": 0
+              },
+              "occupiedPixels": 63633,
+              "maxCount": 100.35558319091797
+            }
+          ]
+        },
+        {
+          "name": "samila2",
+          "source": {
+            "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/source.json",
+            "sha256": "1b22305cf1bb276f1e9187ab20d0aa14b3c527348be67d4f1ae40b43d6d50397"
+          },
+          "seeds": [
+            2344913720,
+            3211293863,
+            266227914
+          ],
+          "frames": [
+            {
+              "index": 0,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-0/draw-2.rgba",
+                "sha256": "e72cba1c7ca7926757aad0ef87eca78ae5a0f990c67cc7d8ae25248623415762"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila2-0.rgba",
+                "sha256": "c44bf3abcf19cd51d58b428f314a0bc8034d886f3712bb160c8c624928da150f"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 78402,
+              "maxCount": 35.77486801147461
+            },
+            {
+              "index": 1,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-1/draw-2.rgba",
+                "sha256": "16c866b3af1633f35d73c1db8e112ce2da44d4eecae754993844c392ec7173cd"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila2-1.rgba",
+                "sha256": "f0a3f62313c028d84014ac25c23c1f4c468b5dd7d1352f4aa2d9f9014f5e99ec"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 78444,
+              "maxCount": 70.8152847290039
+            },
+            {
+              "index": 2,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila2-run5/frame-2/draw-2.rgba",
+                "sha256": "3f2cd4b256a223509e25b6666cc3891ed3695bee066f4685516ca705b175af78"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila2-2.rgba",
+                "sha256": "244807ef1c16e64346741b4f739e81b397bb3524d343eecb389093f26380c7d3"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 78451,
+              "maxCount": 105.32469940185547
+            }
+          ]
+        },
+        {
+          "name": "samila3",
+          "source": {
+            "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/source.json",
+            "sha256": "458d93c9283fb5d31c337f2f91f243906543b1a805f5ac4e2cdbfa9f9e481dfc"
+          },
+          "seeds": [
+            2747714295,
+            3042142833,
+            3467580246
+          ],
+          "frames": [
+            {
+              "index": 0,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-0/draw-2.rgba",
+                "sha256": "c5037b950d36020d89a979855507575f94da94052e8d4e18a63e9721c9a27c67"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila3-0.rgba",
+                "sha256": "d403134cc3d693fe498dbdb76b023e6fd1b3c8efc73a5dbcd34377000a685224"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 51224,
+              "maxCount": 23.884784698486328
+            },
+            {
+              "index": 1,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-1/draw-2.rgba",
+                "sha256": "0455b4e9a768ca7ceb64be4d6f646bca79ab898a33cc2fab4d38f5ba38c321e0"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila3-1.rgba",
+                "sha256": "1e25a8ad2b771d1fb73f9093221b43790b42b7143a8433aa7f52615d9d5d0cda"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 51264,
+              "maxCount": 46.89341354370117
+            },
+            {
+              "index": 2,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila3-run5/frame-2/draw-2.rgba",
+                "sha256": "651c855b50704ecd66cbea714940afa1e9b1b71cc53c4866611306acb9b2c986"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila3-2.rgba",
+                "sha256": "424ede95885944377c05111ca93c1cd8838e32be325233dbf8975bd7665ef92c"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3262144,
+                "invalid": 0
+              },
+              "occupiedPixels": 51277,
+              "maxCount": 69.55487823486328
+            }
+          ]
+        },
+        {
+          "name": "samila4",
+          "source": {
+            "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/source.json",
+            "sha256": "cf1f55cb2ad18526ab24e2d0e30d0864dfab8d61dc0003dae0c47d621c680741"
+          },
+          "seeds": [
+            1622860899,
+            1986492014,
+            3335212452
+          ],
+          "frames": [
+            {
+              "index": 0,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-0/draw-2.rgba",
+                "sha256": "a11d12d5af3dd2f228eca7edab6b06b7d0acce04ed7943a9e54ba52de0921d27"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila4-0.rgba",
+                "sha256": "d9f3479d917e34f997c6af537ae757e42a801c74b918ba6045f5fb51911839fe"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3253825,
+                "invalid": 8319
+              },
+              "occupiedPixels": 55766,
+              "maxCount": 5.538104057312012
+            },
+            {
+              "index": 1,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-1/draw-2.rgba",
+                "sha256": "a5caedbd4bb98eab08e5cbb0aab20d5dbd0d09aa67a42ce12eb7bd4fa726b2bb"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila4-1.rgba",
+                "sha256": "4e5fed6b1436e513ad81b01ff57df01d1e44d439194fa07c65debf8b438c9904"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3253798,
+                "invalid": 8346
+              },
+              "occupiedPixels": 55929,
+              "maxCount": 11.105709075927734
+            },
+            {
+              "index": 2,
+              "reference": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-state-20261024/samila4-run5/frame-2/draw-2.rgba",
+                "sha256": "34cdba0445ab26cdc2a292c0b0338cafdf80d0d67c0ff232cc2046339b4280e9"
+              },
+              "output": {
+                "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-integration-20261024/production-2026-10-24T12-56-59.725Z/samila4-2.rgba",
+                "sha256": "1c9d1d9919ebab03c353c8a68354d990620e51d2886c2f9f9ea3424c97a2d1a9"
+              },
+              "differentBytes": 0,
+              "stats": {
+                "samples": 3262144,
+                "generated": 3253807,
+                "invalid": 8337
+              },
+              "occupiedPixels": 56000,
+              "maxCount": 16.40597152709961
+            }
+          ]
+        }
+      ]
+    },
+    "publicLifecycle": {
+      "checks": [
+        "Two retained owners, rejected duplicate checkpoint/third owner, and foreign/repeated release preserve every byte of A against isolated identical-seed execution.",
+        "Actual hot parameter change uses six compensation batches and one new seed without recreating programs.",
+        "Paused capture executes two real displays on the same resource, resizes both ways, consumes exactly two seeds, restores primary completion.",
+        "Capacity rejection and pause/resume do not draw, consume seeds or lose the completed primary capability.",
+        "Public Generator routes native preview, editor metadata projection, playback and scale1/3 current PNG capture without a Worker; rejects stale capability and invalid dimensions.",
+        "Public cancel/dispose awaits release and allows an explicit fresh epoch at display index0.",
+        "After an actual native display succeeds but its fully read ACK is discarded at the test transport boundary, same-session Generator retry sends no request; explicit new live session releases the uncertain resource and starts a fresh epoch."
+      ],
+      "requests": 31,
+      "status": "passed"
+    },
+    "hiddenElectronDisplay": {
+      "runtime": {
+        "kind": "electron",
+        "electron": "44.7.2",
+        "chrome": "152.0.7977.149",
+        "features": "disableProgramCaching",
+        "visibleWindows": 0,
+        "directory": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-electron-host-YOTTQ9"
+      },
+      "result": {
+        "width": 500,
+        "height": 600,
+        "backend": "native",
+        "outputSha256": "cf078fadfef5b17b5c15b6ca6381b2b1ccb9dfad1c9d5cb43c667fbcf313e5bb",
+        "displaySha256": "3ee9d97adb39753a6c8ad97776e9cfc02ad16eddd71fb0c9a3eca9446b7d589d",
+        "rgbDifferences": 0,
+        "maxDifference": 0,
+        "nonOpaquePixels": 0,
+        "sourceNonOpaquePixels": 21391,
+        "requestsBeforeDisplay": 2,
+        "requestsAfterDisplayAndPng": 2,
+        "glError": 0,
+        "pngRgbaExact": true,
+        "pngSha256": "b44217c7a780852ec225589c9ff84974d269022fdb46ae50cb8ded99bfc5256c"
+      },
+      "hostClosed": true,
+      "viteClosed": true
+    },
+    "ownedProcessesAfterClose": 0
+  },
+  "measurements": {
+    "finalProductionSeconds": 4.7700345,
+    "finalLifecycleSeconds": 3.1040457499999996,
+    "finalDisplaySeconds": 8.222779125,
+    "initialProduction": {
+      "seconds": 5.332388459,
+      "timeWallSeconds": 5.47,
+      "timeUserSeconds": 6.81,
+      "timeSystemSeconds": 3.66,
+      "maximumRssBytes": 635240448
+    },
+    "initialLifecycle": {
+      "seconds": 3.225659125,
+      "timeWallSeconds": 3.38,
+      "timeUserSeconds": 4.47,
+      "timeSystemSeconds": 1.9,
+      "maximumRssBytes": 592855040
+    },
+    "rssScope": "time -l maximum-process indicator; not simultaneous process-family peak.",
+    "performanceComparison": false,
+    "coldWarm": "New test processes, uncontrolled OS/module/driver caches.",
+    "unmeasured": [
+      "process-family peak memory",
+      "GPU execution and VRAM",
+      "agent tokens"
+    ]
+  },
+  "remaining": [
+    "Independent cold replay export retaining preview",
+    "Hot recording and complete original seed timeline",
+    "Original runtime hot edits/resize/capture and full animation parity",
+    "App library/same-ID/profile matrices",
+    "Cross-device validation and final Apple Silicon package"
+  ]
+}

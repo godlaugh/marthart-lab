@@ -25,7 +25,9 @@ npm run server
 
 ## 2.0 创作预览
 
-2026-10-24 Samila 原生完整帧原型已通过五个预设、15 帧、45 个绘制阶段的零容差对照；生产代码修复了三个噪声参数被写成 GLSL 常量的问题，并统一两条绘制路径的参数 owner。386 项相关测试、120 个实际 GPU 用例和 2.0 构建通过。应用仍走 WebGL，整图差异尚在，接下来需接入已验证的原生绘制链；整体保持 M3，见[完整帧原型与修复中文报告](docs/source-samila-native-prototype-validation.zh-CN.md)。
+2026-10-24 Samila 的可选原生后端已接通生产预览、参数热改和暂停截图；五个原版预设的 15 张完整场景缓冲 RGBA 逐字节一致。真实多会话、取消与资源清理检查通过，隐藏 Electron 的显示 RGB 和 PNG RGBA 也保持一致。普通默认入口尚未切换，冷重放导出、热录制和 2.0 打包继续；整体保持 M3，见[原生预览接入中文报告](docs/source-samila-native-integration-validation.zh-CN.md)。
+
+同日较早的原生原型已通过 45 个完整绘制阶段的零容差对照，并修复三个噪声参数被写成 GLSL 常量的问题。该批次 386 项相关测试、120 个实际 GPU 用例和构建通过；当时生产 WebGL 的整图差异仍在，见[完整帧原型与修复中文报告](docs/source-samila-native-prototype-validation.zh-CN.md)。
 
 2026-10-24 Samila 已完成五个未改动原版预设、各三次暂停显示的完整 500×600 对照，15 帧均发现差异；后续独立实验确认有效样本分类与小数点径绘制存在两端差异。此次保留完整参考、纠正墨迹统计通道顺序，未修改产品源码，也未计为整图通过。整体仍在 M3，见[原版整图与驱动差异中文报告](docs/source-samila-native-reference-validation.zh-CN.md)。
 

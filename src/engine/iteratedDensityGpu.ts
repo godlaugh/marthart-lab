@@ -1,4 +1,5 @@
 import {sourceMapGpuField,prepareSourceMapExpressions} from './sourceMapMath';
+import {DENSITY_FULLSCREEN_VERTEX_GLSL,SAMILA_HISTORY_COPY_GLSL} from './densityGpuShaders';
 import {sourceSymmetryPaletteLut} from './sourceSymmetryPalette';
 import {sourceDensityPointDiameter,sourceDensitySplatPixelTests} from './sourceDensitySplat';
 import {compileSourceSamilaDirect,type SourceSamilaDrawObserver} from './sourceSamilaGpuDirect';
@@ -31,9 +32,9 @@ const HEADER='#version 300 es\nprecision highp float;precision highp int;precisi
 // representation for all contexts instead of relying on that hidden flag.
 const FLOAT_CLASSIFY=`bool finiteFloat(float v){return (floatBitsToUint(v)&0x7f800000u)!=0x7f800000u;}
 bool finiteVector(vec3 v){return finiteFloat(v.x)&&finiteFloat(v.y)&&finiteFloat(v.z);}`;
-const QUAD=HEADER+`void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}`;
+const QUAD=HEADER+DENSITY_FULLSCREEN_VERTEX_GLSL;
 const EMPTY=HEADER+'out vec4 color;void main(){color=vec4(0.);}';
-const HISTORY_COPY=HEADER+`uniform sampler2D previousInk;uniform float decay,densityCeiling;out vec4 result;void main(){result=texelFetch(previousInk,ivec2(gl_FragCoord.xy),0)*decay;if(result.a>densityCeiling){result.rgb*=densityCeiling/result.a;result.a=densityCeiling;}}`;
+const HISTORY_COPY=HEADER+SAMILA_HISTORY_COPY_GLSL;
 const MAX_BYTES=768*1024*1024,CHUNK=65536,SEED_STAGING_BYTES=CHUNK*24,PALETTE_INTERVALS=4096;
 const finite32=(v:number)=>Number.isFinite(v)&&Number.isFinite(Math.fround(v));
 const checked=(v:boolean,message:string)=>{if(!v)throw new Error(message);};

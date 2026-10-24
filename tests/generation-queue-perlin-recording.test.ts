@@ -132,6 +132,22 @@ describe('Perlin recording queue lease',()=>{
   await retryRetiredGenerationQueueCleanup();expect(f.port.dispose).toHaveBeenCalledOnce();
   await retryRetiredGenerationQueueCleanup();expect(f.port.finishSourceRecording).toHaveBeenCalledTimes(2);
  });
+ it('keeps native cleanup reachable after an unmounted recording releases its own lease',async()=>{
+  const f=await fixture(),gate=deferred<void>(),cleanup=vi.fn().mockRejectedValueOnce(Error('native release failed')).mockResolvedValue(undefined);Object.assign(f.port,{settledNativeCleanup:cleanup});
+  const task=f.queue.recordSource(raster,options,{frame:()=>gate.promise}),caught=task.catch(error=>error);await flush();f.queue.dispose();
+  expect(cleanup).not.toHaveBeenCalled();expect(f.port.dispose).not.toHaveBeenCalled();gate.resolve();expect(await caught).toBeInstanceOf(AggregateError);
+  expect(f.port.hasSourceRecording(f.handle)).toBe(false);expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();expect(f.port.dispose).toHaveBeenCalledOnce();expect(cleanup).toHaveBeenCalledOnce();
+  await retryRetiredGenerationQueueCleanup();expect(cleanup).toHaveBeenCalledTimes(2);expect(f.port.finishSourceRecording).toHaveBeenCalledOnce();expect(f.port.dispose).toHaveBeenCalledOnce();
+  await retryRetiredGenerationQueueCleanup();expect(cleanup).toHaveBeenCalledTimes(2);
+ });
+ it.each([false,true])('waits for a capture lease and preserves both failures when native release fails (capture failed=%s)',async failed=>{
+  const f=await fixture(),gate=deferred<{capture:SourceRecordingRaster;preview:SourceRecordingRaster}>(),cleanup=vi.fn().mockRejectedValueOnce(Error('native release failed')).mockResolvedValue(undefined);Object.assign(f.port,{settledNativeCleanup:cleanup});f.port.capturePerlinPaused.mockImplementationOnce(()=>gate.promise);
+  const capture=f.queue.capturePerlinPaused(raster,{width:2,height:2}),caught=capture.catch(error=>error);f.queue.dispose();
+  await expect(f.queue.retrySourceRecordingCleanup()).rejects.toThrow('截图仍在处理');expect(f.port.dispose).not.toHaveBeenCalled();expect(cleanup).not.toHaveBeenCalled();
+  const failure=Error('capture failed');if(failed)gate.reject(failure);else gate.resolve({capture:raster,preview:raster});const error=await caught;
+  expect(error).toBeInstanceOf(AggregateError);expect(error.errors).toHaveLength(2);if(failed)expect(error.errors[0]).toBe(failure);else expect(error.errors[0]).toMatchObject({name:'AbortError'});expect(error.errors[1]).toMatchObject({message:'native release failed'});expect(f.port.dispose).toHaveBeenCalledOnce();
+  await retryRetiredGenerationQueueCleanup();expect(cleanup).toHaveBeenCalledTimes(2);expect(f.port.dispose).toHaveBeenCalledOnce();
+ });
  it('a later capture retries unfinished cleanup without terminating the worker',async()=>{
   const f=await fixture();f.port.finishSourceRecording.mockRejectedValueOnce(new Error('release failed'));
   await expect(f.queue.recordSource(raster,options,{frame:vi.fn()})).rejects.toThrow('release failed');

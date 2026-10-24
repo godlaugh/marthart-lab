@@ -517,7 +517,7 @@ export interface DensityStats {
   projection: DensityProjection; bounds: DensityBounds; inputPoints: number; examined: number;
   accepted: number; clipped: number; invalid: number; occupiedPixels: number; maxCount: number; cancelled: boolean;
   /** Actual final density presentation backend, independent of orbit/accumulation backend. */
-  toneBackend?: 'cpu' | 'webgl2';
+  toneBackend?: 'cpu' | 'webgl2' | 'native';
 }
 export type SceneOutput = (GeometryOutput | RasterOutput) & {
   /** Absolute update identity and camera paired with the delivered raster. */

@@ -3,7 +3,7 @@ import type {PreparedSamilaView} from './samilaCamera';
 import type {DensityToneJob} from './density';
 
 export const SOURCE_SAMILA_PRESENTATION_MODEL='samila-present-1.7.8' as const;
-export interface SourceSamilaPresentationFacts {model:typeof SOURCE_SAMILA_PRESENTATION_MODEL;stage:'present-target-rgba8';display:'opaque-rgb-copy';backend:'webgl2'|'cpu-derived';}
+export interface SourceSamilaPresentationFacts {model:typeof SOURCE_SAMILA_PRESENTATION_MODEL;stage:'present-target-rgba8';display:'opaque-rgb-copy';backend:'webgl2'|'cpu-derived'|'native';}
 export function usesSourceSamilaPresentation(scene:Pick<SceneDocument,'kind'|'settings'>):boolean{return scene.kind==='samila'&&scene.settings.samilaPresentationModel===SOURCE_SAMILA_PRESENTATION_MODEL;}
 export function sourceSamilaPresentationModel(settings:Settings):typeof SOURCE_SAMILA_PRESENTATION_MODEL|undefined {
  const model=settings.samilaPresentationModel;if(model===undefined)return;
