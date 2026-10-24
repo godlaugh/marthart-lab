@@ -26,6 +26,9 @@ export class SourceRecordingOperationError extends Error {
 export class FractalLiveGenerationError extends Error {
  constructor(message:string,readonly previewRetained:boolean){super(message);this.name='FractalLiveGenerationError';}
 }
+export class RootsLiveGenerationError extends Error {
+ constructor(message:string,readonly previewRetained:boolean){super(message);this.name='RootsLiveGenerationError';}
+}
 
 export interface PausedCaptureSize {width:number;height:number;}
 export interface PausedCaptureResult {capture:Extract<SceneOutput,{type:'raster'}>;preview:Extract<SceneOutput,{type:'raster'}>;}

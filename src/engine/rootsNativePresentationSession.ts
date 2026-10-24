@@ -1,3 +1,6 @@
+import {RootsControlOwner,rootsControlRepresentationBytes,type PreparedRootsControls} from './rootsControl';
+import {prepareRootsComputationPlan} from './rootsComputation';
+import {RootsPendingQueue,prepareRootsPendingPlan} from './rootsPending';
 import {snapshotGenerationInput} from './generationInput';
 import {sourceRecordingSize} from './sourceRecordingSize';
 import type {SourceRecordingOptions} from './generationProtocol';
@@ -74,6 +77,10 @@ interface LiveRecording {
  * a new local instance, rather than pretending to rewind original native ink. */
 export class RootsNativePresentationSession {
  private cleanup=new GenerationCleanupState();
+ private controlOwner?:RootsControlOwner;
+ private controlTemporaryBytes=0;
+ private controlResetPending=false;
+ private controlledOffset?:number;
  private math=new RootsMathSession();
  private density?:RootsNativeDensityDisplay;
  private clouds:Partial<Record<'primary'|'offscreen',CloudTarget>>={};
@@ -110,19 +117,32 @@ export class RootsNativePresentationSession {
   this.pending?.dispose();this.pending=undefined;this.pendingFrame=-1;this.pendingAdmission=undefined;
   this.cameraClock=undefined;this.cameraFrame=-1;this.displayFrames=0;this.displayKey=undefined;
  }
- reset(failures:readonly unknown[]=[]){this.cleanup.reset(()=>{
+ private releaseRuntime(){
   this.resetDisplay();this.math.dispose();this.identity=undefined;this.state=undefined;
   this.lastTime=-1;this.rawInvalid=this.displayInvalid=0;
- },failures);}
+ }
+ private resetRuntime(failures:readonly unknown[]=[]){this.cleanup.reset(()=>this.releaseRuntime(),failures);}
+ reset(failures:readonly unknown[]=[]){this.controlResetPending=true;this.cleanup.reset(()=>{this.releaseRuntime();this.controlOwner=undefined;this.controlledOffset=undefined;this.controlResetPending=false;},failures);}
+ completedHasFormulas():boolean{if(!this.completed)throw new RootsGpuError("复根缺少已完成显示帧","input");return !!this.completed.metadata.formulaPresentation?.labels.length;}
  diagnostics(){const math=this.math.diagnostics(),density=this.density?.diagnostics(),primary=this.clouds.primary?.owner.diagnostics(),offscreen=this.clouds.offscreen?.owner.diagnostics(),cloud=primary??offscreen,ring=this.ring?.facts;return{
   instance:this.instance,attemptedSamples:this.state?.attemptedSamples??0,rawPoints:this.state?.rootPoints??0,math,density,cloud,cloudTargets:{primary,offscreen},ring,displayFrames:this.displayFrames,cameraFrame:this.cameraFrame,completedPrimary:!!this.completed&&this.completed.plan.target==='primary',
   pending:this.pending?.facts,concurrent:this.concurrent?.facts,
-  retainedBytes:math.workspaceBytes+math.keyBytes+(density?.gpu?.retainedBytes??0)+(primary?.retainedBytes??0)+(offscreen?.retainedBytes??0)+(ring?.allocatedBytes??0)+(this.completed?.descriptorBytes??0)+this.recordingDescriptorBytes+(this.concurrent?.facts.reservedBytes??this.pending?.retainedBytes??0),
+  retainedBytes:(this.controlOwner?.retainedBytes??0)+math.workspaceBytes+math.keyBytes+(density?.gpu?.retainedBytes??0)+(primary?.retainedBytes??0)+(offscreen?.retainedBytes??0)+(ring?.allocatedBytes??0)+(this.completed?.descriptorBytes??0)+this.recordingDescriptorBytes+(this.concurrent?.facts.reservedBytes??this.pending?.retainedBytes??0),
  };}
  generate(scene:SceneDocument,c:GenerateContext):RootsRasterOutput {
   if(this.recording)throw Error('复根录制进行中，请先停止录制');
-  this.recordingHandoff=undefined;this.recordingDescriptorBytes=0;this.cleanup.prepare();
-  try{if(c.rootsLive!==undefined)return this.runLive(scene,c);if(this.liveContext)this.reset();return this.run(scene,c);}catch(error){this.reset([error]);throw error;}
+  this.cleanup.prepare();if(this.controlResetPending){this.controlOwner=undefined;this.controlledOffset=undefined;this.controlResetPending=false;}
+  // Admission is outside the mutation/cleanup catch: rejected commands retain
+  // the prior completed preview and its owner.
+  const live=c.rootsLive===undefined?undefined:validateRootsLiveContext(c.rootsLive);
+  if(this.controlOwner&&live?.sessionId===this.controlOwner.sessionId&&!live.controls)throw new RootsGpuError('复根受控会话不能省略 controls','input');
+  const owner=live?.controls?(this.controlOwner?.sessionId===live.sessionId?this.controlOwner:new RootsControlOwner(live.sessionId)):undefined;
+  const transaction=owner&&owner.prepare(live!.controls!,c.isCancelled);
+  if(transaction)this.preflightControls(transaction,c,scene);
+  this.recordingHandoff=undefined;this.recordingDescriptorBytes=0;
+  try{if(transaction){this.controlTemporaryBytes=transaction.peakBytes;this.applyControls(owner!,transaction,c);}
+   if(c.rootsLive!==undefined)return this.runLive(scene,c);if(this.liveContext)this.reset();return this.run(scene,c);
+  }catch(error){this.reset([error]);throw error;}finally{this.controlTemporaryBytes=0;}
  }
  /** Identity observation for transport recovery after a rejected capture. This
   * does not admit a new size or authorize a mutation. Unknown input is false. */
@@ -179,7 +199,8 @@ export class RootsNativePresentationSession {
   }catch(error){this.reset([error]);throw error;}
  }
  private requestKey(scene:SceneDocument,c:GenerateContext):string {
-  return rootsGpuInput(()=>numericIdentity(c.rootsLive?[rootsPresentationRequestIdentity(scene,c.rootsLive.sessionId),scene,c.rootsLive.maximumWorkers,c.rootsPixelDensity]:[rootsPresentationRequestIdentity(scene,c.rootsSessionId),scene]));
+  if(c.rootsLive?.controls){if(!this.controlOwner||this.controlOwner.sessionId!==c.rootsLive.sessionId)throw new RootsGpuError('复根控制 owner 缺失','input');const p=this.controlOwner.prepare(c.rootsLive.controls);if(p.steps.length)throw new RootsGpuError('复根控制命令尚未显示','input');}
+  return rootsGpuInput(()=>numericIdentity(c.rootsLive?[rootsPresentationRequestIdentity(scene,c.rootsLive.sessionId),scene,c.rootsLive.maximumWorkers,c.rootsPixelDensity,c.rootsLive.controls?this.controlOwner!.receipt:undefined]:[rootsPresentationRequestIdentity(scene,c.rootsSessionId),scene]));
  }
  private displayPeak(plan:PreparedRootsProjection):number {
   return plan.mode==='density'
@@ -194,7 +215,7 @@ export class RootsNativePresentationSession {
    if(additionalTarget?.target===other)peak+=this.displayPeak(additionalTarget);
    else if(retained)peak+=rootsNativePointCloudGpuBytes(retained.width,retained.height);
   }
-  if(peak+mathBytes+CHUNK*16+pendingBytes+extraBytes+this.recordingDescriptorBytes>MAX_BYTES)throw new RootsGpuError('源复根工作区、显示与点缓冲超过 768 MiB','capacity');
+  if(peak+mathBytes+CHUNK*16+pendingBytes+extraBytes+this.recordingDescriptorBytes+(this.controlOwner?.retainedBytes??0)+this.controlTemporaryBytes>MAX_BYTES)throw new RootsGpuError('源复根工作区、显示与点缓冲超过 768 MiB','capacity');
  }
  private drainPending(plan:PreparedRootsProjection,isCancelled?:()=>boolean){
   if(!this.pending&&!this.concurrent)return;
@@ -272,19 +293,23 @@ export class RootsNativePresentationSession {
   const descriptorBytes=2*descriptorRepresentationBytes(scene)+4*descriptorRepresentationBytes(input);
   this.admitMemory(last.plan,0,last.descriptorBytes+descriptorBytes);
   const author=structuredClone(scene),live={...validateRootsLiveContext(c.rootsLive),clock:{paused:false}};
+  const controlReset=live.controls?this.controlOwner!.prepareRecordingReset():undefined;
+  if(controlReset)live.controls={acknowledgedRevision:controlReset.receipt.revision,commands:[]};
   const primary:GenerateContext={...input,time:0,rootsLive:live,rootsViewport:{logicalWidth:last.plan.logicalWidth,logicalHeight:last.plan.logicalHeight,referenceLogicalHeight:last.plan.referenceLogicalHeight,target:'primary'}};
   const target:GenerateContext={...primary,isCancelled:c.isCancelled,quality:'export',width:size.width,height:size.height,rootsViewport:{logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,referenceLogicalHeight:last.plan.referenceLogicalHeight,target:'offscreen'}};
-  const plan=prepareRootsProjection(author.rootsPresentation!,{width:target.width,height:target.height,viewport:target.rootsViewport!});
+  const plan=prepareRootsProjection((controlReset?.current??author).rootsPresentation!,{width:target.width,height:target.height,viewport:target.rootsViewport!});
   // Admit the new target against the existing identical computation budget
   // before destroying the completed preview. Rebuilding starts no worker here.
   this.admitMemory(plan,0,last.descriptorBytes+descriptorBytes);
   const record:LiveRecording={handle:{},author,primary,target,simulationFps:options.simulationFps,next:0,complete:false,finished:false,descriptorBytes};
-  this.reset();
+  if(controlReset)this.preflightControls(controlReset,target,author);
+  if(!controlReset)this.reset();
   try{
+   if(controlReset){this.controlTemporaryBytes=controlReset.peakBytes;this.applyControls(this.controlOwner!,controlReset,target);}
    const warmup=this.runLive(author,target,{kind:'recording',simulationFps:record.simulationFps,displayFrame:0,descriptorBytes});
    record.next=1;record.complete=warmup.rootsLive!.autoRecording.complete;this.recording=record;
    return{handle:record.handle,scene:structuredClone(author),context:snapshotGenerationInput(primary),clock:{simulationFps:record.simulationFps,warmupUpdates:1 as const,completionReason:'observed-roots-display' as const},warmup};
-  }catch(error){this.reset([error]);throw error;}
+  }catch(error){this.reset([error]);throw error;}finally{this.controlTemporaryBytes=0;}
  }
  ownsRecording(handle:object):boolean{return this.recording?.handle===handle;}
  nextRecordingFrame(handle:object,displayFrame:number):RootsRasterOutput {
@@ -322,11 +347,53 @@ export class RootsNativePresentationSession {
  private liveFacts(renderKind:'update'|'snapshot',mode:'density'|'point-cloud'):RootsLiveFacts {
   const stream=this.concurrent!.facts,frame=this.cameraClock!.snapshot(),host=this.hostClock!.diagnostics();
   const inputs={queueComplete:frame.queueComplete,hasAnimations:this.liveHasAnimations,mode,finishedWorkers:stream.pending.finishedWorkers,workerCount:stream.pending.workerCount,queueSize:stream.pool.queuedBatches+stream.pool.waitingBatches+stream.pending.queuedBatches,pendingPoints:stream.pending.pendingPoints};
-  return{sessionId:this.liveContext!.sessionId,paused:host.paused,clockSource:host.clockSource,renderKind,sceneTime:frame.sceneTime,frame,stream,autoRecording:{...inputs,policy:'roots-worker-arrival-v1',complete:isRootsAutoRecordingComplete(inputs)}};
+  return{...(this.controlOwner&&this.liveContext!.controls?{controls:this.controlOwner.receipt,presentation:structuredClone({...this.controlOwner.currentScene.rootsPresentation!,camera:{...this.controlOwner.currentScene.rootsPresentation!.camera,...frame.camera}})}:{}),sessionId:this.liveContext!.sessionId,paused:host.paused,clockSource:host.clockSource,renderKind,sceneTime:frame.sceneTime,frame,stream,autoRecording:{...inputs,policy:'roots-worker-arrival-v1',complete:isRootsAutoRecordingComplete(inputs)}};
+ }
+ private controlProjection(scene:SceneDocument,c:GenerateContext,camera?:RootsSceneFrame['camera']){
+  return prepareRootsProjection({...scene.rootsPresentation!,...(camera?{camera:{...scene.rootsPresentation!.camera,...camera}}:{})},{width:c.width,height:c.height,viewport:c.rootsViewport??{logicalWidth:c.width,logicalHeight:c.height,referenceLogicalHeight:c.height,target:'primary'}});
+ }
+ private preflightControls(transaction:PreparedRootsControls,c:GenerateContext,author?:SceneDocument){
+  validateRasterRequest(c);rootsGpuCancel(c.isCancelled);const live=validateRootsLiveContext(c.rootsLive);
+  if(!Number.isFinite(c.time))throw new RootsGpuError('复根预览请求时间无效','input');
+  if(!transaction.steps.some(s=>s.reset)&&this.concurrent&&live.maximumWorkers<this.concurrent.facts.pool.workerCount)throw new RootsGpuError('现有复根线程超过调用方新预算，请重新 Apply','capacity');
+  if(c.rootsPixelDensity!==undefined&&(!Number.isSafeInteger(c.rootsPixelDensity)||c.rootsPixelDensity<1))throw new RootsGpuError('复根显示像素密度无效','input');
+  const authorBytes=author===undefined?0:rootsControlRepresentationBytes(author)*3;
+  if(!transaction.steps.some(s=>s.reset))this.hostClock?.assertPaused(live.clock.paused);
+  for(const step of transaction.steps.length?transaction.steps:[{scene:transaction.current,reset:false}]){
+   const scene=step.scene,plan=this.controlProjection(scene,c),color=prepareRootsDensityColor(scene);if(color.kind!=='metric-sum')throw new RootsGpuError('复根配色无效','input');
+   const reserve=transaction.peakBytes+transaction.retainedBytes+(this.completed?.descriptorBytes??0)+authorBytes;
+   const maximumBytes=MAX_BYTES-this.displayPeak(plan)-CHUNK*16-reserve-(plan.mode==='point-cloud'?ROOTS_POINT_CLOUD_DEFAULT_BYTES:0);
+   const prepared=prepareRootsComputationPlan(scene.rootsMath,color.metric,{maximumWorkers:live.maximumWorkers,maximumBytes});if(!prepared.ok)throw prepared.error;
+   const p=prepared.value;prepareRootsPendingPlan({...scene.rootsPresentation!.pending!,batchSize:p.configuration.sampling.batchSize,workerCount:p.partitions.workerCount,maxPointsPerSample:p.maxPointsPerSample});
+   if(p.reservedBytes+RootsPendingQueue.minimumBytes>maximumBytes)throw new RootsGpuError('复根控制与运行缓冲超过 768 MiB','capacity');
+   this.admitMemory(plan,0,reserve);
+  }
+  rootsGpuCancel(c.isCancelled);
+ }
+ private initializeControlled(scene:SceneDocument,c:GenerateContext){
+  const live=validateRootsLiveContext(c.rootsLive),plan=this.controlProjection(scene,c),color=prepareRootsDensityColor(scene);if(color.kind!=='metric-sum')throw new RootsGpuError('复根配色无效','input');
+  this.resetRuntime();this.controlledOffset=undefined;this.instance++;this.liveContext=live;
+  const timeline=prepareRootsCameraTimeline(scene);this.cameraClock=createRootsCameraClock(scene,timeline);this.hostClock=new SourceSceneHostClock(live.clock.paused,this.cameraClock.snapshot().camera);this.liveHasAnimations=timeline.clips.length>0;
+  this.pendingAdmission=bytes=>this.admitMemory(plan,0,0,undefined,bytes);
+  const maximumBytes=MAX_BYTES-this.displayPeak(plan)-CHUNK*16-(plan.mode==='point-cloud'?ROOTS_POINT_CLOUD_DEFAULT_BYTES:0)-(this.controlOwner?.retainedBytes??0)-this.controlTemporaryBytes;
+  this.concurrent=new RootsConcurrentStream(scene.rootsMath,color.metric,scene.rootsPresentation!.pending!,{maximumWorkers:live.maximumWorkers,maximumBytes},undefined,bytes=>this.pendingAdmission!(bytes));this.state=this.concurrent.progress;this.concurrent.start();
+ }
+ private applyControls(owner:RootsControlOwner,transaction:PreparedRootsControls,c:GenerateContext){
+  for(const step of transaction.steps){
+   if(step.reset)this.initializeControlled(step.scene,c);
+   else if(step.kind==='camera'){const camera=step.scene.rootsPresentation!.camera;this.cameraClock!.writeAngles(camera);this.cameraClock!.writeZoom(camera.zoom);}
+   else if(step.kind==='offset')this.controlledOffset=Number(step.scene.settings.rootSourcePaletteOffset);
+   // Preserve ordered transform effects even if subsequent commands restore
+   // the original value. This touches no pending batches or clock.
+   if((step.kind==='transform'||step.kind==='camera')&&this.density){const color=prepareRootsDensityColor(step.scene);if(color.kind!=='metric-sum')throw new RootsGpuError('复根配色无效','input');this.density.advanceBatches(this.controlProjection(step.scene,c,this.cameraClock!.snapshot().camera),[],color,{isCancelled:c.isCancelled});}
+  }
+  owner.commit(transaction);this.controlOwner=owner;
  }
  private runLive(scene:SceneDocument,c:GenerateContext,operation?:{kind:'recording';simulationFps:number;displayFrame:number;descriptorBytes:number}|{kind:'snapshot'}):RootsRasterOutput {
   const started=performance.now();validateRasterRequest(c);rootsGpuCancel(c.isCancelled);
-  const live=validateRootsLiveContext(c.rootsLive);
+  const author=scene,live=validateRootsLiveContext(c.rootsLive);
+  const controlled=live.controls!==undefined;
+  if(controlled){if(!this.controlOwner||this.controlOwner.sessionId!==live.sessionId)throw new RootsGpuError("复根控制状态缺失，请重新 Apply","input");scene=this.controlOwner.currentScene;}
   if(c.rootsPixelDensity!==undefined&&(!Number.isSafeInteger(c.rootsPixelDensity)||c.rootsPixelDensity<1))throw Error('复根显示像素密度必须为正整数');
   if(!usesRootsNativePresentation(scene)||!usesRootsNativeMath(scene)||scene.settings.rootsMode!=='progressive'||!usesRootsCameraTimeline(scene))throw Error('复根实时预览需要完整源数学、显示和相机队列');
   if(!Number.isFinite(c.time))throw Error('复根预览请求时间无效');
@@ -338,8 +405,8 @@ export class RootsNativePresentationSession {
   let plan=projection();const camera=scene.rootsPresentation!.camera;
   const identity:Identity={document:rootsPresentationRequestIdentity(scene,live.sessionId),math:numericIdentity([scene.rootsMath,color.metric,live.maximumWorkers]),mode:plan.mode,timeline:numericIdentity(scene.timeline),clock:'source-live-clock-v1',camera:numericIdentity([camera.phi,camera.theta,camera.gamma,camera.zoom]),gradient:numericIdentity(color.paletteOffset),pending:numericIdentity(pending)};
   const prior=this.identity;
-  const restartReason:RootsPresentationFacts['restartReason']=!prior?'initial':prior.document!==identity.document?'document':prior.mode!==identity.mode?'mode':prior.math!==identity.math||prior.clock!==identity.clock?'math':prior.timeline!==identity.timeline?'timeline':prior.camera!==identity.camera?'camera':prior.gradient!==identity.gradient?'gradient':prior.pending!==identity.pending?'pending-policy':null;
-  const requestKey=this.requestKey(scene,c);this.completed=undefined;
+  const restartReason:RootsPresentationFacts['restartReason']=controlled?null:!prior?'initial':prior.document!==identity.document?'document':prior.mode!==identity.mode?'mode':prior.math!==identity.math||prior.clock!==identity.clock?'math':prior.timeline!==identity.timeline?'timeline':prior.camera!==identity.camera?'camera':prior.gradient!==identity.gradient?'gradient':prior.pending!==identity.pending?'pending-policy':null;
+  const requestKey=this.requestKey(author,c);this.completed=undefined;
   if(restartReason){
    this.reset();this.identity=identity;this.instance++;this.liveContext=live;
    this.cameraClock=createRootsCameraClock(scene,timeline);this.hostClock=new SourceSceneHostClock(live.clock.paused,this.cameraClock.snapshot().camera);this.liveHasAnimations=timeline.clips.length>0;
@@ -353,7 +420,8 @@ export class RootsNativePresentationSession {
   const before=this.state!,previous=this.cameraClock!.snapshot();
   const dt=operation?.kind==='recording'?Math.fround(1/Math.fround(operation.simulationFps)):operation?.kind==='snapshot'?0:this.hostClock!.update(live.clock);
   const frame=operation?.kind==='snapshot'?previous:this.cameraClock!.step(dt,{paused:live.clock.paused,allowSignedDt:true,isCancelled:c.isCancelled});
-  plan=projection(frame.camera);if(frame.gradient)color={...color,paletteOffset:frame.gradient.offset};
+  plan=projection(frame.camera);if(controlled&&frame.gradient?.phases.some(p=>p.applied))this.controlledOffset=undefined;
+  if(controlled&&this.controlledOffset!==undefined)color={...color,paletteOffset:this.controlledOffset};else if(frame.gradient)color={...color,paletteOffset:frame.gradient.offset};
   this.admitMemory(plan,0,requestKey.length*2);
   this.pendingAdmission=bytes=>this.admitMemory(plan,0,requestKey.length*2,undefined,bytes);
   if(operation?.kind!=='snapshot')for(let i=0;i<(previous.queueComplete||live.clock.paused?1:2);i++)this.drainPending(plan,c.isCancelled);

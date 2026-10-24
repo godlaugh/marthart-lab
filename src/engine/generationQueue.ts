@@ -15,8 +15,9 @@ import {retainsIteratedCompiler} from './iteratedIdentity';
 import type {GenerationInput,SceneDocument,SceneOutput} from '../types';
 import {usesRootsNativePresentation} from './rootsPresentationAuthoring';
 import {rootsPresentationRequestIdentity} from './rootsPresentationRequest';
+import {validateRootsControlReceipt,type RootsControlReceipt} from './rootsControl';
 import type {RootsPausedCaptureResult,RootsPausedCaptureSize,PerlinPausedCaptureResult,PerlinPausedCaptureSize,PausedCaptureSize,PausedCaptureResult,SourceRecordingOptions,SourceRecordingHandle,SourceRecordingStart,SourceRecordingStop,SourceRecordingRaster} from './generationProtocol';
-import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError} from './generationProtocol';
+import {pausedCaptureContracts,SourceRecordingOperationError,FractalLiveGenerationError,RootsLiveGenerationError} from './generationProtocol';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {usesSourcePerlin} from './sourcePerlinIdentity';
 type Context=GenerationInput;
@@ -112,7 +113,7 @@ export class GenerationQueue {
   private recordingOwner?:RecordingOwner;
   private playbackOwner?:PlaybackOwner;
   private navigationOwner?:{request:Request;events:((output:SceneOutput)=>Promise<SceneOutput>)[]};
-  constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void}){
+  constructor(private readonly generator:GeneratorPort,private readonly callbacks:{output:(output:SceneOutput,time:number,source:SceneDocument)=>void;error:(error:Error)=>void;busy:(value:boolean)=>void;recordingStopped?:(stop:SourceRecordingStop,originalScene:SceneDocument)=>void;rootsControlAcknowledged?:(sessionId:string,receipt:RootsControlReceipt)=>void}){
     if(retiredQueues.size)void retryRetiredGenerationQueueCleanup().catch(error=>{if(!this.disposed)this.callbacks.error(error);});
   }
   request(scene:SceneDocument,context:Context,delayMs=0,intent?:'metadata',parameterWrites?:readonly (readonly [string,number])[]){
@@ -181,8 +182,8 @@ export class GenerationQueue {
       if(!current())throw new DOMException('实时参数会话已更换','AbortError');
       return !surfaceEdit&&request.intent==='metadata'&&JSON.stringify(metadataContext(request.context))===JSON.stringify(metadataContext(cached!.request.context))?cached!.output:generate();
     }):generate();
-    void operation.then(output=>{if(current()&&liveKey(request)){if(request.context.implicitLive||request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
-      if(current()&&cached&&liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError&&error.previewRetained){
+    void operation.then(output=>{this.acknowledgeRoots(output,request);if(current()&&liveKey(request)){if(request.context.implicitLive||request.context.rootsLive||request.context.perlinLive||request.context.samilaLive?.clock||request.context.symmetryLive||request.context.mapLive||request.context.fractalLive||request.context.domainLive||request.context.surfaceLive)request.context={...request.context,time:this.outputTime(output,request)};this.completedLive={request,output};}publish(output);}).catch((error:Error)=>{
+      if(current()&&cached&&(liveKey(request)==='fractalLive'&&error instanceof FractalLiveGenerationError||liveKey(request)==='rootsLive'&&error instanceof RootsLiveGenerationError)&&error.previewRetained){
         // Keep the rejected document as the author's draft, but return this
         // request's applied context to the owner-confirmed completed version.
         request.context=snapshotGenerationInput(cached.request.context);this.completedLive={request,output:cached.output};
@@ -194,6 +195,25 @@ export class GenerationQueue {
       if(this.playbackOwner){if(this.completedLive)this.startPlayback();else {this.rejectPlayback(new Error('当前实时预览未完成，无法切换播放状态'));this.callbacks.busy(false);}}
       else if(this.latest!==request)this.start();else this.callbacks.busy(false);
     });
+  }
+  /** Executed controls belong to the live owner even if a newer UI request
+   * makes this image stale. Consume its receipt before publication filtering,
+   * keeping later commands queued and leaving the author document untouched. */
+  private acknowledgeRoots(output:SceneOutput,request:Request):void {
+    const sent=request.context.rootsLive,live=output.type==='raster'?output.rootsLive:undefined;
+    if(!sent?.controls||this.disposed||this.latest?.context.rootsLive?.sessionId!==sent.sessionId)return;
+    if(!live||live.sessionId!==sent.sessionId)throw Error('复根控制回执的会话不匹配');
+    const receipt=validateRootsControlReceipt(live.controls),issued=sent.controls.commands.at(-1)?.revision??sent.controls.acknowledgedRevision;
+    if(receipt.revision!==issued)throw Error('复根控制回执未覆盖已发送的命令');
+    // A journal can reject a forged applied/reset receipt. Do not drop any
+    // queued command until its owning acknowledgement succeeds.
+    this.callbacks.rootsControlAcknowledged?.(sent.sessionId,{...receipt});
+    const latest=this.latest,queued=latest?.context.rootsLive,controls=queued?.controls;
+    if(!latest||queued?.sessionId!==sent.sessionId)return;
+    if(!controls)throw Error('复根控制队列不能丢弃运行配置所有者');
+    if(receipt.revision>=controls.acknowledgedRevision){
+      latest.context={...latest.context,rootsLive:{...queued,controls:{acknowledgedRevision:receipt.revision,commands:controls.commands.filter(command=>command.revision>receipt.revision)}}};
+    }
   }
   private outputTime(output:SceneOutput,request:Request):number{
     const fallback=output.implicitLive?implicitCameraFrame(output).sceneTime:output.temporal?.time??request.context.time;
@@ -351,6 +371,7 @@ export class GenerationQueue {
     let failed=false,failure:unknown;
     try{
       const start=await (request.scene.kind==='surface'||request.scene.kind==='implicit'?this.generator.beginSourceRecording(output,options,owner.controller.signal):this.generator.beginSourceRecording(output,options));owner.handle=start.handle;
+      this.acknowledgeRoots(start.warmup,request);
       const clock=structuredClone(start.clock),handle=start.handle;
       if(clock.completionReason==='animation-queue'&&!validSourceQueueRecordingClock(clock,options.simulationFps))throw Error('录制完成规划无效');
       const complete=(frame:SceneOutput,ordinal:number)=>{
@@ -407,11 +428,15 @@ export class GenerationQueue {
         if(!this.disposed&&this.latest===owner.request)this.callbacks.error(error instanceof Error?error:new Error(String(error)));
         this.releaseRecordingOwner(owner);throw error;
       }
-      const latest=this.latest,deferred=latest!==owner.request;let expected=latest;
+      let expected=this.latest,deferred=this.latest!==owner.request;
       try{
+        if(stop)this.acknowledgeRoots(stop.preview,owner.request);
+        // A receipt callback may synchronously open another document. Read
+        // current ownership after that callback before adopting the stop image.
+        const latest=this.latest;deferred=latest!==owner.request;expected=latest;
         if(!stop&&owner.invalidPreview&&!this.disposed&&this.latest===owner.request)this.callbacks.error(owner.invalidPreview);
         const roots=stop?.context.rootsLive,queuedRoots=latest?.context.rootsLive;
-        const sameRoots=!!roots&&!!queuedRoots&&latest?.scene.kind==='roots'&&latest.scene.id===owner.request.scene.id&&queuedRoots.sessionId===roots.sessionId;
+        const sameRoots=!!roots&&!!queuedRoots&&latest?.scene.kind==='roots'&&queuedRoots.sessionId===roots.sessionId&&(roots.controls!==undefined||latest.scene.id===owner.request.scene.id);
         const fractal=stop?.context.fractalLive,queued=latest?.context.fractalLive;
         const sameFractal=!!fractal&&!!queued&&latest?.scene.kind==='fractal'&&latest.scene.id===owner.request.scene.id&&queued.sessionId===fractal.sessionId;
         const domain=stop?.context.domainLive,queuedDomain=latest?.context.domainLive;
@@ -420,7 +445,7 @@ export class GenerationQueue {
         const samePerlin=!!perlin&&!!queuedPerlin&&latest?.scene.kind==='perlin'&&latest.scene.id===owner.request.scene.id&&queuedPerlin.sessionId===perlin.sessionId;
         const surface=stop?.context.surfaceLive,queuedSurface=latest?.context.surfaceLive;
         const sameSurface=!!surface&&!!queuedSurface&&latest?.scene.kind==='surface'&&latest.scene.id===owner.request.scene.id&&queuedSurface.sessionId===surface.sessionId;
-        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!perlin||samePerlin)||sameFractal||sameDomain||sameSurface||samePerlin||sameRoots)){
+        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!perlin||samePerlin)&&(!roots||sameRoots)||sameFractal||sameDomain||sameSurface||samePerlin||sameRoots)){
           // Keep deferred viewport changes, but never reuse the pre-recording
           // live session or seek time after the runtime has been rebuilt.
           // Fractal author identity remains in the UI. Runtime/presentation

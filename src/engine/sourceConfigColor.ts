@@ -71,3 +71,12 @@ export function sourceBouncingBoundaryPackedColor(value:string):number {
  try{const parsed=integer(normalized,16,32);return Number(BigInt.asUintN(32,raw.length===6?parsed|0xff000000n:parsed));}
  catch(error){if(error instanceof SourceConfigColorError)return 0xffffffff;throw error;}
 }
+
+/** MathArtSession.parsePaletteColor: a hot UI command, independent of the
+ * persisted ConfigUtils representation. Opaque white is the source fallback. */
+export function sourceHotPalettePackedColor(value:string):number {
+ const raw=value.startsWith('#')?value.slice(1):value;
+ if(raw.length!==6&&raw.length!==8)return 0xffffffff;
+ const normalized=javaHexText(raw);if(normalized===undefined)return 0xffffffff;
+ try{return ((Number(BigInt.asUintN(32,integer(normalized,16,raw.length===6?32:64)))&0xffffff)|0xff000000)>>>0;}catch(error){if(error instanceof SourceConfigColorError)return 0xffffffff;throw error;}
+}

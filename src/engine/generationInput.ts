@@ -1,5 +1,6 @@
 import {domainPaletteRuntimeScene} from './domainPaletteEditing';
 import type {GenerationInput} from '../types';
+import {validateRootsControls} from './rootsControl';
 /** One exhaustive transport boundary shared by queued and direct generation.
  * New GenerateContext inputs must be deliberately registered here. Callbacks
  * and other local-only context fields must never cross the Worker boundary. */
@@ -13,6 +14,10 @@ export function snapshotGenerationInput(context:GenerationInput):GenerationInput
  const result:Partial<GenerationInput>={};
  for(const key of Object.keys(fields) as (keyof GenerationInput)[]){
   let value=context[key];
+  // Explicit command batches can retain complete Apply documents. Admit their
+  // representation before allocating a transport copy; use the same protocol
+  // parser as the worker, rather than a second main-thread interpretation.
+  if(key==='rootsLive'&&context.rootsLive?.controls!==undefined)validateRootsControls(context.rootsLive.controls);
   if(key==='domainLive'&&context.domainLive?.configuration){value={...context.domainLive,configuration:domainPaletteRuntimeScene(context.domainLive.configuration)};}
   // Preserve malformed-but-present inputs for the owning worker's validator.
   // Deep-copy nested viewport facts so later callers cannot mutate a request.

@@ -31,7 +31,7 @@ import type {PerlinFreshRecordingPlan} from './sourcePerlinRecording';
 import type { SceneDocument, SceneOutput, GenerationInput, GenerationStatus } from "../types";
 import type { StableSearchOptions, StableSearchProgress, StableSearchResult } from './stableSearch';
 import type { GenerationRequest, GenerationResponse, RootsPausedCaptureResult, RootsPausedCaptureSize, PerlinPausedCaptureResult, PerlinPausedCaptureSize, PausedCaptureOperation, PausedCaptureResult, PausedCaptureSize, SourceRecordingOptions, SourceRecordingHandle, SourceRecordingStart, SourceRecordingStop, SourceRecordingRaster } from './generationProtocol';
-import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperationError,isSourceRecordingOperation,FractalLiveGenerationError} from './generationProtocol';
+import {pausedCaptureContracts,isPausedCaptureOperation,SourceRecordingOperationError,isSourceRecordingOperation,FractalLiveGenerationError,RootsLiveGenerationError} from './generationProtocol';
 import type { ComplexExploreOptions, ComplexExploreProgress, ComplexExploreResult } from './complexExplore';
 import type {SpirographRecordingPlan} from './spirographFramePlan';
 import type {RootsFreshRecordingPlan} from './rootsRecording';
@@ -42,18 +42,20 @@ import {usesSourceImplicitPresentation} from './sourceImplicitPresentation';
 type FormulaOutputContract =
  |{kind:'optional'}
  |{kind:'raster'}
+ |{kind:'roots-runtime-raster';viewport:SourceCameraViewport}
  |{kind:'source-raster';layout:'source-surface-centered-v1';viewport:SourceCameraViewport}
  |{kind:'source-geometry';layout:'source-surface-centered-v1'|undefined};
 function generationFormulaContract(scene:SceneDocument,context:GenerationInput):FormulaOutputContract {
+ if(context.rootsLive?.controls)return{kind:'roots-runtime-raster',viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesRootsNativePresentation(scene)&&scene.formulas?.layout==='source-surface-centered-v1')return{kind:'source-raster',layout:scene.formulas.layout,viewport:rootsFormulaViewport(context.rootsViewport??{logicalWidth:context.width,logicalHeight:context.height,referenceLogicalHeight:context.height,target:'primary'})};
  if(usesSourceSurfaceGeometry(scene)||usesSourceImplicitPresentation(scene))return{kind:'source-geometry',layout:scene.formulas?.layout};
  return{kind:usesSourceFractal(scene)?'raster':'optional'};
 }
 function validOutputFormulas(output:SceneOutput,contract:FormulaOutputContract):boolean {
  try{
-  if(!output||(contract.kind==='raster'||contract.kind==='source-raster')&&output.type!=='raster'||contract.kind==='source-geometry'&&output.type!=='geometry')return false;
+  if(!output||(contract.kind==='raster'||contract.kind==='source-raster'||contract.kind==='roots-runtime-raster')&&output.type!=='raster'||contract.kind==='source-geometry'&&output.type!=='geometry')return false;
   if(output.formulaPresentation===undefined)return contract.kind==='optional';
-  output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
+  output.formulaPresentation=validateFrameFormulas(output.formulaPresentation,contract.kind==='source-raster'||contract.kind==='roots-runtime-raster'?contract.viewport:output.sourceCameraFrame?.viewport);
   return contract.kind!=='source-geometry'&&contract.kind!=='source-raster'||output.formulaPresentation.layout===contract.layout;
  }catch{return false;}
 }
@@ -439,7 +441,7 @@ export class Generator {
       }
       if (data.operation === 'generate-progress') {
         if(p.operation==='generate'&&!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){this.invalidate(new Error('后台进度帧的公式标注无效'));return;}
-        if(p.operation==='generate'&&p.context.rootsLive&&!validRootsLiveOutput(data.output,p.context)){this.invalidate(new Error('复根实时进度响应身份或状态不匹配'));return;}
+        if(p.operation==='generate'&&p.context.rootsLive&&!validRootsLiveOutput(data.output,p.context,p.source?.output.type==='raster'?p.source.output.rootsLive:undefined)){this.invalidate(new Error('复根实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){this.invalidate(new Error('Perlin 实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){this.invalidate(new Error('曲面实时进度响应身份或状态不匹配'));return;}
         if(p.operation==='generate'&&p.domain&&!validDomainOutput(data.output,p.domain,p.context)){this.invalidate(new Error('域着色实时进度响应身份或状态不匹配'));return;}
@@ -463,12 +465,17 @@ export class Generator {
           if(data.retainedSourceId!==undefined&&!retained){const error=new FractalLiveGenerationError('分形实时预览保留身份不匹配',false);p.reject(error);this.invalidate(error);return;}
           if(retained)this.completed=p.source;
           p.reject(new FractalLiveGenerationError(data.error,retained));
+        }else if(p.operation==='generate'&&p.context.rootsLive?.controls){
+          const retained=data.operation==='generate'&&data.retainedSourceId!==undefined&&data.retainedSourceId===p.source?.id&&data.id===this.currentInputId;
+          if(data.retainedSourceId!==undefined&&!retained){const error=new RootsLiveGenerationError('复根实时预览保留身份不匹配',false);p.reject(error);this.invalidate(error);return;}
+          const error=new RootsLiveGenerationError(data.error,retained);if(retained)this.completed=p.source;
+          p.reject(error);if(!retained)this.invalidate(error);
         }else if(p.operation==='generate'&&(p.domain||p.context.implicitLive||p.context.surfaceLive||p.context.perlinLive||p.context.rootsLive)){const error=new Error(data.error);p.reject(error);this.invalidate(error);}else p.reject(new Error(data.error));
       }
       else if (p.operation === 'search-stable' && data.operation === 'search-stable') p.resolve(data.result);
       else if (p.operation === 'generate' && data.operation === 'generate') {
         if(!p.fractal&&!validOutputFormulas(data.output,generationFormulaContract(p.scene,p.context))){const error=new Error('后台帧的公式标注无效');p.reject(error);this.invalidate(error);return;}
-        if(p.context.rootsLive&&!validRootsLiveOutput(data.output,p.context)){const error=new Error('复根实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
+        if(p.context.rootsLive&&!validRootsLiveOutput(data.output,p.context,p.source?.output.type==='raster'?p.source.output.rootsLive:undefined)){const error=new Error('复根实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.perlinLive&&!validSourcePerlinLiveOutput(data.output,p.context)){const error=new Error('Perlin 实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.implicitLive&&!validSourceImplicitOutput(data.output,p.context)){const error=new Error('隐式实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
         if(p.context.surfaceLive&&!validSourceSurfaceOutput(data.output,p.context)){const error=new Error('曲面实时响应身份或状态不匹配');p.reject(error);this.invalidate(error);return;}
@@ -489,7 +496,7 @@ export class Generator {
           const {capture,preview}=data.result??{};
           if(p.source.context.rootsLive){
             const prior=p.source.output.type==='raster'?p.source.output.rootsLive:undefined;
-            const paired=prior&&capture?.type==='raster'&&preview?.type==='raster'&&validRootsLiveOutput(preview,p.source.context)&&validRootsLiveOutput(capture,{...p.source.context,width:capture.width,height:capture.height})&&capture.rootsLive?.renderKind==='snapshot'&&preview.rootsLive?.renderKind==='snapshot'&&JSON.stringify(capture.rootsLive.frame)===JSON.stringify(prior.frame)&&JSON.stringify(preview.rootsLive.frame)===JSON.stringify(prior.frame);
+            const paired=prior&&capture?.type==='raster'&&preview?.type==='raster'&&validRootsLiveOutput(preview,p.source.context,prior)&&validRootsLiveOutput(capture,{...p.source.context,width:capture.width,height:capture.height},prior)&&capture.rootsLive?.renderKind==='snapshot'&&preview.rootsLive?.renderKind==='snapshot'&&JSON.stringify(capture.rootsLive.frame)===JSON.stringify(prior.frame)&&JSON.stringify(preview.rootsLive.frame)===JSON.stringify(prior.frame)&&JSON.stringify(capture.rootsLive.controls)===JSON.stringify(prior.controls)&&JSON.stringify(preview.rootsLive.controls)===JSON.stringify(prior.controls);
             if(!paired){const error=new pausedCaptureContracts[p.operation].Error('复根实时截图响应身份或时钟不匹配',false);p.reject(error);this.invalidate(error);return;}
           }
           const image=capture?.type==='raster'?capture.sourceCurrentImage:undefined;
@@ -555,7 +562,12 @@ export class Generator {
     return new Promise((resolve, reject) => {
       const d=context.domainLive,domain=d?{sessionId:d.sessionId,revision:d.revision,paused:d.clock?.paused,actualFrameRate:d.actualFrameRate}:undefined;
       const v=context.fractalLive,fractal=v?{sessionId:v.sessionId,revision:v.revision,paused:v.clock?.paused,actualFrameRate:v.actualFrameRate}:undefined;
-      try { const input=snapshotGenerationInput(context);this.pending.set(id, { operation: 'generate', scene,context:input,fractal,domain,source:fractal?source:undefined, resolve, reject, onProgress, onStatus });
+      let input:GenerationInput;
+      try{input=snapshotGenerationInput(context);}catch(error){
+        if(context.rootsLive?.controls!==undefined){this.completed=source;reject(new RootsLiveGenerationError(error instanceof Error?error.message:String(error),source!==undefined));}
+        else reject(error);return;
+      }
+      try { this.pending.set(id, { operation: 'generate', scene,context:input,fractal,domain,source:fractal||input.rootsLive?.controls?source:undefined, resolve, reject, onProgress, onStatus });
       const request: GenerationRequest = { operation: 'generate', sessionId: this.sessionId, id, scene:domainPaletteRuntimeScene(scene), ...(onStatus?{wantsStatus:true as const}:{}), context: input };
       this.worker!.postMessage(request); } catch (error) { this.pending.delete(id); reject(error); }
     });

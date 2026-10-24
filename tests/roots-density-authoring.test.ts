@@ -33,9 +33,15 @@ describe('Roots metric density authoring and source file boundary',()=>{
   expect(s.rootsSourcePalette?.colors).toEqual(['#80112233','0xFF123456','not-a-color']);expect(s.palette).toEqual(createScene(definition).palette);expect(s.settings.brightness).toBe(createScene(definition).settings.brightness);expect(s.settings.gamma).toBe(createScene(definition).settings.gamma);expect(s.provenance?.original).toEqual(input);
   const prepared=prepareRootsDensityColor(s);expect(prepared.kind).toBe('metric-sum');if(prepared.kind==='metric-sum')expect(prepared.diagnostics.join()).toContain('白色');
  });
- it('distinguishes absent, empty and singleton palettes through import and reload',()=>{
-  const absent=imported(raw()).scene;expect(absent.rootsSourcePalette).toBeUndefined();expect(prepareRootsDensityColor(absent)).toEqual(prepareRootsDensityColor({...absent,rootsSourcePalette:{colors:[...DEFAULT_ROOTS_SOURCE_COLORS]}}));
-  for(const colors of [[],['#123456']]){const s=imported(raw({palette:colors})).scene;expect(parseScene(JSON.stringify(s)).rootsSourcePalette).toEqual({colors});const plan=prepareRootsDensityColor(s);if(plan.kind!=='metric-sum')throw new Error('source');expect(Array.from(plan.lut.slice(0,4))).toEqual(colors.length?[18,52,86,255]:[255,255,255,255]);}
+ it('materializes project defaults while retaining source omission and direct runtime defaults',()=>{
+  const input=raw(),project=imported(input).scene,runtime=parseLegacyScene(JSON.stringify(input)).scene,projectColors=['#FC6255','#FF862F','#FFFF00','#59743E','#83C167','#1D4A81','#9A72AC'];
+  expect(project.rootsSourcePalette).toEqual({colors:projectColors});expect(project.provenance?.original).toEqual(input);expect(project.provenance?.original).not.toHaveProperty('palette');
+  expect(runtime.rootsSourcePalette).toBeUndefined();expect(prepareRootsDensityColor(runtime)).toEqual(prepareRootsDensityColor({...runtime,rootsSourcePalette:{colors:[...DEFAULT_ROOTS_SOURCE_COLORS]}}));
+  const projectPlan=prepareRootsDensityColor(project);expect(projectPlan).toEqual(prepareRootsDensityColor({...runtime,rootsSourcePalette:{colors:projectColors}}));if(projectPlan.kind!=='metric-sum')throw new Error('source');expect(Array.from(projectPlan.lut.slice(0,4))).toEqual([252,98,85,255]);
+  for(const s of [project,runtime]){const saved=JSON.stringify(persistentScene(s));expect(parseScene(saved).rootsSourcePalette).toEqual(s.rootsSourcePalette);expect(imported(JSON.parse(saved)).scene.rootsSourcePalette).toEqual(s.rootsSourcePalette);}
+ });
+ it('retains empty and singleton palettes through both source entry points and canonical reload',()=>{
+  for(const colors of [[],['#123456']])for(const parse of [parseProjectFile,parseLegacyScene]){const s=parse(JSON.stringify(raw({palette:colors}))).scene;expect(s.rootsSourcePalette).toEqual({colors});expect(parseScene(JSON.stringify(persistentScene(s))).rootsSourcePalette).toEqual({colors});if(parse===parseProjectFile)expect(s.provenance?.original).toMatchObject({palette:colors});const plan=prepareRootsDensityColor(s);if(plan.kind!=='metric-sum')throw new Error('source');expect(Array.from(plan.lut.slice(0,4))).toEqual(colors.length?[18,52,86,255]:[255,255,255,255]);}
  });
  it.each([null,{},'red',[null],[1],[true]])('rejects malformed native palette structure %j',palette=>{expect(()=>imported(raw({palette}))).toThrow();});
  it('preserves recoverable invalid strings rather than replacing source content',()=>{const s=imported(raw({palette:['BAD','#123456']})).scene;expect(parseScene(JSON.stringify(persistentScene(s))).rootsSourcePalette).toEqual({colors:['BAD','#123456']});expect(markup(s,true)).toContain('BAD');});

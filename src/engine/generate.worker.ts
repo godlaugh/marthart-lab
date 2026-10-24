@@ -1,6 +1,5 @@
 import type {GenerateContext} from '../types';
 import {usesSourceImplicitCpuMesh} from './sourceImplicitPresentation';
-import {resolveFormulaContent} from './formulas';
 import {planFractalFreshRecording} from './sourceFractalRecording';
 import {planPerlinFreshRecording} from './sourcePerlinRecording';
 import { definition } from "../scenes";
@@ -213,7 +212,7 @@ self.onmessage = (
       if(domain&&(source.scene.kind!=='domain'||!temporalSession.sourceDomain.matchesCompletedPrimary(source.scene,source.context)))throw Error('域着色当前帧截图对应的实时主预览已过期');
       // Source scenes inherit parent density. Native render-buffer rounding can make
       // actual physical base dimensions differ from the user's requested size.
-      const rootsFormulas=event.data.operation==='roots-paused-capture'&&resolveFormulaContent(source.scene).labels.length>0;
+      const rootsFormulas=event.data.operation==='roots-paused-capture'&&temporalSession.rootsNative.completedHasFormulas();
       const currentBase=rootsFormulas?{width,height,logicalWidth:width,logicalHeight:height,density:1}:fractal||domain?prepareSourcePausedCaptureSize({width,height},domain?source.context.domainLive?.viewport?.pixelDensity??NaN:source.context.fractalPixelDensity??NaN,MAX_RASTER_PIXELS):undefined;
       const base=currentBase??(perlin||samila||iterated?prepareSourcePausedCaptureSize({width,height},iterated?source.context.sourcePointPixelDensity??NaN:samila?source.context.samilaLive!.pixelDensity:source.context.sourcePerlinViewport!.pixelDensity):{width,height});
       const upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);
@@ -279,7 +278,7 @@ self.onmessage = (
       return;
     }
     const { context } = event.data;
-    generationSource=context.fractalLive||context.surfaceLive?completed:undefined;
+    generationSource=context.fractalLive||context.surfaceLive||context.rootsLive?.controls?completed:undefined;
     completed=undefined;
     const executionContext = { ...context, onStatus: event.data.wantsStatus ? status => send({operation:'generate-status',id,status}) : undefined, onProgress: output => {
       output.dimension ??= definition(scene.kind).dimension;
@@ -321,6 +320,10 @@ self.onmessage = (
       const retained=owner===sessionId&&temporalSession.sourceSurface.matchesCompletedPrimary(source.scene,source.context);
       completed=retained?source:undefined;
       send({id,operation,error:message,...(retained?{retainedSourceId:source.id}:{})});
+    }else if(operation==='generate'&&generationSource?.context.rootsLive?.controls){
+      const retained=owner===sessionId&&temporalSession.rootsNative.matchesCompletedPrimary(generationSource.scene,generationSource.context);
+      completed=retained?generationSource:undefined;
+      send({id,operation,error:message,...(retained?{retainedSourceId:generationSource.id}:{})});
     }else if(operation==='generate'&&generationSource?.context.fractalLive){
       const retained=owner===sessionId&&temporalSession.sourceFractal.matchesCompletedPrimary(generationSource.scene,generationSource.context);
       completed=retained?generationSource:undefined;

@@ -1,0 +1,263 @@
+{
+  "date": "2026-10-24",
+  "baseCommit": "a131a3a232dddcb68879910251b68e46ff3a53c9",
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "status": "backend-owner-verified-app-routing-pending",
+  "milestone": "M3",
+  "readableReport": "docs/source-roots-control-owner.zh-CN.md",
+  "evidenceKinds": {
+    "original": "Reused pinned JAR static control-routing and configuration evidence; no original JVM or GUI execution.",
+    "local": "Real public Generator, Queue, computation Workers and WebGL; injected transport faults are labeled. No App UI, FFmpeg/MP4 or native whole-image parity claim."
+  },
+  "claims": [
+    "Explicit ordered commands separate author, applied cold and current runtime configuration; same-value Apply remains an event.",
+    "Recording resets to cold without consuming or replaying external hot commands; output consumers use actual completed mode, animation, formulas and receipt.",
+    "Journal and queue acknowledge executed prefixes even when UI output is stale, preserving later commands and respecting document-session ownership.",
+    "Representation admission precedes cloning/mutation, preserves old completion on rejected commands, and requires explicit Apply after owner loss.",
+    "Legacy callers without controls remain available; App and control components have not yet adopted the new protocol."
+  ],
+  "validation": {
+    "testFiles": 62,
+    "tests": 1523,
+    "buildV2": "passed; existing chunk-size warning",
+    "realControls": {
+      "status": "passed",
+      "cases": [
+        {
+          "mode": "density",
+          "checks": 676
+        },
+        {
+          "mode": "point-cloud",
+          "checks": 561
+        }
+      ],
+      "recordingStreams": 4,
+      "capturePngs": 6,
+      "viewport": [
+        192,
+        144
+      ],
+      "transportFaults": 5,
+      "queueRecording": "passed",
+      "retainedRejections": "passed",
+      "remainingWorkers": 0,
+      "sourceStable": true,
+      "finalSourceHashesMatch": true,
+      "cleanup": [
+        {
+          "resource": "browser",
+          "status": "fulfilled"
+        },
+        {
+          "resource": "vite",
+          "status": "fulfilled"
+        }
+      ],
+      "node": "v24.18.0",
+      "browser": "155.0.8059.85",
+      "queueChecks": 52,
+      "retainedRejectionChecks": 22,
+      "stableSourceCount": 556,
+      "pageErrors": []
+    },
+    "legacyRecording": {
+      "status": "passed",
+      "bundled": true,
+      "cases": 20,
+      "workflows": 8,
+      "transportFaults": 12,
+      "elapsedSeconds": 20.560218375,
+      "remainingWorkers": 0,
+      "sourceStable": true,
+      "finalSourceHashesMatch": true
+    },
+    "baselineTestDrift": "Full archive of a131a3a reproduced the one ProjectState palette-omission expectation failure; only test expectations/coverage changed, retaining distinct runtime-config omission semantics.",
+    "finalReadOnlyReview": "No additional substantiated defect in client, recording lease, queue, journal or runtime ownership; App routing remains pending."
+  },
+  "measurements": {
+    "matrix": {
+      "elapsedMs": 9060.442334,
+      "costScope": "Two actual Worker matrices after Vite/browser setup; includes passive hashing and artifact persistence",
+      "processFamily": {
+        "rootPid": 75085,
+        "samples": 30,
+        "observedProcesses": 39,
+        "maxConcurrentProcesses": 10,
+        "sampledPeakRssKiB": 2095472,
+        "observedCpuMs": 25090.000000000004,
+        "samplingErrors": []
+      }
+    },
+    "totalVerifierElapsedMs": 11916.756459,
+    "agentTokens": "not separately measured",
+    "processFamilyScope": "Root is the verifier Node process; includes Node, Vite/esbuild and owned Chrome. Correctness phase includes main matrices, Queue and rejection/fault cases; cost variants follow sequentially."
+  },
+  "costComparison": {
+    "scope": "Current legacy and explicit-controls routes; same warm Chrome/Vite, fresh Generator/Worker, 256 samples and 32 paused redraws. Not two complete historical checkouts. One sequential sample per variant; sampled verifier Node process-family cost (including Node, Vite/esbuild and owned Chrome) includes passive observation/serialization.",
+    "variants": [
+      {
+        "explicitControls": false,
+        "coldInitializationMs": 491.2000000476837,
+        "initialUpdates": 36,
+        "pausedRedrawMs": 72.60000002384186,
+        "pausedRedrawFrames": 32,
+        "elapsedMs": 821.8872910000009,
+        "processFamily": {
+          "rootPid": 75085,
+          "samples": 4,
+          "observedProcesses": 13,
+          "maxConcurrentProcesses": 10,
+          "sampledPeakRssKiB": 2093872,
+          "observedCpuMs": 1510.0000000000005,
+          "samplingErrors": []
+        }
+      },
+      {
+        "explicitControls": true,
+        "coldInitializationMs": 484.60000002384186,
+        "initialUpdates": 33,
+        "pausedRedrawMs": 81.10000002384186,
+        "pausedRedrawFrames": 32,
+        "elapsedMs": 823.3763749999998,
+        "processFamily": {
+          "rootPid": 75085,
+          "samples": 4,
+          "observedProcesses": 13,
+          "maxConcurrentProcesses": 10,
+          "sampledPeakRssKiB": 2091312,
+          "observedCpuMs": 1519.9999999999998,
+          "samplingErrors": []
+        }
+      }
+    ],
+    "equivalence": {
+      "rgbaSequence": true,
+      "consumedCpuBatches": true,
+      "tokenUsage": "unmeasured",
+      "statisticalClaim": "none: one sequential run per variant"
+    },
+    "unmeasured": [
+      "agent tokens",
+      "separate per-category Node/Vite/Chrome CPU and memory",
+      "GPU device time/VRAM",
+      "browser/Vite setup",
+      "original application cost"
+    ]
+  },
+  "verifierCorrections": [
+    {
+      "path": ".cache/roots-control-owner-20261024/run-1/report.json",
+      "reason": "Harness compared pre-enhancement raw capture with enhanced delivered pixels; now follows actual enhancement chain."
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/run-2/report.json",
+      "reason": "Harness used JSON property insertion order for command equality; now compares exact fields/values."
+    }
+  ],
+  "sourcePins": {
+    "scripts/verify-roots-control-owner.mjs": "153956cb1cdd8deeff7a935e612740d8b964b5e7408f5da0e2d77ded0453964e",
+    "src/engine/client.ts": "fd39e1478501c0fb8123ce3eb1985bde3884a41d1109a2d6d4f8e9f50fec4cd4",
+    "src/engine/generate.worker.ts": "fe687ed18304955623c48c19ab22420cec663101c607cc3e76a119dc00ed91c0",
+    "src/engine/generationInput.ts": "16604881021483cb9ef8cb30aa76ce1469e2c36c4d0f451f21c62701332256ea",
+    "src/engine/generationProtocol.ts": "ea2d234ee6ab0b4e08c1317e3e73e0578fd7bd861e0573c74fb67af03ad762cb",
+    "src/engine/generationQueue.ts": "d4e87a045d03dff1a818eb2dc052274557d2654736ca7277b932797f970cfbfd",
+    "src/engine/rootsControl.ts": "ebcea3e4c0a92c032ae535c1a5420cbb4d839bcc0289a5bba5b664300013ff38",
+    "src/engine/rootsControlJournal.ts": "613e2872d420fb52af7264bd14592b824406c6b1c800ed7d1333fd4c1fb07a44",
+    "src/engine/rootsLive.ts": "dee863821250c0554ab6e53700e143a1f6ddacf0712712eb57087fa75e4b866d",
+    "src/engine/rootsNativePresentationSession.ts": "92cb8f6dab34c66ff184f7c520feb0d44f64666ce761c70e0b4edb7d84f49f9a",
+    "src/engine/sourceConfigColor.ts": "d0fd8abffda89428c1a2302db6a1ef58c53a04a7cfe54404ff0fac9b4b0b9968",
+    "src/engine/sourceQueuePresentation.ts": "ab62cae43cc2ff18db620ab8e7723e61e0e3d0bb95eed78768ea4c07d824a14f",
+    "src/engine/sourceRootsRecordingLease.ts": "8d88ae8195ea23c8b39db36008e81390c2323d6cb3e260c4732ed7e40db46662",
+    "tests/generation-queue-roots-controls.test.ts": "709202cecd0a8231942caf359cdf4d4035f2796d18e4df6c7f512dbd80086419",
+    "tests/generation-queue-roots-live.test.ts": "fdbcafbd3c17124393f7c411c16c7e0ce42ea3ef976df8641a3d434d199f0a79",
+    "tests/roots-control-journal.test.ts": "1078faf6d68759180a325f7a33c22158d6a953bfe13b08c3951be72e4a18e565",
+    "tests/roots-control-owner.test.ts": "2faba6220cdc4ff1321a5f336e002fe22c4c01d80038e2bdf0296f6e6a518f1d",
+    "tests/roots-control-session.test.ts": "48c5f32c2e31c8bb02467b689f7de4e0f130a787bf91bb9e99d10357b6f4a0b5",
+    "tests/roots-density-authoring.test.ts": "2fc81c4c7e273856d652e17c4c1f9afa1e8d03126702db7b0e59caf31cf1555a"
+  },
+  "artifacts": [
+    {
+      "path": ".cache/roots-control-owner-20261024/run-3/report.json",
+      "sha256": "c8c75f3b399a82ec59a5838c5f89c9ed2579016670391481929dd40277de7b56"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/run-3/README.md",
+      "sha256": "57acb1fb6b09994324bcfc18b944f2d5f1b8d2838edb37b76c05d39ec274ce2b"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/legacy-transport-bundle/report.json",
+      "sha256": "1a4f125f46a00ef71c564b858bb6a2d973a69c050ac3d9b78177195f43a4cc2c"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/validation/targeted-final.log",
+      "sha256": "2745b31397a26bb8336a77ac9c8e4a2456582ef131ded67db999b2cda8ed4021"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/validation/build-v2-final.log",
+      "sha256": "f3f182119dff349a87e515d52d68c2cf52450155737d882ee4e24c8bf65b9c96"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/palette-entry-drift-review.zh-CN.md",
+      "sha256": "b69057144cee5f70fe9562e45e7b6c563b0e4f74ddce3f76d51956d644549d96"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/palette-entry-drift-manifest.json",
+      "sha256": "1c9ec8c17e42f18a90e6ee25cc75eb265c16cf045417442b8c8fdb98b4b4369e"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/baseline-roots-density-authoring.log",
+      "sha256": "531a9396e90120dfb7fdadd1b4f1e9534f24236999032700a7b2afa368fe7899"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/palette-entry-regression-final.log",
+      "sha256": "e8eea2240df872ef730a0c4657e92fd58371e640e9701afdbfa4249ae94d518d"
+    },
+    {
+      "path": ".cache/roots-control-command-routing-review-20261024/manifest.json",
+      "sha256": "8266791f9e36013c6f3ba0da3a13dbab14ace537262b61d48a171e432eb3fe86"
+    },
+    {
+      "path": ".cache/roots-control-command-routing-review-20261024/selected-evidence.json",
+      "sha256": "048cda48b0c8bb344cb8bad348db8438983afe71f63bbcf894d47746438dd09c"
+    },
+    {
+      "path": ".cache/roots-control-command-routing-review-20261024/review.zh-CN.md",
+      "sha256": "c2cb95d292b617f797695f50da9fdf9d67c35e22a711a694d570761107f0421c"
+    },
+    {
+      "path": ".cache/roots-full-configuration-owner-design-20261024/manifest.json",
+      "sha256": "e08f6c0be7484dd4fa611d89bf516242a4c2e449d26590b24270e8d9b37c664d"
+    },
+    {
+      "path": ".cache/roots-full-configuration-owner-design-20261024/review.zh-CN.md",
+      "sha256": "570989df9295fb6eb5ff64b641ad04ec8617d90a24775d18358ae9814d072755"
+    },
+    {
+      "path": ".cache/roots-app-command-routing-inventory-20261024/manifest.json",
+      "sha256": "55c869d9ddd16a8c4f641e92221502c375ed7d5a95ee6d640fb34042a935a988"
+    },
+    {
+      "path": ".cache/roots-app-command-routing-inventory-20261024/review.zh-CN.md",
+      "sha256": "d500751830c927d3c7eb64d1972a2b59b809ce603e92c46b4f48949cb58c7ccf"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/run-1/report.json",
+      "sha256": "8a8d9e6d6db0a38c0a9777b9c2be5bcc7bdfe3babc1562aae9dadaa3370dfc36"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/run-2/report.json",
+      "sha256": "09476ba95f17326e58ddf7d501cbdbbc8fe00ab050d812317906d02273d46722"
+    },
+    {
+      "path": ".cache/roots-control-owner-20261024/acceptance.zh-CN.md",
+      "sha256": "6f12cadec73e7cc6c5e8419625679e8a06a45dd22ec02938096cbe6791b3b9f4"
+    }
+  ],
+  "remaining": [
+    "App controls, staged edits, explicit Apply, navigation, history, replay and recovery UI integration.",
+    "Actual App recording/export and four MP4 workflows; arbitrary capture sizes, multi-worker ordering and broader animation combinations.",
+    "Original matched whole-image comparisons.",
+    "Implicit/Symmetry/Samila palette generators, remaining family/general requirements and final Apple Silicon integration/package."
+  ]
+}
