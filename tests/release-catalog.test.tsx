@@ -3,7 +3,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import App from '../src/App';
 import {ArtworkLibrary} from '../src/components/ArtworkLibrary';
 import {definitions,definition} from '../src/scenes';
-import {creationDefinitions,defaultCreationTemplate,isCreationKind,creationCatalogForMode} from '../src/scenes/releaseCatalog';
+import {creationDefinitions,defaultCreationTemplate,isCreationKind,creationCatalogForMode,createCreationScene,isBuiltinCreationScene} from '../src/scenes/releaseCatalog';
 import {createScene,loadWorkspace,persistentScene,saveWorkspace,serializeScene} from '../src/engine/document';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {emptyLibrary,moveArtwork,trashArtwork} from '../src/engine/library';
@@ -77,9 +77,38 @@ describe('1.0 discovery and compatible documents',()=>{
 });
 
 describe('2.0 preview discovery',()=>{
-  it('exposes every registered family only in the explicit preview mode, without replacing its definitions or presets',()=>{
-    const preview=creationCatalogForMode('preview-v2');expect(preview).toEqual(definitions);expect(Object.isFrozen(preview)).toBe(true);
-    for(const def of definitions)expect(preview.find(item=>item.kind===def.kind)).toBe(def);
+  it('exposes every family in preview with canonical Bouncing creation templates',()=>{
+    const preview=creationCatalogForMode('preview-v2');expect(preview.map(d=>d.kind)).toEqual(definitions.map(d=>d.kind));expect(Object.isFrozen(preview)).toBe(true);
+    for(const def of definitions.filter(d=>d.kind!=='bouncing'))expect(preview.find(item=>item.kind===def.kind)).toBe(def);
+    expect(preview.find(d=>d.kind==='bouncing')!.presets).toHaveLength(7);
     for(const mode of ['development','production','test','unknown'])expect(creationCatalogForMode(mode).map(item=>item.kind)).toEqual(['spirograph']);
+  });
+});
+
+
+describe('Bouncing creation identity and persistence',()=>{
+  it('starts each new work from the spiral recipe with an independent identity',()=>{
+    const first=createCreationScene('bouncing'),second=createCreationScene('bouncing');
+    expect(first.id).not.toBe(second.id);expect(isBuiltinCreationScene(first)).toBe(false);
+    expect(first.bouncingSource?.configuration).toMatchObject({particleCount:2_000_000,subSteps:1,initialPositionMode:'SPIRAL',initialSpeed:Math.fround(.2)});
+    expect(first.settings).toEqual({});expect(first.equations).toEqual({});expect(first.parameters).toEqual({});expect(first.timeline.tracks).toEqual([]);
+    expect(parseProjectFile(serializeScene(first)).scene).toEqual(persistentScene(first));
+    first.bouncingSource!.configuration.particleCount=17;
+    expect(second.bouncingSource?.configuration.particleCount).toBe(2_000_000);
+    expect(createCreationScene('bouncing').bouncingSource?.configuration.particleCount).toBe(2_000_000);
+  });
+  it('preserves all seven example payloads through workspace and project files, with copy-on-save identity',()=>{
+    const presets=creationCatalogForMode('preview-v2').find(d=>d.kind==='bouncing')!.presets;
+    const scenes=presets.map(p=>createCreationScene('bouncing',p.id)),store=memoryStorage();
+    expect(scenes.map(s=>s.bouncingSource!.configuration.particleCount)).toEqual([2_000_000,5_000_000,1_000_000,1_000_000,2_000_000,500_000,2_000_000]);
+    for(const scene of scenes){expect(isBuiltinCreationScene(scene)).toBe(true);expect(parseProjectFile(serializeScene(scene)).scene).toEqual(persistentScene(scene));}
+    saveWorkspace(store,{scenes,active:scenes[0].id,theme:'dark',language:'zh'});
+    expect(loadWorkspace(store)?.scenes).toEqual(scenes);
+    expect(()=>createCreationScene('bouncing','missing')).toThrow('Unknown creation template');
+  });
+  it('keeps legacy documents and their built-in identities readable',()=>{
+    const def=definition('bouncing'),legacy=createScene(def,def.presets[0]);
+    expect(legacy.bouncingSource).toBeUndefined();expect(isBuiltinCreationScene(legacy)).toBe(true);
+    expect(parseProjectFile(serializeScene(legacy)).scene).toEqual(persistentScene(legacy));
   });
 });

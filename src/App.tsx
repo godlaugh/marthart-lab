@@ -111,7 +111,7 @@ import type {
   CameraState,
 } from "./types";
 import { definition } from "./scenes";
-import {creationDefinitions,defaultCreationTemplate,isCreationKind,isCreationPreview} from './scenes/releaseCatalog';
+import {creationDefinitions,defaultCreationTemplate,isCreationKind,isCreationPreview,createCreationScene,isBuiltinCreationScene} from './scenes/releaseCatalog';
 import {
   createScene,
   parseScene,
@@ -575,7 +575,7 @@ export default function App() {
   }
   function save(favorite?: boolean) {
     try {
-    const builtin=def.presets.some(p=>scene.id===`preset:${def.kind}:${p.id}`);
+    const builtin=isBuiltinCreationScene(scene);
     const item = parseScene(serializeScene({ ...workingDocument(scene),id:builtin?crypto.randomUUID():scene.id,favorite:favorite??scene.favorite,camera:{...camera.current,autoFit:false} }));
     if(builtin)drafts.current[scene.id]=workingDocument(scene);
     setScene(retainSamilaViewportOnSave(scene,withoutSourceIteratedDraft(item)),sourceLivePreviewKind(scene)==='surface'?'surface-metadata':sourceLivePreviewKind(scene)==='fractal'?'fractal-metadata':undefined);camera.current=item.camera;
@@ -603,7 +603,7 @@ export default function App() {
   function createArtwork(kind:SceneKind,folderId:string|null){
     const model=definition(kind);
     setInputDialog({title:'新建场景',label:'新场景名称',initial:language==='en'?model.englishName:model.name,validate:validateName,submit:name=>{
-      const item={...createScene(model),name};setSaved(current=>[...current,item]);setLibrary(current=>moveArtwork(current,item.id,folderId));load(item,'document');
+      const item={...createCreationScene(kind),name};setSaved(current=>[...current,item]);setLibrary(current=>moveArtwork(current,item.id,folderId));load(item,'document');
     }});
   }
   function duplicateArtwork(item:SceneDocument){
@@ -1072,7 +1072,7 @@ export default function App() {
                         key={d.kind}
                         onClick={() => {
                           setNewMenu(false);
-                          setInputDialog({title:'新建场景',label:'新场景名称',initial:language==='en'?d.englishName:d.name,validate:validateName,submit:name=>load({...createScene(d),name},'document')});
+                          setInputDialog({title:'新建场景',label:'新场景名称',initial:language==='en'?d.englishName:d.name,validate:validateName,submit:name=>load({...createCreationScene(d.kind),name},'document')});
                         }}
                       >
                         {language==='en'?d.englishName:d.name}
@@ -1152,9 +1152,9 @@ export default function App() {
                       onClick={() =>
                         load(
                           e.document ??
-                            createScene(
-                              definition(e.kind),
-                              "preset" in e ? e.preset : undefined,
+                            createCreationScene(
+                              e.kind,
+                              "preset" in e ? e.preset.id : undefined,
                             ),
                           'library',
                         )
@@ -1536,7 +1536,7 @@ export default function App() {
                   <SpirographEditor key={`layers:${scene.id}`} scene={scene} time={time} completedFrame={outputScene===scene&&output===presentedOutput&&presentedSource===scene&&!previewCancelled?output?.spirographFrame?.absoluteFrame:undefined} onChange={edit}/>
                   {scene.kind==='roots'&&!usesRootsNativeMath(scene)&&<RootsParameterEditor scene={scene} onChange={edit}/>}
                   {experience.formulaPanel&&<FormulaEditor scene={scene} onChange={edit}/>}
-                  <details className="inspector-section"><summary>{t("场景说明")}</summary><div className="section-body"><label className="equation-field"><span>{t("描述")}</span><textarea aria-label={t("场景描述")} maxLength={300} rows={4} value={scene.description??''} onChange={e=>{const value=e.target.value;if(value.length<=300||(scene.description??'').length>300&&value.length<(scene.description??'').length)edit({...scene,description:value},false,false);}}/></label><p className="muted" aria-live="polite">{(scene.description??'').length} / 300 {t('字符')}{(scene.description??'').length>300?' · '+t('已保留导入的长描述'):''}</p>{def.presets.some(p=>scene.id===`preset:${def.kind}:${p.id}`)&&<p className="muted">{t("正在编辑内置示例的本地草稿；保存时会创建独立作品。")}</p>}</div></details>
+                  <details className="inspector-section"><summary>{t("场景说明")}</summary><div className="section-body"><label className="equation-field"><span>{t("描述")}</span><textarea aria-label={t("场景描述")} maxLength={300} rows={4} value={scene.description??''} onChange={e=>{const value=e.target.value;if(value.length<=300||(scene.description??'').length>300&&value.length<(scene.description??'').length)edit({...scene,description:value},false,false);}}/></label><p className="muted" aria-live="polite">{(scene.description??'').length} / 300 {t('字符')}{(scene.description??'').length>300?' · '+t('已保留导入的长描述'):''}</p>{isBuiltinCreationScene(scene)&&<p className="muted">{t("正在编辑内置示例的本地草稿；保存时会创建独立作品。")}</p>}</div></details>
                 </>
               ) : (
                 <>

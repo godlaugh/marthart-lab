@@ -829,5 +829,19 @@
   "本地重放随机种子": "Local replay random seed",
   "用于可重放的本地采样，不是原版每帧 ThreadLocalRandom 随机流。": "Controls repeatable local sampling, independently of the original per-frame ThreadLocalRandom stream.",
   "源 RANDOM · 等同 F1_VS_F2": "Source RANDOM · same as F1_VS_F2",
-  "源 RANDOM · 等同直角投影": "Source RANDOM · same as Cartesian"
+  "源 RANDOM · 等同直角投影": "Source RANDOM · same as Cartesian",
+  "螺旋弹跳": "Spiral bouncing",
+  "星形弹跳": "Star bouncing",
+  "正弦格点弹跳": "Sine grid bouncing",
+  "余弦环纹弹跳": "Cosine rings bouncing",
+  "玫瑰弹跳": "Rose bouncing",
+  "六边形弹跳": "Hexagon bouncing",
+  "椭圆弹跳": "Ellipse bouncing",
+  "200 万粒子 · 螺旋轮廓 · 圆形容器": "2 million particles · spiral outline · circular boundary",
+  "500 万粒子 · 星形填充 · 径向速度": "5 million particles · filled star · radial velocity",
+  "100 万粒子 · 正弦公式采样": "1 million particles · sine formula sampling",
+  "100 万粒子 · 余弦公式采样": "1 million particles · cosine formula sampling",
+  "200 万粒子 · 七瓣玫瑰 · 径向速度": "2 million particles · seven-petal rose · radial velocity",
+  "50 万粒子 · 圆形初始分布 · 六边形容器": "500,000 particles · circular seed · hexagonal boundary",
+  "200 万粒子 · 圆环初始分布 · 椭圆容器": "2 million particles · ring seed · elliptical boundary"
 }

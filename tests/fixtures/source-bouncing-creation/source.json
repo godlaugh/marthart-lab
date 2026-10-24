@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-10-24T02:18:44.204503+00:00",
+  "scope": "Real preview-v2 App entry, playback and persistence checks; exact canonical payload against pinned originals/guide recipes. Previous original-runtime parity is referenced, not recaptured.",
+  "sourceFiles": {
+    "src/App.tsx": "7f5e6b8bbb211464f31b0c05c335e9612b50153f2d8b0a11f18cdcf9853d66b4",
+    "src/scenes/releaseCatalog.ts": "585b48b192cdd1b7e99405a4be28b12910bb5ad460fe16370421d04b0fdab4df",
+    "src/scenes/bouncingTemplates.ts": "87d28c1ececd6cbfb95030035050a79cf66464c8d58514d472bc68fb927d7a18",
+    "src/locales/metadata.en.json": "2028f80aaffb670c3d25b222326e171597286d6e7ee8fefcb04404a86f6ee6bb",
+    "tests/release-catalog.test.tsx": "c0e292a3bce433efce2439d3ba14f774a75212718403684efade715051adf2c4",
+    "scripts/verify-bouncing-creation.mjs": "0d32a23c23628d756bfe4944d43fb5cf76f54ff882810fcef8521d4b6e2acbef"
+  },
+  "runs": {
+    "native": {
+      "report": ".cache/bouncing-creation-20261024-native-final/report.json",
+      "reportSha256": "5279aa41336ad98d8409646100a8533f8d5d8fa1f0674f0d7d1373ac06395cf1",
+      "screenshot": ".cache/bouncing-creation-20261024-native-final/creation.png",
+      "screenshotSha256": "d32776d46e9f86cc44cb5b93cac5abcc215f24c32f7be8003e61881f1e87882d",
+      "checks": 69,
+      "browser": "155.0.8059.85",
+      "measurements": {
+        "elapsedMs": 54681.781916,
+        "processFamily": {
+          "rootPid": 8548,
+          "samples": 183,
+          "observedProcesses": 195,
+          "maxConcurrentProcesses": 11,
+          "sampledPeakRssKiB": 2774304,
+          "observedCpuMs": 85810,
+          "samplingErrors": []
+        }
+      },
+      "cases": [
+        {
+          "id": "source-spiral",
+          "source": "bouncing1",
+          "particleCount": 2000000,
+          "payloadSha": "a11ed22d153d19639f60d0863d7e813633cdf9a0f20e40c81414e4fab8d01791"
+        },
+        {
+          "id": "source-star",
+          "source": "bouncing2",
+          "particleCount": 5000000,
+          "payloadSha": "3022d3671e5575d160851eadb9e727d6eb1e8aac9f0e4769e89a671a13a3ab94"
+        },
+        {
+          "id": "source-formula-grid",
+          "source": "bouncing1_formula1",
+          "particleCount": 1000000,
+          "payloadSha": "a3b5040b2a60ebd890177bfd73b5c7e53ef51e2ad5dc191e5bf162f3ce555480"
+        },
+        {
+          "id": "source-formula-rings",
+          "source": "bouncing1_formula2",
+          "particleCount": 1000000,
+          "payloadSha": "0749b5b10821790878eebcda71d998a2359f33a338ddfbd9dd6475335c0d9535"
+        },
+        {
+          "id": "source-rose",
+          "source": "guide-rose",
+          "particleCount": 2000000,
+          "payloadSha": "604814475e9811fa152c3ce77caf6ca050f642e5f3a19a9401d78b112d928890"
+        },
+        {
+          "id": "source-hexagon",
+          "source": "guide-hexagon",
+          "particleCount": 500000,
+          "payloadSha": "4bb988ea7f69bbd90024460e6c9c632624296803f0c47f8e8f8c1f234e3b3059"
+        },
+        {
+          "id": "source-ellipse",
+          "source": "guide-ellipse",
+          "particleCount": 2000000,
+          "payloadSha": "832afed063d1abf6531216fe4089b21d62e5a831297cc86d4fdc317243ba3b5c"
+        }
+      ],
+      "sourceStable": true,
+      "referenceStable": true,
+      "remainingProcesses": 0
+    },
+    "webgl": {
+      "report": ".cache/bouncing-creation-20261024-webgl-r2/report.json",
+      "reportSha256": "5d90db02ed784cc23682a1e36fb1eaae37169d43483dbb76b8af8218250edf39",
+      "screenshot": ".cache/bouncing-creation-20261024-webgl-r2/creation.png",
+      "screenshotSha256": "e99b0a5ae33d52905a8d48d485e8810514f871a85d18f79819010b0b38d61eae",
+      "checks": 68,
+      "browser": "155.0.8059.85",
+      "measurements": {
+        "elapsedMs": 26547.95925,
+        "processFamily": {
+          "rootPid": 7022,
+          "samples": 92,
+          "observedProcesses": 102,
+          "maxConcurrentProcesses": 11,
+          "sampledPeakRssKiB": 2208528,
+          "observedCpuMs": 45910.00000000001,
+          "samplingErrors": []
+        }
+      },
+      "cases": [
+        {
+          "id": "source-spiral",
+          "source": "bouncing1",
+          "particleCount": 2000000,
+          "payloadSha": "a11ed22d153d19639f60d0863d7e813633cdf9a0f20e40c81414e4fab8d01791"
+        },
+        {
+          "id": "source-star",
+          "source": "bouncing2",
+          "particleCount": 5000000,
+          "payloadSha": "3022d3671e5575d160851eadb9e727d6eb1e8aac9f0e4769e89a671a13a3ab94"
+        },
+        {
+          "id": "source-formula-grid",
+          "source": "bouncing1_formula1",
+          "particleCount": 1000000,
+          "payloadSha": "a3b5040b2a60ebd890177bfd73b5c7e53ef51e2ad5dc191e5bf162f3ce555480"
+        },
+        {
+          "id": "source-formula-rings",
+          "source": "bouncing1_formula2",
+          "particleCount": 1000000,
+          "payloadSha": "0749b5b10821790878eebcda71d998a2359f33a338ddfbd9dd6475335c0d9535"
+        },
+        {
+          "id": "source-rose",
+          "source": "guide-rose",
+          "particleCount": 2000000,
+          "payloadSha": "604814475e9811fa152c3ce77caf6ca050f642e5f3a19a9401d78b112d928890"
+        },
+        {
+          "id": "source-hexagon",
+          "source": "guide-hexagon",
+          "particleCount": 500000,
+          "payloadSha": "4bb988ea7f69bbd90024460e6c9c632624296803f0c47f8e8f8c1f234e3b3059"
+        },
+        {
+          "id": "source-ellipse",
+          "source": "guide-ellipse",
+          "particleCount": 2000000,
+          "payloadSha": "832afed063d1abf6531216fe4089b21d62e5a831297cc86d4fdc317243ba3b5c"
+        }
+      ],
+      "sourceStable": true,
+      "referenceStable": true,
+      "remainingProcesses": 0
+    }
+  },
+  "priorRuntimeEvidence": [
+    "docs/source-bouncing-full-recording.zh-CN.md",
+    "docs/source-bouncing-guide-compositions.zh-CN.md"
+  ],
+  "checks": [
+    "npm test -- tests/release-catalog.test.tsx: 20 passed",
+    "npm run build:v2: passed with existing chunk-size warning",
+    "node scripts/check-i18n.mjs: passed; zero required gaps",
+    "git diff --check: passed"
+  ],
+  "limits": [
+    "No new original application capture or original-window interaction.",
+    "WebGL availability does not establish original pixel parity.",
+    "Measurements are current sequential workflow samples, not controlled cold/warm runs or a before/after performance claim; GPU memory and token costs unmeasured.",
+    "Native distribution and other UI/scene requirements remain open."
+  ]
+}
