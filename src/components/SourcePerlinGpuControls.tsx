@@ -1,4 +1,5 @@
 import {SourcePerlinDraftField} from './SourcePerlinDraftField';
+import {SourcePerlinPaletteEditor} from './SourcePerlinPaletteEditor';
 import {useState, type ReactNode} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
@@ -43,7 +44,6 @@ export function SourcePerlinGpuControls({scene,onChange,tab='all'}:Props){
   <summary>{t(label)}</summary><div className="section-body">{children}</div>
  </details>;
  const renderStyle=source.uniforms.renderStyle;
- const paletteText=source.palette.map(color=>'#'+color.toString(16).padStart(8,'0').toUpperCase()).join('\n');
  return <div key={scene.id} data-testid="source-perlin-gpu-controls">
   {(tab==='all'||tab==='geometry')&&<>
    {section('texture','纹理与流动',<>
@@ -64,14 +64,8 @@ export function SourcePerlinGpuControls({scene,onChange,tab='all'}:Props){
   {(tab==='all'||tab==='appearance')&&<>
    {section('appearance','画面外观',<>{appearanceFields.map(([key,label])=>uniform(key,label))}</>)}
    {section('palette','纹理色板',<>
-    {field('palette','颜色列表（#AARRGGBB）',paletteText,raw=>{
-     const tokens=raw.trim()===''?[]:raw.trim().split(/[\s,]+/);
-     const invalid=tokens.findIndex(token=>!/^#[\da-f]{8}$/i.test(token));
-     if(invalid!==-1)return t('第 {index} 项需要完整的 #AARRGGBB 颜色',{index:invalid+1});
-     return emit({...source,palette:tokens.map(token=>parseInt(token.slice(1),16))});
-    },true)}
+    <SourcePerlinPaletteEditor palette={source.palette} prefix="source-perlin-gpu" onChange={palette=>emit({...source,palette})}/>
     <p className="muted">{t('每行一个颜色，也可用空格或逗号分隔。前两位为透明度；此画面最终输出为不透明。')}</p>
-    <p className="muted">{t('已保存 {count} 个颜色',{count:source.palette.length})}</p>
    </>)}
   </>}
   <p className="muted">{t('输入后按 Enter 或移出输入框应用；颜色列表使用 Ctrl / ⌘ + Enter。')}</p>

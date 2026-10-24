@@ -84,6 +84,45 @@ describe('Perlin retained live owner',()=>{
   const next={...c,width:4,height:3,sourcePerlinViewport:{width:4,height:3,pixelDensity:1},sourceViewport:{...c.sourceViewport!,logicalWidth:4,logicalHeight:3}};
   expect(generate(owner,s,next).sourcePerlinFrame).toMatchObject({frameIndex:0,sceneTime:0});owner.reset();
  });
+ it.each(['particles','field-curves','gpu'] as const)('hot recolors %s without replacing simulation, gradient, camera or target',style=>{
+  const s=scene(),config=s.perlinSource!;
+  config.backend=style==='gpu'?'gpu':'cpu';config.cpuStyle=style==='field-curves'?'field-curves':'particles';
+  config.curves.count=3;config.curves.length=4;
+  const owner=new SourcePerlinSession();generate(owner,s,context());generate(owner,s,context(1125));owner.setPaused(true,1125);
+  const c=context(9000,true),before=generate(owner,s,c),numericBefore=numeric(owner),snapshot=owner.diagnosticSnapshot()!,targets=[...graphics.targets];
+  config.palette=[0x40112233,0x80112233];
+  const recolored=generate(owner,s,c),after=owner.diagnosticSnapshot()!;
+  expect(recolored.perlinLive).toEqual(before.perlinLive);expect(recolored.sourcePerlinFrame).toEqual(before.sourcePerlinFrame);
+  expect(numeric(owner)).toEqual(numericBefore);expect(after.geometry).toEqual(snapshot.geometry);expect(graphics.targets).toEqual(targets);
+  expect(after.colors.revision).toBe(snapshot.colors.revision+1);
+  expect(config.palette).toEqual([0x40112233,0x80112233]);
+  if(style!=='field-curves')expect([...after.particleColors!.packed]).toEqual([0xff112233,0xff112233,0xff112233]);
+  // A structural edit still constructs from the authored, alpha-bearing list.
+  config.palette=[0x40112233];config.particles.stepSize+=1;
+  expect(generate(owner,s,c).sourcePerlinFrame).toMatchObject({sceneTime:0,updates:0});
+  expect(graphics.targets.length).toBeGreaterThan(targets.length);expect(targets[0]).toMatchObject({disposed:true});
+  if(style!=='field-curves')expect([...owner.diagnosticSnapshot()!.particleColors!.packed]).toEqual([0x40112233,0x40112233,0x40112233]);
+  owner.reset();
+ });
+ it('records from the cold palette while preserving authored colors across the recording handoff',()=>{
+  const s=scene();s.timeline.tracks=[track(.5)];s.perlinSource!.palette=[0x40123456,0x80abcdef];
+  const owner=new SourcePerlinSession(),c=context(1000,true);generate(owner,s,c);
+  const original=owner.diagnosticSnapshot()!.particleColors!.packed;
+  s.perlinSource!.palette=[0x20112233,0x60445566];generate(owner,s,c);
+  expect(owner.diagnosticSnapshot()!.particleColors!.packed).not.toEqual(original);
+  const recording=owner.beginRecording(s,c,{width:4,height:4,simulationFps:4});
+  expect(owner.diagnosticSnapshot()!.particleColors!.packed).toEqual(original);
+  expect(recording.scene.perlinSource!.palette).toEqual(s.perlinSource!.palette);
+  owner.nextRecordingFrame(recording.handle,1);const stopped=owner.finishRecording(recording.handle);
+  expect(stopped.scene.perlinSource!.palette).toEqual(s.perlinSource!.palette);
+  owner.setPaused(true,2000);const paused={...stopped.context,perlinLive:{...stopped.context.perlinLive!,clock:{paused:true,timestampMs:2000}}};
+  generate(owner,stopped.scene,paused);expect(owner.diagnosticSnapshot()!.particleColors!.packed).toEqual(original);
+  stopped.scene.perlinSource!.palette=[0x01112233];generate(owner,stopped.scene,paused);
+  expect([...owner.diagnosticSnapshot()!.particleColors!.packed]).toEqual([0xff112233,0xff112233,0xff112233]);
+  owner.applyConfiguration(stopped.scene);generate(owner,stopped.scene,paused);
+  expect([...owner.diagnosticSnapshot()!.particleColors!.packed]).toEqual([0x01112233,0x01112233,0x01112233]);
+  owner.reset();
+ });
  it('resumes from the actual paused seek camera instead of restoring the initial camera',()=>{
   const s=scene(),owner=new SourcePerlinSession(),c=context(1000,true);c.perlinLive!.startAt=.5;
   const seek=generate(owner,s,c);expect(seek.perlinLive!.frame.camera.theta).not.toBe(ordinarySourceCameraInitial(s)!.theta);

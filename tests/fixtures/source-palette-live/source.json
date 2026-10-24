@@ -1,0 +1,76 @@
+{
+  "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "evidenceKind": "Static classfile audit; no new target execution or original pixel comparison",
+  "correction": "Appearance bootstrap #79 is Domain applyChanges; #80 is Roots/Perlin updatePaletteOnly. Earlier full-reload claim for Roots/Perlin is withdrawn.",
+  "claims": [
+    {
+      "method": "AppearanceSectionKt.FractalGradientSection$notifyGradientChanged",
+      "pc": "0-69",
+      "fact": "Domain callback #79 -> lambda22 applyChanges; supported others callback #80 -> lambda23 updatePaletteOnly; inspectorCommit preserves callback."
+    },
+    {
+      "method": "MathArtSession.parsePaletteColor",
+      "pc": "44-77",
+      "fact": "Six/eight hex digits become opaque ARGB on UI hot apply; ProjectState strings are unchanged."
+    },
+    {
+      "method": "MathArt.updatePalette",
+      "pc": "0-186",
+      "fact": "Null/empty no-op; dispatch to live scene and paused redraw. Does not write currentJsonConfig."
+    },
+    {
+      "method": "ComplexRootsMobject.resetForPaletteChange",
+      "pc": "0-5",
+      "fact": "Only pointCloudShapeDirty=true; no simulation/history/clock reset."
+    },
+    {
+      "method": "TimelinePanelKt.TopToolbarRightControls",
+      "pc": "1357 -> Bootstrap57 -> lambda7$2 @124 -> Bootstrap100 -> lambda7$2$0$0",
+      "fact": "IconButton callback start branch resetScene @48 precedes startRecordingWithAccessCheck @54."
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".cache/roots-perlin-generator-route-review-20261024/manifest.json",
+      "sha256": "6ab34ff61af7fe7f0a180c28be7512707b54f7a7e46042a0f0d4e32d0824c703"
+    },
+    {
+      "path": ".cache/roots-perlin-generator-route-review-20261024/README.md",
+      "sha256": "efcc9970e210bcd84e75439b3295e5b6e86628451001d0ebdd04ece95df0dd83"
+    },
+    {
+      "path": ".cache/roots-perlin-generator-route-review-20261024/Appearance.bootstrap-79-80.txt",
+      "sha256": "bbc2e55cf9b98f435fdf8500e17be246e5d8f5af5fe82f0e8f468c22e006377f"
+    },
+    {
+      "path": ".cache/roots-perlin-generator-route-review-20261024/MathArtSession.selected.txt",
+      "sha256": "273a2dd291ecde7345abc051d4196e733d80cd2f5356eaa857ac75e158767a8b"
+    },
+    {
+      "path": ".cache/roots-perlin-generator-route-review-20261024/MathArt.cold-config.selected.txt",
+      "sha256": "f966ccd04683c9d9a4e8af633cf13b118e75ec30ffd6db79ef81da1d6b7bd8b9"
+    },
+    {
+      "path": ".cache/roots-perlin-generator-route-review-20261024/MathArt.currentJsonConfig-writes.json",
+      "sha256": "288d8db94b01b1c50798edd5f0d461f694d4b87faefda33a3c70bb52036f128b"
+    },
+    {
+      "path": ".cache/roots-palette-reset-review-20261024/manifest.json",
+      "sha256": "3e739b0b51ce7b8687ec3f6c71784fd2262c5989b9a0511babb02aa58183153d"
+    },
+    {
+      "path": ".cache/roots-palette-reset-review-20261024/review.zh-CN.md",
+      "sha256": "748769e9f1c337872ba23d8f69e4463be63d0de513116f558cacc17f329f64f9"
+    },
+    {
+      "path": ".cache/roots-palette-reset-review-20261024/toolbar-recording-reset.txt",
+      "sha256": "36b09ad64a544be2acaec4e8352e3351e5a357383eb091cae20140e628876a1c"
+    }
+  ],
+  "limits": [
+    "Short authored palette padding remains different locally.",
+    "Empty hot commands and same-value UI recommits are not covered by the current canonical scene-change contract.",
+    "Roots hash collision semantics are not reproduced.",
+    "Recording call ordering is static evidence; real browser tests establish local behavior only."
+  ]
+}

@@ -2,6 +2,7 @@ import {useState} from 'react';
 import type {SceneDocument} from '../types';
 import {useI18n} from '../i18n';
 import {SourcePerlinDraftField} from './SourcePerlinDraftField';
+import {SourcePerlinPaletteEditor} from './SourcePerlinPaletteEditor';
 import {usesSourcePerlinCpu,sourcePerlinCpuConfiguration} from '../engine/sourcePerlinIdentity';
 import {parseSourcePerlinCpuDocument,type SourcePerlinCpuDocumentPayload as Config} from '../engine/sourcePerlinCpuDocument';
 
@@ -43,7 +44,7 @@ export function SourcePerlinCpuControls({scene,onChange,tab='all'}:Props){
  {source.cpuStyle==='particles'?<>{numeric('display','dotSize','dot-size','点大小')}{numeric('display','trailLifetime','trail-lifetime','轨迹保留时长')}{flag('showTrails','显示与记录轨迹')}{flag('fadeTrails','轨迹渐隐')}</>:numeric('curves','alpha','curve-alpha','曲线透明度')}
  {flag('accumulation','累积画面')}{source.display.accumulation&&numeric('display','accumulationFadeAlpha','fade-alpha','每帧背景淡出（0–255）')}
  {field('background','背景颜色（#AARRGGBB）','#'+source.display.backgroundColor.toString(16).padStart(8,'0').toUpperCase(),raw=>/^#[\da-f]{8}$/i.test(raw)?emit({...source,display:{...source.display,backgroundColor:parseInt(raw.slice(1),16)}}):t('请输入完整的 #AARRGGBB 颜色'))}
- {field('palette','颜色列表（#AARRGGBB）',source.palette.map(c=>'#'+c.toString(16).padStart(8,'0').toUpperCase()).join('\n'),raw=>{const tokens=raw.trim()?raw.trim().split(/[\s,]+/):[];if(tokens.some(c=>!/^#[\da-f]{8}$/i.test(c)))return t('请输入完整的 #AARRGGBB 颜色');return emit({...source,palette:tokens.map(c=>parseInt(c.slice(1),16))});},true)}
+ <SourcePerlinPaletteEditor palette={source.palette} prefix="source-perlin-cpu" onChange={palette=>emit({...source,palette})}/>
  </div></details>}
  <p className="muted">{t('输入后按 Enter 或移出输入框应用；颜色列表使用 Ctrl / ⌘ + Enter。')}</p>
  {error&&<p role="alert">{error}</p>}

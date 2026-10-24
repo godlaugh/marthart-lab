@@ -51,7 +51,9 @@ function prepareConfiguration(scene:SceneDocument){
  const config=parsed.value,camera=ordinarySourceCameraInitial(document);
  if(!camera||document.timeline.schedule!==ORDINARY_CAMERA_SEQUENCE)throw new Error('源 Perlin CPU 需要原版顺序时间线');
  if(complete)document.perlinSource=complete;else document.perlinCpuSource=config;
- return {document,config,complete,camera,key:identity([document.id,config,complete?.gpu,document.sourceCamera,document.settings.sourceCameraProjection,document.timeline])};
+ const {palette,...simulation}=config;
+ const shared=[document.id,complete?.gpu,document.sourceCamera,document.settings.sourceCameraProjection,document.timeline];
+ return {document,config,complete,camera,key:identity([shared,simulation,palette]),simulationKey:identity([shared,simulation])};
 }
 type Configuration=ReturnType<typeof prepareConfiguration>;
 function ownConfiguration(value:Configuration):Configuration{return {...value,document:structuredClone(value.document)};}
@@ -92,9 +94,9 @@ export class SourcePerlinSession{
    this.completed.context.perlinLive!.clock={...this.live.context.clock};
   }catch(error){this.reset([error]);throw error;}
  }
- /** Explicit apply includes the selected backend. Non-backend document edits
-  * in generate use the local auto-apply policy; resize/rewind/hot switching do
-  * not overwrite this snapshot. This is not inferred from model construction. */
+ /** Explicit apply includes the selected backend and authored palette. Live
+  * palette/backend edits do not update the original currentJsonConfig snapshot;
+  * structural edits retain the local auto-apply policy. */
  applyConfiguration(scene:SceneDocument):void{
   this.requireIdle();this.cleanup.prepare();const prepared=prepareConfiguration(scene);
   this.applied=ownConfiguration(prepared);this.observedDocumentKey=prepared.key;this.key='';this.completed=undefined;this.handoff=undefined;
@@ -193,7 +195,7 @@ export class SourcePerlinSession{
   });
  }
  private runtimeKey(configuration:Configuration,binding:Binding,live?:SourcePerlinLiveContext){
-  return identity([configuration.key,binding.view,binding.width,binding.height,binding.kind,live?['live',live.sessionId,live.startAt]:['fixed']]);
+  return identity([live?configuration.simulationKey:configuration.key,binding.view,binding.width,binding.height,binding.kind,live?['live',live.sessionId,live.startAt]:['fixed']]);
  }
  private liveFacts(frame:OrdinarySourceCameraFrame,renderKind:'update'|'snapshot'):SourcePerlinLiveFacts {
   const live=this.live!,clock=live.clock.diagnostics();
@@ -224,9 +226,13 @@ export class SourcePerlinSession{
    const density=view.pixelDensity,width=kind==='primary'?initial.viewport.logicalWidth:Math.round(context.width/density),height=kind==='primary'?initial.viewport.logicalHeight:Math.round(context.height/density);
    if(width<1||height<1)throw new Error('Perlin 导出尺寸小于一个逻辑像素');
    if(kind==='primary'&&(width!==view.width||height!==view.height))throw new Error('Perlin 主画布尺寸与模拟参考尺寸不一致');
-   // Actual document edits auto-apply locally. Canvas resize, cold replay and
-   // hot backend selection are deliberately not application events.
-   if(prepared.key!==this.observedDocumentKey){this.applied=ownConfiguration(prepared);this.observedDocumentKey=prepared.key;}
+   // Keep authored changes, live palette application and cold initialization
+   // separate. MathArtSession.updatePaletteOnly does not write currentJsonConfig.
+   const edited=prepared.key!==this.observedDocumentKey;
+   if(edited){
+    if(!live||!this.applied||!this.configuration||prepared.simulationKey!==this.configuration.simulationKey)this.applied=ownConfiguration(prepared);
+    this.observedDocumentKey=prepared.key;
+   }
    const binding={view,width,height,density,kind},key=this.runtimeKey(prepared,binding,live),rebuild=key!==this.key;
    const seek=live?.startAt!==undefined&&(this.live?.context.sessionId!==live.sessionId||this.live.context.startAt!==live.startAt);
    if(rebuild){
@@ -235,6 +241,12 @@ export class SourcePerlinSession{
    }
    if(live)this.live!.clock.assertPaused(live.clock.paused);
    this.completed=undefined;this.handoff=undefined;this.cancelled=context.isCancelled;this.work=0;
+   if(live&&!rebuild&&edited){
+    // Canonical values are already parsed ARGB. The UI hot path discards alpha;
+    // saved/imported colors and the cold snapshot keep their authored bytes.
+    // The canonical document parser already requires a nonempty palette.
+    this.model!.replacePalette(prepared.config.palette.map(color=>(color|0xff000000)>>>0));
+   }
    const requestedBackend=prepared.complete?.backend??'cpu',switched=this.backend!==requestedBackend;
    if(switched){this.backend=requestedBackend;this.model?.setBackend(requestedBackend);}
    const previousDraws=this.target?.diagnostics().draws;
@@ -274,7 +286,10 @@ export class SourcePerlinSession{
    sourceCamera:structuredClone(this.applied.document.sourceCamera),timeline:{...structuredClone(this.applied.document.timeline),fps:options.simulationFps},
    settings:{...scene.settings,sourceCameraProjection:this.applied.document.settings.sourceCameraProjection}};
   const configuration=prepareConfiguration(effective),binding=this.binding!,primary=copyContext({...context,time:0});
-  const record:Recording={handle:Object.freeze({}),scene:effective,context:primary,clock,next:0};
+  // Reset uses the cold palette, but ProjectState still owns the latest saved
+  // colors. Publish those authored colors without silently applying them again.
+  const published={...effective,perlinSource:{...effective.perlinSource,palette:[...scene.perlinSource!.palette]}};
+  const record:Recording={handle:Object.freeze({}),scene:published,context:primary,clock,next:0};
   const started=performance.now();let changed=false;
   try{
    this.cancelled=context.isCancelled;this.work=0;
@@ -286,9 +301,9 @@ export class SourcePerlinSession{
    this.initializeTimeline(configuration,binding,true);
    if(this.live){this.live.clock.forceResume();this.live.context.clock={paused:false};primary.perlinLive={...this.live.context,clock:{paused:false}};}
    this.key=this.runtimeKey(configuration,binding,this.live?.context);
-   this.observedDocumentKey=configuration.key;this.recording=record;
+   this.observedDocumentKey=prepareConfiguration(published).key;this.recording=record;
    const warmup=this.advanceRecording(record,0,started);
-   return {handle:record.handle,scene:structuredClone(effective),context:copyContext(primary),clock:{...clock},warmup};
+   return {handle:record.handle,scene:structuredClone(published),context:copyContext(primary),clock:{...clock},warmup};
   }catch(error){if(changed)this.reset([error]);throw error;}finally{this.cancelled=undefined;}
  }
  private advanceRecording(record:Recording,displayFrame:number,started:number):Raster{

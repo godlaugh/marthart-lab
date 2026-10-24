@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {useI18n} from '../i18n';
 import type {RasterOutput,SceneDocument} from '../types';
 import {Control} from './Fields';
+import {SourceGradientPaletteEditor} from './SourceGradientPaletteEditor';
 import {copyRootsManualColors,withRootsDensityColorVersion} from '../engine/rootsControls';
 import {DEFAULT_ROOTS_SOURCE_COLORS,ROOTS_SOURCE_TONE_FIELDS,parseRootsDensityColorVersion,parseRootsSourcePalette,rootsSourceColorRgbHex,usesRootsSourceDensity,withRootsSourceColorRgb} from '../engine/rootsDensityColor';
 
@@ -29,9 +30,9 @@ export function RootsDensityColorControls({scene,onChange,facts}:Props&{facts?:R
 export function RootsSourcePaletteEditor({scene,onChange}:Props){
  const {t}=useI18n(),[selected,setSelected]=useState(0),[error,setError]=useState('');
  const colors=scene.rootsSourcePalette?.colors??DEFAULT_ROOTS_SOURCE_COLORS,index=Math.min(selected,Math.max(0,colors.length-1)),current=colors[index];
- const emit=(next:readonly string[])=>{try{onChange({...scene,rootsSourcePalette:parseRootsSourcePalette({colors:[...next]})});setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}};
+ const emit=(next:readonly string[],resetSelection=false)=>{try{onChange({...scene,rootsSourcePalette:parseRootsSourcePalette({colors:[...next]})});if(resetSelection)setSelected(0);setError('');return undefined;}catch(e){const message=e instanceof Error?e.message:String(e);setError(message);return message;}};
  const previewColors=(colors.length===1?[colors[0],colors[0]]:colors).slice(0,32).map(rootsSourceColorRgbHex);
- return <div style={{display:'grid',gap:10}}>
+ return <SourceGradientPaletteEditor source={scene.rootsSourcePalette} colors={colors} onGenerate={emit} onRestore={palette=>{onChange({...scene,rootsSourcePalette:palette});setError('');return undefined;}}><div data-testid="source-roots-palette" style={{display:'grid',gap:10}}>
   <p className="muted">{t('源色板保留颜色原文与顺序；所有颜色生成 256 色纹理，透明度不参与根密度。无色板时用四个默认颜色，显式空色板为白色。')}</p>
   <div role="img" aria-label={t('复根源色板预览')} style={{height:25,borderRadius:5,background:previewColors.length?`linear-gradient(90deg,${previewColors.join(',')})`:'#ffffff',border:'1px solid var(--border)'}}/>
   {colors.length>32&&<p className="muted">{t('预览仅展示前 32 色，实际纹理使用完整色板。')}</p>}
@@ -44,5 +45,5 @@ export function RootsSourcePaletteEditor({scene,onChange}:Props){
   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button onClick={()=>{emit([...colors,current??'#ffffff']);setSelected(colors.length);}}>{t('添加颜色')}</button><button disabled={colors.length<2} onClick={()=>{emit([...colors].reverse());setSelected(0);}}>{t('反转')}</button><button onClick={()=>{emit(DEFAULT_ROOTS_SOURCE_COLORS);setSelected(0);}}>{t('恢复四色默认')}</button><button onClick={()=>{try{onChange(copyRootsManualColors(scene));setSelected(0);setError('');}catch(e){setError(e instanceof Error?e.message:String(e));}}}>{t('拷贝本地手动颜色一次')}</button></div>
   <p className="muted">{t('拷贝仅使用保存的手动色标，不采样余弦、HSV、曲线或带位置色板；本地色板保持不变。')}</p>
   {error&&<p role="alert">{t(error)}</p>}
- </div>;
+ </div></SourceGradientPaletteEditor>;
 }

@@ -12,7 +12,7 @@ const clamp=(n:number,a=0,b=1)=>Math.max(a,Math.min(b,n)),F=Math.fround;
 const countRules={integer:true,min:2,max:25,precision:0,step:1};
 const scalarRules={min:0,max:1,precision:3,step:.01},frequencyRules={...scalarRules,min:.5,max:3};
 
-/** Surface/Attractor source UI keeps generator parameters only while mounted.
+/** Transient source editors keep generator parameters only while mounted.
  * The canonical palette alone is persisted. Snapshot the caller's authored
  * representation so Manual restoration preserves omission, alpha and tail. */
 export function SourceGradientPaletteEditor<T>({source,colors,onGenerate,onRestore,children}:{source:T;colors:readonly string[];onGenerate:(colors:string[],resetSelection?:boolean)=>string|undefined;onRestore:(source:T)=>string|undefined;children:ReactNode}){
