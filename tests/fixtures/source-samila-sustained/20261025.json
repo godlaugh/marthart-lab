@@ -1,0 +1,666 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "status": "single-device-sustained-render-contract-verified",
+  "scope": "Two real original 300-second offscreen fixed-dt workloads and complete same-seed native-production replays. Raw Float64 parameters are not all equal; exact Float32 shader input and observed control/selected image boundaries are explicit.",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "remaining": [
+    "second supported device: user confirmed only this Mac is available; second device unavailable and unverified",
+    "broader public-window/codec/package acceptance outside this direct offscreen workload"
+  ],
+  "secondDevice": {
+    "available": false,
+    "verified": false,
+    "reason": "User confirmed they currently have only this Mac. No second-device result is claimed."
+  },
+  "unmeasuredCosts": [
+    "GPU physical memory",
+    "energy and temperature",
+    "agent token cost",
+    "isolated GPU stage timing"
+  ],
+  "unmeasuredCostsScope": "Measurement limitations only; this report does not add Goal acceptance requirements.",
+  "limits": [
+    "Original synchronizes core drawing but downloads only selected quality images; production transports a full RGBA every display. Their time scopes are not equal GPU kernel measurements.",
+    "Fixed dt=1/60 is simulation stepping, not a 60 FPS guarantee.",
+    "CPU is whole supervised process-family RUSAGE_CHILDREN including startup/cleanup and ps overhead; RSS sums are simultaneous 0.5-second samples, not PSS or GPU allocations.",
+    "Three complete quality images per case do not establish every intermediate image byte equal.",
+    "Single runs and uncontrolled OS/driver caches do not establish statistical significance or leak-free/thermal behavior."
+  ],
+  "secondDeviceVerified": false,
+  "fullIndex": {
+    "path": ".cache/samila-sustained-load-20261025/sustained-index.json",
+    "sha256": "40072553b97daa96a7459eaea4f502e239091a0de9942d89499e497d98bd0aa0",
+    "bytes": 221826
+  },
+  "report": {
+    "path": ".cache/samila-sustained-load-20261025/SUSTAINED.zh-CN.md",
+    "sha256": "2de2961b45062254daae57fc1aa79a55c26acc77797eeeb81d41d54bb3c424e7",
+    "bytes": 6259
+  },
+  "renderContract": {
+    "path": ".cache/samila-sustained-load-20261025/RENDER-CONTRACT.zh-CN.md",
+    "sha256": "e729d2685f1bd238fe561bebdd4a668b81668c3f8e01eb0a0cbbd3d7f951c633",
+    "bytes": 1812
+  },
+  "cpuJvmIndex": {
+    "path": ".cache/samila-parameter-long-cpu-20261025/combined-index-v2.json",
+    "sha256": "ec87ef92d4769054a58d8346887edc226705506ec3862a5e3cc67780e7e38ab0",
+    "bytes": 8689
+  },
+  "strictFailure": {
+    "displayIndex": 572,
+    "completedTraceFrames": 572,
+    "report": {
+      "path": ".cache/samila-sustained-load-20261025/Samila-300s-production-run1/report.json",
+      "sha256": "f799ce341f696e6b59ac7bee56fff1605dd5d622f3bfea1f5b0bba6c6277ba53",
+      "bytes": 133535
+    },
+    "run": {
+      "path": ".cache/samila-sustained-load-20261025/Samila-300s-production-run1/run.json",
+      "sha256": "bdf8ab4a1cdabfb4a51eb1ffbfc156803f0511c4d9b534c7dbedba73ed463854",
+      "bytes": 1634
+    },
+    "trace": {
+      "path": ".cache/samila-sustained-load-20261025/Samila-300s-production-run1/trace.jsonl",
+      "sha256": "041e1a76146f4f869f89b48dc61a16ef732e9fb90439a57853f6b575809f4dc9",
+      "bytes": 957035
+    },
+    "cleanup": {
+      "ownedProcessesAfterClose": 0,
+      "processGroupAfter": []
+    }
+  },
+  "cases": [
+    {
+      "name": "Samila",
+      "frames": 14885,
+      "samples": 112722080640,
+      "batchSize": 1262144,
+      "dimensions": {
+        "primaryPhysical": [
+          810,
+          972
+        ],
+        "targetPhysical": [
+          576,
+          384
+        ],
+        "requestedOutput": [
+          192,
+          128
+        ],
+        "pixelDensity": 2,
+        "primaryPixelHeight": 972
+      },
+      "quality": [
+        {
+          "displayIndex": 0,
+          "key": "first",
+          "bytes": 884736,
+          "dimensions": [
+            576,
+            384
+          ],
+          "differentBytes": 0,
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-run1/quality-0/core.rgba",
+            "sha256": "75b488909cbb2477f27099d7e19528ae49ae30ca442cad036a55848fdc1898ac",
+            "bytes": 884736
+          },
+          "output": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/quality-0.rgba",
+            "sha256": "65183b90ce5780dcf1147903d0769605626070a021232421a4ad95ac67d1e0e9",
+            "bytes": 884736
+          },
+          "density": {
+            "occupiedPixels": 82490,
+            "maxCount": 391.78240966796875
+          }
+        },
+        {
+          "displayIndex": 7529,
+          "key": "middle",
+          "bytes": 884736,
+          "dimensions": [
+            576,
+            384
+          ],
+          "differentBytes": 0,
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-run1/quality-7529/core.rgba",
+            "sha256": "f783e08561a80bef3e647a0961217f61e19dd21cba890ef012aec29ee7bd7642",
+            "bytes": 884736
+          },
+          "output": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/quality-7529.rgba",
+            "sha256": "1086afb39a943a625eeb0e0e9b1e22af7e3c200d37c521e8e5c7b1438996e7c3",
+            "bytes": 884736
+          },
+          "density": {
+            "occupiedPixels": 82482,
+            "maxCount": 394.7410888671875
+          }
+        },
+        {
+          "displayIndex": 14884,
+          "key": "last",
+          "bytes": 884736,
+          "dimensions": [
+            576,
+            384
+          ],
+          "differentBytes": 0,
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-run1/quality-14884/core.rgba",
+            "sha256": "c297ea472e0b19c7bb894668d551a62c995d65ea0fa8595a7048148566e44ca8",
+            "bytes": 884736
+          },
+          "output": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/quality-14884.rgba",
+            "sha256": "c1ac199c3343fa84192cf1aa70d63f0cc263e2e1dea8eff5ec1f22922bc011de",
+            "bytes": 884736
+          },
+          "density": {
+            "occupiedPixels": 82512,
+            "maxCount": 405.7961120605469
+          }
+        }
+      ],
+      "parameterContract": {
+        "differingDoubleFrames": 515,
+        "differingValues": 515,
+        "maxAbsoluteDifference": 4.440892098500626e-16,
+        "maxUlpDifference": "2",
+        "firstDifference": {
+          "displayIndex": 572,
+          "name": "a",
+          "actual": 2.6382295632342365,
+          "expected": 2.638229563234237,
+          "absoluteDifference": 4.440892098500626e-16,
+          "ulpDifference": "1",
+          "shaderFloat32": 2.6382296085357666
+        },
+        "allNamedFloat32ValuesChecked": 59540,
+        "float32DifferentValues": 0,
+        "controlDifferentChecks": 0
+      },
+      "postComparison": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/cpu-owner-comparison-v2.json",
+        "sha256": "4580d9f035e41243f16a3226dfdfdd12d8c54f9bb49922e8c286bcb0313d2539",
+        "bytes": 2344
+      },
+      "cost": {
+        "original": {
+          "wallSeconds": 300.027725625,
+          "wholeRunSeconds": 308.0087205839809,
+          "wholeRunCpuSeconds": 45.151631,
+          "wholeRunPeakFamilyRssKiB": 368464,
+          "firstFrameSeconds": 0.146504291,
+          "p50Seconds": 0.018679042,
+          "p95Seconds": 0.025039417,
+          "windowRssPeakKiB": 368464,
+          "periods": {
+            "early": {
+              "p50Seconds": 0.018485,
+              "p95Seconds": 0.024755375,
+              "rssPeakKiB": 277664
+            },
+            "middle": {
+              "p50Seconds": 0.018368833,
+              "p95Seconds": 0.024276834,
+              "rssPeakKiB": 295488
+            },
+            "late": {
+              "p50Seconds": 0.0193085,
+              "p95Seconds": 0.025843875,
+              "rssPeakKiB": 368464
+            }
+          },
+          "report": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-run1/run.json",
+            "sha256": "4bbea8111fbce9adb39310f2c88eacb1d6f09e3af948bc1645178031c9add5e0",
+            "bytes": 23724
+          },
+          "summary": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-run1/summary.json",
+            "sha256": "85c336bad1abede3af0d56091c99261b08dcd49c30f95f992e13e046004df066",
+            "bytes": 4610
+          },
+          "trace": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-run1/trace.jsonl",
+            "sha256": "ae571a4bc79d1d532b1d0ec17e22e24c9c6b06e59a46655a43e981cdb61cb613",
+            "bytes": 9953058
+          },
+          "rssSamples": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-run1/process-samples.jsonl",
+            "sha256": "388853ec73518f1582669d1711ab3ffd56bb1bc029cc958f36170819d8fda0eb",
+            "bytes": 160239
+          }
+        },
+        "production": {
+          "wallSeconds": 705.057750584,
+          "wholeRunSeconds": 708.9448436250677,
+          "wholeRunCpuSeconds": 837.748795,
+          "wholeRunPeakFamilyRssKiB": 810016,
+          "firstFrameSeconds": 0.2792707499999997,
+          "p50Seconds": 0.044966416999988726,
+          "p95Seconds": 0.0630326660000137,
+          "windowRssPeakKiB": 810016,
+          "periods": {
+            "early": {
+              "p50Seconds": 0.04671466699999292,
+              "p95Seconds": 0.06433333300000231,
+              "rssPeakKiB": 810016
+            },
+            "middle": {
+              "p50Seconds": 0.04715212499996414,
+              "p95Seconds": 0.06420491600001696,
+              "rssPeakKiB": 800560
+            },
+            "late": {
+              "p50Seconds": 0.04133579200005624,
+              "p95Seconds": 0.05614324999996461,
+              "rssPeakKiB": 800656
+            }
+          },
+          "report": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/report.json",
+            "sha256": "b77103c4305d0f3ba4f67a531ada355e4c1b0d62b00b3e615a8a06ed5b2348e7",
+            "bytes": 136913
+          },
+          "summary": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/summary.json",
+            "sha256": "83b4d591975f4886327f355e226658d172842b4c39551bd96bd37385a7d85fac",
+            "bytes": 6302
+          },
+          "trace": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/trace.jsonl",
+            "sha256": "972d185159c920606965e01ba262578742ae85968d32c6dae0c2c2b5054f6926",
+            "bytes": 26384677
+          },
+          "rssSamples": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-300s-render-contract-run1/process-samples.jsonl",
+            "sha256": "db5f2ddbf290dcad9ed46e068f05afdd6dea0105b03795d0635d173f02712069",
+            "bytes": 732266
+          }
+        }
+      },
+      "productionCleanup": {
+        "afterRelease": {
+          "creations": 2,
+          "displays": 14887,
+          "steps": 0,
+          "presentations": 0,
+          "requestBytes": 22942722,
+          "owned": false,
+          "active": false,
+          "cleanupPending": false,
+          "displayIndex": 0,
+          "retainedBytes": 0,
+          "resources": 0
+        },
+        "processesAfterClose": 0,
+        "processGroupAfter": []
+      },
+      "perDisplayBackend": {
+        "creations": [
+          2
+        ],
+        "resources": [
+          1
+        ],
+        "retainedBytes": [
+          14067612
+        ]
+      },
+      "classification": {
+        "steps": {
+          "sum": 112722080640,
+          "min": 7572864,
+          "max": 7572864
+        },
+        "accepted": {
+          "sum": 112722080640,
+          "min": 7572864,
+          "max": 7572864
+        },
+        "clipped": {
+          "sum": 0,
+          "min": 0,
+          "max": 0
+        },
+        "invalid": {
+          "sum": 0,
+          "min": 0,
+          "max": 0
+        },
+        "sampleInvalid": {
+          "sum": 0,
+          "min": 0,
+          "max": 0
+        }
+      },
+      "originalPendingErrors": {
+        "byCode": {
+          "1282": 44655
+        },
+        "byDrawAndCode": {
+          "0:1282": 14885,
+          "1:1282": 14885,
+          "2:1282": 14885
+        },
+        "total": 44655
+      },
+      "originalDisposedResources": {
+        "Program": 5,
+        "Framebuffers": 0,
+        "Buffers": 9,
+        "Shader": 10,
+        "Renderbuffers": 0,
+        "Textures": 2
+      },
+      "driver": {
+        "renderer": "Apple M2 Max",
+        "vendor": "Apple",
+        "version": "4.1 Metal - 90.5",
+        "glsl": "4.10"
+      }
+    },
+    {
+      "name": "samila1",
+      "frames": 2796,
+      "samples": 110086527744,
+      "batchSize": 6562144,
+      "dimensions": {
+        "primaryPhysical": [
+          810,
+          972
+        ],
+        "targetPhysical": [
+          576,
+          384
+        ],
+        "requestedOutput": [
+          192,
+          128
+        ],
+        "pixelDensity": 2,
+        "primaryPixelHeight": 972
+      },
+      "quality": [
+        {
+          "displayIndex": 0,
+          "key": "first",
+          "bytes": 884736,
+          "dimensions": [
+            576,
+            384
+          ],
+          "differentBytes": 0,
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-run1/quality-0/core.rgba",
+            "sha256": "7ed6b9acfb9a783aebdeae0eea1032f5c11dfb56954d7c58357e2c3c23b6298b",
+            "bytes": 884736
+          },
+          "output": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/quality-0.rgba",
+            "sha256": "9d0fa442df936e715f2b40f4064c020d9b163767fb401d4fe1c2d06ae1ca52e0",
+            "bytes": 884736
+          },
+          "density": {
+            "occupiedPixels": 84337,
+            "maxCount": 176.73138427734375
+          }
+        },
+        {
+          "displayIndex": 1425,
+          "key": "middle",
+          "bytes": 884736,
+          "dimensions": [
+            576,
+            384
+          ],
+          "differentBytes": 0,
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-run1/quality-1425/core.rgba",
+            "sha256": "cbc7036e8b0137ecc07b03a2a028bd35dc498bf1d585adf23ada9334b92eb018",
+            "bytes": 884736
+          },
+          "output": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/quality-1425.rgba",
+            "sha256": "1e1ea7ddc3e3d390adae566900c3feff113dc1b717af2924418cb1e53cb56535",
+            "bytes": 884736
+          },
+          "density": {
+            "occupiedPixels": 84330,
+            "maxCount": 181.26083374023438
+          }
+        },
+        {
+          "displayIndex": 2795,
+          "key": "last",
+          "bytes": 884736,
+          "dimensions": [
+            576,
+            384
+          ],
+          "differentBytes": 0,
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-run1/quality-2795/core.rgba",
+            "sha256": "fcbf26039ffca733a7f6bfa3869c82632ae9ab14966c9a42a91fed247844c84a",
+            "bytes": 884736
+          },
+          "output": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/quality-2795.rgba",
+            "sha256": "d6df96be45d05c04b110672d6751cf3a41fe34f23fd4b8a01b2cdaea01b60f63",
+            "bytes": 884736
+          },
+          "density": {
+            "occupiedPixels": 84328,
+            "maxCount": 176.53443908691406
+          }
+        }
+      ],
+      "parameterContract": {
+        "differingDoubleFrames": 63,
+        "differingValues": 63,
+        "maxAbsoluteDifference": 4.440892098500626e-16,
+        "maxUlpDifference": "1",
+        "firstDifference": {
+          "displayIndex": 1600,
+          "name": "a",
+          "actual": 2.643381090703853,
+          "expected": 2.6433810907038526,
+          "absoluteDifference": 4.440892098500626e-16,
+          "ulpDifference": "1",
+          "shaderFloat32": 2.643381118774414
+        },
+        "allNamedFloat32ValuesChecked": 13980,
+        "float32DifferentValues": 0,
+        "controlDifferentChecks": 0
+      },
+      "postComparison": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/cpu-owner-comparison-v2.json",
+        "sha256": "497dd7aa78c07c598df437fa398130d4839eab5e178ea28739011e3a317ab0d4",
+        "bytes": 2351
+      },
+      "cost": {
+        "original": {
+          "wallSeconds": 300.025361917,
+          "wholeRunSeconds": 309.4210460409522,
+          "wholeRunCpuSeconds": 33.959822,
+          "wholeRunPeakFamilyRssKiB": 281840,
+          "firstFrameSeconds": 0.24687125,
+          "p50Seconds": 0.098641667,
+          "p95Seconds": 0.150783375,
+          "windowRssPeakKiB": 281840,
+          "periods": {
+            "early": {
+              "p50Seconds": 0.090536291,
+              "p95Seconds": 0.139648125,
+              "rssPeakKiB": 280688
+            },
+            "middle": {
+              "p50Seconds": 0.119298792,
+              "p95Seconds": 0.152797292,
+              "rssPeakKiB": 281616
+            },
+            "late": {
+              "p50Seconds": 0.093333875,
+              "p95Seconds": 0.152417709,
+              "rssPeakKiB": 281840
+            }
+          },
+          "report": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-run1/run.json",
+            "sha256": "48b201b75e84ada09267eb29d23cc5acbfcd68e70df7562dfcca873e2bb8705f",
+            "bytes": 23751
+          },
+          "summary": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-run1/summary.json",
+            "sha256": "6832bcfded2dff51e3b69c52524c4a635716b83963c2b35b957218e9cb44ec5f",
+            "bytes": 4623
+          },
+          "trace": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-run1/trace.jsonl",
+            "sha256": "004883bb114dec3c912e4e2385facb63b90d8853c42b3e8da5f08fad6f7d466d",
+            "bytes": 1904970
+          },
+          "rssSamples": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-run1/process-samples.jsonl",
+            "sha256": "3f898e87f725dbe88eced2b60e4b0d0c735014ba01bae600e51ce87113566401",
+            "bytes": 160727
+          }
+        },
+        "production": {
+          "wallSeconds": 448.461253125,
+          "wholeRunSeconds": 451.86418587504886,
+          "wholeRunCpuSeconds": 420.475927,
+          "wholeRunPeakFamilyRssKiB": 751872,
+          "firstFrameSeconds": 0.4092069999999999,
+          "p50Seconds": 0.157946082999988,
+          "p95Seconds": 0.16744950000000244,
+          "windowRssPeakKiB": 751872,
+          "periods": {
+            "early": {
+              "p50Seconds": 0.15764824999999838,
+              "p95Seconds": 0.16453945900002145,
+              "rssPeakKiB": 751872
+            },
+            "middle": {
+              "p50Seconds": 0.15776695799999288,
+              "p95Seconds": 0.16411887500004377,
+              "rssPeakKiB": 735392
+            },
+            "late": {
+              "p50Seconds": 0.15857049999997253,
+              "p95Seconds": 0.17577204200002597,
+              "rssPeakKiB": 736128
+            }
+          },
+          "report": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/report.json",
+            "sha256": "db65bb135b0573b0a386cc1efcb61827e81dd23cf1237cbd0c3d791afd42eeb2",
+            "bytes": 136916
+          },
+          "summary": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/summary.json",
+            "sha256": "e52c5c39362cc5aa3fa2b4699bce03b7f70972718cc859d21a37590f07ce7c88",
+            "bytes": 6269
+          },
+          "trace": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/trace.jsonl",
+            "sha256": "5d394d3e4f9dd4fee9d4e82555743d1566c0785f5217a7ef2aa3ba8be9ce182c",
+            "bytes": 4996289
+          },
+          "rssSamples": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-300s-render-contract-run1/process-samples.jsonl",
+            "sha256": "a8dab969e15d6563d34d6cf0099d23a17dc0f4e63080140da3db174440d0bd06",
+            "bytes": 459519
+          }
+        }
+      },
+      "productionCleanup": {
+        "afterRelease": {
+          "creations": 2,
+          "displays": 2798,
+          "steps": 0,
+          "presentations": 0,
+          "requestBytes": 4902672,
+          "owned": false,
+          "active": false,
+          "cleanupPending": false,
+          "displayIndex": 0,
+          "retainedBytes": 0,
+          "resources": 0
+        },
+        "processesAfterClose": 0,
+        "processGroupAfter": []
+      },
+      "perDisplayBackend": {
+        "creations": [
+          2
+        ],
+        "resources": [
+          1
+        ],
+        "retainedBytes": [
+          14067780
+        ]
+      },
+      "classification": {
+        "steps": {
+          "sum": 110086527744,
+          "min": 39372864,
+          "max": 39372864
+        },
+        "accepted": {
+          "sum": 110086527744,
+          "min": 39372864,
+          "max": 39372864
+        },
+        "clipped": {
+          "sum": 0,
+          "min": 0,
+          "max": 0
+        },
+        "invalid": {
+          "sum": 0,
+          "min": 0,
+          "max": 0
+        },
+        "sampleInvalid": {
+          "sum": 0,
+          "min": 0,
+          "max": 0
+        }
+      },
+      "originalPendingErrors": {
+        "byCode": {
+          "1282": 8388
+        },
+        "byDrawAndCode": {
+          "0:1282": 2796,
+          "1:1282": 2796,
+          "2:1282": 2796
+        },
+        "total": 8388
+      },
+      "originalDisposedResources": {
+        "Program": 5,
+        "Framebuffers": 0,
+        "Buffers": 9,
+        "Shader": 10,
+        "Renderbuffers": 0,
+        "Textures": 2
+      },
+      "driver": {
+        "renderer": "Apple M2 Max",
+        "vendor": "Apple",
+        "version": "4.1 Metal - 90.5",
+        "glsl": "4.10"
+      }
+    }
+  ]
+}
