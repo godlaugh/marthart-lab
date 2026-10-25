@@ -20,9 +20,9 @@ export function inspectSourceFrameHeader(packet){
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
  if(version===7&&b.readUInt32LE(60)===3){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
-  if(operation<1||operation>4||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生绘制头部无效');
+  if(operation<1||operation>5||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生绘制头部无效');
   if(operation===4){if(width!==1||height!==1||b.length!==88)return failure('input','迭代原生绘制释放范围无效');return{ok:true,value:{generation,sequence,width,height,samples,control:true,operation,resource,family:'iterated-render'}};}
-  if(b.length<{1:168,2:136,3:144}[operation]||b.readUInt32LE(88)!==16)return failure('input','迭代原生绘制请求截断');
+  if(b.length<{1:168,2:136,3:144,5:168}[operation]||b.readUInt32LE(88)!==16)return failure('input','迭代原生绘制请求截断');
   const stateResource=b.subarray(92,108).toString('hex'),expectedIndex=b.readUInt32LE(108),expectedDisplays=b.readUInt32LE(112),totalCount=b.readUInt32LE(116),record=operation===2?b.readUInt32LE(124):undefined;
   if(stateResource==='0'.repeat(32)||!totalCount||totalCount>8000000||operation===1&&expectedDisplays!==0||operation===2&&(expectedDisplays===0xffffffff||b.readUInt32LE(120)>1||record>1||!Number.isFinite(b.readFloatLE(128))||b.readFloatLE(128)<0||b.readFloatLE(128)>1||![1,2].includes(b.readUInt32LE(132)))||operation===3&&!expectedDisplays)return failure('input','迭代原生绘制检查点无效');
   if(b.length*6+128+(operation===3?width*height*8:0)>BUDGET)return failure('capacity','迭代原生绘制协议与读取超过容量');
@@ -92,8 +92,8 @@ function iteratedRenderResponse(payload,expected){
  }
  if(disposition!==0||stateResource!==expected.stateResource||index!==expected.expectedIndex||displays!==expected.expectedDisplays+(kind===2?1:0)||count!==expected.totalCount||width!==expected.width||height!==expected.height)return failure('protocol','迭代原生绘制确认检查点或尺寸不符');
  // A later compute advance does not change the last index drawn into this ink.
- if(expected.owned&&(kind===1||['stateResource','count','width','height'].some(k=>metadata[k]!==expected.owned[k])||expected.expectedDisplays!==expected.owned.displays||kind===3&&index!==expected.owned.index))return failure('protocol','迭代原生绘制确认与自有资源不符');
- if(kind===1&&!payload.subarray(64,128).every(n=>n===0)||kind===2&&(!Number.isSafeInteger(invalid)||accepted+clipped>count||sampleInvalid!==(expected.record?count-accepted-clipped:0)||!payload.subarray(84,128).every(n=>n===0))||kind===3&&(!payload.subarray(64,84).every(n=>n===0)||occupied>width*height||!Number.isFinite(maxCount)||maxCount<0))return failure('protocol','迭代原生绘制统计覆盖无效');
+ if(expected.owned&&(kind===1||['stateResource','count','width','height'].some(k=>metadata[k]!==expected.owned[k])||expected.expectedDisplays!==expected.owned.displays||(kind===3||kind===5)&&index!==expected.owned.index))return failure('protocol','迭代原生绘制确认与自有资源不符');
+ if((kind===1||kind===5)&&!payload.subarray(64,128).every(n=>n===0)||kind===2&&(!Number.isSafeInteger(invalid)||accepted+clipped>count||sampleInvalid!==(expected.record?count-accepted-clipped:0)||!payload.subarray(84,128).every(n=>n===0))||kind===3&&(!payload.subarray(64,84).every(n=>n===0)||occupied>width*height||!Number.isFinite(maxCount)||maxCount<0))return failure('protocol','迭代原生绘制统计覆盖无效');
  return{ok:true,value:metadata};
 }
 const releaseOperation={bouncing:4,samila:3,iterated:5,'iterated-render':4};

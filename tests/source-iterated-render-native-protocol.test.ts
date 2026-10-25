@@ -11,7 +11,7 @@ const draw=():SourceIteratedRenderNativeRequest=>({...present(),operation:{...co
 // not evidence of native shaders or GPU mathematics.
 function reply(r:SourceIteratedRenderNativeRequest){
  const op=r.operation,b=new Uint8Array(128+(op.kind==='present'?r.width*r.height*4:0)),v=new DataView(b.buffer),u=(at:number,n:number)=>v.setUint32(at,n,true);
- u(0,3);u(4,{create:1,draw:2,present:3,release:4}[op.kind]);b.set(Uint8Array.from(resource.match(/../g)!,s=>parseInt(s,16)),8);
+ u(0,3);u(4,{create:1,draw:2,present:3,release:4,'replace-programs':5}[op.kind]);b.set(Uint8Array.from(resource.match(/../g)!,s=>parseInt(s,16)),8);
  if(op.kind==='release'){u(48,2);return b;}
  b.set(Uint8Array.from(stateResource.match(/../g)!,s=>parseInt(s,16)),24);u(40,op.expectedIndex);u(44,op.expectedDisplays+(op.kind==='draw'?1:0));u(52,op.expectedCount);u(56,r.width);u(60,r.height);
  if(op.kind==='draw'){u(64,17);u(72,5);u(76,2);u(80,op.record?1:0);}
@@ -35,6 +35,14 @@ describe('v7 retained iterated drawing contract',()=>{
   const v=new DataView(result.value.buffer);expect([v.getUint32(4,true),v.getUint32(60,true),v.getUint32(64,true),v.getUint32(108,true),v.getUint32(112,true),v.getUint32(116,true)]).toEqual([7,3,1,7,0,8]);
   expect(decodeSourceIteratedRenderNativeResponse(reply(request),request)).toMatchObject({resource,stateResource,index:7,displays:0,width:3,height:2,count:8,disposition:'owned'});
   expect(encodeSourceIteratedRenderNativeRequest(draw()).ok).toBe(true);
+ });
+ it('binds program replacement to retained ink without incrementing display or publishing statistics',()=>{
+  const r:SourceIteratedRenderNativeRequest={...present(),operation:{...common,kind:'replace-programs',programs}};
+  const encoded=encodeSourceIteratedRenderNativeRequest(r);expect(encoded.ok).toBe(true);if(!encoded.ok)return;
+  expect(new DataView(encoded.value.buffer).getUint32(64,true)).toBe(5);
+  expect(decodeSourceIteratedRenderNativeResponse(reply(r),r)).toMatchObject({index:7,displays:3,count:8});
+  const dirty=reply(r);dirty[64]=1;expect(()=>decodeSourceIteratedRenderNativeResponse(dirty,r)).toThrow();
+  expect(encodeSourceIteratedRenderNativeRequest(r,{retainedBytes:256*1024*1024-100}).ok).toBe(false);
  });
  it.each(['uniform-duplicate','uniform-hole','uniform-overflow','sampler','palette','clear','capacity'] as const)('rejects %s without an output packet',kind=>{
   const r=draw();if(r.operation.kind!=='draw')throw Error();const p=r.operation.plan;

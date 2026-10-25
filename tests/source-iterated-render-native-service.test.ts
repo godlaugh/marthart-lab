@@ -19,6 +19,7 @@ const programs=Object.fromEntries(['draw','statsFirst','statsReduce','present','
 const checkpoint={resource:token,stateResource:token,expectedIndex:1,expectedDisplays:0,expectedCount:count};
 const create=():SourceIteratedRenderNativeOperation=>({...checkpoint,kind:'create',expectedDisplays:0,programs});
 const draw=(record=true):SourceIteratedRenderNativeOperation=>({...checkpoint,kind:'draw',clear:true,record,decay:0.5,plan:{primitive:'points',palette:{key:'synthetic',format:'source-rgb1024',values:new Float32Array(3072)},noise:new Uint8Array(256),drawUniforms:[],statsUniforms:[]}});
+const replace=():SourceIteratedRenderNativeOperation=>({...checkpoint,kind:'replace-programs',expectedDisplays:1,programs});
 const present=():SourceIteratedRenderNativeOperation=>({...checkpoint,kind:'present',expectedDisplays:1,plan:{filter:'nearest',clear:[0,0,0,1],uniforms:[]}});
 const release=(resource=token):SourceIteratedRenderNativeOperation=>({kind:'release',resource});
 const stateCreate=():SourceIteratedNativeOperation=>({kind:'create',resource:token,count,...shaders});
@@ -41,7 +42,7 @@ const mode=${JSON.stringify(mode)},states=new Map(),inks=new Map();let input=Buf
 function handle(b){
  const family=b.readUInt32LE(60),kind=b.readUInt32LE(64),resource=b.subarray(72,88),key=resource.toString('hex');
  writeFileSync(${JSON.stringify(received)},String(b.readUInt32LE(16)));
- if(family===3&&kind===2&&mode==='hang')return;
+ if(family===3&&(kind===2&&mode==='hang'||kind===5&&mode==='replace-hang'))return;
  let payload,status=0,format=family===3?5:4;
  if(family===2){
   let state=states.get(key);if(kind===1){state={index:0,uploaded:0,count:b.readUInt32LE(88)};states.set(key,state);}
@@ -81,6 +82,14 @@ function handle(b){
    if(mode==='present-facts')payload.writeUInt32LE(1,64);
    if(mode==='input-error'){status=1;payload=Buffer.from('synthetic malformed present');}
   }
+  if(kind===5){
+   if(mode==='replace-facts')payload.writeUInt32LE(1,64);
+   if(mode==='replace-displays')payload.writeUInt32LE(ink.displays+1,44);
+   if(mode==='replace-index')payload.writeUInt32LE(ink.index+1,40);
+   if(mode==='replace-extra')payload=Buffer.concat([payload,Buffer.from([1])]);
+   if(mode==='replace-input'){status=1;payload=Buffer.from('candidate compile rejected; cleanup succeeded');}
+   if(mode==='replace-runtime'){status=4;payload=Buffer.from('candidate cleanup failed');}
+  }
   if(kind===4){if(mode==='release-checkpoint'&&ink)payload.writeUInt32LE(ink.index+1,40);if(mode==='release-state'&&ink)payload[24]^=1;if(mode==='absent-dirty'&&!ink)payload.writeUInt32LE(1,52);}
  }
  if(status)format=0;
@@ -118,6 +127,24 @@ describe('v7 iterated render gateway through actual sealed CPU child pipes',()=>
    expect(await f.compute(stateRelease())).toMatchObject({ok:true});expect(f.service.retainedResourceCount).toBe(0);expect(f.service.canAcquireLease).toBe(true);expect(f.service.sessionStarts).toBe(1);
   }finally{await f.close();}
  });
+ it('keeps the registered ink checkpoint and displayed pixels after program-only replacement, even after compute advances',async()=>{
+  const f=await initialized();try{
+   expect(await f.send(draw())).toMatchObject({ok:true});const before=await f.send(present());expect(await f.compute(advance(1))).toMatchObject({ok:true});
+   const result=await f.send(replace());expect(result).toMatchObject({ok:true,value:{format:'iterated-render-v1',rowOrder:'none',contextSerial:1,sessionSerial:1}});
+   const decoded=decodeSourceIteratedRenderNativeResponse(result.value.pixels,packet(replace()).request);expect(decoded).toMatchObject({index:1,displays:1,invalid:0,accepted:0,clipped:0,sampleInvalid:0,occupiedPixels:0,maxCount:0});expect(decoded.pixels).toBeUndefined();
+   expect(result.value.pixels.byteLength).toBe(128);const after=await f.send(present());expect(after.value.pixels).toEqual(before.value.pixels);expect(f.service.retainedResourceCount).toBe(2);expect(f.service.sessionStarts).toBe(1);
+   expect(await f.send(release())).toMatchObject({ok:true});expect(await f.compute(stateRelease())).toMatchObject({ok:true});
+  }finally{await f.close();}
+ });
+ it.each(['replace-facts','replace-displays','replace-index','replace-extra'])('rejects %s ACK and retires the exact ink/state child',async mode=>{
+  const f=await initialized(mode);try{expect(await f.send(draw())).toMatchObject({ok:true});expect(await f.send(replace())).toMatchObject({ok:false,error:{kind:'protocol'}});expect(f.service.processCount).toBe(0);expect(f.service.retainedResourceCount).toBe(0);}finally{await f.close();}
+ });
+ it('retains the previous ink after a recoverable replacement input error',async()=>{
+  const f=await initialized('replace-input');try{expect(await f.send(draw())).toMatchObject({ok:true});const before=await f.send(present());expect(await f.send(replace())).toMatchObject({ok:false,error:{kind:'input'}});const after=await f.send(present());expect(after.value.pixels).toEqual(before.value.pixels);expect(f.service.retainedResourceCount).toBe(2);expect(f.service.sessionStarts).toBe(1);}finally{await f.close();}
+ });
+ it.each(['replace-runtime','replace-hang'])('waits for exact child close after %s before clearing both registries',async mode=>{
+  const f=await initialized(mode),controller=new AbortController();try{expect(await f.send(draw())).toMatchObject({ok:true});const pending=f.send(replace(),controller.signal);await f.ready();if(mode==='replace-hang')controller.abort();expect(await pending).toMatchObject({ok:false,error:{kind:mode==='replace-hang'?'cancelled':'runtime'}});expect(f.service.processCount).toBe(0);expect(f.service.retainedResourceCount).toBe(0);expect(f.service.canAcquireLease).toBe(true);}finally{controller.abort();await f.close();}
+ });
  it('carries v7 facts and pixels over real HTTP, retains its page lease, and reaps both owners on disconnect',async()=>{
   const f=await fixture(),app=await createExportServer({root:join(root,'http-'+(++serial)),sourceRendererBackend:f.backend});
   const address=await app.listen(0),url=`http://127.0.0.1:${address.port}`,controller=new AbortController();let reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
@@ -126,7 +153,7 @@ describe('v7 iterated render gateway through actual sealed CPU child pipes',()=>
    const lease=await fetch(url+'/api/source-renderer/lease/'+other,{signal:controller.signal});expect(lease.status).toBe(200);reader=lease.body!.getReader();expect(new TextDecoder().decode((await reader.read()).value)).toBe('READY\n');
    const upload:SourceIteratedNativeOperation={kind:'upload',resource:token,expectedIndex:0,expectedCount:count,offset:0,positionsAndMetric:new Float32Array(count*4)};
    for(const op of [stateCreate(),upload,advance()]){const response=await post(computePacket(op));expect(response.status).toBe(200);await response.arrayBuffer();}
-   for(const op of [create(),draw(),present()]){
+   for(const op of [create(),draw(),replace(),present()]){
     const response=await post(packet(op).packet);expect(response.status).toBe(200);expect(response.headers.get('x-source-format')).toBe('iterated-render-v1');expect(response.headers.get('x-source-row-order')).toBe(op.kind==='present'?'bottom-up':'none');
     expect(response.headers.get('x-source-generation')).toBe('7');expect(response.headers.get('x-source-sequence')).toBe('1');expect(response.headers.get('x-source-context')).toBe('1');expect(response.headers.get('x-source-session')).toBe('1');
     const bytes=new Uint8Array(await response.arrayBuffer());expect(bytes.length).toBe(op.kind==='present'?152:128);expect(decodeSourceIteratedRenderNativeResponse(bytes,packet(op).request).stateResource).toBe(token);

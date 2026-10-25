@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "scope": "Opt-in built-in source 2D Symmetry through actual production Generator, retained native backend, shared HTTP lease and CGL. Full 2.0 Goal/M3 remains incomplete.",
+  "index": ".cache/iterated-native-production-20261025/index.json",
+  "indexSha256": "56afaf33ccd2a1df5d340a18291b488fe200b7af00c3c7c48ac6d542ac51c3c4",
+  "changedFileSha256": {
+    "scripts/verify-source-iterated-native-http.mjs": "4e8a4b6a0f6453e9953926057676a3e9cf5779516e52a07d147e9aec46de6807",
+    "scripts/verify-source-iterated-native-workflow.mjs": "1253fb69fc60baf812ef8d4ed9f9cfa21142f36fb5f80014b974e33cfaf5e3ef",
+    "server/render/SourceCglIteratedInk.h": "cc1bb57c941a510e881a291fc850148c9dcd050a6a1acb7b5b7cb59c78279723",
+    "server/render/SourceCglIteratedRenderProtocol.h": "bd86da404ed976a5e56253d65d04ddc68754ae7517a20924c0d7167ef6368cf8",
+    "server/render/SourceCglIteratedRenderRegistry.h": "a88e6bfbf55045417a413f41c6faaf82622e93996f9fdd98090289bc3dda0a6b",
+    "server/source-renderer.mjs": "c118975dcc5e8f9331051016a5a5bc06b0ab3a69674578d574841ec783bc6118",
+    "src/engine/client.ts": "4ec35c11fbb246aa353b11c65120cb1e16d8c98c03c3f68eb463ef7d3fd2ce92",
+    "src/engine/sourceIteratedRenderNativeProtocol.ts": "d7755d03d9be657d466516440190e52e4a95252eae94c0a0f181f72f7cad3590",
+    "src/engine/sourceIteratedSession.ts": "430c14d2e6b5be634b959c9c5041ab37b6fd26b835fc2de2327f5004d7dd33e9",
+    "tests/fixtures/source-iterated-native-ink-boundaries/runner.m": "fdb008dab4b1625845940a13caa174f09ebc59f60d4f4cb7459442b89bf1796e",
+    "tests/source-iterated-native-ink-boundaries.test.ts": "0c156698b9f6bdf0b11ade9200f5c11da3597b82f1495958b9f69f94fe5ee75a",
+    "tests/source-iterated-render-native-lifecycle.test.ts": "895b633825fde86b7eb661188c284941d1b22954fce837a902587947cb682b2b",
+    "tests/source-iterated-render-native-protocol.test.ts": "513141dabf1b3524d38dcbe1c8a8099eca2f3d0ff306e3c3da9d7ebca6e8cf54",
+    "tests/source-iterated-render-native-service.test.ts": "f766d5e8674474be28486bd4d4fb2acd35ecb55d704151ceccf9d3f125267d6f",
+    "server/render/SourceCglIteratedPrograms.h": "84f5200a8332d286c512065aea5da9309a926c0650a7b68af5763d0c182a6dda",
+    "src/engine/sourceIteratedNativeBackend.ts": "39f9ce8f8b1a516cf42df75a8cf191cfd457a394023938352149c35ce3bbfb88",
+    "tests/source-iterated-native-backend.test.ts": "16a1cc8b07f4de507ee4272f541ba7269a3e74b6bb11c0bedffdbb6f28155859",
+    "tests/source-iterated-native-generator.test.ts": "2dd9b5656c6d2a500f3fa971f840f58b11ebd0cfbfef2dfe388ee9142a24c9f7"
+  },
+  "validation": {
+    "codecClientTests": 34,
+    "backendBoundaryTests": 13,
+    "generatorAndSessionTests": 101,
+    "serviceTests": 43,
+    "nativeLifecycleTests": 20,
+    "cpuInkBoundaryTests": 1,
+    "cpuInkChecks": 285,
+    "cpuInkCases": 39,
+    "buildV2": "passed; existing chunk-size warning",
+    "typecheck": "passed",
+    "diffCheck": "passed"
+  },
+  "nativeHttp": {
+    "frames": 8,
+    "particleCount": 562144,
+    "dimensions": [
+      810,
+      972
+    ],
+    "rgbaBytesCompared": 25194240,
+    "rgbaDifferences": 0,
+    "requests": 88,
+    "requestBytes": 18295939,
+    "baselineBeforeCleanup": {
+      "requests": 44,
+      "requestBytes": 9135883
+    },
+    "frameSeconds": [
+      2.0646999999284743,
+      0.3047000000476837,
+      0.2875,
+      0.30289999997615813,
+      0.306,
+      0.31289999997615814,
+      0.30110000002384185,
+      0.31260000002384186
+    ],
+    "interactions": {
+      "baseline": {
+        "requests": 44,
+        "requestBytes": 9135883
+      },
+      "capture": {
+        "width": 160,
+        "height": 120,
+        "enhancement": {
+          "enhancement": "mathart-1.7.8-scale1",
+          "baseSize": [
+            160,
+            120
+          ],
+          "scale": 1,
+          "resampling": "none",
+          "originalRuntimeCompared": false
+        },
+        "renderer": {
+          "backend": "native",
+          "identity": "912a69670c9919a53f0e1c72b6616add12728cf7ddaf45f4a6c76ef9e1387320",
+          "generation": 1,
+          "sequence": 48,
+          "samples": 0
+        }
+      },
+      "navigation": {
+        "paused": true,
+        "renderer": {
+          "backend": "native",
+          "identity": "912a69670c9919a53f0e1c72b6616add12728cf7ddaf45f4a6c76ef9e1387320",
+          "generation": 1,
+          "sequence": 54,
+          "samples": 0
+        }
+      },
+      "recording": [
+        {
+          "width": 240,
+          "height": 180,
+          "recording": {
+            "displayFrame": 1,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          },
+          "renderer": {
+            "backend": "native",
+            "identity": "912a69670c9919a53f0e1c72b6616add12728cf7ddaf45f4a6c76ef9e1387320",
+            "generation": 2,
+            "sequence": 20,
+            "samples": 0
+          }
+        },
+        {
+          "width": 240,
+          "height": 180,
+          "recording": {
+            "displayFrame": 2,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          },
+          "renderer": {
+            "backend": "native",
+            "identity": "912a69670c9919a53f0e1c72b6616add12728cf7ddaf45f4a6c76ef9e1387320",
+            "generation": 2,
+            "sequence": 24,
+            "samples": 0
+          }
+        }
+      ],
+      "stop": {
+        "width": 810,
+        "height": 972,
+        "paused": false,
+        "renderer": {
+          "backend": "native",
+          "identity": "912a69670c9919a53f0e1c72b6616add12728cf7ddaf45f4a6c76ef9e1387320",
+          "generation": 2,
+          "sequence": 30,
+          "samples": 0
+        }
+      }
+    }
+  },
+  "cleanup": {
+    "ownedNativeProcesses": 0,
+    "processGroupAfter": [],
+    "browserErrors": [],
+    "pageErrors": []
+  },
+  "measurement": {
+    "seconds": 8.663504375028424,
+    "childCpuSeconds": 23.798623,
+    "processGroupRssPeakKiB": 1109072,
+    "sampleIntervalSeconds": 0.5,
+    "costLimits": [
+      "CPU RUSAGE_CHILDREN includes the ps sampling subprocesses; their overhead is not separately subtracted.",
+      "A 0.5-second RSS sample can miss short peaks.",
+      "GPU allocation and energy/thermal state not measured."
+    ]
+  },
+  "limitations": [
+    "Only this Mac; second device unavailable per user, no pending question.",
+    "8 final RGBA frames of one Symmetry preset; no new original app execution/export.",
+    "Production public Generator API tested, not a full React UI acceptance.",
+    "Only opt-in live built-in source 2D Symmetry. Map, custom kernels and cold reconstruction keep existing WebGL routes.",
+    "Screenshot/navigation/2-frame recording lifecycle verified in our app; no original screenshot/video encoding comparison in this run.",
+    "No speedup claim. Previous diagnostic run and new complete interaction run have different total workloads.",
+    "Installed 1.0 app unchanged."
+  ]
+}

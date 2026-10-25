@@ -41,8 +41,10 @@ function fixture(count=8){
  };
  const binding=(resource:string,index:number,displays:number)=>({resource,stateResource:STATE,expectedIndex:index,expectedDisplays:displays,expectedCount:count});
  return{count,job,source,program,programs,uniforms,drawPlan,
+  renderPrograms:(value:IteratedFrameJob)=>sourceIteratedRenderPrograms('native-gl41','symmetry',prepareSourceIteratedDrawPlan(value,target).sourceSplatProgram),
   seeds:()=>iteratedInitialChunk(job.config,0,count),
   create:(resource=INK_A,index=0):RenderOperation=>({...binding(resource,index,0),kind:'create',expectedDisplays:0,programs}),
+  replace:(resource=INK_A,index=0,displays=1,next=programs):RenderOperation=>({...binding(resource,index,displays),kind:'replace-programs',programs:next}),
   draw:(resource=INK_A,index=0,displays=0,value=job,clear=true):RenderOperation=>({...binding(resource,index,displays),kind:'draw',plan:drawPlan(value),record:value.config.record,decay:value.config.decay,clear}),
   present:(resource=INK_A,index=0,displays=1):RenderOperation=>({...binding(resource,index,displays),kind:'present',plan:presentPlan}),
   advance:(index:number,steps=1,extra:Partial<Extract<SourceIteratedNativeOperation,{kind:'advance'}>>={}):SourceIteratedNativeOperation=>({kind:'advance',resource:STATE,expectedCount:count,expectedIndex:index,steps,reset:false,dimension:2,uniforms,...extra}),
@@ -131,6 +133,71 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated render CGL 
    const result=await o.good(f.draw(INK_A,2,1,noRecord,false));expect(result.decoded).toMatchObject({index:2,displays:2,accepted:0,clipped:0,sampleInvalid:0});expect(bytes((await o.good(f.present(INK_A,2,2))).decoded.pixels!)).toEqual(original);
   }finally{await o.close();}
  });
+ it('replaces source, local and quad program tables without clearing ink or advancing computation',async()=>{
+  const o=await owner(),f=fixture();try{
+   await o.setup(f);await o.computeGood(f.advance(0));await o.good(f.create(INK_A,1));await o.good(f.draw(INK_A,1));
+   let index=1,displays=1,previous=await o.good(f.present(INK_A,index,displays));expect(previous.decoded.occupiedPixels).toBeGreaterThan(0);
+   // The render owner remains bound to its last draw even when the borrowed
+   // compute owner has already moved to a later checkpoint.
+   await o.computeGood(f.advance(1));const state=(await o.computeGood(f.read(2))).decoded,originalState=Buffer.from(bytes(state.positionsAndMetric!));
+   const local:IteratedFrameJob={...f.job,config:{...f.job.config,decay:1},palette:{...f.job.palette,cycles:2,stops:['#00ff00','#00ff00']}};local.symmetryPalette=prepareSourceSymmetryPalette(local.palette);
+   const quad:IteratedFrameJob={...f.job,config:{...f.job.config,decay:1},densitySplat:{...f.job.densitySplat!,path:'quad',dotSize:4,radius:4},palette:{...f.job.palette,stops:['#0000ff','#0000ff']}};quad.symmetryPalette=prepareSourceSymmetryPalette(quad.palette);
+   const points:IteratedFrameJob={...f.job,config:{...f.job.config,decay:1}};
+   expect(f.drawPlan(local).palette.format).toBe('local-rgba4097');expect(f.drawPlan(quad).primitive).toBe('triangles');expect(f.drawPlan(points).primitive).toBe('points');
+   for(const value of [local,quad,points]){
+    const original=Buffer.from(bytes(previous.decoded.pixels!)),replaced=await o.good(f.replace(INK_A,index,displays,f.renderPrograms(value)));
+    expect(replaced.decoded).toMatchObject({resource:INK_A,stateResource:STATE,disposition:'owned',index,displays,count:f.count,width:WIDTH,height:HEIGHT,invalid:0,accepted:0,clipped:0,sampleInvalid:0,occupiedPixels:0,maxCount:0});expect(replaced.decoded.pixels).toBeUndefined();
+    expect(replaced.result.value.sessionSerial).toBe(previous.result.value.sessionSerial);expect(replaced.result.value.contextSerial).toBe(previous.result.value.contextSerial);expect(o.service.retainedResourceCount).toBe(2);
+    const preserved=await o.good(f.present(INK_A,index,displays));expect(bytes(preserved.decoded.pixels!)).toEqual(original);expect(preserved.decoded.occupiedPixels).toBe(previous.decoded.occupiedPixels);expect(preserved.decoded.maxCount).toBe(previous.decoded.maxCount);
+    const retained=(await o.computeGood(f.read(2))).decoded;expect(bytes(retained.positionsAndMetric!)).toEqual(originalState);expect(retained.invalidCounts).toEqual(state.invalidCounts);expect(retained.validity).toEqual(state.validity);
+    // Exercise the installed variant with its production prepared uniforms/LUT.
+    // This is an additional accumulation, explicitly without clear or advance.
+    // A later compute checkpoint may cover different pixels, so maxCount must
+    // not decrease but need not strictly increase. Full output must change.
+    // Quad radius 4 ensures this tiny fixture covers actual fragment centers.
+    const drawn=await o.good(f.draw(INK_A,2,displays,value,false));expect(drawn.decoded.accepted).toBeGreaterThan(0);index=2;displays++;
+    const next=await o.good(f.present(INK_A,index,displays));expect(next.decoded.occupiedPixels).toBeGreaterThanOrEqual(previous.decoded.occupiedPixels);expect(next.decoded.maxCount).toBeGreaterThanOrEqual(previous.decoded.maxCount);expect(bytes(next.decoded.pixels!)).not.toEqual(original);previous=next;
+   }
+   expect((await o.good(releaseInk())).decoded).toMatchObject({index:2,displays:4,count:f.count});expect((await o.computeGood(releaseState())).decoded.index).toBe(2);
+  }finally{await o.close();}
+ },30000);
+ it('keeps the old programs and full output after rejected replacement compilation, linking or output ABI',async()=>{
+  const o=await owner(),f=fixture();try{
+   await o.setup(f);await o.computeGood(f.advance(0));await o.good(f.create(INK_A,1));await o.good(f.draw(INK_A,1));
+   const baseline=await o.good(f.present(INK_A,1)),original=Buffer.from(bytes(baseline.decoded.pixels!)),state=Buffer.from(bytes((await o.computeGood(f.read(1))).decoded.positionsAndMetric!));
+   const replacement=f.replace(INK_A,1);if(replacement.kind!=='replace-programs')throw Error('replacement fixture');
+   const invalidDrawPrograms=[
+    {...f.programs.draw,fragment:'#version 410 core\ninvalid shader;'},
+    {...f.programs.draw,vertex:'#version 410 core\nout vec2 sourceStepMetric;void main(){sourceStepMetric=vec2(0.);gl_Position=vec4(0.,0.,0.,1.);gl_PointSize=1.;}'},
+    {...f.programs.draw,fragment:'#version 410 core\nlayout(location=1)out vec4 result;void main(){result=vec4(1.);}'},
+   ];
+   const invalidProgramSets=invalidDrawPrograms.map(draw=>({...replacement.programs,draw}));
+   invalidProgramSets.push({...replacement.programs,present:{...replacement.programs.present,fragment:'#version 410 core\nuniform float unexpected;layout(location=0)out vec4 pixel;layout(location=1)out uvec4 facts;void main(){pixel=vec4(unexpected,0.,0.,1.);facts=uvec4(0u);}'}});
+   for(const programs of invalidProgramSets){
+    await o.rejected({...replacement,programs});
+    const retained=await o.good(f.present(INK_A,1));expect(bytes(retained.decoded.pixels!)).toEqual(original);expect(retained.decoded).toMatchObject({index:1,displays:1,occupiedPixels:baseline.decoded.occupiedPixels,maxCount:baseline.decoded.maxCount});expect(retained.result.value.contextSerial).toBe(baseline.result.value.contextSerial);expect(retained.result.value.sessionSerial).toBe(baseline.result.value.sessionSerial);expect(o.service.processCount).toBe(1);expect(o.service.retainedResourceCount).toBe(2);expect(bytes((await o.computeGood(f.read(1))).decoded.positionsAndMetric!)).toEqual(state);
+   }
+   await o.good(f.draw(INK_A,1,1,f.job,false));const continued=await o.good(f.present(INK_A,1,2));expect(continued.decoded.maxCount).toBeGreaterThan(baseline.decoded.maxCount);
+  }finally{await o.close();}
+ },30000);
+ it('rejects mismatched replacement bindings before changing the old program owner',async()=>{
+  const o=await owner(),f=fixture();try{
+   await o.setup(f);await o.computeGood(f.advance(0));await o.good(f.create(INK_A,1));await o.good(f.draw(INK_A,1));await o.setup(f,OTHER_STATE);
+   const baseline=await o.good(f.present(INK_A,1)),original=Buffer.from(bytes(baseline.decoded.pixels!)),replacement=f.replace(INK_A,1);if(replacement.kind!=='replace-programs')throw Error('replacement fixture');
+   const invalid:[RenderOperation,RenderOptions][]=[
+    [{...replacement,stateResource:OTHER_STATE},{}],
+    [{...replacement,expectedCount:f.count+1},{}],
+    [{...replacement,expectedIndex:0},{}],
+    [{...replacement,expectedDisplays:0},{}],
+    [replacement,{width:WIDTH+1}],
+    [replacement,{height:HEIGHT+1}],
+   ];
+   for(const [operation,options]of invalid){
+    await o.rejected(operation,options);const retained=await o.good(f.present(INK_A,1));expect(bytes(retained.decoded.pixels!)).toEqual(original);expect(retained.decoded).toMatchObject({index:1,displays:1});expect(retained.result.value.contextSerial).toBe(baseline.result.value.contextSerial);expect(retained.result.value.sessionSerial).toBe(baseline.result.value.sessionSerial);expect(o.service.retainedResourceCount).toBe(3);
+   }
+   await o.good(replacement);expect(bytes((await o.good(f.present(INK_A,1))).decoded.pixels!)).toEqual(original);await o.computeGood(releaseState(OTHER_STATE));
+  }finally{await o.close();}
+ },30000);
  it('keeps v6 advance compatible while v7 resets counters independently of nonfinite state',async()=>{
   const o=await owner(),f=fixture(2),diagnostic:IteratedGpuFieldSource={key:'render-counter-boundary',sourceCalculateNext:true,uniforms:{},source:'void calculate_next(in vec3 p,out vec3 next,out float metric){next=vec3(uintBitsToFloat(0x7fc12345u),uintBitsToFloat(0x7f800000u),0.);metric=uintBitsToFloat(0xff800000u);}'};
   try{

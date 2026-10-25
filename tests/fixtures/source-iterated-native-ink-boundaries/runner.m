@@ -16,8 +16,10 @@ static NSMutableDictionary<NSNumber*,NSArray*> *active;
 static GLuint nextObject=100,currentProgram=0,attachment=0;
 static GLenum nextError=GL_NO_ERROR;
 static CGLContextObj currentContext=(CGLContextObj)(uintptr_t)1;
-static BOOL failDraw=NO,failUnbind=NO,failDelete=NO,failLink=NO,externalAttribute=NO,badOutput=NO;
+static GLuint failDeleteObject=0;
+static BOOL failCompile=NO,failDraw=NO,failUnbind=NO,failDelete=NO,failLink=NO,externalAttribute=NO,badOutput=NO;
 static NSString *failureReason;
+static NSString *candidateUniformProblem;
 static void note(NSString *kind){[calls addObject:@{@"kind":kind}];}
 static CGLContextObj cpuCurrent(void){return currentContext;}
 static CGLContextObj cpuRetain(CGLContextObj c){return c;}
@@ -38,13 +40,13 @@ static void cpuParam(GLenum t,GLenum p,GLint n){(void)t;(void)p;(void)n;note(@"p
 static void cpuImage(GLenum t,GLint l,GLint f,GLsizei w,GLsizei h,GLint b,GLenum fm,GLenum ty,const void *d){(void)t;(void)l;(void)f;(void)w;(void)h;(void)b;(void)fm;(void)ty;(void)d;note(@"allocation");}
 static void cpuSubImage(GLenum t,GLint l,GLint x,GLint y,GLsizei w,GLsizei h,GLenum fm,GLenum ty,const void *d){(void)t;(void)l;(void)x;(void)y;(void)w;(void)h;(void)fm;(void)ty;(void)d;note(@"upload");}
 static void cpuGen(GLsizei n,GLuint *p){for(int i=0;i<n;i++)p[i]=nextObject++;note(@"allocation");}
-static void cpuDelete(GLsizei n,const GLuint *p){(void)n;(void)p;note(@"delete");if(failDelete){nextError=GL_INVALID_OPERATION;failDelete=NO;}}
+static void cpuDelete(GLsizei n,const GLuint *p){for(int i=0;i<n;i++)[calls addObject:@{@"kind":@"delete",@"handle":@(p[i])}];if(failDelete||(n&&failDeleteObject==p[0])){nextError=GL_INVALID_OPERATION;failDelete=NO;failDeleteObject=0;}}
 static GLuint cpuCreateShader(GLenum t){(void)t;note(@"createShader");return nextObject++;}
 static void cpuShaderSource(GLuint n,GLsizei c,const GLchar *const *s,const GLint *l){(void)n;(void)c;(void)s;(void)l;note(@"shaderSource");}
 static void cpuCompile(GLuint n){(void)n;note(@"compile");}
-static void cpuShaderInfo(GLuint n,GLenum p,GLint *v){(void)n;(void)p;*v=1;}
+static void cpuShaderInfo(GLuint n,GLenum p,GLint *v){(void)n;(void)p;*v=!failCompile;}
 static void cpuShaderLog(GLuint n,GLsizei c,GLsizei *l,GLchar *s){(void)n;(void)c;if(l)*l=0;*s=0;}
-static GLuint cpuCreateProgram(void){note(@"createProgram");return nextObject++;}
+static GLuint cpuCreateProgram(void){note(@"createProgram");GLuint p=nextObject++;if(candidateUniformProblem)active[@(p)]=@[@{@"name":[candidateUniformProblem isEqual:@"unknown-uniform"]?@"unexpected":@"radius",@"kind":[candidateUniformProblem isEqual:@"wrong-uniform-type"]?@"int":@"float",@"size":@([candidateUniformProblem isEqual:@"uniform-array"]?2:1)}];return p;}
 static void cpuAttach(GLuint p,GLuint s){(void)p;(void)s;note(@"attach");}
 static void cpuLink(GLuint p){(void)p;note(@"link");}
 static void cpuDetach(GLuint p,GLuint s){(void)p;(void)s;note(@"detach");}
@@ -151,11 +153,13 @@ static void samilaRaster(uint32_t w,uint32_t h){(void)w;(void)h;note(@"raster");
 -(void)acceptFixturePrograms:(NSDictionary*)fixture;
 -(BOOL)failed;
 -(GLuint)framebuffer;
+-(GLuint)activeProgram;
 @end
 @implementation CpuInk
--(void)acceptFixturePrograms:(NSDictionary*)fixture{_prepared=YES;_framebuffer=800;_vao=801;_ink=802;_output=803;_facts=804;_reductions[0]=805;_reductions[1]=806;_palette=807;_noise=808;NSArray *names=iteratedInkProgramNames();for(int i=0;i<6;i++){_programs[i]=(GLuint)i+1;active[@(i+1)]=fixture[names[i]];}}
+-(void)acceptFixturePrograms:(NSDictionary*)fixture{_prepared=YES;_framebuffer=800;_vao=801;_ink=802;_output=803;_facts=804;_reductions[0]=805;_reductions[1]=806;_palette=807;_noise=808;NSArray *names=iteratedInkProgramNames();for(int i=0;i<6;i++){_programSet->handles[i]=(GLuint)i+1;active[@(i+1)]=fixture[names[i]];}}
 -(BOOL)failed{return _failed;}
 -(GLuint)framebuffer{return _framebuffer;}
+-(GLuint)activeProgram{return _programSet->handles[0];}
 @end
 static unsigned checks=0;
 static NSMutableArray *cases,*findings;
@@ -164,7 +168,7 @@ static NSException *rejected(NSString *kind,void (^work)(void)){NSException *fai
 static NSUInteger nCalls(NSString *kind){return [[calls filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDictionary *r,NSDictionary *b){(void)b;return[r[@"kind"]isEqual:kind];}]]count];}
 static NSMutableDictionary *mutablePlan(NSDictionary *p){NSMutableDictionary *r=[p mutableCopy];for(NSString *k in @[@"drawUniforms",@"statsUniforms",@"uniforms"])if(p[k]){NSMutableArray *a=[NSMutableArray new];for(NSDictionary *u in p[k])[a addObject:[u mutableCopy]];r[k]=a;}return r;}
 static void setBinding(NSMutableDictionary *plan,NSString *group,NSString *name,id value,BOOL sampler){for(NSMutableDictionary *u in plan[group])if([u[@"name"]isEqual:name]){u[sampler?@"texture":@"values"]=value;return;}@throw[NSException exceptionWithName:@"TestFailure" reason:@"Missing fixture binding" userInfo:nil];}
-static void resetCalls(void){calls=[NSMutableArray new];nextError=GL_NO_ERROR;failDraw=failUnbind=failDelete=failLink=externalAttribute=badOutput=NO;failureReason=nil;currentContext=(CGLContextObj)(uintptr_t)1;}
+static void resetCalls(void){calls=[NSMutableArray new];nextError=GL_NO_ERROR;failCompile=failDraw=failUnbind=failDelete=failLink=externalAttribute=badOutput=NO;failDeleteObject=0;failureReason=nil;candidateUniformProblem=nil;currentContext=(CGLContextObj)(uintptr_t)1;}
 static void unchanged(CpuInk *ink,uint64_t bytes){expect(nCalls(@"clear")==0&&nCalls(@"draw")==0&&nCalls(@"uniform")==0&&nCalls(@"allocation")==0&&nCalls(@"upload")==0,@"Rejected binding mutated ink or submitted uniforms");expect(ink.displays==0&&ink.lastFacts==nil&&ink.retainedBytes==bytes&&!ink.failed,@"Input rejection changed owner state");}
 int main(int argc,const char **argv){@autoreleasepool{@try{
  expect(argc==2,@"Supply production fixture JSON");NSDictionary *fixture=[NSJSONSerialization JSONObjectWithData:[NSData dataWithContentsOfFile:@(argv[1])] options:NSJSONReadingMutableContainers error:nil];expect(fixture!=nil,@"Readable fixture");active=[NSMutableDictionary new];cases=[NSMutableArray new];findings=[NSMutableArray new];resetCalls();
@@ -219,6 +223,21 @@ int main(int argc,const char **argv){@autoreleasepool{@try{
  [ink accumulateAtIndex:0 plan:draw clear:YES decay:1 record:YES retained:retained];expect(ink.displays==1&&ink.lastFacts!=nil&&nCalls(@"draw")>0,@"Valid prepared draw rejected");[cases addObject:@"successful-owner-publication"];
  CpuInk *failed=[[CpuInk alloc]initWithState:state programs:fixture[@"programs"] width:width height:height];[failed acceptFixturePrograms:fixture[@"declared"]];resetCalls();failDraw=YES;failUnbind=YES;failureReason=@"injected primary";NSException *failure=rejected(@"runtime",^{[failed accumulateAtIndex:0 plan:draw clear:YES decay:.5 record:YES retained:retained];});expect([failure.reason containsString:@"injected primary"]&&[failure.reason containsString:@"cleanup"],@"Primary or cleanup reason lost");expect(failure.userInfo[@"primary"]&&failure.userInfo[@"cleanup"],@"Both underlying errors must remain inspectable");expect(failed.failed&&failed.displays==0&&failed.lastFacts==nil&&failed.retainedBytes==baseline,@"Failed effect published state or abandoned ownership");resetCalls();rejected(@"runtime",^{[failed present:present retained:retained];});expect(calls.count==0,@"Poisoned owner performed GL work");[cases addObject:@"primary-cleanup-error-and-poison"];
  resetCalls();failDelete=YES;GLuint ownedFramebuffer=failed.framebuffer;rejected(@"runtime",^{[failed dispose];});expect(failed.framebuffer==ownedFramebuffer&&failed.retainedBytes==baseline,@"Failed deletion relinquished handle ownership");resetCalls();[failed dispose];expect(failed.retainedBytes==0&&failed.framebuffer==0,@"Explicit cleanup retry failed");NSUInteger callsBefore=calls.count;[failed dispose];expect(calls.count==callsBefore,@"Idempotent disposal performed GL work");[cases addObject:@"cleanup-retry-retains-exact-handle"];
+ // Program replacement compiles a complete candidate before exchanging handles.
+ // These are observable production owner effects; fake compilation establishes
+ // transaction/cleanup behavior only, never shader math or actual driver output.
+ for(NSString *problem in @[@"compile",@"link",@"attribute",@"output",@"unknown-uniform",@"wrong-uniform-type",@"uniform-array",@"budget"]){
+  resetCalls();CpuInk *q=[[CpuInk alloc]initWithState:state programs:fixture[@"programs"] width:width height:height];[q acceptFixturePrograms:fixture[@"declared"]];[q accumulateAtIndex:0 plan:draw clear:YES decay:1 record:YES retained:retained];GLuint old=q.activeProgram;NSDictionary *oldFacts=q.lastFacts;resetCalls();failCompile=[problem isEqual:@"compile"];failLink=[problem isEqual:@"link"];externalAttribute=[problem isEqual:@"attribute"];badOutput=[problem isEqual:@"output"];if([problem containsString:@"uniform"])candidateUniformProblem=problem;
+  rejected([problem isEqual:@"budget"]?@"capacity":@"input",^{[q replacePrograms:fixture[@"programs"] retained:[problem isEqual:@"budget"]?Budget:retained];});
+  expect(q.activeProgram==old&&q.retainedBytes==baseline&&q.displays==1&&q.lastIndex==0&&q.lastFacts==oldFacts&&!q.failed,@"Rejected replacement changed active programs/ink metadata");expect(nCalls(@"clear")==0&&nCalls(@"draw")==0&&nCalls(@"allocation")==0&&nCalls(@"upload")==0,@"Replacement input rejection touched render storage");if([problem isEqual:@"budget"])expect(calls.count==0,@"Replacement capacity admission allocated GL resources");resetCalls();[q present:present retained:retained];[q dispose];
+ }
+ [cases addObject:@"replacement-input-and-overlap-budget-preserve-old-owner"];
+ resetCalls();CpuInk *q=[[CpuInk alloc]initWithState:state programs:fixture[@"programs"] width:width height:height];[q acceptFixturePrograms:fixture[@"declared"]];[q accumulateAtIndex:0 plan:draw clear:YES decay:1 record:YES retained:retained];GLuint old=q.activeProgram;NSDictionary *oldFacts=q.lastFacts;resetCalls();[q replacePrograms:fixture[@"programs"] retained:retained];expect(q.activeProgram!=old&&q.displays==1&&q.lastIndex==0&&q.lastFacts==oldFacts&&!q.failed&&q.retainedBytes==baseline,@"Successful replacement failed to preserve ink state");expect(nCalls(@"clear")==0&&nCalls(@"draw")==0&&nCalls(@"allocation")==0&&nCalls(@"upload")==0,@"Successful program replacement touched render storage");[q present:present retained:retained];[q dispose];[cases addObject:@"replacement-atomic-exchange-without-ink-effects"];
+ // A failed provisional delete retains its exact handle and source budget.
+ resetCalls();q=[[CpuInk alloc]initWithState:state programs:fixture[@"programs"] width:width height:height];[q acceptFixturePrograms:fixture[@"declared"]];old=q.activeProgram;GLuint provisional=nextObject;failCompile=YES;failDelete=YES;NSException *replacementError=rejected(@"runtime",^{[q replacePrograms:fixture[@"programs"] retained:retained];});expect(q.failed&&q.activeProgram==old&&q.retainedBytes>baseline&&replacementError.userInfo[@"primary"]&&replacementError.userInfo[@"cleanup"],@"Failed candidate cleanup lost owner/error/budget");resetCalls();rejected(@"runtime",^{[q present:present retained:retained];});expect(calls.count==0,@"Poisoned replacement owner executed GL");[q dispose];expect(q.retainedBytes==0&&[[calls filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDictionary *r,NSDictionary *b){(void)b;return[r[@"kind"]isEqual:@"delete"]&&[r[@"handle"]unsignedIntValue]==provisional;}]]count]==1,@"Candidate cleanup retry did not retain exact shader handle");[cases addObject:@"replacement-provisional-cleanup-retains-exact-handle"];
+ // An old bundle that cannot retire stays owned alongside the committed new
+ // bundle. No further draw is permitted until explicit disposal succeeds.
+ resetCalls();q=[[CpuInk alloc]initWithState:state programs:fixture[@"programs"] width:width height:height];[q acceptFixturePrograms:fixture[@"declared"]];old=q.activeProgram;failDeleteObject=old;rejected(@"runtime",^{[q replacePrograms:fixture[@"programs"] retained:retained];});expect(q.failed&&q.activeProgram!=old&&q.retainedBytes>baseline,@"Failed old-program retirement abandoned either bundle");resetCalls();[q dispose];expect(q.retainedBytes==0&&[[calls filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDictionary *r,NSDictionary *b){(void)b;return[r[@"kind"]isEqual:@"delete"]&&[r[@"handle"]unsignedIntValue]==old;}]]count]==1,@"Retired-program cleanup retry lost exact handle");[cases addObject:@"replacement-retired-cleanup-retains-both-bundles"];
  resetCalls();[ink dispose];expect(ink.retainedBytes==0,@"Successful owner did not release");
  NSDictionary *result=@{@"status":@"passed",@"checks":@(checks),@"cases":cases,@"findings":findings,@"scope":@"CPU GL-call recorder executes production ink methods; prepared fixture contains declared rather than driver-linked active uniforms. No real GL context, shader execution, GPU contents or actual driver cleanup is established."};NSData *json=[NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:nil];fwrite(json.bytes,1,json.length,stdout);fputc('\n',stdout);return 0;
  }@catch(NSException *e){fprintf(stderr,"%s: %s\n",e.name.UTF8String,e.reason.UTF8String);return 1;}}}

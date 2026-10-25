@@ -23,6 +23,7 @@ static NSData *renderIteratedOperation(NSDictionary *frame,NSMutableDictionary<N
  }
  ensure(owner!=nil,@"state-lost",@"Iterated ink owner is absent after release or context loss");
  INPUT([record[@"stateResource"]isEqual:stateResource]&&particles==owner.count&&width==owner.width&&height==owner.height&&displays==owner.displays,@"Iterated ink identity/dimensions/display checkpoint differ");
+ if(kind==5){INPUT(index==owner.lastIndex,@"Iterated program replacement differs from last drawn checkpoint");iteratedStateBudget(retained+[op[@"programBytes"]unsignedLongLongValue],packet,128);[owner replacePrograms:op[@"programs"] retained:retained+packet*6+128];return iteratedRenderReply(op,record,0,nil);}
  if(kind==2){SourceCglIteratedState *state=states[stateResource];ensure(state!=nil,@"state-lost",@"Iterated compute owner is absent");INPUT(index==state.index&&particles==state.count,@"Iterated draw compute checkpoint/count differ");iteratedStateBudget(retained,packet,128);[owner accumulateAtIndex:index plan:op[@"plan"] clear:[op[@"clear"]boolValue] decay:[op[@"decay"]floatValue] record:[op[@"record"]boolValue] retained:retained+packet*6+128];return iteratedRenderReply(op,record,0,nil);}
  INPUT(index==owner.lastIndex&&displays>0,@"Iterated presentation differs from last drawn checkpoint");iteratedStateBudget(retained,packet,128+(uint64_t)width*height*12);
  NSData *pixels=[owner present:op[@"plan"] retained:retained+packet*6+128];return iteratedRenderReply(op,record,0,pixels);

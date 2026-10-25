@@ -19,12 +19,12 @@ static NSArray *iteratedRenderUniforms(FrameReader *r){
  }return out;
 }
 static NSDictionary *parseIteratedRender(FrameReader *r,uint32_t width,uint32_t height){
- uint32_t kind=[r word];INPUT(kind>=1&&kind<=4,@"Unknown iterated render operation");NSData *resource=iteratedRenderToken(r);
+ uint32_t kind=[r word];INPUT(kind>=1&&kind<=5,@"Unknown iterated render operation");NSData *resource=iteratedRenderToken(r);
  NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource}mutableCopy];
  if(kind==4){INPUT(width==1&&height==1,@"Iterated render release must use control dimensions");return op;}
  op[@"stateResource"]=iteratedRenderToken(r);op[@"index"]=@([r word]);uint32_t displays=[r word],particles=[r word];
  INPUT(particles>=1&&particles<=8000000&&(kind!=1||displays==0)&&(kind!=2||displays<UINT32_MAX)&&(kind!=3||displays>0),@"Invalid iterated render count/display checkpoint");op[@"displays"]=@(displays);op[@"count"]=@(particles);
- if(kind==1){NSMutableDictionary *programs=[NSMutableDictionary new];uint64_t bytes=0;
+ if(kind==1||kind==5){NSMutableDictionary *programs=[NSMutableDictionary new];uint64_t bytes=0;
   for(NSString *name in @[@"draw",@"statsFirst",@"statsReduce",@"present",@"presentReduce",@"decay"]){NSMutableDictionary *stages=[NSMutableDictionary new];for(NSString *stage in @[@"vertex",@"fragment"]){NSString *source=[r text];INPUT([source hasPrefix:@"#version 410 core\n"],@"Iterated render shader requires native GL41 profile");stages[stage]=source;bytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}programs[name]=stages;}
   op[@"programs"]=programs;op[@"programBytes"]=@(bytes);
  }else if(kind==2){uint32_t clear=[r word],record=[r word];float decay=[r number];uint32_t primitive=[r word];INPUT(clear<=1&&record<=1&&decay>=0&&decay<=1&&(primitive==1||primitive==2),@"Invalid iterated draw controls");

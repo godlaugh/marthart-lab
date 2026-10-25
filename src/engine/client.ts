@@ -1,3 +1,8 @@
+import {SourceIteratedSession} from './sourceIteratedSession';
+import {SourceIteratedNativeBackend} from './sourceIteratedNativeBackend';
+import {sourceIteratedLiveKind} from './sourceLivePreview';
+import {usesSourceSymmetryMath} from './sourceSymmetryMath';
+import {assertSourceIteratedRecordingFrame} from './sourceIteratedRecording';
 import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {sourceSamilaOwnerScene} from './sourceSamilaPaletteEditing';
 import {assertSourceSamilaRecordingFrame} from './sourceSamilaRecording';
@@ -237,17 +242,19 @@ export class Generator {
   private nativeCleanup?:Promise<void>;
   private nativeSamila?:{backend:SourceSamilaNativeBackend;session:SourceSamilaAsyncSession};
   private nativeSamilaCold?:IteratedDensitySession;
+  private nativeSymmetry?:SourceIteratedSession;
+  private async releaseSymmetry(){const owned=this.nativeSymmetry;if(!owned)return;await owned.resetAsync();if(this.nativeSymmetry===owned)this.nativeSymmetry=undefined;}
   private async releaseSamilaCold(){const owned=this.nativeSamilaCold;if(!owned)return;await owned.resetAsync();if(this.nativeSamilaCold===owned)this.nativeSamilaCold=undefined;}
   private async releaseSamila(){const owned=this.nativeSamila;if(!owned)return;await owned.session.release();if(this.nativeSamila===owned)this.nativeSamila=undefined;}
   private releaseNative(){
     const previous=this.nativeCleanup;this.nativeSamila?.backend.cancel();
-    this.nativeCleanup=(async()=>{await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();})();void this.nativeCleanup.catch(()=>{});
+    this.nativeCleanup=(async()=>{await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseSymmetry();})();void this.nativeCleanup.catch(()=>{});
   }
   private sessionId = 0;
   private pending = new Map<number, Pending>();
   private currentInputId=0;
   private completed?:Completed;
-  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;samila?:SourceSamilaAsyncSession;roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
+  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;samila?:SourceSamilaAsyncSession;iterated?:{session:SourceIteratedSession;runtime?:object;finish?:ReturnType<SourceIteratedSession['finishRecording']>;preview?:SourceRecordingRaster};roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
   private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='implicit-playback'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
@@ -256,7 +263,7 @@ export class Generator {
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
     for(const p of this.pending.values()){if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
   }
-  hasSourceRecording(handle:SourceRecordingHandle):boolean{const lease=this.recording;return lease?.handle===handle&&(lease.samila?lease.samila.hasRecording(handle):!!this.worker&&lease.usable);}
+  hasSourceRecording(handle:SourceRecordingHandle):boolean{const lease=this.recording;return lease?.handle===handle&&(lease.samila?lease.samila.hasRecording(handle):lease.iterated?!!lease.iterated.finish||!!lease.iterated.runtime&&lease.iterated.session.ownsRecording(lease.iterated.runtime):!!this.worker&&lease.usable);}
 
   private renderGeometryFrame(id:number,p:Extract<Pending,{operation:'source-recording-begin'|'source-recording-frame'}>,lease:SourceGeometryRecordingLease,worker:Worker,start?:import('./generationProtocol').SourceRecordingWireStart){
     const cancelled=()=>this.worker!==worker||this.pending.get(id)!==p||this.recording?.geometry!==lease;
@@ -558,7 +565,10 @@ export class Generator {
     if(this.recording)return Promise.reject(this.recordingError('源场景录制期间不能生成其它场景'));
     if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     const samilaNative=sourceDrawingPolicy()==='native'&&scene.kind==='samila'&&(!!context.samilaLive||usesSourceSamilaSampling(scene)&&usesSourceSamilaPresentation(scene)&&usesSourceSamilaSplat(scene));
-    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative)){
+    // This adapter supports the built-in source 2D Symmetry kernel. Map,
+    // authored custom kernels and cold reconstruction keep their WebGL owner.
+    const symmetryNative=sourceDrawingPolicy()==='native'&&!!context.symmetryLive&&sourceIteratedLiveKind(scene)==='symmetry'&&usesSourceSymmetryMath(scene);
+    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||symmetryNative)){
       if(this.pending.size)return Promise.reject(new Error('当前生成任务尚未结束'));
       this.worker?.terminate();this.worker=null;
       const id=++this.counter;this.currentInputId=id;this.completed=undefined;
@@ -572,6 +582,15 @@ export class Generator {
             if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});
             await sourceBouncingNativeSession.settleCancellation();
             if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
+            if(symmetryNative){
+              await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();
+              const held=this.nativeSymmetry?.diagnostics();
+              if(held?.failed){if(held.sessionId===input.symmetryLive!.sessionId)throw new SourceNativeError('state-lost','Symmetry 当前显示结果未知；请重新应用或重置场景');await this.releaseSymmetry();}
+              if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
+              if(!this.nativeSymmetry){this.sessionId++;this.nativeSymmetry=new SourceIteratedSession('symmetry',{asyncBackend:()=>new SourceIteratedNativeBackend(),hostClock:{now:()=>Date.now()-nativePageOrigin,source:'page-wall-clock'}});}
+              return this.nativeSymmetry.generateAsync(snapshot,{...input,isCancelled:()=>this.pending.get(id)!==pending});
+            }
+            await this.releaseSymmetry();
             if(!samilaNative){await this.releaseSamila();await this.releaseSamilaCold();return sourceBouncingNativeSession.generate(this,snapshot,input);}
             await sourceBouncingNativeSession.release(this);
             if(!input.samilaLive){
@@ -600,7 +619,7 @@ export class Generator {
         }catch(error){this.pending.delete(id);reject(error);}
       });
     }
-    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold){
+    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold||this.nativeSymmetry){
       const transition=this.nativeTransition;this.releaseNative();
       return this.nativeCleanup!.then(()=>{if(this.nativeTransition!==transition)throw new DOMException('已取消','AbortError');return this.generate(scene,context,onProgress,onStatus);});
     }
@@ -678,7 +697,7 @@ export class Generator {
     });
   }
   captureMapPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('map-paused-capture',output,size,scale);}
-  captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('symmetry-paused-capture',output,size,scale);}
+  captureSymmetryPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.nativeSymmetry?this.captureNativeSymmetry(output,size,scale):this.capturePaused('symmetry-paused-capture',output,size,scale);}
   captureDomainPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('domain-paused-capture',output,size,scale);}
   captureFractalPaused(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5=1):Promise<PausedCaptureResult>{return this.capturePaused('fractal-paused-capture',output,size,scale);}
   navigateDomainPaused(output:SceneOutput,event:SourceDomainNavigationEvent):Promise<SceneOutput>{
@@ -700,12 +719,14 @@ export class Generator {
     return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'surface-navigation',source,resolve,reject});try{this.worker!.postMessage({operation:'surface-navigation',sessionId:this.sessionId,id,sourceId:source.id,event} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
   }
   navigateIteratedPaused(output:SceneOutput,event:SourceViewportNavigationEvent):Promise<SceneOutput>{
+    if(this.nativeSymmetry)return this.navigateNativeSymmetry(output,event);
     const source=this.completed;
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代视口交互需要当前已完成的主预览'));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
     return new Promise((resolve,reject)=>{this.pending.set(id,{operation:'iterated-navigation',source,resolve,reject});try{this.worker!.postMessage({operation:'iterated-navigation',sessionId:this.sessionId,id,sourceId:source.id,event} satisfies GenerationRequest);}catch(error){this.invalidate(error instanceof Error?error:new Error(String(error)));}});
   }
   updateIteratedParameters(output:SceneOutput,scene:SceneDocument,writes:readonly (readonly [string,number])[]):Promise<void>{
+    if(this.nativeSymmetry){const source=this.completed;if(this.recording||this.pending.size||!source||source.output!==output)return Promise.reject(Error('迭代参数更新需要当前已完成的主预览'));try{this.nativeSymmetry.updateParameters(source.scene,scene,source.context,writes);this.completed={...source,scene:structuredClone(scene)};return Promise.resolve();}catch(error){return Promise.reject(error);}}
     const source=this.completed;
     if(this.recording||!this.worker||this.pending.size||!source||source.output!==output||output.type!=='raster'||!['map','symmetry'].includes(source.scene.kind)||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new Error('迭代参数更新需要当前已完成的主预览'));
     const id=++this.counter;this.currentInputId=id;this.completed=undefined;
@@ -733,7 +754,11 @@ export class Generator {
     try{this.nativeSamila.session.setPaused(paused);this.completed={...source,context:{...source.context,samilaLive:{...source.context.samilaLive,clock:{...source.context.samilaLive.clock,paused}}}};return Promise.resolve();}catch(error){return Promise.reject(error);}
   }
   setMapPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('map-playback',output,paused,timestampMs);}
-  setSymmetryPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('symmetry-playback',output,paused,timestampMs);}
+  setSymmetryPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{
+    if(!this.nativeSymmetry)return this.setLivePaused('symmetry-playback',output,paused,timestampMs);
+    const source=this.completed;if(this.recording||this.pending.size||!source||source.output!==output||!source.context.symmetryLive)return Promise.reject(Error('实时播放控制需要当前已完成的主预览'));
+    try{this.nativeSymmetry.setPaused(paused,timestampMs);this.completed={...source,context:{...source.context,symmetryLive:{...source.context.symmetryLive,clock:{...source.context.symmetryLive.clock,paused}}}};return Promise.resolve();}catch(error){return Promise.reject(error);}
+  }
   setRootsPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('roots-playback',output,paused,timestampMs);}
   setPerlinPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('perlin-playback',output,paused,timestampMs);}
   setDomainPaused(output:SceneOutput,paused:boolean,timestampMs?:number):Promise<void>{return this.setLivePaused('domain-playback',output,paused,timestampMs);}
@@ -780,6 +805,71 @@ export class Generator {
   /** Native recording owns the same retained Samila runtime as preview. The
    * queue supplies backpressure and soft cancellation; a submitted draw must
    * settle before stop can restore or release its exact resource. */
+  private captureNativeSymmetry(output:SceneOutput,size:PausedCaptureSize,scale:1|3|5):Promise<PausedCaptureResult>{
+    const source=this.completed,session=this.nativeSymmetry!,ErrorType=pausedCaptureContracts['symmetry-paused-capture'].Error;
+    if(this.recording||this.pending.size||!source||source.output!==output||source.scene.kind!=='symmetry'||!source.context.symmetryLive||output.type!=='raster'||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new ErrorType('Symmetry 截图需要当前已完成的暂停预览',false));
+    let base:SourceCaptureSize,upscale:ReturnType<typeof prepareSourcePausedUpscale>|undefined,additionalBytes:number;
+    try{if(scale!==1&&scale!==3&&scale!==5)throw Error('暂停 PNG 放大倍率须为 1、3 或 5');base=prepareSourcePausedCaptureSize(size,source.context.sourcePointPixelDensity??NaN);upscale=scale===1?undefined:prepareSourcePausedUpscale(base.width,base.height,scale);additionalBytes=sourcePausedImageBytes(base.width,base.height)-base.width*base.height*4+(upscale?upscale.peakBytes-upscale.inputBytes:0);}
+    catch(error){return Promise.reject(new ErrorType(error instanceof Error?error.message:String(error),true));}
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{
+      const pending:Pending={operation:'symmetry-paused-capture',source,size:{...size},scale,resolve,reject};this.pending.set(id,pending);let rendered=false;
+      void session.capturePausedAsync(source.scene,{...source.context,quality:'export',...size,isCancelled:()=>this.pending.get(id)!==pending},{additionalBytes}).then(result=>{
+        rendered=true;if(this.pending.get(id)!==pending)return;const capture=result.capture;
+        if(capture.width!==base.width||capture.height!==base.height)throw Error('Symmetry 截图尺寸与已核验预算不符');
+        const enhanced=enhanceSourcePausedImage(capture.pixels,base.width,base.height);capture.pixels=scale===1?enhanced:upscaleSourcePausedImage(enhanced,base.width,base.height,scale);capture.width=upscale?.width??base.width;capture.height=upscale?.height??base.height;
+        capture.sourcePausedImage={enhancement:'mathart-1.7.8-scale1',baseSize:[base.width,base.height],scale,resampling:upscale?'openjdk21-software-bicubic':'none',originalRuntimeCompared:false};
+        this.pending.delete(id);this.completed={...source,id,output:result.preview};resolve(result);
+      }).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=!rendered&&session.matchesCompletedPrimary(source.scene,source.context);if(retained)this.completed=source;reject(new ErrorType(error instanceof Error?error.message:String(error),retained));});
+    });
+  }
+  private navigateNativeSymmetry(output:SceneOutput,event:SourceViewportNavigationEvent):Promise<SceneOutput>{
+    const source=this.completed,session=this.nativeSymmetry!;
+    if(this.recording||this.pending.size||!source||source.output!==output||source.scene.kind!=='symmetry'||output.type!=='raster'||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(Error('迭代视口交互需要当前已完成的主预览'));
+    const id=++this.counter;this.currentInputId=id;this.completed=undefined;
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'iterated-navigation',source,resolve,reject};this.pending.set(id,pending);
+      void session.navigatePausedAsync(source.scene,{...source.context,isCancelled:()=>this.pending.get(id)!==pending},event).then(next=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);this.completed={...source,id,output:next};resolve(next);}).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);if(session.matchesCompletedPrimary(source.scene,source.context))this.completed=source;reject(error);});
+    });
+  }
+  private beginNativeSymmetryRecording(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>{
+    const source=this.completed,session=this.nativeSymmetry!;
+    if(this.recording||this.pending.size||!source||source.output!==output||output.type!=='raster'||!source.context.symmetryLive||output.sourceCameraFrame?.viewport.target!=='primary')return Promise.reject(new SourceRecordingOperationError('Symmetry 录制需要当前已完成的主预览',false,false));
+    const id=++this.counter,handle=Object.freeze({sessionId:this.sessionId,recordingId:id}),settings={...options};
+    const lease:NonNullable<Generator['recording']>={handle,family:'symmetry',usable:false,iterated:{session}};
+    this.currentInputId=id;this.completed=undefined;this.recording=lease;
+    // The recording outlives begin's pending entry. Soft queue cancellation
+    // finishes after the current ACK; only owner replacement revokes this epoch.
+    const cancelled=()=>this.recording!==lease||this.nativeSymmetry!==session;
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'source-recording-begin',source,handle,resolve,reject};this.pending.set(id,pending);
+      void session.beginRecordingAsync(source.scene,{...source.context,isCancelled:cancelled},settings).then(start=>{
+        if(this.pending.get(id)!==pending)return;lease.iterated!.runtime=start.handle;
+        if(!validSourceQueueRecordingClock(start.clock,settings.simulationFps))throw Error('Symmetry 录制规划无效');assertSourceIteratedRecordingFrame(start.warmup,start.clock,0);
+        lease.usable=true;this.pending.delete(id);resolve({...start,handle});
+      }).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=!!lease.iterated!.runtime&&session.ownsRecording(lease.iterated!.runtime),preview=!retained&&session.matchesCompletedPrimary(source.scene,source.context);if(!retained)this.recording=undefined;if(preview)this.completed=source;reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),preview,retained,retained?handle:undefined));});
+    });
+  }
+  private nextNativeSymmetryRecordingFrame(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceRecordingRaster>{
+    const lease=this.recording!,owned=lease.iterated!,id=++this.counter;
+    if(owned.finish)return Promise.reject(this.recordingError('源场景录制已停止，等待主预览恢复'));
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'source-recording-frame',handle,family:'symmetry',displayFrame,resolve,reject};this.pending.set(id,pending);
+      void owned.session.nextRecordingFrameAsync(owned.runtime!,displayFrame).then(output=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);resolve(output);}).catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=owned.session.ownsRecording(owned.runtime!);if(!retained)this.recording=undefined;reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,retained,retained?handle:undefined));});
+    });
+  }
+  private finishNativeSymmetryRecording(handle:SourceRecordingHandle,timestampMs?:number):Promise<SourceRecordingStop>{
+    const lease=this.recording!,owned=lease.iterated!,id=++this.counter;
+    return new Promise((resolve,reject)=>{const pending:Pending={operation:'source-recording-finish',handle,family:'symmetry',resolve,reject};this.pending.set(id,pending);
+      void (async()=>{
+        // Stop mutates the host clock exactly once. Keep this handoff if the
+        // following primary repaint needs an explicit retry.
+        owned.finish??=owned.session.finishRecording(owned.runtime!,timestampMs);
+        const {scene,context}=owned.finish;
+        owned.preview??=await owned.session.generateAsync(scene,context);
+        if(this.pending.get(id)!==pending)return;
+        const preview=owned.preview;if(!owned.session.matchesCompletedPrimary(scene,context)||preview.type!=='raster'||preview.sourceCameraFrame?.viewport.target!=='primary')throw Error('Symmetry 录制停止没有恢复相同主预览');
+        this.pending.delete(id);this.recording=undefined;this.currentInputId=id;const input=snapshotGenerationInput(context);this.completed={id,scene,context:input,output:preview};resolve({scene,context:input,preview});
+      })().catch(error=>{if(this.pending.get(id)!==pending)return;this.pending.delete(id);const state=owned.session.diagnostics(),retained=owned.session.ownsRecording(owned.runtime!)||!!owned.finish&&!state.failed&&!!state.sessionId;if(!retained)this.recording=undefined;reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,retained,retained?handle:undefined));});
+    });
+  }
   private beginNativeSamilaRecording(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>{
     const source=this.completed,session=this.nativeSamila!.session;
     if(this.recording||this.pending.size||!source||source.output!==output||output.type!=='raster'||output.samilaLive?.target!=='primary'||!source.context.samilaLive?.clock)
@@ -834,6 +924,7 @@ export class Generator {
   beginSourceRecording(output:SceneOutput,options:SourceRecordingOptions,signal?:AbortSignal):Promise<SourceRecordingStart>{
     if(signal?.aborted)return Promise.reject(new DOMException('源场景录制已取消','AbortError'));
     if(this.nativeSamila)return this.beginNativeSamilaRecording(output,options);
+    if(this.nativeSymmetry)return this.beginNativeSymmetryRecording(output,options);
     const source=this.completed;
     if(this.recording)return Promise.reject(this.recordingError('源场景录制已开始'));
     const eligible=source&&(source.scene.kind==='surface'||usesSourceImplicitCpuMesh(source.scene)?output.type==='geometry'&&(source.scene.kind==='surface'?!!output.surfaceLive:!!output.sourceImplicitPresentation)&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
@@ -869,6 +960,7 @@ export class Generator {
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
     if(!Number.isSafeInteger(displayFrame)||displayFrame<1)return Promise.reject(this.recordingError('源场景录制帧序号无效'));
     if(this.recording!.samila)return this.nextNativeSamilaRecordingFrame(handle,displayFrame);
+    if(this.recording!.iterated)return this.nextNativeSymmetryRecordingFrame(handle,displayFrame);
     try{this.recording!.roots?.requestFrame(displayFrame);}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
     const fractal=this.recording!.fractal,domain=this.recording!.domain;
     if(fractal&&(!fractal.clock||displayFrame!==fractal.nextDisplayFrame||displayFrame>fractal.clock.lastDisplayFrame))return Promise.reject(this.recordingError('分形录制必须按已确认规划连续请求，未交付 warmup 的会话只能停止'));
@@ -893,6 +985,7 @@ export class Generator {
   finishSourceRecording(handle:SourceRecordingHandle,timestampMs?:number):Promise<SourceRecordingStop>{
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
     if(this.recording!.samila)return this.finishNativeSamilaRecording(handle,timestampMs);
+    if(this.recording!.iterated)return this.finishNativeSymmetryRecording(handle,timestampMs);
     if(timestampMs!==undefined&&this.recording!.family!=='implicit')return Promise.reject(this.recordingError('注入停止时钟仅支持隐式录制'));
     try{this.recording!.geometry?.prepareStop();}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
     const id=++this.counter;
@@ -977,7 +1070,7 @@ export class Generator {
     }
     this.pending.clear();
   }
-  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();}
+  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseSymmetry();}
   dispose() {
     this.invalidate(this.recording?new SourceRecordingOperationError('源场景录制后台已释放',false,false):new DOMException('已取消','AbortError'));
   }

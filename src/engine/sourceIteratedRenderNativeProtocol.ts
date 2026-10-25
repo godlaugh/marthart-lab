@@ -17,19 +17,20 @@ type Owned={resource:string};
 type Checkpoint=Owned&{stateResource:string;expectedIndex:number;expectedDisplays:number;expectedCount:number};
 export type SourceIteratedRenderNativeOperation=
  | (Checkpoint&{kind:'create';expectedDisplays:0;programs:SourceIteratedRenderNativePrograms})
+ | (Checkpoint&{kind:'replace-programs';programs:SourceIteratedRenderNativePrograms})
  | (Checkpoint&{kind:'draw';plan:SourceIteratedNativeDrawPlan;clear:boolean;record:boolean;decay:number})
  | (Checkpoint&{kind:'present';plan:SourceIteratedNativePresentPlan})
  | (Owned&{kind:'release'});
 export interface SourceIteratedRenderNativeRequest {generation:number;sequence:number;width:number;height:number;operation:SourceIteratedRenderNativeOperation;}
 export type SourceIteratedRenderNativeResponseBinding=Readonly<
  | (Owned&{kind:'release';width:1;height:1})
- | (Checkpoint&{kind:'create'|'draw'|'present';width:number;height:number;record?:boolean})
+ | (Checkpoint&{kind:'create'|'draw'|'present'|'replace-programs';width:number;height:number;record?:boolean})
 >;
 export interface SourceIteratedRenderNativeResponse {
  resource:string;stateResource?:string;index:number;displays:number;disposition:'owned'|'released'|'absent';count:number;width:number;height:number;
  invalid:number;accepted:number;clipped:number;sampleInvalid:number;occupiedPixels:number;maxCount:number;pixels?:Uint8ClampedArray;
 }
-const kinds={create:1,draw:2,present:3,release:4} as const;
+const kinds={create:1,draw:2,present:3,release:4,'replace-programs':5} as const;
 const uniformKinds={float:1,int:2,bool:3,vec2:4,vec3:5,vec4:6,ivec2:7,mat4:8,sampler2d:9,usampler2d:10} as const;
 const components={float:1,int:1,bool:1,vec2:2,vec3:3,vec4:4,ivec2:2,mat4:16,sampler2d:1,usampler2d:1} as const;
 const uint=(n:number)=>Number.isInteger(n)&&n>=0&&n<=0xffffffff;
@@ -96,7 +97,8 @@ export function encodeSourceIteratedRenderNativeRequest(request:SourceIteratedRe
   // Reserve the borrowed state view conservatively even before first draw.
   // The native registry independently charges exact live storage across owners.
   const resident=op.kind==='release'?0:op.kind==='create'?Math.max(retained,sourceIteratedNativeResidentBytes(op.expectedCount,0))+sourceIteratedNativeViewBytes(op.expectedCount)+sourceIteratedRenderNativeResidentBytes(op.expectedCount,request.width,request.height,sourceIteratedRenderNativeProgramBytes(op.programs)):Math.max(retained,sourceIteratedNativeResidentBytes(op.expectedCount,0)+sourceIteratedRenderNativeResidentBytes(op.expectedCount,request.width,request.height))+sourceIteratedNativeViewBytes(op.expectedCount);
-  const transient=128+(op.kind==='present'?request.width*request.height*8+request.width*4:0);capacity(resident+transient);
+  const replacement=op.kind==='replace-programs'?sourceIteratedRenderNativeProgramBytes(op.programs):0;
+  const transient=replacement+128+(op.kind==='present'?request.width*request.height*8+request.width*4:0);capacity(resident+transient);
   let offset=0,out:Uint8Array|undefined,view:DataView|undefined;
   const reserve=(n:number)=>{capacity(offset+n);const at=offset;offset+=n;return at;};
   const word=(v:number)=>{const at=reserve(4);view?.setUint32(at,v,true);};
@@ -109,7 +111,7 @@ export function encodeSourceIteratedRenderNativeRequest(request:SourceIteratedRe
   const emit=()=>{
    check();word(SOURCE_FRAME_MAGIC);word(SOURCE_ITERATED_RENDER_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(request.width);word(request.height);for(let i=0;i<8;i++)word(0);word(SOURCE_ITERATED_RENDER_NATIVE_FAMILY);word(kinds[op.kind]);id(op.resource);
    if(op.kind==='release')return;id(op.stateResource);word(op.expectedIndex);word(op.expectedDisplays);word(op.expectedCount);
-   if(op.kind==='create')for(const name of SOURCE_ITERATED_RENDER_PROGRAM_NAMES)for(const stage of ['vertex','fragment'] as const)text(op.programs[name][stage]);
+   if(op.kind==='create'||op.kind==='replace-programs')for(const name of SOURCE_ITERATED_RENDER_PROGRAM_NAMES)for(const stage of ['vertex','fragment'] as const)text(op.programs[name][stage]);
    if(op.kind==='draw'){word(op.clear?1:0);word(op.record?1:0);float(op.decay);word(op.plan.primitive==='points'?1:2);text(op.plan.palette.key);word(op.plan.palette.format==='source-rgb1024'?1:2);palette(op.plan.palette.values);block(op.plan.noise);uniforms(op.plan.drawUniforms);uniforms(op.plan.statsUniforms);}
    if(op.kind==='present'){word(op.plan.filter==='linear'?1:2);op.plan.clear.forEach(float);uniforms(op.plan.uniforms);}
   };
@@ -131,7 +133,7 @@ export function decodeSourceIteratedRenderNativeResponse(raw:Uint8Array,request:
   else fail(token(stateResource)&&particleCount(count)&&dimensions(width,height),'原生迭代绘制释放容量或父状态无效');
  }else{
   fail(disposition===0&&stateResource===op.stateResource&&index===op.expectedIndex&&displays===op.expectedDisplays+(op.kind==='draw'?1:0)&&count===op.expectedCount&&width===op.width&&height===op.height,'原生迭代绘制确认检查点或尺寸不符');
-  if(op.kind==='create')fail(raw.subarray(64,128).every(n=>n===0),'原生迭代绘制创建含有未测量统计');
+  if(op.kind==='create'||op.kind==='replace-programs')fail(raw.subarray(64,128).every(n=>n===0),'原生迭代绘制创建含有未测量统计');
   if(op.kind==='draw')fail(Number.isSafeInteger(invalid)&&accepted+clipped<=count&&sampleInvalid===(op.record?count-accepted-clipped:0)&&raw.subarray(84,128).every(n=>n===0),'原生迭代绘制统计覆盖不符');
   if(op.kind==='present')fail(raw.subarray(64,84).every(n=>n===0)&&occupiedPixels<=width*height&&Number.isFinite(maxCount)&&maxCount>=0,'原生迭代呈现统计无效');
  }

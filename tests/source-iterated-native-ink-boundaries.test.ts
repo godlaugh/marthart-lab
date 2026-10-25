@@ -35,6 +35,6 @@ describe.skipIf(process.platform!=='darwin')('native retained ink CPU ownership 
   const run=spawnSync(executable,[input],{encoding:'utf8',timeout:10000,killSignal:'SIGKILL',maxBuffer:65536});writeFileSync(join(directory,'result.json'),run.stdout);writeFileSync(join(directory,'stderr.log'),run.stderr);
   expect(run.error).toBeUndefined();expect(run.status,run.stderr).toBe(0);expect(run.stderr).toBe('');const result=JSON.parse(run.stdout);
   expect(result.status).toBe('passed');expect(result.findings).toEqual([]);expect(result.checks).toBeGreaterThan(150);
-  expect(result.cases).toEqual(expect.arrayContaining(['all-programs-active-coverage-before-mutation','checkpoint-budget-context','primary-cleanup-error-and-poison','cleanup-retry-retains-exact-handle']));
+  expect(result.cases).toEqual(expect.arrayContaining(['all-programs-active-coverage-before-mutation','checkpoint-budget-context','primary-cleanup-error-and-poison','cleanup-retry-retains-exact-handle','replacement-input-and-overlap-budget-preserve-old-owner','replacement-atomic-exchange-without-ink-effects','replacement-provisional-cleanup-retains-exact-handle','replacement-retired-cleanup-retains-both-bundles']));
  },45000);
 });

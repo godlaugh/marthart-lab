@@ -38,14 +38,14 @@ export interface SourceIteratedLiveContext {
  mapEdits?:{runtimeRevision:number;dotSizeRevision:number};
 }
 export interface SourceIteratedLiveFacts {
- sessionId:string;clock:'realtime-source-queue'|'fixed-source-queue';clockSource:'worker-wall-clock'|'injected'|'fixed-step';
+ sessionId:string;clock:'realtime-source-queue'|'fixed-source-queue';clockSource:'worker-wall-clock'|'page-wall-clock'|'injected'|'fixed-step';
  sceneTime:number;rawDt:number;activeDt:number;queueIndex:number;queueComplete:boolean;paused:boolean;
  objectUpdates:number;replayRevision:number;display:SourceIteratedDisplayFacts;
 }
 type Raster=Extract<SceneOutput,{type:'raster'}>;
-export type SourceIteratedSessionOptions=
+export type SourceIteratedSessionOptions=(
  | {backend?:()=>SourceIteratedReplayBackend;asyncBackend?:never}
- | {backend?:never;asyncBackend:()=>SourceIteratedReplayAsyncBackend};
+ | {backend?:never;asyncBackend:()=>SourceIteratedReplayAsyncBackend})&{hostClock?:{now:()=>number;source:'worker-wall-clock'|'page-wall-clock'}};
 type DisplayResult={scene:SceneDocument;job:ReturnType<typeof prepareIteratedFrame>;sourceFrame:ReturnType<typeof ordinarySourceCameraFrame>;display:SourceIteratedDisplayFacts};
 type RecordingStart={handle:object;scene:SceneDocument;context:ReturnType<typeof snapshotGenerationInput>;clock:SourceQueueRecordingClock;warmup:Raster};
 type Effect=
@@ -120,7 +120,7 @@ export class SourceIteratedSession {
  private tone(scene:SceneDocument,c:GenerateContext){return this.family==='map'?prepareSourceMapTone(scene,c):prepareSourceSymmetryTone(scene,c);}
  private runtimeRevision=0;private dotSizeRevision=0;private runtimePointSize?:number;
  private readonly cleanup=new GenerationCleanupState();
- private timeline?:SourceIteratedTimelineSession;private replay?:SourceIteratedReplaySession;private clock?:SourceSceneHostClock;
+ private timeline?:SourceIteratedTimelineSession;private replay?:SourceIteratedReplaySession;private clock?:SourceSceneHostClock<'worker-wall-clock'|'page-wall-clock'>;
  private applied?:SceneDocument;
  private particleConstruction?:Pick<SceneDocument,'mapSource'|'symmetrySource'>;
  private recording?:{handle:object;clock:SourceQueueRecordingClock;primary:GenerateContext;target:GenerateContext;next:number};
@@ -230,7 +230,7 @@ export class SourceIteratedSession {
    if(replace&&live.startAt!==undefined){
     const frames=Math.floor(live.startAt*scene.timeline.fps+1e-9)+1;
     for(let i=0;i<frames;i++)result=yield* this.advance(c,Math.fround(1/scene.timeline.fps),false,true);
-    this.clock=new SourceSceneHostClock(live.clock.paused,this.frame!.frame.camera);
+    this.clock=new SourceSceneHostClock(live.clock.paused,this.frame!.frame.camera,this.backend.hostClock?.now,this.backend.hostClock?.source??'worker-wall-clock');
    }else result=yield* this.advance(c,this.clock!.update(live.clock),live.clock.paused);
    const output=yield* this.present(c,result!);
    this.completed=c.sourceViewport?.target==='primary'?{context:{...c,[this.family==='map'?'mapLive':'symmetryLive']:structuredClone(live),sourceViewport:{...c.sourceViewport},...(c.sourceMapToneReference?{sourceMapToneReference:{...c.sourceMapToneReference}}:{}),...(c.sourceSymmetryToneReference?{sourceSymmetryToneReference:{...c.sourceSymmetryToneReference}}:{})},identity:this.captureIdentity(scene,c)}:undefined;
@@ -243,7 +243,7 @@ export class SourceIteratedSession {
   yield* this.resetOperation();this.particleConstruction=structuredClone({mapSource:scene.mapSource,symmetrySource:scene.symmetrySourcePalette?applied.symmetrySource:scene.symmetrySource});this.applied=structuredClone(applied);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
   this.sessionId=live.sessionId;this.startAt=live.startAt;this.revision=live.replayRevision;
   this.timeline=new SourceIteratedTimelineSession(scene);this.frame=this.timeline.snapshot();
-  this.clock=new SourceSceneHostClock(live.clock.paused,this.frame.frame.camera);this.replay=new SourceIteratedReplaySession(this.family,live.renderFps,this.backend.asyncBackend?{asyncBackend:this.backend.asyncBackend()}:{backend:this.backend.backend?.()});
+  this.clock=new SourceSceneHostClock(live.clock.paused,this.frame.frame.camera,this.backend.hostClock?.now,this.backend.hostClock?.source??'worker-wall-clock');this.replay=new SourceIteratedReplaySession(this.family,live.renderFps,this.backend.asyncBackend?{asyncBackend:this.backend.asyncBackend()}:{backend:this.backend.backend?.()});
   this.runtimeRevision=live.mapEdits?.runtimeRevision??0;this.dotSizeRevision=live.mapEdits?.dotSizeRevision??0;
  }
  /** Public toolbar resets from the last applied JSON before enabling recording.
