@@ -60,3 +60,5 @@
 新 GPU 回归耗时分别约 3.301 秒、4.374 秒，App 矩阵约 12.912 秒，均包含各自验证开销。原生计算诊断墙钟约 1.591 秒、CPU 0.284 秒；内存采样不足以给出可靠峰值。各实验没有形成等价冷／热吞吐基准，完整进程族内存、GPU 内存和 token 成本未测，不宣称性能提升。
 
 精简机器记录：[render-boundary-20261025.json](../tests/fixtures/symmetry/render-boundary-20261025.json)。完整本地证据与每项输入／源码摘要在 `.cache/source-symmetry-webgl-stage-20261025/validation-index.json`；最新 App 运行在 `.cache/symmetry-point-size-ui-20261025/run-5/`。只有这一台 Mac，第二设备仍未验证；原窗口、原版导出和其它场景的未完成要求均保留。
+
+后续集成准备：[迭代场景的异步执行边界验证](source-iterated-execution-validation.zh-CN.md)，包含共用会话规则、20 组 CGL 程序编译、取消竞态修复与实际 GPU 回归；原生生产调度仍待接入。

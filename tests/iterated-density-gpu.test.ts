@@ -1,5 +1,6 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
-import {IteratedDensityGpu,iteratedGpuBytes,iteratedGpuFieldSource,type IteratedGpuOptions} from '../src/engine/iteratedDensityGpu';
+import {IteratedDensityGpu,iteratedGpuBytes,type IteratedGpuOptions} from '../src/engine/iteratedDensityGpu';
+import {iteratedDensityGpuPrograms,iteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import {prepareIteratedFrame,type IteratedField} from '../src/scenes/iteratedDensity';
@@ -10,17 +11,18 @@ function job(){const s=createScene(definition('map'));s.equations={x:'x+.01',y:'
 const options:IteratedGpuOptions={resetParticles:true,clearInk:true,width:32,height:24,projection:'xy',padding:.05,bounds:{minX:-1,maxX:1,minY:-1,maxY:1}};
 /** Lifecycle-only GL fixture. It does not emulate shader math or establish GPU behavior. */
 function glFixture({textureLimit=8192,missingExtension=false,failTexture=0,compileFails=false,drawFails=false}:{textureLimit?:number;missingExtension?:boolean;failTexture?:number;compileFails?:boolean;drawFails?:boolean}={}){
- let id=0,textureAttempts=0,contextCalls=0,loseCalls=0,activeFeedback=false,ended=0;const live=new Map<object,string>(),allocated:string[]=[],calls:string[]=[],constants=new Map<string,number>();
+ let id=0,textureAttempts=0,contextCalls=0,loseCalls=0,activeFeedback=false,ended=0;const live=new Map<object,string>(),allocated:string[]=[],calls:string[]=[],shaderSources:string[]=[],constants=new Map<string,number>();
  const value=(name:string)=>{if(!constants.has(name))constants.set(name,constants.size+1);return constants.get(name)!;};
  const make=(kind:string)=>{const o={id:++id};live.set(o,kind);allocated.push(kind);return o;};
  const drop=(o:object|null)=>{if(o)live.delete(o);};
  const gl=new Proxy({} as WebGL2RenderingContext,{get(_t,key:string){if(/^[A-Z_0-9]+$/.test(key))return value(key);if(key==='getExtension')return(name:string)=>name==='WEBGL_lose_context'?{loseContext(){loseCalls++;}}:missingExtension?null:{};if(key==='getParameter')return(token:number)=>token===value('MAX_TEXTURE_SIZE')?textureLimit:1024;
   if(key==='isContextLost')return()=>false;if(key==='getError')return()=>value('NO_ERROR');if(key==='checkFramebufferStatus')return()=>value('FRAMEBUFFER_COMPLETE');if(key==='getShaderParameter')return()=>!compileFails;if(key==='getProgramParameter')return()=>true;if(key==='getShaderInfoLog'||key==='getProgramInfoLog')return()=> 'injected shader failure';if(key==='getUniformLocation')return()=>({});
+  if(key==='shaderSource')return(_shader:WebGLShader,source:string)=>{shaderSources.push(source);};
   if(key==='createTexture')return()=>++textureAttempts===failTexture?null:make('Texture');if(key.startsWith('create'))return()=>make(key.slice(6));if(key.startsWith('delete'))return drop;
   if(key==='beginTransformFeedback')return()=>{activeFeedback=true;calls.push(key);};if(key==='endTransformFeedback')return()=>{activeFeedback=false;ended++;calls.push(key);};if(key==='drawArrays')return()=>{calls.push(key);if(drawFails&&activeFeedback)throw Error('injected draw failure');};
   return()=>{calls.push(key);};}});
  vi.stubGlobal('OffscreenCanvas',class{getContext(){contextCalls++;return gl;}});
- return{gl,live,allocated,calls,get contextCalls(){return contextCalls;},get loseCalls(){return loseCalls;},get activeFeedback(){return activeFeedback;},get ended(){return ended;}};
+ return{gl,live,allocated,calls,shaderSources,get contextCalls(){return contextCalls;},get loseCalls(){return loseCalls;},get activeFeedback(){return activeFeedback;},get ended(){return ended;}};
 }
 afterEach(()=>vi.unstubAllGlobals());
 describe('iterated GPU admission and safe mathematical source',()=>{
@@ -58,4 +60,22 @@ describe('custom fragment state ownership',()=>{
  it('accounts for independent metadata and a single buffer or texture representation',()=>{const builtin=iteratedGpuBytes(2049,41,31,2048,false,false),custom=iteratedGpuBytes(2049,41,31,2048,false,true);expect(builtin-custom).toBe(4096*24);expect(iteratedGpuBytes(4096,41,31,2048,false,true)).toBe(custom);expect(()=>iteratedGpuBytes(1,1,1,1,false,1 as unknown as boolean)).toThrow();});
  it('uses texture state with no duplicate particle buffers and releases every partial allocation',()=>{const complete=glFixture(),gpu=new IteratedDensityGpu();gpu.step(customJob(),options);expect(complete.allocated.filter(k=>k==='Buffer')).toHaveLength(0);expect(complete.allocated.filter(k=>k==='Texture')).toHaveLength(11);gpu.reset();expect(complete.live.size).toBe(0);const broken=glFixture({failTexture:4});expect(()=>gpu.step(customJob(),options)).toThrow('texture');expect(broken.live.size).toBe(0);expect(gpu.diagnostics().retainedBytes).toBe(0);});
  it('cancels the custom frame before state allocation rather than silently executing builtin',()=>{const fixture=glFixture(),gpu=new IteratedDensityGpu();expect(()=>gpu.step(customJob(),{...options,isCancelled:()=>true})).toThrow('取消');expect(fixture.contextCalls).toBe(0);expect(fixture.live.size).toBe(0);});
+});
+
+
+describe('shared program consumption at the WebGL compile boundary',()=>{
+ it('submits the shared builtin, source calculate_next and custom programs without backend rewriting',()=>{
+  const programs=iteratedDensityGpuPrograms('webgl2');
+  const scenes=[createScene(definition('map')),createScene(definition('symmetry')),createScene(definition('map')),createScene(definition('symmetry'))];
+  scenes[1].settings.symmetryMathModel='mathart-1.7.8-gpu-v1';
+  scenes[2].settings.mapMathModel='mathart-1.7.8-gpu-v1';scenes[2].equations={x:'x+a',y:'nx+y'};scenes[2].parameters={a:.1};
+  scenes[3].equations.glsl='void calculate_next(in vec3 p,out vec3 n,out float m){n=p;m=-3.;}';
+  for(const scene of scenes){
+   Object.assign(scene.settings,{iteratedMode:'continuous',batchSize:7,burnIn:0,iterationsPerFrame:1});
+   const prepared=prepareIteratedFrame(scene,0,0),source=iteratedGpuFieldSource(prepared.field),expected=programs.iteration(source),fixture=glFixture(),gpu=new IteratedDensityGpu();
+   gpu.step(prepared,options);
+   for(const shader of [expected.vertex,expected.fragment,programs.DRAW_VERTEX,programs.DRAW_FRAGMENT,programs.STATS_FIRST,programs.STATS_REDUCE])expect(fixture.shaderSources).toContain(shader);
+   gpu.dispose();expect(fixture.live.size).toBe(0);
+  }
+ });
 });

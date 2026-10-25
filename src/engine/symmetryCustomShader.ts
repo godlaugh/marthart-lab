@@ -1,3 +1,4 @@
+import {gpuShaderHeader,type GpuShaderProfile} from './gpuShaderProfile';
 import {SYMMETRY_CUSTOM_LOOP_ITERATIONS,type PreparedSymmetryCustomSource} from './symmetryCustom';
 
 /** Pure fragment kernel. IteratedDensityGpu exclusively owns GL resources,
@@ -8,11 +9,8 @@ import {SYMMETRY_CUSTOM_LOOP_ITERATIONS,type PreparedSymmetryCustomSource} from 
  * leaves unwritten out arguments undefined. The NaN initialization below is
  * not a definite-assignment proof and cannot make such source well-defined.
  */
-export function symmetryCustomFragmentSource(plan:PreparedSymmetryCustomSource):string {
- return `#version 300 es
-precision highp float;
-precision highp int;
-uniform highp sampler2D rea_states;
+export function symmetryCustomFragmentSource(plan:PreparedSymmetryCustomSource,profile:GpuShaderProfile='webgl2'):string {
+ return gpuShaderHeader(profile,'precision highp float;\nprecision highp int;\n')+`uniform highp sampler2D rea_states;
 uniform highp usampler2D rea_metadata;
 uniform ivec2 rea_sourceSize;
 uniform int rea_count,rea_steps,rea_resetCounter;

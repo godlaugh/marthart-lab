@@ -1,0 +1,355 @@
+{
+  "baselineCommit": "5d8c9d26c79f076b20ef8068f9db19d5f15a0cef",
+  "scope": "CPU-generated WebGL source at the pre-extraction producer; no GL compilation or runtime equivalence claim. Shader hashes lock the full byte output, including whitespace and preambles. Inputs contain authored fields, not captured application shaders.",
+  "sourcePins": {
+    "src/engine/iteratedDensityGpu.ts": "ac88ba5b1306cae56fbab1bd28ab18559f4b7cfccde11b8ca7ee90922d78e546",
+    "src/engine/symmetryCustomShader.ts": "0085e7f09aca918b39c0c416fb2d17ee244394804418286ab1836f002e109f23",
+    "src/engine/sourceSymmetryMath.ts": "6ec015beefc8bd88ad4017067c1e18c858f4def7fd2f23243405bac6c814617e",
+    "src/engine/sourceMapMath.ts": "e98d6a888c9256de946b2ffaf86baef4f9efa3007f71db91f685527a1593183d",
+    "src/engine/iteratedGpuSamila.ts": "cd20cd1df88697e25f72efa01f17d28b8d2897b780a91851c8bba56b92fb0485",
+    "src/engine/gpuSampler.ts": "10c47b0e70e25f0b4c57e7fd47f028e24c7521301f3b258703f4b5b2d5035694",
+    "src/engine/densityGpuShaders.ts": "f2c37c57493e8e9535093d092ac61fd96ad02860c7d023f441b0f6e2055199d1",
+    "src/engine/iteratedGpuNoise.ts": "af5cd43de81139ef20547d948e2f59afa22527bb49ef74d6f3fd0fa7d43ce917",
+    "src/engine/sourceSamilaSplat.ts": "bdc1d60bc232b5c60bfca64b7afebf744b84c98bd9cf02bc93cd6ef92c2d4ae3",
+    "src/engine/samilaProjection.ts": "fcd1bdb2cbaa76f32778cda2fe829496a5a92e5ee77a5a3d8e69c3b1b299f73e"
+  },
+  "shaders": {
+    "QUAD": {
+      "sha256": "a7b0b577f63947f7b8f4f71fc3568e2142bfb604fd03e607bd9624c77671ebcd",
+      "bytes": 203
+    },
+    "EMPTY": {
+      "sha256": "bfd3378ad39ed2885ede97d5e06c19c646bc9583ee4088a9d605b923ba4acd77",
+      "bytes": 155
+    },
+    "HISTORY_COPY": {
+      "sha256": "426d4c2248761df87a3c68a65130100fd1b0f2139006b538f56bb79ddd60a71f",
+      "bytes": 357
+    },
+    "STEP": {
+      "sha256": "c5a9f56b7966879fb48c3eb0340723295e3c617ca6089fdcccce59e559793dcb",
+      "bytes": 1796
+    },
+    "STEP_MAIN": {
+      "sha256": "5727a53ca2eba5870ca56d45f14be51f250c5963e5115217d8a629ef17410737",
+      "bytes": 475
+    },
+    "SOURCE_CALCULATE_NEXT_STEP_MAIN": {
+      "sha256": "1d45058baa9c6aedba4d9fa2d3ad2d6694e5fcc58374d82439aea27d2f7486cb",
+      "bytes": 449
+    },
+    "BOUNDS_FIRST": {
+      "sha256": "95018a410d6c9125548e5a8c22441e3033ee052f9e9b732f76762bd79174eed3",
+      "bytes": 2610
+    },
+    "BOUNDS_REDUCE": {
+      "sha256": "ef3575b3c8a2839df696b131dd6df2767c098d9365c97e5988608c45bc4d60a6",
+      "bytes": 511
+    },
+    "STATS_FIRST": {
+      "sha256": "1da3f9f279551c3fbc40f7351490674ff8ded87f1c5548558e87115bf33fe5e9",
+      "bytes": 3213
+    },
+    "STATS_REDUCE": {
+      "sha256": "a0c355b4742e62dd934a00bc0e02f0ca861cadc19ed41f9e4863534a1a958da7",
+      "bytes": 511
+    },
+    "CUSTOM_ERRORS_FIRST": {
+      "sha256": "8072efa32365c04969991307bf19a8f39d81812acb6746003edac4975cdc681c",
+      "bytes": 468
+    },
+    "CUSTOM_ERRORS_REDUCE": {
+      "sha256": "576b465dbcab583ff5f160c4c1c61f3f4edaf6779a366b8ac318817088f8b3c4",
+      "bytes": 414
+    },
+    "DRAW_VERTEX": {
+      "sha256": "d00014abad26117c88d665708794a2f3680ac5ccfd56752fe00378a7d2f9bfca",
+      "bytes": 5745
+    },
+    "DRAW_FRAGMENT": {
+      "sha256": "6a195ff8213f4c67a104ba33adb9558fb5d9593644693f787498249d1e684c8d",
+      "bytes": 627
+    },
+    "SOURCE_DRAW_VERTEX": {
+      "sha256": "59295f23b896b0768f0a6d39922b6392e3b17fb1a94f2897c266a9fc2f54f253",
+      "bytes": 3545
+    },
+    "SOURCE_DRAW_FRAGMENT": {
+      "sha256": "9670be4a72c34cdab5a29a970557cb3282367079d51f9da61815cd27ae57a50e",
+      "bytes": 642
+    },
+    "POINT_PROBE_VERTEX": {
+      "sha256": "3d305f62490f443cc5169363e5453313bca155a5600b3b986a14b56b37baafd8",
+      "bytes": 172
+    },
+    "POINT_PROBE_FRAGMENT": {
+      "sha256": "b85d0c4ab75488b05e810cbe2624ce371370ff210e8a7aac3abff3bb06d5b631",
+      "bytes": 207
+    },
+    "DIRECT_STATS_FIRST": {
+      "sha256": "82216f4ef13ff4b771cf531921abdfc935b3bf54fa4f5ea6b22104e648139f6c",
+      "bytes": 558
+    },
+    "legacySymmetry.vertex": {
+      "sha256": "f112187a2caecc8feda544a71f97347f76688c8a5c94dfbd76447dbc0fc8d80d",
+      "bytes": 2679
+    },
+    "legacySymmetry.fragment": {
+      "sha256": "bfd3378ad39ed2885ede97d5e06c19c646bc9583ee4088a9d605b923ba4acd77",
+      "bytes": 155
+    },
+    "sourceSymmetry.vertex": {
+      "sha256": "24ea60833ae1368e0f46ca2e82766f54cdc7a48fb5a259512cb31eeb403df6af",
+      "bytes": 3168
+    },
+    "sourceSymmetry.fragment": {
+      "sha256": "bfd3378ad39ed2885ede97d5e06c19c646bc9583ee4088a9d605b923ba4acd77",
+      "bytes": 155
+    },
+    "sourceSymmetryModified.vertex": {
+      "sha256": "0e4b84f5ad16551172d820f2b6861613e3b689e613369fb9b24a934be8aab87c",
+      "bytes": 3827
+    },
+    "sourceSymmetryModified.fragment": {
+      "sha256": "bfd3378ad39ed2885ede97d5e06c19c646bc9583ee4088a9d605b923ba4acd77",
+      "bytes": 155
+    },
+    "legacyMap.vertex": {
+      "sha256": "1d43fa4b0c1b11a4467999232c7fb99c7b6eae0fb5acb97a08341b46b8659ce1",
+      "bytes": 2644
+    },
+    "legacyMap.fragment": {
+      "sha256": "bfd3378ad39ed2885ede97d5e06c19c646bc9583ee4088a9d605b923ba4acd77",
+      "bytes": 155
+    },
+    "sourceMap.vertex": {
+      "sha256": "7ec7b19e78aa8270829def072c26bc2eae8d8f9a6fc6f166580baa04e1ce4fd1",
+      "bytes": 2703
+    },
+    "sourceMap.fragment": {
+      "sha256": "bfd3378ad39ed2885ede97d5e06c19c646bc9583ee4088a9d605b923ba4acd77",
+      "bytes": 155
+    },
+    "legacySamila.vertex": {
+      "sha256": "407a3b09b9a808073a7b291b7fa919d073289a96ef90f249471454017d2365b3",
+      "bytes": 3663
+    },
+    "legacySamila.fragment": {
+      "sha256": "bfd3378ad39ed2885ede97d5e06c19c646bc9583ee4088a9d605b923ba4acd77",
+      "bytes": 155
+    },
+    "custom.vertex": {
+      "sha256": "a7b0b577f63947f7b8f4f71fc3568e2142bfb604fd03e607bd9624c77671ebcd",
+      "bytes": 203
+    },
+    "custom.fragment": {
+      "sha256": "7a68553c1651afef8e36b51ef484df029461cfeb94843bad49deb374093434bd",
+      "bytes": 2941
+    }
+  },
+  "fields": {
+    "legacySymmetry": {
+      "input": {
+        "kind": "symmetry",
+        "parameters": {
+          "lambda": -2.34,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.2,
+          "omega": 0,
+          "n": 5,
+          "template": "standard",
+          "delta": 0,
+          "deltaPower": 1
+        },
+        "time": 0
+      },
+      "sourceSha256": "d26c32c7363b9b090f91fca27b7dea958b7b2f927e251bf67a2c881d49160e9e",
+      "keySha256": "3781049acb7fd5d7de257b5522345fccce1e56f50ea02589ab65256ed359f37f",
+      "uniforms": {
+        "q0": -2.34,
+        "q1": 2,
+        "q2": 0.2,
+        "q3": 0.2,
+        "q4": 0,
+        "q5": 5,
+        "q6": 0,
+        "q7": 1
+      },
+      "stage": "vertex",
+      "sourceCalculateNext": false
+    },
+    "sourceSymmetry": {
+      "input": {
+        "kind": "symmetry",
+        "parameters": {
+          "lambda": -2.34,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.2,
+          "omega": 0,
+          "n": 5,
+          "template": "standard",
+          "delta": 0,
+          "deltaPower": 1
+        },
+        "time": 0,
+        "mathModel": "mathart-1.7.8-gpu-v1"
+      },
+      "sourceSha256": "d0aa9764df9b2300777b7ed6a5ff3b39c706b92e4a91473878ad621d813fc8e0",
+      "keySha256": "0ff1daab229d79132efe4d415e1343e11dc9bfe0ac9faf12049fff350f5be4ae",
+      "uniforms": {
+        "lambda": -2.34,
+        "alpha": 2,
+        "beta": 0.2,
+        "gamma": 0.2,
+        "omega": 0,
+        "symmetry_degree": 5
+      },
+      "stage": "vertex",
+      "sourceCalculateNext": true
+    },
+    "sourceSymmetryModified": {
+      "input": {
+        "kind": "symmetry",
+        "parameters": {
+          "lambda": -2.34,
+          "alpha": 2,
+          "beta": 0.2,
+          "gamma": 0.2,
+          "omega": 0,
+          "n": 5,
+          "template": "modified",
+          "delta": 0.42,
+          "deltaPower": 3
+        },
+        "time": 0,
+        "mathModel": "mathart-1.7.8-gpu-v1"
+      },
+      "sourceSha256": "b43eae14f15592426b4265cd8d79fe26372ce64be1bd1dc8315cb001dfdd43bc",
+      "keySha256": "963868372a7e2e97c13547f50ce5660401739e640af71752d2db655c6a63a079",
+      "uniforms": {
+        "lambda": -2.34,
+        "alpha": 2,
+        "beta": 0.2,
+        "gamma": 0.2,
+        "omega": 0,
+        "symmetry_degree": 5,
+        "delta": 0.42,
+        "delta_power": 3
+      },
+      "stage": "vertex",
+      "sourceCalculateNext": true
+    },
+    "legacyMap": {
+      "input": {
+        "kind": "map",
+        "equations": {
+          "x": "x+a",
+          "y": "nx+y+b",
+          "z": "ny+z"
+        },
+        "parameters": {
+          "b": 2,
+          "a": 1
+        },
+        "dimension": 3,
+        "time": 2
+      },
+      "sourceSha256": "3d1b961a11193dd91222ddb7a6b0dd844e5047a8bfad4d527987f8bce8d5c3c4",
+      "keySha256": "3d1b961a11193dd91222ddb7a6b0dd844e5047a8bfad4d527987f8bce8d5c3c4",
+      "uniforms": {
+        "parameter0": 1,
+        "parameter1": 2,
+        "parameter2": 2,
+        "parameter3": 2
+      },
+      "stage": "vertex",
+      "sourceCalculateNext": false
+    },
+    "sourceMap": {
+      "input": {
+        "kind": "map",
+        "equations": {
+          "x": "x+a",
+          "y": "nx+y+b",
+          "z": "ny+z"
+        },
+        "parameters": {
+          "b": 2,
+          "a": 1
+        },
+        "dimension": 3,
+        "time": 2,
+        "mathModel": "mathart-1.7.8-gpu-v1"
+      },
+      "sourceSha256": "59186be5572e200e9a1f55520b30de42c845ce0ddcb768edf598bac295f7196f",
+      "keySha256": "5625d4b868c1395155e0cc0dab768677b48e54827a4a1b0889a01e5f63af8810",
+      "uniforms": {
+        "sourceMapParameter0": 1,
+        "sourceMapParameter1": 2
+      },
+      "stage": "vertex",
+      "sourceCalculateNext": true
+    },
+    "legacySamila": {
+      "input": {
+        "kind": "samila",
+        "equations": {
+          "f1": "sin(a*x*y)+cos(b*x^2)",
+          "f2": "cos(c*x+y)+sin(d*y^4)"
+        },
+        "parameters": {
+          "a": 2.1,
+          "b": 1,
+          "c": 1.1,
+          "d": 0.49
+        },
+        "mapping": "f1_f2",
+        "projection": "polar",
+        "lo": -3.141592653589793,
+        "hi": 3.141592653589793,
+        "rotation": 0,
+        "time": 0
+      },
+      "sourceSha256": "229ca1bcace1f50d4be64dc4f6772771a153441ef442b5646b4cff0a932b8870",
+      "keySha256": "229ca1bcace1f50d4be64dc4f6772771a153441ef442b5646b4cff0a932b8870",
+      "uniforms": {
+        "parameter0": 2.1,
+        "parameter1": 1,
+        "parameter2": 1.1,
+        "parameter3": 0.49,
+        "parameter4": 0,
+        "parameter5": 0,
+        "mappingA": 2.1,
+        "mappingB": 1,
+        "mappingC": 1.1,
+        "mappingD": 0.49,
+        "rotationCos": 1,
+        "rotationSin": 0
+      },
+      "stage": "vertex",
+      "sourceCalculateNext": false
+    },
+    "custom": {
+      "input": {
+        "kind": "symmetry-custom",
+        "parameters": {
+          "gain": 1
+        },
+        "time": 0,
+        "customSource": {
+          "rawSource": "uniform float gain;void calculate_next(in vec3 pos,out vec3 nextPos,out float stepMetric){for(int i=0;i<3;i++){pos*=gain;}nextPos=pos;stepMetric=-3.;}",
+          "compileDegree": 5
+        }
+      },
+      "sourceSha256": "7a68553c1651afef8e36b51ef484df029461cfeb94843bad49deb374093434bd",
+      "keySha256": "790179dcfc4442a0d91cda6505a6d5eb0a358149829e252089621ed89f374b1d",
+      "uniforms": {
+        "gain": 1
+      },
+      "stage": "fragment",
+      "sourceCalculateNext": false
+    }
+  }
+}
