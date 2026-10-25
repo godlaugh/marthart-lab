@@ -1,0 +1,247 @@
+{
+  "date": "2026-10-25",
+  "baseCommit": "941821e397a7c591cbbc35f7539e53c39a1a2d11",
+  "status": "finite-app-recording-and-same-id-replacement-verified",
+  "milestone": "M3",
+  "readableReport": "docs/source-domain-recording-replacement-validation.zh-CN.md",
+  "readableReportSha256": "b3c48ec67d45d2aee31b2ddf437168f1c9a89e2f95dad5ef27471d745a082e55",
+  "evidenceKinds": {
+    "local": "Actual public App controls, production GenerationQueue/Worker/WebGL and export service/FFmpeg in owned hidden Chrome on the single available Mac.",
+    "original": "No original application/JVM/window execution or original pixel comparison in this increment.",
+    "cpu": "Real parser/planner/owner preflight and tests; transport unit tests substitute messaging and are not actual App evidence."
+  },
+  "productChanges": false,
+  "validation": {
+    "actualApp": ".cache/domain-control-final-ui-20261025/run-1/report.json",
+    "cases": 2,
+    "checks": 363,
+    "elapsedMs": 29469.614,
+    "runtime": {
+      "node": "v24.18.0",
+      "chrome": "155.0.8059.85",
+      "devicePixelRatio": 1,
+      "devicesVerified": 1,
+      "preview": {
+        "cpu": {
+          "quality": "low",
+          "targetDensity": 1
+        },
+        "gpu": {
+          "quality": "high",
+          "targetDensity": 2
+        }
+      }
+    },
+    "sourceFiles": 587,
+    "sourceStable": true,
+    "cleanup": {
+      "operations": [
+        {
+          "resource": "browser",
+          "status": "fulfilled"
+        },
+        {
+          "resource": "vite",
+          "status": "fulfilled"
+        },
+        {
+          "resource": "exportServer",
+          "status": "fulfilled"
+        }
+      ],
+      "serviceOwnedProcesses": 0,
+      "pageErrors": [],
+      "contextsClosed": true,
+      "sameIdOldWorkersExplicitlyTerminated": true,
+      "gpuReleased": true
+    },
+    "pngs": {
+      "canvas": 8,
+      "app": 8,
+      "actualUploaded": 6
+    },
+    "cpu": {
+      "preflightChecks": 16,
+      "files": 2,
+      "passed": 33,
+      "failed": 0,
+      "report": ".cache/domain-control-final-ui-20261025/cpu-prepare-2/vitest.json",
+      "evidenceRecheck": ".cache/domain-control-final-ui-20261025/run-1/cpu-evidence-audit.json",
+      "recheckedSourcePins": 587,
+      "recheckedImageVideoPins": 24
+    },
+    "results": [
+      {
+        "backend": "cpu",
+        "recording": {
+          "warmupOrdinal": 0,
+          "encodedOrdinals": [
+            1,
+            2,
+            3
+          ],
+          "target": [
+            192,
+            144
+          ],
+          "rawRgbaToUploadPngExact": true,
+          "uploadedRgbaSha256": [
+            "ab8065b3d27a0c95e656c72512259b570b1b14f304eb3c1b055b6f2a7cf9445b",
+            "424b06bcd1244ad13ed78d35292b6cc1cdb387a8378ee4c7f1e7308b0de48264",
+            "25b6bfdbc34a8e65127682cdf022ec1f2f16c92a43bd7691b0aa98518585dc03"
+          ],
+          "video": {
+            "path": ".cache/domain-control-final-ui-20261025/run-1/domain-final-cpu-recording.mp4",
+            "sha256": "2624ac8c336296cf90e01d42ba1fa5ab723678238436601736b0ff52cb412930",
+            "metadata": {
+              "width": 64,
+              "height": 48,
+              "pix_fmt": "yuvj444p",
+              "r_frame_rate": "4/1",
+              "nb_read_frames": "3"
+            },
+            "decodedRgbSha256": "16d77fec3507d563364d525cf3844b28bc8db7bb27304cf3d4b4957245cc8e1e"
+          },
+          "sharedEditorAndManualSnapshotRetained": true,
+          "finish": {
+            "target": "primary",
+            "ordinal": 3,
+            "paused": false,
+            "renderKind": "snapshot",
+            "rawDt": 0
+          }
+        },
+        "sameIdReplacement": {
+          "documentId": "ad189e61-9e32-4299-a3b3-f2e75fa92e65",
+          "oldSessionId": "3a5f36b9-45f9-4452-b718-c20fcdcf9073",
+          "newSessionId": "db00aa45-ff31-4bc6-b000-0d20a58c57cf",
+          "oldWorker": 2,
+          "oldWorkerTerminated": true,
+          "newRevision": 1,
+          "noPageReload": true,
+          "newEditorUsesDefaults": true,
+          "manualRestoresNewFileColors": [
+            "#FF0022",
+            "#00E0C0",
+            "#202040"
+          ]
+        },
+        "actualBackendRetainedWithoutFallback": true
+      },
+      {
+        "backend": "gpu",
+        "recording": {
+          "warmupOrdinal": 0,
+          "encodedOrdinals": [
+            1,
+            2,
+            3
+          ],
+          "target": [
+            192,
+            144
+          ],
+          "rawRgbaToUploadPngExact": true,
+          "uploadedRgbaSha256": [
+            "fb00a43f00363d8669edff5e21ff8e37bc630bb29e210418a5888f81cc972125",
+            "cc8c816715cde8b180b3da3a947f878eeeeffb87692ee477688144f2f625bdeb",
+            "32eb77150589ddaa928b71178c75dc81093b452bc760a600d3599db6c5d435b5"
+          ],
+          "video": {
+            "path": ".cache/domain-control-final-ui-20261025/run-1/domain-final-gpu-recording.mp4",
+            "sha256": "35f91098203b57fcc02a576e808fabe81f6f957353dbd6b13b11fc01e45f78eb",
+            "metadata": {
+              "width": 64,
+              "height": 48,
+              "pix_fmt": "yuvj444p",
+              "r_frame_rate": "4/1",
+              "nb_read_frames": "3"
+            },
+            "decodedRgbSha256": "121ab8012ab30ba3e7617022aed6bb0060f32bdd842ab4ce1fc118e125c5580f"
+          },
+          "sharedEditorAndManualSnapshotRetained": true,
+          "finish": {
+            "target": "primary",
+            "ordinal": 3,
+            "paused": false,
+            "renderKind": "snapshot",
+            "rawDt": 0
+          }
+        },
+        "sameIdReplacement": {
+          "documentId": "682adc9f-9354-4ac0-ba0c-8daf3434880a",
+          "oldSessionId": "e1d2cbcd-75fb-4a54-96e9-bb49ddd6c445",
+          "newSessionId": "f2334107-c5d1-4c77-9ee7-d71aaa7a14ef",
+          "oldWorker": 1,
+          "oldWorkerTerminated": true,
+          "newRevision": 1,
+          "noPageReload": true,
+          "newEditorUsesDefaults": true,
+          "manualRestoresNewFileColors": [
+            "#FF0022",
+            "#00E0C0",
+            "#202040"
+          ]
+        },
+        "actualBackendRetainedWithoutFallback": true
+      }
+    ]
+  },
+  "preparationFailure": {
+    "path": ".cache/domain-control-final-ui-20261025/cpu-prepare-1/report.json",
+    "classification": "verifier-input-assumption",
+    "reason": "Source render_mode selects source semantics, not the local domainBackend. Restored existing public dropdown selection and retained runtime backend checks.",
+    "originalRecordPreserved": true,
+    "actualAppFailedRuns": 0
+  },
+  "sourcePins": {
+    "src/App.tsx": "a69dae4772c42004cf2e2068ea9b18f35cba4e821713da1e0deb7b822802f56e",
+    "src/components/DomainColorControls.tsx": "999b40537d979a91633b211129d6e3d0b441a44aa709552e94ea6e51eddc8458",
+    "src/components/ExportDialog.tsx": "53228a192f916a0f3bbde28c55307897fdc6e688ad22e4c94a49faf539bacce6",
+    "src/engine/client.ts": "22afaff520eb602ec4e9d10b1df21c0b9fafd65016daa57231146576ec1fef3e",
+    "src/engine/generationQueue.ts": "33781c8fedcc3dba3773f674bf0588997e99a1c1f366e17b7383691b56b2bae5",
+    "src/engine/document.ts": "b8deb3c9ecbc589435b610af4494333d2faac1e81a88ea54f8598a2a3dc68cbb",
+    "src/engine/legacyImport.ts": "69bd1cf26c3369eb67ba193719d6d144b1820508811aa58f6c80dfd83ed314ef",
+    "src/engine/domainPaletteEditing.ts": "3250ce2b37582a5fa14cb1d17323f629b7a98741d35529621cb24834831d622f",
+    "src/engine/sourceDomainRecording.ts": "9a341758eff768b7985c935504e70770f0d760c26e2c5e9c956bf96c8f5f9f99",
+    "src/engine/sourceDomainLiveSession.ts": "d5e02eb6da4d5bee7d9211fb90b49cb54c288fa9b8bf091141f602a066e6c5d5",
+    "src/engine/formulaCanvas.ts": "8753018532b88a3fc069a4fad19dd36c882f13a209982c52ef14b3c5d4ae055e"
+  },
+  "artifacts": {
+    ".cache/domain-control-final-ui-20261025/final-index.json": "0e48beb73b1265c84f7afa249ecb69b3e5a7ba88ac8fff5282832309735488e9",
+    ".cache/domain-control-final-ui-20261025/index.json": "8099e1d18d7ab0c793d23317e01c8799a8ac778a737e9db2dd6f6bdf2aee261d",
+    ".cache/domain-control-final-ui-20261025/verify-app.mjs": "29cb9402a555eecc7661100b5fa1940e2376cdffdf632bdab667b25c7efd83cb",
+    ".cache/domain-control-final-ui-20261025/fixture.mjs": "ee796fd40165bafb67f915d4e447570db1f330e75a8134094774c4a24ffa24c1",
+    ".cache/domain-control-final-ui-20261025/run-1/report.json": "a77b5c9fafa72cbc7bd93692fc619aca8fc3b8ec5dca901200f675fd58716a2c",
+    ".cache/domain-control-final-ui-20261025/run-1/verifier.mjs": "29cb9402a555eecc7661100b5fa1940e2376cdffdf632bdab667b25c7efd83cb",
+    ".cache/domain-control-final-ui-20261025/run-1/README.zh-CN.md": "0a52e578f2b3019ac8c775ae989f4b23eb6ae1cf33546fc080670effb63b35ce",
+    ".cache/domain-control-final-ui-20261025/run-1/cpu-evidence-audit.json": "dfd9ca0be0e743b510fc53bfc7e6dcd1631fd03ad79d36fc49b808f19543fadd",
+    ".cache/domain-control-final-ui-20261025/cpu-prepare-1/report.json": "ababddf60867195d2ed242868f5cb3b224cad1ac738a64ca5a12100ee5ccd487",
+    ".cache/domain-control-final-ui-20261025/cpu-prepare-3/report.json": "0d47678c1d9c551cc795eab764ad1b964442f7a7026f713220ade14c53958aad",
+    ".cache/domain-control-final-ui-20261025/cpu-prepare-2/vitest.json": "af3507a0c6b79aba6917aaf57173b292cb0a3e66f93d52f70e61aa614fbeccfe",
+    ".cache/domain-control-final-ui-20261025/run-1/viewport-appearance-note.json": "688d88d5d3427b43bc00b795fd772d24026483c42496b5d259577ad76e616732"
+  },
+  "remaining": [
+    "No original whole-image or second-device validation.",
+    "No arbitrary formula, long-running or multi-worker workload, DPR2 or new Stop/Cancel/zero-frame matrix.",
+    "Overall M3 and final integrated release remain separate; installed 1.0 unchanged."
+  ],
+  "unmeasuredCosts": [
+    "CPU time",
+    "peak process-family RSS",
+    "GPU time",
+    "agent tokens"
+  ],
+  "visualWitness": {
+    "note": ".cache/domain-control-final-ui-20261025/run-1/viewport-appearance-note.json",
+    "appearance": "Actual GPU new-Manual image is nearly cyan; nonuniform count only rules out a constant buffer, not a quality or original-parity test.",
+    "actualFormula": "z^3-1",
+    "actualCenter": [
+      0,
+      0
+    ],
+    "actualScale": 2.5,
+    "actualHalfSpan": 0.4,
+    "interpretation": "Source-derived plane around0 makes z^3-1 near-1 and palette coordinate near0.5, compatible with the middle cyan. Not an independent pixel oracle."
+  }
+}
