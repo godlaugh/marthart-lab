@@ -5,7 +5,7 @@ import {encodeSourceDrawingFrame,type SourceDrawingFrame} from './sourceDrawingF
 import {SourceNativeError} from './sourceNativeError';
 export {SourceNativeError} from './sourceNativeError';
 import {sourceNativeLeaseToken} from './sourceNativeLease';
-import {encodeSourceSamilaNativeRequest,decodeSourceSamilaNativeResponse,type SourceSamilaNativeRequest,type SourceSamilaNativeResponse} from './sourceSamilaNativeProtocol';
+import {encodeSourceSamilaNativeRequest,decodeSourceSamilaNativeResponse,type SourceSamilaNativeRequest,type SourceSamilaNativeResponse,type SourceSamilaNativeRetainedTarget} from './sourceSamilaNativeProtocol';
 export interface SourceNativePixels {width:number;height:number;pixels:Uint8ClampedArray;rendererIdentity:string;generation:number;sequence:number;requestBytes:number}
 const check=(signal?:AbortSignal)=>{if(signal?.aborted)throw signal.reason instanceof SourceNativeError?signal.reason:new DOMException('原生帧已取消','AbortError');};
 async function bytes(response:Response,limit:number,signal:AbortSignal){
@@ -33,13 +33,13 @@ type NativeOptions={signal?:AbortSignal;retainedBytes?:number};
  * ownership and must await this frame or explicitly cancel it before replacing
  * it. The loopback gateway separately coordinates other windows/consumers. */
 let active=false;
-async function exchange(request:NativeRequest,options:NativeOptions):Promise<NativeResponse>{
+async function exchange(request:NativeRequest,options:NativeOptions&{samilaRetainedTarget?:SourceSamilaNativeRetainedTarget}):Promise<NativeResponse>{
  const frame=request.frame,samila=request.family==='samila',iterated=request.family==='iterated',render=request.family==='iterated-render',control=request.family==='iterated'||(request.family==='iterated-render'?request.frame.operation.kind!=='present':request.family==='samila'?!['display','present'].includes(request.frame.operation.kind):!!request.frame.bouncing&&request.frame.bouncing.kind!=='draw');
  check(options.signal);if(active)throw new SourceNativeError('capacity','当前页面已有原生帧请求');active=true;
  const controller=new AbortController(),cancel=()=>controller.abort(options.signal?.reason),timer=setTimeout(()=>controller.abort(new SourceNativeError('timeout','原生帧传输超时')),20000);
  options.signal?.addEventListener('abort',cancel,{once:true});
  try{
-  const encoding={isCancelled:()=>controller.signal.aborted,retainedBytes:options.retainedBytes},packet=request.family==='iterated-render'?encodeSourceIteratedRenderNativeRequest(request.frame,encoding):request.family==='iterated'?encodeSourceIteratedNativeRequest(request.frame,encoding):request.family==='samila'?encodeSourceSamilaNativeRequest(request.frame,encoding):encodeSourceDrawingFrame(request.frame,encoding);if(!packet.ok)throw new SourceNativeError(packet.error.kind,packet.error.reason);
+  const encoding={isCancelled:()=>controller.signal.aborted,retainedBytes:options.retainedBytes},packet=request.family==='iterated-render'?encodeSourceIteratedRenderNativeRequest(request.frame,encoding):request.family==='iterated'?encodeSourceIteratedNativeRequest(request.frame,encoding):request.family==='samila'?encodeSourceSamilaNativeRequest(request.frame,{...encoding,retainedTarget:options.samilaRetainedTarget}):encodeSourceDrawingFrame(request.frame,encoding);if(!packet.ok)throw new SourceNativeError(packet.error.kind,packet.error.reason);
   const expected={generation:frame.generation,sequence:frame.sequence,width:request.family==='iterated'?1:request.frame.width,height:request.family==='iterated'?1:request.frame.height};
   const iteratedBinding=request.family==='iterated'?captureSourceIteratedNativeResponseBinding(request.frame):undefined,renderBinding=request.family==='iterated-render'?captureSourceIteratedRenderNativeResponseBinding(request.frame):undefined;
   const response=await fetch('/api/source-renderer/frames',{method:'POST',headers:{'content-type':'application/octet-stream',...(sourceNativeLeaseToken()?{'x-source-lease':sourceNativeLeaseToken()!}:{})},body:packet.value as Uint8Array<ArrayBuffer>,signal:controller.signal,credentials:'same-origin',cache:'no-store',redirect:'error'});
@@ -77,8 +77,8 @@ export async function controlSourceBouncingState(frame:SourceDrawingFrame,option
 }
 
 /** Uses the same page request slot and lease as every other native family. */
-export async function exchangeSourceSamilaNative(request:SourceSamilaNativeRequest,options:NativeOptions={}):Promise<SourceNativeSamilaResponse>{
- const result=await exchange({family:'samila',frame:request},options);if(result.format!=='samila-v1')throw new SourceNativeError('protocol','Samila 原生响应类型不符');return result;
+export async function exchangeSourceSamilaNative(request:SourceSamilaNativeRequest,options:NativeOptions&{retainedTarget?:SourceSamilaNativeRetainedTarget}={}):Promise<SourceNativeSamilaResponse>{
+ const result=await exchange({family:'samila',frame:request},{...options,samilaRetainedTarget:options.retainedTarget});if(result.format!=='samila-v1')throw new SourceNativeError('protocol','Samila 原生响应类型不符');return result;
 }
 
 /** Bounded diagnostic state exchange shares the same request slot and lease. */

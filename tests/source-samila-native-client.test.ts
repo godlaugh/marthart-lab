@@ -7,12 +7,12 @@ import type {SourceSamilaNativeRequest} from '../src/engine/sourceSamilaNativePr
 import type {SourceDrawingFrame} from '../src/engine/sourceDrawingFrame';
 
 const resource='12'.repeat(16);
-function requests(){
+function requests(width=2,height=3){
  const scene=parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'SAMILA',name:'Native transport input',settings:{batch_size:13},equations:{f1:'sin(x*y)',f2:'cos(x-y)'},timeline:[{type:'wait',duration:1}]})).scene;
- const owner=new SourceSamilaSession({samilaSeedProvider:()=>0x80000001}),token=owner.begin(scene,{width:2,height:3,time:0,quality:'preview',samilaPrimaryPixelHeight:972,samilaLive:{sessionId:'transport',pixelDensity:1}}),prepared=owner.prepareDisplay(token);
+ const owner=new SourceSamilaSession({samilaSeedProvider:()=>0x80000001}),token=owner.begin(scene,{width,height,time:0,quality:'preview',samilaPrimaryPixelHeight:972,samilaLive:{sessionId:'transport',pixelDensity:1}}),prepared=owner.prepareDisplay(token);
  const envelope={generation:2,sequence:4};
  const create:SourceSamilaNativeRequest={...envelope,width:1,height:1,operation:prepareSourceSamilaNativeCreate(prepared.job,resource)};
- const display:SourceSamilaNativeRequest={...envelope,width:2,height:3,operation:prepareSourceSamilaNativeDisplay(prepared.job,prepared.tone,prepared.view,{width:2,height:3,clearInk:true,resource,expectedIndex:0,paletteChanged:false})};
+ const display:SourceSamilaNativeRequest={...envelope,width,height,operation:prepareSourceSamilaNativeDisplay(prepared.job,prepared.tone,prepared.view,{width,height,clearInk:true,resource,expectedIndex:0,paletteChanged:false})};
  owner.reset();return{create,display};
 }
 // Hand-authored wire responses follow the retained 64-byte contract. Production
@@ -29,6 +29,14 @@ const legacy=():SourceDrawingFrame=>({generation:3,sequence:1,width:1,height:1,s
 afterEach(()=>vi.unstubAllGlobals());
 
 describe('Samila v5 production transport contract (CPU only)',()=>{
+ it('uses acknowledged target identity for the real desktop size while retaining unknown and resize budgets',async()=>{
+  const {display}=requests(1724,1160),retainedBytes=1724*1160*52,retainedTarget={resource,width:1724,height:1160},fetch=vi.fn(async()=>response(display));vi.stubGlobal('fetch',fetch);
+  await expect(exchangeSourceSamilaNative(display,{retainedBytes})).rejects.toMatchObject({kind:'capacity'});expect(fetch).not.toHaveBeenCalled();
+  const result=await exchangeSourceSamilaNative(display,{retainedBytes,retainedTarget});expect(result.pixels).toHaveLength(1724*1160*4);expect(fetch).toHaveBeenCalledOnce();
+  await expect(exchangeSourceSamilaNative(display,{retainedBytes,retainedTarget:{...retainedTarget,resource:'34'.repeat(16)}})).rejects.toMatchObject({kind:'input'});
+  await expect(exchangeSourceSamilaNative(display,{retainedBytes,retainedTarget:{resource,width:1160,height:1724}})).rejects.toMatchObject({kind:'capacity'});
+  await expect(exchangeSourceSamilaNative(display,{retainedBytes:0,retainedTarget})).rejects.toMatchObject({kind:'input'});expect(fetch).toHaveBeenCalledOnce();
+ });
  it('carries the production request and flips only pixel rows, preserving channel and alpha bytes',async()=>{
   const {display}=requests(),fetch=vi.fn(async()=>response(display));vi.stubGlobal('fetch',fetch);
   const output=await exchangeSourceSamilaNative(display),expected=Array.from({length:24},(_,i)=>i*7);

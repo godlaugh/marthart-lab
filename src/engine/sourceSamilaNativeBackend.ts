@@ -3,7 +3,7 @@ import {exchangeSourceSamilaNative,type SourceNativeSamilaResponse,SourceNativeE
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {SOURCE_FRAME_BUDGET} from './sourceDrawingFrame';
 import {prepareSourceSamilaNativeCreate,prepareSourceSamilaNativeDisplay,prepareSourceSamilaNativePresent,prepareSourceSamilaNativeProgram} from './sourceSamilaNativeProgram';
-import {sourceSamilaNativeProgramBytes,sourceSamilaNativeResidentBytes,SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES,type SourceSamilaNativeOperation} from './sourceSamilaNativeProtocol';
+import {sourceSamilaNativeProgramBytes,sourceSamilaNativeResidentBytes,sourceSamilaNativeTargetGrowth,SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES,type SourceSamilaNativeOperation} from './sourceSamilaNativeProtocol';
 import type {IteratedDensityAsyncStepResult,IteratedDensityAsyncPresentResult,IteratedDensityPreparedPresent} from './iteratedDensityAsyncBackend';
 import type {SourceSamilaAsyncBackend} from './sourceSamilaAsyncSession';
 import type {SourceSamilaPreparedDisplay,SourceSamilaDisplayBudget,SourceSamilaDisplayResult} from './sourceSamilaSession';
@@ -21,9 +21,13 @@ export class SourceSamilaNativeBackend implements SourceSamilaAsyncBackend {
  private readonly generation=++generation;private sequence=0;
  private state?:State;private active?:AbortController;private retiring?:Promise<void>;
  private counters={creations:0,displays:0,steps:0,presentations:0,requestBytes:0};
+ private retainedTarget(){const s=this.state;return s&&s.index>0?{resource:s.resource,width:s.width,height:s.height}:undefined;}
  private identity(){if(this.sequence===0xffffffff)throw new SourceNativeError('capacity','Samila 请求序号已耗尽');return{generation:this.generation,sequence:++this.sequence};}
  private async exchange(operation:SourceSamilaNativeOperation,width=1,height=1,signal?:AbortSignal,additionalBytes=0){
-  const reply=await exchangeSourceSamilaNative({...this.identity(),width,height,operation},{signal,retainedBytes:retainedBytes()-(operation.kind==='display'||operation.kind==='step'?(this.state?.pendingTargetBytes??0):0)+additionalBytes});this.counters.requestBytes+=reply.requestBytes;return reply;
+  // The encoder reserves this transaction's possible allocations. Keep their
+  // ownership in the registry, but do not charge those same bytes twice.
+  const provisional=operation.kind==='create'&&this.state?.resource===operation.resource?bytes(this.state):operation.kind==='display'||operation.kind==='step'?(this.state?.pendingTargetBytes??0):0;
+  const reply=await exchangeSourceSamilaNative({...this.identity(),width,height,operation},{signal,retainedBytes:retainedBytes()-provisional+additionalBytes,retainedTarget:this.retainedTarget()});this.counters.requestBytes+=reply.requestBytes;return reply;
  }
  private checkIdentity(state:State,reply:SourceNativeSamilaResponse){
   if(state.identity&&(state.identity!==reply.rendererIdentity||state.context!==reply.contextSerial||state.session!==reply.sessionSerial))throw new SourceNativeError('state-lost','Samila 所属原生 context 已变化，不能重建为同一随机历史');
@@ -37,7 +41,8 @@ export class SourceSamilaNativeBackend implements SourceSamilaAsyncBackend {
   // stats readback and caller-owned preview/enhancement storage. Conservative;
   // not a GPU/RSS measurement. Native independently validates its whole registry.
   const createBytes=this.state?0:sourceSamilaNativeResidentBytes(programBytes)+(programBytes/3+256*256*4+1024*3*4+256)*6;
-  const peak=retainedBytes()+createBytes+width*height*84+SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES+programBytes*2+additionalBytes+stateBytes;
+  const targetGrowth=sourceSamilaNativeTargetGrowth(this.state?.resource,width,height,this.retainedTarget());
+  const peak=retainedBytes()+createBytes+targetGrowth+width*height*32+SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES+programBytes*2+additionalBytes+stateBytes;
   if(!Number.isSafeInteger(peak)||peak>SOURCE_FRAME_BUDGET)throw new SourceNativeError('capacity','Samila 原生显示和保留图像超过 256 MiB 工作预算');
  }
  async draw(prepared:SourceSamilaPreparedDisplay):Promise<SourceSamilaDisplayResult> {return this.accumulate(prepared,'display') as Promise<SourceSamilaDisplayResult>;}

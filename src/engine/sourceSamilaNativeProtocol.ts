@@ -67,8 +67,18 @@ export function sourceSamilaNativeProgramBytes(shaders:SourceSamilaNativeShaders
 export const SOURCE_SAMILA_NATIVE_STATISTICS_BYTES=2_240_000;
 export const SOURCE_SAMILA_NATIVE_STATISTICS_PROGRAM_BYTES=1_860;
 export const SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES=16;
+export interface SourceSamilaNativeRetainedTarget {readonly resource:string;readonly width:number;readonly height:number;}
+/** Only an acknowledged target belonging to this owner can be reused. Unknown
+ * targets and size changes still reserve a complete new generation. */
+export function sourceSamilaNativeTargetGrowth(resource:string|undefined,width:number,height:number,target?:SourceSamilaNativeRetainedTarget):number {
+ if(target){
+  demand(target.resource===resource&&[target.width,target.height].every(n=>Number.isInteger(n)&&n>0&&n<=16384)&&target.width*target.height<=16_000_000,'Samila 保留目标身份或尺寸无效');
+  if(target.width===width&&target.height===height)return 0;
+ }
+ return width*height*52;
+}
 export function sourceSamilaNativeResidentBytes(programBytes:number,width=0,height=0):number {return programBytes+SOURCE_SAMILA_NATIVE_STATISTICS_PROGRAM_BYTES+256*256*4+1024*3*4+SOURCE_SAMILA_NATIVE_STATISTICS_BYTES+width*height*52;}
-export function encodeSourceSamilaNativeRequest(request:SourceSamilaNativeRequest,options:{isCancelled?:()=>boolean;retainedBytes?:number}={}):SourceDrawingResult<Uint8Array> {
+export function encodeSourceSamilaNativeRequest(request:SourceSamilaNativeRequest,options:{isCancelled?:()=>boolean;retainedBytes?:number;retainedTarget?:SourceSamilaNativeRetainedTarget}={}):SourceDrawingResult<Uint8Array> {
  try{
   const check=()=>{if(options.isCancelled?.())throw new SourceNativeError('cancelled','Samila 原生事务编码已取消');};check();
   const retained=options.retainedBytes??0;demand(Number.isSafeInteger(retained)&&retained>=0,'Samila 保留内存无效');
@@ -79,7 +89,7 @@ export function encodeSourceSamilaNativeRequest(request:SourceSamilaNativeReques
   const floatBlock=(v:Float32Array,size:number)=>demand(v instanceof Float32Array&&v.buffer instanceof ArrayBuffer&&v.length===size&&v.every(Number.isFinite),'Samila 浮点纹理无效');
   let nativeExtra=0;
   if(op.kind==='create'){floatBlock(op.noise,65536);floatBlock(op.palette,3072);nativeExtra=sourceSamilaNativeResidentBytes(sourceSamilaNativeProgramBytes(op.shaders));}
-  if(op.kind==='display'||op.kind==='step'){validateSourceSamilaNativeDisplay(op,width,height);if(op.palette)floatBlock(op.palette,3072);nativeExtra=width*height*(op.kind==='display'?84:52)+SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES;}
+  if(op.kind==='display'||op.kind==='step'){validateSourceSamilaNativeDisplay(op,width,height);if(op.palette)floatBlock(op.palette,3072);const growth=sourceSamilaNativeTargetGrowth(op.resource,width,height,options.retainedTarget);if(options.retainedTarget)demand(retained>=options.retainedTarget.width*options.retainedTarget.height*52,'Samila 保留总量未包含已声明目标');nativeExtra=growth+(op.kind==='display'?width*height*32:0)+SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES;}
   if(op.kind==='present'){validateSourceSamilaNativePresent(op,width,height);nativeExtra=width*height*32;}
   let offset=0,out:Uint8Array|undefined,view:DataView|undefined;
   const reserve=(size:number)=>{capacity(offset+size);const at=offset;offset+=size;return at;};

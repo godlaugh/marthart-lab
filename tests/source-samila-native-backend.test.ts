@@ -48,6 +48,15 @@ describe('Samila native resource/backend integration (real producers, mock trans
   const next=await session.generate(edited,context);expect(next.samilaLive).toMatchObject({displayIndex:1,parameterChanged:true,accumulationPasses:6});expect(next.density).toMatchObject({accepted:78,inputPoints:78});
   const ops=operations(),displays=ops.filter(op=>op.kind==='display');expect(ops.filter(op=>op.kind==='create')).toHaveLength(1);expect(displays[1]).toMatchObject({resource:displays[0].resource,expectedIndex:1,clear:true,passes:6,baseBatch:13});expect(backend.diagnostics().displayIndex).toBe(2);
  });
+ it('reuses an acknowledged desktop-size target and charges a provisional create only once',async()=>{
+  const {session}=owner(),s=scene(),desktop={...context,width:1724,height:1160};
+  await session.generate(s,desktop);await session.generate(s,desktop);await session.generate({...s,parameters:{...s.parameters,a:2}},desktop);
+  const calls=transport.mock.calls,create=calls.find(([r])=>r.operation.kind==='create')!;
+  expect(create[1]?.retainedBytes).toBe(0);expect(create[1]?.retainedTarget).toBeUndefined();
+  const displays=calls.filter(([r])=>r.operation.kind==='display');expect(displays).toHaveLength(3);expect(displays[0][1]?.retainedTarget).toBeUndefined();
+  for(const [,options] of displays.slice(1))expect(options?.retainedTarget).toEqual({resource:create[0].operation.resource,width:1724,height:1160});
+  expect(displays[2][0].operation).toMatchObject({passes:6,expectedIndex:2});expect(operations().filter(op=>op.kind==='create')).toHaveLength(1);
+ });
  it.each(['renderer','context','session'] as const)('rejects changed %s identity without continuing or silently recreating history',async identity=>{
   const {session,backend}=owner(),s=scene();await session.generate(s,context);transport.mockImplementationOnce(async request=>({...reply(request),...(identity==='renderer'?{rendererIdentity:'b'.repeat(64)}:identity==='context'?{contextSerial:10}:{sessionSerial:5})}));
   await expect(session.generate(s,context)).rejects.toMatchObject({kind:'state-lost'});expect(backend.diagnostics()).toMatchObject({owned:true,cleanupPending:true,displayIndex:1});expect(session.diagnostics().displayIndex).toBe(1);
