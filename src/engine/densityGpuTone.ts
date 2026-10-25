@@ -1,7 +1,5 @@
-import {SOURCE_MAP_PRESENT_GLSL} from './sourceMapPresentation';
+import {prepareSourceIteratedPresentPlan,sourceIteratedRenderPrograms,SOURCE_DENSITY_PRESENT_REDUCTION_GLSL,applySourceIteratedRenderUniforms} from './sourceIteratedRenderPlan';
 import {DENSITY_FULLSCREEN_VERTEX_GLSL,DENSITY_PRESENT_VERTEX_GLSL} from './densityGpuShaders';
-import {sourceIteratedBrightnessUniform} from './sourceIteratedPresentation';
-import {SOURCE_SYMMETRY_PRESENT_GLSL} from './sourceSymmetryPresentation';
 import {isCapturedDensityView,validateDensityView,type PreparedDensityView} from './densityPresentation';
 import {SOURCE_SAMILA_PRESENT_GLSL,sourceSamilaDisplayTransform} from './sourceSamilaPresentation';
 import {densityAcceptsSignedMass} from './density';
@@ -127,9 +125,7 @@ void main(){
  vec3 rgb=transparent!=0?(raw>0.?channel:vec3(0.)):channel*level+background*(1.-level);float alpha=transparent!=0?level:1.;
  pixel=floor(clamp(vec4(rgb,alpha),0.,1.)*255.+.5)/255.;facts.w=repair;
 }`;
-const REDUCTION=HEADER+`
-uniform usampler2D values;uniform ivec2 size,reductionOrigin;out uvec4 total;
-void main(){ivec2 base=ivec2(gl_FragCoord.xy)*4;uvec4 r=uvec4(0);for(int y=0;y<4;y++)for(int x=0;x<4;x++){ivec2 p=base+ivec2(x,y);if(p.x<size.x&&p.y<size.y){uvec4 v=texelFetch(values,p+reductionOrigin,0);r.x+=v.x;r.y=max(r.y,v.y);r.z|=v.z;r.w|=v.w;}}total=r;}`;
+const REDUCTION=HEADER+SOURCE_DENSITY_PRESENT_REDUCTION_GLSL;
 interface Program{program:WebGLProgram;locations:Map<string,WebGLUniformLocation|null>;}
 export interface DensityGpuToneResult{pixels:Uint8ClampedArray;occupiedPixels:number;maxCount:number;needsCpu:boolean;}
 /** Borrows a session's GL context and ink. Owns only presentation handles;
@@ -189,17 +185,19 @@ export class DensityGpuTone {
  private renderSource(ink:WebGLTexture,width:number,height:number,plan:DensityGpuTonePlan,isCancelled?:()=>boolean,view?:PreparedDensityView):DensityGpuToneResult {
   const gl=this.gl,job=plan.job,symmetry=plan.sourceFamily==='symmetry',map=plan.sourceFamily==='map',iterated=symmetry||map;if(job.model==='white-point-v1'||(iterated?job.model!=='normalized-v2':job.model!=='samila-normalized-v2'))throw Error('源密度呈现调色类型无效');
   if(iterated){if(symmetry)require(Boolean(gl.getExtension('OES_texture_float_linear')),'源 Symmetry 呈现需要浮点线性采样');if(view&&(!isCapturedDensityView(view)||view.family!==(map?'map':'symmetry')))throw Error('源迭代密度呈现相机类型不匹配');}else if(view&&isCapturedDensityView(view))throw Error('源密度呈现相机类型不匹配');
-  const transform=iterated?{delta:view&&isCapturedDensityView(view)?view.rotation:0,aspect:Math.fround(width/height)}:sourceSamilaDisplayTransform(view&&!isCapturedDensityView(view)?view:undefined,width,height),{output,statistics}=this.ensureSourceTarget(width,height),[,,reductionA,reductionB]=this.textures,reduce=this.programs[1];
+  const sourcePlan=iterated?prepareSourceIteratedPresentPlan(job,width,height,view):undefined;
+  const transform=sourcePlan?undefined:sourceSamilaDisplayTransform(view&&!isCapturedDensityView(view)?view:undefined,width,height),{output,statistics}=this.ensureSourceTarget(width,height),[,,reductionA,reductionB]=this.textures,reduce=this.programs[1];
   const vertex=HEADER+DENSITY_PRESENT_VERTEX_GLSL;
-  const tone=map?(this.mapToneProgram??(this.mapToneProgram=this.program(vertex,HEADER+SOURCE_MAP_PRESENT_GLSL))):symmetry?(this.symmetryToneProgram??(this.symmetryToneProgram=this.program(vertex,HEADER+SOURCE_SYMMETRY_PRESENT_GLSL))):(this.sourceToneProgram??(this.sourceToneProgram=this.program(vertex,HEADER+SOURCE_SAMILA_PRESENT_GLSL)));
+  const sourcePrograms=sourcePlan?sourceIteratedRenderPrograms('webgl2',sourcePlan.family).present:undefined;
+  const tone=map?(this.mapToneProgram??(this.mapToneProgram=this.program(sourcePrograms!.vertex,sourcePrograms!.fragment))):symmetry?(this.symmetryToneProgram??(this.symmetryToneProgram=this.program(sourcePrograms!.vertex,sourcePrograms!.fragment))):(this.sourceToneProgram??(this.sourceToneProgram=this.program(vertex,HEADER+SOURCE_SAMILA_PRESENT_GLSL)));
   const pixels=new Uint8ClampedArray(width*height*4),scratch=new Uint8Array(DENSITY_TONE_TILE**2*4),facts=new Uint32Array(4);let occupiedPixels=0,maxBits=0;
   gl.bindVertexArray(null);gl.disable(gl.DEPTH_TEST);gl.disable(gl.SCISSOR_TEST);gl.disable(gl.CULL_FACE);gl.disable(gl.DITHER);gl.pixelStorei(gl.PACK_ALIGNMENT,1);gl.pixelStorei(gl.PACK_ROW_LENGTH,0);gl.pixelStorei(gl.PACK_SKIP_PIXELS,0);gl.pixelStorei(gl.PACK_SKIP_ROWS,0);
-  gl.useProgram(tone.program);this.i(tone,'ink',0);this.i(tone,'usePaletteLUT',job.model==='samila-normalized-v2'&&job.branch==='palette-average'?1:0);this.rgb(tone,'backgroundRgb',job.background);
-  for(const[name,value]of Object.entries({displayRotation:transform.delta,viewportAspect:transform.aspect,brightness:iterated?sourceIteratedBrightnessUniform(job.tone.brightness):job.tone.brightness,contrast:job.tone.contrast,gamma:job.tone.gamma,dynamicRange:job.tone.dynamicRange,saturation:job.tone.saturation,scale:job.normalization.scale}))this.f(tone,name,value);
+  gl.useProgram(tone.program);if(sourcePlan)applySourceIteratedRenderUniforms(gl,name=>this.location(tone,name),sourcePlan.setupUniforms);else{this.i(tone,'ink',0);this.i(tone,'usePaletteLUT',job.model==='samila-normalized-v2'&&job.branch==='palette-average'?1:0);this.rgb(tone,'backgroundRgb',job.background);
+  for(const[name,value]of Object.entries({displayRotation:transform!.delta,viewportAspect:transform!.aspect,brightness:job.tone.brightness,contrast:job.tone.contrast,gamma:job.tone.gamma,dynamicRange:job.tone.dynamicRange,saturation:job.tone.saturation,scale:job.normalization.scale}))this.f(tone,name,value);}
   this.bind(ink,0);const oldMin=gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER),oldMag=gl.getTexParameter(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER);
   try {
-   if(iterated)for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,map?gl.NEAREST:gl.LINEAR);
-   cancel(isCancelled);gl.useProgram(tone.program);this.bind(ink,0);this.xy(tone,'origin',0,0);this.target(output,width,height,statistics);gl.clearBufferfv(gl.COLOR,0,new Float32Array(iterated?(job.sceneBackground??[...job.background,1]):[0,0,0,0]));gl.clearBufferuiv(gl.COLOR,1,new Uint32Array(4));
+   if(sourcePlan)for(const name of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,name,sourcePlan.filter==='nearest'?gl.NEAREST:gl.LINEAR);
+   cancel(isCancelled);gl.useProgram(tone.program);this.bind(ink,0);if(sourcePlan)applySourceIteratedRenderUniforms(gl,name=>this.location(tone,name),[sourcePlan.originUniform]);else this.xy(tone,'origin',0,0);this.target(output,width,height,statistics);gl.clearBufferfv(gl.COLOR,0,sourcePlan?.clear??new Float32Array(4));gl.clearBufferuiv(gl.COLOR,1,new Uint32Array(4));
    // Preserve the source's complete viewport and four-vertex strip. Offsetting
    // a viewport changes varying rounding at NEAREST boundaries, even when the
    // same shader is used. Only the subsequent integer reduction/readback tiles.

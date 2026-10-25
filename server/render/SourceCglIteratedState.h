@@ -1,6 +1,14 @@
 // Retained source calculate_next TF state. Included after Budget, ensure,
 // INPUT/RUNTIME and nameValid. The host owns admission/registry identity; this
 // owner retains its exact CGL context and all provisional GL handles.
+// Borrowed sampling handles for this exact checkpoint. A consumer must retain
+// the owner, stay in its context, and neither mutate/delete these textures nor
+// use the view after advance/dispose. Padding texels beyond count are undefined.
+typedef struct {
+ GLuint positions,metadata;
+ uint32_t width,height,count,index;
+} SourceCglIteratedDrawView;
+
 @interface SourceCglIteratedState:NSObject {
  CGLContextObj _context;
  GLuint _program,_shaders[2],_seed,_positions[2],_metadata[2],_vao,_feedback,_framebuffer,_colorBuffer;
@@ -10,8 +18,15 @@
  NSString *_vertex,*_fragment;
  NSDictionary<NSString*,NSNumber*> *_floatLocations;
  GLint _stepsLocation,_resetLocation,_dimensionLocation;
+ GLuint _viewPositions,_viewMetadata;
+ uint32_t _viewIndex;
+ uint64_t _viewRetainedBytes;
+ BOOL _viewValid,_viewBindingsSaved;
+ GLint _viewTextureBinding,_viewUnpackBuffer,_viewUnpackAlignment,_viewUnpackRowLength,_viewUnpackSkipRows,_viewUnpackSkipPixels,_viewUnpackSwapBytes;
 }
 @property(readonly) uint64_t retainedBytes;
+// Total allocation needed for the view, whether or not it exists yet.
+@property(readonly) uint64_t drawViewAllocationBytes;
 @property(readonly) uint32_t count,uploaded,index;
 -(instancetype)initWithOperation:(NSDictionary*)operation;
 -(void)prepare:(NSDictionary*)operation;
@@ -21,6 +36,8 @@
 -(void)advance:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes;
 // Bounded diagnostic only: little-endian {float32[4],uint32 invalid,validity}.
 -(NSData*)read:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes;
+// retained includes the current view, if present, but not a prospective view.
+-(SourceCglIteratedDrawView)drawViewAtIndex:(uint32_t)index retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes;
 -(void)dispose;
 @end
 
@@ -53,7 +70,10 @@ static void iteratedStateCompile(GLuint *shader,GLenum stage,NSString *source){
 }
 
 @implementation SourceCglIteratedState
--(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_count*64+_programBytes+IteratedStateFixedBytes;}
+-(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_count*64+_programBytes+IteratedStateFixedBytes+_viewRetainedBytes;}
+-(uint32_t)drawViewWidth{return MIN(2048,_count);}
+-(uint32_t)drawViewHeight{uint32_t width=[self drawViewWidth];return width?(_count+width-1)/width:0;}
+-(uint64_t)drawViewAllocationBytes{return (uint64_t)[self drawViewWidth]*[self drawViewHeight]*24;}
 -(uint32_t)count{return _count;}-(uint32_t)uploaded{return _uploaded;}-(uint32_t)index{return _index;}
 -(instancetype)initWithOperation:(NSDictionary*)operation{
  self=[super init];if(!self)return nil;
@@ -71,8 +91,15 @@ static void iteratedStateCompile(GLuint *shader,GLenum stage,NSString *source){
  RUNTIME(CGLGetCurrentContext()==_context,@"Iterated state belongs to another context");
 }
 -(void)ready{[self check];INPUT(_uploaded==_count,@"Iterated initial seed upload is incomplete");}
+-(void)restoreDrawViewBindings{
+ if(!_viewBindingsSaved)return;
+ glBindTexture(GL_TEXTURE_2D,_viewTextureBinding);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,_viewUnpackBuffer);
+ glPixelStorei(GL_UNPACK_ALIGNMENT,_viewUnpackAlignment);glPixelStorei(GL_UNPACK_ROW_LENGTH,_viewUnpackRowLength);glPixelStorei(GL_UNPACK_SKIP_ROWS,_viewUnpackSkipRows);glPixelStorei(GL_UNPACK_SKIP_PIXELS,_viewUnpackSkipPixels);glPixelStorei(GL_UNPACK_SWAP_BYTES,_viewUnpackSwapBytes);
+ [self checkGl];_viewBindingsSaved=NO;
+}
 -(void)unbind{
  RUNTIME(CGLGetCurrentContext()==_context,@"Cannot unbind iterated state in another context");
+ [self restoreDrawViewBindings];
  GLint bound=0;GLboolean active=GL_FALSE;glGetIntegerv(GL_TRANSFORM_FEEDBACK_BINDING,&bound);glGetBooleanv(GL_TRANSFORM_FEEDBACK_BUFFER_ACTIVE,&active);[self checkGl];
  RUNTIME(!active||(_feedback!=0&&(GLuint)bound==_feedback),@"Another owner has active transform feedback");
  if(active){glEndTransformFeedback();[self checkGl];}
@@ -158,18 +185,56 @@ static void iteratedStateCompile(GLuint *shader,GLenum stage,NSString *source){
 }
 -(void)advance:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes{
  [self ready];uint32_t index=iteratedStateWord(operation,@"index"),reset=iteratedStateWord(operation,@"reset"),dimension=iteratedStateWord(operation,@"dimension"),steps=iteratedStateWord(operation,@"steps");
+ // Internal callers may start a new invalid-counter interval without restoring
+ // particle positions. The v6 wire omits this field and keeps its old default.
+ uint32_t resetCounter=operation[@"resetCounter"]?iteratedStateWord(operation,@"resetCounter"):reset;
  INPUT(index==_index&&index<UINT32_MAX,@"Iterated advance checkpoint mismatch");INPUT(reset<=1&&dimension==2&&steps<=256,@"Invalid iterated advance controls");
+ INPUT(resetCounter<=1&&(!reset||resetCounter==1),@"Invalid iterated counter reset policy");
  NSDictionary *uniforms=[self validatedUniforms:operation[@"uniforms"]];INPUT(retained>=self.retainedBytes,@"Iterated advance accounting excludes its owned state");iteratedStateBudget(retained,packetBytes,0);
  // All controls and active field coverage are validated before reset can touch
  // a retained seed/state buffer. Unknown partial success poisons this owner.
  [self perform:^{
-  glUseProgram(self->_program);glUniform1i(self->_stepsLocation,(GLint)steps);glUniform1i(self->_resetLocation,(GLint)reset);glUniform1i(self->_dimensionLocation,(GLint)dimension);for(NSString *key in self->_floatLocations)glUniform1f([self->_floatLocations[key]intValue],[uniforms[key]floatValue]);[self checkGl];
-  if(reset){glBindBuffer(GL_COPY_READ_BUFFER,self->_seed);glBindBuffer(GL_COPY_WRITE_BUFFER,self->_positions[0]);glCopyBufferSubData(GL_COPY_READ_BUFFER,GL_COPY_WRITE_BUFFER,0,0,(GLsizeiptr)self->_count*16);[self checkGl];[self initializeMetadataAt:0 count:self->_count];self->_current=0;}
-  uint32_t next=1-self->_current;glBindFramebuffer(GL_FRAMEBUFFER,self->_framebuffer);glDrawBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,1,1);glBindVertexArray(self->_vao);glBindBuffer(GL_ARRAY_BUFFER,self->_positions[self->_current]);glEnableVertexAttribArray(0);glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,0,NULL);glBindBuffer(GL_ARRAY_BUFFER,self->_metadata[self->_current]);glEnableVertexAttribArray(1);glVertexAttribIPointer(1,2,GL_UNSIGNED_INT,0,NULL);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,self->_feedback);glEnable(GL_RASTERIZER_DISCARD);[self checkGl];
+  glUseProgram(self->_program);glUniform1i(self->_stepsLocation,(GLint)steps);glUniform1i(self->_resetLocation,(GLint)resetCounter);glUniform1i(self->_dimensionLocation,(GLint)dimension);for(NSString *key in self->_floatLocations)glUniform1f([self->_floatLocations[key]intValue],[uniforms[key]floatValue]);[self checkGl];
+  if(reset)[self initializeMetadataAt:0 count:self->_count];
+  // Reset reads the immutable seed directly. TF writes a distinct mutable
+  // position/metadata side even for zero steps; no GPU copy or seed mutation.
+  // Counter-only resets keep the current trajectory as their position input.
+  const uint32_t input=reset?0:self->_current,next=1-input;
+  const GLuint inputPositions=reset?self->_seed:self->_positions[input];
+  glBindFramebuffer(GL_FRAMEBUFFER,self->_framebuffer);glDrawBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,1,1);glBindVertexArray(self->_vao);glBindBuffer(GL_ARRAY_BUFFER,inputPositions);glEnableVertexAttribArray(0);glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,0,NULL);glBindBuffer(GL_ARRAY_BUFFER,self->_metadata[input]);glEnableVertexAttribArray(1);glVertexAttribIPointer(1,2,GL_UNSIGNED_INT,0,NULL);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,self->_feedback);glEnable(GL_RASTERIZER_DISCARD);[self checkGl];
   for(uint32_t first=0;first<self->_count;first+=IteratedStateChunk){uint32_t n=MIN(IteratedStateChunk,self->_count-first);glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,0,self->_positions[next],(GLintptr)first*16,(GLsizeiptr)n*16);glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,1,self->_metadata[next],(GLintptr)first*8,(GLsizeiptr)n*8);glBeginTransformFeedback(GL_POINTS);glDrawArrays(GL_POINTS,(GLint)first,(GLsizei)n);glEndTransformFeedback();[self checkGl];}
   self->_current=next;
  }];
  _index++;
+}
+-(SourceCglIteratedDrawView)drawViewAtIndex:(uint32_t)index retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes{
+ [self ready];INPUT(index==_index,@"Iterated draw view checkpoint mismatch");INPUT(retained>=self.retainedBytes,@"Iterated view accounting excludes its owned state");
+ uint64_t allocation=self.drawViewAllocationBytes,additional=_viewRetainedBytes?0:allocation;
+ iteratedStateBudget(retained,packetBytes,additional);
+ uint32_t width=[self drawViewWidth],height=[self drawViewHeight];
+ if(!_viewValid||_viewIndex!=index){
+  [self perform:^{
+   GLint maximum=0;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maximum);[self checkGl];ensure(maximum>0&&width<=(uint32_t)maximum&&height<=(uint32_t)maximum,@"unsupported",@"Iterated draw view exceeds native texture size");
+   // Reserve before any allocation: partial failure retains both ownership and
+   // the admitted storage until dispose succeeds. Compute-only stays 64N.
+   self->_viewRetainedBytes=allocation;
+   glGetIntegerv(GL_TEXTURE_BINDING_2D,&self->_viewTextureBinding);glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING,&self->_viewUnpackBuffer);glGetIntegerv(GL_UNPACK_ALIGNMENT,&self->_viewUnpackAlignment);glGetIntegerv(GL_UNPACK_ROW_LENGTH,&self->_viewUnpackRowLength);glGetIntegerv(GL_UNPACK_SKIP_ROWS,&self->_viewUnpackSkipRows);glGetIntegerv(GL_UNPACK_SKIP_PIXELS,&self->_viewUnpackSkipPixels);glGetIntegerv(GL_UNPACK_SWAP_BYTES,&self->_viewUnpackSwapBytes);[self checkGl];self->_viewBindingsSaved=YES;
+   glPixelStorei(GL_UNPACK_ALIGNMENT,1);glPixelStorei(GL_UNPACK_ROW_LENGTH,0);glPixelStorei(GL_UNPACK_SKIP_ROWS,0);glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);glPixelStorei(GL_UNPACK_SWAP_BYTES,GL_FALSE);
+   GLuint *textures[]={&self->_viewPositions,&self->_viewMetadata};const GLuint buffers[]={self->_positions[self->_current],self->_metadata[self->_current]};const GLint formats[]={GL_RGBA32F,GL_RG32UI};const GLenum channels[]={GL_RGBA,GL_RG_INTEGER},types[]={GL_FLOAT,GL_UNSIGNED_INT};const uint32_t strides[]={16,8};
+   for(int side=0;side<2;side++){
+    if(!*textures[side]){glGenTextures(1,textures[side]);[self checkGl];RUNTIME(*textures[side]!=0,@"Iterated draw view texture allocation failed");glBindTexture(GL_TEXTURE_2D,*textures[side]);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_BASE_LEVEL,0);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAX_LEVEL,0);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);glTexImage2D(GL_TEXTURE_2D,0,formats[side],(GLsizei)width,(GLsizei)height,0,channels[side],types[side],NULL);[self checkGl];}
+    else glBindTexture(GL_TEXTURE_2D,*textures[side]);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER,buffers[side]);
+    uint32_t rows=self->_count/width,rowsPerChunk=MAX(1,IteratedStateChunk/width);
+    for(uint32_t row=0;row<rows;row+=rowsPerChunk){uint32_t n=MIN(rowsPerChunk,rows-row);uintptr_t offset=(uintptr_t)row*width*strides[side];glTexSubImage2D(GL_TEXTURE_2D,0,0,(GLint)row,(GLsizei)width,(GLsizei)n,channels[side],types[side],(const void*)offset);[self checkGl];}
+    uint32_t tail=self->_count%width;
+    if(tail){uintptr_t offset=(uintptr_t)rows*width*strides[side];glTexSubImage2D(GL_TEXTURE_2D,0,0,(GLint)rows,(GLsizei)tail,1,channels[side],types[side],(const void*)offset);[self checkGl];}
+   }
+  }];
+  // Only a fully uploaded view with successful binding restoration is valid.
+  _viewIndex=index;_viewValid=YES;
+ }
+ return (SourceCglIteratedDrawView){_viewPositions,_viewMetadata,width,height,_count,_viewIndex};
 }
 -(NSData*)read:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes{
  [self ready];uint32_t index=iteratedStateWord(operation,@"index"),offset=iteratedStateWord(operation,@"offset"),count=iteratedStateWord(operation,@"count");
@@ -192,12 +257,13 @@ static void iteratedStateCompile(GLuint *shader,GLenum stage,NSString *source){
  for(int i=0;i<16;i++){GLenum error=glGetError();if(error==GL_NO_ERROR)break;RUNTIME(i<15,@"Cannot establish clean iterated disposal state");}
  [self unbind];
  #define ITERATED_DROP(handle,operation) if(handle){operation;RUNTIME(glGetError()==GL_NO_ERROR,@"Iterated cleanup failed; owner retained");handle=0;}
+ ITERATED_DROP(_viewPositions,glDeleteTextures(1,&_viewPositions));ITERATED_DROP(_viewMetadata,glDeleteTextures(1,&_viewMetadata));
  ITERATED_DROP(_framebuffer,glDeleteFramebuffers(1,&_framebuffer));ITERATED_DROP(_colorBuffer,glDeleteRenderbuffers(1,&_colorBuffer));
  ITERATED_DROP(_vao,glDeleteVertexArrays(1,&_vao));ITERATED_DROP(_feedback,glDeleteTransformFeedbacks(1,&_feedback));ITERATED_DROP(_seed,glDeleteBuffers(1,&_seed));
  for(int i=0;i<2;i++){ITERATED_DROP(_positions[i],glDeleteBuffers(1,&_positions[i]));ITERATED_DROP(_metadata[i],glDeleteBuffers(1,&_metadata[i]));}
  ITERATED_DROP(_program,glDeleteProgram(_program));for(int i=0;i<2;i++){ITERATED_DROP(_shaders[i],glDeleteShader(_shaders[i]));}
  #undef ITERATED_DROP
  // Keep count/uploaded/index for the successful release reply.
- _floatLocations=nil;_vertex=nil;_fragment=nil;_disposed=YES;CGLReleaseContext(_context);_context=NULL;
+ _floatLocations=nil;_vertex=nil;_fragment=nil;_viewValid=NO;_disposed=YES;CGLReleaseContext(_context);_context=NULL;
 }
 @end

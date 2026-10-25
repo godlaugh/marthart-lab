@@ -103,8 +103,8 @@ const CUSTOM_ERRORS_FIRST=HEADER+`uniform usampler2D counters;uniform ivec2 sour
 const CUSTOM_ERRORS_REDUCE=HEADER+`uniform usampler2D values;uniform ivec2 sourceSize;out uvec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uint flags=0u;for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize)))continue;flags|=texelFetch(values,p,0).r;}result=uvec4(flags,0u,0u,0u);}`;
 const DRAW_VERTEX=HEADER+TRANSFORM+iteratedNoiseGlsl+`
 uniform sampler2D states;uniform usampler2D counters;uniform int stateWidth;uniform ivec2 size;uniform vec4 bounds;uniform float radius,metricMin,metricRange,colorSpeed,colorPhase,paletteCycles,paletteOffset;uniform int metricMode,colorMode,count,particleOffset;
-uniform sampler2D palette;uniform bool densitySplat,mapCosine,quadSplat,symmetryLut;out vec2 localPoint;flat out float diameter;flat out vec2 center;flat out vec3 tint;
-void main(){int id=particleOffset+gl_InstanceID;ivec2 at=ivec2(id%stateWidth,id/stateWidth);vec4 particle=texelFetch(states,at,0);vec3 p=transformed(particle.xyz);vec2 projected;vec4 clip;if(invalidPosition(particle,p,texelFetch(counters,at,0).g)||!densityPosition(p,projected,clip)){gl_Position=vec4(2.,2.,0.,1.);center=vec2(-1e30);tint=vec3(0.);return;}
+uniform sampler2D palette;uniform bool densitySplat,mapCosine,quadSplat,symmetryLut;out vec2 localPoint;flat out float diameter;flat out vec2 center;flat out vec3 tint;out float sourceStepMetric;
+void main(){int id=particleOffset+gl_InstanceID;ivec2 at=ivec2(id%stateWidth,id/stateWidth);vec4 particle=texelFetch(states,at,0);sourceStepMetric=particle.w;vec3 p=transformed(particle.xyz);vec2 projected;vec4 clip;if(invalidPosition(particle,p,texelFetch(counters,at,0).g)||!densityPosition(p,projected,clip)){gl_Position=vec4(2.,2.,0.,1.);center=vec2(-1e30);tint=vec3(0.);return;}
 float u=0.;if(colorMode==0){float d=max(0.,particle.w-metricMin);if(densitySplat){float normalized=(particle.w-metricMin)/max(metricRange,1.e-6);float positive=max(normalized,0.);u=clamp(metricMode==1?positive/(1.+positive):normalized,0.,1.);}else u=metricMode==1?(d==0.?0.:1./(1.+metricRange/d)):min(1.,d/metricRange);}else if(colorMode==1)u=float(particleOffset+gl_InstanceID)/float(max(1,count-1));else if(colorMode==2)u=norm3(p);else if(colorMode==3)u=(atan(p.y,p.x)+3.141592653589793)/6.283185307179586;else if(colorMode==4)u=p.y;else u=clamp((spatialNoise(p*.1)+1.)/2.,0.,1.);
 float coordinate=(u*colorSpeed+colorPhase/360.)*paletteCycles+paletteOffset;float q=fract(coordinate)*4096.;int i=min(4095,int(floor(q)));tint=mapCosine?.5+.5*vec3(cos(6.283185307179586*(u*max(colorSpeed,.001))-colorPhase),cos(6.283185307179586*(u*max(colorSpeed,.001)-1./3.)-colorPhase),cos(6.283185307179586*(u*max(colorSpeed,.001)-2./3.)-colorPhase)):symmetryLut?texture(palette,vec2(fract(u*max(colorSpeed,.001)),.5)).rgb:(!finiteFloat(coordinate))?vec3(uintBitsToFloat(0x7fc00000u)):mix(texelFetch(palette,ivec2(i,0),0).rgb,texelFetch(palette,ivec2(i+1,0),0).rgb,q-float(i));
 center=vec2((projected.x-bounds.x)/(bounds.y-bounds.x),(projected.y-bounds.z)/(bounds.w-bounds.z))*vec2(size);
@@ -115,6 +115,20 @@ const DRAW_FRAGMENT=HEADER+`flat in vec2 center;flat in vec3 tint;in vec2 localP
 if(densitySplat){vec2 p=quadSplat?localPoint:gl_PointCoord*2.-1.;float r2=dot(p,p);if(r2>(quadSplat?1.35:1.))discard;
 mass=quadSplat?(1.-smoothstep(-.75,.75,(sqrt(r2)-1.)*max(diameter*.5,.4)))*exp(-.45*r2):1.-smoothstep(.75,1.,r2);
 }else mass=clamp(radius+.5-length(gl_FragCoord.xy-center),0.,1.)*alpha;result=vec4(tint*mass,mass);}`;
+
+// Source density color and coverage have their own fragment program. Keeping
+// the legacy color branches in this program changes native floating-point
+// lowering: source state/coverage stay exact but accumulated RGB can drift.
+// The prepared owner selects this program only for source step/LUT semantics.
+const sourceDensityFragment=(quad:boolean)=>HEADER+`
+uniform float colorSpeed,colorPhase,metricMin,metricMax;uniform sampler2D palette;uniform bool symmetryLut;uniform int metricMode;
+in float sourceStepMetric;${quad?'in vec2 localPoint;flat in float diameter;':''}out vec4 result;
+float densityMetric(float metric){float span=max(metricMax-metricMin,1.e-6);float normalized=(metric-metricMin)/span;if(metricMode==1){float positive=max(normalized,0.);normalized=positive/(1.+positive);}return clamp(normalized,0.,1.);}
+vec3 densityCosine(float t){return .5+.5*vec3(cos(6.283185307179586*t-colorPhase),cos(6.283185307179586*(t-1./3.)-colorPhase),cos(6.283185307179586*(t-2./3.)-colorPhase));}
+void main(){vec2 p=${quad?'localPoint':'gl_PointCoord*2.-1.'};float r2=dot(p,p);if(r2>${quad?'1.35':'1.'})discard;
+float t=densityMetric(sourceStepMetric)*max(colorSpeed,.001);vec3 rgb;if(symmetryLut){rgb=texture(palette,vec2(fract(t),.5)).rgb;}else{rgb=densityCosine(t);}
+float mass=${quad?'(1.-smoothstep(-.75,.75,(sqrt(r2)-1.)*max(diameter*.5,.4)))*exp(-.45*r2)':'1.-smoothstep(.75,1.,r2)'};result=vec4(rgb*mass,mass);}`;
+const SOURCE_DENSITY_POINTS_FRAGMENT=sourceDensityFragment(false),SOURCE_DENSITY_QUAD_FRAGMENT=sourceDensityFragment(true);
 
 const SOURCE_DRAW_VERTEX=HEADER+TRANSFORM+SOURCE_SAMILA_NOISE_GLSL+`
 uniform sampler2D states,palette;uniform usampler2D counters;uniform int stateWidth,particleOffset;uniform ivec2 size;uniform float radius,colorPhase;uniform bool quadSplat,usePaletteLut;
@@ -135,7 +149,7 @@ const POINT_PROBE_FRAGMENT=HEADER+`out vec4 result;void main(){vec2 p=gl_PointCo
 
 const DIRECT_STATS_FIRST=HEADER+SUM+`uniform usampler2D values;uniform ivec2 sourceSize;uniform int count;out uvec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uvec4 total=uvec4(0);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;total=sum(total,texelFetch(values,p,0));}result=total;}`;
 return Object.freeze({
- QUAD,EMPTY,HISTORY_COPY,STEP,STEP_MAIN,SOURCE_CALCULATE_NEXT_STEP_MAIN,BOUNDS_FIRST,BOUNDS_REDUCE,STATS_FIRST,STATS_REDUCE,CUSTOM_ERRORS_FIRST,CUSTOM_ERRORS_REDUCE,DRAW_VERTEX,DRAW_FRAGMENT,SOURCE_DRAW_VERTEX,SOURCE_DRAW_FRAGMENT,POINT_PROBE_VERTEX,POINT_PROBE_FRAGMENT,DIRECT_STATS_FIRST,
+ QUAD,EMPTY,HISTORY_COPY,STEP,STEP_MAIN,SOURCE_CALCULATE_NEXT_STEP_MAIN,BOUNDS_FIRST,BOUNDS_REDUCE,STATS_FIRST,STATS_REDUCE,CUSTOM_ERRORS_FIRST,CUSTOM_ERRORS_REDUCE,DRAW_VERTEX,DRAW_FRAGMENT,SOURCE_DENSITY_POINTS_FRAGMENT,SOURCE_DENSITY_QUAD_FRAGMENT,SOURCE_DRAW_VERTEX,SOURCE_DRAW_FRAGMENT,POINT_PROBE_VERTEX,POINT_PROBE_FRAGMENT,DIRECT_STATS_FIRST,
  iteration(source:IteratedGpuFieldSource):IteratedGpuProgramSource {
   if(source.stage==='fragment'){
    if(source.profile!==profile)throw Error('自定义迭代 shader profile 不匹配');

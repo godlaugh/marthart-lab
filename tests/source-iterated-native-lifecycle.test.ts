@@ -50,7 +50,10 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecyc
    await o.good(advance(count,3,16,true));const reset=(await o.good(read(count,4,65530,11))).decoded;expect(bytes(reset.positionsAndMetric!)).toEqual(bytes(first.positionsAndMetric!));expect(reset.invalidCounts).toEqual(first.invalidCounts);expect(reset.validity).toEqual(first.validity);
    const generic=await o.generic();expect(generic.value.contextSerial).toBe(created.result.value.contextSerial);
    await o.good(advance(count,4,0));expect((await o.good(read(count,5,65530,11))).decoded.positionsAndMetric).toEqual(reset.positionsAndMetric);
-   expect(o.service.retainedResourceCount).toBe(1);expect((await o.good(release())).decoded).toMatchObject({disposition:'released',index:5,uploaded:count,totalCount:count});expect(o.service.retainedResourceCount).toBe(0);expect((await o.good(release())).decoded).toMatchObject({disposition:'absent',index:0,totalCount:0});
+   // Reset reads the immutable seed buffer directly, including a zero-step
+   // advance after both live sides have held evolved states.
+   await o.good(advance(count,5,0,true));const seeded=(await o.good(read(count,6,65530,11))).decoded;expect(bytes(seeded.positionsAndMetric!)).toEqual(bytes(seed(count,65530,11)));expect(seeded.invalidCounts!.every(v=>v===0)).toBe(true);expect(seeded.validity!.every(v=>v===1)).toBe(true);
+   expect(o.service.retainedResourceCount).toBe(1);expect((await o.good(release())).decoded).toMatchObject({disposition:'released',index:6,uploaded:count,totalCount:count});expect(o.service.retainedResourceCount).toBe(0);expect((await o.good(release())).decoded).toMatchObject({disposition:'absent',index:0,totalCount:0});
   }finally{await o.close();}
  });
  it('rejects malformed native inputs before changing uploaded state or progress',async()=>{

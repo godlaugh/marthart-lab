@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "status": "passed-finite-native-workflow",
+  "wholeGoalComplete": false,
+  "milestone": "M3",
+  "reference": {
+    "path": ".cache/source-symmetry-production-full-20261025/source-cloak1.json",
+    "sha256": "7cd4bceab0313426ba204b2366bfd980593874d8d0338664446f16dfeb7a586d",
+    "jar": "../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "member": "data/SymmetryChaos/Emperors_Cloak1.json"
+  },
+  "dimensions": [
+    810,
+    972
+  ],
+  "particleCount": 562144,
+  "frames": [
+    {
+      "index": 0,
+      "checkpoint": 3,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "d89c247a8a00acad4ac05aa4ce3082e8e0c2429e2f33004c558a0b0c7bda9c06",
+        "ink": "8d22eff052d94de142f0eef7fee20056450332e5781d6b7e41a0bbaa79f0caa0",
+        "rgba": "ab09edd9e0da6d0944ecb2e6b169835bf5af510ad6a412b396c493c97811de1c",
+        "originalState": "1b25a93a0ed51e3873582d05661cdd71957d72cf0d773242a7483618d95ffc66",
+        "originalInk": "a090d3fbbc97c487256ed73ca5499eafda38c1bd50a41d522547c03e599441e4",
+        "originalRgba": "ab09edd9e0da6d0944ecb2e6b169835bf5af510ad6a412b396c493c97811de1c"
+      }
+    },
+    {
+      "index": 1,
+      "checkpoint": 5,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "ed9d18c7800ca2b6cb756ea7ca7f26bd84c974dc5a84d866a25b09ca9ff9efe4",
+        "ink": "87db565c2b905f738c381940e84d6c64af3cd5e700cad9b5cc6e9fde12191a99",
+        "rgba": "301efd95ba3b3dc0c3cb95da78df7479bd53b430b4b4260deaef1a5058cc865d",
+        "originalState": "3f14c254b68d36534907e79a6c90d0febc9c7361d619298f65129bd803e5e63b",
+        "originalInk": "39beed72203c7314190cec12746484734207006576e3645bdb68f729bdd0c3df",
+        "originalRgba": "301efd95ba3b3dc0c3cb95da78df7479bd53b430b4b4260deaef1a5058cc865d"
+      }
+    },
+    {
+      "index": 2,
+      "checkpoint": 7,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "9f905c877e113b718fe72d516d06e6350cc0f3843792e79e2f73b4508ce9118e",
+        "ink": "f29a1cc23e0381bd425c5ad0c213084a1257e4a68a5ef42e93832e063abf6959",
+        "rgba": "29edb958565985cfbd9c19e1b09976c8fc7c10caa92c7ba10a11f1f8c9942891",
+        "originalState": "3dbac79a481f56348aacec21bfe67d474673c493156073b2de406f7ccbd32ae1",
+        "originalInk": "3be78be8a417f4a6f5a079f12c8c6c3967c0082597171fb7ea559ac198b79613",
+        "originalRgba": "29edb958565985cfbd9c19e1b09976c8fc7c10caa92c7ba10a11f1f8c9942891"
+      }
+    },
+    {
+      "index": 3,
+      "checkpoint": 9,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "60afb427c8bcdae0085ccfe2c0989c4dd9ae2d9bd12262cf2bc7b70241f8231c",
+        "ink": "d8d7b484efa1f5444a935c3ff7203e807a9aa4529b2af72e929c7d8aab9972fc",
+        "rgba": "af2b46b0c6ce6550d45b27a6c1894c4c6852e1e5654ed7b45b8b1a92ad22c2be",
+        "originalState": "3c92c21bfce8a67049ede91b71172c79d7f1aa13cb5b6881fa9b819a38dcca78",
+        "originalInk": "65516a3f643fc97da56b13d79ac5a9e6390b40cb84ac72bb9477d7a6aac02b5b",
+        "originalRgba": "af2b46b0c6ce6550d45b27a6c1894c4c6852e1e5654ed7b45b8b1a92ad22c2be"
+      }
+    },
+    {
+      "index": 4,
+      "checkpoint": 11,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "365562424cf5f16c6ac1d50c957823c6f3d94a7f8c0be53be202a10435f469b1",
+        "ink": "37233577c422b731e0fc0edd9c37b137b289e1e8268754111d27ade0697ea3d8",
+        "rgba": "512458d3d63860f15daa94e68310d5b0c11ffc67e1ef71320668ffe4da53ab1d",
+        "originalState": "bc12db66e978947ebfbc79c8da423ae75eddb000c69bca666a7ae66c615f525e",
+        "originalInk": "b26fc5ffbcdc21c3c2235acfdbac831bf6ed5eb8993514882e19275938f90c73",
+        "originalRgba": "512458d3d63860f15daa94e68310d5b0c11ffc67e1ef71320668ffe4da53ab1d"
+      }
+    },
+    {
+      "index": 5,
+      "checkpoint": 13,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "0c0d12774ce7800a2661d07b7cba6086e77b5431c747d0c5a8dd9c7a09d14068",
+        "ink": "5bf668ee6b3e898d7e0ee83e0477066fec8ee0b12dd9463dd7934e15742ece1c",
+        "rgba": "6a519914a55c8a64db53ec8d7ccb0cd680e3937e648ec06b4883e53ad85dee26",
+        "originalState": "a2d6a75d88fe4e717ff99218893115c463b2b8ef0474f1db2573985ee829b673",
+        "originalInk": "0edfccfd636ee31ddbeb8dd66275c145d4385d95af10361677b6c6f8381846e3",
+        "originalRgba": "6a519914a55c8a64db53ec8d7ccb0cd680e3937e648ec06b4883e53ad85dee26"
+      }
+    },
+    {
+      "index": 6,
+      "checkpoint": 15,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "2da2d87329ba81f2a8dcaa8459afa3ed6ac4eb0362ddf0d45d6552e9d692e00b",
+        "ink": "bcbc7d4ab96639a04c1d8f29cd1ecc8052adb6daf77219c316cecaa40a46d783",
+        "rgba": "3d17f1f7143765bd4d73c4668ff90e48cd7e1239a9deefd5634213a3c3529888",
+        "originalState": "8b03abc559a701de6b3207f4cc4a03dfde21151753d55bbe91e3fd63483378ae",
+        "originalInk": "e3216816fc09a84fb865ca2e1802ee36f6185fcb14d589134bfad70c14f6def5",
+        "originalRgba": "3d17f1f7143765bd4d73c4668ff90e48cd7e1239a9deefd5634213a3c3529888"
+      }
+    },
+    {
+      "index": 7,
+      "checkpoint": 17,
+      "comparisons": {
+        "stateDifferences": 0,
+        "inkDifferences": 0,
+        "rgbaDifferences": 0,
+        "rgbPixels": 0,
+        "publicOutputDifferences": 0
+      },
+      "sha256": {
+        "state": "70ebbead02d38a59c59374c1b823843f7a36e0f5beaaf85e05c41912a03e5837",
+        "ink": "559fb6ba3120d8969a757d9767a38e8f161c69d6796dca55ac53b5df79b82fe0",
+        "rgba": "83be8290e1b9005b0babb758a37fc0ebcbb90e25c548cb055ac538c3820b2dc5",
+        "originalState": "953ef4bc195b0de0e1c6f8fb37f261f9662ea7ee8e3e7a21b1d8a57d3e75a1a9",
+        "originalInk": "2ba62e7d4d516351b9708ea9f4fb640f1ad07c831be1581b3407f8ea5be42957",
+        "originalRgba": "83be8290e1b9005b0babb758a37fc0ebcbb90e25c548cb055ac538c3820b2dc5"
+      }
+    }
+  ],
+  "lifecycle": {
+    "pausedParticlePreservation": true,
+    "captureResizeAndPrimaryRestore": true,
+    "resizeParticlePreservation": true,
+    "repeatReplayStateAndPixels": true,
+    "scope": "Actual native owners through shared async Session; no original lifecycle or browser-wire claim"
+  },
+  "checks": {
+    "cpuSessionTests": 108,
+    "cpuNativeInkAssertions": 238,
+    "cpuNativeInkCases": 34,
+    "actualCglTests": 4,
+    "webglSplatCases": 170,
+    "webglAsyncRows": 18,
+    "buildV2": "passed; existing large-chunk warning"
+  },
+  "measurement": {
+    "seconds": 6.6089876249898225,
+    "childCpuSeconds": 11.945326,
+    "processGroupRssPeakKiB": 930656,
+    "sampleIntervalSeconds": 0.5,
+    "processGroupAfter": [],
+    "costLimits": [
+      "CPU RUSAGE_CHILDREN includes the ps sampling subprocesses; their overhead is not separately subtracted.",
+      "A 0.5-second RSS sample can miss short peaks.",
+      "GPU allocation and energy/thermal state not measured."
+    ]
+  },
+  "knownRetainedBytes": 88012257,
+  "cleanup": {
+    "retainedBytes": 0,
+    "child": {
+      "code": 0,
+      "signal": null,
+      "stderr": ""
+    },
+    "processGroupAfter": []
+  },
+  "index": ".cache/iterated-native-workflow-20261025/index.json",
+  "indexSha256": "c0c4e7ba052c9d175a3693eb7e77a6525b0c743de9d14a78e0bea8ee956faeb9",
+  "readableReport": "docs/source-iterated-native-ink-validation.zh-CN.md",
+  "limitations": [
+    "Diagnostic bounded pipe adapter; browser/HTTP/Worker draw integration remains.",
+    "Compute supports2D source calculate_next only; custom fragment and3D Map not covered.",
+    "Current diagnostic owner rejects draw-program selection changes; production program replacement remains.",
+    "Large particle/ink readbacks are diagnostics, not the intended frame transport.",
+    "Only one Mac available; no cross-device claim.",
+    "Other presets, whole-window/formula composition, sustained workflows and other scene requirements remain."
+  ]
+}
