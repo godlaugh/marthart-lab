@@ -30,12 +30,20 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10,11].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
+ if(version===11){
+  const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
+  if(b.readUInt32LE(60)!==4||![1,2,3].includes(operation)||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','分形原生帧头部无效');
+  const control=operation!==2;if(control&&(width!==1||height!==1)||operation===3&&b.length!==88||operation===1&&b.length<96||operation===2&&b.length<104)return failure('input','分形原生操作范围无效');
+  const expectedIndex=operation===2?b.readUInt32LE(88):undefined,pointBytes=operation===2?b.readUInt32LE(92):0,count=pointBytes/8;
+  if(operation===2&&(expectedIndex===0xffffffff||!pointBytes||pointBytes%8||count>65536||96+pointBytes>b.length)||b.length*6+128+count*104>BUDGET)return failure('capacity','分形原生采样超过容量或范围');
+  return{ok:true,value:{generation,sequence,width,height,samples,control,operation,resource,family:'fractal',expectedIndex,count}};
+ }
  if((version===7||version===10)&&b.readUInt32LE(60)===3){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex'),fragmentProfile=version===10,shift=fragmentProfile?8:0;
   if(fragmentProfile&&(b.length<96||b.readUInt32LE(88)!==1||b.readUInt32LE(92)!==1))return failure('input','迭代原生绘制 profile 或诊断单位无效');
@@ -75,8 +83,16 @@ function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
  const length=bytes.readUInt32LE(8),generation=bytes.readUInt32LE(12),sequence=bytes.readUInt32LE(16),width=bytes.readUInt32LE(20),height=bytes.readUInt32LE(24),status=bytes.readUInt32LE(28),format=bytes.readUInt32LE(32),payloadBytes=bytes.readUInt32LE(36),contextSerial=bytes.readUInt32LE(40);
  if(generation!==expected.generation||sequence!==expected.sequence||width!==expected.width||height!==expected.height)return failure('protocol','原生响应不属于当前帧');
- if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.family==='iterated-render'?5:expected.family==='iterated'?4:expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='iterated-render'?128+(expected.control?0:width*height*4):expected.family==='iterated'?64+expected.readCount*24+(expected.processingBytes??0):expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
+ if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.family==='fractal'?6:expected.family==='iterated-render'?5:expected.family==='iterated'?4:expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='fractal'?64+expected.count*52:expected.family==='iterated-render'?128+(expected.control?0:width*height*4):expected.family==='iterated'?64+expected.readCount*24+(expected.processingBytes??0):expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
  return {ok:true,value:{generation,sequence,width,height,status,format,payloadBytes,contextSerial}};
+}
+function fractalResponse(payload,expected){
+ const word=n=>payload.readUInt32LE(n),index=word(24),disposition=word(28),count=word(32);
+ if(word(0)!==4||word(4)!==expected.operation||payload.subarray(8,24).toString('hex')!==expected.resource||count!==expected.count||word(36)!==expected.width||word(40)!==expected.height||word(60)!==0)return failure('protocol','分形原生响应身份、样本或尺寸无效');
+ const draws=word(44),targetAllocations=word(48),referenceUploads=word(52),paletteUploads=word(56);
+ if(expected.operation===2?!(draws>=1&&draws<=count&&targetAllocations<=1&&referenceUploads===1&&paletteUploads===1):draws!==0||targetAllocations!==0||referenceUploads!==0||paletteUploads!==0)return failure('protocol','分形原生响应执行统计无效');
+ if(expected.operation===1&&(disposition!==0||index!==0||expected.owned)||expected.operation===2&&(disposition!==0||index!==expected.expectedIndex+1||expected.owned&&expected.owned.index!==expected.expectedIndex)||expected.operation===3&&(![1,2].includes(disposition)||disposition===2&&index!==0||disposition===1&&expected.owned&&index!==expected.owned.index))return failure('protocol','分形原生响应检查点无效');
+ return{ok:true,value:{family:'fractal',resource:expected.resource,index}};
 }
 function samilaResponse(payload,expected){
  const word=n=>payload.readUInt32LE(n),index=word(24),disposition=word(28),steps=word(32),accepted=word(36),clipped=word(40),invalid=word(44),occupied=word(48),maxCount=payload.readFloatLE(52),invalidInk=word(56);
@@ -122,7 +138,7 @@ function iteratedRenderResponse(payload,expected){
  if((kind===1||kind===5)&&!payload.subarray(64,92).every(n=>n===0)||kind===2&&(!Number.isSafeInteger(invalid)||accepted+clipped>count||sampleInvalid!==(expected.record?count-accepted-clipped:0)||!payload.subarray(84,92).every(n=>n===0))||kind===3&&(!payload.subarray(64,84).every(n=>n===0)||occupied>width*height||!Number.isFinite(maxCount)||maxCount<0))return failure('protocol','迭代原生绘制统计覆盖无效');
  return{ok:true,value:metadata};
 }
-const releaseOperation={bouncing:4,samila:3,iterated:5,'iterated-render':4};
+const releaseOperation={fractal:3,bouncing:4,samila:3,iterated:5,'iterated-render':4};
 /** Owns the actual ChildProcess handle until close, never locates/kills a PID.
  * This helper executes no shell and spawns no subprocesses. A failed cleanup
  * retains its owner and blocks replacements. One request; no unbounded queue.
@@ -171,6 +187,7 @@ export async function createSourceRendererService({executablePath,executableSha2
      if(offset!==chunk.length){retire(o,failure('protocol','原生响应附带额外字节'));return;}
      const meta=o.response,pixels=o.payload;o.headerUsed=0;o.payload=undefined;o.response=undefined;
      let result,resourceMetadata;if(meta.status){let message;try{message=new TextDecoder('utf-8',{fatal:true}).decode(pixels);}catch{retire(o,failure('protocol','原生错误消息不是 UTF-8'));return;}result=failure({1:'input',2:'unsupported',3:'capacity',4:'runtime',5:'state-lost',6:'ownership'}[meta.status],message);}
+     else if(j.expected.family==='fractal'){const parsed=fractalResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}resourceMetadata=parsed.value;result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'fractal-v1',rowOrder:'none',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else if(j.expected.family==='iterated-render'){const parsed=iteratedRenderResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}resourceMetadata=parsed.value;result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'iterated-render-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else if(j.expected.family==='iterated'){const parsed=iteratedResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'iterated-v1',rowOrder:'none',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else if(j.expected.family==='samila'){const parsed=samilaResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'samila-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
@@ -178,7 +195,7 @@ export async function createSourceRendererService({executablePath,executableSha2
      if(meta.status===4){
       // Ink and source-prefix cleanup can fail after a context error. Only close
       // proves those child owners are gone, including a failed unacknowledged create.
-      if(j.expected.family==='iterated-render'||j.expected.family==='iterated'&&[6,7].includes(j.expected.operation)||[...retainedResources.values()].some(r=>r.family==='iterated-render'||r.profile==='source-prefix'||r.profile==='source-fragment')){retire(o,result);return;}
+      if(j.expected.family==='fractal'||j.expected.family==='iterated-render'||j.expected.family==='iterated'&&[6,7].includes(j.expected.operation)||[...retainedResources.values()].some(r=>r.family==='fractal'||r.family==='iterated-render'||r.profile==='source-prefix'||r.profile==='source-fragment')){retire(o,result);return;}
       retainedResources.clear();
      }
      if(result.ok&&j.expected.family){

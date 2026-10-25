@@ -35,7 +35,7 @@ function device(failure:Failure={}){
   getExtension:op('getExtension',name=>name==='EXT_color_buffer_float'&&failure.floatAttachment===false?null:{loseContext:op('loseContext',()=>{if(live.size)throw Error('Live objects remain before context loss');})}),
   getShaderParameter:op('getShaderParameter',()=>failure.compile!==false),getProgramParameter:op('getProgramParameter',()=>failure.link!==false),getShaderInfoLog:op('getShaderInfoLog',()=> 'compile'),getProgramInfoLog:op('getProgramInfoLog',()=> 'link'),
   useProgram:op('useProgram',p=>{currentProgram=p;}),attachShader:op('attachShader',(p,s)=>shaderPrograms.set(s,p)),
-  getUniformLocation:op('getUniformLocation',(_p,name)=>({name})),uniform1i:op('uniform1i',(loc,value)=>uniforms.set(loc.name,value)),
+  getUniformLocation:op('getUniformLocation',(_p,name)=>({name:name.replace(/\[0\]$/,'')})),uniform1i:op('uniform1i',(loc,value)=>uniforms.set(loc.name,value)),uniform1iv:op('uniform1iv',(loc,value)=>uniforms.set(loc.name,value[0])),
   uniform4fv:op('uniform4fv',(loc,value)=>arrayUniforms.set(loc.name,Array.from(value))),uniform1fv:op('uniform1fv',(loc,value)=>arrayUniforms.set(loc.name,Array.from(value))),
   checkFramebufferStatus:op('checkFramebufferStatus',()=>constant(failure.framebuffer===false?'FRAMEBUFFER_UNSUPPORTED':'FRAMEBUFFER_COMPLETE')),
   beginTransformFeedback:op('beginTransformFeedback',()=>{tf=true;}),endTransformFeedback:op('endTransformFeedback',()=>{tf=false;}),
@@ -92,7 +92,7 @@ describe('source GPU ingress and ownership',()=>{
   const p=parseFractalSourceNativePlan({formula:'newton',native,iterations:8},view,{logicalWidth:3,logicalHeight:2,provenance:'requested-output-local'},{precision:'medium'});
   const d=device(),gpu=new FractalSourceNewtonGpu();sample(gpu,p);
   expect(d.uniforms.get('u_power')).toBe(7);expect(p.shaderIntegerPower).toBe(3);
-  expect(d.arrayUniforms.get('u_formulaParams')).toEqual(native.formulaParams);expect(d.arrayUniforms.get('u_dynamicParams[0]')).toEqual(native.dynamicParams);
+  expect(d.arrayUniforms.get('u_formulaParams')).toEqual(native.formulaParams);expect(d.arrayUniforms.get('u_dynamicParams')).toEqual(native.dynamicParams);
   gpu.dispose();expect(d.live.size).toBe(0);
  });
 
@@ -250,7 +250,7 @@ describe('native color MRT transport and resource ownership',()=>{
  });
  it('accounts for the source LUT copies and mixed target without claiming driver storage',()=>{
   const old=fractalSourceGpuBytes(100,50,10,2048),native=fractalSourceGpuBytes(100,50,10,2048,false,true);
-  expect(native-old).toBe(-100*50*12+5*1024*3*4+10*4+12); // Includes the 1×1 RGB32F fallback texture.
+  expect(native-old).toBe(-100*50*12+5*1024*3*4+10*4+12+708-284); // Fallback texture and color-versus-numeric binding storage.
  });
  it('charges a still-owned mixed target and LUT before a large legacy batch, retaining the owner on preflight rejection',()=>{
   const d=device(),gpu=new FractalSourceNewtonGpu();gpu.sample(new Float32Array([0,0]),10000,1500,view,config(),plan(),undefined,undefined,colorPlan());const before=gpu.diagnostics();

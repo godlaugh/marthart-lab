@@ -64,7 +64,7 @@ export class SourceFractalDisplay {
  private pendingGradientSize:0|1024=0;private ordinal=0;private busy=false;
  /** applyConfig resets the pass, but keeps the same PShader's pending uniform. */
  applyConfiguration():void {if(this.busy)throw Error('分形显示期间不能替换配置');this.passIndex=0;}
- display<T>(input:SourceFractalDisplayInput,render:(facts:SourceFractalDisplayFacts)=>T):T {
+ private begin(input:SourceFractalDisplayInput):SourceFractalDisplayFacts {
   if(this.busy)throw Error('分形显示不能重入');
   const stateHash=sourceFractalRenderState(input),stateReset=stateHash!==this.lastState||input.method!==this.lastMethod;
   const passIndexBefore=stateReset?0:this.passIndex,passes=scales[input.method],full=input.method==='one-pass'||input.parametersRunning;
@@ -75,7 +75,26 @@ export class SourceFractalDisplay {
   const facts:SourceFractalDisplayFacts=Object.freeze({profile:'mathart-1.7.8-display-v1',ordinal:this.ordinal,stateHash,stateReset,method:input.method,parametersRunning:input.parametersRunning,passIndexBefore,passIndexAfter,previewScale,gradientSize:this.pendingGradientSize,requestedGradientSize,useGradientTexture,needsAnotherDisplay:nextScale!==previewScale||this.pendingGradientSize!==requestedGradientSize});
   ownedDisplays.add(facts);
   this.busy=true;
-  try{const output=render(facts);this.passIndex=passIndexAfter;this.lastState=stateHash;this.lastMethod=input.method;this.pendingGradientSize=requestedGradientSize;this.ordinal++;return output;}
+  return facts;
+ }
+ private commit(facts:SourceFractalDisplayFacts):void {
+  this.passIndex=facts.passIndexAfter;this.lastState=facts.stateHash;this.lastMethod=facts.method;this.pendingGradientSize=facts.requestedGradientSize;this.ordinal=facts.ordinal+1;
+ }
+ display<T>(input:SourceFractalDisplayInput,render:(facts:SourceFractalDisplayFacts)=>T):T {
+  const facts=this.begin(input);
+  try{
+   const output=render(facts);
+   if(output!==null&&(typeof output==='object'||typeof output==='function')&&typeof (output as {then?:unknown}).then==='function')throw Error('同步分形显示不能返回 thenable；请使用 displayAsync');
+   this.commit(facts);return output;
+  }
+  finally{this.busy=false;}
+ }
+ /** A display commits only after its actual render acknowledgement. The same
+  * transition owns sync and async paths; rejected work leaves all progress at
+  * its last successful display, including the shader's queued uniform. */
+ async displayAsync<T>(input:SourceFractalDisplayInput,render:(facts:SourceFractalDisplayFacts)=>T|PromiseLike<T>):Promise<T> {
+  const facts=this.begin(input);
+  try{const output=await render(facts);this.commit(facts);return output;}
   finally{this.busy=false;}
  }
 }

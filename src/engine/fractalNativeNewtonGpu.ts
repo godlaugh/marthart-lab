@@ -1,3 +1,4 @@
+import {createFractalSourceRasterBindings,uploadFractalSourceRasterBindings,FRACTAL_SOURCE_RASTER_BINDING_BYTES} from './fractalSourceRasterBindings';
 import type {SourceFractalDisplayFacts} from './sourceFractalDisplay';
 import type {FractalConfig} from '../scenes/complex';
 import type {GpuOrbitBatch} from './fractalGpu';
@@ -26,7 +27,7 @@ export function fractalSourceGpuBytes(width:number,height:number,count:number,re
  require([width,height].every(n=>Number.isSafeInteger(n)&&n>0&&n<=16384),'Source fractal dimensions exceed the image capacity','capacity');
  require(Number.isSafeInteger(count)&&count>=0&&count<=MAX_SAMPLES,'Source fractal batch exceeds 65536 samples','capacity');
  require(Number.isSafeInteger(referenceLength)&&referenceLength>=0&&referenceLength<=2048,'Source reference exceeds 2048 entries','capacity');
- return (direct?0:width*height*(sourceColor?52:64)+count*4)+(sourceColor?5*SOURCE_COLOR_LUT_BYTES+FALLBACK_TEXTURE_BYTES+count*4:0)+count*(16+16+STRIDE*4*4)+referenceLength*16*3+2048*16*3+1025*2*4*4*2+6*4*4;
+ return (direct?0:(sourceColor?FRACTAL_SOURCE_RASTER_BINDING_BYTES.color:FRACTAL_SOURCE_RASTER_BINDING_BYTES.numeric)+width*height*(sourceColor?52:64)+count*4)+(sourceColor?5*SOURCE_COLOR_LUT_BYTES+FALLBACK_TEXTURE_BYTES+count*4:0)+count*(16+16+STRIDE*4*4)+referenceLength*16*3+2048*16*3+1025*2*4*4*2+6*4*4;
 }
 function bytes(length:number):Uint8Array {try{return new Uint8Array(length);}catch(cause){throw new FractalSourceGpuError('Source fractal byte buffer allocation failed','capacity',{cause});}}
 function floats(length:number):Float32Array {try{return new Float32Array(length);}catch(cause){throw new FractalSourceGpuError('Source fractal typed buffer allocation failed','capacity',{cause});}}
@@ -115,7 +116,7 @@ export class FractalSourceNewtonGpu {
  }
  /** The parsed owner supplies the full LUT. A private copy makes cache reuse
   * depend on its actual bytes as well as its canonical key. */
- private sourceColor(plan:PreparedFractalSourceColor,program:WebGLProgram,display?:SourceFractalDisplayFacts){
+ private sourceColorTexture(plan:PreparedFractalSourceColor,display?:SourceFractalDisplayFacts){
   const gl=this.gl!,same=this.colorTexture&&this.colorLutKey===plan.lutKey&&this.colorLutCopy?.length===plan.lut.length&&plan.lut.every((x,i)=>Object.is(x,this.colorLutCopy![i]));
   if((!display||display.useGradientTexture)&&!same){
    require(plan.lutSize<=device(()=>gl.getParameter(gl.MAX_TEXTURE_SIZE)),'Source color LUT exceeds GPU texture capacity','device');
@@ -124,20 +125,10 @@ export class FractalSourceNewtonGpu {
    device(()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,plan.lutSize,1,0,gl.RGB,gl.FLOAT,plan.lut));this.checkDevice('color LUT upload');
    this.colorLutCopy=floats(plan.lut.length);this.colorLutCopy.set(plan.lut);this.colorLutKey=plan.lutKey;this.colorUploads++;
   }else if(!display||display.useGradientTexture)this.colorHits++;
-  const loc=(n:string)=>device(()=>gl.getUniformLocation(program,n));
   if(display&&!display.useGradientTexture&&!this.fallbackTexture){
    device(()=>gl.activeTexture(gl.TEXTURE1));this.fallbackTexture=this.texture();device(()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB32F,1,1,0,gl.RGB,gl.FLOAT,new Float32Array(3)));this.checkDevice('fallback palette upload');
   }
-  device(()=>{
-   gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,display&&!display.useGradientTexture?this.fallbackTexture!:this.colorTexture!);gl.uniform1i(loc('u_gradientTex'),1);gl.uniform1i(loc('u_gradientSize'),display?.gradientSize??plan.lutSize);
-   const p=plan.fallback;gl.uniform1i(loc('u_paletteSize'),p.size);if(p.size)gl.uniform3fv(loc('u_palette[0]'),p.colors);
-   gl.uniform1f(loc('u_paletteOffset'),p.offset);gl.uniform1f(loc('u_paletteGamma'),p.gamma);gl.uniform1i(loc('u_paletteSpace'),p.space);gl.uniform1i(loc('u_useCosinePalette'),p.useCosine?1:0);
-   for(const k of ['a','b','c','d'] as const)gl.uniform3fv(loc('u_cos'+k.toUpperCase()),p.cosine[k]);
-   for(const side of ['inside','outside'] as const){const p=plan[side],prefix='u_'+side;
-    gl.uniform1i(loc(prefix+'ColoringAlgorithm'),p.algorithmId);gl.uniform4fv(loc(prefix+'ColoringParams0'),p.p0);gl.uniform4fv(loc(prefix+'ColoringParams1'),p.p1);gl.uniform4fv(loc(prefix+'ColoringParams2'),p.p2);
-    gl.uniform4f(loc(prefix+'SolidColor'),...p.solid,1);gl.uniform1i(loc(prefix+'TransferFunction'),p.transferId);gl.uniform1f(loc(prefix+'ColorDensity'),p.density);gl.uniform1f(loc(prefix+'GradientOffset'),p.offset);gl.uniform1i(loc(prefix+'RepeatGradient'),p.repeat?1:0);
-   }
-  });
+  device(()=>{gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,display&&!display.useGradientTexture?this.fallbackTexture!:this.colorTexture!);});
  }
  sample(points:Float32Array,width:number,height:number,_view:FractalViewport,c:FractalConfig,plan:FractalSourcePlan,colors?:FractalColors,isCancelled?:()=>boolean,colorPlan?:PreparedFractalSourceColor,display?:SourceFractalDisplayFacts):GpuOrbitBatch {
   return this.sampleInternal(points,width,height,c,plan,colors,isCancelled,false,undefined,colorPlan,display);
@@ -204,15 +195,11 @@ export class FractalSourceNewtonGpu {
   }
  }
  private renderRaster(points:Float32Array,width:number,height:number,c:FractalConfig,plan:FractalSourcePlan,reference:FractalSourceReferenceReady|undefined,colors:FractalColors|undefined,isCancelled:(()=>boolean)|undefined,drawCount:number,maxIter:number,out:{values:Float32Array;residual:Float32Array;traps?:Float32Array;distance?:Float32Array;source:Float32Array;sourceRGBA?:Uint8Array},colorPlan?:PreparedFractalSourceColor,display?:SourceFractalDisplayFacts){
-  const gl=this.gl!,program=colorPlan?(this.colorProgram??=this.program(FRACTAL_SOURCE_RASTER_VERTEX,FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT)):this.rasterProgram!,loc=(n:string)=>device(()=>gl.getUniformLocation(program,n));this.ensureRaster(width,height,!!colorPlan);
-  device(()=>gl.useProgram(program));if(colorPlan)this.sourceColor(colorPlan,program,display);else this.trace(colors,program);
+  const gl=this.gl!,program=colorPlan?(this.colorProgram??=this.program(FRACTAL_SOURCE_RASTER_VERTEX,FRACTAL_SOURCE_COLOR_RASTER_FRAGMENT)):this.rasterProgram!;this.ensureRaster(width,height,!!colorPlan);
+  device(()=>gl.useProgram(program));if(colorPlan)this.sourceColorTexture(colorPlan,display);else this.trace(colors,program);
+  const bindings=createFractalSourceRasterBindings(plan,c,reference,colorPlan,display);
   device(()=>{
-   gl.uniform2fv(loc('u_resolution'),plan.logicalSize);gl.uniform2fv(loc('u_centerHigh'),[plan.shaderCenter[0],plan.shaderCenter[2]]);gl.uniform2fv(loc('u_centerLow'),[plan.shaderCenter[1],plan.shaderCenter[3]]);gl.uniform2fv(loc('u_zoomDS'),plan.zoom);
-   gl.uniform2fv(loc('u_juliaConstantHigh'),[plan.shaderJuliaConstant[0],plan.shaderJuliaConstant[2]]);gl.uniform2fv(loc('u_juliaConstantLow'),[plan.shaderJuliaConstant[1],plan.shaderJuliaConstant[3]]);
-   gl.uniform1f(loc('u_rotation'),plan.rotation);gl.uniform1f(loc('u_previewScale'),display?.previewScale??1);gl.uniform1f(loc('u_bailout'),plan.bailout);gl.uniform1f(loc('u_perturbationThreshold'),plan.perturbation.threshold);gl.uniform1f(loc('u_perturbationAbsFactor'),plan.perturbation.absFactor);gl.uniform1f(loc('u_perturbationRelLimit'),plan.perturbation.relLimit);
-   gl.uniform1i(loc('u_formulaId'),plan.formula==='newton'?2:plan.formula==='nova'?3:plan.formula==='julia'?1:0);gl.uniform1i(loc('u_type'),plan.isJulia?1:0);gl.uniform1i(loc('u_formulaType'),0);gl.uniform1i(loc('u_power'),plan.uniformPower);gl.uniform1i(loc('u_formulaSupportsPerturbation'),1);gl.uniform1i(loc('u_iterations'),plan.iterations);gl.uniform1i(loc('u_usePerturbation'),reference?1:0);gl.uniform1i(loc('u_refOrbitLen'),reference?.length??0);gl.uniform1i(loc('u_refOrbitTex'),2);if(!colorPlan){gl.uniform1i(loc('u_insideColoringAlgorithm'),1);gl.uniform1i(loc('u_outsideColoringAlgorithm'),1);}
-   gl.uniform4fv(loc('u_formulaParams'),plan.formulaParams);gl.uniform1fv(loc('u_dynamicParams[0]'),plan.dynamicParams);
-   gl.uniform4f(loc('legacyTrap'),...c.trapCenter,c.trapRadius,c.trapAspect);gl.uniform3f(loc('legacyTrapShape'),Math.cos(c.trapRotation),Math.sin(c.trapRotation),['point','ring','cross'].indexOf(c.trapShape));
+   uploadFractalSourceRasterBindings(gl,program,bindings);
    gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.referenceTexture!);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,this.referenceTexture!);
    gl.bindVertexArray(this.quadVao!);gl.bindFramebuffer(gl.FRAMEBUFFER,this.rasterFbo!);gl.viewport(0,0,width,height);gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.disable(gl.DITHER);gl.disable(gl.RASTERIZER_DISCARD);gl.enable(gl.SCISSOR_TEST);
   });

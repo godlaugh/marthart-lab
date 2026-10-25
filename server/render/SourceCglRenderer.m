@@ -49,18 +49,24 @@ static NSArray *samilaUniforms(FrameReader *r){
 static void samilaFloatBlock(NSData *data,NSUInteger length){INPUT(data.length==length,@"Invalid Samila LUT length");for(NSUInteger i=0;i<data.length/4;i++){uint32_t bits=indexAt(data,i,4);float v;memcpy(&v,&bits,4);INPUT(isfinite(v),@"Nonfinite Samila LUT");}}
 #include "SourceCglIteratedRenderProtocol.h"
 #include "SourceCglSymmetryProtocol.h"
+#include "SourceCglFractalProtocol.h"
 static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retainedBytes){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=10,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=11,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
  NSUInteger nt=count(r,16),nd=count(r,40);uint32_t samples=version>=2?[r word]:0;INPUT(samples<=INT_MAX,@"Invalid sample count");uint32_t completion=version>=3?[r word]:0;INPUT(completion<=1&&(!completion||[clear[3]floatValue]==1),@"Invalid completion alpha policy");
  BOOL render=(version==7||version==10)&&packet.length>=68&&indexAt(packet,15,4)==3;
+ BOOL fractalRelease=version==11&&packet.length==88&&indexAt(packet,16,4)==3;
  BOOL iteratedRelease=((version==6||version==8)&&packet.length==88&&indexAt(packet,16,4)==5)||(render&&packet.length==(version==10?96:88)&&indexAt(packet,16,4)==4);
- uint64_t responseBytes=render?128+(indexAt(packet,16,4)==3?(uint64_t)width*height*12:0):(uint64_t)width*height*(12+(uint64_t)8*samples);
- ensure((iteratedRelease?0:retainedBytes)+packet.length*(version>=4?6:4)+responseBytes<=Budget,@"capacity",@"Packet, copies, multisample GPU and frame buffers exceed budget");
+ uint64_t responseBytes=version==11?192:render?128+(indexAt(packet,16,4)==3?(uint64_t)width*height*12:0):(uint64_t)width*height*(12+(uint64_t)8*samples);
+ ensure(((iteratedRelease||fractalRelease)?0:retainedBytes)+packet.length*(version>=4?6:4)+responseBytes<=Budget,@"capacity",@"Packet, copies, multisample GPU and frame buffers exceed budget");
  ensure(!trace||((uint64_t)nd+1)*width*height*4<=Budget,@"capacity",@"Diagnostic draw readbacks exceed budget");
+ if(version==11){
+  INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Fractal envelope cannot contain generic draws");for(NSNumber *v in clear)INPUT(v.floatValue==0,@"Fractal envelope clear must be zero");
+  NSDictionary *operation=parseFractal(r,width,height,retainedBytes);return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"fractal":operation,@"packetBytes":@(packet.length)};
+ }
  if(version>=6){
   INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Iterated envelope cannot contain generic draws");for(NSNumber *v in clear)INPUT(v.floatValue==0,@"Iterated envelope clear must be zero");
   uint32_t family=[r word];if((version==7||version==10)&&family==3){NSDictionary *op=parseIteratedRender(r,width,height,version);INPUT(r.offset==packet.length,@"Trailing iterated render bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"iteratedRender":op,@"packetBytes":@(packet.length)};}
@@ -153,8 +159,11 @@ static NSData *readPacket(FILE *f,BOOL stream){
 static void writeFile(NSString *root,NSString *name,NSData *data){NSError *e=nil;RUNTIME([data writeToFile:[root stringByAppendingPathComponent:name] options:NSDataWritingAtomic error:&e],e.description?:@"Output write failed");}
 static GLuint compile(GLenum kind,NSString *source){GLuint shader=glCreateShader(kind);NSString *text=[@"#version 410\n" stringByAppendingString:source];const char *p=text.UTF8String;glShaderSource(shader,1,&p,NULL);glCompileShader(shader);GLint ok=0;glGetShaderiv(shader,GL_COMPILE_STATUS,&ok);if(!ok){char log[8192]={0};glGetShaderInfoLog(shader,sizeof(log),NULL,log);glDeleteShader(shader);RUNTIME(NO,[NSString stringWithUTF8String:log]?:@"Shader compile failed");}return shader;}
 static GLenum uniformType(uint32_t kind){switch(kind){case 1:case 8:return GL_FLOAT;case 2:return GL_INT;case 3:return GL_FLOAT_VEC2;case 4:return GL_INT_VEC2;case 5:case 10:return GL_FLOAT_VEC3;case 6:return GL_FLOAT_VEC4;case 7:return GL_FLOAT_MAT4;case 9:return GL_SAMPLER_2D;case 11:return GL_BOOL;}return 0;}
-static void applyUniforms(GLuint program,NSArray *uniforms){
+static void uploadUniforms(GLuint program,NSArray *uniforms){
   for(NSDictionary *u in uniforms){GLint loc=glGetUniformLocation(program,[u[@"name"]UTF8String]);if(loc<0)continue;int kind=[u[@"kind"]intValue];NSData *values=u[@"bytes"];const GLfloat *v=values.bytes;const GLint *iv=values.bytes;switch(kind){case 1:case 8:glUniform1fv(loc,[u[@"count"]intValue],v);break;case 2:case 11:glUniform1iv(loc,1,iv);break;case 3:glUniform2fv(loc,1,v);break;case 4:glUniform2iv(loc,1,iv);break;case 5:case 10:glUniform3fv(loc,[u[@"count"]intValue],v);break;case 6:glUniform4fv(loc,1,v);break;case 7:glUniformMatrix4fv(loc,1,GL_FALSE,v);break;case 9:glUniform1i(loc,[u[@"texture"]intValue]);break;}}
+}
+static void applyUniforms(GLuint program,NSArray *uniforms){
+  uploadUniforms(program,uniforms);
   // Match linked native inputs against the owner's declarations, including
   // arrays. An optimized-away input is fine; a missing/wrong active one is not.
   GLint active=0;glGetProgramiv(program,GL_ACTIVE_UNIFORMS,&active);for(GLint i=0;i<active;i++){char name[1024]={0};GLsizei length=0;GLint size=0;GLenum type=0;glGetActiveUniform(program,i,sizeof(name),&length,&size,&type,name);RUNTIME(length>0&&length<1023,@"Active uniform name capacity");NSString *key=@(name);if([key hasSuffix:@"[0]"])key=[key substringToIndex:key.length-3];NSDictionary *found=nil;for(NSDictionary *u in uniforms)if([u[@"name"]isEqual:key])found=u;RUNTIME(found&&uniformType([found[@"kind"]intValue])==type&&(type==GL_SAMPLER_2D?size==1:[found[@"count"]intValue]>=size),@"Active uniform lacks matching typed data");}
@@ -229,6 +238,7 @@ static NSData *renderFrameWithDraw(NSDictionary *frame,NSString *out,uint64_t re
 static NSData *renderFrame(NSDictionary *frame,NSString *out){return renderFrameWithDraw(frame,out,0,^(NSDictionary *command,NSArray *textures){draw(command,textures);});}
 #include "SourceCglBouncingState.h"
 #include "SourceCglSamilaState.h"
+#include "SourceCglFractalState.h"
 #include "SourceCglIteratedState.h"
 #include "SourceCglSymmetryState.h"
 #include "SourceCglIteratedInk.h"
@@ -242,21 +252,23 @@ static NSData *iteratedReply(NSDictionary *operation,id<SourceCglIteratedStateOw
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
 static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData *payload){
- uint32_t version=indexAt(request,1,4),format=status?0:version==10?5:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
+ uint32_t version=indexAt(request,1,4),format=status?0:version==11?6:version==10?5:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
  uint32_t header[11]={0x31524c4d,1,(uint32_t)(44+payload.length),indexAt(request,3,4),indexAt(request,4,4),indexAt(request,5,4),indexAt(request,6,4),status,format,(uint32_t)payload.length,contextSerial};
  for(int i=0;i<11;i++)header[i]=CFSwapInt32HostToLittle(header[i]);
  RUNTIME(fwrite(header,1,sizeof(header),stdout)==sizeof(header)&&fwrite(payload.bytes,1,payload.length,stdout)==payload.length&&fflush(stdout)==0,@"Response pipe write failed");
 }
 static uint32_t errorCode(NSString *kind){return [kind isEqual:@"input"]?1:[kind isEqual:@"unsupported"]?2:[kind isEqual:@"capacity"]?3:[kind isEqual:@"state-lost"]?5:[kind isEqual:@"ownership"]?6:4;}
 int main(int argc,const char **argv){@autoreleasepool{
- CGLContextObj ctx=NULL;SourceCglBouncingState *bouncing=nil;NSData *bouncingResource=nil;NSMutableDictionary<NSData*,SourceCglSamilaState*> *samila=[NSMutableDictionary new];NSMutableDictionary<NSData*,id<SourceCglIteratedStateOwner>> *iterated=[NSMutableDictionary new];NSMutableDictionary<NSData*,NSDictionary*> *inks=[NSMutableDictionary new];FILE *input=NULL;int result=1;uint32_t serial=0;BOOL stream=argc==2&&strcmp(argv[1],"--stdio")==0;
+ CGLContextObj ctx=NULL;SourceCglBouncingState *bouncing=nil;NSData *bouncingResource=nil;NSMutableDictionary<NSData*,SourceCglSamilaState*> *samila=[NSMutableDictionary new];NSMutableDictionary<NSData*,id<SourceCglIteratedStateOwner>> *iterated=[NSMutableDictionary new];NSMutableDictionary<NSData*,NSDictionary*> *inks=[NSMutableDictionary new];NSMutableDictionary<NSData*,SourceCglFractalState*> *fractals=[NSMutableDictionary new];FILE *input=NULL;int result=1;uint32_t serial=0;BOOL stream=argc==2&&strcmp(argv[1],"--stdio")==0;
  @try{
   INPUT(stream||argc==3,@"Usage: renderer --stdio | frame.bin output-directory");input=stream?stdin:fopen(argv[1],"rb");INPUT(input!=NULL,@"Cannot open frame packet");
   NSString *out=stream?nil:@(argv[2]);if(out){BOOL isDir=NO;INPUT([[NSFileManager defaultManager]fileExistsAtPath:out isDirectory:&isDir]&&isDir,@"Output directory must exist");}
   while(YES){@autoreleasepool{
    NSData *packet=readPacket(input,stream);if(!packet)break;
    @try{
-    uint64_t retained=(bouncing?bouncing.retainedBytes:0)+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks);NSDictionary *frame=parseWithRetained(packet,!stream,retained),*operation=frame[@"bouncing"],*samilaOperation=frame[@"samila"],*iteratedOperation=frame[@"iterated"],*renderOperation=frame[@"iteratedRender"];uint32_t kind=[operation[@"kind"]unsignedIntValue],renderKind=[renderOperation[@"kind"]unsignedIntValue];
+    uint64_t retained=(bouncing?bouncing.retainedBytes:0)+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals);NSDictionary *frame=parseWithRetained(packet,!stream,retained),*operation=frame[@"bouncing"],*samilaOperation=frame[@"samila"],*iteratedOperation=frame[@"iterated"],*renderOperation=frame[@"iteratedRender"],*fractalOperation=frame[@"fractal"];uint32_t kind=[operation[@"kind"]unsignedIntValue],renderKind=[renderOperation[@"kind"]unsignedIntValue];
+    uint32_t fractalKind=[fractalOperation[@"kind"]unsignedIntValue];NSData *fractalResource=fractalOperation[@"resource"];SourceCglFractalState *fractalOwner=fractalResource?fractals[fractalResource]:nil;
+    if(fractalKind==1)ensure(fractals.count<2&&!fractalOwner,@"capacity",@"Two Fractal resources are already owned or token is duplicate");else if(fractalKind==2)ensure(fractalOwner!=nil,@"state-lost",@"Fractal resource is absent after release or context loss");
     uint32_t samilaKind=[samilaOperation[@"kind"]unsignedIntValue];NSData *samilaResource=samilaOperation[@"resource"];SourceCglSamilaState *samilaOwner=samilaResource?samila[samilaResource]:nil;
     if(samilaKind==1)ensure(samila.count<2&&!samilaOwner,@"capacity",@"Two Samila resources are already owned or token is duplicate");else if(samilaKind==2||samilaKind==4||samilaKind==5)ensure(samilaOwner!=nil,@"state-lost",@"Samila resource is absent after release or context loss");
     uint32_t iteratedKind=[iteratedOperation[@"kind"]unsignedIntValue];NSData *iteratedResource=iteratedOperation[@"resource"];id<SourceCglIteratedStateOwner> iteratedOwner=iteratedResource?iterated[iteratedResource]:nil;
@@ -266,7 +278,11 @@ int main(int argc,const char **argv){@autoreleasepool{
     if(kind==1)ensure(bouncing==nil,@"capacity",@"A Bouncing resource is already owned");
     else if(kind){if(bouncing)ensure([bouncingResource isEqual:operation[@"resource"]],@"ownership",@"Bouncing resource belongs to another caller");else if(kind!=4)ensure(NO,@"state-lost",@"Bouncing resource is absent after release or context loss");if(bouncing&&kind!=4)INPUT(bouncing.particleCount==[operation[@"count"]unsignedIntValue]&&(bouncing.pointVertex.length+bouncing.pointFragment.length)*3==[operation[@"programBytes"]unsignedIntValue],@"Bouncing particle count differs from owned state");}
     if(!ctx){createContext(&ctx);serial++;}NSData *rgba;
-    if(renderKind){rgba=renderIteratedOperation(frame,inks,iterated,retained);}
+    if(fractalKind){
+     if(fractalKind==1){fractalOwner=[[SourceCglFractalState alloc]initWithOperation:fractalOperation];fractals[fractalResource]=fractalOwner;@try{[fractalOwner prepare:fractalOperation];}@catch(NSException *e){[fractalOwner dispose];[fractals removeObjectForKey:fractalResource];@throw;}rgba=fractalReply(fractalOperation,fractalOwner,0,1,1,nil);}
+     else if(fractalKind==2){NSData *records=[fractalOwner sample:fractalOperation width:[frame[@"width"]unsignedIntValue] height:[frame[@"height"]unsignedIntValue] retained:retained packetBytes:packet.length];rgba=fractalReply(fractalOperation,fractalOwner,0,[frame[@"width"]unsignedIntValue],[frame[@"height"]unsignedIntValue],records);}
+     else{uint32_t disposition=fractalOwner?1:2;[fractalOwner dispose];rgba=fractalReply(fractalOperation,fractalOwner,disposition,1,1,nil);[fractals removeObjectForKey:fractalResource];}
+    }else if(renderKind){rgba=renderIteratedOperation(frame,inks,iterated,retained);}
     else if(iteratedKind){
      NSData *states=nil;
      if(iteratedKind==1||iteratedKind==6||iteratedKind==7){iteratedOwner=iteratedKind==7?[[SourceCglSymmetryState alloc]initWithOperation:iteratedOperation]:[[SourceCglIteratedState alloc]initWithOperation:iteratedOperation];iterated[iteratedResource]=iteratedOwner;@try{[iteratedOwner prepare:iteratedOperation];}@catch(NSException *e){[iteratedOwner dispose];[iterated removeObjectForKey:iteratedResource];@throw;}}
@@ -287,17 +303,19 @@ int main(int argc,const char **argv){@autoreleasepool{
     if(kind==3){
      NSDictionary *point=frame[@"draws"][0];INPUT([point[@"vertex"]isEqual:bouncing.pointVertex]&&[point[@"fragment"]isEqual:bouncing.pointFragment],@"Bouncing draw shaders differ from the owned programs");[bouncing validateDrawUniforms:point[@"uniforms"]];
      SourceBouncingUpdate update;memcpy(&update,[operation[@"update"]bytes],sizeof(update));[bouncing advanceFrom:[operation[@"from"]unsignedIntValue] to:[operation[@"to"]unsignedIntValue] update:update];
-     rgba=renderFrameWithDraw(frame,out,bouncing.retainedBytes+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks),^(NSDictionary *command,NSArray *textures){if([command[@"flags"]unsignedIntValue]&32)[bouncing drawUniforms:command[@"uniforms"]];else draw(command,textures);});
+     rgba=renderFrameWithDraw(frame,out,bouncing.retainedBytes+samilaRetained(samila)+iteratedRetained(iterated)+iteratedInkRetained(inks)+fractalRetained(fractals),^(NSDictionary *command,NSArray *textures){if([command[@"flags"]unsignedIntValue]&32)[bouncing drawUniforms:command[@"uniforms"]];else draw(command,textures);});
     }else if(kind){uint32_t uploaded=CFSwapInt32HostToLittle(bouncing?bouncing.uploaded:0);rgba=[NSData dataWithBytes:&uploaded length:4];}
     else rgba=retained?renderFrameWithDraw(frame,out,retained,^(NSDictionary *command,NSArray *textures){draw(command,textures);}):renderFrame(frame,out);
     }
     if(stream)reply(packet,0,serial,rgba);
-    else{writeFile(out,renderKind?@"render.bin":iteratedKind?@"state.bin":@"frame.rgba",rgba);NSDictionary *meta=@{@"generation":frame[@"generation"],@"sequence":frame[@"sequence"],@"renderer":@((const char*)glGetString(GL_RENDERER)),@"version":@((const char*)glGetString(GL_VERSION)),@"vendor":@((const char*)glGetString(GL_VENDOR)),@"windowCreated":@NO,@"width":frame[@"width"],@"height":frame[@"height"],@"samples":frame[@"samples"],@"draws":@([(NSArray*)frame[@"draws"]count]),@"rowOrder":renderKind?(renderKind==3?@"bottom-up":@"none"):iteratedKind?@"none":@"bottom-up",@"format":renderKind?@"iterated-render-v1":iteratedKind?@"iterated-v1":@"rgba8"};writeFile(out,@"renderer.json",[NSJSONSerialization dataWithJSONObject:meta options:NSJSONWritingPrettyPrinted error:NULL]);}
+    else{writeFile(out,fractalKind?@"fractal.bin":renderKind?@"render.bin":iteratedKind?@"state.bin":@"frame.rgba",rgba);NSDictionary *meta=@{@"generation":frame[@"generation"],@"sequence":frame[@"sequence"],@"renderer":@((const char*)glGetString(GL_RENDERER)),@"version":@((const char*)glGetString(GL_VERSION)),@"vendor":@((const char*)glGetString(GL_VENDOR)),@"windowCreated":@NO,@"width":frame[@"width"],@"height":frame[@"height"],@"samples":frame[@"samples"],@"draws":@([(NSArray*)frame[@"draws"]count]),@"rowOrder":fractalKind?@"sample-order":renderKind?(renderKind==3?@"bottom-up":@"none"):iteratedKind?@"none":@"bottom-up",@"format":fractalKind?@"fractal-v1":renderKind?@"iterated-render-v1":iteratedKind?@"iterated-v1":@"rgba8"};writeFile(out,@"renderer.json",[NSJSONSerialization dataWithJSONObject:meta options:NSJSONWritingPrettyPrinted error:NULL]);}
    }@catch(NSException *e){
     if(!stream)@throw;
     // A failed GL operation can poison context state. Recreate it before the
     // next valid frame; invalid input never touches an existing good context.
-    uint32_t status=errorCode(e.name);if(status==4){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}destroyContext(&ctx);}
+    // Fractal v11 poisons its owner instead, preserving custody until release.
+    // A transport may retire this whole process after receiving that failure.
+    uint32_t status=errorCode(e.name);if(status==4&&indexAt(packet,1,4)!=11){disposeIteratedInks(inks);[bouncing dispose];bouncing=nil;bouncingResource=nil;for(NSData *key in [samila.allKeys copy]){[samila[key]dispose];[samila removeObjectForKey:key];}for(NSData *key in [iterated.allKeys copy]){[iterated[key]dispose];[iterated removeObjectForKey:key];}for(NSData *key in [fractals.allKeys copy]){[fractals[key]dispose];[fractals removeObjectForKey:key];}destroyContext(&ctx);}
     NSData *message=[(e.reason?:@"Native frame failed") dataUsingEncoding:NSUTF8StringEncoding];if(!message||message.length>8192)message=[@"Native frame failed; diagnostic exceeded response budget" dataUsingEncoding:NSUTF8StringEncoding];
     reply(packet,status,serial,message);
    }
@@ -307,6 +325,7 @@ int main(int argc,const char **argv){@autoreleasepool{
  @finally{BOOL clean=YES;for(NSData *key in [inks.allKeys copy])@try{[inks[key][@"owner"]dispose];[inks removeObjectForKey:key];}@catch(NSException *e){fprintf(stderr,"Iterated ink cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   @try{[bouncing dispose];}@catch(NSException *e){fprintf(stderr,"Bouncing cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}for(SourceCglSamilaState *owner in samila.allValues)@try{[owner dispose];}@catch(NSException *e){fprintf(stderr,"Samila cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   for(NSData *key in iterated.allKeys)@try{ensure(iteratedInkDependents(inks,key)==0,@"ownership",@"Failed ink cleanup retains its compute dependency");[iterated[key]dispose];}@catch(NSException *e){fprintf(stderr,"Iterated cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
+  for(SourceCglFractalState *owner in fractals.allValues)@try{[owner dispose];}@catch(NSException *e){fprintf(stderr,"Fractal cleanup failed: %s\n",e.reason.UTF8String);clean=NO;result=1;}
   if(clean)@try{destroyContext(&ctx);}@catch(NSException *e){fprintf(stderr,"Context cleanup failed: %s\n",e.reason.UTF8String);result=1;}if(input&&!stream)fclose(input);}
  return result;
 }}
