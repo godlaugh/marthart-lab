@@ -7,7 +7,13 @@ import {createDesktopHost,findFFmpeg} from './host.mjs';
 import {createWorkspaceStore,STORAGE_KEYS} from './storage.mjs';
 import {createDesktopPreferences} from './preferences.mjs';
 import {configureDesktopGraphics} from './graphics.mjs';
-const directory=path.dirname(fileURLToPath(import.meta.url)),name='MathArt Lab';
+import {loadBundledSourceRendererBackend} from './native-backend.mjs';
+const directory=path.dirname(fileURLToPath(import.meta.url));
+const manifest=JSON.parse(await readFile(path.join(directory,'../package.json'),'utf8'));
+const name=manifest.productName??'MathArt Lab';
+const nativeBundle=manifest.mathartRuntime?.sourceRenderer==='bundled-native';
+const hidden=app.commandLine.hasSwitch('mathart-hidden');
+if(hidden&&process.platform==='darwin')app.setActivationPolicy('accessory');
 app.setName(name);
 const smokeReport=app.commandLine.getSwitchValue('mathart-smoke-report');
 const workspaceDirectory=app.commandLine.getSwitchValue('mathart-user-data');
@@ -32,15 +38,15 @@ async function shutdown(){
 app.on('before-quit',event=>{if(!finished){event.preventDefault();void shutdown();}});
 process.on('SIGINT',()=>void shutdown());process.on('SIGTERM',()=>void shutdown());
 app.on('window-all-closed',()=>{if(!closing)app.quit();});
-app.on('activate',()=>{if(window&&!window.isDestroyed())window.show();});
-app.on('second-instance',()=>{if(window&&!window.isDestroyed()){if(window.isMinimized())window.restore();window.show();window.focus();}});
+app.on('activate',()=>{if(!hidden&&window&&!window.isDestroyed())window.show();});
+app.on('second-instance',()=>{if(!hidden&&window&&!window.isDestroyed()){if(window.isMinimized())window.restore();window.show();window.focus();}});
 async function start(){try{
  await app.whenReady();const userData=app.getPath('userData');
  store=await createWorkspaceStore(userData);
  preferences=await createDesktopPreferences(userData);
  const configuredFFmpeg=process.env.MATHART_FFMPEG??preferences.read().ffmpegPath;
  try{activeFFmpeg=await findFFmpeg(configuredFFmpeg);}catch(error){ffmpegWarning=`所选 FFmpeg 不可用：${error.message}`;console.error(ffmpegWarning);activeFFmpeg=configuredFFmpeg;}
- const sourceRendererBackend=process.env.MATHART_SOURCE_RENDERER_BACKEND?JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND,'utf8')):undefined;
+ const sourceRendererBackend=process.env.MATHART_SOURCE_RENDERER_BACKEND?JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND,'utf8')):nativeBundle?await loadBundledSourceRendererBackend({resourcesPath:process.resourcesPath}):undefined;
  host=await createDesktopHost({sourceRendererBackend,dist:path.join(directory,'../dist'),exportRoot:path.join(userData,'exports'),ffmpegPath:activeFFmpeg});
  const browserSession=session.fromPartition('persist:mathart-lab');
  browserSession.setPermissionRequestHandler((contents,permission,callback)=>callback(permission==='clipboard-sanitized-write'&&contents?.getURL().startsWith(host.origin+'/')));
@@ -67,7 +73,7 @@ async function start(){try{
   if(!trusted(event)||selecting)return null;selecting=true;
   try{const result=await dialog.showOpenDialog(window,{title:'选择 FFmpeg 可执行文件',defaultPath:activeFFmpeg,properties:['openFile']});if(result.canceled)return null;await preferences.save({ffmpegPath:result.filePaths[0]});return settings();}finally{selecting=false;}
  });
- window=new BrowserWindow({title:name,width:1440,height:960,minWidth:1000,minHeight:680,show:!smokeReport,backgroundColor:'#111317',webPreferences:{preload:path.join(directory,'preload.cjs'),session:browserSession,contextIsolation:true,nodeIntegration:false,nodeIntegrationInWorker:false,sandbox:true,webSecurity:true,allowRunningInsecureContent:false,webviewTag:false}});
+ window=new BrowserWindow({title:name,width:1440,height:960,minWidth:1000,minHeight:680,show:!smokeReport&&!hidden,backgroundColor:'#111317',webPreferences:{preload:path.join(directory,'preload.cjs'),session:browserSession,contextIsolation:true,nodeIntegration:false,nodeIntegrationInWorker:false,sandbox:true,webSecurity:true,allowRunningInsecureContent:false,webviewTag:false}});
  window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
  window.webContents.on('will-navigate',(event,url)=>{if(!url.startsWith(host.origin+'/'))event.preventDefault();});
  window.webContents.on('will-redirect',(event,url)=>{if(!url.startsWith(host.origin+'/'))event.preventDefault();});
@@ -80,5 +86,5 @@ async function start(){try{
   const {runSmoke}=await import('./smoke.mjs');report=await runSmoke({window,host,userData,phase:app.commandLine.getSwitchValue('mathart-smoke-phase')||'initial'});
   report.version={electron:process.versions.electron,chrome:process.versions.chrome,node:process.versions.node};report.graphics={enabledAngleFeatures:app.commandLine.getSwitchValue('enable-angle-features'),disabledAngleFeatures:app.commandLine.getSwitchValue('disable-angle-features')};await shutdown();
  }
-}catch(error){exitCode=1;console.error(error);if(smokeReport){report={status:'failed',error:error.stack,origin:host?.origin,port:host?.port,apiPort:host?.apiPort};}else dialog.showErrorBox(name+' 启动失败',error.message);await shutdown();}}
+}catch(error){exitCode=1;console.error(error);if(smokeReport){report={status:'failed',error:error.stack,origin:host?.origin,port:host?.port,apiPort:host?.apiPort};}else if(!hidden)dialog.showErrorBox(name+' 启动失败',error.message);await shutdown();}}
 if(app.requestSingleInstanceLock())void start();else{finished=true;app.exit(0);}

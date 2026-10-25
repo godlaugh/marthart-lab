@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+2026-10-26 已增加独立 Apple Silicon 桌面入口 `npm run desktop:build:v2`，输出 `dist-desktop-v2/MathArt Lab 2 Preview-darwin-arm64/MathArt Lab 2 Preview.app`，约 297 MiB。原生渲染器随包提供，不再需要外部后端配置；工作区默认保存在 `~/Library/Application Support/MathArt Lab 2 Preview/`。两个源场景的隐藏窗口导入、热改参数、播放恢复、PNG 下载及重启恢复已通过。此包仍为 M3 预览，公式字形服务尚未打包，部分冷重放仍走 Worker；完整范围见[桌面预览中文验收](docs/native-v2-desktop-preview-validation.zh-CN.md)。
+
 2026-10-24 Samila 的可选原生后端已接通生产预览、参数热改和暂停截图；五个原版预设的 15 张完整场景缓冲 RGBA 逐字节一致。真实多会话、取消与资源清理检查通过，隐藏 Electron 的显示 RGB 和 PNG RGBA 也保持一致。普通默认入口尚未切换，冷重放导出、热录制和 2.0 打包继续；整体保持 M3，见[原生预览接入中文报告](docs/source-samila-native-integration-validation.zh-CN.md)。
 
 同日较早的原生原型已通过 45 个完整绘制阶段的零容差对照，并修复三个噪声参数被写成 GLSL 常量的问题。该批次 386 项相关测试、120 个实际 GPU 用例和构建通过；当时生产 WebGL 的整图差异仍在，见[完整帧原型与修复中文报告](docs/source-samila-native-prototype-validation.zh-CN.md)。

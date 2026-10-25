@@ -3,6 +3,7 @@
 /dist/
 /dist-v2/
 /dist-desktop/
+/dist-desktop-v2/
 *.tsbuildinfo
 
 # Local verification output, caches and research artifacts

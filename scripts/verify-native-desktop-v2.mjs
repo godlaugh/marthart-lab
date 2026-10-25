@@ -1,0 +1,78 @@
+/** Public controls of a packaged, hidden Electron app. No engine patches or
+ * external renderer configuration. Caller selects fixtures and a new output. */
+import {_electron} from '@playwright/test';
+import {build} from 'esbuild';
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import net from 'node:net';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {resolve,join} from 'node:path';
+import {decodePng} from './lib/verify-png.mjs';
+const [bundleArg,specArg,outArg]=process.argv.slice(2);assert(bundleArg&&specArg&&outArg,'Supply app bundle, fixture spec, new output directory');
+const bundle=resolve(bundleArg),out=resolve(outArg);await mkdir(out,{recursive:false});
+const sha=b=>createHash('sha256').update(b).digest('hex'),resources=join(bundle,'Contents/Resources'),manifest=JSON.parse(await readFile(join(resources,'source-renderer/manifest.json'))),executable=join(bundle,'Contents/MacOS/MathArt Lab 2 Preview');
+assert.equal(manifest.executable,'source-cgl-renderer');const nativePath=join(resources,'source-renderer',manifest.executable);assert.equal(sha(await readFile(nativePath)),manifest.sha256);
+const specBytes=await readFile(specArg),spec=JSON.parse(specBytes),report={status:'running',bundle,specSha256:sha(specBytes),nativeManifest:manifest,appAsarSha256:sha(await readFile(join(resources,'app.asar'))),checks:[],errors:[],limits:['Actual packaged UI, native helper and PNG download on this Mac; original preview parity is covered separately. PNG uses the shared source image enhancement; it is not raw RGBA.','No source engine patches or renderer environment override. Hidden window and isolated test userData.','Map/Symmetry cold replay and custom Symmetry still use their existing Worker path; this verifies current-scene native captures.']};
+const compiled=await build({entryPoints:['src/engine/sourcePausedImage.ts'],bundle:true,platform:'node',format:'esm',write:false,metafile:true});
+const {enhanceSourcePausedImage}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'));
+report.expectedEnhancementSources=Object.fromEntries(await Promise.all(Object.keys(compiled.metafile.inputs).map(async p=>[p,sha(await readFile(p))])));
+const execFileAsync=promisify(execFile),appRuns=[];
+async function processRows(){
+ const {stdout}=await execFileAsync('/bin/ps',['-axo','pid=,ppid=,pgid=,rss=,time=,lstart='],{maxBuffer:2*1024*1024});
+ return stdout.trim().split('\n').map(line=>{const m=line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/);assert(m,'Invalid ps row');return {pid:+m[1],ppid:+m[2],pgid:+m[3],rssKiB:+m[4],cpuTime:m[5],startTime:m[6]};});
+}
+async function observeApplication(app){
+ const process=app.process(),rows=await processRows(),root=rows.find(p=>p.pid===process.pid);assert(root,'Launched Electron is missing');assert.equal(root.pgid,root.pid,'Expected a dedicated Playwright Electron process group');
+ const record={pid:root.pid,startTime:root.startTime,samples:[]};appRuns.push(record);let timer,task,stopped=false;
+ async function sample(){const rows=await processRows();const current=rows.find(p=>p.pid===root.pid);if(!current||current.startTime!==root.startTime)return;const members=rows.filter(p=>p.pgid===root.pgid);record.samples.push({epochMs:Date.now(),seconds:(performance.now()-started)/1000,rssKiB:members.reduce((n,p)=>n+p.rssKiB,0),processes:members});}
+ async function tick(){await sample();if(!stopped)timer=setTimeout(()=>{task=tick().catch(error=>report.errors.push(String(error)));},500);}
+ await tick();
+ return async()=>{stopped=true;clearTimeout(timer);await task;record.exitCode=process.exitCode;record.signalCode=process.signalCode;record.processGroupAfter=(await processRows()).filter(p=>p.pgid===root.pgid);record.rssPeakKiB=Math.max(...record.samples.map(p=>p.rssKiB));assert.equal(record.exitCode,0,'Electron shutdown failed');assert.deepEqual(record.processGroupAfter,[],'Electron/native process group did not exit');};
+}
+async function closedOrigin(origin){
+ const port=Number(new URL(origin).port);await new Promise((resolve,reject)=>{const socket=net.createConnection({host:'127.0.0.1',port});socket.setTimeout(2000,()=>{socket.destroy();reject(Error('Closed app port timed out'));});socket.once('connect',()=>{socket.destroy();reject(Error('Closed app port still listening'));});socket.once('error',error=>error.code==='ECONNREFUSED'?resolve():reject(error));});
+}
+const env={...process.env};for(const key of ['ELECTRON_RUN_AS_NODE','MATHART_SOURCE_RENDERER_BACKEND','VITE_SOURCE_RENDERER'])delete env[key];let application,page,finishObservation;const started=performance.now(),wire=[],pending=new Set(),presents=[];
+try{
+ application=await _electron.launch({executablePath:executable,args:['--mathart-hidden','--mathart-user-data='+out+'/profile'],env,timeout:30000});
+ finishObservation=await observeApplication(application);
+ report.runtime=await application.evaluate(({app,BrowserWindow})=>({name:app.getName(),version:app.getVersion(),userData:app.getPath('userData'),visibleWindows:BrowserWindow.getAllWindows().filter(w=>w.isVisible()).length,electron:process.versions.electron}));assert.equal(report.runtime.visibleWindows,0);assert.equal(report.runtime.name,'MathArt Lab 2 Preview');
+ report.hiddenActivation=await application.evaluate(({app,BrowserWindow})=>{app.emit('activate');app.emit('second-instance',{},[],process.cwd(),{});return {visibleWindows:BrowserWindow.getAllWindows().filter(w=>w.isVisible()).length};});assert.equal(report.hiddenActivation.visibleWindows,0);
+ await application.evaluate(({session})=>{globalThis.__verificationDownloads=[];session.fromPartition('persist:mathart-lab').on('will-download',(_event,item)=>{const row={path:item.getSavePath(),state:'pending'};globalThis.__verificationDownloads.push(row);item.once('done',(_event,state)=>{row.state=state;row.path=item.getSavePath();});});});
+ page=await application.firstWindow();page.setDefaultTimeout(30000);page.on('pageerror',error=>report.errors.push(String(error)));
+ page.on('response',response=>{if(!response.url().endsWith('/api/source-renderer/frames'))return;const task=(async()=>{const packet=response.request().postDataBuffer();assert(packet&&packet.length>=88);const row={width:packet.readUInt32LE(20),height:packet.readUInt32LE(24),family:packet.readUInt32LE(60),kind:packet.readUInt32LE(64),resource:packet.subarray(72,88).toString('hex'),status:response.status()};wire.push(row);assert.equal(response.status(),200);if(row.family===2&&row.kind===3){row.steps=packet.readUInt32LE(packet.readUInt32LE(4)===7?104:100);}
+// Preview requests may be cancelled by public controls; only retain the explicit
+// 160x120 export payload. Request metadata still covers all native operations.
+if(row.family===3&&row.kind===3&&row.width===160&&row.height===120){const bytes=await response.body();assert.equal(bytes.readUInt32LE(0),3);const width=bytes.readUInt32LE(56),height=bytes.readUInt32LE(60);assert.equal(bytes.length,128+width*height*4);const rgba=Buffer.alloc(width*height*4);for(let y=0;y<height;y++)bytes.copy(rgba,y*width*4,128+(height-1-y)*width*4,128+(height-y)*width*4);presents.push({width,height,rgba,wire:wire.indexOf(row)});if(presents.length>8)presents.shift();}})().catch(e=>report.errors.push(String(e)));pending.add(task);task.finally(()=>pending.delete(task));});
+ const ready=()=>page.waitForFunction(()=>{const s=document.querySelector('.status-bar')?.textContent;return (s?.includes('Ready')||s?.includes('就绪'))&&!document.querySelector('.rendering-badge')&&!document.querySelector('.error-card');});
+ await ready();await page.getByTitle('工作区设置',{exact:true}).click();await page.getByRole('combobox',{name:'界面语言',exact:true}).selectOption('en');await page.getByRole('button',{name:'Close settings',exact:true}).click();
+ report.health=await page.evaluate(()=>fetch('/api/source-renderer/health').then(r=>r.json()));assert.equal(report.health.available,true);
+ const download=async action=>{const index=await application.evaluate(()=>globalThis.__verificationDownloads.length);await action();const stop=performance.now()+30000;while(performance.now()<stop){const row=await application.evaluate((_args,n)=>globalThis.__verificationDownloads[n],index);if(row?.state!=='pending'&&row){assert.equal(row.state,'completed');return row.path;}await new Promise(r=>setTimeout(r,50));}throw Error('Packaged download timed out');};
+ for(const fixture of spec.cases){
+  assert(['map','symmetry'].includes(fixture.family));const raw=await readFile(fixture.path);assert.equal(sha(raw),fixture.sha256);const begin=wire.length;
+  await page.locator('input[type=file]').setInputFiles({name:fixture.name+'.json',mimeType:'application/json',buffer:raw});await page.waitForFunction(name=>document.querySelector('.project-title')?.textContent.includes(name),JSON.parse(raw).name);await ready();await Promise.all([...pending]);assert(wire.slice(begin).some(r=>r.family===2&&r.kind===6),'Actual UI did not create source-native owner');assert(wire.slice(begin).some(r=>r.family===3&&r.kind===3),'Actual UI did not present native pixels');
+  const input=page.locator('#param-'+fixture.parameter),before=await input.inputValue(),creates=wire.filter(r=>r.family===2&&r.kind===6).length,prior=wire.length;
+  await input.fill(String(Number(before)+fixture.delta));await input.blur();await page.waitForFunction(()=>!document.querySelector('.rendering-badge'));await page.waitForTimeout(200);await ready();await Promise.all([...pending]);assert.notEqual(await input.inputValue(),before,'Hot parameter edit did not change the control value');assert.equal(wire.filter(r=>r.family===2&&r.kind===6).length,creates,'Hot parameter edit recreated native state');
+  const running=wire.length;await Promise.all([page.waitForResponse(response=>{if(!response.url().endsWith('/api/source-renderer/frames'))return false;const p=response.request().postDataBuffer();return p&&p.length>=108&&p.readUInt32LE(60)===2&&p.readUInt32LE(64)===3&&p.readUInt32LE(p.readUInt32LE(4)===7?104:100)>0;}),page.getByRole('button',{name:'Play',exact:true}).click()]);await page.getByRole('button',{name:'Pause',exact:true}).click();await ready();await Promise.all([...pending]);assert(wire.slice(running).some(r=>r.family===2&&r.kind===3&&r.steps>0));assert.equal(wire.filter(r=>r.family===2&&r.kind===6).length,creates,'Resume after hot edit recreated native compute state');
+  await page.getByRole('button',{name:'Export artwork',exact:true}).click();assert.equal(await page.getByRole('combobox',{name:fixture.family==='map'?'Map image source':'Symmetry image source',exact:true}).inputValue(),'current');
+  await page.getByRole('combobox',{name:'Export resolution',exact:true}).selectOption('custom');await page.getByRole('spinbutton',{name:'Export width',exact:true}).fill('160');await page.getByRole('spinbutton',{name:'Export height',exact:true}).fill('120');await page.getByRole('combobox',{name:'PNG upscale',exact:true}).selectOption('1');
+  const first=wire.length,file=await download(()=>page.getByRole('button',{name:'Start export',exact:true}).click());await page.getByRole('button',{name:'Start export',exact:true}).waitFor({state:'visible'});await Promise.all([...pending]);const png=decodePng(await readFile(file));assert.equal(png.width,160);assert.equal(png.height,120);const native=presents.findLast(p=>p.wire>=first&&p.width===png.width&&p.height===png.height);assert(native,'No native present with PNG dimensions');await writeFile(out+'/'+fixture.name+'-native.rgba',native.rgba);await writeFile(out+'/'+fixture.name+'-download.rgba',png.rgba);const expected=enhanceSourcePausedImage(new Uint8ClampedArray(native.rgba),native.width,native.height);let diff=0;for(let k=0;k<png.rgba.length;k++)if(png.rgba[k]!==expected[k])diff++;report.comparison={fixture:fixture.name,width:png.width,height:png.height,nativeWire:native.wire,differences:diff,presents:presents.map(p=>({width:p.width,height:p.height,wire:p.wire,sha256:sha(p.rgba)}))};assert.equal(diff,0,'Downloaded PNG differs from native pixels after the source image enhancement');assert(wire.slice(first).some(r=>r.family===3&&r.kind===3));
+  await page.getByRole('button',{name:'Close export',exact:true}).click();await ready();await page.screenshot({path:out+'/'+fixture.name+'.png'});
+  report.checks.push({name:fixture.name,sourceSha256:fixture.sha256,sourceNativeCreate:true,hotParameter:{name:fixture.parameter,before,after:await input.inputValue(),sameComputeOwner:true,positiveAdvanceAfterEdit:true,requests:wire.length-prior},download:file,width:png.width,height:png.height,rgbaSha256:sha(png.rgba),pngMatchesEnhancedNative:true});console.log(JSON.stringify({case:fixture.name,status:'passed',width:png.width,height:png.height}));
+ }
+ assert.deepEqual(report.errors,[]);
+ const firstOrigin=new URL(page.url()).origin,last=spec.cases.at(-1),expectedName=JSON.parse(await readFile(last.path)).name,expectedParameter=await page.locator('#param-'+last.parameter).inputValue();
+ await application.close();await finishObservation();finishObservation=undefined;await closedOrigin(firstOrigin);
+ application=await _electron.launch({executablePath:executable,args:['--mathart-hidden','--mathart-user-data='+out+'/profile'],env,timeout:30000});finishObservation=await observeApplication(application);
+ page=await application.firstWindow();page.setDefaultTimeout(30000);page.on('pageerror',error=>report.errors.push(String(error)));await ready();
+ assert((await page.locator('.project-title').innerText()).includes(expectedName));assert.equal(await page.locator('#param-'+last.parameter).inputValue(),expectedParameter);
+ const restored=await application.evaluate(({app,BrowserWindow})=>({userData:app.getPath('userData'),visibleWindows:BrowserWindow.getAllWindows().filter(w=>w.isVisible()).length}));assert.equal(restored.userData,report.runtime.userData);assert.equal(restored.visibleWindows,0);
+ report.restore={...restored,name:expectedName,parameter:expectedParameter,firstOrigin,secondOrigin:new URL(page.url()).origin};assert.notEqual(report.restore.secondOrigin,firstOrigin);assert.deepEqual(report.errors,[]);report.status='passed';
+}catch(error){report.status='failed';report.error=String(error.stack??error);process.exitCode=1;if(page&&!page.isClosed()){report.body=await page.locator('body').innerText().catch(()=>undefined);await page.screenshot({path:out+'/failure.png'}).catch(()=>{});}}
+finally{
+ await Promise.all([...pending]);report.wire=wire;try{const origin=page&&!page.isClosed()?new URL(page.url()).origin:undefined;await application?.close();await finishObservation?.();if(origin)await closedOrigin(origin);report.applicationClosed=true;}catch(e){report.closeError=String(e);report.status='failed';process.exitCode=1;}
+ report.applicationRuns=appRuns;report.costScope='Electron and native-helper dedicated process groups sampled every 0.5s, excluding driver JS/esbuild; short peaks and GPU memory are unmeasured. Outer supervisor measures driver group separately.';
+ report.appAsarStable=report.appAsarSha256===sha(await readFile(join(resources,'app.asar')));report.nativeStable=manifest.sha256===sha(await readFile(nativePath));if(!report.appAsarStable||!report.nativeStable||report.errors.length){report.status='failed';process.exitCode=1;}report.seconds=(performance.now()-started)/1000;await writeFile(out+'/report.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,checks:report.checks.length,error:report.error,seconds:report.seconds}));
+}
