@@ -74,7 +74,9 @@ describe('shared program consumption at the WebGL compile boundary',()=>{
    Object.assign(scene.settings,{iteratedMode:'continuous',batchSize:7,burnIn:0,iterationsPerFrame:1});
    const prepared=prepareIteratedFrame(scene,0,0),source=iteratedGpuFieldSource(prepared.field),expected=programs.iteration(source),fixture=glFixture(),gpu=new IteratedDensityGpu();
    gpu.step(prepared,options);
-   for(const shader of [expected.vertex,expected.fragment,programs.DRAW_VERTEX,programs.DRAW_FRAGMENT,programs.STATS_FIRST,programs.STATS_REDUCE])expect(fixture.shaderSources).toContain(shader);
+   const sourceStep=prepared.kind==='symmetry'&&prepared.densitySplat&&prepared.config.color==='step'&&prepared.symmetryPalette?.model==='source-rgb1024';
+   const drawing=sourceStep?(prepared.densitySplat!.path==='points'?programs.SOURCE_DENSITY_POINTS_FRAGMENT:programs.SOURCE_DENSITY_QUAD_FRAGMENT):programs.DRAW_FRAGMENT;
+   for(const shader of [expected.vertex,expected.fragment,programs.DRAW_VERTEX,drawing,programs.STATS_FIRST,programs.STATS_REDUCE])expect(fixture.shaderSources).toContain(shader);
    gpu.dispose();expect(fixture.live.size).toBe(0);
   }
  });

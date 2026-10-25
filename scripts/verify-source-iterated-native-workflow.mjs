@@ -21,6 +21,7 @@ try{
  async function command(value){assert(!ended,'Native diagnostic process has exited');const record={kind:value.kind,index:value.index,steps:value.steps};report.commands.push(record);assert(!pending,'No diagnostic background queue');const data=Buffer.from(JSON.stringify(value));assert(data.length<=8*1024*1024);wire+=data.length+4;let timer;try{return await new Promise((resolve,reject)=>{pending={resolve,reject};timer=setTimeout(()=>{reject(Error('Native command timed out'));child.kill('SIGTERM');},15000);const size=Buffer.alloc(4);size.writeUInt32LE(data.length);child.stdin.write(size);child.stdin.write(data);});}catch(error){record.error=String(error);throw error;}finally{clearTimeout(timer);}}
  vite=await createServer({server:{middlewareMode:true},logLevel:'error'});
  const {parseProjectFile}=await vite.ssrLoadModule('/src/engine/legacyImport.ts'),{SourceIteratedSession}=await vite.ssrLoadModule('/src/engine/sourceIteratedSession.ts'),{iteratedInitialChunk}=await vite.ssrLoadModule('/src/engine/iteratedSeed.ts'),{iteratedGpuFieldSource,iteratedDensityGpuPrograms}=await vite.ssrLoadModule('/src/engine/iteratedDensityGpuPrograms.ts'),{prepareSourceIteratedDrawPlan,prepareSourceIteratedPresentPlan,sourceIteratedRenderPrograms}=await vite.ssrLoadModule('/src/engine/sourceIteratedRenderPlan.ts');
+ const {prepareSourceIteratedAdvancePlan}=await vite.ssrLoadModule('/src/engine/sourceIteratedAdvancePlan.ts');
  const scene=parseProjectFile(source.toString()).scene;assert.equal(scene.kind,'symmetry');let frameNumber=0,backend,presentationNumber=0,planNumber=0,lastPresentedPath;
  const binary=a=>Buffer.from(a.buffer,a.byteOffset,a.byteLength).toString('base64');
  const flip=(raw,w,h)=>{const result=new Uint8ClampedArray(raw.length),stride=w*4;for(let y=0;y<h;y++)result.set(raw.subarray((h-y-1)*stride,(h-y)*stride),y*stride);return result;};
@@ -29,20 +30,19 @@ try{
   async function run(c){const reply=await command(c);index=reply.index;retainedBytes=reply.retainedBytes;report.renderer=reply.renderer;report.glVersion=reply.version;return reply;}
   backend={
    async step(job,options){
+    const cfg=job.config,advancePlan=prepareSourceIteratedAdvancePlan(job,options.resetParticles);
     const field=iteratedGpuFieldSource(job.field,'native-gl41'),program=iteratedDensityGpuPrograms('native-gl41').iteration(field);assert(field.sourceCalculateNext,'Source TF field required');assert.equal(job.config.dimension,2);
     const p=prepareSourceIteratedDrawPlan(job,{projection:options.projection,bounds,width:options.width,height:options.height,stateWidth:Math.min(2048,job.config.count)});
     if(!initialized){count=job.config.count;await run({kind:'create',compute:{count,...program},programs:sourceIteratedRenderPrograms('native-gl41','symmetry',p.sourceSplatProgram)});sourceKey=program.vertex;drawKey=p.sourceSplatProgram;for(let offset=0;offset<count;offset+=65536)await run({kind:'upload',index:0,offset,base64:binary(iteratedInitialChunk(job.config,offset,Math.min(65536,count-offset)))});initialized=true;}
     assert.equal(program.vertex,sourceKey,'Structural program changes require new diagnostic owner');assert.equal(job.config.count,count);assert.equal(p.sourceSplatProgram,drawKey,'Drawing program changes need a new diagnostic owner');width=options.width;height=options.height;
-    const cfg=job.config,iteration=job.iterationFrame,warmup=iteration?.warmupSteps??(options.resetParticles?cfg.burn:0),steps=iteration?.iterationSteps??cfg.iterations,updates=job.iterationUpdates;let reset=options.resetParticles;
+    let reset=advancePlan.resetParticles;
     async function advance(n,f,resetCounter){const source=iteratedGpuFieldSource(f,'native-gl41');assert.equal(iteratedDensityGpuPrograms('native-gl41').iteration(source).vertex,sourceKey);await run({kind:'advance',index,reset:reset?1:0,resetCounter:reset||resetCounter?1:0,dimension:2,steps:n,uniforms:source.uniforms});reset=false;}
-    for(let at=0;at<warmup;at+=256)await advance(Math.min(256,warmup-at),updates?.[0]??job.field,at===0);
-    if(updates)for(let i=0;i<updates.length;i++)await advance(cfg.iterations,updates[i],i===0&&!options.resetParticles&&warmup===0);
-    else if(steps>0)await advance(steps,job.field,!options.resetParticles&&warmup===0);
+    for(const operation of advancePlan.advances)await advance(operation.steps,operation.field,operation.resetCounter);
     if(reset)await advance(0,job.field,true);
     const plan={drawUniforms:p.drawUniforms,statsUniforms:p.statsUniforms,palette:{key:p.palette.key,format:p.palette.format,base64:binary(p.palette.createValues())},noiseBase64:binary(p.noisePermutation),primitive:p.primitive};
     await writeFile(out+`/frame-${frameNumber}.plan-${++planNumber}.json`,JSON.stringify(plan));
     const reply=await run({kind:'draw',index,width,height,plan,clear:options.clearInk||options.resetParticles,decay:cfg.decay,record:cfg.record});
-    const changed=!iteration||iteration.objectUpdates>0||iteration.phase==='replay'&&(warmup>0||steps>0);return{bounds:{...bounds},steps:count*(steps+warmup),...reply.facts,invalid:changed?reply.facts.invalid:0};
+    return{bounds:{...bounds},steps:count*(advancePlan.iterationSteps+advancePlan.warmupSteps),...reply.facts,invalid:advancePlan.reportInvalid?reply.facts.invalid:0};
    },
    async present(tone,view){const p=prepareSourceIteratedPresentPlan(tone,width,height,view),path=out+`/frame-${frameNumber}.present-${++presentationNumber}.rgba`,r=await run({kind:'present',plan:{uniforms:p.uniforms,clear:Array.from(p.clear),filter:p.filter},path});lastPresentedPath=path;return{pixels:flip(await readFile(path),width,height),...r.facts,toneBackend:'native',warnings:[]};},
    async resizeAccumulation(w,h){if(width===w&&height===h)return false;await run({kind:'resize',width:w,height:h});width=w;height=h;return true;},

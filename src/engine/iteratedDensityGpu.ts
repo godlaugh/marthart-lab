@@ -1,3 +1,4 @@
+import {prepareSourceIteratedAdvancePlan,type SourceIteratedAdvance} from './sourceIteratedAdvancePlan';
 import {prepareSourceIteratedDrawPlan,applySourceIteratedRenderUniforms,sourceIteratedRenderPrograms,type SourceIteratedDrawPlan} from './sourceIteratedRenderPlan';
 import {prepareSourceMapExpressions} from './sourceMapMath';
 import {iteratedDensityGpuPrograms,iteratedGpuFieldSource,type IteratedGpuFieldSource} from './iteratedDensityGpuPrograms';
@@ -276,14 +277,11 @@ export class IteratedDensityGpu {
  private run(job:IteratedFrameJob,options:IteratedGpuOptions):IteratedGpuFacts {
   checkCancelled(options.isCancelled);const source=job.samilaSampling?undefined:this.fieldSource(job.field);const cfg=job.config;checked(['map','symmetry','samila'].includes(job.kind),'GPU 持续密度类型无效');const customStorage=job.field.kind==='symmetry-custom',samila=job.kind==='samila',boundedHistory=samila&&cfg.samilaHistoryModel==='bounded-v2',history=job.history;
   checked(!history||boundedHistory,'GPU 历史规则与模型不匹配');
-  const iterationFrame=job.iterationFrame,warmup=iterationFrame?.warmupSteps??(options.resetParticles?cfg.burn:0),iterations=iterationFrame?.iterationSteps??cfg.iterations;
-  if(iterationFrame)checked((job.kind==='symmetry'||job.kind==='map')&&iterationFrame.model===`${job.kind}-frame-1.7.8`&&Number.isSafeInteger(warmup)&&warmup>=0&&warmup<=cfg.burn&&(iterationFrame.phase==='replay'?iterationFrame.objectUpdates===0&&(iterations===0||iterations===cfg.iterations):iterationFrame.phase===undefined&&Number.isInteger(iterationFrame.objectUpdates)&&iterationFrame.objectUpdates>=0&&iterationFrame.objectUpdates<=2&&iterations===iterationFrame.objectUpdates*cfg.iterations&&(!warmup||iterationFrame.objectUpdates>0)),'GPU 迭代更新计划无效');
-  const updateFields=job.iterationUpdates;
-  if(updateFields!==undefined)checked(!!iterationFrame&&iterationFrame.phase===undefined&&updateFields.length===iterationFrame.objectUpdates&&updateFields.every(field=>field.kind===job.field.kind),'GPU 迭代有序更新字段无效');
-  if(iterationFrame?.objectUpdates===2)checked(updateFields?.length===2,'GPU 迭代两次更新需要各自字段');
+  const iterationFrame=job.iterationFrame,advancePlan=samila?undefined:prepareSourceIteratedAdvancePlan(job,options.resetParticles),warmup=advancePlan?.warmupSteps??0,iterations=advancePlan?.iterationSteps??cfg.iterations;
+  if(samila)checked(iterationFrame===undefined&&job.iterationUpdates===undefined,'GPU Samila 不接受迭代对象更新计划');
   if(job.samilaSampling){checked(samila&&!!job.samilaSplat&&job.field.kind==='samila'&&job.field.mathModel==='mathart-1.7.8'&&!!job.samilaProjection&&!!history,'源 Samila PCG 缺少已解析场/历史事实');validateSourceSamilaSamplingBatch(job.samilaSampling,cfg.count,history!.passes,job.frame);}
   if(boundedHistory)checked(!!history&&history.densityCeiling===SAMILA_HISTORY_CEILING&&[0,1,6].includes(history.passes)&&history.samples===cfg.count*history.passes&&(job.samilaSampling!==undefined||history.randomFrames.length===history.passes&&history.randomFrames.every(f=>Number.isSafeInteger(f)&&f>=0)&&new Set(history.randomFrames).size===history.passes)&&(history.passes>0)===cfg.record,'GPU Samila 缺少有效历史帧事实');
-  checked(Number.isSafeInteger(job.frame)&&job.frame>=0&&(samila||cfg.burn+1+job.frame*(iterationFrame?32:16)+Math.max(iterations,cfg.iterations)<=0xffffffff),'GPU 随机序号超出 32 位');
+  if(samila)checked(Number.isSafeInteger(job.frame)&&job.frame>=0,'GPU 随机序号超出 32 位');
   checked(cfg.bounds.flat().every(finite32)&&[cfg.decay,cfg.alpha,cfg.escape,cfg.pointSize,cfg.metricMin,cfg.metricMax,cfg.colorSpeed,cfg.colorPhase].every(finite32),'GPU 帧参数超出 float32');
   if(job.densitySplat){checked(job.densitySplat.model===`${job.kind}-splat-1.7.8`,'源散点与场景不匹配');if(cfg.record)sourceDensitySplatPixelTests(job.densitySplat,cfg.count);}
   if(job.sourceCamera){checked(job.kind!=='samila'&&job.sourceCamera.anchor.family===job.kind,'源密度相机与模型不匹配');for(const matrix of [job.sourceCamera.anchor.projection,job.sourceCamera.anchor.modelView])checked(matrix.columnMajor.length===16&&Array.from(matrix.columnMajor).every(finite32),'源密度投影矩阵无效');}
@@ -301,10 +299,10 @@ export class IteratedDensityGpu {
    for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const initial=iteratedInitialChunk(cfg,offset,Math.min(CHUNK,cfg.count-offset));this.uploadInitial(initial,offset);}
 
   }
-  const updateSources=updateFields?.map(field=>this.fieldSource(field));
-  if(updateSources)for(const updateSource of updateSources)checked(Object.keys(updateSource.uniforms).length+16<=gl.getParameter(updateSource.stage==='fragment'?gl.MAX_FRAGMENT_UNIFORM_VECTORS:gl.MAX_VERTEX_UNIFORM_VECTORS),'源迭代更新 uniform 容量不足');
-  if(!samila)for(let offset=0;offset<warmup;offset+=256)this.iterate(updateFields?.[0]?{...job,field:updateFields[0]}:job,updateSources?.[0]??source,Math.min(256,warmup-offset),offset+1,offset===0,options.isCancelled);
-  if(updateFields)for(let i=0;i<updateFields.length;i++)this.iterate({...job,field:updateFields[i]},updateSources![i],cfg.iterations,cfg.burn+1+job.frame*32+i*cfg.iterations,i===0&&!options.resetParticles&&warmup===0,options.isCancelled);
+  const advanceSources=new Map<IteratedField,IteratedGpuFieldSource>([[job.field,source]]);
+  for(const advance of advancePlan?.advances??[])if(!advanceSources.has(advance.field)){const prepared=this.fieldSource(advance.field);checked(Object.keys(prepared.uniforms).length+16<=gl.getParameter(prepared.stage==='fragment'?gl.MAX_FRAGMENT_UNIFORM_VECTORS:gl.MAX_VERTEX_UNIFORM_VECTORS),'源迭代更新 uniform 容量不足');advanceSources.set(advance.field,prepared);}
+  const executeAdvance=(advance:SourceIteratedAdvance)=>this.iterate({...job,field:advance.field},advanceSources.get(advance.field)!,advance.steps,advance.serial,advance.resetCounter,options.isCancelled);
+  for(const advance of advancePlan?.advances??[])if(advance.phase!=='frame')executeAdvance(advance);
   // One history copy per fixed frame, before all compensation batches.
   if(boundedHistory){
    checkCancelled(options.isCancelled);const p=this.program('samila-history-copy',QUAD,HISTORY_COPY);gl.useProgram(p.value);gl.disable(gl.BLEND);this.texture(r.ink,0);this.i(p,'previousInk',0);this.f(p,'decay',cfg.decay);this.f(p,'densityCeiling',history!.densityCeiling);this.target(r.inkScratch!,r.width,r.height);gl.drawArrays(gl.TRIANGLES,0,3);[r.ink,r.inkScratch]=[r.inkScratch!,r.ink];
@@ -320,8 +318,8 @@ export class IteratedDensityGpu {
   for(let pass=0;pass<randomFrames.length;pass++){
    checkCancelled(options.isCancelled);const randomFrame=randomFrames[pass];
   if(samila&&cfg.record){const field=job.field;if(field.kind!=='samila')throw new Error('Samila 帧标签不一致');for(let offset=0;offset<cfg.count;offset+=CHUNK){checkCancelled(options.isCancelled);const seeds=iteratedSamilaSeedChunk({...cfg,seed:cfg.sampleSeed??cfg.seed},randomFrame,field.lo,field.hi,offset,Math.min(CHUNK,cfg.count-offset),field.mathModel!==undefined);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions[r.side]);gl.bufferSubData(gl.ARRAY_BUFFER,offset*16,seeds);}}
-  if(updateFields===undefined&&(!samila||cfg.record)&&iterations>0)this.iterate(job,source,iterations,samila?0:cfg.burn+1+job.frame*16,samila||!options.resetParticles&&warmup===0,options.isCancelled);
-  if(options.resetParticles||warmup>0||iterations>0&&(!samila||cfg.record))this.uploadState();
+  if(advancePlan){for(const advance of advancePlan.advances)if(advance.phase==='frame')executeAdvance(advance);}else if(cfg.record&&iterations>0)this.iterate(job,source,iterations,0,true,options.isCancelled);
+  if(advancePlan?advancePlan.publishState:options.resetParticles||iterations>0&&cfg.record)this.uploadState();
   if(customStorage){const errors=this.reduce(this.program('custom-errors-first',QUAD,CUSTOM_ERRORS_FIRST),this.program('custom-errors-reduce',QUAD,CUSTOM_ERRORS_REDUCE),true,()=>{},options.isCancelled);checked(errors[0]===0,'自定义对称公式超过单次调用的循环工作预算');}
   if(job.sourceCamera||job.samilaProjection)this.bounds={minX:-1,maxX:1,minY:-1,maxY:1};else if(options.bounds)this.bounds={...options.bounds};else if(!this.bounds||job.frame===0&&pass===0)this.bounds=samila&&!cfg.record?{minX:-options.width/options.height,maxX:options.width/options.height,minY:-1,maxY:1}:this.autoBounds(job,options);const bounds=this.bounds!;
   const renderPlan=job.kind==='symmetry'&&job.densitySplat?prepareSourceIteratedDrawPlan(job,{width:r.width,height:r.height,stateWidth:r.tw,projection:options.projection,bounds}):undefined;
@@ -334,7 +332,7 @@ export class IteratedDensityGpu {
    const primitive=renderPlan?.primitive??(pointSplat?.path==='points'?'points':'triangles'),vertices=renderPlan?.verticesPerInstance??(pointSplat?.path==='points'?1:6),chunkSize=renderPlan?.chunkSize??CHUNK;
    try{for(let offset=0;offset<cfg.count;offset+=chunkSize){checkCancelled(options.isCancelled);this.i(p,'particleOffset',offset);gl.drawArraysInstanced(primitive==='points'?gl.POINTS:gl.TRIANGLES,0,vertices,Math.min(chunkSize,cfg.count-offset));}}finally{gl.disable(gl.BLEND);gl.bindVertexArray(null);}
   }
-   if(!iterationFrame||iterationFrame.objectUpdates>0||iterationFrame.phase==='replay'&&(warmup>0||iterations>0))invalid+=stat[0]+stat[1]*4294967296;accepted+=stat[2];clipped+=stat[3];sampleInvalid+=cfg.record?cfg.count-stat[2]-stat[3]:0;
+   if(advancePlan?.reportInvalid??true)invalid+=stat[0]+stat[1]*4294967296;accepted+=stat[2];clipped+=stat[3];sampleInvalid+=cfg.record?cfg.count-stat[2]-stat[3]:0;
   }
 
   checked(gl.getError()===gl.NO_ERROR&&!gl.isContextLost(),'GPU 持续密度执行失败');checkCancelled(options.isCancelled);this.structuralKey=job.structuralKey;this.frame=job.frame;

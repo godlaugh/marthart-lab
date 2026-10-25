@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "status": "passed-shared-advance-plan",
+  "milestone": "M3",
+  "wholeGoalComplete": false,
+  "index": ".cache/iterated-advance-plan-20261025/index.json",
+  "indexSha256": "c1356a5f2bb07b2ac4665895168962f7e88c17b8538a03ea1a36489ba906df0a",
+  "baselineCommit": "50279dbe29bcf91ec3492bb17e4a50ac2352956b",
+  "referenceFixture": "tests/fixtures/source-iterated-native-workflow/20261025.json",
+  "native": {
+    "frames": 8,
+    "allStateInkRgbaDifferencesZero": true,
+    "lifecycleChecks": {
+      "pausedParticlePreservation": true,
+      "captureResizeAndPrimaryRestore": true,
+      "resizeParticlePreservation": true,
+      "repeatReplayStateAndPixels": true,
+      "scope": "Actual native owners through shared async Session; no original lifecycle or browser-wire claim"
+    },
+    "newOwnerFirstFrameSeconds": 0.4947062089999995,
+    "warmFrameSeconds": [
+      0.2978844999999992,
+      0.2209387080000006,
+      0.21049074999999992,
+      0.22223383300000024,
+      0.26537491599999974,
+      0.1888603750000002,
+      0.20435279199999967
+    ],
+    "retainedBytesAfter": 0
+  },
+  "checks": {
+    "tests": 76,
+    "files": 5,
+    "newAdvanceBoundaryTests": 14,
+    "typecheck": "passed",
+    "webglWorkflowRows": 18,
+    "webglAllExact": true
+  },
+  "measurement": {
+    "native": {
+      "seconds": 7.145361292059533,
+      "childCpuSeconds": 14.873290999999998,
+      "processGroupRssPeakKiB": 1471456,
+      "sampleIntervalSeconds": 0.5,
+      "processGroupAfter": [],
+      "costLimits": [
+        "CPU RUSAGE_CHILDREN includes the ps sampling subprocesses; their overhead is not separately subtracted.",
+        "A 0.5-second RSS sample can miss short peaks.",
+        "GPU allocation and energy/thermal state not measured."
+      ]
+    },
+    "webgl": {
+      "seconds": 3.0919412919320166,
+      "childCpuSeconds": 8.651362000000002,
+      "processGroupRssPeakKiB": 376320,
+      "sampleIntervalSeconds": 0.5,
+      "processGroupAfter": [],
+      "costLimits": [
+        "CPU RUSAGE_CHILDREN includes the ps sampling subprocesses; their overhead is not separately subtracted.",
+        "A 0.5-second RSS sample can miss short peaks.",
+        "GPU allocation and energy/thermal state not measured."
+      ]
+    }
+  },
+  "readableReport": "docs/source-iterated-native-ink-validation.zh-CN.md",
+  "limitations": [
+    "One original Symmetry preset and finite frames; diagnostic native adapter, not production browser/HTTP/Worker integration.",
+    "CPU/trace coverage preserves other prepared schedules but does not establish every source scene.",
+    "No cross-device testing; only one Mac."
+  ]
+}
