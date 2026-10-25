@@ -258,6 +258,7 @@ export default function App() {
     [tab, setTab] = useState<"geometry" | "appearance">("geometry");
   const samilaExportPreview=useRef(new SourceSamilaExportPreview()),exportWorking=useRef(false),livePlaybackPromise=useRef<Promise<void>|undefined>(undefined);
   const [samilaExportPaused,setSamilaExportPaused]=useState(false);
+  const sourceSamilaRecording=sourceDrawingPolicy()==='native'&&usesSourceSamilaSampling(scene);
   const [theme, setTheme] = useState<"dark" | "light">(
       restored?.theme ?? "dark",
     ),
@@ -930,6 +931,13 @@ export default function App() {
     setPlaying(value);
   }
   function samilaPreviewInput(){return[scene,renderPreferences,viewportSize,generationRevision,liveTickRevision];}
+  function pauseForExport(){
+    const ticket=sourceDrawingPolicy()==='native'&&usesSourceSamilaSampling(sceneRef.current)?samilaExportPreview.current.open(samilaPreviewInput()):undefined;
+    if(ticket)setSamilaExportPaused(false);
+    const paused=sourceBouncing||previewLiveKind(sceneRef.current)?play(false):undefined;
+    if(!sourceBouncing&&!previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);}
+    if(ticket)void Promise.resolve(paused).then(()=>{if(samilaExportPreview.current.owns(ticket))setSamilaExportPaused(true);});
+  }
   function closeExport(){
     if(exportWorking.current)return;
     const deferred=samilaExportPreview.current.close();setExporting(false);setRecording(false);
@@ -1141,6 +1149,16 @@ export default function App() {
           playingRef.current=!live.clock.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
           setTime(result.context.time);setPreviewCancelled(false);return;
         }
+        if(result.context.samilaLive){
+          // The recording owner returns the author document with its applied
+          // configuration active. Do not promote unrelated hot editor values.
+          sceneRef.current=result.scene;generationScene.current=result.scene;camera.current=result.scene.camera;setSceneState(result.scene);
+          const live=result.context.samilaLive;liveSessionId.current=live.sessionId;samilaDirtyRevision.current=live.dirtyRevision??0;
+          livePlaybackTransition.current=undefined;liveLastFrameAt.current=undefined;replayPendingRef.current=false;
+          samilaExportPreview.current.close();setSamilaExportPaused(false);
+          playingRef.current=!live.clock?.paused;setPlaying(playingRef.current);timeRef.current=result.context.time;playbackClock.current=result.context.time;
+          setTime(result.context.time);setPreviewCancelled(false);return;
+        }
         if(result.context.perlinLive){
           sceneRef.current=result.scene;generationScene.current=result.scene;camera.current=result.scene.camera;setSceneState(result.scene);
           const live=result.context.perlinLive;perlinPaletteRevision.current=live.paletteRevision??0;liveSessionId.current=live.sessionId;iteratedStartAt.current=live.startAt;
@@ -1291,18 +1309,13 @@ export default function App() {
         </button>
         <button className="text-button" onClick={()=>save()}>
           <Save size={15} />{t("保存")}</button>
-        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":usesSourceImplicitCpuMesh(scene)?'隐式曲面录制':sourceLivePreviewKind(scene)==='surface'?'曲面录制':sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':sourceLivePreviewKind(scene)==='perlin'?'Perlin 录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;play(false);if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
+        <button disabled={sourceBouncing} className="text-button" title={t(sourceBouncing?"源弹跳请通过「导出作品」录制视频":usesSourceImplicitCpuMesh(scene)?'隐式曲面录制':sourceLivePreviewKind(scene)==='surface'?'曲面录制':sourceLivePreviewKind(scene)==='domain'?'域着色录制':sourceLivePreviewKind(scene)==='fractal'?'分形录制':sourceLivePreviewKind(scene)==='perlin'?'Perlin 录制':sourceSamilaRecording?'Samila 录制':"实时录制")} onClick={()=>{autoPlayPending.current=false;pauseForExport();if(finalPreview){generationPending.current=true;playbackClock.current=0;timeRef.current=0;setTime(0);}setRecording(true);}}><Circle size={15}/>{t("录制")}</button>
         <button
           className="primary-button"
           onClick={() => {
             autoPlayPending.current=false;
-            const nativeSamila=sourceDrawingPolicy()==='native'&&usesSourceSamilaSampling(sceneRef.current);
-            const ticket=nativeSamila?samilaExportPreview.current.open(samilaPreviewInput()):undefined;
-            if(ticket)setSamilaExportPaused(false);
-            const paused=sourceBouncing||previewLiveKind(sceneRef.current)?play(false):undefined;
-            if(!sourceBouncing&&!previewLiveKind(sceneRef.current)){playingRef.current=false;setPlaying(false);}
+            pauseForExport();
             setExporting(true);
-            if(ticket)void Promise.resolve(paused).then(()=>{if(samilaExportPreview.current.owns(ticket))setSamilaExportPaused(true);});
           }}
         >
           <Download size={15} />{t("导出作品")}</button>
@@ -1992,9 +2005,9 @@ export default function App() {
           {toast}
         </div>
       )}
-      {(exporting||recording&&(usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin')) && (
+      {(exporting||recording&&(usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'||sourceSamilaRecording)) && (
         <ExportDialog
-          mode={recording?(usesSourceImplicitCpuMesh(scene)?'implicit-recording':sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':'fractal-recording'):'export'}
+          mode={recording?(usesSourceImplicitCpuMesh(scene)?'implicit-recording':sourceLivePreviewKind(scene)==='roots'?'roots-recording':sourceLivePreviewKind(scene)==='surface'?'surface-recording':sourceLivePreviewKind(scene)==='domain'?'domain-recording':sourceLivePreviewKind(scene)==='perlin'?'perlin-recording':sourceSamilaRecording?'samila-recording':'fractal-recording'):'export'}
           scene={{ ...(implicitExport?.scene??scene),id:scene.id,name:scene.name,projectResolution:scene.projectResolution,camera:camera.current }}
           previewReady={implicitExport?.error?false:samilaExportPreview.current.active?samilaExportPaused&&!generationPending.current&&completedFrameAvailable:nativeGeometryPreviewEnabled(scene)?completedFrameAvailable:undefined}
           time={time}
@@ -2067,11 +2080,11 @@ export default function App() {
               return generationQueue.current.capturePerlinPaused(output,size,scale);
             },
           }:undefined}
-          currentSourceRecording={usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'?{
-            ready:usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'?completedFrameAvailable:completedFrameReady,
+          currentSourceRecording={usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='fractal'||scene.perlinSource||sourceLivePreviewKind(scene)==='map'||sourceLivePreviewKind(scene)==='symmetry'||sourceSamilaRecording?{
+            ready:usesSourceImplicitCpuMesh(scene)||sourceLivePreviewKind(scene)==='roots'||sourceLivePreviewKind(scene)==='surface'||sourceLivePreviewKind(scene)==='fractal'||sourceLivePreviewKind(scene)==='domain'||sourceLivePreviewKind(scene)==='perlin'||sourceSamilaRecording?completedFrameAvailable:completedFrameReady,
             record:async(options,consumer,signal)=>{
               if(playingRef.current||sceneRef.current!==scene||generationPending.current||!output||!generationQueue.current)throw new Error('当前录制画面尚未完成或已过期，请等待预览完成后重试');
-              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=(frame.implicitRecording?implicitCameraFrame(frame).sceneTime:undefined)??frame.rootsLive?.sceneTime??frame.surfaceLive?.frame.sceneTime??frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.perlinLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
+              const present=(frame:SceneOutput)=>{if(sceneRef.current!==scene)return;setOutput(frame);setOutputScene(scene);if(frame.type==='raster'){const time=(frame.implicitRecording?implicitCameraFrame(frame).sceneTime:undefined)??frame.rootsLive?.sceneTime??frame.surfaceLive?.frame.sceneTime??frame.domainLive?.sceneTime??frame.fractalLive?.sceneTime??frame.perlinLive?.sceneTime??frame.mapLive?.sceneTime??frame.symmetryLive?.sceneTime??frame.samilaLive?.runtime?.sceneTime;if(time!==undefined){timeRef.current=time;setTime(time);setRenderTime(time);}}};
               const kind=usesSourceImplicitCpuMesh(scene)?'implicit':sourceLivePreviewKind(scene),observedFps=kind==='implicit'||kind==='domain'||kind==='surface',initialFps=(kind==='implicit'?implicitActualFps.current:kind==='surface'?surfaceActualFps.current:domainActualFps.current)??renderPreferences.frameRate;let lastFrameStart=performance.now();
               const actualFrameRate=observedFps?()=>{const now=performance.now(),delta=now-lastFrameStart;lastFrameStart=now;return delta>0?1000/delta:initialFps;}:consumer.actualFrameRate;
               if(kind==='implicit')implicitRecordingScene.current=scene;
@@ -2093,7 +2106,7 @@ export default function App() {
         />
       )}
       {inputDialog&&<TextPrompt request={inputDialog} onClose={()=>setInputDialog(null)}/>}
-      {recording&&!usesSourceImplicitCpuMesh(scene)&&sourceLivePreviewKind(scene)!=='roots'&&sourceLivePreviewKind(scene)!=='surface'&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&sourceLivePreviewKind(scene)!=='perlin'&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
+      {recording&&!usesSourceImplicitCpuMesh(scene)&&sourceLivePreviewKind(scene)!=='roots'&&sourceLivePreviewKind(scene)!=='surface'&&sourceLivePreviewKind(scene)!=='fractal'&&sourceLivePreviewKind(scene)!=='domain'&&sourceLivePreviewKind(scene)!=='perlin'&&!sourceSamilaRecording&&<RecordDialog name={scene.name} fps={renderPreferences.frameRate} defaultDuration={sceneRecordingDuration(scene)} ready={!generationActive&&outputScene===scene&&presentedSource===scene&&output===presentedOutput&&renderTime===time&&!previewCancelled&&!error}
         getFrame={initial=>{const frame=viewport.current?.frame();return frame&&frame.source===sceneRef.current&&(!initial||!generationPending.current)?frame:null;}}
         onDuration={scene.kind==='bouncing'?value=>changeSetting('bouncingRecordDuration',value):undefined}
         onPlaying={(value,sceneTime,startedAt)=>{autoPlayPending.current=false;if(sourceLivePreviewKind(sceneRef.current)){play(value);return;}if(value&&sceneTime!==undefined){playbackClock.current=sceneTime;playbackStartedAt.current=startedAt;setTime(sceneTime);}setPlaying(value);}}

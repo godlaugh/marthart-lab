@@ -11,6 +11,7 @@ import {Generator} from '../src/engine/client';
 import {GenerationQueue,retryRetiredGenerationQueueCleanup} from '../src/engine/generationQueue';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
+import {writeSourceSamilaParameter,sourceSamilaPaletteRuntimeScene} from '../src/engine/sourceSamilaPaletteEditing';
 import type {GenerateContext} from '../src/types';
 
 const source={config_version:'1.0.0',type:'SAMILA',name:'Native owner',palette:['#112233','#abcdef'],settings:{batch_size:13},parameters:{a:0},equations:{f1:'sin(x*y)+a',f2:'cos(x-y)'},timeline:[{type:'wait',duration:1}]};
@@ -159,4 +160,44 @@ describe('Samila native resource/backend integration (real producers, mock trans
   const generator=new Generator();generators.push(generator);const pending=generator.generate(createScene(definition('samila')),{width:17,height:13,time:0,quality:'preview'}),cancelled=expect(pending).rejects.toMatchObject({name:'AbortError'});
   expect(posted).toHaveLength(1);expect(posted[0]).toMatchObject({operation:'generate',scene:{kind:'samila'}});expect(transport).not.toHaveBeenCalled();generator.cancel();await cancelled;expect(terminated).toBe(1);
  });
+ it('records the applied Samila scene through the public Generator and resumes one owned primary',async()=>{
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');const generator=new Generator();generators.push(generator);
+  const initial=parseProjectFile(JSON.stringify(source)).scene,base={...context,samilaLive:{...context.samilaLive!,clock:{paused:true}}};
+  await generator.generate(initial,base);
+  const edited=writeSourceSamilaParameter(initial,'a',5),input={...base,samilaLive:{...base.samilaLive,parameterRevisions:edited.samilaPaletteSession!.parameterRevisions}},preview=await generator.generate(edited,input);
+  const mark=operations().length,start=await generator.beginSourceRecording(preview,{width:5,height:7,simulationFps:10});
+  expect(start.warmup).toMatchObject({width:15,height:21,samilaRecording:{displayFrame:0,warmup:true,complete:false},samilaLive:{target:'offscreen',displayIndex:0,clock:'fixed-source-queue',runtime:{paused:false}}});
+  expect(sourceSamilaPaletteRuntimeScene(start.scene).parameters.a).toBe(0);expect(start.scene.parameters.a).toBe(5);
+  expect(operations().slice(mark).map(op=>op.kind)).toEqual(['release','create','display']);
+  expect(generator.hasSourceRecording(start.handle)).toBe(true);
+  await expect(generator.generate(initial,base)).rejects.toThrow('录制期间');
+  await expect(generator.nextSourceRecordingFrame({...start.handle},1)).rejects.toThrow('身份无效');
+  const frame=await generator.nextSourceRecordingFrame(start.handle,1);expect(frame.samilaRecording).toMatchObject({displayFrame:1,warmup:false});
+  const before=operations().length;await expect(generator.nextSourceRecordingFrame(start.handle,1)).rejects.toThrow();expect(operations()).toHaveLength(before);
+  const stopped=await generator.finishSourceRecording(start.handle,5000);
+  expect(stopped.context).toMatchObject({width:17,height:13,samilaLive:{sessionId:'native-owner',dirtyRevision:0,runtimeRevision:0,parameterRevisions:{},clock:{paused:false}}});
+  expect(stopped.preview).toMatchObject({samilaLive:{displayIndex:2,target:'primary',runtime:{sceneTime:frame.samilaLive!.runtime!.sceneTime}}});
+  expect(stopped.preview).not.toHaveProperty('samilaRecording');expect(generator.hasSourceRecording(start.handle)).toBe(false);
+  expect(await generator.generate(stopped.scene,stopped.context)).toMatchObject({samilaLive:{displayIndex:3}});
+ });
+ it('keeps preflight rejection usable and never consumes a native draw or seed',async()=>{
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');const generator=new Generator();generators.push(generator);const s=scene(),input={...context,samilaLive:{...context.samilaLive!,clock:{paused:true}}},output=await generator.generate(s,input),before=operations().length;
+  await expect(generator.beginSourceRecording(output,{width:100000,height:100000,simulationFps:10})).rejects.toMatchObject({previewRetained:true,recordingRetained:false});expect(operations()).toHaveLength(before);
+  const start=await generator.beginSourceRecording(output,{width:5,height:7,simulationFps:10});await generator.finishSourceRecording(start.handle);
+ });
+ it('soft-cancels an in-flight recording frame then restores primary after its acknowledgement',async()=>{
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');const generator=new Generator();generators.push(generator);
+  const s=scene(),input={...context,samilaLive:{...context.samilaLive!,clock:{paused:true}}},callbacks={output:vi.fn(),error:vi.fn(),busy:vi.fn(),recordingStopped:vi.fn()},queue=new GenerationQueue(generator,callbacks);
+  queue.request(s,input);await vi.waitFor(()=>expect(callbacks.output).toHaveBeenCalledOnce());const preview=callbacks.output.mock.calls[0][0],controller=new AbortController();let submitted:SourceSamilaNativeRequest|undefined,signal:AbortSignal|undefined,complete!:(v:SourceNativeSamilaResponse)=>void;
+  const frames=vi.fn(),record=queue.recordSource(preview,{width:5,height:7,simulationFps:10},{start:()=>{transport.mockImplementation((request:SourceSamilaNativeRequest,options:{signal?:AbortSignal})=>{if(request.operation.kind==='display'&&!submitted){submitted=request;signal=options.signal;return new Promise(resolve=>{complete=resolve;});}return Promise.resolve(reply(request));});},frame:frames},controller.signal),failed=record.catch(error=>error);
+  await vi.waitFor(()=>expect(submitted).toBeDefined());const mark=operations().length;controller.abort();await Promise.resolve();expect(signal!.aborted).toBe(false);expect(operations()).toHaveLength(mark);expect(callbacks.recordingStopped).not.toHaveBeenCalled();
+  complete(reply(submitted!));expect(await failed).toMatchObject({name:'AbortError'});expect(frames).not.toHaveBeenCalled();expect(signal!.aborted).toBe(false);expect(callbacks.recordingStopped).toHaveBeenCalledOnce();expect(callbacks.error).not.toHaveBeenCalled();expect(callbacks.recordingStopped.mock.calls[0][0].preview.samilaLive.target).toBe('primary');queue.dispose();await retryRetiredGenerationQueueCleanup();
+ });
+ it('releases an uncertain recording without replay and retains failed release for retry',async()=>{
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');const generator=new Generator();generators.push(generator);const s=scene(),input={...context,samilaLive:{...context.samilaLive!,clock:{paused:true}}},preview=await generator.generate(s,input),start=await generator.beginSourceRecording(preview,{width:5,height:7,simulationFps:10});
+  transport.mockImplementation(async request=>{if(request.operation.kind==='display')throw Error('ACK lost');return reply(request);});await expect(generator.nextSourceRecordingFrame(start.handle,1)).rejects.toMatchObject({recordingRetained:true});const draws=operations().filter(op=>op.kind==='display').length;
+  transport.mockImplementation(async request=>{if(request.operation.kind==='release')throw Error('release unavailable');return reply(request);});await expect(generator.finishSourceRecording(start.handle)).rejects.toMatchObject({recordingRetained:true});expect(generator.hasSourceRecording(start.handle)).toBe(true);
+  transport.mockImplementation(async request=>reply(request));await expect(generator.finishSourceRecording(start.handle)).rejects.toMatchObject({previewRetained:false,recordingRetained:false});expect(generator.hasSourceRecording(start.handle)).toBe(false);expect(operations().filter(op=>op.kind==='display')).toHaveLength(draws);
+ });
+
 });

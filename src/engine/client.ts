@@ -1,4 +1,6 @@
 import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
+import {sourceSamilaOwnerScene} from './sourceSamilaPaletteEditing';
+import {assertSourceSamilaRecordingFrame} from './sourceSamilaRecording';
 import {usesSourceBouncing} from './sourceBouncingDocument';
 import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
@@ -245,7 +247,7 @@ export class Generator {
   private pending = new Map<number, Pending>();
   private currentInputId=0;
   private completed?:Completed;
-  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
+  private recording?:{handle:SourceRecordingHandle;family:string;usable:boolean;samila?:SourceSamilaAsyncSession;roots?:SourceRootsRecordingLease;fractal?:RetainedRecordingLease;domain?:DomainRecordingLease;geometry?:SourceGeometryRecordingLease;perlin?:{sceneId:string;primary:GenerationInput;size:SourceCaptureSize}};
   private playbackPending(){return [...this.pending.values()].some(p=>p.operation==='surface-navigation'||(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')||p.operation==='surface-parameter'||p.operation==='surface-current'||p.operation==='implicit-playback'||p.operation==='surface-playback'||p.operation==='domain-navigation'||p.operation==='domain-parameters'||p.operation==='iterated-navigation'||p.operation==='iterated-parameters'||p.operation==='samila-playback'||p.operation==='symmetry-playback'||p.operation==='map-playback'||p.operation==='fractal-playback'||p.operation==='roots-playback'||p.operation==='perlin-playback'||p.operation==='domain-playback');}
   private recordingError(message:string){const retained=!!this.recording?.usable;return new SourceRecordingOperationError(message,false,retained,retained?this.recording!.handle:undefined);}
   private invalidate(error:Error){
@@ -254,7 +256,7 @@ export class Generator {
     this.worker?.terminate();this.worker=null;this.recording=undefined;this.completed=undefined;this.currentInputId=0;
     for(const p of this.pending.values()){if(p.operation==='surface-paused-capture'||p.operation==='implicit-paused-capture')p.controller.abort();p.reject(error);}this.pending.clear();
   }
-  hasSourceRecording(handle:SourceRecordingHandle):boolean{return !!this.worker&&this.recording?.handle===handle&&this.recording.usable;}
+  hasSourceRecording(handle:SourceRecordingHandle):boolean{const lease=this.recording;return lease?.handle===handle&&(lease.samila?lease.samila.hasRecording(handle):!!this.worker&&lease.usable);}
 
   private renderGeometryFrame(id:number,p:Extract<Pending,{operation:'source-recording-begin'|'source-recording-frame'}>,lease:SourceGeometryRecordingLease,worker:Worker,start?:import('./generationProtocol').SourceRecordingWireStart){
     const cancelled=()=>this.worker!==worker||this.pending.get(id)!==p||this.recording?.geometry!==lease;
@@ -562,7 +564,7 @@ export class Generator {
       const id=++this.counter;this.currentInputId=id;this.completed=undefined;
       return new Promise((resolve,reject)=>{
         try{
-          const input=snapshotGenerationInput(context),snapshot=structuredClone(sourcePaletteRuntimeScene(scene));
+          const input=snapshotGenerationInput(context),snapshot=structuredClone(context.samilaLive?sourceSamilaOwnerScene(scene):sourcePaletteRuntimeScene(scene));
           const pending:Pending={operation:'generate',scene,context:input,resolve,reject};this.pending.set(id,pending);
           void (async()=>{
             // cancel() remains synchronous for UI callers; remote retirement
@@ -589,7 +591,7 @@ export class Generator {
               await this.releaseSamila();
             }
             if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
-            if(!this.nativeSamila){const backend=new SourceSamilaNativeBackend();this.nativeSamila={backend,session:new SourceSamilaAsyncSession(backend,{hostClock:{now:()=>Date.now()-nativePageOrigin,source:'page-wall-clock'}})};}
+            if(!this.nativeSamila){this.sessionId++;const backend=new SourceSamilaNativeBackend();this.nativeSamila={backend,session:new SourceSamilaAsyncSession(backend,{hostClock:{now:()=>Date.now()-nativePageOrigin,source:'page-wall-clock'}})};}
             return this.nativeSamila.session.generate(snapshot,{...input,isCancelled:()=>this.pending.get(id)!==pending});
           })().then(output=>{
             if(this.pending.get(id)!==pending)return;
@@ -775,8 +777,63 @@ export class Generator {
       }
     });
   }
+  /** Native recording owns the same retained Samila runtime as preview. The
+   * queue supplies backpressure and soft cancellation; a submitted draw must
+   * settle before stop can restore or release its exact resource. */
+  private beginNativeSamilaRecording(output:SceneOutput,options:SourceRecordingOptions):Promise<SourceRecordingStart>{
+    const source=this.completed,session=this.nativeSamila!.session;
+    if(this.recording||this.pending.size||!source||source.output!==output||output.type!=='raster'||output.samilaLive?.target!=='primary'||!source.context.samilaLive?.clock)
+      return Promise.reject(new SourceRecordingOperationError('Samila 录制需要当前已完成的主预览',false,false));
+    const id=++this.counter,handle=Object.freeze({sessionId:this.sessionId,recordingId:id});
+    this.currentInputId=id;this.completed=undefined;this.recording={handle,family:'samila',usable:true,samila:session};
+    return new Promise((resolve,reject)=>{
+      const pending:Pending={operation:'source-recording-begin',source,handle,resolve,reject};this.pending.set(id,pending);
+      void session.beginRecording(source.scene,source.context,{...options},handle).then(start=>{
+        if(this.pending.get(id)!==pending)return;
+        if(start.handle!==handle||!validSourceQueueRecordingClock(start.clock,options.simulationFps))throw Error('Samila 录制响应身份或规划无效');
+        assertSourceSamilaRecordingFrame(start.warmup,start.clock,0);
+        const size=sourceRecordingSize(options,source.context.samilaLive!.pixelDensity);
+        if(start.warmup.width!==size.width||start.warmup.height!==size.height)throw Error('Samila 录制预热尺寸无效');
+        this.pending.delete(id);resolve(start);
+      }).catch(error=>{
+        if(this.pending.get(id)!==pending)return;this.pending.delete(id);
+        const retained=session.hasRecording(handle),preview=!retained&&session.matchesCompletedPrimary(source.scene,source.context);
+        if(!retained)this.recording=undefined;if(preview)this.completed=source;
+        reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),preview,retained,retained?handle:undefined));
+      });
+    });
+  }
+  private nextNativeSamilaRecordingFrame(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceRecordingRaster>{
+    const session=this.recording!.samila!,id=++this.counter;
+    return new Promise((resolve,reject)=>{
+      const pending:Pending={operation:'source-recording-frame',handle,family:'samila',displayFrame,resolve,reject};this.pending.set(id,pending);
+      void session.nextRecordingFrame(handle,displayFrame).then(output=>{
+        if(this.pending.get(id)!==pending)return;this.pending.delete(id);resolve(output);
+      }).catch(error=>{
+        if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=session.hasRecording(handle);
+        if(!retained)this.recording=undefined;
+        reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,retained,retained?handle:undefined));
+      });
+    });
+  }
+  private finishNativeSamilaRecording(handle:SourceRecordingHandle,timestampMs?:number):Promise<SourceRecordingStop>{
+    const session=this.recording!.samila!,id=++this.counter;
+    return new Promise((resolve,reject)=>{
+      const pending:Pending={operation:'source-recording-finish',handle,family:'samila',resolve,reject};this.pending.set(id,pending);
+      void session.finishRecording(handle,timestampMs).then(stop=>{
+        if(this.pending.get(id)!==pending)return;
+        if(!session.matchesCompletedPrimary(stop.scene,stop.context)||stop.preview.type!=='raster'||stop.preview.samilaLive?.target!=='primary'||stop.context.samilaLive?.clock?.paused!==false)throw Error('Samila 录制停止没有恢复相同主预览');
+        this.pending.delete(id);this.recording=undefined;this.currentInputId=id;this.completed={id,scene:stop.scene,context:snapshotGenerationInput(stop.context),output:stop.preview};resolve(stop);
+      }).catch(error=>{
+        if(this.pending.get(id)!==pending)return;this.pending.delete(id);const retained=session.hasRecording(handle);
+        if(!retained)this.recording=undefined;
+        reject(new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,retained,retained?handle:undefined));
+      });
+    });
+  }
   beginSourceRecording(output:SceneOutput,options:SourceRecordingOptions,signal?:AbortSignal):Promise<SourceRecordingStart>{
     if(signal?.aborted)return Promise.reject(new DOMException('源场景录制已取消','AbortError'));
+    if(this.nativeSamila)return this.beginNativeSamilaRecording(output,options);
     const source=this.completed;
     if(this.recording)return Promise.reject(this.recordingError('源场景录制已开始'));
     const eligible=source&&(source.scene.kind==='surface'||usesSourceImplicitCpuMesh(source.scene)?output.type==='geometry'&&(source.scene.kind==='surface'?!!output.surfaceLive:!!output.sourceImplicitPresentation)&&output.sourceCameraFrame?.viewport.target==='primary':output.type==='raster'&&recordingRaster(output,source.scene.kind)&&(source.scene.kind==='roots'?output.rootsPresentation?.target==='primary'&&!!source.context.rootsLive:source.scene.kind==='domain'?output.domainLive?.target==='primary'&&output.domainLive.clockSource!=='fixed-step':source.scene.kind==='fractal'?output.fractalLive?.target==='primary'&&output.fractalLive.clock==='realtime-source-queue':source.scene.kind==='perlin'?!!source.scene.perlinSource:output.sourceCameraFrame?.viewport.target==='primary'&&(output.mapLive??output.symmetryLive)?.clock==='realtime-source-queue'));
@@ -811,6 +868,7 @@ export class Generator {
   nextSourceRecordingFrame(handle:SourceRecordingHandle,displayFrame:number,actualFrameRate?:number):Promise<SourceRecordingRaster>{
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
     if(!Number.isSafeInteger(displayFrame)||displayFrame<1)return Promise.reject(this.recordingError('源场景录制帧序号无效'));
+    if(this.recording!.samila)return this.nextNativeSamilaRecordingFrame(handle,displayFrame);
     try{this.recording!.roots?.requestFrame(displayFrame);}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
     const fractal=this.recording!.fractal,domain=this.recording!.domain;
     if(fractal&&(!fractal.clock||displayFrame!==fractal.nextDisplayFrame||displayFrame>fractal.clock.lastDisplayFrame))return Promise.reject(this.recordingError('分形录制必须按已确认规划连续请求，未交付 warmup 的会话只能停止'));
@@ -834,6 +892,7 @@ export class Generator {
    * A retry republishes the first stop; it never resets that baseline again. */
   finishSourceRecording(handle:SourceRecordingHandle,timestampMs?:number):Promise<SourceRecordingStop>{
     if(!this.hasSourceRecording(handle)||this.pending.size)return Promise.reject(this.recordingError('源场景录制身份无效或前一操作尚未完成'));
+    if(this.recording!.samila)return this.finishNativeSamilaRecording(handle,timestampMs);
     if(timestampMs!==undefined&&this.recording!.family!=='implicit')return Promise.reject(this.recordingError('注入停止时钟仅支持隐式录制'));
     try{this.recording!.geometry?.prepareStop();}catch(error){return Promise.reject(this.recordingError(error instanceof Error?error.message:String(error)));}
     const id=++this.counter;

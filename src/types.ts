@@ -489,7 +489,8 @@ export interface RasterOutput {
   mapLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveFacts;
   iteratedRecording?:import('./engine/sourceIteratedRecording').SourceIteratedRecordingFrame;
   symmetryLive?:import('./engine/sourceIteratedSession').SourceIteratedLiveFacts;
-  samilaLive?:{sessionId:string;target:'primary'|'offscreen';displayIndex:number;accumulationPasses:number;anchorTheta:number;parameterChanged:boolean;cleared:boolean;clock:'fixed-source-queue'|'realtime-source-queue';runtime?:import('./engine/sourceSamilaSession').SourceSamilaRuntimeFacts};
+  samilaRecording?:import('./engine/sourceSamilaRecording').SourceSamilaRecordingFrame;
+  samilaLive?:{sessionId:string;target:'primary'|'offscreen';recordingHandoff?:'first-post-stop-primary-frame';displayIndex:number;accumulationPasses:number;anchorTheta:number;parameterChanged:boolean;cleared:boolean;clock:'fixed-source-queue'|'realtime-source-queue';runtime?:import('./engine/sourceSamilaSession').SourceSamilaRuntimeFacts};
   symmetryFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
   mapFrame?:import('./engine/sourceIterationFramePlan').SourceIterationFramePlan;
   symmetryPalette?:import('./engine/sourceSymmetryPalette').SourceSymmetryPaletteFacts;

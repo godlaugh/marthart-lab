@@ -7,6 +7,7 @@ import {usesSourceFractal} from '../engine/sourceFractalDocument';
 import {withFractalFreshRecording,fractalRecordingFrameInput,assertFractalRecordingFrame} from '../engine/sourceFractalRecording';
 import {sourceRecordingSize} from '../engine/sourceRecordingSize';
 import {assertSourceIteratedRecordingFrame} from '../engine/sourceIteratedRecording';
+import {assertSourceSamilaRecordingFrame} from '../engine/sourceSamilaRecording';
 import {usesSourceMapPresentation} from '../engine/sourceMapPresentation';
 import type {SourceIteratedToneReference} from '../engine/sourceIteratedPresentation';
 import {sourceLivePreviewKind} from '../engine/sourceLivePreview';
@@ -75,7 +76,7 @@ export function ExportDialog({
   /** Native preview must release the shared drawing slot and deliver its
    * camera/density facts before a separate export can start. */
   previewReady?:boolean;
-  mode?:'export'|'implicit-recording'|'fractal-recording'|'domain-recording'|'surface-recording'|'perlin-recording'|'roots-recording';
+  mode?:'export'|'implicit-recording'|'fractal-recording'|'domain-recording'|'surface-recording'|'perlin-recording'|'roots-recording'|'samila-recording';
   rootsPixelDensity?:number;
   surfacePixelDensity?:number;
   currentImplicitCapture?:{ready:boolean;size:RootsPausedCaptureSize;capture:(size:RootsPausedCaptureSize,scale:1|3|5,signal?:AbortSignal)=>Promise<SceneOutput>};
@@ -111,7 +112,7 @@ export function ExportDialog({
   const sourceImplicitLive=!!currentImplicitCapture,sourceGeometryLive=!!currentImplicitCapture||!!currentSurfaceCapture;
   const sourceSurfaceLive=!!currentSurfaceCapture,sourceFractalLive=!!currentFractalCapture,sourceDomainLive=!!currentDomainCapture,sourceNumericalLive=sourceFractalLive||sourceDomainLive;
   const recordingMode=mode!=='export';
-  const recordingTitle=mode==='implicit-recording'?'隐式曲面录制':mode==='roots-recording'?'复根录制':sourceSurfaceLive?'曲面录制':sourceDomainLive?'域着色录制':sourcePerlin?'Perlin 录制':'分形录制';
+  const recordingTitle=mode==='samila-recording'?'Samila 录制':mode==='implicit-recording'?'隐式曲面录制':mode==='roots-recording'?'复根录制':sourceSurfaceLive?'曲面录制':sourceDomainLive?'域着色录制':sourcePerlin?'Perlin 录制':'分形录制';
   const currentPausedCapture=sourceImplicitLive?currentImplicitCapture:sourceSurfaceLive?currentSurfaceCapture:sourceDomainLive?currentDomainCapture:sourceFractalLive?currentFractalCapture:sourcePerlin?currentPerlinCapture:sourceSamila?currentSamilaCapture:sourceIterated?currentIteratedCapture:currentRootsCapture;
   const [bouncingStart,setBouncingStart]=useState<'current'|'seed'>('seed');
   const sourceFrames=usesSpirographFrameClock(scene);
@@ -126,6 +127,7 @@ export function ExportDialog({
   const [perlinVideoMode,setPerlinVideoMode]=useState<'duration'|'source'|'retained'>(mode==='perlin-recording'?'retained':'duration');
   const [recordingQuality,setRecordingQuality]=useState<'low'|'medium'|'high'|'production'>('high');
   const [iteratedVideoMode,setIteratedVideoMode]=useState<'duration'|'source'>('source');
+  const [samilaVideoMode,setSamilaVideoMode]=useState<'duration'|'retained'>(mode==='samila-recording'?'retained':'duration');
   const perlinFrames=sourcePerlin&&perlinVideoMode==='source';
   const rootsFrames=usesRootsCameraTimeline(scene)&&rootsVideoMode==='source';
   const [recordingStart,setRecordingStart]=useState<'fresh'|'current'>('fresh');
@@ -160,14 +162,15 @@ export function ExportDialog({
   const [width,height]=resolution==='custom'?[customWidth,customHeight]:resolution.split('x').map(Number);
   const retainedRoots=kind==='video'&&sourceLivePreviewKind(scene)==='roots'&&rootsVideoMode==='retained';
   const retainedPerlin=kind==='video'&&sourcePerlin&&perlinVideoMode==='retained';
+  const retainedSamila=kind==='video'&&sourceSamila&&samilaVideoMode==='retained';
   const iteratedRecording=kind==='video'&&sourceIterated&&iteratedVideoMode==='source';
   const retainedImplicit=kind==='video'&&sourceImplicit&&implicitVideoMode==='retained';
   const retainedSurface=kind==='video'&&sourceSurfaceLive&&surfaceVideoMode==='retained';
   const retainedDomain=kind==='video'&&sourceDomainLive&&domainVideoMode==='retained';
   const retainedNumerical=retainedImplicit||retainedSurface||retainedDomain||kind==='video'&&sourceFractal&&fractalVideoMode==='retained';
-  const fixedRetained=retainedRoots||iteratedRecording||retainedNumerical;
+  const fixedRetained=retainedRoots||iteratedRecording||retainedNumerical||retainedSamila;
   const liveRecording=retainedPerlin||fixedRetained;
-  const stoppableRecording=retainedRoots||retainedNumerical||retainedPerlin;
+  const stoppableRecording=retainedRoots||retainedNumerical||retainedPerlin||retainedSamila;
   const sharedRecordingFps=fixedRetained||mode==='perlin-recording';
   const fractalVideo=kind==='video'&&fractalFrames;
   const sourceMp4=(fixedRetained||fractalVideo||sourceBouncing)&&format==='mp4';
@@ -176,14 +179,14 @@ export function ExportDialog({
   const assertRecordingOutput=(output:SceneOutput,clock:SourceRecordingClock,index:number)=>{
     if(retainedRoots){assertRootsLiveRecordingFrame(output,clock,index);return;}
     if(clock.completionReason!=='animation-queue')throw Error('录制完成条件与当前导出方式不匹配');
-    (retainedImplicit?assertSourceImplicitRecordingFrame:retainedSurface?assertSourceSurfaceRecordingFrame:retainedDomain?assertDomainRecordingFrame:retainedNumerical?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,clock,index);
+    (retainedSamila?assertSourceSamilaRecordingFrame:retainedImplicit?assertSourceImplicitRecordingFrame:retainedSurface?assertSourceSurfaceRecordingFrame:retainedDomain?assertDomainRecordingFrame:retainedNumerical?assertFractalRecordingFrame:iteratedRecording?assertSourceIteratedRecordingFrame:assertPerlinRecordingFrame)(output,clock,index);
   };
   const pausedSourceImage=kind==='image'&&(sourceGeometryLive||sourceNumericalLive||usesRootsNativePresentation(scene)||sourcePerlin||sourceSamila||sourceIterated)&&sourceImageMode==='current';
   let outputBase={width,height},pausedSizeError='';
   if((sourceGeometryLive||sourceNumericalLive)&&pausedSourceImage){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceImplicitLive?previewPointPixelDensity:sourceSurfaceLive?surfacePixelDensity:sourceDomainLive?domainPixelDensity:fractalPixelDensity)??NaN,sourceGeometryLive?undefined:MAX_RASTER_PIXELS);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   else if((sourcePerlin||sourceSamila||sourceIterated)&&(pausedSourceImage||retainedPerlin)){try{outputBase=prepareSourcePausedCaptureSize({width,height},(sourceIterated?iteratedPixelDensity:sourceSamila?samilaPixelDensity:sourcePerlinViewport?.pixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let recordingSize:{width:number;height:number;logicalWidth?:number;logicalHeight?:number}={width:outputBase.width,height:outputBase.height};
-  if(fixedRetained||fractalVideo){try{recordingSize=sourceRecordingSize({width,height},(retainedImplicit?previewPointPixelDensity:retainedRoots?rootsPixelDensity:retainedSurface?surfacePixelDensity:retainedDomain?domainPixelDensity:(fractalVideo||retainedNumerical)?fractalPixelDensity:iteratedPixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
+  if(fixedRetained||fractalVideo){try{recordingSize=sourceRecordingSize({width,height},(retainedSamila?samilaPixelDensity:retainedImplicit?previewPointPixelDensity:retainedRoots?rootsPixelDensity:retainedSurface?surfacePixelDensity:retainedDomain?domainPixelDensity:(fractalVideo||retainedNumerical)?fractalPixelDensity:iteratedPixelDensity)??NaN);}catch(error){pausedSizeError=error instanceof Error?error.message:String(error);}}
   let upscaleError=pausedSizeError;
   if(pausedSourceImage&&pausedImageScale!==1){try{const size=prepareSourcePausedUpscale(outputBase.width,outputBase.height,pausedImageScale);validateRasterRequest({time:0,quality:'export',width:size.width,height:size.height});}catch(error){upscaleError=error instanceof Error?error.message:String(error);}}
   let dimensionError='';
@@ -520,7 +523,7 @@ export function ExportDialog({
         {!previewReady&&<p role="status" className="muted">{t('请等待当前预览完成并暂停后再导出。')}</p>}
         {sourceBouncing&&<p role="status" className="muted">{t(kind==='image'?'PNG 保存当前已呈现检查点，不推进模拟；尺寸变化只改变输出投影。':'源弹跳离线逐帧录制，使用源时钟的预热与停止规则。')}{!currentSourceBouncingFrame?.ready&&t('请等待当前预览完成并暂停后再导出。')}</p>}
         {sourceIterated&&!iteratedRecording&&<p role="status" className="muted">{t(pausedSourceImage?'截图会额外绘制导出图和主预览，动画时间保持不变。同尺寸会继续累积或推进重播；改变尺寸会清空累积画面并取消重播。':'从初始状态按固定时间重放，不复制当前实时累积画面。')}</p>}
-        {sourceSamila&&<p role="status" className="muted">{t(pausedSourceImage?'截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。':'从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。')}</p>}
+        {sourceSamila&&!retainedSamila&&<p role="status" className="muted">{t(pausedSourceImage?'截图会新增一次采样，随后重绘预览再采样一次；动画时间保持不变。改变尺寸会清空累积画面。':'从初始状态重放，使用独立随机采样；不会复制当前预览的累积画面。')}</p>}
         {sourcePerlin&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像，不推进动画；累积效果会保留在独立的导出画布中。':retainedPerlin?'使用上次应用的配置重新开始录制，保留主画布和同尺寸导出画布的累积效果。保存完成后从录制状态继续播放。':'从当前配置的初始状态重放，不保留预览中的后端切换历史。')}</p>}
         {liveRecording&&<><p className="muted">{t('实际视频尺寸：{width} × {height} 像素。',{width:videoWidth,height:videoHeight})}</p>{!working&&!currentSourceRecording?.ready&&<p role="status" className="muted">{t('请等待当前预览完成并暂停后再录制')}</p>}{upscaleError&&<p className="export-error" role="alert">{t(upscaleError)}</p>}</>}
         {usesRootsNativePresentation(scene)&&!retainedRoots&&<p role="status" className="muted">{t(pausedSourceImage?'保存当前暂停场景并增强图像；尺寸变化会清空密度墨迹，点云截图使用独立的累积画布。':'空间复根导出会从初始采样重放到所选时间，使用当前相机和导出尺寸；预览中的历史墨迹与点云拖影不会复制。')}</p>}
@@ -612,6 +615,7 @@ export function ExportDialog({
             {sourceDomainLive&&!recordingMode&&<label className="field"><span>{t('域着色视频模式')}</span><select aria-label={t('域着色视频模式')} disabled={working} value={domainVideoMode} onChange={event=>setDomainVideoMode(event.target.value as 'duration'|'retained')}><option value="retained">{t('从上次完整应用的场景录制')}</option><option value="duration">{t('按时长导出')}</option></select></label>}
             {sourceFractal&&!recordingMode&&<label className="field"><span>{t('分形视频模式')}</span><select aria-label={t('分形视频模式')} disabled={working} value={fractalVideoMode} onChange={event=>setFractalVideoMode(event.target.value as 'duration'|'source'|'retained')}><option value="source">{t('按源完成条件录制')}</option><option value="duration">{t('按时长导出')}</option>{currentSourceRecording&&<option value="retained">{t('从上次完整应用的场景录制')}</option>}</select></label>}
             {sourcePerlin&&!recordingMode&&<label className="field"><span>{t('Perlin 视频模式')}</span><select aria-label={t('Perlin 视频模式')} disabled={working} value={perlinVideoMode} onChange={event=>setPerlinVideoMode(event.target.value as 'duration'|'source'|'retained')}><option value="duration">{t('按时长导出')}</option><option value="source">{t('按源队列结束重放')}</option><option value="retained">{t('保留画布录制')}</option></select></label>}
+            {sourceSamila&&currentSourceRecording&&!recordingMode&&<label className="field"><span>{t('Samila 视频模式')}</span><select aria-label={t('Samila 视频模式')} disabled={working} value={samilaVideoMode} onChange={event=>setSamilaVideoMode(event.target.value as 'duration'|'retained')}><option value="duration">{t('按时长导出')}</option><option value="retained">{t('从上次完整应用的场景录制')}</option></select></label>}
             {sourceIterated&&<label className="field"><span>{t('迭代场景视频模式')}</span><select aria-label={t('迭代场景视频模式')} disabled={working} value={iteratedVideoMode} onChange={event=>setIteratedVideoMode(event.target.value as 'duration'|'source')}><option value="source">{t('按源完成条件录制')}</option><option value="duration">{t('按时长导出')}</option></select></label>}
             {sourceMp4&&<label className="field"><span>{t('视频质量')}</span><select aria-label={t('视频质量')} disabled={working} value={recordingQuality} onChange={event=>setRecordingQuality(event.target.value as typeof recordingQuality)}><option value="low">{t('低')}</option><option value="medium">{t('中')}</option><option value="high">{t('高')}</option><option value="production">{t('制作级')}</option></select></label>}
             {sourceBouncing?<>
@@ -625,7 +629,7 @@ export function ExportDialog({
             </>:sourceFrames||rootsFrames||sourceQueueVideo?<>
               {sourceFrames&&<label className="field"><span>{t('录制起点')}</span><select aria-label={t('录制起点')} disabled={working} value={recordingStart} onChange={event=>setRecordingStart(event.target.value as 'fresh'|'current')}><option value="fresh">{t('从初始状态')}</option><option value="current" disabled={currentSpirographFrame===undefined}>{t('从当前已呈现帧')}</option></select></label>}
               {!sharedRecordingFps&&<label className="field"><span>{t('录制模拟帧率')}</span><input aria-label={t('录制模拟帧率')} disabled={working} type="number" min={1} max={120} step={1} value={recordingFps} onChange={event=>setRecordingFps(Number(event.target.value))}/></label>}
-              <p className="muted">{t(retainedImplicit?'从当前场景重新开始，预热后录到动画队列结束，保存后继续播放。帧率同时用于动画和视频编码。':retainedRoots?'从当前配置重新计算，预热后录制；有动画时录到队列结束，无动画时等待全部点绘制完成。可随时停止并保存，保存后继续播放。':retainedSurface?'从上次完整应用的曲面场景开始，预热后录到队列结束，保存后继续播放。帧率同时用于模拟和编码。要将修改作为录制起点，请先点击“应用场景”。':retainedDomain?'从上次完整应用的域着色场景开始，预热后录到队列结束，保存后继续播放。要将修改作为录制起点，请先点击“应用场景”。':retainedNumerical?'从上次完整应用的场景开始，预热后录到队列结束，编码完成后继续播放。帧率同时用于模拟和编码。要将修改作为录制起点，请先播放并点击“应用场景”。':fractalVideo?'从当前配置重新开始，先绘制一帧预热，再录到队列结束。使用三倍导出画布，MP4 使用原版质量设置。模拟帧率与编码帧率默认相同；分别调整播放速度是本地扩展。':iteratedRecording?'从上次应用的配置开始，首帧预热后按队列结束停止；编码完成后动画继续播放。帧率同时用于模拟和视频编码。':retainedPerlin?'恢复上次应用的模拟配置和后端，首帧预热后录到队列结束，保存后继续播放。导出尺寸变化会重建导出画布。':perlinFrames?'使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。':rootsFrames?'从初始状态重放；首帧用于预热。存在源队列时按队列结束停止；空队列等待本地样本提交完成。模拟帧率决定运动步长，编码帧率决定视频播放速度。':'按源队列结束时停止录制；首个已推进帧用于预热，不写入视频。模拟帧率决定运动步长，编码帧率决定视频播放速度。')}</p>
+              <p className="muted">{t(retainedSamila?'从上次完整应用的 Samila 场景重新开始，先推进并绘制一帧预热，再录到动画队列结束。保存后继续播放。帧率同时用于模拟和编码；要将修改作为录制起点，请先点击“应用场景”。':retainedImplicit?'从当前场景重新开始，预热后录到动画队列结束，保存后继续播放。帧率同时用于动画和视频编码。':retainedRoots?'从当前配置重新计算，预热后录制；有动画时录到队列结束，无动画时等待全部点绘制完成。可随时停止并保存，保存后继续播放。':retainedSurface?'从上次完整应用的曲面场景开始，预热后录到队列结束，保存后继续播放。帧率同时用于模拟和编码。要将修改作为录制起点，请先点击“应用场景”。':retainedDomain?'从上次完整应用的域着色场景开始，预热后录到队列结束，保存后继续播放。要将修改作为录制起点，请先点击“应用场景”。':retainedNumerical?'从上次完整应用的场景开始，预热后录到队列结束，编码完成后继续播放。帧率同时用于模拟和编码。要将修改作为录制起点，请先播放并点击“应用场景”。':fractalVideo?'从当前配置重新开始，先绘制一帧预热，再录到队列结束。使用三倍导出画布，MP4 使用原版质量设置。模拟帧率与编码帧率默认相同；分别调整播放速度是本地扩展。':iteratedRecording?'从上次应用的配置开始，首帧预热后按队列结束停止；编码完成后动画继续播放。帧率同时用于模拟和视频编码。':retainedPerlin?'恢复上次应用的模拟配置和后端，首帧预热后录到队列结束，保存后继续播放。导出尺寸变化会重建导出画布。':perlinFrames?'使用当前配置在新画布重放，首帧预热后按源队列结束停止。不会复用预览或上次导出的画面。模拟帧率决定运动步长，编码帧率决定播放速度。':rootsFrames?'从初始状态重放；首帧用于预热。存在源队列时按队列结束停止；空队列等待本地样本提交完成。模拟帧率决定运动步长，编码帧率决定视频播放速度。':'按源队列结束时停止录制；首个已推进帧用于预热，不写入视频。模拟帧率决定运动步长，编码帧率决定视频播放速度。')}</p>
               {sourceVideoFrames!==null&&(!retainedRoots||!working)&&<p className="muted">{t('本次录制 {frames} 帧',{frames:sourceVideoFrames})}</p>}
             </>:<label className="field">
               <span>{t("时长（秒）")}</span>

@@ -164,3 +164,6 @@ export function changeSourceSamilaPalette(scene:SceneDocument,colors:readonly st
 export function sourceSamilaManualColorRgb(text:string):string{return '#'+(sourceManualPalettePackedColor(text)&0xffffff).toString(16).padStart(6,'0');}
 export function sourceSamilaManualRgbText(rgb:string):string {if(!/^#[0-9a-f]{6}$/i.test(rgb))throw Error('色标必须使用 #RRGGBB');return rgb.toUpperCase();}
 export const SOURCE_SAMILA_DEFAULT_COLORS=DEFAULT_SOURCE_SURFACE_COLORS;
+
+/** Renderer owner keeps authored/applied/effective facts, never the editor UI. */
+export function sourceSamilaOwnerScene(scene:SceneDocument):SceneDocument {const {samilaPaletteEditor:_,...owned}=scene;return owned;}

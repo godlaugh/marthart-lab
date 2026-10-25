@@ -472,9 +472,11 @@ export class GenerationQueue {
         const sameDomain=!!domain&&!!queuedDomain&&latest?.scene.kind==='domain'&&latest.scene.id===owner.request.scene.id&&queuedDomain.sessionId===domain.sessionId;
         const perlin=stop?.context.perlinLive,queuedPerlin=latest?.context.perlinLive;
         const samePerlin=!!perlin&&!!queuedPerlin&&latest?.scene.kind==='perlin'&&latest.scene.id===owner.request.scene.id&&queuedPerlin.sessionId===perlin.sessionId;
+        const samila=stop?.context.samilaLive,queuedSamila=latest?.context.samilaLive;
+        const sameSamila=!!samila&&!!queuedSamila&&latest?.scene===owner.request.scene&&queuedSamila.sessionId===samila.sessionId;
         const surface=stop?.context.surfaceLive,queuedSurface=latest?.context.surfaceLive;
         const sameSurface=!!surface&&!!queuedSurface&&latest?.scene.kind==='surface'&&latest.scene.id===owner.request.scene.id&&queuedSurface.sessionId===surface.sessionId;
-        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!perlin||samePerlin)&&(!roots||sameRoots)&&(!(implicit||queuedImplicit)||sameImplicit)||sameFractal||sameDomain||sameSurface||samePerlin||sameRoots||sameImplicit)){
+        if(stop&&!this.disposed&&(latest?.scene===owner.request.scene&&(!samila||sameSamila)&&(!perlin||samePerlin)&&(!roots||sameRoots)&&(!(implicit||queuedImplicit)||sameImplicit)||sameFractal||sameDomain||sameSurface||samePerlin||sameRoots||sameImplicit)){
           // Keep deferred viewport changes, but never reuse the pre-recording
           // live session or seek time after the runtime has been rebuilt.
           // Fractal author identity remains in the UI. Runtime/presentation
@@ -494,7 +496,7 @@ export class GenerationQueue {
           const nextDomain=domain&&queuedDomain?{...domain,viewport:queuedDomain.viewport,actualFrameRate:queuedDomain.actualFrameRate,...(queuedDomain.revision>domain.revision?{revision:queuedDomain.revision,configuration:queuedDomain.configuration}:{})}:domain;
           const nextPerlin=perlin&&samePerlin&&queuedPerlin?.paletteRevision!==undefined&&queuedPerlin.paletteRevision>(perlin.paletteRevision??-1)?{...perlin,paletteRevision:queuedPerlin.paletteRevision}:perlin;
           const nextSurface=surface&&queuedSurface?{...surface,actualFrameRate:queuedSurface.actualFrameRate,...(queuedSurface.revision>surface.revision?{revision:queuedSurface.revision,configuration:queuedSurface.configuration,startAt:queuedSurface.startAt}:{})}:surface;
-          const context=snapshotGenerationInput(deferred?{...latest!.context,time:resetImplicit?0:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,implicitLive:resetImplicit?undefined:sameImplicit||latest?.scene===owner.request.scene?stop.context.implicitLive:latest?.context.implicitLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:nextPerlin}:stop.context);
+          const context=snapshotGenerationInput(deferred?{...latest!.context,time:resetImplicit?0:stop.context.time,rootsLive:sameRoots?{...queuedRoots!,clock:roots!.clock}:latest!.context.rootsLive,implicitLive:resetImplicit?undefined:sameImplicit||latest?.scene===owner.request.scene?stop.context.implicitLive:latest?.context.implicitLive,samilaLive:sameSamila?{...samila!,pixelDensity:queuedSamila!.pixelDensity}:latest!.context.samilaLive,mapLive:stop.context.mapLive,symmetryLive:stop.context.symmetryLive,fractalLive:nextFractal,domainLive:nextDomain,surfaceLive:nextSurface,perlinLive:nextPerlin}:stop.context);
           this.latest=expected={scene:stop.scene,context};
           if(liveKey(expected)&&!deferred)this.completedLive={request:expected,output:stop.preview};
           this.callbacks.recordingStopped?.(stop,owner.request.scene);

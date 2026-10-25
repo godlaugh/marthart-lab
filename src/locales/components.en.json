@@ -1,5 +1,8 @@
 {
   "修改立即更新作品。主色板与 CPU 回退共用生成参数；保存仅保留颜色，重新打开项目回到手动模式。": "Changes update the artwork immediately. The main palette and CPU fallback share generator settings. Saving keeps the colors; reopening returns to Manual mode.",
+  "Samila 录制": "Samila recording",
+  "Samila 视频模式": "Samila video mode",
+  "从上次完整应用的 Samila 场景重新开始，先推进并绘制一帧预热，再录到动画队列结束。保存后继续播放。帧率同时用于模拟和编码；要将修改作为录制起点，请先点击“应用场景”。": "Restart the last fully applied Samila scene, advance and draw one warmup frame, then record until the animation queue finishes. Playback resumes after saving. Simulation and encoding share the frame rate. To record edited settings, click Apply scene first.",
   "最终效果预览": "Final preview",
   "点击播放或录制将从头开始": "Play or record from the beginning",
   "渐变类型": "Gradient type",

@@ -78,3 +78,6 @@ export class SourceSamilaTimelineSession {
  writeAngles(angles:Partial<Pick<SourceCameraScalars,'phi'|'theta'|'gamma'>>):void {if(!this.owner.runtime){if(this.live)this.snapshot();else this.evaluate(0);}this.owner.session.writeAngles(angles);}
  reset():void{this.owner.session.reset();this.owner.runtime=undefined;this.owner.work=0;this.owner.frameWrites=0;this.owner.writesBeforeFrame=0;}
 }
+
+/** Queue layout shares the ordinary source clock; it does not draw or consume seeds. */
+export function sourceSamilaRecordingLayout(scene:SceneDocument,fps:number){if(!usesSourceSamilaTimeline(scene))throw Error('Samila 录制需要源队列');return resolveOrdinarySourceCameraTimeline(initialCamera(scene),scene.timeline.tracks,fps,{particleActions:'samila'});}

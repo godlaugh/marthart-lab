@@ -1,4 +1,5 @@
 import type {GenerateContext,SceneDocument} from '../types';
+import {SourceRecordingOperationError,type SourceRecordingHandle,type SourceRecordingOptions,type SourceRecordingStart,type SourceRecordingStop} from './generationProtocol';
 import {SourceSamilaSession,type SourceSamilaDisplayBudget,type SourceSamilaDisplayResult,type SourceSamilaHotAction,type SourceSamilaLiveOutput,type SourceSamilaOperation,type SourceSamilaPreparedDisplay,type SourceSamilaSessionOptions} from './sourceSamilaSession';
 
 /** The transport/backend owns resources and capacity. In particular native
@@ -48,6 +49,29 @@ export class SourceSamilaAsyncSession {
  }
  capturePaused(scene:SceneDocument,context:GenerateContext,options:{additionalBytes?:number}={}):Promise<{capture:SourceSamilaLiveOutput;preview:SourceSamilaLiveOutput}> {
   return this.run(()=>this.owner.beginCapture(scene,context,options),async token=>{await this.draw(token);await this.draw(token);return this.owner.completeCapture(token);});
+ }
+ hasRecording(handle:SourceRecordingHandle):boolean {return this.owner.hasRecording(handle);}
+ async beginRecording(scene:SceneDocument,context:GenerateContext,options:SourceRecordingOptions,handle:SourceRecordingHandle):Promise<SourceRecordingStart> {
+  try{return await this.run(()=>this.owner.beginRecording(scene,context,options,handle),async token=>{await this.draw(token);return this.owner.recordingStart(handle,this.owner.completeRecordingFrame(token));});}
+  catch(error){throw new SourceRecordingOperationError(error instanceof Error?error.message:String(error),this.matchesCompletedPrimary(scene,context),this.hasRecording(handle),this.hasRecording(handle)?handle:undefined);}
+ }
+ async nextRecordingFrame(handle:SourceRecordingHandle,displayFrame:number):Promise<SourceSamilaLiveOutput> {
+  try{return await this.run(()=>this.owner.nextRecordingFrame(handle,displayFrame),async token=>{await this.draw(token);return this.owner.completeRecordingFrame(token);});}
+  catch(error){throw new SourceRecordingOperationError(error instanceof Error?error.message:String(error),!this.blocked&&this.hasRecording(handle),this.hasRecording(handle),this.hasRecording(handle)?handle:undefined);}
+ }
+ /** A failed draw has unknown commit state. Finish then releases this exact
+  * resource; it never retries that draw or claims to restore its old preview.
+  * Failed release keeps the handle for another explicit cleanup attempt. */
+ async finishRecording(handle:SourceRecordingHandle,timestampMs?:number):Promise<SourceRecordingStop> {
+  if(!this.hasRecording(handle))throw new SourceRecordingOperationError('Samila 录制句柄不属于当前会话',false,false);
+  if(this.inFlight||this.resetting)throw new SourceRecordingOperationError('Samila 录制仍在执行',!this.blocked,true,handle);
+  if(this.blocked){
+   try{await this.reset();}
+   catch(error){throw new SourceRecordingOperationError(error instanceof Error?error.message:String(error),false,true,handle);}
+   throw new SourceRecordingOperationError('Samila 录制失败的资源已释放；主画布未恢复',false,false);
+  }
+  try{return await this.run(()=>this.owner.beginRecordingFinish(handle,timestampMs),async token=>{await this.draw(token);return this.owner.completeRecordingFinish(token);});}
+  catch(error){throw new SourceRecordingOperationError(error instanceof Error?error.message:String(error),!this.blocked&&this.hasRecording(handle),this.hasRecording(handle),this.hasRecording(handle)?handle:undefined);}
  }
  setPaused(paused:boolean,timestampMs?:number):void {this.assertIdle();this.owner.setPaused(paused,timestampMs);}
  applyHot(action:SourceSamilaHotAction):void {this.assertIdle();this.owner.applyHot(action);}
