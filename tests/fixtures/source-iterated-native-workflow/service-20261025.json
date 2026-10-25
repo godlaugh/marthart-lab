@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "status": "verified-public-native-render-service",
+  "milestone": "M3",
+  "wholeGoalComplete": false,
+  "baseCommit": "2ead883588d46c8dd81b734fe81531809a16182b",
+  "index": ".cache/iterated-render-protocol-20261025/index.json",
+  "indexSha256": "6442e50d520c6f56ae7a7dcb2e3cb388c78652c1c68df0193f7c1c0f497083bb",
+  "readableReport": "docs/source-iterated-native-service-validation.zh-CN.md",
+  "reference": {
+    "path": ".cache/source-symmetry-production-full-20261025/source-cloak1.json",
+    "sha256": "7cd4bceab0313426ba204b2366bfd980593874d8d0338664446f16dfeb7a586d",
+    "jar": "../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+    "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "member": "data/SymmetryChaos/Emperors_Cloak1.json"
+  },
+  "frames": [
+    {
+      "index": 0,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "29281bdf410e496bd83c2c1da355164fa15de802421f7173bf44a9bffad7d948",
+      "originalSha256": "ab09edd9e0da6d0944ecb2e6b169835bf5af510ad6a412b396c493c97811de1c"
+    },
+    {
+      "index": 1,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "0dbce27754b6c9d83466192691304c836e8e6152c32e8ee654891b6c5dbad14c",
+      "originalSha256": "301efd95ba3b3dc0c3cb95da78df7479bd53b430b4b4260deaef1a5058cc865d"
+    },
+    {
+      "index": 2,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "1130da6a8ed4d69ba51f369454d47a44c37abbbce1bd71259f1997f29df9a646",
+      "originalSha256": "29edb958565985cfbd9c19e1b09976c8fc7c10caa92c7ba10a11f1f8c9942891"
+    },
+    {
+      "index": 3,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "14b49af31e0dddf88903aee8213980758018b9d1364959d63a1e7de0495c06d2",
+      "originalSha256": "af2b46b0c6ce6550d45b27a6c1894c4c6852e1e5654ed7b45b8b1a92ad22c2be"
+    },
+    {
+      "index": 4,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "8a113c86e2aa7ced4d55f4e8c7e4dac7faad390097712cd854ce9cb09c0448ee",
+      "originalSha256": "512458d3d63860f15daa94e68310d5b0c11ffc67e1ef71320668ffe4da53ab1d"
+    },
+    {
+      "index": 5,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "96e9f0240887fd4ed46db63a7d6d3eb32699119b3140496cf94926c973edbf88",
+      "originalSha256": "6a519914a55c8a64db53ec8d7ccb0cd680e3937e648ec06b4883e53ad85dee26"
+    },
+    {
+      "index": 6,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "0d0428526fff70e1acfae5b3dbb341864fcc840b5cbd73ff46a0d2c83a4b45db",
+      "originalSha256": "3d17f1f7143765bd4d73c4668ff90e48cd7e1239a9deefd5634213a3c3529888"
+    },
+    {
+      "index": 7,
+      "bytes": 3149280,
+      "rgbaDifferences": 0,
+      "actualSha256": "1995c7df0fe0360c14bca407558e529cd58c17d9a13ff118be2ead4e1725a83e",
+      "originalSha256": "83be8290e1b9005b0babb758a37fc0ebcbb90e25c548cb055ac538c3820b2dc5"
+    }
+  ],
+  "requests": 46,
+  "requestBytes": 9136059,
+  "knownRetainedBytes": 88012257,
+  "checks": {
+    "codecClientTests": 131,
+    "serviceTests": 89,
+    "actualNativeLifecycleTests": 17,
+    "cpuInkBoundaryTests": 1,
+    "cpuInkAssertions": 239,
+    "cpuInkCases": 35,
+    "buildV2": "passed; existing chunk-size warning"
+  },
+  "cleanup": {
+    "ownedNativeProcesses": 0,
+    "retainedBytes": 0,
+    "processGroupAfter": []
+  },
+  "measurement": {
+    "seconds": 7.674633667105809,
+    "childCpuSeconds": 22.273044,
+    "processGroupRssPeakKiB": 1119392,
+    "sampleIntervalSeconds": 0.5,
+    "sampleCount": 15,
+    "costLimits": [
+      "CPU RUSAGE_CHILDREN includes the ps sampling subprocesses; their overhead is not separately subtracted.",
+      "A 0.5-second RSS sample can miss short peaks.",
+      "GPU allocation and energy/thermal state not measured."
+    ]
+  },
+  "frameSeconds": [
+    2.1655,
+    0.3157999999523163,
+    0.30410000002384185,
+    0.3201999999284744,
+    0.3147000000476837,
+    0.3177999999523163,
+    0.31140000009536745,
+    0.3137999999523163
+  ],
+  "limitations": [
+    "Diagnostic async adapter injects shared Session; production application backend selection/program replacement not integrated.",
+    "Only one Symmetry preset,8finiteframes and currentMac.",
+    "No particle/ink full readback through this newHTTP run; exact final RGBA comparison only.",
+    "No speedup claim; no equivalent hybrid/native completed-task benchmark."
+  ]
+}

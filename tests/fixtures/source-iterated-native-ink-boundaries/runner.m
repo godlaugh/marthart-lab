@@ -213,6 +213,7 @@ int main(int argc,const char **argv){@autoreleasepool{@try{
  [cases addObject:@"creation-attributes-outputs-context-budget"];
  // Uniform array-shaped linked ABI is unsupported before touching ink.
  NSArray *originalActive=active[@1];active[@1]=[originalActive arrayByAddingObject:@{@"name":@"unsupportedArray",@"kind":@"float",@"size":@2}];resetCalls();rejected(@"runtime",^{[ink accumulateAtIndex:0 plan:draw clear:YES decay:.5 record:YES retained:retained];});unchanged(ink,baseline);active[@1]=originalActive;[cases addObject:@"active-array-shape"];
+ expect(state.viewCalls==0,@"Rejected render input materialized the compute view");[cases addObject:@"rejected-bindings-do-not-materialize-state-view"];
  // A successful draw publishes facts only after cleanup. The fake reducer has
  // zero facts, deliberately independent of the mathematical scene.
  [ink accumulateAtIndex:0 plan:draw clear:YES decay:1 record:YES retained:retained];expect(ink.displays==1&&ink.lastFacts!=nil&&nCalls(@"draw")>0,@"Valid prepared draw rejected");[cases addObject:@"successful-owner-publication"];

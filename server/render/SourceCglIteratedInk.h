@@ -1,3 +1,5 @@
+#ifndef SOURCE_CGL_ITERATED_INK_H
+#define SOURCE_CGL_ITERATED_INK_H
 // Retained drawing companion for the exact iterated state owner. It borrows
 // checkpoint-bound GPU texture views; no particle readback or CPU recurrence.
 // Included after SourceCglIteratedState. The composition owner disposes ink
@@ -5,12 +7,12 @@
 @interface SourceCglIteratedInk:NSObject {
  CGLContextObj _context;SourceCglIteratedState *_state;
  GLuint _programs[6],_shaders[12],_ink,_output,_facts,_reductions[2],_palette,_noise,_framebuffer,_vao;
- uint32_t _width,_height,_reduceWidth,_reduceHeight,_displays;
+ uint32_t _width,_height,_reduceWidth,_reduceHeight,_displays,_count,_lastIndex;
  uint64_t _programBytes;BOOL _prepared,_failed,_disposed;
  NSDictionary *_sources;NSString *_paletteKey;NSDictionary *_lastFacts;
 }
 @property(readonly) uint64_t retainedBytes;
-@property(readonly) uint32_t width,height,displays;
+@property(readonly) uint32_t width,height,displays,count,lastIndex;
 @property(readonly) NSDictionary *lastFacts;
 -(instancetype)initWithState:(SourceCglIteratedState*)state programs:(NSDictionary*)programs width:(uint32_t)width height:(uint32_t)height;
 -(void)prepareWithRetained:(uint64_t)retained;
@@ -45,11 +47,11 @@ static void iteratedInkBind(GLuint program,NSArray *uniforms){
 }
 
 @implementation SourceCglIteratedInk
--(uint32_t)width{return _width;}-(uint32_t)height{return _height;}-(uint32_t)displays{return _displays;}-(NSDictionary*)lastFacts{return _lastFacts;}
+-(uint32_t)width{return _width;}-(uint32_t)height{return _height;}-(uint32_t)displays{return _displays;}-(uint32_t)count{return _count;}-(uint32_t)lastIndex{return _lastIndex;}-(NSDictionary*)lastFacts{return _lastFacts;}
 -(uint64_t)retainedBytes{return _disposed?0:_programBytes+(uint64_t)_width*_height*36+(uint64_t)_reduceWidth*_reduceHeight*32+4097*16+256+1024*1024;}
 -(instancetype)initWithState:(SourceCglIteratedState*)state programs:(NSDictionary*)programs width:(uint32_t)width height:(uint32_t)height{
- self=[super init];if(!self)return nil;INPUT(state&&width&&height&&width<=16384&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid iterated ink dimensions");INPUT([programs isKindOfClass:NSDictionary.class],@"Iterated programs must be a record");_state=state;_width=width;_height=height;
- uint32_t tw=MIN(2048,state.count),th=(state.count+tw-1)/tw;_reduceWidth=MAX((tw+1)/2,(width+3)/4);_reduceHeight=MAX((th+1)/2,(height+3)/4);
+ self=[super init];if(!self)return nil;INPUT(state&&width&&height&&width<=16384&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid iterated ink dimensions");INPUT([programs isKindOfClass:NSDictionary.class],@"Iterated programs must be a record");_state=state;_width=width;_height=height;_count=state.count;_lastIndex=state.index;
+ uint32_t tw=[state drawViewWidth],th=[state drawViewHeight];_reduceWidth=MAX((tw+1)/2,(width+3)/4);_reduceHeight=MAX((th+1)/2,(height+3)/4);
  for(NSString *name in iteratedInkProgramNames()){NSDictionary *p=programs[name];INPUT([p isKindOfClass:NSDictionary.class],@"Iterated shader program must be a record");for(NSString *stage in @[@"vertex",@"fragment"]){NSString *source=p[stage];INPUT([source isKindOfClass:NSString.class]&&[source hasPrefix:@"#version 410 core\n"],@"Iterated ink shader profile missing");_programBytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}}
  ensure(self.retainedBytes<=Budget,@"capacity",@"Iterated ink storage exceeds budget");_sources=[programs copy];_context=CGLGetCurrentContext();RUNTIME(_context!=NULL,@"Iterated ink needs current context");_context=CGLRetainContext(_context);return self;
 }
@@ -87,11 +89,14 @@ static void iteratedInkBind(GLuint program,NSArray *uniforms){
  BOOL native=[format isEqual:@"source-rgb1024"];INPUT([key isKindOfClass:NSString.class]&&[paletteData isKindOfClass:NSData.class]&&[noise isKindOfClass:NSData.class]&&(native||[format isEqual:@"local-rgba4097"])&&paletteData.length==(native?1024*12:4097*16)&&noise.length==256,@"Iterated palette/noise input mismatch");
  for(NSUInteger i=0;i<paletteData.length/4;i++){float v;memcpy(&v,(const uint8_t*)paletteData.bytes+i*4,4);INPUT(isfinite(v),@"Iterated palette contains nonfinite values");}
  NSString *primitive=plan[@"primitive"];BOOL points=[primitive isEqual:@"points"];INPUT(points||[primitive isEqual:@"triangles"],@"Unknown iterated primitive");
- SourceCglIteratedDrawView view=[_state drawViewAtIndex:index retained:retained packetBytes:0];
+ // Read dimensions from the state owner without materializing its GPU view.
+ // Malformed bindings must fail before either owner's storage is changed.
+ SourceCglIteratedDrawView view={0,0,[_state drawViewWidth],[_state drawViewHeight],_state.count,index};
  NSArray *stateBindings=@[iteratedInkUniform(@"quadSplat",@"bool",@[@(points?0:1)]),iteratedInkSampler(@"states",NO,0),iteratedInkSampler(@"counters",YES,1),iteratedInkSampler(@"palette",NO,2),iteratedInkSampler(@"noisePermutation",YES,3),iteratedInkUniform(@"size",@"ivec2",@[@(_width),@(_height)]),iteratedInkUniform(@"count",@"int",@[@(view.count)]),iteratedInkUniform(@"stateWidth",@"int",@[@(view.width)]),iteratedInkUniform(@"particleOffset",@"int",@[@0])];
  draw=iteratedInkReplace(draw,stateBindings);stats=iteratedInkReplace(stats,@[iteratedInkUniform(@"sourcePointClip",@"int",@[@(points?1:0)]),iteratedInkUniform(@"size",@"ivec2",@[@(_width),@(_height)]),iteratedInkUniform(@"recording",@"int",@[@(record?1:0)]),iteratedInkSampler(@"states",NO,0),iteratedInkSampler(@"counters",YES,1),iteratedInkUniform(@"count",@"int",@[@(view.count)]),iteratedInkUniform(@"sourceSize",@"ivec2",@[@(view.width),@(view.height)])]);
  // Complete active bindings are validated before the retained ink is touched.
- iteratedInkValidate(_programs[0],draw);iteratedInkValidate(_programs[1],stats);iteratedInkValidate(_programs[2],@[iteratedInkSampler(@"values",YES,0),iteratedInkUniform(@"sourceSize",@"ivec2",@[@(view.width),@(view.height)])]);iteratedInkValidate(_programs[5],@[]);[self checkGl];NSException *failure=nil;NSDictionary *facts=nil;
+ iteratedInkValidate(_programs[0],draw);iteratedInkValidate(_programs[1],stats);iteratedInkValidate(_programs[2],@[iteratedInkSampler(@"values",YES,0),iteratedInkUniform(@"sourceSize",@"ivec2",@[@(view.width),@(view.height)])]);iteratedInkValidate(_programs[5],@[]);[self checkGl];
+ view=[_state drawViewAtIndex:index retained:retained packetBytes:0];NSException *failure=nil;NSDictionary *facts=nil;
  @try{
   samilaRaster(_width,_height);glBindVertexArray(_vao);glDisable(GL_BLEND);
   if(![_paletteKey isEqual:key]){[self bindTexture:_palette unit:2];glTexImage2D(GL_TEXTURE_2D,0,native?GL_RGB32F:GL_RGBA32F,native?1024:4097,1,0,native?GL_RGB:GL_RGBA,GL_FLOAT,paletteData.bytes);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,native?GL_LINEAR:GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,native?GL_LINEAR:GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,native?GL_REPEAT:GL_CLAMP_TO_EDGE);_paletteKey=[key copy];}
@@ -102,12 +107,12 @@ static void iteratedInkBind(GLuint program,NSArray *uniforms){
    else{iteratedInkBind(_programs[2],@[iteratedInkSampler(@"values",YES,0),iteratedInkUniform(@"sourceSize",@"ivec2",@[@(w),@(h)])]);[self bindTexture:_reductions[1-side] unit:0];}
    w=(w+1)/2;h=(h+1)/2;[self target:_reductions[side] width:w height:h facts:NO];glDrawArrays(GL_TRIANGLES,0,3);side=1-side;level++;
   }while(w>1||h>1);
-  uint32_t values[4]={0};glReadPixels(0,0,1,1,GL_RGBA_INTEGER,GL_UNSIGNED_INT,values);[self checkGl];uint64_t invalid=(uint64_t)values[0]+((uint64_t)values[1]<<32);INPUT((uint64_t)values[2]+values[3]<=view.count,@"Iterated sample statistics exceed particle coverage");
+  uint32_t values[4]={0};glReadPixels(0,0,1,1,GL_RGBA_INTEGER,GL_UNSIGNED_INT,values);[self checkGl];uint64_t invalid=(uint64_t)values[0]+((uint64_t)values[1]<<32);RUNTIME(invalid<=9007199254740991ULL&&(uint64_t)values[2]+values[3]<=view.count,@"Iterated sample statistics exceed exact coverage");
   if(record){iteratedInkBind(_programs[0],draw);[self target:_ink width:_width height:_height facts:NO];[self bindTexture:view.positions unit:0];[self bindTexture:view.metadata unit:1];[self bindTexture:_palette unit:2];[self bindTexture:_noise unit:3];glEnable(GL_BLEND);glBlendEquation(GL_FUNC_ADD);glBlendFunc(GL_ONE,GL_ONE);if(points)glEnable(GL_PROGRAM_POINT_SIZE);else glDisable(GL_PROGRAM_POINT_SIZE);GLint offset=glGetUniformLocation(_programs[0],"particleOffset");
    for(uint32_t first=0;first<view.count;first+=65536){glUniform1i(offset,(GLint)first);glDrawArraysInstanced(points?GL_POINTS:GL_TRIANGLES,0,points?1:6,MIN(65536,view.count-first));}[self checkGl];
   }
   facts=@{@"invalid":@(invalid),@"accepted":@(values[2]),@"clipped":@(values[3]),@"sampleInvalid":@(record?view.count-values[2]-values[3]:0)};
- }@catch(NSException *e){_failed=YES;failure=e;}[self finishWithFailure:failure restoreInkFilter:NO];_lastFacts=facts;_displays++;return _lastFacts;
+ }@catch(NSException *e){_failed=YES;failure=e;}[self finishWithFailure:failure restoreInkFilter:NO];_lastFacts=facts;_lastIndex=index;_displays++;return _lastFacts;
 }
 -(NSData*)present:(NSDictionary*)plan retained:(uint64_t)retained{
  [self check];INPUT([plan isKindOfClass:NSDictionary.class],@"Iterated present plan must be a record");INPUT(retained>=self.retainedBytes+_state.retainedBytes,@"Presentation admission omits owned storage");iteratedStateBudget(retained,0,(uint64_t)_width*_height*4);
@@ -129,3 +134,4 @@ static void iteratedInkBind(GLuint program,NSArray *uniforms){
  _disposed=YES;_sources=nil;_state=nil;CGLReleaseContext(_context);_context=NULL;
 }
 @end
+#endif

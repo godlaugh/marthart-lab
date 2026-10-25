@@ -13,7 +13,7 @@ type Checkpoint=Owned&{expectedIndex:number;expectedCount:number};
 export type SourceIteratedNativeOperation=
  | (Owned&SourceIteratedNativeShaders&{kind:'create';count:number})
  | (Checkpoint&{kind:'upload';expectedIndex:0;offset:number;positionsAndMetric:Float32Array})
- | (Checkpoint&{kind:'advance';reset:boolean;dimension:2;steps:number;uniforms:readonly SourceIteratedNativeUniform[]})
+ | (Checkpoint&{kind:'advance';reset:boolean;resetCounter?:boolean;dimension:2;steps:number;uniforms:readonly SourceIteratedNativeUniform[]})
  | (Checkpoint&{kind:'read';offset:number;count:number})
  | (Owned&{kind:'release';expectedIndex?:number;expectedCount?:number});
 /** All operations use a 1x1, zero-clear, zero-draw envelope. Logical expected
@@ -84,7 +84,7 @@ function validate(request:SourceIteratedNativeRequest){
  captureSourceIteratedNativeResponseBinding(request);const op=request.operation;
  if(op.kind==='upload')demand(op.positionsAndMetric.every(Number.isFinite),'原生迭代上传块须为有限 canonical seed');
  if(op.kind==='advance'){
-  demand(typeof op.reset==='boolean'&&op.dimension===2,'原生迭代推进配置无效');
+  demand(typeof op.reset==='boolean'&&op.dimension===2&&(op.resetCounter===undefined||typeof op.resetCounter==='boolean'&&(!op.reset||op.resetCounter)),'原生迭代推进配置无效');
   demand(Array.isArray(op.uniforms)&&op.uniforms.length<=65536,'原生迭代 uniform 集合无效');const names=new Set<string>();
   for(const u of op.uniforms){demand(u&&typeof u.name==='string'&&/^[A-Za-z_]\w*$/.test(u.name)&&!u.name.startsWith('gl_')&&!['steps','dimension','resetCounter'].includes(u.name)&&!names.has(u.name),'原生迭代 uniform 名称无效或重复');demand(typeof u.value==='number'&&Number.isFinite(Math.fround(u.value)),'原生迭代 uniform 必须为有限 float32');names.add(u.name);}
  }
@@ -115,11 +115,11 @@ export function encodeSourceIteratedNativeRequest(request:SourceIteratedNativeRe
    if(view){const bits=new Uint32Array(values.buffer,values.byteOffset,values.length);for(let i=0;i<bits.length;i++){if((i&16383)===0)check();view.setUint32(at+i*4,bits[i],true);}}
   };
   const emit=()=>{
-   check();word(SOURCE_FRAME_MAGIC);word(SOURCE_ITERATED_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(1);word(1);for(let i=0;i<8;i++)word(0);
+   check();word(SOURCE_FRAME_MAGIC);word(op.kind==='advance'&&op.resetCounter!==undefined?7:SOURCE_ITERATED_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(1);word(1);for(let i=0;i<8;i++)word(0);
    word(SOURCE_ITERATED_NATIVE_FAMILY);word(kinds[op.kind]);block(Uint8Array.from(op.resource.match(/../g)!,v=>parseInt(v,16)));
    if(op.kind==='create'){word(op.count);text(op.vertex);text(op.fragment);}
    if(op.kind==='upload'){word(op.expectedIndex);word(op.offset);floats(op.positionsAndMetric);}
-   if(op.kind==='advance'){word(op.expectedIndex);word(op.reset?1:0);word(op.dimension);word(op.steps);word(op.uniforms.length);for(const u of op.uniforms){check();text(u.name);float(u.value);}}
+   if(op.kind==='advance'){word(op.expectedIndex);word(op.reset?1:0);if(op.resetCounter!==undefined)word(op.resetCounter?1:0);word(op.dimension);word(op.steps);word(op.uniforms.length);for(const u of op.uniforms){check();text(u.name);float(u.value);}}
    if(op.kind==='read'){word(op.expectedIndex);word(op.offset);word(op.count);}
   };
   emit();const size=offset;capacity(resident+transient+size*6);out=new Uint8Array(size);view=new DataView(out.buffer);offset=0;emit();check();return{ok:true,value:out};
