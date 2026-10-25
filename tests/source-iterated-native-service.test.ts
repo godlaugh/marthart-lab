@@ -43,12 +43,21 @@ function handle(b){
    else if(state&&mode!=='duplicate-ack')status=1;
    else{state={index:0,uploaded:0,total:b.readUInt32LE(88)};states.set(key,state);}
   }else if(kind!==5&&!state)status=5;
-  if(!status&&kind===2&&state)state.uploaded=2;if(!status&&(kind===3||kind===8)&&state)state.index++;
-  const count=kind===4?b.readUInt32LE(96):0;payload=Buffer.alloc(64+count*24);payload.writeUInt32LE(2,0);payload.writeUInt32LE(kind,4);resource.copy(payload,8);
+  if(!status&&kind===2&&state)state.uploaded=2;if(!status&&(kind===3||kind===8||kind===9)&&state)state.index++;
+  const count=kind===4?b.readUInt32LE(96):0,automatic=kind===9?b.readUInt32LE(104):0,parameters=kind===9?b.readUInt32LE(108):0;payload=Buffer.alloc(64+count*24+(kind===9?8+4*(automatic+parameters):0));payload.writeUInt32LE(2,0);payload.writeUInt32LE(kind,4);resource.copy(payload,8);
   if(state){payload.writeUInt32LE(state.index,24);payload.writeUInt32LE(state.uploaded,32);payload.writeUInt32LE(state.total,36);}
   if(kind===4){payload.writeUInt32LE(b.readUInt32LE(92),40);payload.writeUInt32LE(count,44);for(let i=0;i<count;i++){payload.writeUInt32LE(0x7fa12345,64+i*24);payload.writeUInt32LE(0x80000000,68+i*24);payload.writeUInt32LE(0x7f800000,72+i*24);payload.writeUInt32LE(0xff800000,76+i*24);payload.writeUInt32LE(0xffffffff,80+i*24);payload.writeUInt32LE(1,84+i*24);}}
-  if(version===8){payload.writeUInt32LE(1,52);payload.writeUInt32LE(1,56);}
-  if(kind===3||kind===8)payload.writeUInt32LE(b.readUInt32LE(version===7?104:100),48);
+  if(version>=8){payload.writeUInt32LE(1,52);payload.writeUInt32LE(1,56);}
+  if(kind===3||kind===8||kind===9)payload.writeUInt32LE(b.readUInt32LE(version===7?104:100),48);
+  if(kind===9){
+   payload.writeUInt32LE(1,60);payload.writeUInt32LE(automatic,64);payload.writeUInt32LE(parameters,68);for(let i=0;i<automatic+parameters;i++)payload.writeUInt32LE(b.readUInt32LE(100)?2:0,72+i*4);
+   if(mode==='processing-count')payload.writeUInt32LE(automatic+1,64);
+   if(mode==='processing-alias')payload.writeUInt32LE(0xffffffff,72);
+   if(mode==='processing-parameter')payload.writeUInt32LE(4,72+automatic*4);
+   if(mode==='processing-marker')payload.writeUInt32LE(0,60);
+   if(mode==='processing-length')payload=payload.subarray(0,68);
+   if(mode==='processing-extra')payload=Buffer.concat([payload,Buffer.from([0])]);
+  }
   if(kind===5){payload.writeUInt32LE(state?1:2,28);states.delete(key);}
   if(kind===4){
    const offsets={family:0,kind:4,index:24,disposition:28,uploaded:32,offset:40,count:44,steps:48,reserved:60,validity:84,unit:52,profile:56};
@@ -80,6 +89,14 @@ async function initialized(mode='normal',cleanupMs=500,creation:SourceIteratedNa
 describe('v6/v7 gateway with actual owned CPU child pipes',()=>{
 
 
+ it.each(['processing-count','processing-alias','processing-parameter','processing-marker','processing-length','processing-extra'])('retires the child on malformed %s results without accepting the checkpoint',async mode=>{
+  const f=await fixture(mode),profile='source-fragment' as const;
+  try{
+   expect(await f.send({kind:'create-fragment',resource:token,count:2,...shaders,bindingNames:['gain']})).toMatchObject({ok:true});expect(await f.send({...upload(),profile})).toMatchObject({ok:true});
+   const operation:SourceIteratedNativeOperation={kind:'advance-processing-fragment',resource:token,expectedIndex:0,expectedCount:2,steps:3,reset:false,resetCounter:false,automatic:[{names:['viewport','fallback'],type:35666,values:[0,0,405,486]}],parameters:[{name:'gain',value:.125}]};
+   expect(await f.send(operation)).toMatchObject({ok:false,error:{kind:'protocol'}});expect(f.service.processCount).toBe(0);expect(f.service.retainedResourceCount).toBe(0);
+  }finally{await f.close();}
+ });
  it('keeps a custom unacknowledged create owned when process cleanup fails and releases it only after confirmed close',async()=>{
   const f=await fixture('hang-create',20),abort=new AbortController(),kill=vi.spyOn(ChildProcess.prototype,'kill').mockReturnValue(false);
   try{

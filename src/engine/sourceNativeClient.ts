@@ -1,5 +1,5 @@
 import {encodeSourceIteratedRenderNativeRequest,captureSourceIteratedRenderNativeResponseBinding,decodeSourceIteratedRenderNativeResponse,type SourceIteratedRenderNativeRequest,type SourceIteratedRenderNativeResponse} from './sourceIteratedRenderNativeProtocol';
-import {encodeSourceIteratedNativeRequest,captureSourceIteratedNativeResponseBinding,decodeSourceIteratedNativeResponse,type SourceIteratedNativeRequest,type SourceIteratedNativeResponse} from './sourceIteratedNativeProtocol';
+import {encodeSourceIteratedNativeRequest,captureSourceIteratedNativeResponseBinding,decodeSourceIteratedNativeResponse,sourceIteratedNativeResponseBytes,type SourceIteratedNativeRequest,type SourceIteratedNativeResponse} from './sourceIteratedNativeProtocol';
 import {encodeSourceDrawingFrame,type SourceDrawingFrame} from './sourceDrawingFrame';
 
 import {SourceNativeError} from './sourceNativeError';
@@ -47,7 +47,7 @@ async function exchange(request:NativeRequest,options:NativeOptions):Promise<Nat
   const identity=response.headers.get('x-source-renderer');
   if(response.headers.get('content-type')!=='application/octet-stream'||response.headers.get('x-source-format')!==(render?'iterated-render-v1':iterated?'iterated-v1':samila?'samila-v1':control?'u32le':'rgba8')||response.headers.get('x-source-row-order')!==(control?'none':'bottom-up')||!identity||!/^[a-f0-9]{64}$/.test(identity))throw new SourceNativeError('protocol','原生响应格式或后端身份无效');
   for(const [name,value]of Object.entries(expected))if(header(response,'x-source-'+name)!==value)throw new SourceNativeError('protocol','原生响应与请求帧不一致');
-  const length=renderBinding?128+(renderBinding.kind==='present'?renderBinding.width*renderBinding.height*4:0):iteratedBinding?64+(iteratedBinding.kind==='read'?iteratedBinding.count*24:0):samila?64+(control?0:expected.width*expected.height*4):expected.width*expected.height*4;if(header(response,'content-length')!==length)throw new SourceNativeError('protocol','原生像素长度无效');
+  const length=renderBinding?128+(renderBinding.kind==='present'?renderBinding.width*renderBinding.height*4:0):iteratedBinding?sourceIteratedNativeResponseBytes(iteratedBinding):samila?64+(control?0:expected.width*expected.height*4):expected.width*expected.height*4;if(header(response,'content-length')!==length)throw new SourceNativeError('protocol','原生像素长度无效');
   const raw=await bytes(response,length,controller.signal);if(raw.length!==length)throw new SourceNativeError('protocol','原生像素响应截断');
   const samilaResult=request.family==='samila'?decodeSourceSamilaNativeResponse(raw,request.frame):undefined,iteratedResult=iteratedBinding?decodeSourceIteratedNativeResponse(raw,iteratedBinding):undefined,renderResult=renderBinding?decodeSourceIteratedRenderNativeResponse(raw,renderBinding):undefined;
   const contextSerial=samila||iterated||render?header(response,'x-source-context'):0,sessionSerial=samila||iterated||render?header(response,'x-source-session'):0;

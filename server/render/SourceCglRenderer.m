@@ -51,7 +51,7 @@ static void samilaFloatBlock(NSData *data,NSUInteger length){INPUT(data.length==
 #include "SourceCglSymmetryProtocol.h"
 static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retainedBytes){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=8,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=9,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
@@ -65,17 +65,17 @@ static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retain
   INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Iterated envelope cannot contain generic draws");for(NSNumber *v in clear)INPUT(v.floatValue==0,@"Iterated envelope clear must be zero");
   uint32_t family=[r word];if(version==7&&family==3){NSDictionary *op=parseIteratedRender(r,width,height);INPUT(r.offset==packet.length,@"Trailing iterated render bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"iteratedRender":op,@"packetBytes":@(packet.length)};}
   INPUT(family==2&&width==1&&height==1,@"Unknown iterated native family/control dimensions");uint32_t kind=[r word];NSData *resource=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<resource.length;i++)if(((const uint8_t*)resource.bytes)[i])nonzero=YES;
-  INPUT((version==6?(kind>=1&&kind<=5):version==7?(kind==3||kind==6):(kind==2||kind==4||kind==5||kind==7||kind==8))&&resource.length==16&&nonzero,@"Invalid iterated operation/resource");NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource,@"fragmentProfile":@(version==8)}mutableCopy];
+  INPUT((version==6?(kind>=1&&kind<=5):version==7?(kind==3||kind==6):version==8?(kind==2||kind==4||kind==5||kind==7||kind==8):kind==9)&&resource.length==16&&nonzero,@"Invalid iterated operation/resource");NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource,@"fragmentProfile":@(version>=8)}mutableCopy];
   if(kind==1||kind==6||kind==7){uint32_t particles=[r word];INPUT(particles>=1&&particles<=8000000,@"Invalid iterated particle count");op[@"count"]=@(particles);uint64_t programBytes=0;
    for(NSString *key in (kind==6?@[@"vertex",@"fragment",@"diagnosticVertex",@"diagnosticFragment"]:@[@"vertex",@"fragment"])){NSString *source=[r text];INPUT([source hasPrefix:@"#version 410 core\n"],@"Iterated shader requires explicit native GL41 profile");op[key]=source;programBytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}
    op[@"programBytes"]=@(programBytes);uint64_t texels=kind==7?(uint64_t)ceil(sqrt((double)particles))*(uint64_t)ceil(sqrt((double)particles)):particles,base=retainedBytes+texels*64+programBytes+1024*1024;ensure(base+packet.length*6<=Budget,@"capacity",@"Iterated creation exceeds shared budget");if(kind==7)op[@"bindingNames"]=parseSymmetryNames(r,base);
   }
-  if((kind>=2&&kind<=4)||kind==8){uint32_t index=[r word];INPUT(kind!=2||index==0,@"Iterated seed upload requires initial checkpoint");INPUT((kind!=3&&kind!=8)||index<UINT32_MAX,@"Iterated advance checkpoint exhausted");op[@"index"]=@(index);}
+  if((kind>=2&&kind<=4)||kind==8||kind==9){uint32_t index=[r word];INPUT(kind!=2||index==0,@"Iterated seed upload requires initial checkpoint");INPUT((kind!=3&&kind!=8&&kind!=9)||index<UINT32_MAX,@"Iterated advance checkpoint exhausted");op[@"index"]=@(index);}
   if(kind==2){uint32_t offset=[r word];NSData *positions=[r block];INPUT(positions.length>0&&positions.length%16==0&&positions.length/16<=65536,@"Iterated seed chunk exceeds range");for(NSUInteger i=0;i<positions.length/4;i++){uint32_t bits=indexAt(positions,i,4);float f;memcpy(&f,&bits,4);INPUT(isfinite(f),@"Nonfinite initial particle");}op[@"offset"]=@(offset);op[@"positions"]=positions;}
   if(kind==3){uint32_t reset=[r word],resetCounter=version==7?[r word]:reset,dimension=[r word],steps=[r word];INPUT(reset<=1&&resetCounter<=1&&reset<=resetCounter&&(dimension==2||dimension==3)&&steps<=256,@"Invalid iterated advance parameters");op[@"reset"]=@(reset);if(version==7)op[@"resetCounter"]=@(resetCounter);op[@"dimension"]=@(dimension);op[@"steps"]=@(steps);NSUInteger n=count(r,9);INPUT(n<=65536,@"Iterated uniform capacity");NSMutableDictionary *uniforms=[NSMutableDictionary new];
    for(NSUInteger i=0;i<n;i++){NSString *name=[r text];INPUT((nameValid(name)&&!uniforms[name]&&![@[@"steps",@"dimension",@"resetCounter"]containsObject:name]),@"Invalid iterated uniform name");uniforms[name]=@([r number]);}op[@"uniforms"]=uniforms;
   }
-  if(kind==8){uint32_t reset=[r word],resetCounter=[r word],steps=[r word];INPUT(reset<=1&&resetCounter<=1&&reset<=resetCounter&&steps<=16,@"Invalid Symmetry advance controls");op[@"reset"]=@(reset);op[@"resetCounter"]=@(resetCounter);op[@"steps"]=@(steps);op[@"bindings"]=parseSymmetryBindings(r,retainedBytes);}
+  if(kind==8||kind==9){uint32_t reset=[r word],resetCounter=[r word],steps=[r word];INPUT(reset<=1&&resetCounter<=1&&reset<=resetCounter&&steps<=16,@"Invalid Symmetry advance controls");op[@"reset"]=@(reset);op[@"resetCounter"]=@(resetCounter);op[@"steps"]=@(steps);if(kind==8)op[@"bindings"]=parseSymmetryBindings(r,retainedBytes);else[op addEntriesFromDictionary:parseSymmetryProcessing(r,retainedBytes)];}
   if(kind==4){uint32_t offset=[r word],n=[r word];INPUT(n>=1&&n<=65536,@"Iterated read chunk exceeds range");op[@"offset"]=@(offset);op[@"count"]=@(n);ensure(retainedBytes+packet.length*6+(uint64_t)n*48<=Budget,@"capacity",@"Iterated bounded read exceeds shared budget");}
   INPUT(r.offset==packet.length,@"Trailing iterated frame bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@1,@"height":@1,@"samples":@0,@"iterated":op,@"packetBytes":@(packet.length)};
  }
@@ -236,13 +236,13 @@ static NSData *renderFrame(NSDictionary *frame,NSString *out){return renderFrame
 static uint64_t iteratedRetained(NSDictionary<NSData*,id<SourceCglIteratedStateOwner>> *owners){uint64_t bytes=0;for(id<SourceCglIteratedStateOwner> owner in owners.allValues)bytes+=owner.retainedBytes;return bytes;}
 static NSData *iteratedReply(NSDictionary *operation,id<SourceCglIteratedStateOwner> owner,uint32_t disposition,NSData *states){
  uint32_t unit=owner?([owner.diagnosticUnit isEqual:@"completed-pass"]?1:0):([operation[@"fragmentProfile"]boolValue]?1:0);
- uint32_t kind=[operation[@"kind"]unsignedIntValue],words[16]={2,kind,0,0,0,0,owner?owner.index:0,disposition,owner?owner.uploaded:0,owner?owner.count:0,kind==4?[operation[@"offset"]unsignedIntValue]:0,kind==4?[operation[@"count"]unsignedIntValue]:0,(kind==3||kind==8)?[operation[@"steps"]unsignedIntValue]:0,unit,[operation[@"fragmentProfile"]boolValue]?1:0,0};
+ uint32_t kind=[operation[@"kind"]unsignedIntValue],words[16]={2,kind,0,0,0,0,owner?owner.index:0,disposition,owner?owner.uploaded:0,owner?owner.count:0,kind==4?[operation[@"offset"]unsignedIntValue]:0,kind==4?[operation[@"count"]unsignedIntValue]:0,(kind==3||kind==8||kind==9)?[operation[@"steps"]unsignedIntValue]:0,unit,[operation[@"fragmentProfile"]boolValue]?1:0,kind==9?1:0};
  for(int i=0;i<16;i++)words[i]=CFSwapInt32HostToLittle(words[i]);memcpy((uint8_t*)words+8,[operation[@"resource"]bytes],16);NSMutableData *result=[NSMutableData dataWithBytes:words length:64];if(states)[result appendData:states];return result;
 }
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
 static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData *payload){
- uint32_t version=indexAt(request,1,4),format=status?0:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
+ uint32_t version=indexAt(request,1,4),format=status?0:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
  uint32_t header[11]={0x31524c4d,1,(uint32_t)(44+payload.length),indexAt(request,3,4),indexAt(request,4,4),indexAt(request,5,4),indexAt(request,6,4),status,format,(uint32_t)payload.length,contextSerial};
  for(int i=0;i<11;i++)header[i]=CFSwapInt32HostToLittle(header[i]);
  RUNTIME(fwrite(header,1,sizeof(header),stdout)==sizeof(header)&&fwrite(payload.bytes,1,payload.length,stdout)==payload.length&&fflush(stdout)==0,@"Response pipe write failed");
@@ -260,7 +260,7 @@ int main(int argc,const char **argv){@autoreleasepool{
     uint32_t samilaKind=[samilaOperation[@"kind"]unsignedIntValue];NSData *samilaResource=samilaOperation[@"resource"];SourceCglSamilaState *samilaOwner=samilaResource?samila[samilaResource]:nil;
     if(samilaKind==1)ensure(samila.count<2&&!samilaOwner,@"capacity",@"Two Samila resources are already owned or token is duplicate");else if(samilaKind==2||samilaKind==4||samilaKind==5)ensure(samilaOwner!=nil,@"state-lost",@"Samila resource is absent after release or context loss");
     uint32_t iteratedKind=[iteratedOperation[@"kind"]unsignedIntValue];NSData *iteratedResource=iteratedOperation[@"resource"];id<SourceCglIteratedStateOwner> iteratedOwner=iteratedResource?iterated[iteratedResource]:nil;
-    if(iteratedKind==1||iteratedKind==6||iteratedKind==7)ensure(iterated.count<2&&!iteratedOwner,@"capacity",@"Two iterated resources are owned or token is duplicate");else if((iteratedKind>=2&&iteratedKind<=4)||iteratedKind==8)ensure(iteratedOwner!=nil,@"state-lost",@"Iterated resource is absent after release or context loss");
+    if(iteratedKind==1||iteratedKind==6||iteratedKind==7)ensure(iterated.count<2&&!iteratedOwner,@"capacity",@"Two iterated resources are owned or token is duplicate");else if((iteratedKind>=2&&iteratedKind<=4)||iteratedKind==8||iteratedKind==9)ensure(iteratedOwner!=nil,@"state-lost",@"Iterated resource is absent after release or context loss");
     if(iteratedOwner)ensure([iteratedOperation[@"fragmentProfile"]boolValue]==[iteratedOwner.executionProfile isEqual:@"source-fragment"],@"ownership",@"Iterated operation belongs to another execution profile");
     if(iteratedKind==5)ensure(iteratedInkDependents(inks,iteratedResource)==0,@"ownership",@"Release dependent iterated ink owners before compute state");
     if(kind==1)ensure(bouncing==nil,@"capacity",@"A Bouncing resource is already owned");
@@ -272,6 +272,7 @@ int main(int argc,const char **argv){@autoreleasepool{
      if(iteratedKind==1||iteratedKind==6||iteratedKind==7){iteratedOwner=iteratedKind==7?[[SourceCglSymmetryState alloc]initWithOperation:iteratedOperation]:[[SourceCglIteratedState alloc]initWithOperation:iteratedOperation];iterated[iteratedResource]=iteratedOwner;@try{[iteratedOwner prepare:iteratedOperation];}@catch(NSException *e){[iteratedOwner dispose];[iterated removeObjectForKey:iteratedResource];@throw;}}
      else if(iteratedKind==2)[iteratedOwner upload:iteratedOperation retained:retained packetBytes:packet.length];
      else if(iteratedKind==3||iteratedKind==8)[iteratedOwner advance:iteratedOperation retained:retained packetBytes:packet.length];
+     else if(iteratedKind==9){ensure([iteratedOwner isKindOfClass:SourceCglSymmetryState.class],@"ownership",@"Processing advance requires a source-fragment owner");states=[(SourceCglSymmetryState*)iteratedOwner advanceProcessing:iteratedOperation retained:retained packetBytes:packet.length];}
      else if(iteratedKind==4)states=[iteratedOwner read:iteratedOperation retained:retained packetBytes:packet.length];
      uint32_t disposition=iteratedKind==5?(iteratedOwner?1:2):0;if(iteratedKind==5)[iteratedOwner dispose];rgba=iteratedReply(iteratedOperation,iteratedOwner,disposition,states);if(iteratedKind==5)[iterated removeObjectForKey:iteratedResource];
     }else if(samilaKind){

@@ -8,11 +8,29 @@ const BUDGET=256*1024*1024,HEADER=44,MAX_ERROR=8192;
 const failure=(kind,message)=>({ok:false,error:{kind,message}});
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const sameFile=(a,b)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeMs===b.mtimeMs&&a.ctimeMs===b.ctimeMs;
+/** Bounds checked wire traversal; no GLSL scan or reflection interpretation.
+ * Keep exact alias counts before the caller can mutate its request buffer. */
+function processingWireShape(b){
+ let at=112;
+ try{
+  const automaticCount=b.readUInt32LE(104),parameterCount=b.readUInt32LE(108);if(automaticCount+parameterCount>65536)throw Error();
+  const word=()=>{if(at+4>b.length)throw Error();const n=b.readUInt32LE(at);at+=4;return n;};
+  const skip=n=>{if(n>b.length-at)throw Error();at+=n;};
+  const text=()=>{const n=word();if(!n)throw Error();skip(n);};
+  const automaticAliases=[];let names=0,scalars=parameterCount;
+  for(let i=0;i<automaticCount;i++){
+   const aliases=word();names+=aliases;if(!aliases||names>65536)throw Error();automaticAliases.push(aliases);for(let j=0;j<aliases;j++)text();
+   const type=word(),n=word(),width={5124:1,35664:2,35665:3,35666:4,35675:9,35676:16}[type];if(!width||n!==width)throw Error();scalars+=n;if(scalars>65536)throw Error();skip(n*4);
+  }
+  for(let i=0;i<parameterCount;i++){text();skip(4);}if(at!==b.length)throw Error();
+  return{ok:true,value:{automaticAliases:Object.freeze(automaticAliases),parameterCount,processingBytes:8+4*(automaticCount+parameterCount)}};
+ }catch{return failure('input','Processing setter wire shape invalid');}
+}
 export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
@@ -30,13 +48,14 @@ export function inspectSourceFrameHeader(packet){
  }
  if(version>=6){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
-  if(version===8&&![2,4,5,7,8].includes(operation)||version===7&&operation!==3&&operation!==6||version===6&&operation>5||width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>8||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
-  const create=operation===1||operation===6||operation===7,shift=version===7&&operation===3?4:0,minimum={1:100,2:116,3:108+shift,4:100,5:88,6:108,7:104,8:108}[operation];if(b.length<minimum)return failure('input','迭代原生计算请求截断');
-  const expectedIndex=(operation>=2&&operation<=4)||operation===8?b.readUInt32LE(88):undefined,totalCount=create?b.readUInt32LE(88):undefined,offset=operation===2||operation===4?b.readUInt32LE(92):0,readCount=operation===4?b.readUInt32LE(96):0,steps=operation===3?b.readUInt32LE(100+shift):operation===8?b.readUInt32LE(100):0;
+  if(version===9&&operation!==9||version===8&&![2,4,5,7,8].includes(operation)||version===7&&operation!==3&&operation!==6||version===6&&operation>5||width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>9||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
+  const create=operation===1||operation===6||operation===7,shift=version===7&&operation===3?4:0,minimum={1:100,2:116,3:108+shift,4:100,5:88,6:108,7:104,8:108,9:112}[operation];if(b.length<minimum)return failure('input','迭代原生计算请求截断');
+  const expectedIndex=(operation>=2&&operation<=4)||operation===8||operation===9?b.readUInt32LE(88):undefined,totalCount=create?b.readUInt32LE(88):undefined,offset=operation===2||operation===4?b.readUInt32LE(92):0,readCount=operation===4?b.readUInt32LE(96):0,steps=operation===3?b.readUInt32LE(100+shift):(operation===8||operation===9)?b.readUInt32LE(100):0;
   const uploadBytes=operation===2?b.readUInt32LE(96):0;
-  if(create&&(totalCount<1||totalCount>8000000)||operation===2&&(expectedIndex!==0||!uploadBytes||uploadBytes%16||uploadBytes/16>65536||b.length!==100+uploadBytes)||operation===3&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||![2,3].includes(b.readUInt32LE(96+shift))||steps>256||shift&&(b.readUInt32LE(96)>1||b.readUInt32LE(92)>b.readUInt32LE(96)))||operation===8&&(expectedIndex===0xffffffff||steps>16||b.readUInt32LE(92)>1||b.readUInt32LE(96)>1||b.readUInt32LE(92)>b.readUInt32LE(96))||operation===4&&(b.length!==100||!readCount||readCount>65536||offset+readCount>8000000)||operation===5&&b.length!==88)return failure('input','迭代原生计算范围或检查点无效');
-  if(b.length*6+readCount*48+64>BUDGET)return failure('capacity','迭代原生计算协议与读取超过容量');
-  return{ok:true,value:{generation,sequence,width,height,samples,control:true,operation,resource,family:'iterated',fragmentProfile:version===8,expectedIndex,totalCount,offset,readCount,steps,uploaded:operation===2?offset+uploadBytes/16:undefined}};
+  if(create&&(totalCount<1||totalCount>8000000)||operation===2&&(expectedIndex!==0||!uploadBytes||uploadBytes%16||uploadBytes/16>65536||b.length!==100+uploadBytes)||operation===3&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||![2,3].includes(b.readUInt32LE(96+shift))||steps>256||shift&&(b.readUInt32LE(96)>1||b.readUInt32LE(92)>b.readUInt32LE(96)))||(operation===8||operation===9)&&(expectedIndex===0xffffffff||steps>16||b.readUInt32LE(92)>1||b.readUInt32LE(96)>1||b.readUInt32LE(92)>b.readUInt32LE(96))||operation===4&&(b.length!==100||!readCount||readCount>65536||offset+readCount>8000000)||operation===5&&b.length!==88)return failure('input','迭代原生计算范围或检查点无效');
+  const processing=operation===9?processingWireShape(b):{ok:true,value:{processingBytes:0}};if(!processing.ok)return processing;
+  if(b.length*6+readCount*48+64+(operation===9?128+320*(processing.value.automaticAliases.length+processing.value.parameterCount):0)>BUDGET)return failure('capacity','迭代原生计算协议与读取超过容量');
+  return{ok:true,value:{generation,sequence,width,height,samples,control:true,operation,resource,family:'iterated',fragmentProfile:version>=8,...processing.value,expectedIndex,totalCount,offset,readCount,steps,uploaded:operation===2?offset+uploadBytes/16:undefined}};
  }
  if(version===5){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex'),control=operation!==2&&operation!==4,accumulate=operation===2||operation===5;
@@ -55,7 +74,7 @@ function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
  const length=bytes.readUInt32LE(8),generation=bytes.readUInt32LE(12),sequence=bytes.readUInt32LE(16),width=bytes.readUInt32LE(20),height=bytes.readUInt32LE(24),status=bytes.readUInt32LE(28),format=bytes.readUInt32LE(32),payloadBytes=bytes.readUInt32LE(36),contextSerial=bytes.readUInt32LE(40);
  if(generation!==expected.generation||sequence!==expected.sequence||width!==expected.width||height!==expected.height)return failure('protocol','原生响应不属于当前帧');
- if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.family==='iterated-render'?5:expected.family==='iterated'?4:expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='iterated-render'?128+(expected.control?0:width*height*4):expected.family==='iterated'?64+expected.readCount*24:expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
+ if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.family==='iterated-render'?5:expected.family==='iterated'?4:expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='iterated-render'?128+(expected.control?0:width*height*4):expected.family==='iterated'?64+expected.readCount*24+(expected.processingBytes??0):expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
  return {ok:true,value:{generation,sequence,width,height,status,format,payloadBytes,contextSerial}};
 }
 function samilaResponse(payload,expected){
@@ -74,10 +93,15 @@ function samilaResponse(payload,expected){
 }
 function iteratedResponse(payload,expected){
  const word=n=>payload.readUInt32LE(n),index=word(24),disposition=word(28),uploaded=word(32),total=word(36),offset=word(40),count=word(44),steps=word(48),kind=expected.operation;
- if(word(0)!==2||word(4)!==kind||payload.subarray(8,24).toString('hex')!==expected.resource||word(52)!==(expected.fragmentProfile?1:0)||word(56)!==(expected.fragmentProfile?1:0)||word(60)!==0||total>8000000||uploaded>total)return failure('protocol','迭代原生响应身份或容量无效');
+ if(word(0)!==2||word(4)!==kind||payload.subarray(8,24).toString('hex')!==expected.resource||word(52)!==(expected.fragmentProfile?1:0)||word(56)!==(expected.fragmentProfile?1:0)||word(60)!==(kind===9?1:0)||total>8000000||uploaded>total)return failure('protocol','迭代原生响应身份或容量无效');
  if(kind===5){if((disposition!==1&&disposition!==2)||disposition===1&&!total||disposition===2&&(index||uploaded||total)||offset||count||steps)return failure('protocol','迭代原生释放响应无效');return{ok:true};}
  if(disposition!==0||!total||steps!==expected.steps||offset!==(kind===4?expected.offset:0)||count!==expected.readCount)return failure('protocol','迭代原生响应操作范围无效');
- if((kind===1||kind===6||kind===7)&&(expected.owned||index!==0||uploaded!==0||total!==expected.totalCount)||kind===2&&(index!==0||uploaded!==expected.uploaded)||(kind===3||kind===8)&&(index!==expected.expectedIndex+1||uploaded!==total)||kind===4&&(index!==expected.expectedIndex||uploaded!==total||offset+count>total))return failure('protocol','迭代原生确认进度无效');
+ if((kind===1||kind===6||kind===7)&&(expected.owned||index!==0||uploaded!==0||total!==expected.totalCount)||kind===2&&(index!==0||uploaded!==expected.uploaded)||(kind===3||kind===8||kind===9)&&(index!==expected.expectedIndex+1||uploaded!==total)||kind===4&&(index!==expected.expectedIndex||uploaded!==total||offset+count>total))return failure('protocol','迭代原生确认进度无效');
+ if(kind===9){
+  if(word(64)!==expected.automaticAliases.length||word(68)!==expected.parameterCount)return failure('protocol','Processing setter response counts differ');
+  for(let i=0;i<expected.automaticAliases.length;i++){const code=word(72+i*4);if(expected.steps?code<1||code>expected.automaticAliases[i]*2+1:code!==0)return failure('protocol','Processing automatic response selection invalid');}
+  for(let i=0;i<expected.parameterCount;i++){const code=word(72+(expected.automaticAliases.length+i)*4);if(expected.steps?code<1||code>3:code!==0)return failure('protocol','Processing matched response invalid');}
+ }
  for(let i=0;i<count;i++)if(word(64+i*24+20)>1)return failure('protocol','迭代原生有效标记无效');return{ok:true};
 }
 function iteratedRenderResponse(payload,expected){

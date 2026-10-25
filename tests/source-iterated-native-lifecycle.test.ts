@@ -1,4 +1,4 @@
-import {beforeAll,describe,expect,it} from 'vitest';
+import {beforeAll,describe,expect,it,vi} from 'vitest';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {mkdirSync,mkdtempSync,readFileSync,writeFileSync} from 'node:fs';
@@ -7,6 +7,17 @@ import {iteratedInitialChunk} from '../src/engine/iteratedSeed';
 import {iteratedDensityGpuPrograms,sourceIteratedGpuPrograms,type IteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
 import {sourceMapGpuField} from '../src/engine/sourceMapMath';
 import {prepareSourceSymmetryCustomProgram} from '../src/engine/sourceSymmetryCustom';
+import {bindSymmetryCustomParameters} from '../src/engine/symmetryCustom';
+import processingFixture from './fixtures/source-processing-native/runtime.json';
+import {parseProjectFile} from '../src/engine/legacyImport';
+import {prepareSourceCamera,resolveSourceCamera} from '../src/engine/sourceCamera';
+import {OrdinarySourceCameraTimelineSession} from '../src/engine/ordinarySourceCameraTimeline';
+import {SourceProcessingContext,SourceProcessingShaderContext,type SourceProcessingContextEvent} from '../src/engine/sourceProcessingContext';
+import {sourceProcessingAutomaticSetters} from '../src/engine/sourceProcessingAutomaticBindings';
+import {sourceProcessingSceneInitializationEvents,sourceProcessingSceneBaseEvents,sourceProcessingSceneWorldEvents,sourceProcessingOverlayEvents} from '../src/engine/sourceProcessingSceneContext';
+import {exchangeSourceIteratedNative} from '../src/engine/sourceNativeClient';
+// @ts-expect-error The actual loopback server is separate from browser contracts.
+import {createExportServer} from '../server/index.mjs';
 import type {SourceSymmetryNativeBinding} from '../src/engine/sourceSymmetryNativeBindings';
 import {sourceSymmetryGpuField} from '../src/engine/sourceSymmetryMath';
 import {encodeSourceIteratedNativeRequest,decodeSourceIteratedNativeResponse,type SourceIteratedNativeOperation,type SourceIteratedNativeRequest} from '../src/engine/sourceIteratedNativeProtocol';
@@ -203,6 +214,64 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecyc
    await o.good(create(2,B));await o.bad({...read(2,0,0,1,B),profile},'ownership');await o.good(release(B));
    expect((await o.good({...release(),profile})).decoded).toMatchObject({disposition:'released',index:3,diagnosticUnit:'completed-pass'});
    expect((await o.good({...release(),profile})).decoded.disposition).toBe('absent');
+  }finally{await o.close();}
+ });
+ it('matches eight original frames through the public HTTP client, exposing every automatic matrix and matched collision',async()=>{
+  const f=processingFixture,count=64,profile='source-fragment' as const;
+  const app=await createExportServer({root:mkdtempSync(resolve('.cache/processing-http-')),sourceRendererBackend:backend}),realFetch=globalThis.fetch;let restoreFetch:(()=>void)|undefined,sequence=0;
+  const o={async good(operation:SourceIteratedNativeOperation){return{decoded:await exchangeSourceIteratedNative({generation:1,sequence:++sequence,operation})};}};
+  const value=<T>(r:{ok:true;value:T}|{ok:false;error:Error}):T=>{if(!r.ok)throw r.error;return r.value;};
+  const scene=parseProjectFile(JSON.stringify(f.source)).scene,camera=value(resolveSourceCamera(scene.sourceCamera));if(camera.kind!=='known')throw Error(camera.reason);
+  const timeline=new OrdinarySourceCameraTimelineSession(camera.state.value,scene.timeline.tracks,30,{}),graphics=value(SourceProcessingContext.create(f.viewport.logicalWidth,f.viewport.logicalHeight)),shader=new SourceProcessingShaderContext();
+  const events=(items:readonly SourceProcessingContextEvent[])=>{for(const event of items)value(graphics.apply(event));};
+  const program=prepareSourceSymmetryCustomProgram(f.source.equation.glsl,f.compileDegree),parameters=Object.entries(bindSymmetryCustomParameters(program,f.source.parameters)).map(([name,value])=>({name,value}));let index=0;
+  try{
+   const address=await app.listen(0),base=`http://127.0.0.1:${address.port}`;const fetchSpy=vi.spyOn(globalThis,'fetch').mockImplementation((input,init)=>realFetch(new URL(String(input),base),init));restoreFetch=()=>fetchSpy.mockRestore();
+   events([{kind:'begin-draw'},...sourceProcessingSceneInitializationEvents()]);value(shader.bind(graphics));events([{kind:'end-draw'}]);
+   await o.good({kind:'create-fragment',resource:A,count,...program});await o.good({kind:'upload',resource:A,profile,expectedCount:count,expectedIndex:0,offset:0,positionsAndMetric:new Float32Array(new Uint32Array(f.seedBits).buffer)});
+   for(const frame of f.frames){
+    events([{kind:'begin-draw'}]);const calculated=timeline.step(frame.rawDt);
+    for(const steps of frame.steps){
+     const automatic=value(sourceProcessingAutomaticSetters(value(shader.bind(undefined))));
+     const r=(await o.good({kind:'advance-processing-fragment',resource:A,expectedCount:count,expectedIndex:index,reset:false,resetCounter:false,steps,automatic,parameters})).decoded;index=r.index;
+     const outcomes=Object.fromEntries(r.processingBindings!.parameters.map(p=>[p.name,p.outcome]));expect(outcomes).toMatchObject({perspective:'applied',normalMatrix:'rejected',iterations:'rejected',stateTex:'rejected',gl_unused:'inactive','123':'inactive'});
+    }
+    const actual=(await o.good({...read(count,index),profile})).decoded;expect(bytes(actual.positionsAndMetric!),`original frame ${frame.index}`).toEqual(Buffer.from(new Uint32Array(frame.expectedBits).buffer));
+    const prepared=value(prepareSourceCamera({...scene.sourceCamera,frame:calculated.camera},f.viewport));if(prepared.kind!=='known')throw Error(prepared.reason);
+    events(sourceProcessingSceneBaseEvents(prepared.plan));if(scene.settings.sourceCameraProjection==='scene-fade-orthographic')events(sourceProcessingOverlayEvents());events(sourceProcessingSceneWorldEvents(prepared.plan));events([{kind:'pop-matrix'}]);expect(f.watermark).toBe(true);events([...sourceProcessingOverlayEvents(),{kind:'end-draw'}]);
+   }
+   await o.good({...release(),profile});
+  }finally{restoreFetch?.();shader.dispose();graphics.dispose();await app.close();expect(app.ownedProcessCount).toBe(0);}
+ });
+ it('runs source setter phases against its own linked program and preserves state on preflight failures',async()=>{
+  const o=await owner(),profile='source-fragment' as const,count=3;
+  const program=prepareSourceSymmetryCustomProgram(`uniform mat4 transform;uniform mat4 transformMatrix=mat4(7.);uniform bvec4 viewport;uniform bool perspective;uniform float gain;uniform float authored[2]=float[2](.25,.5);uniform sampler2D ppixels;
+// uniform float authored;
+// uniform float perspective;
+// uniform float transform;
+// uniform float iterations;
+// uniform float stateTex;
+// uniform float gl_unused;
+// uniform float 123;
+void calculate_next(in vec3 p,out vec3 q,out float m){q=vec3(transform[0][0]+transformMatrix[0][0]+float(viewport.z)+float(perspective),authored[0]+authored[1]+gain+float(iterations),0.);m=texture(ppixels,texCoord).x;}`,5);
+  const parameters=(values:Record<string,number>)=>Object.entries(bindSymmetryCustomParameters(program,values)).map(([name,value])=>({name,value}));
+  const step=(index:number,steps=3):Extract<SourceIteratedNativeOperation,{kind:'advance-processing-fragment'}>=>({kind:'advance-processing-fragment',resource:A,expectedCount:count,expectedIndex:index,steps,reset:false,resetCounter:false,automatic:[{names:['transform','transformMatrix'],type:35676,values:[3,0,0,0,0,3,0,0,0,0,3,0,0,0,0,3]},{names:['viewport'],type:35666,values:[0,0,10,20]},{names:['perspective'],type:5124,values:[0]},{names:['ppixels'],type:5124,values:[0]},{names:['absent'],type:35664,values:[1,2]}],parameters:parameters({gain:.125,authored:.875,perspective:.25,transform:99,iterations:12,stateTex:1})});
+  const scan=(index:number)=>({...read(count,index),profile});
+  try{
+   await o.good({kind:'create-fragment',resource:A,count,...program});await o.good({...upload(count),profile});
+   const initial=seed(count),first=(await o.good(step(0))).decoded;
+   expect(first.processingBindings!.automatic).toEqual([{outcome:'applied',selectedName:'transform'},{outcome:'applied',selectedName:'viewport'},{outcome:'applied',selectedName:'perspective'},{outcome:'applied',selectedName:'ppixels'},{outcome:'inactive'}]);
+   const outcomes=Object.fromEntries(first.processingBindings!.parameters.map(p=>[p.name,p.outcome]));expect(outcomes).toEqual({gain:'applied',authored:'applied',perspective:'applied',transform:'rejected',iterations:'rejected',stateTex:'rejected',gl_unused:'inactive','123':'inactive'});
+   const expected=new Float32Array(count*4);for(let i=0;i<count;i++)expected.set([12,4.5,0,initial[i*4]],i*4);expect(bytes((await o.good(scan(1))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
+   const missing={...step(1),reset:true,resetCounter:true,parameters:step(1).parameters.slice(1)};await o.bad(missing,'input');
+   const foreign=step(1);foreign.reset=true;foreign.resetCounter=true;(foreign.automatic[3].values as number[])[0]=1;await o.bad(foreign,'ownership');
+   await o.bad(step(1),'input',b=>b.writeUInt32LE(0x7fc00000,b.indexOf(Buffer.from('gain'))+4));
+   expect(bytes((await o.good(scan(1))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
+   const reset={...step(1,0),reset:true,resetCounter:true};expect((await o.good(reset)).decoded.processingBindings!.automatic.every(r=>r.outcome==='skipped')).toBe(true);expect(bytes((await o.good(scan(2))).decoded.positionsAndMetric!)).toEqual(bytes(initial));
+   await o.good(step(2));expect(bytes((await o.good(scan(3))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
+   const empty={...step(3,1),parameters:parameters({gain:NaN})};await o.good(empty);for(let i=0;i<count;i++)expected.set([11,1.5,0,12],i*4);expect(bytes((await o.good(scan(4))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
+   await o.good(create(1,B));await o.bad({...step(0),resource:B,expectedCount:1},'ownership');await o.good(release(B));
+   await o.good({...release(),profile});
   }finally{await o.close();}
  });
  it('keeps custom invalid observations in completed-pass units and rejects forged native profile requests',async()=>{

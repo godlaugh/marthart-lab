@@ -10,7 +10,7 @@ import {createSourceRendererService} from '../server/source-renderer.mjs';
 
 const [referenceArg,outArg]=process.argv.slice(2);assert(referenceArg&&outArg,'reference directory and new output directory required');
 const reference=resolve(referenceArg),out=resolve(outArg),sha=b=>createHash('sha256').update(b).digest('hex');await mkdir(out,{recursive:false});
-const report={status:'running',scope:'Derived graphics matrices and automatic bindings; ordinary primary update with authored camera timeline. Actual source seed/pass scheduling and linked uniform reflection are observed inputs. Application/native automatic routing and full image parity are not claimed.',inputs:{},sources:{},frames:[],mismatches:[]};
+const report={status:'running',scope:'Derived graphics context and real native Processing setter phases; ordinary primary update with authored camera timeline. Source seed/pass scheduling are observed inputs. Linked reflection is owned by the native program; original reflection is used only for comparison. Application routing and full image parity are not claimed.',inputs:{},sources:{},frames:[],mismatches:[]};
 let vite,service;const began=performance.now();
 async function pinned(path,group){const b=await readFile(path);group[path]=sha(b);return b;}
 const ref=async name=>JSON.parse(await pinned(reference+'/'+name,report.inputs));
@@ -25,7 +25,7 @@ try{
  report.originalStderr=String(await pinned(reference+'/stderr.log',report.inputs));
  vite=await createServer({configFile:false,server:{middlewareMode:true},appType:'custom',optimizeDeps:{noDiscovery:true,include:[]},logLevel:'error'});
  const {sourceProcessingSceneInitializationEvents,sourceProcessingSceneBaseEvents,sourceProcessingSceneWorldEvents,sourceProcessingOverlayEvents}=await vite.ssrLoadModule('/src/engine/sourceProcessingSceneContext.ts');
- const {SourceProcessingContext,SourceProcessingShaderContext}=await vite.ssrLoadModule('/src/engine/sourceProcessingContext.ts'),{sourceProcessingAutomaticBindings}=await vite.ssrLoadModule('/src/engine/sourceProcessingAutomaticBindings.ts'),{parseProjectFile}=await vite.ssrLoadModule('/src/engine/legacyImport.ts'),{resolveSourceCamera,prepareSourceCamera}=await vite.ssrLoadModule('/src/engine/sourceCamera.ts'),{OrdinarySourceCameraTimelineSession}=await vite.ssrLoadModule('/src/engine/ordinarySourceCameraTimeline.ts'),{prepareSourceSymmetryCustomProgram}=await vite.ssrLoadModule('/src/engine/sourceSymmetryCustom.ts'),{bindSymmetryCustomParameters}=await vite.ssrLoadModule('/src/engine/symmetryCustom.ts'),codec=await vite.ssrLoadModule('/src/engine/sourceIteratedNativeProtocol.ts');
+ const {SourceProcessingContext,SourceProcessingShaderContext}=await vite.ssrLoadModule('/src/engine/sourceProcessingContext.ts'),{sourceProcessingAutomaticBindings,sourceProcessingAutomaticSetters}=await vite.ssrLoadModule('/src/engine/sourceProcessingAutomaticBindings.ts'),{parseProjectFile}=await vite.ssrLoadModule('/src/engine/legacyImport.ts'),{resolveSourceCamera,prepareSourceCamera}=await vite.ssrLoadModule('/src/engine/sourceCamera.ts'),{OrdinarySourceCameraTimelineSession}=await vite.ssrLoadModule('/src/engine/ordinarySourceCameraTimeline.ts'),{prepareSourceSymmetryCustomProgram}=await vite.ssrLoadModule('/src/engine/sourceSymmetryCustom.ts'),{bindSymmetryCustomParameters}=await vite.ssrLoadModule('/src/engine/symmetryCustom.ts'),codec=await vite.ssrLoadModule('/src/engine/sourceIteratedNativeProtocol.ts');
  const scene=parseProjectFile(JSON.stringify(source)).scene,camera=unwrap(resolveSourceCamera(scene.sourceCamera));assert.equal(camera.kind,'known');
  const width=descriptor.sourceViewport.logicalWidth,height=descriptor.sourceViewport.logicalHeight,graphics=unwrap(SourceProcessingContext.create(width,height));
  const apply=event=>unwrap(graphics.apply(event)),snapshot=()=>unwrap(graphics.snapshot());let shader=new SourceProcessingShaderContext(),timeline=new OrdinarySourceCameraTimelineSession(camera.state.value,scene.timeline.tracks,30,{});
@@ -46,10 +46,19 @@ try{
   compare(`frame ${frame.index} timeline camera`,['phi','theta','gamma','focalDistance','zoom'].map(k=>calculated.camera[k]),['phi','theta','gamma','focalDistance','zoom'].map(k=>Number(runtime.camera[k])));
   const delivered=[];
   for(const pass of passes){
-   const context=unwrap(shader.bind(graphics)),reflection=Object.entries(pass.uniforms).map(([name,value])=>({name:name.replace(/\[0\]$/,''),type:value.type,size:value.size})),{bindings,rejectedSetters}=unwrap(sourceProcessingAutomaticBindings(reflection,context));
-   for(const binding of bindings)compare(`frame ${frame.index} draw ${pass.ordinal} ${binding.name}`,binding.values,pass.uniforms[binding.name]?.values??pass.uniforms[binding.name+'[0]']?.values);
-   delivered.push({ordinal:pass.ordinal,bindings,rejectedSetters});
-   if(native){const matched=bindSymmetryCustomParameters(program,source.parameters);const values=new Map(bindings.map(b=>[b.name,b]));for(const [name,value]of Object.entries(matched))values.set(name,{name,type:5126,values:[value]});const r=await send({kind:'advance-fragment',resource,expectedCount:count,expectedIndex:index,steps:pass.uniforms.iterations.values[0],reset:false,resetCounter:false,bindings:[...values.values()]});index=r.index;}
+   const context=unwrap(shader.bind(graphics)),automatic=unwrap(sourceProcessingAutomaticSetters(context)),parameters=Object.entries(bindSymmetryCustomParameters(program,source.parameters)).map(([name,value])=>({name,value}));
+   let nativeBindings;
+   if(native){const r=await send({kind:'advance-processing-fragment',resource,expectedCount:count,expectedIndex:index,steps:pass.uniforms.iterations.values[0],reset:false,resetCounter:false,automatic,parameters});index=r.index;nativeBindings=r.processingBindings;assert(nativeBindings);}
+   // The original linked facts are comparison evidence only, never request
+   // inputs. Actual native alias/type decisions arrive from the native reply.
+   const observed=new Map(Object.entries(pass.uniforms).map(([name,value])=>[name.replace(/\[0\]$/,''),value]));
+   const reflection=[...observed].map(([name,value])=>({name,type:value.type,size:value.size})),typed=unwrap(sourceProcessingAutomaticBindings(reflection,context));
+   for(const binding of typed.bindings)if(!program.bindingNames.includes(binding.name))compare(`frame ${frame.index} draw ${pass.ordinal} ${binding.name}`,binding.values,observed.get(binding.name).values.slice(0,binding.values.length));
+   if(nativeBindings){
+    const expected={automatic:automatic.map(setter=>{const selectedName=setter.names.find(name=>observed.has(name));return selectedName?{outcome:typed.rejectedSetters.some(r=>r.name===selectedName)?'rejected':'applied',selectedName}:{outcome:'inactive'};}),parameters:parameters.map(p=>({name:p.name,outcome:!observed.has(p.name)?'inactive':[5126,35670].includes(observed.get(p.name).type)?'applied':'rejected'}))};
+    if(JSON.stringify(nativeBindings)!==JSON.stringify(expected))report.mismatches.push({label:`frame ${frame.index} draw ${pass.ordinal} actual native setter results`,actual:nativeBindings,expected});
+   }
+   delivered.push({ordinal:pass.ordinal,automatic,parameters,nativeBindings});
   }
   if(native){const actual=Buffer.alloc(count*16);for(let at=0;at<count;at+=65536){const n=Math.min(65536,count-at),r=await send({kind:'read',resource,profile,expectedIndex:index,expectedCount:count,offset:at,count:n});Buffer.from(r.positionsAndMetric.buffer).copy(actual,at*16);}const expected=(await pinned(reference+`/frame-${frame.index}/state-current-level-0.bin`,report.inputs)).subarray(0,count*16);await writeFile(out+`/frame-${frame.index}.bin`,actual);let differences=0;for(let at=0;at<actual.length;at+=4)if(actual.readUInt32LE(at)!==expected.readUInt32LE(at))differences++;report.frames.push({index:frame.index,bytes:actual.length,stateWordDifferences:differences,actualSha256:sha(actual),expectedSha256:sha(expected)});}
   else report.frames.push({index:frame.index});
