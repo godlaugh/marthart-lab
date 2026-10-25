@@ -68,7 +68,7 @@ function context(c:GenerateContext,family:'map'|'symmetry'):SourceIteratedLiveCo
 /** One actual display lifetime: queue, host clock, mathematical particles,
  * accumulation and captured camera stay together until explicit replacement. */
 export class SourceIteratedSession {
- constructor(private readonly family:'map'|'symmetry',private readonly backend:SourceIteratedSessionOptions={}){
+ constructor(readonly family:'map'|'symmetry',private readonly backend:SourceIteratedSessionOptions={}){
   if(family!=='map'&&family!=='symmetry')throw Error('未知实时迭代场景');
   if(backend.backend&&backend.asyncBackend)throw Error('迭代场景不能同时拥有两个执行后端');
  }

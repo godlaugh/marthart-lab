@@ -7,6 +7,7 @@ import {Generator} from '../src/engine/client';
 import {parseProjectFile,parseLegacyScene} from '../src/engine/legacyImport';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
 import {editSourceSymmetryConfiguration} from '../src/engine/sourceSymmetryConfig';
+import {editSourceMapScene} from '../src/engine/sourceMapScene';
 
 // The real Generator and semantic Session run here. Only native execution is a
 // deterministic recorder; no WebGL/CGL, shader execution or pixel-fidelity claim.
@@ -29,12 +30,14 @@ class FakeWorker {
  terminate(){this.terminated=true;}
 }
 const scene=()=>parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'Native app dispatch',type:'SYMMETRY_CHAOS',parameters:{alpha:2.5},settings:{batch_size:8,burn_in_steps:3,iterations_per_frame:1},timeline:[{type:'wait',duration:.1}]})).scene;
+const mapScene=(dimension:2|3=2)=>parseLegacyScene(JSON.stringify({config_version:'1.0.0',name:'Native Map dispatch',type:'MAP_ATTRACTOR',parameters:{gain:.001},equations:{x_next:'x+gain',y_next:'y',z_next:dimension===3?'z+gain':'0.0'},settings:{dimension,batch_size:8,burn_in_steps:3,iterations_per_frame:1},timeline:[{type:'wait',duration:.1}]}),{sourceEntry:'runtime-config'}).scene;
 const input=(s=scene()):GenerationInput=>({time:0,width:16,height:12,quality:'preview',sourcePointPixelDensity:1,sourceViewport:ordinarySourceViewport(s,16,12,'primary',12),symmetryLive:{sessionId:'native-preview',renderFps:30,replayRevision:0,clock:{paused:true}}});
+const mapInput=(s=mapScene()):GenerationInput=>{const c=input(s);c.mapLive=c.symmetryLive;delete c.symmetryLive;return c;};
 function setup(){vi.stubEnv('VITE_SOURCE_RENDERER','native');vi.stubGlobal('Worker',FakeWorker);FakeWorker.instances=[];recorder.instances=[];recorder.gate=undefined;recorder.entered=undefined;recorder.disposeError=undefined;recorder.stepFailure=undefined;return new Generator();}
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
 async function cleanup(g:Generator){recorder.disposeError=undefined;recorder.stepFailure=undefined;g.dispose();await g.settledNativeCleanup();expect(recorder.instances.every(v=>v.retained===0)).toBe(true);}
 
-describe('native source Symmetry application dispatch',()=>{
+describe('native source iterated application dispatch',()=>{
  it('uses the page clock and exact completed-frame capability for pause, hot parameters, navigation and PNG capture',async()=>{
   const g=setup(),s=scene(),c=input(s);try{
    const first=await g.generate(s,c);expect(first).toMatchObject({backend:'native',symmetryLive:{clockSource:'page-wall-clock',paused:true},sourcePixelRenderer:{backend:'native'}});expect(FakeWorker.instances).toHaveLength(0);
@@ -58,10 +61,11 @@ describe('native source Symmetry application dispatch',()=>{
    expect(FakeWorker.instances).toHaveLength(0);
   }finally{await cleanup(g);}
  });
- it('keeps unsupported Map, custom kernels and cold Symmetry in the worker route under native policy',async()=>{
-  for(const kind of ['map','custom','cold'] as const){
-   const g=setup(),s=kind==='map'?parseLegacyScene(JSON.stringify({config_version:'1.0.0',type:'MAP_ATTRACTOR',name:'Map route',settings:{batch_size:8},equations:{x_next:'x',y_next:'y'}})).scene:scene(),c=input(s);
-   if(kind==='map'){delete c.symmetryLive;c.mapLive={sessionId:'map-preview',renderFps:30,replayRevision:0,clock:{paused:true}};}
+ it('keeps legacy Map, custom kernels and cold reconstruction in the worker route under native policy',async()=>{
+  for(const kind of ['legacy-map','cold-map','custom','cold'] as const){
+   const g=setup(),map=kind==='legacy-map'||kind==='cold-map',s=map?mapScene():scene(),c=map?mapInput(s):input(s);
+   if(kind==='legacy-map')s.settings.mapMathModel='legacy-v1';
+   if(kind==='cold-map')delete c.mapLive;
    if(kind==='custom')s.equations.glsl='void calculate_next(in vec3 p, out vec3 q, out float m){q=p;m=0.;}';
    if(kind==='cold')delete c.symmetryLive;
    const pending=g.generate(s,c),failure=pending.catch(e=>e);expect(FakeWorker.instances).toHaveLength(1);expect(FakeWorker.instances[0].messages[0].operation).toBe('generate');expect(recorder.instances).toHaveLength(0);g.cancel();expect((await failure).name).toBe('AbortError');await cleanup(g);
@@ -100,6 +104,31 @@ describe('native source Symmetry application dispatch',()=>{
  it('retains cleanup failures and blocks replacement until the same owner can be released',async()=>{
   const g=setup(),s=scene(),c=input(s);try{await g.generate(s,c);recorder.disposeError=Error('retained ink');g.cancel();await expect(g.settledNativeCleanup()).rejects.toThrow('清理失败');expect(recorder.instances[0].retained).toBeGreaterThan(0);
    await expect(g.generate(s,{...c,symmetryLive:{...c.symmetryLive!,sessionId:'replacement'}})).rejects.toThrow();expect(recorder.instances).toHaveLength(1);recorder.disposeError=undefined;await g.settledNativeCleanup();expect(await g.generate(s,c)).toMatchObject({backend:'native'});
+  }finally{await cleanup(g);}
+ });
+ for(const dimension of [2,3] as const)it(`routes source Map ${dimension}D through the native owner for editing, pause, capture and recording`,async()=>{
+  const g=setup(),s=mapScene(dimension),c=mapInput(s);try{
+   const first=await g.generate(s,c);expect(first).toMatchObject({backend:'native',mapLive:{paused:true,clockSource:'page-wall-clock'},sourcePixelRenderer:{backend:'native'}});expect(FakeWorker.instances).toHaveLength(0);
+   expect(recorder.instances[0].trace).toContainEqual(expect.objectContaining({kind:'step',field:expect.objectContaining({kind:'map',dimension,equations:expect.objectContaining({z:dimension===3?'z+gain':'0.0'})})}));
+   await expect(g.captureSymmetryPaused(first,{width:20,height:16})).rejects.toThrow('当前');await expect(g.setSymmetryPaused(first,false)).rejects.toThrow('当前');
+   const hot=editSourceMapScene(s,{...s,parameters:{...s.parameters,gain:.02}},'parameters');await g.updateIteratedParameters(first,hot,[['gain',.02]]);
+   const moved=await g.navigateIteratedPaused(first,{kind:'wheel',count:1});expect(moved).toMatchObject({mapLive:{paused:true}});
+   const captured=await g.captureMapPaused(moved,{width:20,height:16},3);expect(captured.capture).toMatchObject({width:60,height:48,mapLive:{paused:true},sourcePausedImage:{baseSize:[20,16],scale:3}});expect(captured.preview).toMatchObject({width:16,height:12,mapLive:{paused:true}});
+   await g.setMapPaused(captured.preview,false,1000);const running=await g.generate(hot,{...c,mapLive:{...c.mapLive!,clock:{paused:false,timestampMs:1100}}});expect(running).toMatchObject({mapLive:{paused:false,clockSource:'injected'}});
+   const start=await g.beginSourceRecording(running,{width:20,height:16,simulationFps:30});expect(start.warmup).toMatchObject({width:60,height:48,mapLive:{clock:'fixed-source-queue'},iteratedRecording:{displayFrame:0,warmup:true}});expect(g.hasSourceRecording(start.handle)).toBe(true);
+   g.cancel();const frame=await g.nextSourceRecordingFrame(start.handle,1);expect(frame).toMatchObject({backend:'native',width:60,height:48,mapLive:{clock:'fixed-source-queue'},iteratedRecording:{displayFrame:1,warmup:false}});
+   const stop=await g.finishSourceRecording(start.handle,2000);expect(stop.preview).toMatchObject({backend:'native',width:16,height:12,mapLive:{clock:'realtime-source-queue',paused:false}});expect(stop.context.mapLive).toBeDefined();expect(stop.context.symmetryLive).toBeUndefined();expect(g.hasSourceRecording(start.handle)).toBe(false);
+   await g.setMapPaused(stop.preview,true);expect((await g.captureMapPaused(stop.preview,{width:16,height:12})).preview).toMatchObject({backend:'native',mapLive:{paused:true}});expect(FakeWorker.instances).toHaveLength(0);
+  }finally{await cleanup(g);}
+ });
+ it('releases the exact owner on Map/Symmetry switches even with reused live ids and retains failed cleanup',async()=>{
+  const g=setup(),map=mapScene(),symmetry=scene();try{
+   const first=await g.generate(map,mapInput(map));recorder.disposeError=Error('Map ink release unacknowledged');
+   await expect(g.generate(symmetry,input(symmetry))).rejects.toThrow('清理失败');expect(recorder.instances).toHaveLength(1);expect(recorder.instances[0].retained).toBeGreaterThan(0);
+   recorder.disposeError=undefined;const second=await g.generate(symmetry,input(symmetry));expect(second).toMatchObject({backend:'native',symmetryLive:{paused:true}});expect(recorder.instances).toHaveLength(2);expect(recorder.instances[0].retained).toBe(0);
+   await expect(g.captureMapPaused(first,{width:16,height:12})).rejects.toThrow('当前');
+   const three=mapScene(3),third=await g.generate(three,mapInput(three));expect(third).toMatchObject({backend:'native',mapLive:{paused:true}});expect(recorder.instances).toHaveLength(3);expect(recorder.instances[1].retained).toBe(0);
+   await expect(g.setSymmetryPaused(second,false)).rejects.toThrow('当前');expect(FakeWorker.instances).toHaveLength(0);
   }finally{await cleanup(g);}
  });
 });

@@ -112,6 +112,15 @@ describe('shared prepared source iterated drawing/presentation owner (CPU only)'
   expect(values(plan.uniforms,'brightness')).toEqual([F(1-F(.3))]);expect(plan.clear).toEqual(Float32Array.from([...tone.background,1]));expect(plan.filter).toBe('linear');expect(plan.blend).toMatchObject({source:'src-alpha',destination:'one-minus-src-alpha'});expect(plan.output).toBe('rgba8');expect(plan.display).toBe('opaque-rgb-copy');expect(plan.readbackOrigin).toBe('top-left');
   const toneWithAlpha={...tone,sceneBackground:[.1,.2,.3,.4] as const};expect(prepareSourceIteratedPresentPlan(toneWithAlpha,32,24).clear).toEqual(Float32Array.from([.1,.2,.3,.4]));expect(tone.tone.brightness).toBe(F(.3));
  });
+ it.each([2,3] as const)('prepares source Map %iD cosine drawing with a family-bound captured camera',dimension=>{
+  const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'Map draw',type:'MAP_ATTRACTOR',equations:{x_next:'x',y_next:'y',z_next:'z'},settings:{dimension,batch_size:8,burn_in_steps:0}})).scene;
+  const frame=prepareIteratedFrame(s,0,0),camera=prepareOrdinarySourceFrame(ordinarySourceCameraFrame(sceneAtTime(s,0),{time:0,width:32,height:24,quality:'preview',sourceViewport:{logicalWidth:32,logicalHeight:24,referenceLogicalHeight:24,target:'primary',projectionPass:'perspective'}}));
+  frame.sourceCamera=prepareCapturedDensityCamera('map',camera);
+  for(const path of ['points','quad'] as const){frame.densitySplat!.path=path;const plan=prepareSourceIteratedDrawPlan(frame,target);expect(plan.family).toBe('map');expect(plan.sourceSplatProgram).toBe(path);expect(values(plan.drawUniforms,'mapCosine')).toEqual([1]);expect(values(plan.drawUniforms,'symmetryLut')).toEqual([0]);
+   const program=sourceIteratedRenderPrograms('native-gl41',plan.family,plan.sourceSplatProgram);expect(program.draw.fragment).not.toContain('uniform sampler2D palette');expect(program.draw.fragment).toContain('in float sourceStepMetric;');expect(program.present.fragment).toContain(SOURCE_MAP_PRESENT_GLSL);
+  }
+  frame.sourceCamera={...frame.sourceCamera,anchor:{...frame.sourceCamera.anchor,family:'symmetry'}};expect(()=>prepareSourceIteratedDrawPlan(frame,target)).toThrow('相机');
+ });
  it('keeps source Map nearest presentation and packed background alpha',()=>{
   const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'Map tone',type:'MAP_ATTRACTOR',equations:{x_next:'x',y_next:'y'},settings:{batch_size:8,background_color:0x80123456}})).scene,tone=prepareSourceMapTone(s,{width:32,height:24}),plan=prepareSourceIteratedPresentPlan(tone,32,24);
   expect(plan.family).toBe('map');expect(plan.filter).toBe('nearest');expect(plan.clear).toEqual(Float32Array.from(tone.sceneBackground!));

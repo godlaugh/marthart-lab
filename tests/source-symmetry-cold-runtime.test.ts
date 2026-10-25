@@ -49,13 +49,12 @@ describe('actual original Symmetry constructor and hot setter ownership',()=>{
   for(const value of [NaN,Infinity,1e40,'1.5',null])expect(writeSourceSymmetryPointSize(fixed,value).ok).toBe(false);
   for(const value of [NaN,Infinity,.5,1.8])expect(()=>sourceSymmetryPointSize({...fixed,symmetryRuntimePointSize:value})).toThrow('运行点径状态无效');
  });
- it('matches actual first-frame update work without truncating authored burn-in or changing Map',()=>{
+ it('matches actual first-frame update work without truncating authored burn-in',()=>{
   const scene=make(),job=prepareIteratedFrame(scene,0,0),first=prepareSourceIterationFramePlan('symmetry',{frameIndex:0,updateCount:2},false,job.config.burn,1);
   expect(job.config.burn).toBe(native.authoredBurnIn);
   expect(first.warmupSteps).toBe(native.firstFrameUpdateIterations[0]);
   expect(first.iterationSteps).toBe(native.firstFrameUpdateIterations.slice(1).reduce((sum,n)=>sum+n,0));
   expect(prepareSourceIterationFramePlan('symmetry',{frameIndex:0,updateCount:0},false,job.config.burn,1)).toMatchObject({warmupSteps:0,warmupApplied:false});
   expect(prepareSourceIterationFramePlan('symmetry',{frameIndex:1,updateCount:2},true,job.config.burn,1)).toMatchObject({warmupSteps:0,iterationSteps:2});
-  expect(prepareSourceIterationFramePlan('map',{frameIndex:0,updateCount:2},false,job.config.burn,1).warmupSteps).toBe(native.authoredBurnIn);
  });
 });

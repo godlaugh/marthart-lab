@@ -5,6 +5,7 @@ import {mkdirSync,mkdtempSync,readFileSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {iteratedInitialChunk} from '../src/engine/iteratedSeed';
 import {iteratedDensityGpuPrograms,type IteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
+import {sourceMapGpuField} from '../src/engine/sourceMapMath';
 import {sourceSymmetryGpuField} from '../src/engine/sourceSymmetryMath';
 import {encodeSourceIteratedNativeRequest,decodeSourceIteratedNativeResponse,type SourceIteratedNativeOperation,type SourceIteratedNativeRequest} from '../src/engine/sourceIteratedNativeProtocol';
 import {encodeSourceDrawingFrame,type SourceDrawingFrame} from '../src/engine/sourceDrawingFrame';
@@ -32,11 +33,11 @@ async function owner(){
   async good(operation:SourceIteratedNativeOperation){const r=await this.send(operation);expect(r.result.ok,JSON.stringify(r.result.error)).toBe(true);return{...r,decoded:r.decoded!};},
   async bad(operation:SourceIteratedNativeOperation,kind:string,mutate?:(b:Buffer)=>void){const r=await this.send(operation,mutate);expect(r.result).toMatchObject({ok:false,error:{kind}});},
   async generic(){const frame:SourceDrawingFrame={generation:1,sequence:++sequence,width:7,height:5,samples:0,clear:[.25,.5,.75,1],drawing:{model:'source-drawing-v1',commands:[],textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0}},p=encodeSourceDrawingFrame(frame);if(!p.ok)throw Error(p.error.reason);const r=await service.render(p.value);expect(r.ok,JSON.stringify(r.error)).toBe(true);expect(r.value.format).toBe('rgba8');expect(r.value.pixels.length).toBe(140);return r;},
-  async close(){expect(await service.close()).toEqual({ok:true});expect(service.processCount).toBe(0);expect(service.retainedResourceCount).toBe(0);}
+  async close(){expect(await service.close()).toEqual({ok:true});expect(service.processCount).toBe(0);expect(service.activeCount).toBe(0);expect(service.retainedResourceCount).toBe(0);}
  };
 }
 describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecycle',()=>{
- beforeAll(()=>{mkdirSync('.cache',{recursive:true});const root=mkdtempSync(resolve('.cache/iterated-lifecycle-')),executablePath=join(root,'renderer');const build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-framework','Foundation','-framework','OpenGL','server/render/SourceCglRenderer.m','-o',executablePath],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL',maxBuffer:65536});expect(build.error).toBeUndefined();expect(build.status,build.stderr).toBe(0);expect(build.stderr).toBe('');backend={executablePath,executableSha256:createHash('sha256').update(readFileSync(executablePath)).digest('hex')};});
+ beforeAll(()=>{mkdirSync('.cache',{recursive:true});const root=mkdtempSync(resolve('.cache/iterated-lifecycle-')),executablePath=join(root,'renderer');const build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-Werror','-framework','Foundation','-framework','OpenGL','server/render/SourceCglRenderer.m','-o',executablePath],{encoding:'utf8',timeout:30000,killSignal:'SIGKILL',maxBuffer:65536});expect(build.error).toBeUndefined();expect(build.status,build.stderr).toBe(0);expect(build.stderr).toBe('');backend={executablePath,executableSha256:createHash('sha256').update(readFileSync(executablePath)).digest('hex')};});
  it('uploads canonical chunks, binds checkpoints, replays reset and releases the exact owner',async()=>{
   const o=await owner(),count=65541;
   try{
@@ -73,6 +74,52 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecyc
    await o.good(create(2,A,iteratedDensityGpuPrograms('native-gl41').iteration(diagnostic)));await o.good(upload(2));await o.good(advance(2,0,2,false,A,[]));
    const r=(await o.good(read(2,1))).decoded;expect(Number.isNaN(r.positionsAndMetric![0])).toBe(true);expect(r.positionsAndMetric![1]).toBe(Infinity);expect(r.positionsAndMetric![3]).toBe(-Infinity);expect([...r.invalidCounts!]).toEqual([2,2]);expect([...r.validity!]).toEqual([0,0]);
    await o.good(advance(2,1,1,false,A,[]));expect([...(await o.good(read(2,2))).decoded.invalidCounts!]).toEqual([3,3]);await o.good(release());
+  }finally{await o.close();}
+ });
+ it.each([2,3] as const)('executes %iD source Map equations with ordered aliases, final metric and exact zero-step/reset semantics',async dimension=>{
+  const count=4,initial=iteratedInitialChunk({count,seed:7,dimension,bounds:[[1,1],[2,2],[3,3]]},0,count);
+  // Dyadic input and integer increments give exact XYZ expectations. The
+  // finite length oracle permits one Float32 ULP: native length(3,4,12)
+  // is 13 + 1 ULP on this CGL driver. Original-compiler parity below remains
+  // bit-exact across every state channel, without such a tolerance.
+  const source=sourceMapGpuField({dimension,equations:{x:'x+dx',y:'y+dy+(nx-x-dx)',z:'z+dz+(ny-y-dy)'},parameters:{dx:3,dy:4,dz:12}}),values=Object.entries(source.uniforms).map(([name,value])=>({name,value})),o=await owner();
+  const step=(index:number,steps:number,reset=false,resetCounter?:boolean):SourceIteratedNativeOperation=>({kind:'advance',resource:A,expectedCount:count,expectedIndex:index,dimension,steps,reset,resetCounter,uniforms:values});
+  try{
+   await o.good(create(count,A,iteratedDensityGpuPrograms('native-gl41').iteration(source)));await o.good({kind:'upload',resource:A,expectedCount:count,expectedIndex:0,offset:0,positionsAndMetric:initial});
+   // The unchanged neutral advance wire is admitted as v6, with the existing
+   // optional independent counter-reset word still selecting v7.
+   await o.good(step(0,3));const evolved=(await o.good(read(count,1))).decoded;
+   const expected=evolved.positionsAndMetric!.slice(),metricBits=new Uint32Array(Float32Array.of(dimension===3?13:5).buffer)[0],actualBits=new Uint32Array(expected.buffer);for(let i=0;i<count;i++){expect([...expected.subarray(i*4,i*4+3)]).toEqual([10,14,dimension===3?39:0]);expect(Math.abs(actualBits[i*4+3]-metricBits)).toBeLessThanOrEqual(1);}expect([...evolved.invalidCounts!]).toEqual([0,0,0,0]);expect([...evolved.validity!]).toEqual([1,1,1,1]);
+   for(const invalid of [0,1,4,0xffffffff])await o.bad(step(1,1),'input',b=>b.writeUInt32LE(invalid,96));expect(bytes((await o.good(read(count,1))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
+   await o.good(step(1,0,false,true));expect(bytes((await o.good(read(count,2))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
+   await o.good(step(2,0,true));expect(bytes((await o.good(read(count,3))).decoded.positionsAndMetric!)).toEqual(bytes(initial));
+   await o.good(step(3,3));expect(bytes((await o.good(read(count,4))).decoded.positionsAndMetric!)).toEqual(bytes(expected));await o.good(release());
+  }finally{await o.close();}
+ });
+ it('matches the captured original compiler 3D equation on the same CGL TF owner without reinterpreting source',async()=>{
+  const captured=JSON.parse(readFileSync('tests/fixtures/source-iterated-native-map/ordered-aliases-original.json','utf8'));
+  expect(createHash('sha256').update(captured.originalGlsl).digest('hex')).toBe(captured.evidence.originalGlslSha256);
+  const count=17,input=captured.input,source=sourceMapGpuField({dimension:3,equations:{x:input.x,y:input.y,z:input.z},parameters:{}}),original:IteratedGpuFieldSource={source:captured.originalGlsl,uniforms:{},key:'captured-original-ordered-aliases',sourceCalculateNext:true};
+  const initial=iteratedInitialChunk({count,seed:7,sourceInitialSeed:'6403493509108980441',dimension:3,bounds:[[-.5,.5],[-.5,.5],[-1,1]]},0,count),o=await owner();
+  try{
+   for(const [resource,field]of [[A,source],[B,original]] as const){await o.good(create(count,resource,iteratedDensityGpuPrograms('native-gl41').iteration(field)));await o.good({kind:'upload',resource,expectedCount:count,expectedIndex:0,offset:0,positionsAndMetric:initial});}
+   let index=0;for(const [steps,reset]of [[1,false],[16,false],[0,false],[1,false],[16,true]] as const){
+    for(const resource of [A,B])await o.good({kind:'advance',resource,expectedCount:count,expectedIndex:index,dimension:3,steps,reset,uniforms:[]});index++;
+    const actual=(await o.good(read(count,index))).decoded,reference=(await o.good(read(count,index,0,count,B))).decoded;
+    expect(bytes(actual.positionsAndMetric!)).toEqual(bytes(reference.positionsAndMetric!));expect(actual.invalidCounts).toEqual(reference.invalidCounts);expect(actual.validity).toEqual(reference.validity);expect(actual.positionsAndMetric!.some((v,i)=>i%4===2&&v!==initial[i])).toBe(true);
+   }
+   await o.good(release());await o.good(release(B));
+  }finally{await o.close();}
+ });
+ it('preserves nonfinite Z from a source Map equation and resets counters independently without reseeding',async()=>{
+  const count=2,dimension=3,initial=iteratedInitialChunk({count,seed:7,dimension,bounds:[[1,1],[2,2],[3,3]]},0,count),source=sourceMapGpuField({dimension,equations:{x:'x',y:'y',z:'z/(x-x)'},parameters:{}}),o=await owner();
+  const step=(index:number,steps:number,reset=false,resetCounter?:boolean):SourceIteratedNativeOperation=>({kind:'advance',resource:A,expectedCount:count,expectedIndex:index,dimension,steps,reset,resetCounter,uniforms:[]});
+  try{
+   await o.good(create(count,A,iteratedDensityGpuPrograms('native-gl41').iteration(source)));await o.good({kind:'upload',resource:A,expectedCount:count,expectedIndex:0,offset:0,positionsAndMetric:initial});await o.good(step(0,1));
+   const first=(await o.good(read(count,1))).decoded;for(let i=0;i<count;i++){expect([...first.positionsAndMetric!.subarray(i*4,i*4+3)]).toEqual([1,2,Infinity]);expect(first.positionsAndMetric![i*4+3]).toBe(Infinity);}expect([...first.invalidCounts!]).toEqual([1,1]);expect([...first.validity!]).toEqual([0,0]);
+   await o.good(step(1,1));expect([...(await o.good(read(count,2))).decoded.invalidCounts!]).toEqual([2,2]);
+   const before=(await o.good(read(count,2))).decoded;await o.good(step(2,0,false,true));const resetCounter=(await o.good(read(count,3))).decoded;expect(bytes(resetCounter.positionsAndMetric!)).toEqual(bytes(before.positionsAndMetric!));expect([...resetCounter.invalidCounts!]).toEqual([0,0]);expect([...resetCounter.validity!]).toEqual([0,0]);
+   await o.good(step(3,0,true));const reset=(await o.good(read(count,4))).decoded;expect(bytes(reset.positionsAndMetric!)).toEqual(bytes(initial));expect([...reset.invalidCounts!]).toEqual([0,0]);expect([...reset.validity!]).toEqual([1,1]);await o.good(release());
   }finally{await o.close();}
  });
  it('keeps two owners independent, rejects a third and cleans failed shader creation',async()=>{

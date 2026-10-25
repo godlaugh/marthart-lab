@@ -55,14 +55,14 @@ describe('Map replay helper evidence and lifecycle ownership',()=>{
   const event={...paused,paused:false,updates:[frame.field,{...frame.field}]};
   const first=owner.display(frame,options,event);
   expect(first.phases).toEqual([
-   {kind:'update',warmupSteps:100,iterationSteps:4,draw:false,resetParticles:false},
+   {kind:'update',warmupSteps:16,iterationSteps:4,draw:false,resetParticles:false},
    {kind:'replay',warmupSteps:12,iterationSteps:2,draw:true,resetParticles:true},
    {kind:'replay',warmupSteps:0,iterationSteps:2,draw:true,resetParticles:false},
   ]);
   expect(trace.steps[1].job.iterationUpdates).toBe(event.updates);
   expect(trace.steps[2].job.iterationUpdates).toBeUndefined();
   expect(first).toMatchObject({remainingBurnInSteps:88,remainingReplaySteps:98,accumulationPasses:2,warmupApplied:false});
-  const next=owner.display(frame,options,event);expect(next.phases[0]).toMatchObject({kind:'update',warmupSteps:100,iterationSteps:4});
+  const next=owner.display(frame,options,event);expect(next.phases[0]).toMatchObject({kind:'update',warmupSteps:16,iterationSteps:4});
  });
  it('resizing cancels active replay without replacing particles or remaining counters',()=>{
   const owner=new SourceIteratedReplaySession('map',60),frame=job();owner.display(frame,options,paused);owner.requestReplay();owner.display(frame,options,paused);

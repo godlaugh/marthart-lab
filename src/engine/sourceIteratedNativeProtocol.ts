@@ -13,7 +13,7 @@ type Checkpoint=Owned&{expectedIndex:number;expectedCount:number};
 export type SourceIteratedNativeOperation=
  | (Owned&SourceIteratedNativeShaders&{kind:'create';count:number})
  | (Checkpoint&{kind:'upload';expectedIndex:0;offset:number;positionsAndMetric:Float32Array})
- | (Checkpoint&{kind:'advance';reset:boolean;resetCounter?:boolean;dimension:2;steps:number;uniforms:readonly SourceIteratedNativeUniform[]})
+ | (Checkpoint&{kind:'advance';reset:boolean;resetCounter?:boolean;dimension:2|3;steps:number;uniforms:readonly SourceIteratedNativeUniform[]})
  | (Checkpoint&{kind:'read';offset:number;count:number})
  | (Owned&{kind:'release';expectedIndex?:number;expectedCount?:number});
 /** All operations use a 1x1, zero-clear, zero-draw envelope. Logical expected
@@ -84,7 +84,7 @@ function validate(request:SourceIteratedNativeRequest){
  captureSourceIteratedNativeResponseBinding(request);const op=request.operation;
  if(op.kind==='upload')demand(op.positionsAndMetric.every(Number.isFinite),'原生迭代上传块须为有限 canonical seed');
  if(op.kind==='advance'){
-  demand(typeof op.reset==='boolean'&&op.dimension===2&&(op.resetCounter===undefined||typeof op.resetCounter==='boolean'&&(!op.reset||op.resetCounter)),'原生迭代推进配置无效');
+  demand(typeof op.reset==='boolean'&&(op.dimension===2||op.dimension===3)&&(op.resetCounter===undefined||typeof op.resetCounter==='boolean'&&(!op.reset||op.resetCounter)),'原生迭代推进配置无效');
   demand(Array.isArray(op.uniforms)&&op.uniforms.length<=65536,'原生迭代 uniform 集合无效');const names=new Set<string>();
   for(const u of op.uniforms){demand(u&&typeof u.name==='string'&&/^[A-Za-z_]\w*$/.test(u.name)&&!u.name.startsWith('gl_')&&!['steps','dimension','resetCounter'].includes(u.name)&&!names.has(u.name),'原生迭代 uniform 名称无效或重复');demand(typeof u.value==='number'&&Number.isFinite(Math.fround(u.value)),'原生迭代 uniform 必须为有限 float32');names.add(u.name);}
  }

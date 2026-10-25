@@ -1,0 +1,319 @@
+{
+  "schema": 1,
+  "status": "original-runtime-warmup-and-seed-observed",
+  "scope": "Captured unmodified original Map runUpdatePass calls and active initial seed words; used for CPU semantic-owner regression, not a new GPU run or full-frame parity claim.",
+  "source": {
+    "path": ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4.json",
+    "sha256": "fe2c130586e156a31bc8ad0e09c21d6a0f0990efda0fcebcef53318833c50b4e",
+    "json": "{\n  \"equations\": {\n    \"y_next\": \"sin(b*x) + d*cos(b*y)\",\n    \"z_next\": \"\",\n    \"x_next\": \"sin(a*y) + c*cos(a*x)\"\n  },\n  \"settings\": {\n    \"accumulation_decay\": 1,\n    \"x0_max\": 1,\n    \"saturation\": 0.7454545497894287,\n    \"step_metric_max\": 2.4000000953674316,\n    \"step_metric_normalize_mode\": \"ROBUST\",\n    \"iterations_per_frame\": 16,\n    \"render_mode\": \"GPU\",\n    \"color_phase\": 121.09091186523438,\n    \"dot_size\": 1.7999999523162842,\n    \"dimension\": 2,\n    \"color_speed\": 0.15461111068725586,\n    \"x0_min\": -1,\n    \"scale_z\": 100,\n    \"y0_min\": -1,\n    \"scale_y\": 100,\n    \"batch_size\": 50000,\n    \"scale_x\": 100,\n    \"burn_in_steps\": 200,\n    \"dynamic_range\": 0.34384575486183167,\n    \"step_metric_min\": 0,\n    \"show_trails\": true,\n    \"brightness\": 0.6454545259475708,\n    \"background_color\": \"#FFFFFF\",\n    \"trail_lifetime\": 4,\n    \"contrast\": 0.9851759672164917,\n    \"y0_max\": 1,\n    \"line_weight\": 0.800000011920929,\n    \"offset_x\": 0,\n    \"offset_y\": 0,\n    \"gamma\": 1.8738172054290771,\n    \"offset_z\": 0\n  },\n  \"main_equation\": {\n    \"color\": \"#666666\",\n    \"scale\": 0.25,\n    \"position\": [\n      0,\n      200\n    ],\n    \"enabled\": true\n  },\n  \"name\": \"Clifford_deJong_2D_4\",\n  \"description\": \"Clifford / de Jong 风格 2D map attractor 预设\",\n  \"timeline\": [{\n    \"duration\": 3,\n    \"label\": \"等待\",\n    \"type\": \"wait\",\n    \"easing\": \"SINE_IN_OUT\"\n  }],\n  \"palette\": [\n    \"#67CCC5\",\n    \"#65C3C3\",\n    \"#62B7BE\",\n    \"#5CAAB8\",\n    \"#559BB1\",\n    \"#4D8BA8\",\n    \"#457B9E\",\n    \"#3E6C95\",\n    \"#3E6C93\",\n    \"#467B9B\",\n    \"#518CA3\",\n    \"#5F9FAD\",\n    \"#6DB4B8\",\n    \"#7EC9C4\",\n    \"#8FE0D0\",\n    \"#A1F5DB\"\n  ],\n  \"type\": \"MAP_ATTRACTOR\",\n  \"camera\": {\n    \"phi\": \"0\",\n    \"theta\": \"0\",\n    \"gamma\": \"PI\"\n  },\n  \"parameters\": {\n    \"a\": 3,\n    \"b\": 4,\n    \"c\": 0.75,\n    \"d\": 0.6\n  },\n  \"config_version\": \"1.0.0\",\n  \"isUserScene\": true\n}\n"
+  },
+  "context": {
+    "time": 0,
+    "width": 810,
+    "height": 972,
+    "quality": "preview",
+    "sourcePointPixelDensity": 2,
+    "sourceViewport": {
+      "logicalWidth": 405,
+      "logicalHeight": 486,
+      "referenceLogicalHeight": 486,
+      "target": "primary",
+      "projectionPass": "perspective"
+    },
+    "sourceMapToneReference": {
+      "width": 810,
+      "height": 972
+    }
+  },
+  "expected": {
+    "authoredBurnIn": 200,
+    "batchSize": 50000,
+    "iterationsPerObjectUpdate": 16,
+    "initialStateSeed": "7150314072254728564",
+    "initialActiveWordCount": 200000,
+    "initialActiveSha256": "451d154a3122ba11e7e8b0bc2387c9bcf29debdfd8780a52ea4e3e1649f64645",
+    "originalStorageBytes": 802816,
+    "frames": [
+      {
+        "index": 0,
+        "timestampMs": 1000,
+        "updatePasses": [
+          {
+            "ordinal": 0,
+            "iterations": 16,
+            "dimension": 2
+          },
+          {
+            "ordinal": 1,
+            "iterations": 16,
+            "dimension": 2
+          },
+          {
+            "ordinal": 2,
+            "iterations": 16,
+            "dimension": 2
+          }
+        ],
+        "totalIterations": 48,
+        "accumulationSampleCount": 1,
+        "warmupApplied": true
+      },
+      {
+        "index": 1,
+        "timestampMs": 1016,
+        "updatePasses": [
+          {
+            "ordinal": 0,
+            "iterations": 16,
+            "dimension": 2
+          },
+          {
+            "ordinal": 1,
+            "iterations": 16,
+            "dimension": 2
+          }
+        ],
+        "totalIterations": 32,
+        "accumulationSampleCount": 2,
+        "warmupApplied": true
+      }
+    ]
+  },
+  "bytecode": {
+    "entry": "mathart/mapattractor/MapAttractorMobject.class",
+    "classSha256": "83902164c81f1354e55f21ed60e70ee142b792afd049fee331b9e879f8060d8c",
+    "sourcePath": ".cache/v2-camera-source/MapAttractorMobject.json",
+    "sourceSha256": "3ec223842343fe330d5a27e6388f61509c1d4a5e88fd525b1efceb016486f195",
+    "interpretation": {
+      "update": "If !warmupApplied, call runUpdatePass once with max(0, authoredBurn), then set warmupApplied. Each object update also calls runUpdatePass(runtimeIterationsPerFrame).",
+      "runUpdatePass": "At pc175..185 upload max(1,min(16, argument2)) to iterations uniform."
+    },
+    "excerpts": {
+      "update": [
+        {
+          "offset": 41,
+          "opcode": "0x2a",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 42,
+          "opcode": "0xb4",
+          "args": "01ab",
+          "reference": "mathart/mapattractor/MapAttractorMobject warmupApplied Z"
+        },
+        {
+          "offset": 45,
+          "opcode": "0x9a",
+          "args": "0024",
+          "reference": null
+        },
+        {
+          "offset": 48,
+          "opcode": "0x3",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 49,
+          "opcode": "0x2a",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 50,
+          "opcode": "0xb4",
+          "args": "0085",
+          "reference": "mathart/mapattractor/MapAttractorMobject config Lmathart/mapattractor/config/MapAttractorConfig;"
+        },
+        {
+          "offset": 53,
+          "opcode": "0xb9",
+          "args": "01ae0100",
+          "reference": "mathart/mapattractor/config/MapAttractorConfig getBurnInSteps ()I"
+        },
+        {
+          "offset": 58,
+          "opcode": "0xb8",
+          "args": "008f",
+          "reference": "java/lang/Math max (II)I"
+        },
+        {
+          "offset": 61,
+          "opcode": "0x36",
+          "args": "05",
+          "reference": null
+        },
+        {
+          "offset": 63,
+          "opcode": "0x15",
+          "args": "05",
+          "reference": null
+        },
+        {
+          "offset": 65,
+          "opcode": "0x9e",
+          "args": "000b",
+          "reference": null
+        },
+        {
+          "offset": 68,
+          "opcode": "0x2a",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 69,
+          "opcode": "0x19",
+          "args": "04",
+          "reference": null
+        },
+        {
+          "offset": 71,
+          "opcode": "0x15",
+          "args": "05",
+          "reference": null
+        },
+        {
+          "offset": 73,
+          "opcode": "0xb6",
+          "args": "01b1",
+          "reference": "mathart/mapattractor/MapAttractorMobject runUpdatePass (Lcom/jogamp/opengl/GL4;I)V"
+        },
+        {
+          "offset": 76,
+          "opcode": "0x2a",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 77,
+          "opcode": "0x4",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 78,
+          "opcode": "0xb5",
+          "args": "01ab",
+          "reference": "mathart/mapattractor/MapAttractorMobject warmupApplied Z"
+        },
+        {
+          "offset": 81,
+          "opcode": "0x2a",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 82,
+          "opcode": "0x19",
+          "args": "04",
+          "reference": null
+        },
+        {
+          "offset": 84,
+          "opcode": "0x2a",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 85,
+          "opcode": "0xb4",
+          "args": "00e3",
+          "reference": "mathart/mapattractor/MapAttractorMobject runtimeIterationsPerFrame I"
+        },
+        {
+          "offset": 88,
+          "opcode": "0xb6",
+          "args": "01b1",
+          "reference": "mathart/mapattractor/MapAttractorMobject runUpdatePass (Lcom/jogamp/opengl/GL4;I)V"
+        }
+      ],
+      "runUpdatePass": [
+        {
+          "offset": 164,
+          "opcode": "0x36",
+          "args": "07",
+          "reference": null
+        },
+        {
+          "offset": 166,
+          "opcode": "0x15",
+          "args": "05",
+          "reference": null
+        },
+        {
+          "offset": 168,
+          "opcode": "0x2",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 169,
+          "opcode": "0x9f",
+          "args": "0015",
+          "reference": null
+        },
+        {
+          "offset": 172,
+          "opcode": "0x2b",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 173,
+          "opcode": "0x15",
+          "args": "05",
+          "reference": null
+        },
+        {
+          "offset": 175,
+          "opcode": "0x4",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 176,
+          "opcode": "0x10",
+          "args": "10",
+          "reference": null
+        },
+        {
+          "offset": 178,
+          "opcode": "0x1c",
+          "args": "",
+          "reference": null
+        },
+        {
+          "offset": 179,
+          "opcode": "0xb8",
+          "args": "02a6",
+          "reference": "java/lang/Math min (II)I"
+        },
+        {
+          "offset": 182,
+          "opcode": "0xb8",
+          "args": "008f",
+          "reference": "java/lang/Math max (II)I"
+        },
+        {
+          "offset": 185,
+          "opcode": "0xb9",
+          "args": "03e40300",
+          "reference": "com/jogamp/opengl/GL4 glUniform1i (II)V"
+        }
+      ]
+    }
+  },
+  "runtimeEvidence": {
+    "directory": ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4-run2",
+    "pins": {
+      ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4-run2/frame-0/draws.json": "7cceed0d3383446a42e6bb6525d037949d2b236049dc5b586d4a4f32757996ad",
+      ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4-run2/frame-1/draws.json": "fc5907df548f9c85ae1e7b8448c619da40ad78251dbf6d1705ab0cde4e849e93",
+      ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4-run2/frame-0/runtime.json": "43a6ee30f93f9cd9efed776069ebefd2b03e700515d2fba6f285c044a4d480f5",
+      ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4-run2/frame-1/runtime.json": "84fab5ed2994f7638c6378a999990c3f23b516c82d0120989cdc40d1b4b1965b",
+      ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4-run2/frame-0/state-initial-level-0.bin": "54c32afdcd296fa8e185c62075164671ef99accc3b8036843e27a51e209008d5",
+      ".cache/source-map-original-full-20261025/Clifford_deJong_2D_4-run2/complete.json": "5a1a938ef0ee4c877457e4fef040bb5cedebdb10b73accebd3602769ea057433"
+    }
+  }
+}

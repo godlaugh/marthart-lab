@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {describe,expect,it} from 'vitest';
 import fixture from './fixtures/iterated-density-gpu-programs/5d8c9d2.json';
+import evolved from './fixtures/iterated-density-gpu-programs/source-density-quad-20261026.json';
 import {iteratedDensityGpuPrograms,iteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
 import {prepareSymmetryCustomSource,bindSymmetryCustomParameters} from '../src/engine/symmetryCustom';
 import type {GpuShaderProfile} from '../src/engine/gpuShaderProfile';
@@ -23,10 +24,10 @@ function sameBody(es:string,gl:string,header=esHeader){
 }
 
 describe('iterated shared program source contracts',()=>{
- it('preserves all pre-extraction WebGL stages byte for byte',()=>{
+ it('preserves unchanged pre-extraction stages and explicitly pins evolved source drawing stages',()=>{
   const entries=Object.entries(webgl).filter((entry):entry is [string,string]=>typeof entry[1]==='string');
-  expect(entries.map(([name])=>name).sort()).toEqual(Object.keys(fixture.shaders).filter(name=>!name.includes('.')).sort());
-  for(const[name,source]of entries)expect(digest(source),name).toEqual(expected(name));
+  expect(entries.map(([name])=>name).sort()).toEqual([...new Set([...Object.keys(fixture.shaders).filter(name=>!name.includes('.')),...Object.keys(evolved.shaders)])].sort());
+  for(const[name,source]of entries)expect(digest(source),name).toEqual(Object.hasOwn(evolved.shaders,name)?evolved.shaders[name as keyof typeof evolved.shaders]:expected(name));
  });
  for(const[name,record]of Object.entries(fixture.fields))it(`preserves assembled ${name} source, uniforms, identity and stage`,()=>{
   const input=field(record.input),source=iteratedGpuFieldSource(input),program=webgl.iteration(source);

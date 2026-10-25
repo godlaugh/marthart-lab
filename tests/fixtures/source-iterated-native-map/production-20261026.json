@@ -1,0 +1,283 @@
+{
+  "date": "2026-10-26",
+  "scope": "Finite original preview core comparison through actual production Generator, public HTTP, lease, retained CGL. Does not establish entire scene-family, React UI, packaged app, original export, all presets, or cross-device parity.",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "cases": [
+    {
+      "name": "Clifford_deJong_2D_4",
+      "inputScope": "packaged-2d",
+      "report": ".cache/source-map-native-production-20261025/run3/report.json",
+      "reportSha256": "5c8b1b1c2d27b40d9123f7bfb5b58b1462df9c597526b0579c94cb2ef439c396",
+      "particleCount": 50000,
+      "dimensions": [
+        810,
+        972
+      ],
+      "frames": 8,
+      "rgbaBytesCompared": 25194240,
+      "rgbaDifferences": 0,
+      "sourceStable": true,
+      "nativeProcessesAfter": 0,
+      "browserErrors": [],
+      "pageErrors": [],
+      "requests": 72,
+      "requestBytes": 2704959,
+      "frameSeconds": [
+        0.9302000000476837,
+        0.42379999995231626,
+        0.38110000002384187,
+        0.34910000002384184,
+        0.33939999997615816,
+        0.3445,
+        0.3987000000476837,
+        0.3460999999046326
+      ],
+      "interactions": {
+        "capture": {
+          "size": [
+            160,
+            120
+          ],
+          "originalRuntimeCompared": false
+        },
+        "navigation": {
+          "paused": true,
+          "backend": "native"
+        },
+        "recording": [
+          {
+            "size": [
+              240,
+              180
+            ],
+            "displayFrame": 1,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          },
+          {
+            "size": [
+              240,
+              180
+            ],
+            "displayFrame": 2,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          }
+        ],
+        "stop": {
+          "size": [
+            810,
+            972
+          ],
+          "paused": false
+        }
+      }
+    },
+    {
+      "name": "Diagnostic_Map_3D",
+      "inputScope": "constructed-3d",
+      "report": ".cache/source-map-native-production-20261025/three-d-run1/report.json",
+      "reportSha256": "46febe166751bbdcd1c0999235cda353f33b599d74a76af862ce38ba0341adbf",
+      "particleCount": 4096,
+      "dimensions": [
+        810,
+        972
+      ],
+      "frames": 8,
+      "rgbaBytesCompared": 25194240,
+      "rgbaDifferences": 0,
+      "sourceStable": true,
+      "nativeProcessesAfter": 0,
+      "browserErrors": [],
+      "pageErrors": [],
+      "requests": 72,
+      "requestBytes": 1235007,
+      "frameSeconds": [
+        0.8763000000715255,
+        0.3621999999284744,
+        0.33480000007152555,
+        0.3365,
+        0.31710000002384187,
+        0.36839999997615813,
+        0.33069999992847443,
+        0.3261000000238419
+      ],
+      "interactions": {
+        "capture": {
+          "size": [
+            160,
+            120
+          ],
+          "originalRuntimeCompared": false
+        },
+        "navigation": {
+          "paused": true,
+          "backend": "native"
+        },
+        "recording": [
+          {
+            "size": [
+              240,
+              180
+            ],
+            "displayFrame": 1,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          },
+          {
+            "size": [
+              240,
+              180
+            ],
+            "displayFrame": 2,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          }
+        ],
+        "stop": {
+          "size": [
+            810,
+            972
+          ],
+          "paused": false
+        }
+      }
+    },
+    {
+      "name": "Emperors_Cloak1",
+      "inputScope": "packaged-symmetry-regression",
+      "report": ".cache/source-map-native-production-20261025/symmetry-regression/report.json",
+      "reportSha256": "51bb3fb48c84d363a030831c178fc1e3e20c66a0c126fe6dfb41cebfc7c31edd",
+      "particleCount": 562144,
+      "dimensions": [
+        810,
+        972
+      ],
+      "frames": 8,
+      "rgbaBytesCompared": 25194240,
+      "rgbaDifferences": 0,
+      "sourceStable": true,
+      "nativeProcessesAfter": 0,
+      "browserErrors": [],
+      "pageErrors": [],
+      "requests": 88,
+      "requestBytes": 18298779,
+      "frameSeconds": [
+        1.7703000000715257,
+        0.3397999999523163,
+        0.30539999997615813,
+        0.31360000002384186,
+        0.30629999995231627,
+        0.3135,
+        0.30160000002384185,
+        0.28980000007152557
+      ],
+      "interactions": {
+        "capture": {
+          "size": [
+            160,
+            120
+          ],
+          "originalRuntimeCompared": false
+        },
+        "navigation": {
+          "paused": true,
+          "backend": "native"
+        },
+        "recording": [
+          {
+            "size": [
+              240,
+              180
+            ],
+            "displayFrame": 1,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          },
+          {
+            "size": [
+              240,
+              180
+            ],
+            "displayFrame": 2,
+            "warmup": false,
+            "complete": false,
+            "simulationFps": 10
+          }
+        ],
+        "stop": {
+          "size": [
+            810,
+            972
+          ],
+          "paused": false
+        }
+      }
+    }
+  ],
+  "businessCycle": {
+    "status": "unresolved",
+    "firstFrameRgbaDifferences": 115299,
+    "initialWordsMatched": 1048576,
+    "actualUpdateCalls": [
+      16,
+      1,
+      1
+    ],
+    "state": {
+      "originalBytes": 4194304,
+      "productionBytes": 4194304,
+      "mismatchWords": 691131,
+      "finiteMismatch": 691131,
+      "nonfiniteMismatch": 0,
+      "maxAbsoluteFiniteDifference": 0.09664678573608398,
+      "channels": [
+        230209,
+        231699,
+        0,
+        229223
+      ]
+    },
+    "nativeProcessesAfter": 0,
+    "diagnosis": {
+      "confirmed": "Per-step finite/invalid observation inside the mathematical loop changes the CGL result on this captured case.",
+      "loopLimit16": "still 691131 final state word differences",
+      "branchlessCounter256And16": "same state and metadata as production; differences unresolved",
+      "outsideLoopObservation": "matches original fragment state, but changes per-step invalid-count semantics; not integrated",
+      "next": "Separate mathematical-state ownership from per-step diagnostics without silently changing validity/counter semantics."
+    }
+  },
+  "quad": {
+    "cases": 68,
+    "rgba32fDifferences": 0,
+    "coverageDifferences": 0,
+    "validClipZWExact": true,
+    "strictClipXYFailures": 6,
+    "strictStatus": "different",
+    "productOutputClassification": "passed",
+    "limit": "Six Symmetry samples differ in clip.x by 1–2 ULP; no whole-scene quad claim.",
+    "report": ".cache/iterated-source-quad-20261026-final-bits/report.json",
+    "comparison": "float32-bits",
+    "executedProductGate": "passed",
+    "contextDestroyed": true
+  },
+  "webglSplat": {
+    "cases": 116,
+    "maximumAbsoluteDifference": 0,
+    "coverageDifferences": 0,
+    "limit": "GL410 shader bodies adapted to ES300; independent rounded point uniform simulates observed CGL footprint. Not native original execution."
+  },
+  "checks": {
+    "finalCpuTests": 213,
+    "nativeComputeLifecycleTests": 8,
+    "v2Build": "passed; existing chunk-size warning"
+  },
+  "goalComplete": false,
+  "milestone": "M3",
+  "secondDevice": "unavailable; user has only this Mac"
+}

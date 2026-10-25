@@ -13,9 +13,12 @@ describe('prepared Map/Symmetry compute calls',()=>{
   const j=job(family),a={...j.field,time:1},b={...j.field,time:2};j.iterationUpdates=[a,b];
   j.iterationFrame=prepareSourceIterationFramePlan(family,{frameIndex:0,updateCount:2},false,j.config.burn,j.config.iterations);
   const p=prepareSourceIteratedAdvancePlan(j,true),warm=p.advances.filter(v=>v.phase==='warmup'),updates=p.advances.filter(v=>v.phase==='update');
-  expect(warm.map(v=>[v.steps,v.serial,v.resetCounter])).toEqual(family==='map'?[[256,1,true],[256,257,false],[1,513,false]]:[[16,1,true]]);
+  expect(warm.map(v=>[v.steps,v.serial,v.resetCounter])).toEqual([[16,1,true]]);
   expect(warm.every(v=>v.field===a)).toBe(true);expect(updates.map(v=>[v.steps,v.serial,v.resetCounter])).toEqual([[2,514,false],[2,516,false]]);
   expect(updates[0].field).toBe(a);expect(updates[1].field).toBe(b);expect(p.publishState&&p.reportInvalid).toBe(true);
+ });
+ it('retains chunking for the local full-burn path without a source frame plan',()=>{
+  const j=job('map');expect(prepareSourceIteratedAdvancePlan(j,true).advances.filter(a=>a.phase==='warmup').map(a=>[a.steps,a.serial,a.resetCounter])).toEqual([[256,1,true],[256,257,false],[1,513,false]]);
  });
  it('clears invalid counters once per later display without resetting the trajectory',()=>{
   const j=job('map');j.frame=3;j.iterationUpdates=[{...j.field,time:3},{...j.field,time:4}];j.iterationFrame=prepareSourceIterationFramePlan('map',{frameIndex:3,updateCount:2},true,513,2);

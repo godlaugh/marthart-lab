@@ -40,6 +40,13 @@ describe('bounded iterated native v6 codec (CPU only)',()=>{
   expect(v.getUint32(120,true)).toBe(4);expect(v.getUint32(128,true)).toBe(0x80000000);expect(packet.length).toBe(132);
   expect(decodeSourceIteratedNativeResponse(response(input),input)).toMatchObject({index:9,steps:0,uploaded:2,totalCount:2});
  });
+ it.each([undefined,false,true] as const)('uses the existing dimension word for 3D with resetCounter=%s and preserves every other 2D byte',resetCounter=>{
+  const input=advance(4,9),op=input.operation;if(op.kind!=='advance')throw Error('fixture');
+  const two=bytes(request({...op,resetCounter})),three=bytes(request({...op,resetCounter,dimension:3}));
+  const offset=resetCounter===undefined?96:100,expected=two.slice();new DataView(expected.buffer).setUint32(offset,3,true);
+  expect(three).toEqual(expected);expect(new DataView(three.buffer).getUint32(4,true)).toBe(resetCounter===undefined?6:7);
+  const req=request({...op,resetCounter,dimension:3});expect(decodeSourceIteratedNativeResponse(response(req),req)).toMatchObject({index:10,steps:4,totalCount:2});
+ });
  it('uploads a nonzero-byteOffset block without changing any F32 bits',()=>{
   const storage=new Uint32Array([0x12345678,0x80000000,0x00000001,0x7f7fffff,0xff7fffff,0x87654321]),values=new Float32Array(storage.buffer,4,4);
   const input=request({kind:'upload',resource,expectedIndex:0,expectedCount:2,offset:1,positionsAndMetric:values}),packet=bytes(input),v=new DataView(packet.buffer);
@@ -93,7 +100,7 @@ describe('bounded iterated native v6 codec (CPU only)',()=>{
  it('rejects invalid bounded read and advance controls without silently coercing values',()=>{
   const r=read().operation,a=advance().operation;if(r.kind!=='read'||a.kind!=='advance')throw Error('fixture');
   for(const patch of [{count:0},{count:65537},{offset:2},{offset:-1},{expectedCount:0},{expectedIndex:-1}])reject(request({...r,...patch}));
-  for(const patch of [{steps:-1},{steps:257},{steps:.5},{dimension:3},{reset:1}])reject(request({...a,...patch} as SourceIteratedNativeOperation));
+  for(const patch of [{steps:-1},{steps:257},{steps:.5},{dimension:1},{dimension:4},{dimension:2.5},{reset:1}])reject(request({...a,...patch} as SourceIteratedNativeOperation));
   for(const uniforms of [[{name:'x',value:Infinity}],[{name:'x',value:1e50}],[{name:'gl_x',value:1}],[{name:'steps',value:1}],[{name:'dimension',value:2}],[{name:'resetCounter',value:0}],[{name:'2x',value:1}],[{name:'x',value:1},{name:'x',value:2}]])reject(request({...a,uniforms}));
  });
  it('admits the exact resident+six-packet boundary and rejects the 8M format maximum',()=>{

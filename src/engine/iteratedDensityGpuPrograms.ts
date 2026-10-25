@@ -108,7 +108,14 @@ void main(){int id=particleOffset+gl_InstanceID;ivec2 at=ivec2(id%stateWidth,id/
 float u=0.;if(colorMode==0){float d=max(0.,particle.w-metricMin);if(densitySplat){float normalized=(particle.w-metricMin)/max(metricRange,1.e-6);float positive=max(normalized,0.);u=clamp(metricMode==1?positive/(1.+positive):normalized,0.,1.);}else u=metricMode==1?(d==0.?0.:1./(1.+metricRange/d)):min(1.,d/metricRange);}else if(colorMode==1)u=float(particleOffset+gl_InstanceID)/float(max(1,count-1));else if(colorMode==2)u=norm3(p);else if(colorMode==3)u=(atan(p.y,p.x)+3.141592653589793)/6.283185307179586;else if(colorMode==4)u=p.y;else u=clamp((spatialNoise(p*.1)+1.)/2.,0.,1.);
 float coordinate=(u*colorSpeed+colorPhase/360.)*paletteCycles+paletteOffset;float q=fract(coordinate)*4096.;int i=min(4095,int(floor(q)));tint=mapCosine?.5+.5*vec3(cos(6.283185307179586*(u*max(colorSpeed,.001))-colorPhase),cos(6.283185307179586*(u*max(colorSpeed,.001)-1./3.)-colorPhase),cos(6.283185307179586*(u*max(colorSpeed,.001)-2./3.)-colorPhase)):symmetryLut?texture(palette,vec2(fract(u*max(colorSpeed,.001)),.5)).rgb:(!finiteFloat(coordinate))?vec3(uintBitsToFloat(0x7fc00000u)):mix(texelFetch(palette,ivec2(i,0),0).rgb,texelFetch(palette,ivec2(i+1,0),0).rgb,q-float(i));
 center=vec2((projected.x-bounds.x)/(bounds.y-bounds.x),(projected.y-bounds.z)/(bounds.w-bounds.z))*vec2(size);
-vec2 corners[6]=vec2[6](vec2(-1.,-1.),vec2(1.,-1.),vec2(-1.,1.),vec2(-1.,1.),vec2(1.,-1.),vec2(1.,1.));diameter=quadSplat?max(radius*.6,.8):max(radius,1.);localPoint=corners[gl_VertexID];gl_PointSize=max(radius,1.);vec2 pixel=center+(densitySplat?(quadSplat?localPoint*diameter*.5:vec2(0.)):localPoint*(radius+.5));gl_Position=capturedCamera==1&&densitySplat&&!quadSplat?clip:vec4(pixel/vec2(size)*2.-1.,0.,1.);}`;
+vec2 corners[6]=vec2[6](vec2(-1.,-1.),vec2(1.,-1.),vec2(-1.,1.),vec2(-1.,1.),vec2(1.,-1.),vec2(1.,1.));diameter=quadSplat?max(radius*.6,.8):max(radius,1.);localPoint=corners[gl_VertexID];gl_PointSize=max(radius,1.);vec2 pixel=center+(densitySplat?(quadSplat?localPoint*diameter*.5:vec2(0.)):localPoint*(radius+.5));if(capturedCamera==1&&densitySplat&&quadSplat){
+// Keep source homogeneous coordinates through clipping/rasterization. A
+// divide-by-w, pixel conversion and NDC reconstruction changes subpixel
+// coverage and perspective interpolation, even with identical center pixels.
+vec2 pixelToNdc=vec2(2./max(float(size.x),1.),2./max(float(size.y),1.));
+vec2 clipOffset;if(mapCosine){float halfPointSize=diameter*.5;clipOffset=localPoint*halfPointSize*pixelToNdc*clip.w;}else{clipOffset=localPoint*diameter*.5*pixelToNdc*clip.w;}
+gl_Position=clip+vec4(clipOffset,0.,0.);
+}else gl_Position=capturedCamera==1&&densitySplat&&!quadSplat?clip:vec4(pixel/vec2(size)*2.-1.,0.,1.);}`;
 // Native density_map_accumulate{,_quad}.frag, adapted to local RGB/mass
 // channel order. The old disc kernel remains only for legacy rendering.
 const DRAW_FRAGMENT=HEADER+`flat in vec2 center;flat in vec3 tint;in vec2 localPoint;flat in float diameter;uniform float radius,alpha;uniform bool densitySplat,quadSplat;out vec4 result;void main(){float mass;
@@ -120,14 +127,15 @@ mass=quadSplat?(1.-smoothstep(-.75,.75,(sqrt(r2)-1.)*max(diameter*.5,.4)))*exp(-
 // the legacy color branches in this program changes native floating-point
 // lowering: source state/coverage stay exact but accumulated RGB can drift.
 // The prepared owner selects this program only for source step/LUT semantics.
-const sourceDensityFragment=(quad:boolean)=>HEADER+`
-uniform float colorSpeed,colorPhase,metricMin,metricMax;uniform sampler2D palette;uniform bool symmetryLut;uniform int metricMode;
+const sourceDensityFragment=(quad:boolean,withPalette=true)=>HEADER+`
+uniform float colorSpeed,colorPhase,metricMin,metricMax;${withPalette?'uniform sampler2D palette;uniform bool symmetryLut;':''}uniform int metricMode;
 in float sourceStepMetric;${quad?'in vec2 localPoint;flat in float diameter;':''}out vec4 result;
 float densityMetric(float metric){float span=max(metricMax-metricMin,1.e-6);float normalized=(metric-metricMin)/span;if(metricMode==1){float positive=max(normalized,0.);normalized=positive/(1.+positive);}return clamp(normalized,0.,1.);}
 vec3 densityCosine(float t){return .5+.5*vec3(cos(6.283185307179586*t-colorPhase),cos(6.283185307179586*(t-1./3.)-colorPhase),cos(6.283185307179586*(t-2./3.)-colorPhase));}
 void main(){vec2 p=${quad?'localPoint':'gl_PointCoord*2.-1.'};float r2=dot(p,p);if(r2>${quad?'1.35':'1.'})discard;
-float t=densityMetric(sourceStepMetric)*max(colorSpeed,.001);vec3 rgb;if(symmetryLut){rgb=texture(palette,vec2(fract(t),.5)).rgb;}else{rgb=densityCosine(t);}
+float t=densityMetric(sourceStepMetric)*max(colorSpeed,.001);vec3 rgb;${withPalette?'if(symmetryLut){rgb=texture(palette,vec2(fract(t),.5)).rgb;}else{rgb=densityCosine(t);}':'rgb=densityCosine(t);'}
 float mass=${quad?'(1.-smoothstep(-.75,.75,(sqrt(r2)-1.)*max(diameter*.5,.4)))*exp(-.45*r2)':'1.-smoothstep(.75,1.,r2)'};result=vec4(rgb*mass,mass);}`;
+const SOURCE_MAP_POINTS_FRAGMENT=sourceDensityFragment(false,false),SOURCE_MAP_QUAD_FRAGMENT=sourceDensityFragment(true,false);
 const SOURCE_DENSITY_POINTS_FRAGMENT=sourceDensityFragment(false),SOURCE_DENSITY_QUAD_FRAGMENT=sourceDensityFragment(true);
 
 const SOURCE_DRAW_VERTEX=HEADER+TRANSFORM+SOURCE_SAMILA_NOISE_GLSL+`
@@ -149,7 +157,7 @@ const POINT_PROBE_FRAGMENT=HEADER+`out vec4 result;void main(){vec2 p=gl_PointCo
 
 const DIRECT_STATS_FIRST=HEADER+SUM+`uniform usampler2D values;uniform ivec2 sourceSize;uniform int count;out uvec4 result;void main(){ivec2 at=ivec2(gl_FragCoord.xy)*2;uvec4 total=uvec4(0);for(int y=0;y<2;y++)for(int x=0;x<2;x++){ivec2 p=at+ivec2(x,y);if(any(greaterThanEqual(p,sourceSize))||p.y*sourceSize.x+p.x>=count)continue;total=sum(total,texelFetch(values,p,0));}result=total;}`;
 return Object.freeze({
- QUAD,EMPTY,HISTORY_COPY,STEP,STEP_MAIN,SOURCE_CALCULATE_NEXT_STEP_MAIN,BOUNDS_FIRST,BOUNDS_REDUCE,STATS_FIRST,STATS_REDUCE,CUSTOM_ERRORS_FIRST,CUSTOM_ERRORS_REDUCE,DRAW_VERTEX,DRAW_FRAGMENT,SOURCE_DENSITY_POINTS_FRAGMENT,SOURCE_DENSITY_QUAD_FRAGMENT,SOURCE_DRAW_VERTEX,SOURCE_DRAW_FRAGMENT,POINT_PROBE_VERTEX,POINT_PROBE_FRAGMENT,DIRECT_STATS_FIRST,
+ QUAD,EMPTY,HISTORY_COPY,STEP,STEP_MAIN,SOURCE_CALCULATE_NEXT_STEP_MAIN,BOUNDS_FIRST,BOUNDS_REDUCE,STATS_FIRST,STATS_REDUCE,CUSTOM_ERRORS_FIRST,CUSTOM_ERRORS_REDUCE,DRAW_VERTEX,DRAW_FRAGMENT,SOURCE_DENSITY_POINTS_FRAGMENT,SOURCE_DENSITY_QUAD_FRAGMENT,SOURCE_MAP_POINTS_FRAGMENT,SOURCE_MAP_QUAD_FRAGMENT,SOURCE_DRAW_VERTEX,SOURCE_DRAW_FRAGMENT,POINT_PROBE_VERTEX,POINT_PROBE_FRAGMENT,DIRECT_STATS_FIRST,
  iteration(source:IteratedGpuFieldSource):IteratedGpuProgramSource {
   if(source.stage==='fragment'){
    if(source.profile!==profile)throw Error('自定义迭代 shader profile 不匹配');

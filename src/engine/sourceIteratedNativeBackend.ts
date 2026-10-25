@@ -22,7 +22,7 @@ const require=(condition:unknown,message:string)=>{if(!condition)throw new Sourc
 const capacity=(n:number)=>{if(!Number.isSafeInteger(n)||n<0||n>SOURCE_FRAME_BUDGET)throw new SourceNativeError('capacity','原生迭代会话超过 256 MiB 工作预算');};
 const globalBytes=()=>Array.from(owners).reduce((n,owner)=>n+owner.diagnostics().retainedBytes,0);
 
-/** Production source Symmetry owner. The semantic Session supplies detached
+/** Production source Map/Symmetry owner. The semantic Session supplies detached
  * frame plans and cancels between acknowledged effects. This adapter never
  * aborts the shared transport or reads particles back to reconstruct history.
  * Other native families are accounted by the service's authoritative registry;
@@ -78,11 +78,11 @@ export class SourceIteratedNativeBackend implements SourceIteratedReplayAsyncBac
  async step(job:IteratedFrameJob,options:Omit<IteratedGpuOptions,'isCancelled'>):Promise<IteratedGpuFacts>{
   return this.transaction(async()=>{
    const plan=prepareSourceIteratedAdvancePlan(job,options.resetParticles),field=iteratedGpuFieldSource(job.field,'native-gl41'),program=iteratedDensityGpuPrograms('native-gl41').iteration(field);
-   require(job.kind==='symmetry'&&field.sourceCalculateNext&&field.stage!=='fragment'&&job.config.dimension===2,'原生迭代后端目前支持二维源 Symmetry calculate_next');
+   require((job.kind==='map'||job.kind==='symmetry')&&field.sourceCalculateNext&&field.stage!=='fragment'&&(job.config.dimension===2||job.kind==='map'&&job.config.dimension===3),'原生迭代后端支持二维源 Symmetry 和二维/三维源 Map calculate_next');
    const bounds=job.sourceCamera?{minX:-1,maxX:1,minY:-1,maxY:1}:options.bounds;
    require(bounds,'原生迭代绘制需要源相机或明确视口');
    const draw=prepareSourceIteratedDrawPlan(job,{width:options.width,height:options.height,stateWidth:Math.min(2048,job.config.count),bounds:bounds!,projection:options.projection});
-   const selected=sourceIteratedRenderPrograms('native-gl41','symmetry',draw.sourceSplatProgram),selectedBytes=sourceIteratedRenderNativeProgramBytes(selected);
+   const selected=sourceIteratedRenderPrograms('native-gl41',draw.family,draw.sourceSplatProgram),selectedBytes=sourceIteratedRenderNativeProgramBytes(selected);
    const advances=plan.advances.map(a=>{const f=iteratedGpuFieldSource(a.field,'native-gl41'),p=iteratedDensityGpuPrograms('native-gl41').iteration(f);require(p.vertex===program.vertex&&p.fragment===program.fragment,'一次原生迭代更新不能切换计算程序');return{...a,uniforms:Object.entries(f.uniforms).map(([name,value])=>({name,value}))};});
    const changed=this.state&&(this.state.structuralKey!==job.structuralKey||this.state.vertex!==program.vertex||this.state.fragment!==program.fragment||this.state.count!==job.config.count);
    require(!changed||options.resetParticles,'原生迭代结构变化需要重置');require(options.resetParticles||!!this.state&&job.frame===this.frame+1,'原生迭代仅允许顺序推进；seek 必须由会话重放');
@@ -91,7 +91,7 @@ export class SourceIteratedNativeBackend implements SourceIteratedReplayAsyncBac
    const preflight=encodeSourceIteratedRenderNativeRequest({generation:this.generation,sequence:1,width:options.width,height:options.height,operation:{kind:'draw',resource:this.ink?.resource??'12'.repeat(16),stateResource:this.state?.resource??'34'.repeat(16),expectedIndex:this.state?.index??0,expectedDisplays:this.ink?.displays??0,expectedCount:job.config.count,clear:options.clearInk||options.resetParticles,record:job.config.record,decay:job.config.decay,plan:drawPlan}},{retainedBytes:globalBytes()});
    if(!preflight.ok)throw new SourceNativeError(preflight.error.kind,preflight.error.reason);
    for(const advance of advances){
-    const checked=encodeSourceIteratedNativeRequest({generation:this.generation,sequence:1,operation:{kind:'advance',resource:this.state?.resource??'34'.repeat(16),expectedIndex:this.state?.index??0,expectedCount:job.config.count,reset:false,resetCounter:advance.resetCounter,dimension:2,steps:advance.steps,uniforms:advance.uniforms}});
+    const checked=encodeSourceIteratedNativeRequest({generation:this.generation,sequence:1,operation:{kind:'advance',resource:this.state?.resource??'34'.repeat(16),expectedIndex:this.state?.index??0,expectedCount:job.config.count,reset:false,resetCounter:advance.resetCounter,dimension:job.config.dimension,steps:advance.steps,uniforms:advance.uniforms}});
     if(!checked.ok)throw new SourceNativeError(checked.error.kind,checked.error.reason);
    }
    if(changed)await this.releaseOwners();
@@ -113,8 +113,8 @@ export class SourceIteratedNativeBackend implements SourceIteratedReplayAsyncBac
     ink.bytes=sourceIteratedRenderNativeResidentBytes(state.count,ink.width,ink.height,selectedBytes);ink.pendingProgramBytes=0;this.programs=selected;this.counters.programReplacements++;
    }
    let reset=plan.resetParticles;
-   for(const a of advances){await this.compute({kind:'advance',resource:state.resource,expectedIndex:state.index,expectedCount:state.count,reset,resetCounter:reset||a.resetCounter,dimension:2,steps:a.steps,uniforms:a.uniforms});reset=false;}
-   if(reset)await this.compute({kind:'advance',resource:state.resource,expectedIndex:state.index,expectedCount:state.count,reset:true,resetCounter:true,dimension:2,steps:0,uniforms:Object.entries(field.uniforms).map(([name,value])=>({name,value}))});
+   for(const a of advances){await this.compute({kind:'advance',resource:state.resource,expectedIndex:state.index,expectedCount:state.count,reset,resetCounter:reset||a.resetCounter,dimension:job.config.dimension,steps:a.steps,uniforms:a.uniforms});reset=false;}
+   if(reset)await this.compute({kind:'advance',resource:state.resource,expectedIndex:state.index,expectedCount:state.count,reset:true,resetCounter:true,dimension:job.config.dimension,steps:0,uniforms:Object.entries(field.uniforms).map(([name,value])=>({name,value}))});
    // A failed draw may already have materialized the borrowed GPU view.
    state.viewBytes=sourceIteratedNativeViewBytes(state.count);
    const reply=await this.render({...this.checkpoint(ink,state.index),kind:'draw',clear:options.clearInk||options.resetParticles,record:job.config.record,decay:job.config.decay,plan:drawPlan});

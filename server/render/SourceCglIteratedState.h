@@ -188,9 +188,11 @@ static void iteratedStateCompile(GLuint *shader,GLenum stage,NSString *source){
  // Internal callers may start a new invalid-counter interval without restoring
  // particle positions. The v6 wire omits this field and keeps its old default.
  uint32_t resetCounter=operation[@"resetCounter"]?iteratedStateWord(operation,@"resetCounter"):reset;
- INPUT(index==_index&&index<UINT32_MAX,@"Iterated advance checkpoint mismatch");INPUT(reset<=1&&dimension==2&&steps<=256,@"Invalid iterated advance controls");
+ INPUT(index==_index&&index<UINT32_MAX,@"Iterated advance checkpoint mismatch");INPUT(reset<=1&&(dimension==2||dimension==3)&&steps<=256,@"Invalid iterated advance controls");
  INPUT(resetCounter<=1&&(!reset||resetCounter==1),@"Invalid iterated counter reset policy");
  NSDictionary *uniforms=[self validatedUniforms:operation[@"uniforms"]];INPUT(retained>=self.retainedBytes,@"Iterated advance accounting excludes its owned state");iteratedStateBudget(retained,packetBytes,0);
+ // The existing vec4 TF layout stores XYZ and the final metric for both
+ // dimensions. Source shader semantics alone clear Z for 2D; never reseed.
  // All controls and active field coverage are validated before reset can touch
  // a retained seed/state buffer. Unknown partial success poisons this owner.
  [self perform:^{

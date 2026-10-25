@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "scope": "Existing bundled-JVM MapAttractorExpressionCompiler output; not original application GL execution. Used with the production native TF wrapper to check finite 3D source equations.",
+  "input": {
+    "id": "ordered-aliases",
+    "x": "x+1",
+    "y": "nx+x_next+y",
+    "z": "nx+ny+x_next+y_next+z",
+    "dimension": 3,
+    "parameters": []
+  },
+  "originalGlsl": "void calculate_next(in vec3 pos, out vec3 nextPos, out float stepMetric) {\n  float x = pos.x;\n  float y = pos.y;\n  float z = pos.z;\n  float x_next = (x + 1.0);\n  float nx = x_next;\n  float y_next = ((nx + x_next) + y);\n  float ny = y_next;\n  float z_next = ((((nx + ny) + x_next) + y_next) + z);\n  float nz = z_next;\n  nextPos = vec3(nx, ny, nz);\n  stepMetric = length(nextPos - pos);\n}\n",
+  "evidence": {
+    "inputPath": ".cache/source-map-expression/input.json",
+    "inputSha256": "8213fa9ad1d8f81e94e0651599e49eb2be16905c445152da5386a568359aec7c",
+    "resultsPath": ".cache/source-map-expression/results.json",
+    "resultsSha256": "f606dff9d8d8760d77d9b83cc927f58e8814dcf8ac7343e69290e5811892d25e",
+    "originalCompilerClassSha256": "62409725e0d049ecb75cfcc932d656b79bdb603ac7b5d53cb093472c911d79a6",
+    "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+    "originalGlslSha256": "c5d2e337e887a98daddb296e7a283cbcd8dc209573f49f665c270c6023c90e85"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "provenance": {
+    "kind": "production-stage-pins",
+    "date": "2026-10-26",
+    "source": "src/engine/iteratedDensityGpuPrograms.ts",
+    "sourceSha256": "f0e1643a7c6f8137be4516036fa0ee2d2efa60dad6271abcbc756ea2453ae560",
+    "note": "Current evolved drawing stages, not pre-extraction or original MathArt source. Old 5d8c9d2 provenance remains unchanged; actual original quad execution is independently verified by scripts/verify-source-iterated-quad.mjs."
+  },
+  "shaders": {
+    "DRAW_VERTEX": {
+      "sha256": "7b8391f4e1e24ad2647fb7b99749d3610eea22a9de6b0acc25d0402191f76016",
+      "bytes": 6368
+    },
+    "SOURCE_DENSITY_POINTS_FRAGMENT": {
+      "sha256": "891710f3fdc3449e8202e9b70320ab33bf279c158e97947d15844b7e9174f059",
+      "bytes": 994
+    },
+    "SOURCE_DENSITY_QUAD_FRAGMENT": {
+      "sha256": "4073679a75fa432fe72044a5a85b5bdf1794024a6c6adb3487ba831a3ba79dae",
+      "bytes": 1077
+    },
+    "SOURCE_MAP_POINTS_FRAGMENT": {
+      "sha256": "1545647a3898db2995f42f8e48ddefe663ec1f281a784dcd00860fe14cd8b9d3",
+      "bytes": 877
+    },
+    "SOURCE_MAP_QUAD_FRAGMENT": {
+      "sha256": "4d9aa15fa2105b90b9ec2d2bfc91f37b03a0b8caf475d0cbd0ae610ba7ef892a",
+      "bytes": 960
+    }
+  }
+}
