@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {SOURCE_SAMILA_PRESENTATION_MODEL,sourceSamilaBlendTarget,sourceSamilaDisplayTransform,validateSourceSamilaPresentation} from '../src/engine/sourceSamilaPresentation';
+import {SOURCE_SAMILA_PRESENTATION_MODEL,sourceSamilaBlendTarget,sourceSamilaDisplayTransform,validateSourceSamilaPresentation,validateSourceSamilaPresentationFacts,sourceSamilaSceneBackgroundRgba8} from '../src/engine/sourceSamilaPresentation';
 import {prepareDensityTone,toneDensityRgbaPrepared} from '../src/engine/density';
 import {prepareDensityGpuTone,sourceDensityPresentationBytes,densityGpuToneBytes} from '../src/engine/densityGpuTone';
 import {iteratedGpuBytes} from '../src/engine/iteratedDensityGpu';
@@ -14,6 +14,19 @@ const settings:Settings={samilaPresentationModel:SOURCE_SAMILA_PRESENTATION_MODE
 const facts:SamilaToneFacts={kind:'samila',historyModel:'bounded-v2',width:1,height:1,completedPasses:1,baseBatchSize:1,alpha:.1,combinedDecay:1,splat:{model:'samila-splat-1.7.8',nominalRadius:1}};
 function job(extra:Record<string,Settings[string]|undefined>={}){const cfg={...settings};for(const [key,value]of Object.entries(extra))if(value===undefined)delete cfg[key];else cfg[key]=value;const out=prepareDensityTone(palette,cfg,facts);if(out.model!=='samila-normalized-v2')throw Error('type');out.normalization.scale=1;return out;}
 describe('versioned original Samila presentation endpoint',()=>{
+ it('preserves constructor packed alpha and Processing grayscale separately from shader RGB',()=>{
+  expect(sourceSamilaSceneBackgroundRgba8({samilaSceneBackgroundColor:1},[0,0,1/255])).toEqual([1,1,1,255]);
+  expect(sourceSamilaSceneBackgroundRgba8({samilaSceneBackgroundColor:0x00102030},[16/255,32/255,48/255])).toEqual([16,32,48,0]);
+  expect(sourceSamilaSceneBackgroundRgba8({samilaSceneBackgroundColor:0x80102030},[16/255,32/255,48/255])).toEqual([16,32,48,128]);
+  expect(sourceSamilaSceneBackgroundRgba8({},[0,0,1/255])).toEqual([0,0,1,255]);
+  expect(()=>sourceSamilaSceneBackgroundRgba8({samilaSceneBackgroundColor:-1},[0,0,0])).toThrow('uint32');
+ });
+ it('accepts explicit opaque-copy and recording-screen facts, without inferring a mode or background',()=>{
+  const common={model:SOURCE_SAMILA_PRESENTATION_MODEL,stage:'present-target-rgba8',backend:'native'};
+  expect(()=>validateSourceSamilaPresentationFacts({...common,display:'opaque-rgb-copy'})).not.toThrow();
+  expect(()=>validateSourceSamilaPresentationFacts({...common,display:'recording-preview-over-background',backgroundRgba8:Object.freeze([16,32,48,128])})).not.toThrow();
+  for(const value of [null,[],common,{...common,display:'source-over'},{...common,display:'opaque-rgb-copy',backgroundRgba8:[0,0,0,255]},{...common,display:'opaque-rgb-copy',backgroundRgba8:undefined},{...common,display:'recording-preview-over-background'},...[Array(4),[0,,0,255],[0,0,0],[0,0,0,-1],[0,0,0,256],[0,0,0,.5],[0,0,0,NaN],new Uint8Array([0,0,0,255])].map(backgroundRgba8=>({...common,display:'recording-preview-over-background',backgroundRgba8})),{...common,display:'opaque-rgb-copy',backend:'unknown'},{...common,display:'opaque-rgb-copy',model:'unknown'},{...common,display:'opaque-rgb-copy',stage:'shader-rgba'}])expect(()=>validateSourceSamilaPresentationFacts(value)).toThrow();
+ });
  it('budgets the complete source MRT only for the selected presentation version',()=>{
   const w=513,h=517,extra=sourceDensityPresentationBytes(w,h);expect(extra).toBe(w*h*20);
   const old=iteratedGpuBytes(100,w,h,2048,true,false,true),source=iteratedGpuBytes(100,w,h,2048,true,false,true,true);expect(source-old).toBe(extra);
@@ -47,7 +60,7 @@ describe('versioned original Samila presentation endpoint',()=>{
  it('validates full profile dependencies at direct generation, before acquiring resources',()=>{
   const scene=createScene(definition('samila'));scene.settings={...scene.settings,...settings,iteratedBackend:'cpu',batchSize:1};scene.equations={f1:'0',f2:'0'};scene.palette=palette;scene.parameters={};scene.timeline.tracks=[];
   expect(()=>validateSourceSamilaPresentation(scene)).not.toThrow();
-  for(const patch of [{samilaPresentationModel:'unknown'},{samilaMathModel:undefined},{samilaCameraModel:'legacy-v1'},{samilaProjectionModel:undefined},{iteratedMode:'single'},{samilaHistoryModel:'legacy-v1'},{densityProjection:'xz'}]){
+  for(const patch of [{samilaPresentationModel:'unknown'},{samilaMathModel:undefined},{samilaCameraModel:'legacy-v1'},{samilaProjectionModel:undefined},{iteratedMode:'single'},{samilaHistoryModel:'legacy-v1'},{densityProjection:'xz'},{samilaSceneBackgroundColor:-1},{samilaSceneBackgroundColor:0x100000000},{samilaSceneBackgroundColor:'255'}]){
    const owner=new IteratedDensitySession();try{expect(()=>owner.generate({...scene,settings:{...scene.settings,...patch} as unknown as Settings},{time:0,width:9,height:9,quality:'export'})).toThrow();expect(owner.diagnostics().retainedBytes).toBe(0);}finally{owner.reset();}
   }
   const owner=new IteratedDensitySession();try{const out=owner.generate(scene,{time:0,width:9,height:9,quality:'export',samilaPrimaryPixelHeight:1080});expect(out.type==='raster'&&out.sourceSamilaPresentation).toEqual({model:SOURCE_SAMILA_PRESENTATION_MODEL,stage:'present-target-rgba8',display:'opaque-rgb-copy',backend:'cpu-derived'});expect(out.warnings?.some(w=>w.includes('CPU float32 派生近似'))).toBe(true);}finally{owner.reset();}

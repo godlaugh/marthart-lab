@@ -2,7 +2,8 @@ import {describe,expect,it,vi} from 'vitest';
 import {parseLegacyScene} from '../src/engine/legacyImport';
 import {SourceSamilaAsyncSession,type SourceSamilaAsyncBackend} from '../src/engine/sourceSamilaAsyncSession';
 import type {SourceSamilaPreparedDisplay,SourceSamilaDisplayResult} from '../src/engine/sourceSamilaSession';
-import {ensureSourceSamilaPaletteSession,writeSourceSamilaParameter,sourceSamilaOwnerScene} from '../src/engine/sourceSamilaPaletteEditing';
+import {ensureSourceSamilaPaletteSession,applySourceSamilaPalette,writeSourceSamilaParameter,writeSourceSamilaSetting,sourceSamilaOwnerScene} from '../src/engine/sourceSamilaPaletteEditing';
+import {validateSourceSamilaPresentationFacts} from '../src/engine/sourceSamilaPresentation';
 import {assertSourceSamilaRecordingFrame} from '../src/engine/sourceSamilaRecording';
 import {SourceRecordingOperationError} from '../src/engine/generationProtocol';
 import type {GenerateContext} from '../src/types';
@@ -15,6 +16,35 @@ function fixture(){const backend={admitDisplay:vi.fn<SourceSamilaAsyncBackend['a
 function deferred<T>(){let resolve!:(value:T)=>void;const promise=new Promise<T>(yes=>{resolve=yes;});return{promise,resolve};}
 
 describe('Samila retained recording owner (CPU backend boundary, no GPU parity claim)',()=>{
+ it('separates constructor Scene background from hot shader background and keeps recording RGBA untouched',async()=>{
+  const f=fixture(),initial=scene(),applied={...initial,settings:{...initial.settings,background:'#102030'},samilaPaletteSession:undefined};const s=applySourceSamilaPalette(applied);
+  const first=await f.owner.generate(s,context);expect(first.sourceSamilaPresentation).toMatchObject({display:'opaque-rgb-copy'});expect(first.sourceSamilaPresentation).not.toHaveProperty('backgroundRgba8');
+  const hot=writeSourceSamilaSetting(s,'background','#a0b0c0');await f.owner.generate(hot,context);
+  expect(f.backend.draw.mock.calls[1][0].tone.background.map(value=>Math.round(value*255))).toEqual([160,176,192]);expect(f.owner.diagnostics().sceneBackgroundRgba8).toEqual([16,32,48,255]);
+  const start=await f.owner.beginRecording(hot,context,options,handle),warmup=start.warmup;
+  expect(start.scene.settings.background).toBe('#a0b0c0');expect(start.scene.samilaPaletteSession!.effective.settings.background).toBe('#102030');
+  expect(warmup.sourceSamilaPresentation).toMatchObject({display:'recording-preview-over-background',backgroundRgba8:[16,32,48,255]});validateSourceSamilaPresentationFacts(warmup.sourceSamilaPresentation);
+  const delivered=await f.backend.draw.mock.results[2].value;expect(warmup.pixels).toBe(delivered.shown.pixels);expect([...warmup.pixels.slice(0,4)]).toEqual([37,41,53,67]);
+  // Later author edits and asynchronous UI state cannot replace the delivered
+  // Scene background or the pixels already handed to the video consumer.
+  hot.settings.background='#ffffff';const frame=await f.owner.nextRecordingFrame(handle,1);expect(frame.sourceSamilaPresentation).toMatchObject({backgroundRgba8:[16,32,48,255]});
+  const stop=await f.owner.finishRecording(handle,5000);expect(stop.preview.type==='raster'&&stop.preview.sourceSamilaPresentation).toMatchObject({display:'opaque-rgb-copy'});expect(stop.preview.type==='raster'&&stop.preview.sourceSamilaPresentation).not.toHaveProperty('backgroundRgba8');
+  f.owner.setPaused(true);const paused={...stop.context,samilaLive:{...stop.context.samilaLive!,clock:{paused:true}}};const captured=await f.owner.capturePaused(stop.scene,paused);
+  for(const output of [captured.capture,captured.preview]){expect(output.sourceSamilaPresentation).toMatchObject({display:'opaque-rgb-copy'});expect(output.sourceSamilaPresentation).not.toHaveProperty('backgroundRgba8');validateSourceSamilaPresentationFacts(output.sourceSamilaPresentation);}
+  expect(warmup.sourceSamilaPresentation).toMatchObject({display:'recording-preview-over-background',backgroundRgba8:[16,32,48,255]});expect([...warmup.pixels.slice(0,4)]).toEqual([37,41,53,67]);await f.owner.release();
+ });
+ it('publishes original Scene grayscale and packed alpha while retaining shader RGB and raw target bytes',async()=>{
+  for(const [packed,background,rgba]of [[1,'#000001',[1,1,1,255]],[0x80102030,'#102030',[16,32,48,128]],[0x00102030,'#102030',[16,32,48,0]]] as const){
+   const f=fixture(),initial=scene(),s=applySourceSamilaPalette({...initial,settings:{...initial.settings,background,samilaSceneBackgroundColor:packed}});await f.owner.generate(s,context);const start=await f.owner.beginRecording(s,context,options,handle);
+   expect(start.warmup.sourceSamilaPresentation).toMatchObject({display:'recording-preview-over-background',backgroundRgba8:rgba});expect(f.backend.draw.mock.calls[1][0].tone.background.map(channel=>Math.round(channel*255))).toEqual([(packed>>>16)&255,(packed>>>8)&255,packed&255]);expect([...start.warmup.pixels.slice(0,4)]).toEqual([37,41,53,67]);await f.owner.finishRecording(handle);await f.owner.release();
+  }
+ });
+ it('a cancelled first prepared display retains only its failed constructor snapshot until explicit reset',async()=>{
+  const f=fixture(),initial=scene(),s=applySourceSamilaPalette({...initial,settings:{...initial.settings,background:'#102030',samilaSceneBackgroundColor:0x80102030}});let cancelled=false;
+  f.backend.admitDisplay.mockImplementationOnce(()=>{}).mockImplementation(()=>{cancelled=true;});await expect(f.owner.generate(s,{...context,isCancelled:()=>cancelled})).rejects.toThrow('取消');expect(f.owner.diagnostics()).toMatchObject({failed:true,sceneBackgroundRgba8:[16,32,48,128]});expect(f.seeds).not.toHaveBeenCalled();
+  await expect(f.owner.generate(s,context)).rejects.toThrow('显式重置');await f.owner.reset();expect(f.owner.diagnostics().sceneBackgroundRgba8).toBeUndefined();f.backend.admitDisplay.mockImplementation(()=>{});
+  const next=applySourceSamilaPalette(writeSourceSamilaSetting(s,'background','#405060'));await f.owner.generate(next,context);expect(f.owner.diagnostics().sceneBackgroundRgba8).toEqual([64,80,96,255]);await f.owner.release();
+ });
  it('resets last Apply, makes exactly one scale-3 warmup, and keeps author metadata',async()=>{
   const f=fixture(),s=writeSourceSamilaParameter(scene(),'a',2);await f.owner.generate(s,context);const start=await f.owner.beginRecording(s,context,options,handle);
   expect(start.clock).toMatchObject({updates:2,encodedFrames:1,warmupUpdates:1});expect(start.context.samilaLive).toMatchObject({sessionId:'owner',dirtyRevision:0,runtimeRevision:0,parameterRevisions:{},clock:{paused:false}});

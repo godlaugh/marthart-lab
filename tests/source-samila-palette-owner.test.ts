@@ -12,6 +12,22 @@ const ctx:GenerateContext={width:17,height:13,time:0,quality:'preview',samilaPri
 function producer(){let width=0,height=0;const step=vi.spyOn(IteratedDensityGpu.prototype,'step').mockImplementation((job,options)=>{width=options.width;height=options.height;return{bounds:{minX:-1,maxX:1,minY:-1,maxY:1},steps:job.history!.samples,accepted:job.history!.samples,invalid:0,sampleInvalid:0,clipped:0};});vi.spyOn(IteratedDensityGpu.prototype,'present').mockImplementation(()=>({pixels:new Uint8ClampedArray(width*height*4),occupiedPixels:1,maxCount:1,toneBackend:'webgl2',warnings:[]}));vi.spyOn(IteratedDensityGpu.prototype,'dispose').mockImplementation(()=>{});return step;}
 afterEach(()=>vi.restoreAllMocks());
 describe('Samila source palette at retained display producer boundary (not GPU pixel parity)',()=>{
+ it('stages authored constructor colors while hot edits leave Scene background and applied reset intact',()=>{
+  producer();const imported=scene();imported.settings={...imported.settings,background:'#000001',samilaSceneBackgroundColor:1};const initial=applySourceSamilaPalette(imported),owner=new SourceSamilaSession({samilaSeedProvider:()=>7});
+  try{
+   owner.generate(initial,ctx);expect(owner.diagnostics().sceneBackgroundRgba8).toEqual([1,1,1,255]);
+   const hot=writeSourceSamilaSetting(initial,'background','#102030');expect(hot.settings.samilaSceneBackgroundColor).toBe(0xff102030);expect(sourceSamilaPaletteRuntimeScene(hot).settings).toMatchObject({background:'#102030',samilaSceneBackgroundColor:1});
+   expect(owner.generate(hot,ctx).samilaLive?.displayIndex).toBe(1);expect(owner.diagnostics().sceneBackgroundRgba8).toEqual([1,1,1,255]);
+   const reset=restartSourceSamilaPalette(hot);expect(sourceSamilaPaletteRuntimeScene(reset).settings).toMatchObject({background:'#000001',samilaSceneBackgroundColor:1});expect(reset.settings.background).toBe('#102030');
+   const applied=applySourceSamilaPalette(hot);owner.generate(applied,{...ctx,samilaLive:{...ctx.samilaLive!,sessionId:'apply-background'}});expect(owner.diagnostics().sceneBackgroundRgba8).toEqual([16,32,48,255]);expect(sourceSamilaPaletteRuntimeScene(applied).settings.samilaSceneBackgroundColor).toBe(0xff102030);
+  }finally{owner.reset();}
+ });
+ it('a same-RGB author setter stages opaque color for Apply without discarding the active Scene alpha',()=>{
+  const imported=scene();imported.settings={...imported.settings,background:'#102030',samilaSceneBackgroundColor:0x80102030};const initial=applySourceSamilaPalette(imported),same=writeSourceSamilaSetting(initial,'background','#102030');
+  expect(same.settings.samilaSceneBackgroundColor).toBe(0xff102030);expect(same.samilaPaletteSession!.effective.settings.samilaSceneBackgroundColor).toBe(0x80102030);expect(restartSourceSamilaPalette(same).samilaPaletteSession!.effective.settings.samilaSceneBackgroundColor).toBe(0x80102030);
+  expect(applySourceSamilaPalette(same).samilaPaletteSession!.applied.settings.samilaSceneBackgroundColor).toBe(0xff102030);
+  const direct={...initial,settings:{...initial.settings,background:'#405060'}};expect(applySourceSamilaPalette(direct).settings.samilaSceneBackgroundColor).toBe(0xff405060);
+ });
  it('commits generated lists and continuous coefficients without rebuilding sampling, including an equal-value hot event',()=>{
   const step=producer(),s=openSourceSamilaPaletteEditor(scene()),owner=new SourceSamilaSession({samilaSeedProvider:()=>7});
   try{owner.generate(s,ctx);const state=value(normalizeSourceCosinePalette({...sourceSamilaPaletteEditorState(s).cosine,colorCount:5})),colors=value(generateSourceCosinePalette(state)),hot=value(commitSourceSamilaPalette(s,{kind:'mode',mode:'cosine',state,colors}));

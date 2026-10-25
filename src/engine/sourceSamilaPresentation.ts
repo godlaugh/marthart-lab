@@ -1,15 +1,49 @@
 import type {SceneDocument,Settings} from '../types';
 import type {PreparedSamilaView} from './samilaCamera';
 import type {DensityToneJob} from './density';
+import {writeSourcePackedColor} from './sourceProcessingGeometry';
 
 export const SOURCE_SAMILA_PRESENTATION_MODEL='samila-present-1.7.8' as const;
-export interface SourceSamilaPresentationFacts {model:typeof SOURCE_SAMILA_PRESENTATION_MODEL;stage:'present-target-rgba8';display:'opaque-rgb-copy';backend:'webgl2'|'cpu-derived'|'native';}
+interface SourceSamilaPresentationBase {model:typeof SOURCE_SAMILA_PRESENTATION_MODEL;stage:'present-target-rgba8';backend:'webgl2'|'cpu-derived'|'native';}
+/** pixels always remain the original target RGBA. Only screen delivery uses
+ * this discriminant: normal primary copies RGB; recording first clears to the
+ * Scene-owned background and applies Processing BLEND1 using stored alpha.
+ * Scene background is independent of the mobject's hot shader background. */
+export type SourceSamilaPresentationFacts=SourceSamilaPresentationBase&(
+ | {display:'opaque-rgb-copy';backgroundRgba8?:never}
+ | {display:'recording-preview-over-background';backgroundRgba8:readonly [number,number,number,number]}
+);
+/** One consumer boundary for unknown delivered facts. Never infer a display
+ * mode or background from the current editable scene, target or alpha bytes. */
+export function validateSourceSamilaPresentationFacts(value:unknown):asserts value is SourceSamilaPresentationFacts {
+ if(!value||typeof value!=='object'||Array.isArray(value))throw Error('源 Samila 呈现事实需要对象');
+ const facts=value as Record<string,unknown>;
+ if(facts.model!==SOURCE_SAMILA_PRESENTATION_MODEL||facts.stage!=='present-target-rgba8'||!['webgl2','cpu-derived','native'].includes(facts.backend as string))throw Error('源 Samila 呈现事实的版本、阶段或后端无效');
+ if(facts.display==='opaque-rgb-copy'){
+  if(Object.hasOwn(facts,'backgroundRgba8'))throw Error('源 Samila 普通复制不能携带录制背景');
+ }else if(facts.display==='recording-preview-over-background'){
+  const background=facts.backgroundRgba8;
+  if(!Array.isArray(background)||background.length!==4||![0,1,2,3].every(index=>Object.hasOwn(background,index)&&Number.isInteger(background[index])&&background[index]>=0&&background[index]<=255))throw Error('源 Samila 录制预览需要 Scene 的 RGBA8 背景');
+ }else throw Error('源 Samila 呈现模式无效');
+}
+function packedSceneBackground(settings:Settings):number|undefined {
+ const packed=settings.samilaSceneBackgroundColor;
+ if(packed!==undefined&&(typeof packed!=='number'||!Number.isSafeInteger(packed)||packed<0||packed>0xffffffff))throw Error('源 Samila Scene 背景需要 uint32 颜色');return packed as number|undefined;
+}
+/** Constructor-owned Scene color uses Processing colorCalc(int), independently
+ * of the shader's masked RGB. Older local documents omit packed provenance and
+ * retain their explicit opaque #RRGGBB behavior; no source alpha is invented. */
+export function sourceSamilaSceneBackgroundRgba8(settings:Settings,parsedShaderBackground:readonly [number,number,number]):readonly [number,number,number,number] {
+ const packed=packedSceneBackground(settings);
+ if(packed===undefined)return Object.freeze([...parsedShaderBackground.map(value=>Math.round(value*255)),255] as [number,number,number,number]);
+ const rgba=new Float32Array(4);writeSourcePackedColor(packed,rgba,0);return Object.freeze(Array.from(rgba,value=>Math.round(value*255)) as [number,number,number,number]);
+}
 export function usesSourceSamilaPresentation(scene:Pick<SceneDocument,'kind'|'settings'>):boolean{return scene.kind==='samila'&&scene.settings.samilaPresentationModel===SOURCE_SAMILA_PRESENTATION_MODEL;}
 export function sourceSamilaPresentationModel(settings:Settings):typeof SOURCE_SAMILA_PRESENTATION_MODEL|undefined {
  const model=settings.samilaPresentationModel;if(model===undefined)return;
  if(model!==SOURCE_SAMILA_PRESENTATION_MODEL||settings.samilaSplatModel!=='samila-splat-1.7.8'||settings.densityToneModel!=='samila-normalized-v2')throw Error('源 Samila 呈现需要已支持的版本、源 splat 和归一调色');return model;
 }
-export function validateSourceSamilaPresentation(scene:Pick<SceneDocument,'kind'|'settings'>):void {const model=sourceSamilaPresentationModel(scene.settings);if(model&&(scene.kind!=='samila'||scene.settings.iteratedMode!=='continuous'||scene.settings.samilaProjectionModel!=='source-ndc-v1'||scene.settings.samilaCameraModel!=='anchored-theta-v1'||scene.settings.samilaMathModel!=='mathart-1.7.8'||scene.settings.samilaHistoryModel!=='bounded-v2'||(scene.settings.densityProjection??'xy')!=='xy'))throw Error('源 Samila 呈现需要 Samila 持续批次、源数学/NDC、锚定相机、bounded-v2 历史和 XY 密度投影');}
+export function validateSourceSamilaPresentation(scene:Pick<SceneDocument,'kind'|'settings'>):void {const model=sourceSamilaPresentationModel(scene.settings);if(model)packedSceneBackground(scene.settings);if(model&&(scene.kind!=='samila'||scene.settings.iteratedMode!=='continuous'||scene.settings.samilaProjectionModel!=='source-ndc-v1'||scene.settings.samilaCameraModel!=='anchored-theta-v1'||scene.settings.samilaMathModel!=='mathart-1.7.8'||scene.settings.samilaHistoryModel!=='bounded-v2'||(scene.settings.densityProjection??'xy')!=='xy'))throw Error('源 Samila 呈现需要 Samila 持续批次、源数学/NDC、锚定相机、bounded-v2 历史和 XY 密度投影');}
 const F=Math.fround,clamp=(x:number)=>Math.max(0,Math.min(1,x));
 /** Mobject.displayPanelRotationRadians: Java fsub, deliberately no modulo. */
 export function sourceSamilaDisplayTransform(view:PreparedSamilaView|undefined,width:number,height:number):{delta:number;aspect:number} {

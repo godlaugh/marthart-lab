@@ -6,7 +6,8 @@ import {createSourceImplicitMesh} from './sourceImplicitRenderer';
 import {usesSourceMapPresentation} from './sourceMapPresentation';
 import {usesSourceSymmetryPresentation} from './sourceSymmetryPresentation';
 import {usesSourceBouncing} from './sourceBouncingDocument';
-import {usesSourceSamilaPresentation} from './sourceSamilaPresentation';
+import {usesSourceSamilaPresentation,validateSourceSamilaPresentationFacts} from './sourceSamilaPresentation';
+import {SourceSamilaRecordingPreviewRenderer} from './sourceSamilaPreviewRenderer';
 import {createSourceParticleTrailLines} from './sourceProcessingLineRenderer';
 import {createSourceSurfaceGpuMesh} from './sourceSurfaceGpuMeshRenderer';
 import {createSourceParticlePoints} from './sourceParticlePointRenderer';
@@ -54,6 +55,7 @@ export class ArtRenderer {
   private sourceCameraPlan?:SourceCameraPlan;
   private sourceClear?:readonly [number,number,number,number];
   private sourceCompositedRaster?:RasterOutput;
+  private samilaRecordingPreview?:SourceSamilaRecordingPreviewRenderer;
   private formulaFrame?:FormulaPresentation;
   private readonly surfaceOverlayScene=new THREE.Scene();
   private surfaceOverlay?:ReturnType<typeof createSourceSurfaceOverlay>;
@@ -139,6 +141,7 @@ export class ArtRenderer {
   }
   private clear() {
     this.shaderFailure=undefined;
+    this.samilaRecordingPreview?.dispose();this.samilaRecordingPreview=undefined;
     for (const obj of [...this.group.children]) {
       this.group.remove(obj);
       const item = obj as THREE.Mesh;
@@ -162,7 +165,9 @@ export class ArtRenderer {
     const sourceMap=output.type==='raster'?output.sourceMapPresentation:undefined,sourceSamila=output.type==='raster'?output.sourceSamilaPresentation:undefined,sourceSymmetry=output.type==='raster'?output.sourceSymmetryPresentation:undefined;
     if(usesSourceMapPresentation(document)!==!!sourceMap||sourceMap&&(output.type!=='raster'||!output.cameraResolved||sourceMap.model!=='map-present-1.7.8'||sourceMap.stage!=='scene-target-rgba8'||sourceMap.display!=='opaque-rgb-copy'))throw Error('源 Map 需要与文档配对的场景合成图像');
     if(usesSourceSymmetryPresentation(document)!==!!sourceSymmetry||sourceSymmetry&&(output.type!=='raster'||!output.cameraResolved||sourceSymmetry.model!=='symmetry-present-1.7.8'||sourceSymmetry.stage!=='scene-target-rgba8'||sourceSymmetry.display!=='opaque-rgb-copy'))throw Error('源 Symmetry 需要与文档配对的场景合成图像');
-    if(usesSourceSamilaPresentation(document)!==!!sourceSamila||sourceSamila&&(output.type!=='raster'||!output.cameraResolved||sourceSamila.model!=='samila-present-1.7.8'||sourceSamila.stage!=='present-target-rgba8'||sourceSamila.display!=='opaque-rgb-copy'))throw new Error('源 Samila 需要与文档配对的已合成图像');
+    if(usesSourceSamilaPresentation(document)!==!!sourceSamila||sourceSamila&&(output.type!=='raster'||!output.cameraResolved))throw new Error('源 Samila 需要与文档配对的已合成图像');
+    if(sourceSamila)validateSourceSamilaPresentationFacts(sourceSamila);
+    const samilaRecording=sourceSamila?.display==='recording-preview-over-background'?sourceSamila:undefined;
     if(!!document.sourceCamera!==!!output.sourceCameraFrame)throw new Error('原版相机与已交付图像帧不匹配');
     if(output.sourceCameraFrame&&output.type==='raster'&&!output.cameraResolved)throw new Error('源相机像素图像必须已完成投影');
     if(output.type==='geometry'&&output.pointAlphas&&!output.sourcePointAppearance)throw new Error('源曲面逐点透明度缺少对应的点外观');
@@ -198,7 +203,10 @@ export class ArtRenderer {
       this.setProjection(sourcePlan?false:planar || document.camera.orthographic);
       fit = true;
     }
-    if (output.type === "raster") {
+    if(output.type==='raster'&&samilaRecording){
+      this.samilaRecordingPreview=new SourceSamilaRecordingPreviewRenderer(output,samilaRecording.backgroundRgba8);
+      this.controls.enableRotate=false;
+    }else if (output.type === "raster") {
       const texture = new THREE.DataTexture(
         output.pixels,
         output.width,
@@ -414,6 +422,7 @@ export class ArtRenderer {
   }
   render() {
     if(this.shaderFailure)throw this.shaderFailure;
+    if(this.samilaRecordingPreview){this.samilaRecordingPreview.render(this.renderer);return;}
     if(this.sourceCameraPlan){
       const plan=this.sourceCameraPlan;
       this.camera.matrixAutoUpdate=false;this.camera.matrixWorldAutoUpdate=false;

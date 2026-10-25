@@ -1,0 +1,629 @@
+{
+  "date": "2026-10-25",
+  "status": "partial",
+  "milestone": "M3",
+  "goalComplete": false,
+  "scope": "Native Samila recording preview composition and first normal post-stop frame; exact core parity passes, original preview residual remains. Local development opt-in; installed 1.0 unchanged.",
+  "baseCommit": "e65d8367c6a2e4a629092730cbe6144f3976a281",
+  "readableReport": {
+    "path": "docs/source-samila-recording-presentation-validation.zh-CN.md",
+    "sha256": "371cfce688a563340437a403e8d71ee4decea9ec40dadc2a39f321194428c42f"
+  },
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "renderer": {
+    "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-cold-export-20261024/renderer",
+    "executableSha256": "8716df02d4dbe5ad36f94528035da0d79528b466124a02d4905dd173cb0950d4"
+  },
+  "reports": {
+    "original": {
+      "path": ".cache/samila-native-presentation-20261025/original-2026-10-25T08-00-24.822Z/report.json",
+      "sha256": "9e08fa5f5e0fb88fa7a8764fd08cd011a4a89de8c963d669d13765dccddc4bd4"
+    },
+    "preview": {
+      "path": ".cache/samila-native-presentation-20261025/original-preview-2026-10-25T07-59-02.017Z/report.json",
+      "sha256": "d11965566c9c7a3055a99e52ab4aa90036dd1fdd8d36f5dcf47eaedbb6815fd1"
+    },
+    "renderer": {
+      "path": ".cache/samila-native-presentation-20261025/renderer-2026-10-25T08-03-14.478Z/report.json",
+      "sha256": "e77bd14a63c54099f99427f1a0b00d4b3c51a3d5f6c3e64447a8f6da8d0e1638"
+    },
+    "ui": {
+      "path": ".cache/samila-native-recording-20261025/ui-2026-10-25T08-02-12.581Z/report.json",
+      "sha256": "f198e474a0fea1667cd1b0e891327c83bda70554e0aaa003c1ce05787b9af942"
+    }
+  },
+  "originalReferenceIndex": {
+    "path": ".cache/samila-recording-composite-20261025/index.json",
+    "sha256": "8f317ee35562a427eec5e9db6b95dfb963d5e5d343b22e0a43f9f10cae6b0770"
+  },
+  "runners": [
+    {
+      "path": ".cache/samila-native-presentation-20261025/verify-original-state.mjs",
+      "sha256": "2d44a9532da7e2d92e6e30de733a3a514cefae5d74bcaa48ce34b1195389ef54"
+    },
+    {
+      "path": ".cache/samila-native-presentation-20261025/verify-original-preview.mjs",
+      "sha256": "d5bc0f0f1d78ef242e7bf473724a992589f47013e8804fceb31f4320347cc8b4"
+    },
+    {
+      "path": ".cache/samila-native-presentation-20261025/verify-renderer.mjs",
+      "sha256": "9864a541520e7a8a123575a46bd00a63a022cb47d819f084210155e2c22bed2d"
+    },
+    {
+      "path": ".cache/samila-native-presentation-20261025/renderer-browser.mjs",
+      "sha256": "b5c591aebb5e5cb67180b37c634dfcd4f550e193f6e4350ec14bc46571aeb96d"
+    },
+    {
+      "path": ".cache/samila-native-presentation-20261025/renderer-oracle.mjs",
+      "sha256": "88cc9dab1a999d7852720e257bcf9e8f0b35adc883651417aa7b31c5292afc67"
+    },
+    {
+      "path": ".cache/samila-native-recording-20261025/verify-ui.mjs",
+      "sha256": "4ba0f011ceda612932a67b5a1065a96aee195c956d5b7ded10382e5bcbf47775"
+    }
+  ],
+  "changedSource": [
+    {
+      "path": "src/engine/renderer.ts",
+      "sha256": "55c95c268d90b0b73c5010ad207da5d2820fdee951e33a2fbbd6ba28ae91cebd"
+    },
+    {
+      "path": "src/engine/sourceSamilaAppearanceImport.ts",
+      "sha256": "878bf7f7ba02593a7402450ba9e7a093dd6491f0d54254f35ee8335dbed9711e"
+    },
+    {
+      "path": "src/engine/sourceSamilaPaletteEditing.ts",
+      "sha256": "93adb72f7b7bd7f4b77b49201fa0bb3e118feac9436a93627e4afd463b1c0314"
+    },
+    {
+      "path": "src/engine/sourceSamilaPresentation.ts",
+      "sha256": "17efd60a4656bb98559b89463190149624ba3b6511e69752f9c316aa545ab61e"
+    },
+    {
+      "path": "src/engine/sourceSamilaPreviewRenderer.ts",
+      "sha256": "9faa50d06e87167e3eb55cf4a806b88470833135789f997c9831292df1784cfd"
+    },
+    {
+      "path": "src/engine/sourceSamilaSession.ts",
+      "sha256": "419bf4e316613b640441d31a67fcdbf95cb1df447a6107ab2ac4ca3d2b2f1f3b"
+    }
+  ],
+  "tests": {
+    "uniqueFiles": 41,
+    "uniquePassed": 475,
+    "composition": "459 passes from 40 unchanged files in broad run plus all 16 final preview-resource tests; initial 4 fake-GL DITHER failures corrected. Not a rerun of all 41 files.",
+    "typecheck": "passed",
+    "buildV2": "passed; existing large chunk warning",
+    "logs": [
+      {
+        "path": ".cache/samila-native-presentation-20261025/test-files.json",
+        "sha256": "6f100ef3803079bf5f6ff882a95563f896cca003e9d305609e829df40543489e"
+      },
+      {
+        "path": ".cache/samila-native-presentation-20261025/tests.log",
+        "sha256": "2296da532288f86944fd2b0bbf94e59685477fa080e5c09782694a353e49bc52"
+      },
+      {
+        "path": ".cache/samila-native-presentation-20261025/tests-preview-final.log",
+        "sha256": "56b4612d5c0ebbf58bb84ed8f1c24e72256a6b8f5631cfa7963546f05e6812b2"
+      },
+      {
+        "path": ".cache/samila-native-presentation-20261025/build-v2.log",
+        "sha256": "415a1deb2e9eb0be5a534b42467ac5c6185d925838c2b7a3062cc4948efc3f85"
+      },
+      {
+        "path": ".cache/samila-native-presentation-20261025/renderer-final-time.log",
+        "sha256": "8ac12f47e34c9d00ca8f1a8ffdecf709f401102ee6d9069825c8fdbbf82680e6"
+      },
+      {
+        "path": ".cache/samila-native-presentation-20261025/original-state-time.log",
+        "sha256": "a6c4b1a0a654f88e65ddd69e2697986fc17199c847b3a9cdfb7efe6412756560"
+      },
+      {
+        "path": ".cache/samila-native-presentation-20261025/original-preview-2-time.log",
+        "sha256": "f9c91394131875f34641875d6f2362827f6c0731c57fe72b22aa00dbc2134008"
+      },
+      {
+        "path": ".cache/samila-native-presentation-20261025/ui-time.log",
+        "sha256": "2ed316d6d578323f5bffdd0b8af48defcd246ca7a988b6eaf24d3e16b5b56bc9"
+      }
+    ]
+  },
+  "coreComparison": {
+    "status": "passed",
+    "exactRecordingFrames": 15,
+    "exactPostStopFrames": 3,
+    "stateChecks": "all equal",
+    "referenceInputsRehashed": 109,
+    "cases": [
+      {
+        "name": "same-size",
+        "status": "passed",
+        "frames": [
+          {
+            "displayIndex": 0,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 1,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 2,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 3,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 4,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          }
+        ],
+        "postStop": {
+          "displayIndex": 5,
+          "postStop": true,
+          "differentBytes": 0,
+          "maxByteDifference": 0,
+          "allStateChecksEqual": true
+        }
+      },
+      {
+        "name": "downsample3",
+        "status": "passed",
+        "frames": [
+          {
+            "displayIndex": 0,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 1,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 2,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 3,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 4,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          }
+        ],
+        "postStop": {
+          "displayIndex": 5,
+          "postStop": true,
+          "differentBytes": 0,
+          "maxByteDifference": 0,
+          "allStateChecksEqual": true
+        }
+      },
+      {
+        "name": "nonblack-downsample3",
+        "status": "passed",
+        "frames": [
+          {
+            "displayIndex": 0,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 1,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 2,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 3,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          },
+          {
+            "displayIndex": 4,
+            "postStop": false,
+            "differentBytes": 0,
+            "maxByteDifference": 0,
+            "allStateChecksEqual": true
+          }
+        ],
+        "postStop": {
+          "displayIndex": 5,
+          "postStop": true,
+          "differentBytes": 0,
+          "maxByteDifference": 0,
+          "allStateChecksEqual": true
+        }
+      }
+    ]
+  },
+  "previewComparison": {
+    "status": "different",
+    "tolerance": 0,
+    "fullRgbaExactFrames": 13,
+    "differentFrames": 2,
+    "differentChannels": 7,
+    "maxAbsoluteDifference": 1,
+    "cases": [
+      {
+        "name": "same-size",
+        "frames": [
+          {
+            "frame": 0,
+            "inputSha256": "652b54afab01d54bfbca821c94406d34353ed8467a593e7f043eb8952c133e2a",
+            "expectedSha256": "a632481a7dcff0e90e40d8c9b9effaf4eb76e2f28c55766f6d700e54124fa580",
+            "actualSha256": "a632481a7dcff0e90e40d8c9b9effaf4eb76e2f28c55766f6d700e54124fa580",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 1,
+            "inputSha256": "f01f91d0fb579ab77937ee9336115bcaca703f7cfe75cb40d7e6c162382f2240",
+            "expectedSha256": "78ccbdfc4f0bb9e8654622bb4469c340ceda6951a8cbbcf77f5c158f42d98e9f",
+            "actualSha256": "78ccbdfc4f0bb9e8654622bb4469c340ceda6951a8cbbcf77f5c158f42d98e9f",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 2,
+            "inputSha256": "e216dd391389689a8e53bad42fd43fedb5e98a3ca63ba066fb4343f94720559d",
+            "expectedSha256": "9f3d8d3fd9a3ae06d4bc43b77c26b4007dce1e991022bd6481102593fec4a6db",
+            "actualSha256": "9f3d8d3fd9a3ae06d4bc43b77c26b4007dce1e991022bd6481102593fec4a6db",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 3,
+            "inputSha256": "ec82518350c45ee768ed5e1fef016b4261612a383313e6fbe790ca405e146006",
+            "expectedSha256": "8311c74f2c38758d15bbc027cd67b460d3f8feb41417e59dcb932c3555a18b43",
+            "actualSha256": "8311c74f2c38758d15bbc027cd67b460d3f8feb41417e59dcb932c3555a18b43",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 4,
+            "inputSha256": "69caf83b5d42959a86203f48e4815c705dc5b23e3be310e2ff23244e6b246a51",
+            "expectedSha256": "3f404d2463b5c88b0513749b72c1ef4897d7e7bfebf7f00475d63f9ed8c37a55",
+            "actualSha256": "3f404d2463b5c88b0513749b72c1ef4897d7e7bfebf7f00475d63f9ed8c37a55",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "downsample3",
+        "frames": [
+          {
+            "frame": 0,
+            "inputSha256": "c212e303092440e5bc9ed24b01518a4b7d02e09b5aced13978871360cc48a57b",
+            "expectedSha256": "2b7ae5f0c3230141def3dcff039901c5f97f71569f70bdf9e9b39ddf861eb84f",
+            "actualSha256": "2b7ae5f0c3230141def3dcff039901c5f97f71569f70bdf9e9b39ddf861eb84f",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 1,
+            "inputSha256": "5bfea5cd25a9d732dafd0fe06f044a0d930bd4f2ec8ff49d23d229f7a59abe19",
+            "expectedSha256": "d23194c44c15aa9a44cad2ea0a5104192b84b851151f39cbd16b12f28732da2a",
+            "actualSha256": "d23194c44c15aa9a44cad2ea0a5104192b84b851151f39cbd16b12f28732da2a",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 2,
+            "inputSha256": "3f505c6e294ff199e89cb7d57311d6e678f4c8c203b12b9dfb38c8603f604b1d",
+            "expectedSha256": "5822f78666d1a1ae36973be7df1605eb69e726198fec889e576b8921a460eaa7",
+            "actualSha256": "5822f78666d1a1ae36973be7df1605eb69e726198fec889e576b8921a460eaa7",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 3,
+            "inputSha256": "3c63fff4c191f216d42042a347c26a44af336d39db09749b9ff9690b08fff12b",
+            "expectedSha256": "0f2eac03a1cd26cf920101e8ea2d0c2d2ce97ff095a477a49e7045ab2d7565ef",
+            "actualSha256": "0f2eac03a1cd26cf920101e8ea2d0c2d2ce97ff095a477a49e7045ab2d7565ef",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 4,
+            "inputSha256": "1e324a118564f5a5bda64a02ea9a1cbbdeac3588fb5d7278ab9d2fff25b0800c",
+            "expectedSha256": "a3b1398d5b132b2946032ee200cdf26b1b8009a25bec553e87efe5bda5aa9d81",
+            "actualSha256": "a3b1398d5b132b2946032ee200cdf26b1b8009a25bec553e87efe5bda5aa9d81",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "nonblack-downsample3",
+        "frames": [
+          {
+            "frame": 0,
+            "inputSha256": "27a8a5610bc927b4e2638889ec7454a4bfeb71a2b6bd271ccea3493ccb498e39",
+            "expectedSha256": "de4b0aa439cad3e0588d43ac883f5da3fe9d18c8979cef51cef8814e95a21040",
+            "actualSha256": "de4b0aa439cad3e0588d43ac883f5da3fe9d18c8979cef51cef8814e95a21040",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 1,
+            "inputSha256": "f1d9c1c907f253532b6e30dcd37271313252203eb013d30ab91199fa674534c1",
+            "expectedSha256": "6c881b8d9d08c1802ee900d1d2f1ef5d69be8e7a0f01e121dd66c01676141aaa",
+            "actualSha256": "6c881b8d9d08c1802ee900d1d2f1ef5d69be8e7a0f01e121dd66c01676141aaa",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 2,
+            "inputSha256": "cc7a3b265169e7e9f9eb6c1fbd9f56271b6b5302d487b68d3807291ceea99a63",
+            "expectedSha256": "0ce7be1f968920ef8d6c7450c2dded3c3360c53ee5a104d7f29498614deb698b",
+            "actualSha256": "0ce7be1f968920ef8d6c7450c2dded3c3360c53ee5a104d7f29498614deb698b",
+            "comparison": {
+              "maxError": 0,
+              "differingChannels": 0,
+              "differingPixels": 0,
+              "meanAbsoluteError": 0,
+              "fullRgbaExact": true,
+              "first": []
+            }
+          },
+          {
+            "frame": 3,
+            "inputSha256": "e2a9fb38c4f4da6bc1d36b16f94df535a8ff3d1f9a8ebe13997ad2f4b8bde5bb",
+            "expectedSha256": "e82fbacfca4bdaa16b3a48461982c29c6b1795a90261245819143c984ffbcc32",
+            "actualSha256": "7031dfade6d972b71e4568cd3d5a3a8e9c3b1cf27d8c5e1b92485e253ac14820",
+            "comparison": {
+              "maxError": 1,
+              "differingChannels": 3,
+              "differingPixels": 3,
+              "meanAbsoluteError": 3.0517578125e-05,
+              "fullRgbaExact": false,
+              "first": [
+                {
+                  "byte": 48769,
+                  "actual": 104,
+                  "expected": 103,
+                  "delta": 1
+                },
+                {
+                  "byte": 49533,
+                  "actual": 104,
+                  "expected": 103,
+                  "delta": 1
+                },
+                {
+                  "byte": 49537,
+                  "actual": 104,
+                  "expected": 103,
+                  "delta": 1
+                }
+              ]
+            }
+          },
+          {
+            "frame": 4,
+            "inputSha256": "e5f06907edad5d03d372840528f83b9ead212e89e36252b6d16485dc387fc74b",
+            "expectedSha256": "9296016f3ee7b49a73ec1965552697f6847b2e42471da19b787dd04d7b595e48",
+            "actualSha256": "3aeb1fbf39ce8cebb3a0de5f4565714b00fd3374abbd9e2b4be6e608e4cbbfaf",
+            "comparison": {
+              "maxError": 1,
+              "differingChannels": 4,
+              "differingPixels": 4,
+              "meanAbsoluteError": 4.0690104166666664e-05,
+              "fullRgbaExact": false,
+              "first": [
+                {
+                  "byte": 48765,
+                  "actual": 104,
+                  "expected": 103,
+                  "delta": 1
+                },
+                {
+                  "byte": 48770,
+                  "actual": 152,
+                  "expected": 151,
+                  "delta": 1
+                },
+                {
+                  "byte": 49534,
+                  "actual": 152,
+                  "expected": 151,
+                  "delta": 1
+                },
+                {
+                  "byte": 49537,
+                  "actual": 105,
+                  "expected": 104,
+                  "delta": 1
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "syntheticRenderer": {
+    "status": "passed",
+    "cases": 12,
+    "fullRgbaExactCases": 10,
+    "nonIntegerInterpolationCasesWithDeclaredOneByteTolerance": 2,
+    "rawPngUnchanged": true,
+    "productResourcesReleased": true,
+    "contextLostOnCleanup": true
+  },
+  "appUi": {
+    "status": "passed",
+    "flows": [
+      "complete recording and resume",
+      "stop and save one frame with deferred resize",
+      "cancel after actual CGL render before delivery"
+    ],
+    "ownedProcessesAfterClose": 0
+  },
+  "measurements": {
+    "original": {
+      "scriptSeconds": 4.909837042,
+      "timeRealSeconds": 5.08,
+      "timeUserSeconds": 8.69,
+      "timeSystemSeconds": 4.42,
+      "timeMaximumRssBytes": 724582400
+    },
+    "preview": {
+      "scriptSeconds": 3.247269125,
+      "timeRealSeconds": 3.65,
+      "timeUserSeconds": 5.89,
+      "timeSystemSeconds": 4.03,
+      "timeMaximumRssBytes": 434913280
+    },
+    "renderer": {
+      "scriptSeconds": 2.455550083,
+      "timeRealSeconds": 2.85,
+      "timeUserSeconds": 6.5,
+      "timeSystemSeconds": 3.85,
+      "timeMaximumRssBytes": 525762560
+    },
+    "ui": {
+      "scriptSeconds": 14.221206875,
+      "timeRealSeconds": 14.62,
+      "timeUserSeconds": 20.97,
+      "timeSystemSeconds": 8.62,
+      "timeMaximumRssBytes": 706248704
+    },
+    "scope": "Fresh hosts/owners, uncontrolled OS/module/driver caches; no equivalent before/after speedup comparison.",
+    "unmeasured": [
+      "agent tokens",
+      "simultaneous process-family peak memory",
+      "GPU time/VRAM",
+      "isolated incremental composition cost"
+    ]
+  },
+  "sourceReportsMatchFinalTree": true,
+  "helperUnchanged": true,
+  "limitations": [
+    "Original final endpoint is complete primary FBO before endOnscreenDraw/OS window; no real window parity claim.",
+    "Original offscreen host preserves 19 GL1282 errors from unsupported GL_BACK per case plus one initial error of uncertain origin; valid complete FBO reader operations have no GL error.",
+    "Preview isolates compositor using original full branded export; local generator does not reproduce that brand layer.",
+    "CGL versus ANGLE Metal quantization is an unproven residual hypothesis; no threshold relaxation or byte correction.",
+    "All Samila presets/hot-edit/resize/library/profile/same-ID combinations and animated post-stop remain incomplete.",
+    "All eleven scene-family acceptance and Apple Silicon 2.0 packaging remain."
+  ]
+}

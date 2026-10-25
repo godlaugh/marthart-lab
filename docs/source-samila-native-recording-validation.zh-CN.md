@@ -4,6 +4,8 @@
 
 能力位于开发分支的 `VITE_SOURCE_RENDERER=native` 模式，需要已有原生服务。默认 WebGL 模式、已安装的 1.0 应用和发行包未更新。[结构化证据索引](../tests/fixtures/source-samila-native-recording/20261025.json)保留报告、源码校验、种子及图像摘要，阅读本文即可了解结果。
 
+后续验收（同日）：[录制预览与停止后首帧](source-samila-recording-presentation-validation.zh-CN.md)已新增三组实际 `MathArt.draw()` 参考；18 张核心帧完全一致，预览 13/15 帧完全一致，剩余两帧的精确残差继续保留。下文是本轮较早验证的原始范围。
+
 ## 使用行为
 
 点击“录制”，或者在“导出作品”的 Samila 视频模式中选择“从上次完整应用的场景录制”。设置尺寸、帧率和质量后开始：

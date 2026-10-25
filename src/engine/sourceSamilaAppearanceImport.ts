@@ -29,20 +29,23 @@ export function importSourceSamilaAppearance(raw:unknown,numberToken:(path:reado
   if(defaulted)warnings.push(`${path.join('.')} 按原版 getFloat 使用默认值 ${parsed}；原值保留。`);
  }
  const backgroundField=source&&Object.hasOwn(source,'background_color')?'background_color':source&&Object.hasOwn(source,'bgcolor')?'bgcolor':undefined;
- let background='#000000';
+ let packedBackground=0xff000000;
  if(backgroundField){
   const path=['settings',backgroundField],raw=source![backgroundField];consumedPaths.push(path);if(typeof raw==='number')numericPaths.push(path);
   const text=prepareRootsSourceJsonString(raw,'#000000',numberToken(path));
   if(!text.ok)return{ok:false,error:{kind:'input',path,reason:'源 Samila 背景数值词法无效'}};
   // Java Double.toString always has a decimal point/exponent; containers are
   // JSON object/array text. None can parse as ConfigUtils's integer color.
-  if(text.value.status==='unknown'){background='#ffffff';warnings.push(`${path.join('.')} 按原版采用白色；原值保留。`);}
+  if(text.value.status==='unknown'){packedBackground=0xffffffff;warnings.push(`${path.join('.')} 按原版采用白色；原值保留。`);}
   else {if(text.value.value.length>SOURCE_COLOR_TEXT_BUDGET)return{ok:false,error:{kind:'capacity',path,reason:'源 Samila 背景颜色超过 1 MiB 文本容量'}};
-   try{background='#'+(sourceConfigPackedColor(text.value.value)&0xffffff).toString(16).padStart(6,'0');}
-   catch(error){if(!(error instanceof SourceConfigColorError))throw error;background='#ffffff';warnings.push(`${path.join('.')} 按原版采用白色；原值保留。`);}
+   try{packedBackground=sourceConfigPackedColor(text.value.value);}
+   catch(error){if(!(error instanceof SourceConfigColorError))throw error;packedBackground=0xffffffff;warnings.push(`${path.join('.')} 按原版采用白色；原值保留。`);}
   }
  }
- settings.background=background;
+ settings.background='#'+(packedBackground&0xffffff).toString(16).padStart(6,'0');
+ // SamilaMobject masks alpha, while Scene.background keeps Processing's int
+ // color semantics, including zero-alpha 0..255 grayscale. Parse source once.
+ settings.samilaSceneBackgroundColor=packedBackground;
  const trails=source?.show_trails;settings.showTrails=typeof trails==='boolean'?trails:typeof trails==='string'&&javaEqualsIgnoreCaseAscii(trails,'false')?false:true;
  if(source&&Object.hasOwn(source,'show_trails'))consumedPaths.push(['settings','show_trails']);
  settings.densityToneModel='samila-normalized-v2';settings.samilaToneBranch='palette-average';

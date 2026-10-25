@@ -71,5 +71,15 @@ describe('source Samila appearance import',()=>{
   expect(parseProjectFile(JSON.stringify(raw({settings:{bgcolor:255}})).replace(':255',':255.0')).scene.settings.background).toBe('#ffffff');
   expect(parseScene(serializeScene(parse({settings:{bgcolor:255}}).scene)).settings.background).toBe('#0000ff');
  });
+ it('retains packed Scene colors before masking the separate Samila shader background',()=>{
+  for(const [background_color,packed,shader]of [['1',1,'#000001'],['#000000ff',255,'#0000ff'],['#80102030',0x80102030,'#102030'],['#00102030',0x00102030,'#102030'],['-1',0xffffffff,'#ffffff']] as const){
+   const scene=parse({settings:{background_color}}).scene;
+   expect(scene.settings).toMatchObject({samilaSceneBackgroundColor:packed,background:shader});
+   expect(parseScene(serializeScene(scene)).settings.samilaSceneBackgroundColor).toBe(packed);
+  }
+  expect(parse({settings:{background_color:null,bgcolor:'#80102030'}}).scene.settings.samilaSceneBackgroundColor).toBe(0xff000000);
+  expect(parse({settings:{background_color:'bad'}}).scene.settings.samilaSceneBackgroundColor).toBe(0xffffffff);
+  const old=parse().scene;delete old.settings.samilaSceneBackgroundColor;const reopened=parseScene(serializeScene(old));expect(reopened.settings).not.toHaveProperty('samilaSceneBackgroundColor');
+ });
 
 });

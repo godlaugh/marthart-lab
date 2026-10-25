@@ -25,6 +25,11 @@ const runtimeKeys=['equations','parameters','settings','palette','timeline','cam
 // of the renderer's GPU allocation and the App's history retention.
 const SESSION_BUDGET=64*1024*1024;
 const runtimeSettings=new Set<string>(['background',...Object.values(SOURCE_SAMILA_APPEARANCE_FIELDS).map(f=>f.key).filter(key=>key!=='trailLifetime')]);
+/** Color widgets author opaque RGB. The constructor color is staged in author
+ * settings, while the effective Scene retains its old packed color until Apply. */
+function authoredBackgroundColor(scene:SceneDocument):number {
+ const value=String(scene.settings.background??'#0a0c14');if(!/^#[0-9a-f]{6}$/i.test(value))throw new SourceSamilaPaletteError('Samila 背景需要 #RRGGBB');return sourceConfigPackedColor(value);
+}
 function configuration(scene:SceneDocument):SourceSamilaRuntimeConfiguration {
  return{equations:scene.equations,parameters:scene.parameters,settings:scene.settings,palette:scene.palette,timeline:scene.timeline,camera:scene.camera,projectResolution:scene.projectResolution,runtimeSamilaViewport:scene.runtimeSamilaViewport};
 }
@@ -50,12 +55,13 @@ export function ensureSourceSamilaPaletteSession(scene:SceneDocument):SceneDocum
 export function syncSourceSamilaPaletteSession(before:SceneDocument,next:SceneDocument,event?:{parameter?:string;setting?:string}):SceneDocument {
  if(!next.samilaSourcePalette||!usesSourceSamilaSplat(next)||next===before&&!event)return next;
  if(next.samilaPaletteSession&&next.samilaPaletteSession!==before.samilaPaletteSession)return next;
+ if(!Object.is(before.settings.background,next.settings.background)||event?.setting==='background')next={...next,settings:{...next.settings,samilaSceneBackgroundColor:authoredBackgroundColor(next)}};
  if(!before.samilaSourcePalette||before.id!==next.id||before.samilaPaletteSession&&!next.samilaPaletteSession)return{...next,samilaPaletteSession:initialSession(next)};
  const session=before.samilaPaletteSession??initialSession(before),effective={...session.effective};let changed=false,runtimeWrite=false;
  for(const key of runtimeKeys){
   if(key==='parameters'||key==='settings'){
    const left=before[key],right=next[key],copy={...effective[key]};let mapChanged=false;
-   for(const name of new Set([...Object.keys(left),...Object.keys(right)]))if(!Object.is(left[name],right[name])||Object.hasOwn(left,name)!==Object.hasOwn(right,name)||(key==='parameters'?event?.parameter:event?.setting)===name){if(Object.hasOwn(right,name))copy[name]=right[name];else delete copy[name];mapChanged=true;if(key==='settings'&&runtimeSettings.has(name))runtimeWrite=true;}
+   for(const name of new Set([...Object.keys(left),...Object.keys(right)]))if(!(key==='settings'&&name==='samilaSceneBackgroundColor')&&(!Object.is(left[name],right[name])||Object.hasOwn(left,name)!==Object.hasOwn(right,name)||(key==='parameters'?event?.parameter:event?.setting)===name)){if(Object.hasOwn(right,name))copy[name]=right[name];else delete copy[name];mapChanged=true;if(key==='settings'&&runtimeSettings.has(name))runtimeWrite=true;}
    if(mapChanged){Object.assign(effective,{[key]:copy});changed=true;}
   }else if(!sameSourceRecordingValue(before[key],next[key])){Object.assign(effective,{[key]:next[key]});changed=true;}
  }
@@ -117,7 +123,12 @@ export function prepareSourceSamilaColdPalette(scene:SceneDocument):SourceSamila
 /** Explicit full Apply alone replaces the cold reset anchor. */
 export function applySourceSamilaPalette(scene:SceneDocument):SceneDocument {
  const cold=prepareSourceSamilaColdPalette(scene);if(!cold)return scene;
- const next={...scene,palette:cold.palette,settings:{...scene.settings,samilaUsePaletteLut:cold.useLut}},applied=snapshot(configuration(next));return{...next,samilaPaletteSession:{applied,effective:applied,runtimeRevision:0,parameterRevisions:{}}};
+ const authored=authoredBackgroundColor(scene),source=scene.settings.samilaSceneBackgroundColor;
+ if(source!==undefined&&(typeof source!=='number'||!Number.isSafeInteger(source)||source<0||source>0xffffffff))throw new SourceSamilaPaletteError('Samila Scene 背景需要 uint32 颜色');
+ // Direct full-Apply callers may bypass the ordinary edit boundary. Preserve
+ // original packed alpha/grayscale only while its shader RGB remains authored.
+ const packed=typeof source==='number'&&(source&0xffffff)===(authored&0xffffff)?source:authored;
+ const next={...scene,palette:cold.palette,settings:{...scene.settings,samilaSceneBackgroundColor:packed,samilaUsePaletteLut:cold.useLut}},applied=snapshot(configuration(next));return{...next,samilaPaletteSession:{applied,effective:applied,runtimeRevision:0,parameterRevisions:{}}};
 }
 /** Reset leaves author values and generator parameters alone. Rebuilding a
  * session for history does not call this: it resumes its effective snapshot. */
