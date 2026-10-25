@@ -28,6 +28,9 @@ export interface PreparedSymmetryCustomSource {
  readonly dialect:typeof SYMMETRY_CUSTOM_DIALECT;
  readonly loopCount:number;
 }
+/** Parsed source-format facts shared by the local budgeted and native source
+ * dialects. This boundary does not lex, compile, execute or rewrite loops. */
+export type SymmetryCustomInput=Readonly<Pick<PreparedSymmetryCustomSource,'rawSource'|'expandedSource'|'compileDegree'|'bindingNames'>>;
 
 export class SymmetryCustomSourceError extends Error {
  constructor(readonly code:'source-type'|'source-budget'|'degree'|'source-format'|'unsupported-directive'|'reserved-identifier'|'unsupported-discard',message:string){super(message);this.name='SymmetryCustomSourceError';}
@@ -135,26 +138,30 @@ function instrumentLoops(source:string):{source:string;loopCount:number} {
 // One bounded facts cache avoids re-lexing unchanged authored source for every
 // animation frame. Values and animated degree uniforms never enter this key.
 const plans:PreparedSymmetryCustomSource[]=[];
-export function prepareSymmetryCustomSource(rawSource:string,compileDegree:number):PreparedSymmetryCustomSource {
+export function prepareSymmetryCustomInput(rawSource:string,compileDegree:number):SymmetryCustomInput {
  const raw=readSymmetryCustomSource(rawSource);if(raw===undefined)fail('source-type','自定义 GLSL 源码为空');
  if(raw!.length>MAX_SYMMETRY_CUSTOM_SOURCE_LENGTH)fail('source-budget','自定义 GLSL 源码超过 64 Ki 字符预算');
  compileDegreeValue(compileDegree);
- const cachedIndex=plans.findIndex(plan=>plan.compileDegree===compileDegree&&plan.rawSource===raw);
- if(cachedIndex>=0){const [cached]=plans.splice(cachedIndex,1);plans.push(cached);return cached;}
  const degree=String(compileDegree),minusTwo=String(compileDegree-2),placeholder=/\{N\}|\{N_MINUS_2\}/g;
  let expandedLength=raw!.length;for(const match of raw!.matchAll(placeholder))expandedLength+=(match[0]==='{N}'?degree:minusTwo).length-match[0].length;
  if(expandedLength>MAX_SYMMETRY_CUSTOM_EXPANDED_LENGTH)fail('source-budget','自定义 GLSL 展开后的源码超过 96 Ki 字符预算');
- const expandedSource=raw!.replace(placeholder,value=>value==='{N}'?degree:minusTwo),instrumented=instrumentLoops(expandedSource);
+ const expandedSource=raw!.replace(placeholder,value=>value==='{N}'?degree:minusTwo);
  // The original matcher includes comments and excludes precision-qualified or
  // grouped declarations. Reflection may skip inactive names, never add names.
  const bindingNames=Object.freeze([...new Set([...expandedSource.matchAll(/uniform\s+float\s+(\w+)\s*;/g)].map(match=>match[1]))]);
+ return Object.freeze({rawSource:raw!,expandedSource,compileDegree,bindingNames});
+}
+export function prepareSymmetryCustomSource(rawSource:string,compileDegree:number):PreparedSymmetryCustomSource {
+ const cachedIndex=plans.findIndex(plan=>plan.compileDegree===compileDegree&&plan.rawSource===rawSource);
+ if(cachedIndex>=0){const [cached]=plans.splice(cachedIndex,1);plans.push(cached);return cached;}
+ const input=prepareSymmetryCustomInput(rawSource,compileDegree),{expandedSource,bindingNames}=input,instrumented=instrumentLoops(expandedSource);
  if(bindingNames.some(name=>name.startsWith('rea_')))fail('reserved-identifier','自定义 GLSL uniform 的 rea_ 前缀由渲染器保留（包括注释中的原生匹配）');
- const plan=Object.freeze({rawSource:raw!,expandedSource,instrumentedSource:instrumented.source,compileDegree,bindingNames,programKey:SYMMETRY_CUSTOM_DIALECT+'\n'+instrumented.source,dialect:SYMMETRY_CUSTOM_DIALECT,loopCount:instrumented.loopCount});
+ const plan=Object.freeze({...input,instrumentedSource:instrumented.source,programKey:SYMMETRY_CUSTOM_DIALECT+'\n'+instrumented.source,dialect:SYMMETRY_CUSTOM_DIALECT,loopCount:instrumented.loopCount});
  if(plans.length>=SYMMETRY_CUSTOM_PLAN_CACHE_SIZE)plans.shift();plans.push(plan);return plan;
 }
 
 /** Native safeFloat: missing, nonfinite and float32 overflow become zero.
  * No implicit time/degree/coordinate values are injected. */
-export function bindSymmetryCustomParameters(plan:PreparedSymmetryCustomSource,parameters:Readonly<Record<string,number>>):Readonly<Record<string,number>> {
+export function bindSymmetryCustomParameters(plan:Pick<SymmetryCustomInput,'bindingNames'>,parameters:Readonly<Record<string,number>>):Readonly<Record<string,number>> {
  return Object.freeze(Object.fromEntries(plan.bindingNames.map(name=>{const value=Object.hasOwn(parameters,name)?Math.fround(parameters[name]):0;return [name,Number.isFinite(value)?value:0];})));
 }
