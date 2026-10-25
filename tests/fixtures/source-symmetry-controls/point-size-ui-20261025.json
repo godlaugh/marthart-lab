@@ -166,5 +166,26 @@
     "No full-load performance or second-device claim.",
     "Prior palette144 App checks remain pinned to9f5ae66, not rerun after this product change.",
     "Raw run3 stdout steps0 is an inherited summary counter mismatch:16 action snapshots have no per-step status;83 assertions and report.status passed are independently audited."
-  ]
+  ],
+  "postReview": {
+    "reason": "Preserve existing sourceLivePreviewKind symmetry dot-size intent while extending native configuration to fixed mode.",
+    "report": {
+      "path": ".cache/symmetry-point-size-ui-20261025/run-4/report.json",
+      "sha256": "14ca3b493322e41c72229e9fcbf8ffe2e9bfff97896498acd94f6e88d3393ad6"
+    },
+    "audit": {
+      "path": ".cache/symmetry-point-size-ui-20261025/audit-run4.json",
+      "sha256": "fccac9b8dc361a225f59f7143cd10e2d0311d27951d55319b08d76dd69aa81de"
+    },
+    "index": {
+      "path": ".cache/symmetry-point-size-ui-20261025/post-review-index.json",
+      "sha256": "58147d00ca9b61dcdc284f7a0f05ca8c6bbac90dda2e7b0abe7896d07c83b18d"
+    },
+    "checks": 83,
+    "elapsedMs": 13485.255792,
+    "sourceStable": true,
+    "appSha256": "830d79f6b5736cab4d9e5b12cc9bcfd044e74765b4f696273ac6efe2495d2842",
+    "buildV2": "passed; existing large chunk warning",
+    "legacyNoConstructionScope": "CPU parse/timeline/frame preparation reviewed only; no original or GPU legacy-profile parity claim."
+  }
 }

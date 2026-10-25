@@ -722,7 +722,7 @@ export default function App() {
         :{...scene.settings,[key]:value};
       const next=scene.samilaSourcePalette?writeSourceSamilaSetting(scene,key,value):{...scene,settings};
       if(scene.kind==='implicit'&&usesSourceImplicitCpuMesh(scene)!==usesSourceImplicitCpuMesh(next)){void applyScene(next);return;}
-      editInspector(next,usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':usesSourceSymmetryConfiguration(scene)&&key==='pointSize'?'iterated-dot-size':(family==='map'||family==='symmetry')&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
+      editInspector(next,usesSourceSamilaSampling(scene)&&['rotation','scaleX','scaleY','offsetX','offsetY'].includes(key),true,(sourceLivePreviewKind(scene)==='symmetry'||sourceLivePreviewKind(scene)==='map')&&SOURCE_ITERATED_REPLAY_SETTINGS.some(value=>value===key)?'iterated-replay':(family==='symmetry'||usesSourceSymmetryConfiguration(scene))&&key==='pointSize'?'iterated-dot-size':(family==='map'||family==='symmetry')&&SOURCE_MAP_RUNTIME_SETTINGS.includes(key)?'map-runtime':sourceLivePreviewKind(scene)==='map'&&key==='pointSize'?'iterated-apply':undefined);
     } catch(error) {setToast(error instanceof Error?error.message:String(error));}
   }
   function workingDocument(item: SceneDocument): SceneDocument {

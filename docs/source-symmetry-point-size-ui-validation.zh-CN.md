@@ -1,5 +1,7 @@
 # Symmetry 冷点径与热 setter 的实际 App 验收
 
+> 最终兼容复核：保留旧 live Symmetry 的点径 intent，同时将新配置 owner 扩展至 fixed 模式。该单行路由调整后，`run-4` 再次通过相同 83 项实际检查（13.485 秒），591 个 pin 稳定；独立留存复核 28 项、2.0 构建再次通过。新索引 `post-review-index.json`，旧 run-3/index 不覆盖；没有把重复检查累加为 166 项。无 construction 的旧 profile 只做 CPU 路由／准备审查，不声称其完整 GPU 行为已验证。
+
 2026-10-25，真实 App / production Worker / WebGL2 小矩阵 **83 项通过**，16 个有序动作快照，耗时 13.131 秒。运行基线是 `6a6bb3c73360433b8011c88d4b53585bb0c6e12b` **加未提交产品改动**；不能只用提交号代表运行源码。[精简 fixture](../tests/fixtures/source-symmetry-controls/point-size-ui-20261025.json) 绑定实际源码 pin 和差异快照。
 
 本次验证产品的冷/热状态归属，不执行原版，不声称原版整图或数值轨迹一致。此前 [色板联合 App 矩阵](source-symmetry-recording-replacement-validation.zh-CN.md) 的 144 项仍绑定旧 `9f5ae66`，没有将其追认为本次源码上的重跑结果。
