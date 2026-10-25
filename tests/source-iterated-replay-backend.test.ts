@@ -51,7 +51,7 @@ describe('one replay owner with synchronous and asynchronous execution (CPU-only
   try{
    const first=await display();expect(first.phases).toEqual([{kind:'display',warmupSteps:0,iterationSteps:0,draw:true,resetParticles:true}]);
    sync.requestReplay();async.requestReplay();const replay=await display(running(frame));
-   expect(replay.phases.map(p=>p.kind)).toEqual(['update','replay','replay']);expect(replay.phases[0].warmupSteps).toBe(family==='map'?1000:16);
+   expect(replay.phases.map(p=>p.kind)).toEqual(['update','replay','replay']);expect(replay.phases[0].warmupSteps).toBe(16);
    let row=replay,limit=100;
    while(row.remainingReplaySteps>0&&--limit)row=await display();expect(limit).toBeGreaterThan(0);
    const burnOnly=await display();expect(burnOnly.passes).toBe(0);expect(burnOnly.phases[0]).toMatchObject({kind:'replay',draw:false,iterationSteps:0});
@@ -142,4 +142,11 @@ describe('one replay owner with synchronous and asynchronous execution (CPU-only
   vi.mocked(b.backend.present).mockImplementationOnce(()=>{expect(()=>owner.reset()).toThrow('尚未结束');expect(()=>owner.requestReplay()).toThrow('空闲');return{pixels:new Uint8ClampedArray(4),occupiedPixels:1,maxCount:1,toneBackend:'webgl2',warnings:[]};});
   expect(owner.present(tone).pixels).toHaveLength(4);expect(owner.diagnostics()).toMatchObject({initialized:true,failed:false});expect(b.backend.dispose).not.toHaveBeenCalled();owner.reset();
  });
+ it('admits the whole replay display using actual backend work before its first effect',async()=>{
+  const b=asynchronous(),estimateWork=vi.fn(()=>1_100_000_000),owner=new SourceIteratedReplaySession('map',60,{asyncBackend:{...b.backend,estimateWork}}),frame=job('map');
+  await owner.displayAsync(frame,options,paused);owner.requestReplay();const calls=b.backend.step.mock.calls.length;
+  await expect(owner.displayAsync(frame,options,paused)).rejects.toThrow('20 亿');expect(b.backend.step).toHaveBeenCalledTimes(calls);expect(owner.diagnostics()).toMatchObject({failed:false,replayPending:true});
+  expect(estimateWork.mock.calls.length).toBeGreaterThan(1);estimateWork.mockReturnValue(10);await owner.displayAsync(frame,options,paused);await owner.resetAsync();
+ });
+
 });

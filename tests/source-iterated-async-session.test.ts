@@ -123,4 +123,10 @@ describe('one live iterated owner across sync and awaited effects',()=>{
   expect(result).toMatchObject({backend:'native',density:{toneBackend:'native'},sourcePixelRenderer:{backend:'native',identity:'a'.repeat(64)}});
   expect(()=>p.async.readParticles()).toThrow('Async');expect(()=>p.async.reset()).toThrow('resetAsync');await p.async.resetAsync();
  });
+ it('accumulates backend work across reconstruction displays before submitting an over-budget phase',async()=>{
+  const p=pair('map');p.b.async.estimateWork=()=>1_100_000_000;
+  await expect(p.async.generateAsync(p.s,{...p.c,mapLive:{...p.c.mapLive!,startAt:.1}})).rejects.toThrow('20 亿');
+  expect(p.b.trace.filter((v:any)=>v.kind==='step')).toHaveLength(1);await p.async.resetAsync();
+ });
+
 });

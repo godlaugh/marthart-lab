@@ -186,7 +186,7 @@ export class SourceIteratedSession {
   const updates=frame.update.calls.map(call=>prepareIteratedField({...scene,parameters:{...call.parameters!}},job.config,call.time,anchor));
   if(reconstructing){
    const planned=prepareSourceIterationFramePlan(this.family,{frameIndex:this.displays,updateCount:updates.length},this.replay!.diagnostics().warmupApplied,job.config.burn,job.config.iterations);
-   this.requestSteps+=job.config.count*(planned.warmupSteps+planned.iterationSteps);
+   this.requestSteps+=this.replay!.estimateWork({...job,iterationFrame:planned,iterationUpdates:updates},!this.replay!.diagnostics().initialized);
    this.requestPixels+=sourceDensitySplatPixelTests(job.densitySplat,job.config.count);
    if(this.requestSteps>2_000_000_000||this.requestPixels>2_000_000_000)throw Error('迭代场景 本地重建超过 20 亿工作预算');
   }

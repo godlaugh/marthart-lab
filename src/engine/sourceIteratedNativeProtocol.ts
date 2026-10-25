@@ -7,11 +7,15 @@ export const SOURCE_ITERATED_NATIVE_FAMILY=2;
 export const SOURCE_ITERATED_NATIVE_CHUNK_PARTICLES=65536;
 export const SOURCE_ITERATED_NATIVE_FIXED_BYTES=1024*1024;
 export interface SourceIteratedNativeShaders {vertex:string;fragment:string;}
+/** Separate pure math and final-state diagnostic programs; their native ABI is
+ * owned by the explicit source-prefix resource, never inferred from GLSL. */
+export interface SourceIteratedNativeSourceShaders extends SourceIteratedNativeShaders {diagnosticVertex:string;diagnosticFragment:string;}
 export interface SourceIteratedNativeUniform {name:string;value:number;}
 type Owned={resource:string};
 type Checkpoint=Owned&{expectedIndex:number;expectedCount:number};
 export type SourceIteratedNativeOperation=
  | (Owned&SourceIteratedNativeShaders&{kind:'create';count:number})
+ | (Owned&SourceIteratedNativeSourceShaders&{kind:'create-source';count:number})
  | (Checkpoint&{kind:'upload';expectedIndex:0;offset:number;positionsAndMetric:Float32Array})
  | (Checkpoint&{kind:'advance';reset:boolean;resetCounter?:boolean;dimension:2|3;steps:number;uniforms:readonly SourceIteratedNativeUniform[]})
  | (Checkpoint&{kind:'read';offset:number;count:number})
@@ -23,6 +27,7 @@ export interface SourceIteratedNativeRequest {generation:number;sequence:number;
  * uploaded seed storage or caller-owned operation object is retained. */
 export type SourceIteratedNativeResponseBinding=Readonly<
  | (Owned&{kind:'create';count:number})
+ | (Owned&{kind:'create-source';count:number})
  | (Checkpoint&{kind:'upload';uploaded:number})
  | (Checkpoint&{kind:'advance';steps:number})
  | (Checkpoint&{kind:'read';offset:number;count:number})
@@ -32,7 +37,7 @@ export interface SourceIteratedNativeResponse {
  resource:string;index:number;disposition:'owned'|'released'|'absent';uploaded:number;totalCount:number;offset:number;readCount:number;steps:number;
  positionsAndMetric?:Float32Array;invalidCounts?:Uint32Array;validity?:Uint8Array;
 }
-const kinds={create:1,upload:2,advance:3,read:4,release:5} as const;
+const kinds={create:1,upload:2,advance:3,read:4,release:5,'create-source':6} as const;
 const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8',{fatal:true});
 const uint=(n:number)=>Number.isInteger(n)&&n>=0&&n<=0xffffffff;
 const count=(n:number)=>uint(n)&&n>0&&n<=8_000_000;
@@ -44,10 +49,16 @@ function textBytes(text:string):Uint8Array {
 }
 /** Native profiles are supplied by the shader producer, never translated from
  * ES source here. This charge is source UTF-8 bytes times three, not driver RSS. */
-export function sourceIteratedNativeProgramBytes(shaders:SourceIteratedNativeShaders):number {
+function shaderProgramBytes(sources:readonly string[]):number {
  let bytes=0;
- for(const key of ['vertex','fragment'] as const){const source=shaders?.[key];demand(typeof source==='string'&&source.startsWith('#version 410 core\n'),'原生迭代 shader 必须显式提供 #version 410 core');bytes+=textBytes(source).length*3;capacity(bytes);}
+ for(const source of sources){demand(typeof source==='string'&&source.startsWith('#version 410 core\n'),'原生迭代 shader 必须显式提供 #version 410 core');bytes+=textBytes(source).length*3;capacity(bytes);}
  return bytes;
+}
+export function sourceIteratedNativeProgramBytes(shaders:SourceIteratedNativeShaders):number {
+ return shaderProgramBytes([shaders?.vertex,shaders?.fragment]);
+}
+export function sourceIteratedNativeSourceProgramBytes(shaders:SourceIteratedNativeSourceShaders):number {
+ return shaderProgramBytes([shaders?.vertex,shaders?.fragment,shaders?.diagnosticVertex,shaders?.diagnosticFragment]);
 }
 export function sourceIteratedNativeResidentBytes(particles:number,programBytes:number):number {
  demand(count(particles)&&Number.isSafeInteger(programBytes)&&programBytes>=0,'原生迭代驻留容量无效');return particles*64+programBytes+SOURCE_ITERATED_NATIVE_FIXED_BYTES;
@@ -59,7 +70,7 @@ export function captureSourceIteratedNativeResponseBinding(request:SourceIterate
  demand(request&&uint(request.generation)&&request.generation>0&&uint(request.sequence)&&request.sequence>0,'原生迭代请求身份无效');
  const op=request.operation;demand(op&&Object.hasOwn(kinds,op.kind)&&typeof op.resource==='string'&&/^[a-f0-9]{32}$/.test(op.resource)&&op.resource!=='0'.repeat(32),'原生迭代资源身份无效');
  let binding:SourceIteratedNativeResponseBinding;
- if(op.kind==='create'){demand(count(op.count),'原生迭代粒子数无效');binding={kind:op.kind,resource:op.resource,count:op.count};}
+ if(op.kind==='create'||op.kind==='create-source'){demand(count(op.count),'原生迭代粒子数无效');binding={kind:op.kind,resource:op.resource,count:op.count};}
  else if(op.kind==='release'){
   demand(op.expectedIndex===undefined||uint(op.expectedIndex),'原生迭代释放检查点无效');demand(op.expectedCount===undefined||count(op.expectedCount),'原生迭代释放粒子数无效');
   binding={kind:op.kind,resource:op.resource,...(op.expectedIndex===undefined?{}:{expectedIndex:op.expectedIndex}),...(op.expectedCount===undefined?{}:{expectedCount:op.expectedCount})};
@@ -99,7 +110,7 @@ export function encodeSourceIteratedNativeRequest(request:SourceIteratedNativeRe
  try{
   const check=()=>{if(options.isCancelled?.())throw new SourceNativeError('cancelled','原生迭代事务编码已取消');};check();validate(request);
   const retained=options.retainedBytes??0;demand(Number.isSafeInteger(retained)&&retained>=0,'原生迭代保留容量无效');const op=request.operation;
-  const resident=op.kind==='create'?retained+sourceIteratedNativeResidentBytes(op.count,sourceIteratedNativeProgramBytes(op)):op.kind==='release'?0:Math.max(retained,sourceIteratedNativeResidentBytes(op.expectedCount,0));
+  const resident=op.kind==='create'||op.kind==='create-source'?retained+sourceIteratedNativeResidentBytes(op.count,op.kind==='create-source'?sourceIteratedNativeSourceProgramBytes(op):sourceIteratedNativeProgramBytes(op)):op.kind==='release'?0:Math.max(retained,sourceIteratedNativeResidentBytes(op.expectedCount,0));
   const transient=op.kind==='read'?48*op.count:0;capacity(resident+transient);
   let offset=0,out:Uint8Array|undefined,view:DataView|undefined;
   const reserve=(bytes:number)=>{capacity(offset+bytes);const at=offset;offset+=bytes;return at;};
@@ -115,9 +126,9 @@ export function encodeSourceIteratedNativeRequest(request:SourceIteratedNativeRe
    if(view){const bits=new Uint32Array(values.buffer,values.byteOffset,values.length);for(let i=0;i<bits.length;i++){if((i&16383)===0)check();view.setUint32(at+i*4,bits[i],true);}}
   };
   const emit=()=>{
-   check();word(SOURCE_FRAME_MAGIC);word(op.kind==='advance'&&op.resetCounter!==undefined?7:SOURCE_ITERATED_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(1);word(1);for(let i=0;i<8;i++)word(0);
+   check();word(SOURCE_FRAME_MAGIC);word(op.kind==='create-source'||op.kind==='advance'&&op.resetCounter!==undefined?7:SOURCE_ITERATED_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(1);word(1);for(let i=0;i<8;i++)word(0);
    word(SOURCE_ITERATED_NATIVE_FAMILY);word(kinds[op.kind]);block(Uint8Array.from(op.resource.match(/../g)!,v=>parseInt(v,16)));
-   if(op.kind==='create'){word(op.count);text(op.vertex);text(op.fragment);}
+   if(op.kind==='create'||op.kind==='create-source'){word(op.count);text(op.vertex);text(op.fragment);if(op.kind==='create-source'){text(op.diagnosticVertex);text(op.diagnosticFragment);}}
    if(op.kind==='upload'){word(op.expectedIndex);word(op.offset);floats(op.positionsAndMetric);}
    if(op.kind==='advance'){word(op.expectedIndex);word(op.reset?1:0);if(op.resetCounter!==undefined)word(op.resetCounter?1:0);word(op.dimension);word(op.steps);word(op.uniforms.length);for(const u of op.uniforms){check();text(u.name);float(u.value);}}
    if(op.kind==='read'){word(op.expectedIndex);word(op.offset);word(op.count);}
@@ -147,8 +158,8 @@ export function decodeSourceIteratedNativeResponse(raw:Uint8Array,request:Source
   if(d===2)fail(index===0&&uploaded===0&&totalCount===0,'原生迭代不存在资源响应含有状态');
   else fail(count(totalCount)&&uploaded<=totalCount&&(op.expectedIndex===undefined||index===op.expectedIndex)&&(op.expectedCount===undefined||totalCount===op.expectedCount),'原生迭代释放响应检查点或容量不符');
  }else{
-  const expectedCount=op.kind==='create'?op.count:op.expectedCount,expectedIndex=op.kind==='create'?0:op.expectedIndex+(op.kind==='advance'?1:0);
-  const expectedUploaded=op.kind==='create'?0:op.kind==='upload'?op.uploaded:expectedCount;
+  const expectedCount=(op.kind==='create'||op.kind==='create-source')?op.count:op.expectedCount,expectedIndex=(op.kind==='create'||op.kind==='create-source')?0:op.expectedIndex+(op.kind==='advance'?1:0);
+  const expectedUploaded=(op.kind==='create'||op.kind==='create-source')?0:op.kind==='upload'?op.uploaded:expectedCount;
   fail(d===0&&totalCount===expectedCount&&index===expectedIndex&&uploaded===expectedUploaded,'原生迭代响应检查点或上传进度不符');
  }
  const result:SourceIteratedNativeResponse={resource,index,disposition:d===0?'owned':d===1?'released':'absent',uploaded,totalCount,offset,readCount:returnedCount,steps};

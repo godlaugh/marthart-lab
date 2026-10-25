@@ -6,6 +6,7 @@ import type {SourceDrawingFrame} from '../src/engine/sourceDrawingFrame';
 
 const resource='12'.repeat(16),identity='a'.repeat(64);
 const read=():SourceIteratedNativeRequest=>({generation:3,sequence:5,operation:{kind:'read',resource,expectedIndex:7,expectedCount:4,offset:1,count:2}});
+const createSource=():SourceIteratedNativeRequest=>({generation:3,sequence:5,operation:{kind:'create-source',resource,count:4,vertex:'#version 410 core\n// math vertex\nvoid main() {}',fragment:'#version 410 core\nvoid main() {}',diagnosticVertex:'#version 410 core\n// diagnostics vertex\nvoid main() {}',diagnosticFragment:'#version 410 core\n// diagnostics fragment\nvoid main() {}'}});
 const release=():SourceIteratedNativeRequest=>({generation:3,sequence:6,operation:{kind:'release',resource,expectedCount:4}});
 function reply(request:SourceIteratedNativeRequest,change?:(body:Uint8Array,headers:Record<string,string>)=>void){
  const op=request.operation;if(op.kind!=='read'&&op.kind!=='release'&&op.kind!=='advance')throw Error('fixture');
@@ -16,6 +17,11 @@ function reply(request:SourceIteratedNativeRequest,change?:(body:Uint8Array,head
  const headers:Record<string,string>={'content-type':'application/octet-stream','content-length':String(body.length),'x-source-generation':String(request.generation),'x-source-sequence':String(request.sequence),'x-source-width':'1','x-source-height':'1','x-source-renderer':identity,'x-source-format':'iterated-v1','x-source-row-order':'none','x-source-context':'9','x-source-session':'4'};
  change?.(body,headers);return new Response(body,{headers});
 }
+function sourceReply(request:SourceIteratedNativeRequest,kind=6){
+ if(request.operation.kind!=='create-source')throw Error('fixture');
+ const template=reply(release()),body=new Uint8Array(64),v=new DataView(body.buffer);v.setUint32(0,2,true);v.setUint32(4,kind,true);body.set(Uint8Array.from(resource.match(/../g)!,p=>parseInt(p,16)),8);v.setUint32(36,request.operation.count,true);
+ const headers=new Headers(template.headers);headers.set('x-source-generation',String(request.generation));headers.set('x-source-sequence',String(request.sequence));return new Response(body,{headers});
+}
 const legacy=():SourceDrawingFrame=>({generation:1,sequence:1,width:1,height:1,samples:0,clear:[0,0,0,0],drawing:{model:'source-drawing-v1',commands:[],textures:[],admittedBytes:0,copiedBufferBytes:0,retainedBufferBytes:0}});
 const samila=():SourceSamilaNativeRequest=>({generation:1,sequence:1,width:1,height:1,operation:{kind:'release',resource}});
 function legacyReply(){return new Response(new Uint8Array([1,2,3,4]),{headers:{'content-type':'application/octet-stream','content-length':'4','x-source-generation':'1','x-source-sequence':'1','x-source-width':'1','x-source-height':'1','x-source-renderer':identity,'x-source-format':'rgba8','x-source-row-order':'bottom-up'}});}
@@ -23,6 +29,25 @@ function samilaReply(){const body=new Uint8Array(64),v=new DataView(body.buffer)
 afterEach(()=>{vi.unstubAllGlobals();vi.useRealTimers();});
 
 describe('iterated v6/v7 production client transport (CPU mock fetch only)',()=>{
+ it('transports v7 source programs through the existing shared client and binds the submitted snapshot',async()=>{
+  const input=createSource(),sent=structuredClone(input);let deliver!:(response:Response)=>void;
+  const fetch=vi.fn(()=>new Promise<Response>(resolve=>{deliver=resolve;}));vi.stubGlobal('fetch',fetch);
+  const pending=exchangeSourceIteratedNative(input);if(input.operation.kind!=='create-source')throw Error('fixture');
+  input.operation.count=8;input.operation.resource='34'.repeat(16);input.operation.diagnosticVertex='invalid';input.operation={kind:'release',resource:input.operation.resource};input.generation=99;
+  deliver(sourceReply(sent));expect(await pending).toMatchObject({resource,index:0,uploaded:0,totalCount:4,readCount:0,steps:0,generation:3,sequence:5,contextSerial:9,sessionSerial:4});
+  const packet=(fetch.mock.calls[0] as unknown as [string,RequestInit])[1].body as Uint8Array,v=new DataView(packet.buffer,packet.byteOffset);
+  expect([v.getUint32(4,true),v.getUint32(60,true),v.getUint32(64,true),v.getUint32(88,true)]).toEqual([7,2,6,4]);
+  let at=92;const shaders=[];for(let i=0;i<4;i++){const n=v.getUint32(at,true);at+=4;shaders.push(new TextDecoder().decode(packet.subarray(at,at+n)));at+=n;}expect(at).toBe(packet.length);
+  if(sent.operation.kind!=='create-source')throw Error('fixture');expect(shaders).toEqual([sent.operation.vertex,sent.operation.fragment,sent.operation.diagnosticVertex,sent.operation.diagnosticFragment]);
+ });
+ it.each(['diagnosticVertex','diagnosticFragment'] as const)('rejects malformed %s before fetch and releases the transport slot',async field=>{
+  const input=createSource();Object.assign(input.operation,{[field]:'#version 300 es\nvoid main() {}'});const fetch=vi.fn();vi.stubGlobal('fetch',fetch);
+  await expect(exchangeSourceIteratedNative(input)).rejects.toMatchObject({kind:'input'});expect(fetch).not.toHaveBeenCalled();
+  vi.stubGlobal('fetch',vi.fn(async()=>sourceReply(createSource())));expect((await exchangeSourceIteratedNative(createSource())).totalCount).toBe(4);
+ });
+ it('rejects an old create ACK for a new source resource without publishing ownership',async()=>{
+  const input=createSource();vi.stubGlobal('fetch',vi.fn(async()=>sourceReply(input,1)));await expect(exchangeSourceIteratedNative(input)).rejects.toMatchObject({kind:'protocol'});
+ });
  it('submits the production packet and returns state words without image row operations',async()=>{
   const input=read(),fetch=vi.fn(async()=>reply(input));vi.stubGlobal('fetch',fetch);const result=await exchangeSourceIteratedNative(input);
   expect(result).toMatchObject({resource,index:7,uploaded:4,totalCount:4,offset:1,readCount:2,steps:0,contextSerial:9,sessionSerial:4,generation:3,sequence:5,width:1,height:1,rendererIdentity:identity});
@@ -79,9 +104,9 @@ describe('iterated v6/v7 production client transport (CPU mock fetch only)',()=>
   const controller=new AbortController();controller.abort();await expect(exchangeSourceIteratedNative(input,{signal:controller.signal})).rejects.toMatchObject({name:'AbortError'});expect(fetch).not.toHaveBeenCalled();
   vi.stubGlobal('fetch',vi.fn(async()=>reply(input)));expect((await exchangeSourceIteratedNative(input)).index).toBe(7);
  });
- it('shares one slot with legacy and Samila, and cancellation allows both families to resume',async()=>{
+ it.each([read,createSource])('shares one slot with legacy and Samila, and cancellation allows both families to resume (%#)',async input=>{
   const controller=new AbortController(),fetch=vi.fn((_url:string,init:RequestInit)=>new Promise<Response>((_resolve,reject)=>init.signal!.addEventListener('abort',()=>reject(new DOMException('cancelled','AbortError')),{once:true})));vi.stubGlobal('fetch',fetch);
-  const pending=exchangeSourceIteratedNative(read(),{signal:controller.signal});
+  const pending=exchangeSourceIteratedNative(input(),{signal:controller.signal});
   await expect(exchangeSourceIteratedNative(read())).rejects.toMatchObject({kind:'capacity'});await expect(renderSourceNativeFrame(legacy())).rejects.toMatchObject({kind:'capacity'});await expect(exchangeSourceSamilaNative(samila())).rejects.toMatchObject({kind:'capacity'});expect(fetch).toHaveBeenCalledOnce();
   controller.abort();await expect(pending).rejects.toMatchObject({name:'AbortError'});
   vi.stubGlobal('fetch',vi.fn(async()=>samilaReply()));expect((await exchangeSourceSamilaNative(samila())).disposition).toBe('absent');

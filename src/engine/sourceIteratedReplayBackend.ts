@@ -25,6 +25,9 @@ export interface SourceIteratedReplayBackend {
  * Cancellation is intentionally absent: an export must not abort a shared CGL
  * context. The semantic owner stops between acknowledged effects instead. */
 export interface SourceIteratedReplayAsyncBackend {
+ /** Actual backend work, including replayed math prefixes and diagnostics.
+  * Pure synchronous preflight; omission retains the legacy logical-step cost. */
+ estimateWork?(job:IteratedFrameJob,resetParticles:boolean):number;
  step(job:IteratedFrameJob,options:Omit<IteratedGpuOptions,'isCancelled'>):Promise<IteratedGpuFacts>;
  resizeAccumulation(width:number,height:number):Promise<boolean|void>;
  present(tone:SourceIteratedPresentArguments[0],view?:SourceIteratedPresentArguments[2]):Promise<SourceIteratedPresented>;

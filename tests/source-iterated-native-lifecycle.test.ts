@@ -1,10 +1,10 @@
 import {beforeAll,describe,expect,it} from 'vitest';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {mkdirSync,mkdtempSync,readFileSync} from 'node:fs';
+import {mkdirSync,mkdtempSync,readFileSync,writeFileSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {iteratedInitialChunk} from '../src/engine/iteratedSeed';
-import {iteratedDensityGpuPrograms,type IteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
+import {iteratedDensityGpuPrograms,sourceIteratedGpuPrograms,type IteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
 import {sourceMapGpuField} from '../src/engine/sourceMapMath';
 import {sourceSymmetryGpuField} from '../src/engine/sourceSymmetryMath';
 import {encodeSourceIteratedNativeRequest,decodeSourceIteratedNativeResponse,type SourceIteratedNativeOperation,type SourceIteratedNativeRequest} from '../src/engine/sourceIteratedNativeProtocol';
@@ -129,4 +129,49 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecyc
    await o.bad(create(2,C,{...shaders,vertex:'#version 410 core\ninvalid shader;'}),'runtime');expect(o.service.retainedResourceCount).toBe(0);await o.good(create(2,C));await o.good(release(C));
   }finally{await o.close();}
  });
+ it('keeps source prefix state and per-step diagnostics independent through recovery and zero-step resets',async()=>{
+  const source:IteratedGpuFieldSource={key:'source-prefix-recovery',sourceCalculateNext:true,uniforms:{},source:`void calculate_next(in vec3 p,out vec3 next,out float metric){
+   float x=p.x+1.;float y=x<2.?uintBitsToFloat(0x7fc12345u):x<3.?uintBitsToFloat(0x7f800000u):x<4.?uintBitsToFloat(0xff800000u):2.;
+   next=vec3(x,y,p.z);metric=x<3.?uintBitsToFloat(0x7fc12345u):x<5.?uintBitsToFloat(0x7f800000u):0.;}`};
+  const count=2,initial=Float32Array.of(0,2,3,7,0,4,5,9),o=await owner();let index=0;
+  const step=(steps:number,reset=false,resetCounter?:boolean):SourceIteratedNativeOperation=>({kind:'advance',resource:A,expectedCount:count,expectedIndex:index,dimension:3,steps,reset,resetCounter,uniforms:[]});
+  const send=async(steps:number,reset=false,resetCounter?:boolean)=>{await o.good(step(steps,reset,resetCounter));index++;return(await o.good(read(count,index))).decoded;};
+  try{
+   await o.good({kind:'create-source',resource:A,count,...sourceIteratedGpuPrograms(source,'native-gl41')});await o.good({kind:'upload',resource:A,expectedCount:count,expectedIndex:0,offset:0,positionsAndMetric:initial});
+   for(let n=1;n<=6;n++){const r=await send(n,true);expect([...r.invalidCounts!]).toEqual([Math.min(4,n),Math.min(4,n)]);expect([...r.validity!]).toEqual([n<5?0:1,n<5?0:1]);expect(r.positionsAndMetric![0]).toBe(n);expect(r.positionsAndMetric![2]).toBe(3);expect(r.positionsAndMetric![6]).toBe(5);}
+   const invalid=await send(3,true),unchanged=await send(0);expect(bytes(unchanged.positionsAndMetric!)).toEqual(bytes(invalid.positionsAndMetric!));expect(unchanged.invalidCounts).toEqual(invalid.invalidCounts);expect(unchanged.validity).toEqual(invalid.validity);
+   const counterReset=await send(0,false,true);expect(bytes(counterReset.positionsAndMetric!)).toEqual(bytes(invalid.positionsAndMetric!));expect([...counterReset.invalidCounts!]).toEqual([0,0]);expect([...counterReset.validity!]).toEqual([0,0]);
+   const next=await send(1);expect(next.positionsAndMetric![0]).toBe(4);expect([...next.invalidCounts!]).toEqual([1,1]);expect([...next.validity!]).toEqual([0,0]);
+   const recovered=await send(2);expect(recovered.positionsAndMetric![0]).toBe(6);expect([...recovered.invalidCounts!]).toEqual([1,1]);expect([...recovered.validity!]).toEqual([1,1]);
+   const reset=await send(0,true);expect(bytes(reset.positionsAndMetric!)).toEqual(bytes(initial));expect([...reset.invalidCounts!]).toEqual([0,0]);expect([...reset.validity!]).toEqual([1,1]);
+   const first=await send(1);expect(first.positionsAndMetric![0]).toBe(1);expect([...first.invalidCounts!]).toEqual([1,1]);await o.good(release());
+  }finally{await o.close();}
+ });
+ it('rejects source over-limit and incomplete controls before mutating its checkpoint',async()=>{
+  const o=await owner(),count=4;
+  try{
+   await o.good({kind:'create-source',resource:A,count,...sourceIteratedGpuPrograms(field,'native-gl41')});await o.good(upload(count));
+   await o.bad(advance(count,0,17),'input');await o.bad(advance(count,0,16,false,A,uniforms.slice(1)),'input');await o.bad(advance(count,0,1,false,A,[...uniforms,{name:'observe',value:1}]),'input');
+   expect(bytes((await o.good(read(count,0))).decoded.positionsAndMetric!)).toEqual(bytes(seed(count)));await o.good(advance(count,0,16));await o.good(release());
+  }finally{await o.close();}
+ });
+ it('admits a constant source equation with optimized-away input, while retaining exact zero-step bytes',async()=>{
+  const f=sourceMapGpuField({dimension:2,equations:{x:'1',y:'2'},parameters:{}}),o=await owner();
+  try{await o.good({kind:'create-source',resource:A,count:2,...sourceIteratedGpuPrograms(f,'native-gl41')});await o.good(upload(2));await o.good(advance(2,0,0,false,A,[]));expect(bytes((await o.good(read(2,1))).decoded.positionsAndMetric!)).toEqual(bytes(seed(2)));await o.good(advance(2,1,16,false,A,[]));const r=(await o.good(read(2,2))).decoded;expect([...r.positionsAndMetric!]).toEqual([1,2,0,0,1,2,0,0]);expect([...r.invalidCounts!]).toEqual([0,0]);await o.good(release());}finally{await o.close();}
+ });
+ it('cleans both source programs after diagnostic compilation or ABI failure',async()=>{
+  const p=sourceIteratedGpuPrograms(field,'native-gl41'),o=await owner();
+  const bad=[{...p,diagnosticVertex:'#version 410 core\ninvalid;'},
+   {...p,diagnosticVertex:p.diagnosticVertex.replace('flat out uvec2 newMetadata','flat out vec2 newMetadata').replace('newMetadata=uvec2','newMetadata=vec2')},
+   {...p,vertex:shaders.vertex}];
+  try{for(const source of bad){await o.bad({kind:'create-source',resource:A,count:2,...source},'runtime');expect(o.service.retainedResourceCount).toBe(0);await o.good({kind:'create-source',resource:A,count:2,...p});await o.good(upload(2));await o.good(advance(2,0));await o.good(release());}}finally{await o.close();}
+ });
+
+ it('preflights the uint32 observation interval and retains failed source ownership through disposal',()=>{
+  const root=mkdtempSync(resolve('.cache/iterated-prefix-boundaries-')),executable=join(root,'runner');
+  const build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-Werror','-Iserver/render','-framework','Foundation','-framework','OpenGL','tests/fixtures/source-iterated-prefix-boundaries/runner.m','-o',executable],{encoding:'utf8',timeout:30000});expect(build.error).toBeUndefined();expect(build.status,build.stderr).toBe(0);expect(build.stderr).toBe('');
+  const source=sourceMapGpuField({dimension:3,equations:{x:'x+1',y:'y+1',z:'z+1'},parameters:{}}),packet=encodeSourceIteratedNativeRequest({generation:1,sequence:1,operation:{kind:'create-source',resource:A,count:2,...sourceIteratedGpuPrograms(source)}});if(!packet.ok)throw Error(packet.error.reason);const path=join(root,'create.bin');writeFileSync(path,packet.value);
+  const run=spawnSync(executable,[path],{encoding:'utf8',timeout:15000});expect(run.error).toBeUndefined();expect(run.status,run.stderr).toBe(0);expect(run.stderr).toBe('');expect(JSON.parse(run.stdout)).toEqual({overflowPreflight:true,zeroAtLimit:true,counterReset:true,poisonedOwnerRetained:true,cleanup:true});
+ });
+
 });

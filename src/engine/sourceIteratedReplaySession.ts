@@ -39,6 +39,12 @@ export class SourceIteratedReplaySession {
   if(backend.backend&&backend.asyncBackend)throw Error('迭代场景不能同时拥有两个执行后端');
   this.asyncBackend=backend.asyncBackend;this.gpu=this.asyncBackend?undefined:backend.backend??new IteratedDensityGpu();
  }
+ /** Work admission delegates to the backend that owns its execution model. */
+ estimateWork(job:IteratedFrameJob,resetParticles:boolean):number {
+  const plan=job.iterationFrame;
+  const work=this.asyncBackend?.estimateWork?.(job,resetParticles)??job.config.count*((plan?.warmupSteps??(resetParticles?job.config.burn:0))+(plan?.iterationSteps??job.config.iterations));
+  if(!Number.isSafeInteger(work)||work<0)throw Error('迭代场景 后端工作预算无效');return work;
+ }
  private get executing(){return this.busy||!!this.inFlight||!!this.resetting;}
  private syncBackend(){if(!this.gpu)throw Error('异步迭代场景必须使用 Async 操作');return this.gpu;}
  setRenderFps(value:number){if(this.failed||this.executing)throw Error('迭代场景 帧率更新需要可用且空闲的会话');this.renderFps=sourceIteratedRenderFps(value);}
@@ -117,7 +123,10 @@ export class SourceIteratedReplaySession {
   const burnBudget=starting?Math.min(12,Math.max(8,Math.min(64,cfg.burn))):this.burnBudget;
   const burn=replay?Math.min(starting?cfg.burn:this.remainingBurn,burnBudget):0;
   const draws=replay?Math.min(remaining,sourceIteratedReplayBudget(remaining,frames-(starting?0:this.replayIndex),starting?0:this.replayIndex),8):1;
-  const work=cfg.count*(ordinary.warmupSteps+ordinary.iterationSteps+burn+(replay?draws*cfg.iterations:0));
+  const phaseJob=(plan:SourceIterationFramePlan,kind:'update'|'display'|'replay',frame=this.gpuFrame):IteratedFrameJob=>({...job,frame,iterationUpdates:kind==='replay'?undefined:event.updates,iterationFrame:{...plan,frameIndex:frame}});
+  const replayPlans=replay?Array.from({length:Math.max(1,draws)},(_,i)=>prepareSourceIterationReplayFrame(this.family,this.displayIndex,i===0?burn:0,i<draws?cfg.iterations:0)):[];
+  let work=!replay||event.updates.length?this.estimateWork(phaseJob(ordinary,replay?'update':'display'),!replay&&!this.initialized):0;
+  for(let i=0;i<replayPlans.length;i++)work+=this.estimateWork(phaseJob(replayPlans[i],'replay'),starting&&i===0);
   const pixelWork=(job.densitySplat?sourceDensitySplatPixelTests(job.densitySplat,cfg.count):cfg.count*(Math.ceil(cfg.pointSize)+2)**2)*draws;
   if(!Number.isSafeInteger(work)||work>2_000_000_000||!Number.isSafeInteger(pixelWork)||pixelWork>2_000_000_000)throw Error('迭代场景 单次显示超过 20 亿工作预算');
   const retainedPasses=resized||starting||!this.initialized||!replay&&(event.cameraChanged||event.parameterChanged&&!event.paused)?0:this.passes;
@@ -125,7 +134,7 @@ export class SourceIteratedReplaySession {
   const phases:SourceIteratedDisplayFacts['phases'][number][]=[],total:IteratedGpuFacts={bounds:{minX:-1,maxX:1,minY:-1,maxY:1},steps:0,invalid:0,accepted:0,clipped:0,sampleInvalid:0};
   const execute=function*(this:SourceIteratedReplaySession,kind:'update'|'display'|'replay',plan:SourceIterationFramePlan,draw:boolean,resetParticles:boolean,clearInk:boolean,decay:number):SourceIteratedReplayOperation<void>{
    checkCancelled(options.isCancelled);
-   const frame=this.gpuFrame,phase={...job,frame,iterationUpdates:kind==='replay'?undefined:event.updates,config:{...cfg,record:draw,decay},iterationFrame:{...plan,frameIndex:frame}};
+   const frame=this.gpuFrame,phase={...phaseJob(plan,kind,frame),config:{...cfg,record:draw,decay}};
    const result=(yield{kind:'step',job:phase,options:{...options,resetParticles,clearInk}}) as IteratedGpuFacts;
    this.gpuFrame++;total.bounds=result.bounds;total.steps+=result.steps;total.invalid+=result.invalid;
    if(draw){total.accepted+=result.accepted;total.clipped+=result.clipped;total.sampleInvalid+=result.sampleInvalid;}
@@ -146,7 +155,7 @@ export class SourceIteratedReplaySession {
     // update precedes display even when display will discard the old trajectory.
     if(event.updates.length){yield* execute('update',ordinary,false,false,false,1);this.warmup=ordinary.warmupApplied;}
     if(starting){this.remainingBurn=cfg.burn;this.remainingReplay=remaining;this.replayIndex=0;this.targetFrames=frames;this.burnBudget=burnBudget;this.warmup=false;this.passes=0;this.pending=false;this.active=true;clear=true;}
-    for(let i=0;i<Math.max(1,draws);i++)yield* execute('replay',prepareSourceIterationReplayFrame(this.family,this.displayIndex,i===0?burn:0,i<draws?cfg.iterations:0),i<draws,starting&&i===0,clear&&i===0,1);
+    for(let i=0;i<replayPlans.length;i++)yield* execute('replay',replayPlans[i],i<draws,starting&&i===0,clear&&i===0,1);
     this.remainingBurn-=burn;this.remainingReplay-=draws;if(draws>0)this.replayIndex++;this.passes+=draws;
     this.active=this.remainingBurn>0||this.remainingReplay>0;this.warmup=!this.active;
    }

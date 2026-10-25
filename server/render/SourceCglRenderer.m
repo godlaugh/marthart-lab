@@ -64,9 +64,9 @@ static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retain
   INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Iterated envelope cannot contain generic draws");for(NSNumber *v in clear)INPUT(v.floatValue==0,@"Iterated envelope clear must be zero");
   uint32_t family=[r word];if(version==7&&family==3){NSDictionary *op=parseIteratedRender(r,width,height);INPUT(r.offset==packet.length,@"Trailing iterated render bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"iteratedRender":op,@"packetBytes":@(packet.length)};}
   INPUT(family==2&&width==1&&height==1,@"Unknown iterated native family/control dimensions");uint32_t kind=[r word];NSData *resource=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<resource.length;i++)if(((const uint8_t*)resource.bytes)[i])nonzero=YES;
-  INPUT((version==6?(kind>=1&&kind<=5):kind==3)&&resource.length==16&&nonzero,@"Invalid iterated operation/resource");NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource}mutableCopy];
-  if(kind==1){uint32_t particles=[r word];INPUT(particles>=1&&particles<=8000000,@"Invalid iterated particle count");op[@"count"]=@(particles);uint64_t programBytes=0;
-   for(NSString *key in @[@"vertex",@"fragment"]){NSString *source=[r text];INPUT([source hasPrefix:@"#version 410 core\n"],@"Iterated shader requires explicit native GL41 profile");op[key]=source;programBytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}
+  INPUT((version==6?(kind>=1&&kind<=5):(kind==3||kind==6))&&resource.length==16&&nonzero,@"Invalid iterated operation/resource");NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource}mutableCopy];
+  if(kind==1||kind==6){uint32_t particles=[r word];INPUT(particles>=1&&particles<=8000000,@"Invalid iterated particle count");op[@"count"]=@(particles);uint64_t programBytes=0;
+   for(NSString *key in (kind==6?@[@"vertex",@"fragment",@"diagnosticVertex",@"diagnosticFragment"]:@[@"vertex",@"fragment"])){NSString *source=[r text];INPUT([source hasPrefix:@"#version 410 core\n"],@"Iterated shader requires explicit native GL41 profile");op[key]=source;programBytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}
    op[@"programBytes"]=@(programBytes);ensure(retainedBytes+(uint64_t)particles*64+programBytes+1024*1024+packet.length*6<=Budget,@"capacity",@"Iterated creation exceeds shared budget");
   }
   if(kind>=2&&kind<=4){uint32_t index=[r word];INPUT(kind!=2||index==0,@"Iterated seed upload requires initial checkpoint");INPUT(kind!=3||index<UINT32_MAX,@"Iterated advance checkpoint exhausted");op[@"index"]=@(index);}
@@ -256,7 +256,7 @@ int main(int argc,const char **argv){@autoreleasepool{
     uint32_t samilaKind=[samilaOperation[@"kind"]unsignedIntValue];NSData *samilaResource=samilaOperation[@"resource"];SourceCglSamilaState *samilaOwner=samilaResource?samila[samilaResource]:nil;
     if(samilaKind==1)ensure(samila.count<2&&!samilaOwner,@"capacity",@"Two Samila resources are already owned or token is duplicate");else if(samilaKind==2||samilaKind==4||samilaKind==5)ensure(samilaOwner!=nil,@"state-lost",@"Samila resource is absent after release or context loss");
     uint32_t iteratedKind=[iteratedOperation[@"kind"]unsignedIntValue];NSData *iteratedResource=iteratedOperation[@"resource"];SourceCglIteratedState *iteratedOwner=iteratedResource?iterated[iteratedResource]:nil;
-    if(iteratedKind==1)ensure(iterated.count<2&&!iteratedOwner,@"capacity",@"Two iterated resources are owned or token is duplicate");else if(iteratedKind>=2&&iteratedKind<=4)ensure(iteratedOwner!=nil,@"state-lost",@"Iterated resource is absent after release or context loss");
+    if(iteratedKind==1||iteratedKind==6)ensure(iterated.count<2&&!iteratedOwner,@"capacity",@"Two iterated resources are owned or token is duplicate");else if(iteratedKind>=2&&iteratedKind<=4)ensure(iteratedOwner!=nil,@"state-lost",@"Iterated resource is absent after release or context loss");
     if(iteratedKind==5)ensure(iteratedInkDependents(inks,iteratedResource)==0,@"ownership",@"Release dependent iterated ink owners before compute state");
     if(kind==1)ensure(bouncing==nil,@"capacity",@"A Bouncing resource is already owned");
     else if(kind){if(bouncing)ensure([bouncingResource isEqual:operation[@"resource"]],@"ownership",@"Bouncing resource belongs to another caller");else if(kind!=4)ensure(NO,@"state-lost",@"Bouncing resource is absent after release or context loss");if(bouncing&&kind!=4)INPUT(bouncing.particleCount==[operation[@"count"]unsignedIntValue]&&(bouncing.pointVertex.length+bouncing.pointFragment.length)*3==[operation[@"programBytes"]unsignedIntValue],@"Bouncing particle count differs from owned state");}
@@ -264,7 +264,7 @@ int main(int argc,const char **argv){@autoreleasepool{
     if(renderKind){rgba=renderIteratedOperation(frame,inks,iterated,retained);}
     else if(iteratedKind){
      NSData *states=nil;
-     if(iteratedKind==1){iteratedOwner=[[SourceCglIteratedState alloc]initWithOperation:iteratedOperation];iterated[iteratedResource]=iteratedOwner;@try{[iteratedOwner prepare:iteratedOperation];}@catch(NSException *e){[iteratedOwner dispose];[iterated removeObjectForKey:iteratedResource];@throw;}}
+     if(iteratedKind==1||iteratedKind==6){iteratedOwner=[[SourceCglIteratedState alloc]initWithOperation:iteratedOperation];iterated[iteratedResource]=iteratedOwner;@try{[iteratedOwner prepare:iteratedOperation];}@catch(NSException *e){[iteratedOwner dispose];[iterated removeObjectForKey:iteratedResource];@throw;}}
      else if(iteratedKind==2)[iteratedOwner upload:iteratedOperation retained:retained packetBytes:packet.length];
      else if(iteratedKind==3)[iteratedOwner advance:iteratedOperation retained:retained packetBytes:packet.length];
      else if(iteratedKind==4)states=[iteratedOwner read:iteratedOperation retained:retained packetBytes:packet.length];

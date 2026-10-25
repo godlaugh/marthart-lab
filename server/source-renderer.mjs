@@ -30,11 +30,11 @@ export function inspectSourceFrameHeader(packet){
  }
  if(version===6||version===7){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
-  if(version===7&&operation!==3||width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>5||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
-  const shift=version===7?4:0,minimum={1:100,2:116,3:108+shift,4:100,5:88}[operation];if(b.length<minimum)return failure('input','迭代原生计算请求截断');
-  const expectedIndex=operation>=2&&operation<=4?b.readUInt32LE(88):undefined,totalCount=operation===1?b.readUInt32LE(88):undefined,offset=operation===2||operation===4?b.readUInt32LE(92):0,readCount=operation===4?b.readUInt32LE(96):0,steps=operation===3?b.readUInt32LE(100+shift):0;
+  if(version===7&&operation!==3&&operation!==6||version===6&&operation===6||width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>6||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
+  const create=operation===1||operation===6,shift=version===7&&operation===3?4:0,minimum={1:100,2:116,3:108+shift,4:100,5:88,6:108}[operation];if(b.length<minimum)return failure('input','迭代原生计算请求截断');
+  const expectedIndex=operation>=2&&operation<=4?b.readUInt32LE(88):undefined,totalCount=create?b.readUInt32LE(88):undefined,offset=operation===2||operation===4?b.readUInt32LE(92):0,readCount=operation===4?b.readUInt32LE(96):0,steps=operation===3?b.readUInt32LE(100+shift):0;
   const uploadBytes=operation===2?b.readUInt32LE(96):0;
-  if(operation===1&&(totalCount<1||totalCount>8000000)||operation===2&&(expectedIndex!==0||!uploadBytes||uploadBytes%16||uploadBytes/16>65536||b.length!==100+uploadBytes)||operation===3&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||![2,3].includes(b.readUInt32LE(96+shift))||steps>256||shift&&(b.readUInt32LE(96)>1||b.readUInt32LE(92)>b.readUInt32LE(96)))||operation===4&&(b.length!==100||!readCount||readCount>65536||offset+readCount>8000000)||operation===5&&b.length!==88)return failure('input','迭代原生计算范围或检查点无效');
+  if(create&&(totalCount<1||totalCount>8000000)||operation===2&&(expectedIndex!==0||!uploadBytes||uploadBytes%16||uploadBytes/16>65536||b.length!==100+uploadBytes)||operation===3&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||![2,3].includes(b.readUInt32LE(96+shift))||steps>256||shift&&(b.readUInt32LE(96)>1||b.readUInt32LE(92)>b.readUInt32LE(96)))||operation===4&&(b.length!==100||!readCount||readCount>65536||offset+readCount>8000000)||operation===5&&b.length!==88)return failure('input','迭代原生计算范围或检查点无效');
   if(b.length*6+readCount*48+64>BUDGET)return failure('capacity','迭代原生计算协议与读取超过容量');
   return{ok:true,value:{generation,sequence,width,height,samples,control:true,operation,resource,family:'iterated',expectedIndex,totalCount,offset,readCount,steps,uploaded:operation===2?offset+uploadBytes/16:undefined}};
  }
@@ -77,7 +77,7 @@ function iteratedResponse(payload,expected){
  if(word(0)!==2||word(4)!==kind||payload.subarray(8,24).toString('hex')!==expected.resource||!payload.subarray(52,64).every(n=>n===0)||total>8000000||uploaded>total)return failure('protocol','迭代原生响应身份或容量无效');
  if(kind===5){if((disposition!==1&&disposition!==2)||disposition===1&&!total||disposition===2&&(index||uploaded||total)||offset||count||steps)return failure('protocol','迭代原生释放响应无效');return{ok:true};}
  if(disposition!==0||!total||steps!==expected.steps||offset!==(kind===4?expected.offset:0)||count!==expected.readCount)return failure('protocol','迭代原生响应操作范围无效');
- if(kind===1&&(index!==0||uploaded!==0||total!==expected.totalCount)||kind===2&&(index!==0||uploaded!==expected.uploaded)||kind===3&&(index!==expected.expectedIndex+1||uploaded!==total)||kind===4&&(index!==expected.expectedIndex||uploaded!==total||offset+count>total))return failure('protocol','迭代原生确认进度无效');
+ if((kind===1||kind===6)&&(expected.owned||index!==0||uploaded!==0||total!==expected.totalCount)||kind===2&&(index!==0||uploaded!==expected.uploaded)||kind===3&&(index!==expected.expectedIndex+1||uploaded!==total)||kind===4&&(index!==expected.expectedIndex||uploaded!==total||offset+count>total))return failure('protocol','迭代原生确认进度无效');
  for(let i=0;i<count;i++)if(word(64+i*24+20)>1)return failure('protocol','迭代原生有效标记无效');return{ok:true};
 }
 function iteratedRenderResponse(payload,expected){
@@ -150,9 +150,9 @@ export async function createSourceRendererService({executablePath,executableSha2
      else if(j.expected.family==='samila'){const parsed=samilaResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'samila-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:meta.format===2?'u32le':'rgba8',rowOrder:meta.format===2?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};
      if(meta.status===4){
-      // Ink cleanup can fail after a context error. Only close proves that every
-      // child owner is gone; never publish an available lease from an error ACK.
-      if(j.expected.family==='iterated-render'||[...retainedResources.values()].some(r=>r.family==='iterated-render')){retire(o,result);return;}
+      // Ink and source-prefix cleanup can fail after a context error. Only close
+      // proves those child owners are gone, including a failed unacknowledged create.
+      if(j.expected.family==='iterated-render'||j.expected.family==='iterated'&&j.expected.operation===6||[...retainedResources.values()].some(r=>r.family==='iterated-render'||r.profile==='source-prefix')){retire(o,result);return;}
       retainedResources.clear();
      }
      if(result.ok&&j.expected.family){
@@ -160,6 +160,7 @@ export async function createSourceRendererService({executablePath,executableSha2
       if(j.expected.family==='iterated'&&j.expected.operation===5&&[...retainedResources.values()].some(r=>r.family==='iterated-render'&&r.stateResource===j.expected.resource)){retire(o,failure('protocol','迭代计算释放未保留仍有子墨迹的所有者'));return;}
       if(j.expected.operation===releaseOperation[j.expected.family])retainedResources.delete(key);
       else if(resourceMetadata)retainedResources.set(key,resourceMetadata);
+      else if(j.expected.family==='iterated'&&(j.expected.operation===1||j.expected.operation===6))retainedResources.set(key,{family:j.expected.family,resource:j.expected.resource,profile:j.expected.operation===6?'source-prefix':'generic'});
       else if(j.expected.operation===1)retainedResources.set(key,{family:j.expected.family,resource:j.expected.resource});
      }
      finish(j,result);return;
@@ -179,8 +180,12 @@ export async function createSourceRendererService({executablePath,executableSha2
   if(signal?.aborted)return Promise.resolve(failure('cancelled','原生渲染已取消'));
   if(job||owner?.reason||resetPromise)return Promise.resolve(failure('capacity','原生渲染已有请求或正在清理'));
   const header=inspectSourceFrameHeader(packet);if(!header.ok)return Promise.resolve(header);
+  const owned=retainedResources.get(header.value.family+':'+header.value.resource);
+  // The acknowledged compute owner, not the packet version or caller, owns its
+  // execution profile. Reject before any await, child write or sequence commit.
+  if(header.value.family==='iterated'&&header.value.operation===3&&owned?.profile==='source-prefix'&&header.value.steps>16)return Promise.resolve(failure('input','源迭代每次推进最多 16 步'));
   // Own the bytes before any await, so later caller edits cannot change a frame.
-  const input=Buffer.from(packet),expected={...header.value,owned:retainedResources.get(header.value.family+':'+header.value.resource)};
+  const input=Buffer.from(packet),expected={...header.value,owned};
   return new Promise(resolve=>{
    const j={expected,resolve,signal,finished:false,owner:undefined};job=j;
    j.cancel=()=>{if(j.finished)return;if(j.owner)retire(j.owner,failure('cancelled','原生渲染已取消'));else finish(j,failure('cancelled','原生渲染已取消'));};

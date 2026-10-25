@@ -19,6 +19,7 @@ export type IteratedGpuFieldSource={source:string;uniforms:Readonly<Record<strin
  | {stage:'fragment';profile:GpuShaderProfile;sourceCalculateNext?:never}
 );
 export interface IteratedGpuProgramSource {vertex:string;fragment:string;varyings?:string[];}
+export interface SourceIteratedGpuProgramSource {vertex:string;fragment:string;diagnosticVertex:string;diagnosticFragment:string;}
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
  * Parameter values remain uniforms and never enter a shader-cache key. */
 export function iteratedGpuFieldSource(field:IteratedField,profile:GpuShaderProfile='webgl2'):IteratedGpuFieldSource {
@@ -41,6 +42,48 @@ vec3 nextPoint(vec3 p){float r=length(p.xy),theta=r==0.?0.:atan(p.y,p.x),rn=pow(
  const source=`${values.map((_,i)=>`uniform float parameter${i};`).join('\n')}
 vec3 nextPoint(vec3 samplePosition){float nextX=${nx};float parameter${base.length}=nextX,parameter${base.length+1}=nextX;float nextY=${ny};float parameter${base.length+2}=nextY,parameter${base.length+3}=nextY;return vec3(nextX,nextY,${nz});}`;
  return{source,uniforms:Object.fromEntries(values.map((v,i)=>['parameter'+i,v])),key:source};
+}
+
+/** The source owner runs each positive prefix from a frozen input. Keep this
+ * mathematical program independent from classification: observing finiteness
+ * inside its loop changes native compiler lowering and the source trajectory.
+ * Zero-step behavior belongs to the retained owner, never this clamped loop. */
+export function sourceIteratedGpuPrograms(source:IteratedGpuFieldSource,profile:GpuShaderProfile='native-gl41'):Readonly<SourceIteratedGpuProgramSource> {
+ checked(source.sourceCalculateNext===true&&source.stage===undefined,'源迭代程序需要显式 calculate_next 数学模型');
+ const header=gpuShaderHeader(profile,'precision highp float;precision highp int;\n');
+ const fragment=header+'out vec4 color;void main(){color=vec4(0.);}\n';
+ const vertex=header+'layout(location=0)in vec4 oldState;out vec4 newState;uniform int steps,dimension;\n'+source.source+`
+void main() {
+  vec4 current = oldState;
+  vec3 pos = current.xyz;
+  float stepMetric = current.w;
+
+  int stepCount = clamp(steps, 1, 16);
+  for (int i = 0; i < 16; i++) {
+    if (i >= stepCount) break;
+    vec3 nextPos = pos;
+    float metric = stepMetric;
+    calculate_next(pos, nextPos, metric);
+    if (dimension == 2) {
+      nextPos.z = 0.0;
+    }
+    pos = nextPos;
+    stepMetric = metric;
+  }
+
+  newState = vec4(pos, stepMetric);
+  gl_Position=vec4(0.);
+}
+`;
+ const diagnosticVertex=header+`layout(location=0)in vec4 oldState;layout(location=1)in uvec2 oldMetadata;
+flat out uvec2 newMetadata;uniform int resetCounter,observe;
+bool finiteFloat(float v){return (floatBitsToUint(v)&0x7f800000u)!=0x7f800000u;}
+void main(){uint count=resetCounter==1?0u:oldMetadata.r;
+if(observe==0){newMetadata=uvec2(count,oldMetadata.g);}
+else{bool valid=finiteFloat(oldState.x)&&finiteFloat(oldState.y)&&finiteFloat(oldState.z)&&finiteFloat(oldState.w);newMetadata=uvec2(count+uint(!valid),valid?1u:0u);}
+gl_Position=vec4(0.);}
+`;
+ return Object.freeze({vertex,fragment,diagnosticVertex,diagnosticFragment:fragment});
 }
 
 function createPrograms(profile:GpuShaderProfile){

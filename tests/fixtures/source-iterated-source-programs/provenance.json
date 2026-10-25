@@ -1,0 +1,8 @@
+{
+  "kind": "independent-observed-prototype-main",
+  "origin": "source-map-native-prefix-20261026/math.vert",
+  "scope": "Only the pure mathematical loop wrapper; formula shader source is supplied by the existing typed producer. This fixture is CPU source contract evidence, not new GPU execution.",
+  "prototypeShaderSha256": "ad575b443a4ae969278a4328f0942086c39ee783d4505db84ca89ca28e9bfefa",
+  "mainSha256": "b2e350c65a6356075925c82182f97d510c2ed3d20548447c637bff5eac8060a7",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018"
+}
