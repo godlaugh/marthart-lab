@@ -1,0 +1,1379 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "taskBaselineCommit": "cc679ec26f4526aa5067f342b1932d72e426d0ce",
+  "productSourceEquivalentCommit": "220d539f0e95f81a91a927b487cf033fffebe4b0",
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "productSourceChanged": false,
+  "originalCompleteCoreFramesExact": 18,
+  "nativeUiChecksPassed": 8,
+  "axes": {
+    "report": {
+      "path": ".cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/report.json",
+      "sha256": "859caf1789f88ff0ddcf34bbe2959b1e854554e301c7cce886b85722547d6184"
+    },
+    "originalRun": {
+      "path": ".cache/samila-native-axes-20261025/Samila-run1/run.json",
+      "sha256": "0d74fab49d443b394e58a2c5ec558ba087a3e5b407e212169ed541774223b068"
+    },
+    "source": {
+      "path": ".cache/samila-native-axes-20261025/Samila-run1/source.json",
+      "sha256": "85024d0943309d95013bb92f1f7d676f252039a41601aa3d7b26c7f8fb5a9d06"
+    },
+    "script": {
+      "path": ".cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/verify-production.mjs",
+      "sha256": "9a938400771fbfffc112680eec5e5ef210b20f4a241ed4a62fef382b9e33afff"
+    },
+    "scriptPinScope": "Archived immediately after completed run; report source manifest covers src and server, not this cache script.",
+    "frames": [
+      {
+        "name": "baseline",
+        "action": {
+          "scaleX": 0.20000000298023224,
+          "offsetX": 0,
+          "setterCalled": false,
+          "scaleY": 0.20000000298023224,
+          "offsetY": 0,
+          "name": "baseline",
+          "width": 500,
+          "primaryPixelHeight": 972,
+          "height": 600
+        },
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "distribution": {
+          "occupied": 63325,
+          "max": 75.974853515625,
+          "mass": 39999.144936598765,
+          "centerX": 249.6569213105887,
+          "centerY": 299.55389580679287,
+          "stdX": 65.81619806870413,
+          "stdY": 62.37797578410381
+        },
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/Samila-run1/frame-0/draw-2.rgba",
+          "sha256": "870b4089707a882a88c1c7b5931f7010ec22e1ad06452af33f0b4f55da3b60f5"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/baseline.rgba",
+          "sha256": "e266648d0f5b82727cb6adbde774715ef582be81d876e06ab49bfa26cc74456c"
+        },
+        "originalPendingGlErrors": [
+          1282,
+          1282,
+          1282
+        ]
+      },
+      {
+        "name": "scale-x",
+        "action": {
+          "scaleX": 0.10000000149011612,
+          "offsetX": 0,
+          "setterCalled": true,
+          "scaleY": 0.20000000298023224,
+          "offsetY": 0,
+          "name": "scale-x",
+          "width": 500,
+          "primaryPixelHeight": 972,
+          "height": 600
+        },
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "distribution": {
+          "occupied": 33545,
+          "max": 105.60176086425781,
+          "mass": 40012.95335657398,
+          "centerX": 249.47779990649153,
+          "centerY": 299.3978894740631,
+          "stdX": 32.899271067285824,
+          "stdY": 62.43823122944392
+        },
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/Samila-run1/frame-1/draw-2.rgba",
+          "sha256": "bce5348ea53b02b5b7ab3dc4679cdc456bca442da33ab39b423c92318ed0c658"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/scale-x.rgba",
+          "sha256": "f1c4958a6c309f4cf040b271e988c8c7cd67d2d23aac0851d5e1042d23d06212"
+        },
+        "originalPendingGlErrors": [
+          1282,
+          1282,
+          1282
+        ]
+      },
+      {
+        "name": "scale-y",
+        "action": {
+          "scaleX": 0.20000000298023224,
+          "offsetX": 0,
+          "setterCalled": true,
+          "scaleY": 0.10000000149011612,
+          "offsetY": 0,
+          "name": "scale-y",
+          "width": 500,
+          "primaryPixelHeight": 972,
+          "height": 600
+        },
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "distribution": {
+          "occupied": 33966,
+          "max": 95.37316131591797,
+          "mass": 40029.00131438779,
+          "centerX": 249.48130710332774,
+          "centerY": 299.5095740586197,
+          "stdX": 65.7272246077661,
+          "stdY": 31.205665039963634
+        },
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/Samila-run1/frame-2/draw-2.rgba",
+          "sha256": "3f2b1bb4560459b90a093e65b873718196c9a54476b2a12f88f601f138217f07"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/scale-y.rgba",
+          "sha256": "9a789d98cc801b464fbdd2757e1d72177f75eb1fce4a67d4a3851a54594d23f2"
+        },
+        "originalPendingGlErrors": [
+          1282,
+          1282,
+          1282
+        ]
+      },
+      {
+        "name": "offset-x",
+        "action": {
+          "scaleX": 0.20000000298023224,
+          "offsetX": 0.15000000596046448,
+          "setterCalled": true,
+          "scaleY": 0.20000000298023224,
+          "offsetY": 0,
+          "name": "offset-x",
+          "width": 500,
+          "primaryPixelHeight": 972,
+          "height": 600
+        },
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "distribution": {
+          "occupied": 63300,
+          "max": 83.1423568725586,
+          "mass": 40049.48338174273,
+          "centerX": 287.0390824848048,
+          "centerY": 299.4964426647266,
+          "stdX": 65.86097740385183,
+          "stdY": 62.35459872867136
+        },
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/Samila-run1/frame-3/draw-2.rgba",
+          "sha256": "2af7b63819314e6c6fd0df19cb155179a3e9eef2784d5a6f45eea00e1b52dfb7"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/offset-x.rgba",
+          "sha256": "c99162453dd97a1252f367db56e0e7bdfac4a6b472cb03b2fc7f12aad2b879d0"
+        },
+        "originalPendingGlErrors": [
+          1282,
+          1282,
+          1282
+        ]
+      },
+      {
+        "name": "offset-y",
+        "action": {
+          "scaleX": 0.20000000298023224,
+          "offsetX": 0,
+          "setterCalled": true,
+          "scaleY": 0.20000000298023224,
+          "offsetY": 0.15000000596046448,
+          "name": "offset-y",
+          "width": 500,
+          "primaryPixelHeight": 972,
+          "height": 600
+        },
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "distribution": {
+          "occupied": 63316,
+          "max": 74.7082748413086,
+          "mass": 40010.20228186349,
+          "centerX": 249.53131674255536,
+          "centerY": 254.44334663074545,
+          "stdX": 65.73983094555092,
+          "stdY": 62.42050089376463
+        },
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/Samila-run1/frame-4/draw-2.rgba",
+          "sha256": "6d7e995ea0ccec4d4abdb3bc5e8aba29b40c5b72f105e89dc21989c3ef7b7cf0"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/offset-y.rgba",
+          "sha256": "970b2ae5eebf3fee314bf7d37f6298da9fd9f377fe9da0f0661fd9a6ec5586d3"
+        },
+        "originalPendingGlErrors": [
+          1282,
+          1282,
+          1282
+        ]
+      },
+      {
+        "name": "wide-aspect",
+        "action": {
+          "scaleX": 0.20000000298023224,
+          "offsetX": 0,
+          "setterCalled": true,
+          "scaleY": 0.20000000298023224,
+          "offsetY": 0,
+          "name": "wide-aspect",
+          "width": 600,
+          "primaryPixelHeight": 972,
+          "height": 400
+        },
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "distribution": {
+          "occupied": 88478,
+          "max": 63.28874206542969,
+          "mass": 40021.73700856125,
+          "centerX": 299.4636189444245,
+          "centerY": 199.61173947089478,
+          "stdX": 78.89520504166964,
+          "stdY": 74.88462031585694
+        },
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/Samila-run1/frame-5/draw-2.rgba",
+          "sha256": "77e287cc601106593771e1f756a020db177cedbc43206caa9324d9732728d717"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/wide-aspect.rgba",
+          "sha256": "2f32af8312c24539286d91b07bd6a58c00d7625c16e2a8daef5e438f5a5da147"
+        },
+        "originalPendingGlErrors": [
+          1282,
+          1282,
+          1282
+        ]
+      },
+      {
+        "name": "restored",
+        "action": {
+          "scaleX": 0.20000000298023224,
+          "offsetX": 0,
+          "setterCalled": true,
+          "scaleY": 0.20000000298023224,
+          "offsetY": 0,
+          "name": "restored",
+          "width": 500,
+          "primaryPixelHeight": 972,
+          "height": 600
+        },
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "distribution": {
+          "occupied": 63313,
+          "max": 75.32752227783203,
+          "mass": 40020.21811035525,
+          "centerX": 249.45918284910178,
+          "centerY": 299.49822045016117,
+          "stdX": 65.80625507906336,
+          "stdY": 62.43648676370012
+        },
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/Samila-run1/frame-6/draw-2.rgba",
+          "sha256": "83125b7d14d400ca792b88432e09e3706ac4cbd249866fd2e306ed5e4b3b60bc"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/production-2026-10-25T09-18-30.994Z/restored.rgba",
+          "sha256": "219cf08fb3a71b44b05020a1e37b438da43e796f3db3fb8c469b1ecd6bd8e728"
+        },
+        "originalPendingGlErrors": [
+          1282,
+          1282,
+          1282
+        ]
+      }
+    ],
+    "checksPassed": 126,
+    "directions": {
+      "xHalfScaleNarrowsX": true,
+      "yHalfScaleNarrowsY": true,
+      "positiveXMovesRight": true,
+      "positiveYMovesUp": true
+    },
+    "afterRelease": {
+      "creations": 1,
+      "displays": 7,
+      "steps": 0,
+      "presentations": 0,
+      "requestBytes": 301738,
+      "owned": false,
+      "active": false,
+      "cleanupPending": false,
+      "displayIndex": 0,
+      "retainedBytes": 0,
+      "resources": 0
+    },
+    "timing": {
+      "path": ".cache/samila-native-axes-20261025/production-run2-time.log",
+      "sha256": "213fd94d3068712850b2bde1b18bb6498be28763d99bb0b099f0d28421a5f100"
+    },
+    "scriptSeconds": 3.7967276670000003,
+    "wallSeconds": 3.95,
+    "userSeconds": 5.32,
+    "systemSeconds": 2.45,
+    "maximumRssBytes": 636305408,
+    "initialVerifierFailure": {
+      "path": ".cache/samila-native-axes-20261025/production-2026-10-25T09-17-46.669Z/report.json",
+      "sha256": "fcaf89d3359460b0f2c4d0d807de8c14c45091ec9e96d4e200e204b73bc0a0d0"
+    },
+    "initialFailureCause": "Java Float.toString decoded as double; corrected known float32 boundary without changing product or pixel comparison."
+  },
+  "ui": {
+    "report": {
+      "path": ".cache/samila-native-axes-20261025/ui-2026-10-25T09-22-10.433Z/report.json",
+      "sha256": "3327d05618915eccc84634a8c8824c67f393d5e5aaf48617fbf96b8ddf7a986c"
+    },
+    "script": {
+      "path": ".cache/samila-native-axes-20261025/ui-2026-10-25T09-22-10.433Z/verify-ui.mjs",
+      "sha256": "f69c887dde117ace60826914acec0d362a3d5ec7666ba53512a6509fd77b13bc"
+    },
+    "runtime": {
+      "kind": "electron",
+      "electron": "44.7.2",
+      "chrome": "152.0.7977.149",
+      "features": "disableProgramCaching",
+      "visibleWindows": 0,
+      "directory": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-electron-host-do72If"
+    },
+    "checks": [
+      {
+        "name": "scale-x",
+        "beforeCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        },
+        "afterCentroid": {
+          "count": 19,
+          "x": 403.7894736842105,
+          "y": 124.36842105263158,
+          "bounds": [
+            402,
+            122,
+            406,
+            126
+          ],
+          "sha256": "5f448d06217be16ea2462abc8ddfd880f60f7af25894b17d59c174aae992f55b"
+        }
+      },
+      {
+        "name": "restore-x",
+        "beforeCentroid": {
+          "count": 19,
+          "x": 403.7894736842105,
+          "y": 124.36842105263158,
+          "bounds": [
+            402,
+            122,
+            406,
+            126
+          ],
+          "sha256": "5f448d06217be16ea2462abc8ddfd880f60f7af25894b17d59c174aae992f55b"
+        },
+        "afterCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        }
+      },
+      {
+        "name": "scale-y",
+        "beforeCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        },
+        "afterCentroid": {
+          "count": 20,
+          "x": 471.1,
+          "y": 174.95,
+          "bounds": [
+            469,
+            173,
+            473,
+            177
+          ],
+          "sha256": "edff77edb3b959e0d19f41851642e7ad509045be18cf54aad05df4dd77145674"
+        }
+      },
+      {
+        "name": "restore-y",
+        "beforeCentroid": {
+          "count": 20,
+          "x": 471.1,
+          "y": 174.95,
+          "bounds": [
+            469,
+            173,
+            473,
+            177
+          ],
+          "sha256": "edff77edb3b959e0d19f41851642e7ad509045be18cf54aad05df4dd77145674"
+        },
+        "afterCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        }
+      },
+      {
+        "name": "offset-x",
+        "beforeCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        },
+        "afterCentroid": {
+          "count": 19,
+          "x": 521.7894736842105,
+          "y": 124.36842105263158,
+          "bounds": [
+            520,
+            122,
+            524,
+            126
+          ],
+          "sha256": "2475c603f3e3aca4fefa45435540d1af51e1f867deb1dd06222d7d3f857ccf7d"
+        }
+      },
+      {
+        "name": "restore-offset-x",
+        "beforeCentroid": {
+          "count": 19,
+          "x": 521.7894736842105,
+          "y": 124.36842105263158,
+          "bounds": [
+            520,
+            122,
+            524,
+            126
+          ],
+          "sha256": "2475c603f3e3aca4fefa45435540d1af51e1f867deb1dd06222d7d3f857ccf7d"
+        },
+        "afterCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        }
+      },
+      {
+        "name": "offset-y",
+        "beforeCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        },
+        "afterCentroid": {
+          "count": 18,
+          "x": 471.22222222222223,
+          "y": 90.5,
+          "bounds": [
+            469,
+            89,
+            473,
+            92
+          ],
+          "sha256": "132e9c30a3abd74d7bd5a7afbd4ee79a139ab9f9b899b508c81141578ee8f3b9"
+        }
+      },
+      {
+        "name": "restore-offset-y",
+        "beforeCentroid": {
+          "count": 18,
+          "x": 471.22222222222223,
+          "y": 90.5,
+          "bounds": [
+            469,
+            89,
+            473,
+            92
+          ],
+          "sha256": "132e9c30a3abd74d7bd5a7afbd4ee79a139ab9f9b899b508c81141578ee8f3b9"
+        },
+        "afterCentroid": {
+          "count": 19,
+          "x": 471.2105263157895,
+          "y": 124.36842105263158,
+          "bounds": [
+            469,
+            122,
+            473,
+            126
+          ],
+          "sha256": "9a60a281f22a3f5fc08d8549f8405e05fede224d56ad7d49b6ef62dd400aec40"
+        }
+      }
+    ],
+    "input": {
+      "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-axes-20261025/ui-2026-10-25T09-22-10.433Z/visual-axes.mathart.json",
+      "sha256": "a828c423da068bf4011497ab7673abc68e737bc57edd6cec5358b372f926b8b1"
+    },
+    "timing": {
+      "path": ".cache/samila-native-axes-20261025/ui-run1-time.log",
+      "sha256": "4890dbc7df3ed2221913870ebbbb0babeeb52c7bf10ff6d037d25032ea20aa3e"
+    },
+    "scriptSeconds": 5.878844791,
+    "wallSeconds": 6.25,
+    "userSeconds": 12.39,
+    "systemSeconds": 6.8,
+    "maximumRssBytes": 565428224
+  },
+  "timeline": {
+    "report": {
+      "path": ".cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/report.json",
+      "sha256": "a969663808fea3d5f73957624dc2dfb90db67fa0a5ad5712d5e887b24971b5fd"
+    },
+    "index": {
+      "path": ".cache/samila-native-timeline-20261025/index.json",
+      "sha256": "a93c0ea5048eb0662c1d32486e8e48b0c282cbf33eb08a4b06ef1623b76593c6"
+    },
+    "readable": {
+      "path": ".cache/samila-native-timeline-20261025/README.zh-CN.md",
+      "sha256": "2bb8fed1d1de1dbdb81fabaaab04b134c838f0ea9b152458627e715dc74f5dae"
+    },
+    "source": {
+      "path": ".cache/samila-native-timeline-20261025/run1/source.json",
+      "sha256": "e7d611ca8da6635ab9167e328dba0abafd741d3fb3931bb69afda945849a4106"
+    },
+    "originalRun": {
+      "path": ".cache/samila-native-timeline-20261025/run1/run.json",
+      "sha256": "af380fd4d0fd513910d91ebdc858718af6a36af0cd4430d1d17cdbb587d8bf1e"
+    },
+    "script": {
+      "path": ".cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/verify-production.mjs",
+      "sha256": "6facece21a796ff368bc9e19e598143e76dbe0e94ce534a8eec6cdfc85c2fd67"
+    },
+    "frames": [
+      {
+        "displayIndex": 0,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-0/draw-2.rgba",
+          "sha256": "d8408f9bcb7af882ed007f009683458c392531a5682b6f973c4470feb2a58133"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-0.rgba",
+          "sha256": "6a178137e7a76f2c8c27965f3f9b0044117384e111e46265e9bc313d0f26bd17"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 0,
+          "accumulationPasses": 1,
+          "anchorTheta": 0.25,
+          "parameterChanged": false,
+          "cleared": true,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 0.25,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 0,
+            "queueComplete": false,
+            "parameterWriteRevision": 0,
+            "phi": 1.5707963705062866,
+            "theta": 0.25,
+            "gamma": 0,
+            "paused": false,
+            "updates": 1,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 2526629238,
+          "sampleCount": 1262144,
+          "baseBatchSize": 1262144,
+          "displayIndex": 0,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.163,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.25,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.125,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 0
+      },
+      {
+        "displayIndex": 1,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-1/draw-2.rgba",
+          "sha256": "0c41fa68ac222f1991d3f806c9d050e1230bc476e9da2ea3d980a3eaa73db168"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-1.rgba",
+          "sha256": "d539b3fbf75bdb673adf748baa2a5d269accd0da73aee85bd5c44c0ff15683dd"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 1,
+          "accumulationPasses": 2,
+          "anchorTheta": 0.25,
+          "parameterChanged": false,
+          "cleared": false,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 0.5,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 1,
+            "queueComplete": false,
+            "parameterWriteRevision": 0,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 2,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 3109834964,
+          "sampleCount": 1262144,
+          "baseBatchSize": 1262144,
+          "displayIndex": 1,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.163,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 0
+      },
+      {
+        "displayIndex": 2,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-2/draw-2.rgba",
+          "sha256": "c91ad8aabbc62196741d2ee09c3fc82ba41574a59c7b6fed6ec91218a2d27803"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-2.rgba",
+          "sha256": "fc72b4aa6f5b8fca82a870d39408ffff2afd94858614505a491479ad766f84c2"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 2,
+          "accumulationPasses": 3,
+          "anchorTheta": 0.25,
+          "parameterChanged": false,
+          "cleared": false,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 0.75,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 2,
+            "queueComplete": false,
+            "parameterWriteRevision": 0,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 3,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 2707318884,
+          "sampleCount": 1262144,
+          "baseBatchSize": 1262144,
+          "displayIndex": 2,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.163,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 0
+      },
+      {
+        "displayIndex": 3,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-3/draw-2.rgba",
+          "sha256": "0b7a3c3250b9a4b717385ab684c9b5f71a81bbd7eafa4b8b7cdafe6f53483528"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-3.rgba",
+          "sha256": "c59aae7ecaa07994e955bf2467258a3c4a0ee456e4502f3af66ea75193072f4a"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 3,
+          "accumulationPasses": 6,
+          "anchorTheta": 0.5,
+          "parameterChanged": true,
+          "cleared": true,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 1,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 2,
+            "queueComplete": false,
+            "parameterWriteRevision": 1,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 4,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 334074558,
+          "sampleCount": 7572864,
+          "baseBatchSize": 1262144,
+          "displayIndex": 3,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.23614787000353,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 1
+      },
+      {
+        "displayIndex": 4,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-4/draw-2.rgba",
+          "sha256": "932310432a1a9e1e831da037f27607101f4e9e48437f1d050b4479a312efc46a"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-4.rgba",
+          "sha256": "3b012b02bda8f6085a0327b61386b63807c874470bab616d3150b1e161c0b8d4"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 4,
+          "accumulationPasses": 6,
+          "anchorTheta": 0.5,
+          "parameterChanged": true,
+          "cleared": true,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 1.25,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 3,
+            "queueComplete": false,
+            "parameterWriteRevision": 3,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 5,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 2557808589,
+          "sampleCount": 7572864,
+          "baseBatchSize": 1262144,
+          "displayIndex": 4,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.477632387693112,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 2
+      },
+      {
+        "displayIndex": 5,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-5/draw-2.rgba",
+          "sha256": "add477433ba1932af03825cd94771471a6e01b96b568f5a77f20fa44a7545743"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-5.rgba",
+          "sha256": "38339d15a424cf6e4efbafde198f53e5ac54a62c12867c190586210d07cfebd6"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 5,
+          "accumulationPasses": 6,
+          "anchorTheta": 0.5,
+          "parameterChanged": true,
+          "cleared": true,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 1.5,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 3,
+            "queueComplete": false,
+            "parameterWriteRevision": 4,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 6,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 339267538,
+          "sampleCount": 7572864,
+          "baseBatchSize": 1262144,
+          "displayIndex": 5,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.49623512668561,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 1
+      },
+      {
+        "displayIndex": 6,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-6/draw-2.rgba",
+          "sha256": "c552dd07af5b358a5566d1837d9f73efacdc421961eee818fe4c92de185de45d"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-6.rgba",
+          "sha256": "07a1802b573ff62334d9b567bdb477bd578bd44c9fc36609dc0c317743104869"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 6,
+          "accumulationPasses": 6,
+          "anchorTheta": 0.5,
+          "parameterChanged": true,
+          "cleared": true,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 1.75,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 4,
+            "queueComplete": false,
+            "parameterWriteRevision": 5,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 7,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 3797864651,
+          "sampleCount": 7572864,
+          "baseBatchSize": 1262144,
+          "displayIndex": 6,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.428820851697749,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 1
+      },
+      {
+        "displayIndex": 7,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-7/draw-2.rgba",
+          "sha256": "19ecb0f31fbfdb177ee8c32ea32f02590b3ac28ddc59686b9da1b5e7d8304717"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-7.rgba",
+          "sha256": "f5d9e2cedf032170475daf1e3b218ecb16b316666f9462f8217009fe1db5fc08"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 7,
+          "accumulationPasses": 6,
+          "anchorTheta": 0.5,
+          "parameterChanged": true,
+          "cleared": true,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 2,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 4,
+            "queueComplete": false,
+            "parameterWriteRevision": 6,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 8,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 2664096960,
+          "sampleCount": 7572864,
+          "baseBatchSize": 1262144,
+          "displayIndex": 7,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.298939308503658,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 1
+      },
+      {
+        "displayIndex": 8,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-8/draw-2.rgba",
+          "sha256": "3b7bdeb69d790539d5a2405b54b3a5ac9213f0d45bd540d60db75344ed7f219b"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-8.rgba",
+          "sha256": "5433f642b0fa3079a6aa0fb2f04785f05e2101c374f0febcf4a25a2988957129"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 8,
+          "accumulationPasses": 7,
+          "anchorTheta": 0.5,
+          "parameterChanged": false,
+          "cleared": false,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 2.25,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 5,
+            "queueComplete": false,
+            "parameterWriteRevision": 6,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 9,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 2599632832,
+          "sampleCount": 1262144,
+          "baseBatchSize": 1262144,
+          "displayIndex": 8,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.298939308503658,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 0
+      },
+      {
+        "displayIndex": 9,
+        "postStop": false,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/frame-9/draw-2.rgba",
+          "sha256": "b6287872c1d1de8da714b6a4d257f8d432c93ab5088e96d7f0528969c8e0557f"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-9.rgba",
+          "sha256": "f727cfca3b81ca4dbd13a3f993cd94e3a207022fe100f8b218b918a982fff3c2"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "offscreen",
+          "displayIndex": 9,
+          "accumulationPasses": 8,
+          "anchorTheta": 0.5,
+          "parameterChanged": false,
+          "cleared": false,
+          "clock": "fixed-source-queue",
+          "runtime": {
+            "sceneTime": 2.5,
+            "rawDt": 0.25,
+            "activeDt": 0.25,
+            "queueIndex": 6,
+            "queueComplete": true,
+            "parameterWriteRevision": 6,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 10,
+            "clockSource": "fixed-step"
+          }
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 1592491830,
+          "sampleCount": 1262144,
+          "baseBatchSize": 1262144,
+          "displayIndex": 9,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.298939308503658,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 0
+      },
+      {
+        "displayIndex": 10,
+        "postStop": true,
+        "differentBytes": 0,
+        "maxByteDifference": 0,
+        "reference": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/run1/post-stop/draw-2.rgba",
+          "sha256": "b8d62d983a7d28b07a41bf28209889badb10b3cfcb12ded7eb1709aa0548480f"
+        },
+        "output": {
+          "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-timeline-20261025/product-2026-10-25T09-21-21.401Z/finite-source-timeline-post-stop.rgba",
+          "sha256": "d3a7fd56d8c2a4c9b87e3470d279982590e1de8dbc4daf65f3affc7c23ea0cf4"
+        },
+        "samilaLive": {
+          "sessionId": "original-state-finite-source-timeline",
+          "target": "primary",
+          "displayIndex": 10,
+          "accumulationPasses": 9,
+          "anchorTheta": 0.5,
+          "parameterChanged": false,
+          "cleared": false,
+          "clock": "realtime-source-queue",
+          "runtime": {
+            "sceneTime": 2.5369999408721924,
+            "rawDt": 0.03699994087219238,
+            "activeDt": 0,
+            "queueIndex": 6,
+            "queueComplete": true,
+            "parameterWriteRevision": 6,
+            "phi": 1.5707963705062866,
+            "theta": 0.5,
+            "gamma": 0,
+            "paused": false,
+            "updates": 11,
+            "clockSource": "page-wall-clock"
+          },
+          "recordingHandoff": "first-post-stop-primary-frame"
+        },
+        "sampling": {
+          "model": "samila-pcg-1.7.8",
+          "frameSeed": 658787047,
+          "sampleCount": 1262144,
+          "baseBatchSize": 1262144,
+          "displayIndex": 10,
+          "seedSource": "injected",
+          "replay": "hot-display"
+        },
+        "parameters": {
+          "a": 2.298939308503658,
+          "b": 1.002,
+          "c": 1.123,
+          "d": 0.49
+        },
+        "ownerCamera": {
+          "phi": 1.5707963705062866,
+          "theta": 0.5,
+          "gamma": 0,
+          "center": [
+            0,
+            0,
+            0
+          ],
+          "zoom": 1.25,
+          "focalDistance": 20
+        },
+        "ownerParameterWrites": 0
+      }
+    ],
+    "checksPassed": 343,
+    "clock": {
+      "simulationFps": 4,
+      "warmupUpdates": 1,
+      "updates": 10,
+      "encodedFrames": 9,
+      "firstEncodedUpdate": 2,
+      "lastDisplayFrame": 9,
+      "completionReason": "animation-queue"
+    },
+    "afterRelease": {
+      "creations": 2,
+      "displays": 12,
+      "steps": 0,
+      "presentations": 0,
+      "requestBytes": 600472,
+      "owned": false,
+      "active": false,
+      "cleanupPending": false,
+      "displayIndex": 0,
+      "retainedBytes": 0,
+      "resources": 0
+    },
+    "scriptSeconds": 4.969165917000001,
+    "nodeCpuMicros": {
+      "user": 5426890,
+      "system": 3427324
+    },
+    "nodeMaxRssKiB": 626976
+  },
+  "cleanup": {
+    "sourceStable": true,
+    "referencesStable": true,
+    "sourceMatchesCurrentTree": true,
+    "ownedNativeProcessesAfterClose": 0,
+    "allOwnedHostsExited": true
+  },
+  "limitations": [
+    "Full scene core buffers, not OS window composition, local formula/brand layer or default WebGL parity.",
+    "Axis original preserves21 observed pendingGL1282 values plus one beginDrawGL1286 stderr without exact frame attribution.",
+    "Timeline original preserves35GL1282 observations including34GL_BACK and one pending observation; no silent error repair.",
+    "Normal source policy cache refresh backed up; no license/settings edits.",
+    "Cost includes startup, IO and checks; system/driver caches uncontrolled. Concurrent process-family memory peak, GPU memory and agent tokens not measured.",
+    "MAS-SAM-025 sustained changing-parameter/rotation and second-device trends remain; this finite matrix does not replace them."
+  ]
+}
