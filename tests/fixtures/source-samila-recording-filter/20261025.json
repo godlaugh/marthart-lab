@@ -1,0 +1,443 @@
+{
+  "date": "2026-10-25",
+  "status": "partial",
+  "milestone": "M3",
+  "goalComplete": false,
+  "baseCommit": "b75a7f7ebc49fd21ddfdc7aba965232d5413825d",
+  "scope": "Original Samila recording texture anisotropy fixed: all 20 actual original preview frames exact; one independent synthetic minification boundary remains different.",
+  "readableReport": {
+    "path": "docs/source-samila-recording-filter-validation.zh-CN.md",
+    "sha256": "8f4deafd9ef47fdf9e900c4862f2ac8c46c1c792a98196576ee350421d224255"
+  },
+  "reports": {
+    "originalPreview": {
+      "path": ".cache/samila-preview-isolation-20261025/production-preview-2026-10-25T08-34-25.628Z/report.json",
+      "sha256": "f06c3e1e597f88252cc198442d34c908e334da61fee55435322c171f20cdf68c"
+    },
+    "syntheticRenderer": {
+      "path": ".cache/samila-preview-filter-validation-20261025/renderer-2026-10-25T08-39-12.300Z/report.json",
+      "sha256": "6fecca25e25b361cb7e9424fa28b6f638c239faa140823026e8b8d341e1d6e6f"
+    },
+    "ui": {
+      "path": ".cache/samila-native-recording-20261025/ui-2026-10-25T08-42-28.981Z/report.json",
+      "sha256": "607e5d0c83867bbcd11c9e5a94e3315ebcac882b0821d04f8e63b9c819567ae8"
+    }
+  },
+  "source": [
+    {
+      "path": "src/engine/sourceSamilaPreviewRenderer.ts",
+      "sha256": "760791b79cbd30e2486779d8e65d7250ee98faeb43b48ad3f7d9587168f145fa"
+    },
+    {
+      "path": "src/engine/sourceProcessingTextureSampling.ts",
+      "sha256": "585bb8ec28f966be393bf5ac907c2c65c720e174e1ea2cb53f35ff6670d7dca5"
+    },
+    {
+      "path": "tests/source-samila-preview-renderer.test.ts",
+      "sha256": "4c4e92ad0ee863133476ee58168798668c1be4beb6975977a46f4b1dd8765196"
+    }
+  ],
+  "cause": {
+    "producer": "Processing Texture.allocate sets maximum device anisotropy including LINEAR level-zero textures.",
+    "observedOriginalAnisotropy": 16,
+    "newOriginalFrames": 5,
+    "controlledChange": "Adding only anisotropy16 makes old nonblack five-frame CGL replay exact; seven previous differing channels disappear.",
+    "rejectedHypothesis": "Before anisotropy, CGL/ANGLE18 whole stage buffers including sampled floats are equal: the original residual was not fixed blending quantization.",
+    "evidence": [
+      {
+        "path": ".cache/samila-preview-isolation-20261025/anisotropy-conclusion.json",
+        "sha256": "07dfdf5bf2115f16cb87084e27ccced3c70565df8cb29f68e5e069a192655a66"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/index.json",
+        "sha256": "106f56a3ae06ee2541358017935ce70e25cf4073b59ae523334c5d3f5867f429"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/original-capture/nonblack-downsample3-run7b/run.json",
+        "sha256": "50fd10650e1bf5ec07afacafa4b5549d7169151c417bab95be5f90ff48b9b73d"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/measured-aniso-run1/run.json",
+        "sha256": "53c30253edf15ab7c5052916d6679c3cbb92cb8461805049c57f1f6f31ad69b4"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/offline-comparison-run1.json",
+        "sha256": "b8e1223ffe5830e232cd826f81a221d27261f02bb54bd7f6f2841f743484add2"
+      }
+    ]
+  },
+  "originalPreview": {
+    "status": "passed",
+    "fullRgbaExact": 20,
+    "tolerance": 0,
+    "cases": [
+      {
+        "name": "same-size",
+        "frames": 5,
+        "exact": 5
+      },
+      {
+        "name": "downsample3",
+        "frames": 5,
+        "exact": 5
+      },
+      {
+        "name": "nonblack-downsample3",
+        "frames": 5,
+        "exact": 5
+      },
+      {
+        "name": "nonblack-new-state",
+        "frames": 5,
+        "exact": 5
+      }
+    ],
+    "input": "Complete original branded export texture",
+    "endpoint": "Complete original valid primary FBO before endOnscreenDraw; no crop, masks or alpha repair",
+    "sourceStable": true,
+    "referencesStable": true,
+    "cleanup": {
+      "productResourcesReleased": true,
+      "contextLost": true,
+      "windowsAfter": 0,
+      "hostExit": {
+        "code": 0,
+        "signal": null
+      }
+    }
+  },
+  "syntheticRenderer": {
+    "status": "different",
+    "cases": 12,
+    "exact": 11,
+    "tolerance": 0,
+    "rawPngFullRgbaExact": 8,
+    "results": [
+      {
+        "name": "record-1to1-alpha-0-64-128-255",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      },
+      {
+        "name": "record-background-alpha-zero",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      },
+      {
+        "name": "record-background-alpha-64",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      },
+      {
+        "name": "record-3x-downsample",
+        "status": "different",
+        "comparison": {
+          "maxError": 1,
+          "differingChannels": 4,
+          "differingPixels": 3,
+          "meanAbsoluteError": 0.020833333333333332,
+          "fullRgbaExact": false,
+          "first": [
+            {
+              "byte": 9,
+              "actual": 111,
+              "expected": 112,
+              "delta": -1
+            },
+            {
+              "byte": 45,
+              "actual": 80,
+              "expected": 81,
+              "delta": -1
+            },
+            {
+              "byte": 46,
+              "actual": 117,
+              "expected": 118,
+              "delta": -1
+            },
+            {
+              "byte": 82,
+              "actual": 53,
+              "expected": 52,
+              "delta": 1
+            }
+          ]
+        },
+        "rawPngRgbaExact": null
+      },
+      {
+        "name": "record-anisotropic-dyadic",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": null
+      },
+      {
+        "name": "record-anisotropic-noninteger",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": null
+      },
+      {
+        "name": "record-active-resize",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": null
+      },
+      {
+        "name": "record-active-return-to-source-size",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      },
+      {
+        "name": "record-to-primary",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      },
+      {
+        "name": "primary-to-record-new-background",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      },
+      {
+        "name": "record-new-frame",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      },
+      {
+        "name": "record-to-primary-new-frame",
+        "status": "passed",
+        "comparison": {
+          "maxError": 0,
+          "differingChannels": 0,
+          "differingPixels": 0,
+          "meanAbsoluteError": 0,
+          "fullRgbaExact": true,
+          "first": []
+        },
+        "rawPngRgbaExact": true
+      }
+    ],
+    "nativeOracle": {
+      "path": ".cache/samila-preview-filter-validation-20261025/native-oracle-run1/report.json",
+      "sha256": "a736e5489da3d0c385da782cb6a4506f4fdea62cd915de124f90f21f4b91cbe7"
+    },
+    "nativeExpectedIndex": {
+      "path": ".cache/samila-preview-filter-validation-20261025/native-oracle-run1/expected.json",
+      "sha256": "208e4c4ce7f977e478d21063fe3f203497d3f11221bf03c4ee46e47b4b32f411"
+    },
+    "limitations": [
+      "Independent CGL synthetic expectation is not another original app run.",
+      "Raw CGL alpha preserved; expected alpha255 is declared final opaque RGB-copy derivation, not OS window evidence."
+    ],
+    "cleanup": {
+      "productResourcesReleased": true,
+      "contextLost": true,
+      "windowsAfter": 0,
+      "hostExit": {
+        "exitCode": 0,
+        "signalCode": null,
+        "observed": true
+      }
+    }
+  },
+  "residual": {
+    "name": "record-3x-downsample",
+    "sourceSize": [
+      24,
+      18
+    ],
+    "destinationSize": [
+      8,
+      6
+    ],
+    "differentChannels": 4,
+    "differentPixels": 3,
+    "maxByteDifference": 1,
+    "sampleFloatDifferentComponents": 13,
+    "maxSampleFloatDifference": 0.0029411613941192627,
+    "observedBoundary": "Pre-blend sampled float already differs; bytes, orientation, Float32 NDC and UV verified equal. Explicit highp did not change final residual.",
+    "unknown": "Texture footprint/gradient versus backend anisotropic implementation not isolated",
+    "evidence": [
+      {
+        "path": ".cache/samila-preview-filter-validation-20261025/cgl-sampling/offline-contract-audit.json",
+        "sha256": "22ea6a253205d09869b61d4a7221cc0ea4f2dcc1f065ae7fddd50bf164dabd43"
+      },
+      {
+        "path": ".cache/samila-preview-filter-validation-20261025/cgl-sampling/comparison.json",
+        "sha256": "f115d9771ed6199b65aed99c3b7c34db374694ee45be5386ce9aba80c46ace53"
+      },
+      {
+        "path": ".cache/samila-preview-filter-validation-20261025/cgl-sampling/run1/run.json",
+        "sha256": "feff29185e1ee82084b1104d0ea8c0b50e01644c1188f6a18902c5e47f4a9ebc"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/angle-synthetic-2026-10-25T08-39-52.592Z/report.json",
+        "sha256": "1d0adcccdf7aaefd80a9d0eac58a48c076a27b35df0120442363a57365b4845c"
+      }
+    ]
+  },
+  "ui": {
+    "status": "passed",
+    "checks": [
+      "complete-recording-and-resume",
+      "manual-stop-one-frame-and-deferred-resize",
+      "cancel-after-real-CGL-before-delivery"
+    ],
+    "ownedProcessesAfterClose": 0,
+    "sourceStable": true
+  },
+  "checks": {
+    "uniqueFiles": 2,
+    "uniqueTestsPassed": 32,
+    "typecheck": "passed",
+    "buildV2": "passed; existing large chunk warning",
+    "diffCheck": "passed",
+    "logs": [
+      {
+        "path": ".cache/samila-preview-isolation-20261025/tests-preview.log",
+        "sha256": "01f0f61dd4ae6ee67fb9d71235909015aa0332d9e6d940ce0206875e03fc9742"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/tests-presentation.log",
+        "sha256": "6a97e1941f084c485c35d217855330206273b14089f95ea968fd463493f1b157"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/typecheck.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/build-v2.log",
+        "sha256": "b35c13218b9571ec866cc8a3ff75b5026310012ce0aa8891e3341ee370842db8"
+      }
+    ]
+  },
+  "measurements": {
+    "originalPreview": {
+      "scriptSeconds": 3.806224833,
+      "timeRealSeconds": 4.36,
+      "timeUserSeconds": 8.17,
+      "timeSystemSeconds": 5.7,
+      "timeMaximumRssBytes": 578437120
+    },
+    "syntheticRenderer": {
+      "scriptSeconds": 2.607190667,
+      "timeRealSeconds": 2.98,
+      "timeUserSeconds": 6.61,
+      "timeSystemSeconds": 4.01,
+      "timeMaximumRssBytes": 554860544
+    },
+    "ui": {
+      "scriptSeconds": 14.731238374999998,
+      "timeRealSeconds": 15.11,
+      "timeUserSeconds": 20.36,
+      "timeSystemSeconds": 8.13,
+      "timeMaximumRssBytes": 734461952
+    },
+    "cacheScope": "Fresh hosts, OS/module/driver caches uncontrolled. Unequal before/after frame counts and filtering prevent speedup claim.",
+    "unmeasured": [
+      "isolated GPU filtering cost",
+      "simultaneous process-family peak memory",
+      "GPU memory",
+      "agent tokens"
+    ],
+    "logs": [
+      {
+        "path": ".cache/samila-preview-isolation-20261025/production-preview-time.log",
+        "sha256": "9e1197888b2f31869f4a62db7898bc776f000eb567330ece19242446257362ce"
+      },
+      {
+        "path": ".cache/samila-preview-filter-validation-20261025/renderer-complete-time.log",
+        "sha256": "c090ca61b9359125b3d6d228058dc82eda37d5b7fbe18cb6325dd5fcc103c3ad"
+      },
+      {
+        "path": ".cache/samila-preview-isolation-20261025/ui-time.log",
+        "sha256": "627a5a4b31fbc6c12c435184e75ee77f9e44cb3d1cd73e1a08e16a52eac2f554"
+      }
+    ]
+  },
+  "limitations": [
+    "Real OS/window composition unverified; original offscreen GL_BACK limits retained.",
+    "Actual WebGL context loss/restore unverified; CPU tests simulate reupload.",
+    "Samila brand/formula composition, broader presets/hot edits/resizes/library/profile/same-ID remain.",
+    "All eleven families and Apple Silicon2.0 final acceptance/packaging remain.",
+    "Installed1.0 unchanged; no push/PR."
+  ]
+}

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type {RasterOutput} from '../types';
 import {exactRasterDimensions,MAX_RASTER_PIXELS} from './rasterDimensions';
 import {createSourceShaderMaterial} from './sourceShaderMaterial';
+import {sourceTextureAnisotropy} from './sourceProcessingTextureSampling';
 
 const vertex='precision highp float; in vec3 position; in vec2 uv; out vec2 texCoord; void main(){gl_Position=vec4(position,1.0);texCoord=uv;}';
 const fragment='precision highp float; uniform sampler2D image; in vec2 texCoord; out vec4 color; void main(){color=texture(image,texCoord);}';
@@ -20,6 +21,8 @@ export class SourceSamilaRecordingPreviewRenderer {
  private readonly camera=new THREE.Camera();
  private readonly size=new THREE.Vector2();
  private closing=false;
+ private textureOwner?:THREE.WebGLRenderer;
+ private uploadFailure?:Error;
  private readonly cleanup:{dispose():void}[];
  constructor(frame:Pick<RasterOutput,'width'|'height'|'pixels'>,private readonly background:readonly [number,number,number,number]){
   const {width,height,pixels}=frame;
@@ -53,6 +56,30 @@ export class SourceSamilaRecordingPreviewRenderer {
   mesh.frustumCulled=copy.frustumCulled=false;this.scene.add(mesh);this.copyScene.add(copy);
   this.cleanup=[this.geometry,this.material,this.copy,this.texture,this.target];
  }
+ private upload(renderer:THREE.WebGLRenderer,gl:WebGL2RenderingContext):void {
+  if(this.uploadFailure)throw this.uploadFailure;
+  if(this.textureOwner&&this.textureOwner!==renderer)throw Error('Samila 录制预览不能跨渲染器使用');
+  let configured=!!this.textureOwner;this.textureOwner=renderer;
+  // Processing applies maximum anisotropy even with LINEAR level zero. Three
+  // r180 skips that profile. Its public initTexture uploads this owned texture
+  // and calls onUpdate while it is still bound, then unbinds through its cache.
+  this.texture.onUpdate=()=>{
+   try{
+    const anisotropy=sourceTextureAnisotropy(gl);
+    if(anisotropy)gl.texParameterf(gl.TEXTURE_2D,anisotropy.parameter,anisotropy.maximum);
+    configured=true;
+   }catch(error){this.uploadFailure=error instanceof Error?error:Error(String(error));}
+  };
+  // Do not throw through onUpdate: Three commits the source version before the
+  // callback and the texture version after it. A failed upload poisons this
+  // owner, so a later draw cannot silently skip the failed configuration.
+  // Repeat initTexture after a context restore; unchanged uploads are cached.
+  // Pin the renderer too: two renderers sharing a GL context own distinct caches.
+  try{renderer.initTexture(this.texture);}catch(error){this.uploadFailure=error instanceof Error?error:Error(String(error));}finally{this.texture.onUpdate=null;}
+  const error=gl.getError();
+  if(!this.uploadFailure&&(!configured||gl.isContextLost()||error!==gl.NO_ERROR))this.uploadFailure=Error(`Samila 录制预览纹理上传失败 (${error})`);
+  if(this.uploadFailure)throw this.uploadFailure;
+ }
  render(renderer:THREE.WebGLRenderer):void {
   if(this.closing)throw Error('Samila 录制预览已释放或等待清理');
   renderer.getDrawingBufferSize(this.size);const width=this.size.x,height=this.size.y;
@@ -72,6 +99,7 @@ export class SourceSamilaRecordingPreviewRenderer {
   // canvas/depth storage and driver allocations are outside this estimate.
   const bytes=4*(source.width*source.height+width*height*(samples>0?samples+1:1));
   if(bytes>2*MAX_RASTER_PIXELS*4)throw Error('Samila 录制预览超过 256 MiB 显示缓冲预算');
+  this.upload(renderer,gl);
   const dither=gl.isEnabled(gl.DITHER);
   if(this.target.samples!==samples){this.target.dispose();this.target.samples=samples;}
   this.target.setSize(width,height);

@@ -4,21 +4,54 @@ import {SourceSamilaRecordingPreviewRenderer} from '../src/engine/sourceSamilaPr
 
 const background=[16,32,48,128] as const;
 function frame(width=1,height=1){return{width,height,pixels:new Uint8ClampedArray(width*height*4)};}
-function device(options:{width?:number;height?:number;maxTexture?:number;maxRenderbuffer?:number;maxViewport?:readonly[number,number];samples?:number;supported?:number[];lost?:boolean;error?:number}={}){
- const state={width:options.width??2,height:options.height??2,maxTexture:options.maxTexture??16384,maxRenderbuffer:options.maxRenderbuffer??16384,maxViewport:options.maxViewport??[16384,16384] as const,samples:options.samples??0,supported:options.supported??[4,2,1],lost:options.lost??false,error:options.error??0,dither:true};
- const gl={NO_ERROR:0,SAMPLES:0x80a9,MAX_TEXTURE_SIZE:0x0d33,MAX_RENDERBUFFER_SIZE:0x84e8,MAX_VIEWPORT_DIMS:0x0d3a,RENDERBUFFER:0x8d41,RGBA8:0x8058,DITHER:0x0bd0,
+function device(options:{width?:number;height?:number;maxTexture?:number;maxRenderbuffer?:number;maxViewport?:readonly[number,number];samples?:number;supported?:number[];lost?:boolean;error?:number;anisotropy?:number|null}={}){
+ const state={width:options.width??2,height:options.height??2,maxTexture:options.maxTexture??16384,maxRenderbuffer:options.maxRenderbuffer??16384,maxViewport:options.maxViewport??[16384,16384] as const,samples:options.samples??0,supported:options.supported??[4,2,1],lost:options.lost??false,error:options.error??0,dither:true,anisotropy:options.anisotropy===undefined?16:options.anisotropy};
+ const gl={NO_ERROR:0,SAMPLES:0x80a9,MAX_TEXTURE_SIZE:0x0d33,MAX_RENDERBUFFER_SIZE:0x84e8,MAX_VIEWPORT_DIMS:0x0d3a,RENDERBUFFER:0x8d41,RGBA8:0x8058,DITHER:0x0bd0,TEXTURE_2D:0x0de1,
   isContextLost:vi.fn(()=>state.lost),getError:vi.fn(()=>state.error),
   isEnabled:vi.fn(()=>state.dither),disable:vi.fn(()=>{state.dither=false;}),enable:vi.fn(()=>{state.dither=true;}),
-  getParameter:vi.fn((name:number)=>{if(name===gl.SAMPLES)return state.samples;if(name===gl.MAX_TEXTURE_SIZE)return state.maxTexture;if(name===gl.MAX_RENDERBUFFER_SIZE)return state.maxRenderbuffer;if(name===gl.MAX_VIEWPORT_DIMS)return Int32Array.from(state.maxViewport);throw Error('unexpected GL query');}),
+  getParameter:vi.fn((name:number)=>{if(name===0x84ff)return state.anisotropy;if(name===gl.SAMPLES)return state.samples;if(name===gl.MAX_TEXTURE_SIZE)return state.maxTexture;if(name===gl.MAX_RENDERBUFFER_SIZE)return state.maxRenderbuffer;if(name===gl.MAX_VIEWPORT_DIMS)return Int32Array.from(state.maxViewport);throw Error('unexpected GL query');}),
   getInternalformatParameter:vi.fn(()=>Int32Array.from(state.supported)),
+  getExtension:vi.fn(()=>state.anisotropy===null?null:{MAX_TEXTURE_MAX_ANISOTROPY_EXT:0x84ff,TEXTURE_MAX_ANISOTROPY_EXT:0x84fe}),texParameterf:vi.fn(),
  };
- const fake={autoClear:true,getDrawingBufferSize:vi.fn((size:THREE.Vector2)=>size.set(state.width,state.height)),getRenderTarget:vi.fn(()=>null as THREE.WebGLRenderTarget|null),getContext:vi.fn(()=>gl),setRenderTarget:vi.fn(),clear:vi.fn(),render:vi.fn(),state:{buffers:{color:{setMask:vi.fn(),setClear:vi.fn()}}}};
+ const uploads=new Map<THREE.Texture,number>();
+ const fake={initTexture:vi.fn((texture:THREE.Texture)=>{if(uploads.get(texture)!==texture.version){texture.onUpdate?.(texture);uploads.set(texture,texture.version);}}),autoClear:true,getDrawingBufferSize:vi.fn((size:THREE.Vector2)=>size.set(state.width,state.height)),getRenderTarget:vi.fn(()=>null as THREE.WebGLRenderTarget|null),getContext:vi.fn(()=>gl),setRenderTarget:vi.fn(),clear:vi.fn(),render:vi.fn(),state:{buffers:{color:{setMask:vi.fn(),setClear:vi.fn()}}}};
  return{state,gl,fake,renderer:fake as unknown as THREE.WebGLRenderer};
 }
 function untouched(value:ReturnType<typeof device>){expect(value.fake.setRenderTarget).not.toHaveBeenCalled();expect(value.fake.clear).not.toHaveBeenCalled();expect(value.fake.render).not.toHaveBeenCalled();expect(value.fake.state.buffers.color.setClear).not.toHaveBeenCalled();}
 afterEach(()=>vi.restoreAllMocks());
 
 describe('Samila recording preview resource boundary (real Three objects, fake renderer; no GPU claim)',()=>{
+ it('applies source maximum anisotropy to a level-zero texture on every actual upload, with no leaked callback',()=>{
+  const owner=new SourceSamilaRecordingPreviewRenderer(frame(),background),d=device();
+  try{
+   owner.render(d.renderer);const texture=d.fake.initTexture.mock.calls[0][0];
+   expect(d.gl.texParameterf).toHaveBeenLastCalledWith(d.gl.TEXTURE_2D,0x84fe,16);expect(texture.minFilter).toBe(THREE.LinearFilter);expect(texture.generateMipmaps).toBe(false);expect(texture.onUpdate).toBeNull();
+   owner.render(d.renderer);expect(d.gl.texParameterf).toHaveBeenCalledTimes(1);
+   // Model a fresh Three upload after cache invalidation; re-query capability.
+   texture.needsUpdate=true;d.state.anisotropy=8;owner.render(d.renderer);expect(d.gl.texParameterf).toHaveBeenLastCalledWith(d.gl.TEXTURE_2D,0x84fe,8);expect(texture.onUpdate).toBeNull();
+  }finally{owner.dispose();}
+ });
+ it('supports the source no-extension path without inventing a filtering capability',()=>{
+  const owner=new SourceSamilaRecordingPreviewRenderer(frame(),background),d=device({anisotropy:null});
+  try{owner.render(d.renderer);expect(d.gl.texParameterf).not.toHaveBeenCalled();expect(d.fake.render).toHaveBeenCalledTimes(2);}finally{owner.dispose();}
+ });
+ it.each(['capability','parameter','gl','missing-callback','init'] as const)('retains upload failure %s after initTexture returns and never draws or silently retries',kind=>{
+  const owner=new SourceSamilaRecordingPreviewRenderer(frame(),background),d=device();let returned=false;
+  if(kind==='capability')d.state.anisotropy=0;
+  if(kind==='parameter')d.gl.texParameterf.mockImplementation(()=>{throw Error('parameter failed');});
+  if(kind==='gl')d.gl.texParameterf.mockImplementation(()=>{d.state.error=1282;});
+  d.fake.initTexture.mockImplementation(texture=>{if(kind==='init')throw Error('init failed');if(kind!=='missing-callback')texture.onUpdate?.(texture);returned=true;});
+  try{
+   expect(()=>owner.render(d.renderer)).toThrow();expect(returned).toBe(kind!=='init');untouched(d);const texture=d.fake.initTexture.mock.calls[0][0];expect(texture.onUpdate).toBeNull();
+   d.state.error=0;d.state.anisotropy=16;d.gl.texParameterf.mockReset();expect(()=>owner.render(d.renderer)).toThrow();expect(d.fake.initTexture).toHaveBeenCalledOnce();untouched(d);
+   const disposed=vi.fn();texture.addEventListener('dispose',disposed);owner.dispose();expect(disposed).toHaveBeenCalledOnce();
+  }finally{owner.dispose();}
+ });
+ it('rejects a second renderer even when it shares the exact GL context',()=>{
+  const owner=new SourceSamilaRecordingPreviewRenderer(frame(),background),d=device(),other=device();
+  other.fake.getContext.mockReturnValue(d.gl);
+  try{owner.render(d.renderer);expect(()=>owner.render(other.renderer)).toThrow('跨渲染器');expect(other.fake.initTexture).not.toHaveBeenCalled();untouched(other);}finally{owner.dispose();}
+ });
  it('rejects the 128 MiB input domain before accepting an incomplete tiny backing array',()=>{
   // No large allocation or forged typed-array length: dimensions alone exceed
   // the input policy, which must reject before inspecting the four real bytes.

@@ -4,6 +4,8 @@
 
 本轮延续[原生队列录制验收](source-samila-native-recording-validation.zh-CN.md)，功能位于开发分支 `VITE_SOURCE_RENDERER=native` 模式。已安装的 1.0 应用与发行包没有更新。阅读本文即可了解结果；[结构化证据索引](../tests/fixtures/source-samila-recording-presentation/20261025.json)另保留摘要和原始数据路径。
 
+同日后续：[纹理过滤修复验收](source-samila-recording-filter-validation.zh-CN.md)已解决本文的原版 7 个通道残差，新增对照达到 20/20 帧完全一致；另一个合成测试图边界仍保留。本文记录较早一轮的原始结果。
+
 ## 改变了什么
 
 原版录制时先生成导出图像，再将它按存储的 alpha 叠加到场景背景上。本地此前沿用普通预览的直接 RGB 显示，省略了这次混合。现在录制帧明确携带显示模式和场景背景，渲染器按原版线性纹理采样、混合系数和矩形三角形顺序绘制，再按不透明 RGB 显示；普通预览、暂停截图、停止后的主画布继续走各自原有路径。
