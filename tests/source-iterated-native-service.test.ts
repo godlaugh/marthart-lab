@@ -11,12 +11,12 @@ import {createSourceRendererService} from '../server/source-renderer.mjs';
 // They execute no shaders, native renderer or GPU mathematics. The production
 // codec and service own admission, stream parsing, resource registry and cleanup.
 const token='12'.repeat(16),other='34'.repeat(16),shaders={vertex:'#version 410 core\nvoid main() { gl_Position=vec4(0); }',fragment:'#version 410 core\nvoid main() {}'};
-const create=(resource=token):SourceIteratedNativeOperation=>({kind:'create',resource,count:2,...shaders});
-const createSource=(resource=token):SourceIteratedNativeOperation=>({kind:'create-source',resource,count:2,...shaders,diagnosticVertex:shaders.vertex,diagnosticFragment:shaders.fragment});
-const upload=():SourceIteratedNativeOperation=>({kind:'upload',resource:token,expectedIndex:0,expectedCount:2,offset:0,positionsAndMetric:new Float32Array(8)});
-const advance=(expectedIndex=0,steps=0,resetCounter?:boolean):SourceIteratedNativeOperation=>({kind:'advance',resource:token,expectedIndex,expectedCount:2,reset:false,...(resetCounter===undefined?{}:{resetCounter}),dimension:2,steps,uniforms:[]});
-const read=():SourceIteratedNativeOperation=>({kind:'read',resource:token,expectedIndex:1,expectedCount:2,offset:1,count:1});
-const release=(resource=token):SourceIteratedNativeOperation=>({kind:'release',resource,expectedCount:2});
+const create=(resource=token):Extract<SourceIteratedNativeOperation,{kind:'create'}>=>({kind:'create',resource,count:2,...shaders});
+const createSource=(resource=token):Extract<SourceIteratedNativeOperation,{kind:'create-source'}>=>({kind:'create-source',resource,count:2,...shaders,diagnosticVertex:shaders.vertex,diagnosticFragment:shaders.fragment});
+const upload=():Extract<SourceIteratedNativeOperation,{kind:'upload'}>=>({kind:'upload',resource:token,expectedIndex:0,expectedCount:2,offset:0,positionsAndMetric:new Float32Array(8)});
+const advance=(expectedIndex=0,steps=0,resetCounter?:boolean):Extract<SourceIteratedNativeOperation,{kind:'advance'}>=>({kind:'advance',resource:token,expectedIndex,expectedCount:2,reset:false,...(resetCounter===undefined?{}:{resetCounter}),dimension:2,steps,uniforms:[]});
+const read=():Extract<SourceIteratedNativeOperation,{kind:'read'}>=>({kind:'read',resource:token,expectedIndex:1,expectedCount:2,offset:1,count:1});
+const release=(resource=token):Extract<SourceIteratedNativeOperation,{kind:'release'}>=>({kind:'release',resource,expectedCount:2});
 const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 let root:string,serial=0;
 beforeAll(()=>{mkdirSync('.cache',{recursive:true});root=mkdtempSync(resolve('.cache/iterated-native-service-'));});
@@ -31,26 +31,27 @@ async function fixture(mode='normal',cleanupMs=500){
 import {writeFileSync} from 'node:fs';
 const mode=${JSON.stringify(mode)},states=new Map();let input=Buffer.alloc(0);
 function handle(b){
- const version=b.readUInt32LE(4),iterated=version===6||version===7,samila=version===5,kind=b.readUInt32LE(version>=5?64:60),resource=b.subarray(version>=5?72:68,version>=5?88:84),key=(iterated?'iterated':version)+':'+resource.toString('hex');
+ const version=b.readUInt32LE(4),iterated=version>=6,samila=version===5,kind=b.readUInt32LE(version>=5?64:60),resource=b.subarray(version>=5?72:68,version>=5?88:84),key=(iterated?'iterated':version)+':'+resource.toString('hex');
  writeFileSync(${JSON.stringify(received)},String(b.readUInt32LE(16)));
  writeFileSync(${JSON.stringify(received+'.packet')},b);
- if(iterated&&(mode==='hang-create'&&(kind===1||kind===6)||mode==='hang-read'&&kind===4))return;
+ if(iterated&&(mode==='hang-create'&&(kind===1||kind===6||kind===7)||mode==='hang-read'&&kind===4))return;
  let payload,status=0,format=iterated?4:samila?3:2;
  if(iterated){
   let state=states.get(key);
-  if(kind===1||kind===6){
+  if(kind===1||kind===6||kind===7){
    if(kind===6&&mode==='source-input')status=1;else if(kind===6&&mode==='source-capacity')status=3;
    else if(state&&mode!=='duplicate-ack')status=1;
    else{state={index:0,uploaded:0,total:b.readUInt32LE(88)};states.set(key,state);}
   }else if(kind!==5&&!state)status=5;
-  if(!status&&kind===2&&state)state.uploaded=2;if(!status&&kind===3&&state)state.index++;
+  if(!status&&kind===2&&state)state.uploaded=2;if(!status&&(kind===3||kind===8)&&state)state.index++;
   const count=kind===4?b.readUInt32LE(96):0;payload=Buffer.alloc(64+count*24);payload.writeUInt32LE(2,0);payload.writeUInt32LE(kind,4);resource.copy(payload,8);
   if(state){payload.writeUInt32LE(state.index,24);payload.writeUInt32LE(state.uploaded,32);payload.writeUInt32LE(state.total,36);}
   if(kind===4){payload.writeUInt32LE(b.readUInt32LE(92),40);payload.writeUInt32LE(count,44);for(let i=0;i<count;i++){payload.writeUInt32LE(0x7fa12345,64+i*24);payload.writeUInt32LE(0x80000000,68+i*24);payload.writeUInt32LE(0x7f800000,72+i*24);payload.writeUInt32LE(0xff800000,76+i*24);payload.writeUInt32LE(0xffffffff,80+i*24);payload.writeUInt32LE(1,84+i*24);}}
-  if(kind===3)payload.writeUInt32LE(b.readUInt32LE(version===7?104:100),48);
+  if(version===8){payload.writeUInt32LE(1,52);payload.writeUInt32LE(1,56);}
+  if(kind===3||kind===8)payload.writeUInt32LE(b.readUInt32LE(version===7?104:100),48);
   if(kind===5){payload.writeUInt32LE(state?1:2,28);states.delete(key);}
   if(kind===4){
-   const offsets={family:0,kind:4,index:24,disposition:28,uploaded:32,offset:40,count:44,steps:48,reserved:60,validity:84};
+   const offsets={family:0,kind:4,index:24,disposition:28,uploaded:32,offset:40,count:44,steps:48,reserved:60,validity:84,unit:52,profile:56};
    if(mode in offsets)payload.writeUInt32LE(payload.readUInt32LE(offsets[mode])+1,offsets[mode]);if(mode==='total')payload.writeUInt32LE(0,36);if(mode==='resource')payload[8]^=1;
    if(mode==='format')format=3;if(mode==='extra')payload=Buffer.concat([payload,Buffer.from([1])]);
    if(mode==='runtime'||mode==='state-lost'){status=mode==='runtime'?4:5;format=0;payload=Buffer.from(mode);if(status===4)states.clear();}
@@ -74,9 +75,29 @@ process.stdin.on('data',chunk=>{input=Buffer.concat([input,chunk]);while(input.l
  const send=(op:SourceIteratedNativeOperation,signal?:AbortSignal)=>{const input=packet(op,++sequence);return service.render(input.packet,{signal});};
  return{service,send,receivedPacket:()=>readFileSync(received+'.packet'),sendOther:(b:Buffer)=>{b.writeUInt32LE(++sequence,16);return service.render(b);},ready:async()=>{for(let i=0;i<500;i++){if(existsSync(received)&&readFileSync(received,'utf8')===String(sequence))return;await delay(5);}throw Error('Owned CPU child did not receive request');},close:async()=>{expect(await service.close()).toMatchObject({ok:true});expect(service.processCount).toBe(0);expect(service.activeCount).toBe(0);expect(service.retainedResourceCount).toBe(0);}};
 }
-async function initialized(mode='normal',cleanupMs=500,creation=create()){const f=await fixture(mode,cleanupMs);try{for(const op of [creation,upload(),advance()])expect(await f.send(op)).toMatchObject({ok:true});return f;}catch(e){await f.close();throw e;}}
+async function initialized(mode='normal',cleanupMs=500,creation:SourceIteratedNativeOperation=create()){const f=await fixture(mode,cleanupMs);try{for(const op of [creation,upload(),advance()])expect(await f.send(op)).toMatchObject({ok:true});return f;}catch(e){await f.close();throw e;}}
 
 describe('v6/v7 gateway with actual owned CPU child pipes',()=>{
+
+
+ it('keeps a custom unacknowledged create owned when process cleanup fails and releases it only after confirmed close',async()=>{
+  const f=await fixture('hang-create',20),abort=new AbortController(),kill=vi.spyOn(ChildProcess.prototype,'kill').mockReturnValue(false);
+  try{
+   const pending=f.send({kind:'create-fragment',resource:token,count:2,...shaders,bindingNames:[]},abort.signal);await f.ready();abort.abort();
+   expect(await pending).toMatchObject({ok:false,error:{kind:'cleanup'}});expect(f.service.processCount).toBe(1);expect(f.service.canAcquireLease).toBe(false);
+   kill.mockRestore();expect(await f.service.reset()).toMatchObject({ok:true});expect(f.service.processCount).toBe(0);
+  }finally{kill.mockRestore();await f.close();}
+ });
+ it.each(['unit','profile'])('retires the actual child after a forged custom %s ACK instead of reinterpreting diagnostics',async mode=>{
+  const f=await fixture(mode),profile='source-fragment' as const;
+  try{
+   expect(await f.send({kind:'create-fragment',resource:token,count:2,...shaders,bindingNames:[]})).toMatchObject({ok:true});
+   const creation=f.receivedPacket();expect(await f.send(release())).toMatchObject({ok:false,error:{kind:'ownership'}});expect(f.receivedPacket()).toEqual(creation);
+   expect(await f.send({...upload(),profile})).toMatchObject({ok:true});
+   expect(await f.send({kind:'advance-fragment',resource:token,expectedCount:2,expectedIndex:0,steps:0,reset:false,resetCounter:false,bindings:[]})).toMatchObject({ok:true});
+   expect(await f.send({...read(),profile})).toMatchObject({ok:false,error:{kind:'protocol'}});expect(f.service.processCount).toBe(0);expect(f.service.retainedResourceCount).toBe(0);
+  }finally{await f.close();}
+ });
  it.each([6,7] as const)('admits source zero/16-step v%s advances, rejecting excess before write or sequence commit',async version=>{
   const f=await fixture();try{
    const creation=createSource(),created=await f.send(creation);expect(created).toMatchObject({ok:true,value:{format:'iterated-v1'}});

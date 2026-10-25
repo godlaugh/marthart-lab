@@ -3,6 +3,7 @@ import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {mkdirSync,mkdtempSync,readFileSync} from 'node:fs';
 import {join,resolve} from 'node:path';
+import {prepareSourceSymmetryCustomProgram} from '../src/engine/sourceSymmetryCustom';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {prepareIteratedFrame,type IteratedFrameJob} from '../src/scenes/iteratedDensity';
 import {iteratedInitialChunk} from '../src/engine/iteratedSeed';
@@ -237,4 +238,14 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated render CGL 
    await o.setup(f);await o.good(f.create());await o.good(f.draw());expect((await o.good(f.present())).decoded.occupiedPixels).toBeGreaterThan(0);
   }finally{await o.close();}
  },30000);
+ it('rejects completed-pass compute resources from the iteration-only ink protocol before allocating ink',async()=>{
+  const o=await owner(),f=fixture(),profile='source-fragment' as const,program=prepareSourceSymmetryCustomProgram('void calculate_next(in vec3 p,out vec3 q,out float m){q=p;m=0.;}',5);
+  try{
+   await o.computeGood({kind:'create-fragment',resource:STATE,count:f.count,...program});await o.computeGood({kind:'upload',resource:STATE,profile,expectedIndex:0,expectedCount:f.count,offset:0,positionsAndMetric:f.seeds()});
+   await o.rejected(f.create());expect(o.service.retainedResourceCount).toBe(1);
+   const r=await o.computeGood({kind:'read',resource:STATE,profile,expectedIndex:0,expectedCount:f.count,offset:0,count:f.count});expect(bytes(r.decoded.positionsAndMetric!)).toEqual(bytes(f.seeds()));
+   await o.computeGood({kind:'release',resource:STATE,profile});
+  }finally{await o.close();}
+ });
+
 });

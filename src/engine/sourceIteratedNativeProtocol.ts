@@ -1,6 +1,7 @@
 import {SOURCE_FRAME_BUDGET,SOURCE_FRAME_MAGIC} from './sourceDrawingFrame';
 import type {SourceDrawingResult} from './sourceDrawingSnapshot';
 import {SourceNativeError} from './sourceNativeError';
+import {SOURCE_SYMMETRY_BINDING_TYPES,sourceSymmetryNativeBindingsBytes,sourceSymmetryNativeNamesBytes,type SourceSymmetryNativeBinding} from './sourceSymmetryNativeBindings';
 
 export const SOURCE_ITERATED_NATIVE_VERSION=6;
 export const SOURCE_ITERATED_NATIVE_FAMILY=2;
@@ -12,14 +13,18 @@ export interface SourceIteratedNativeShaders {vertex:string;fragment:string;}
 export interface SourceIteratedNativeSourceShaders extends SourceIteratedNativeShaders {diagnosticVertex:string;diagnosticFragment:string;}
 export interface SourceIteratedNativeUniform {name:string;value:number;}
 type Owned={resource:string};
+type Profile={profile?:'source-fragment'};
+export type SourceIteratedDiagnosticUnit='iteration'|'completed-pass';
 type Checkpoint=Owned&{expectedIndex:number;expectedCount:number};
 export type SourceIteratedNativeOperation=
  | (Owned&SourceIteratedNativeShaders&{kind:'create';count:number})
  | (Owned&SourceIteratedNativeSourceShaders&{kind:'create-source';count:number})
- | (Checkpoint&{kind:'upload';expectedIndex:0;offset:number;positionsAndMetric:Float32Array})
+ | (Owned&SourceIteratedNativeShaders&{kind:'create-fragment';count:number;bindingNames:readonly string[]})
+ | (Checkpoint&{kind:'advance-fragment';reset:boolean;resetCounter:boolean;steps:number;bindings:readonly SourceSymmetryNativeBinding[]})
+ | (Checkpoint&Profile&{kind:'upload';expectedIndex:0;offset:number;positionsAndMetric:Float32Array})
  | (Checkpoint&{kind:'advance';reset:boolean;resetCounter?:boolean;dimension:2|3;steps:number;uniforms:readonly SourceIteratedNativeUniform[]})
- | (Checkpoint&{kind:'read';offset:number;count:number})
- | (Owned&{kind:'release';expectedIndex?:number;expectedCount?:number});
+ | (Checkpoint&Profile&{kind:'read';offset:number;count:number})
+ | (Owned&Profile&{kind:'release';expectedIndex?:number;expectedCount?:number});
 /** All operations use a 1x1, zero-clear, zero-draw envelope. Logical expected
  * counts bind responses and admission; they are not extra wire fields. */
 export interface SourceIteratedNativeRequest {generation:number;sequence:number;operation:SourceIteratedNativeOperation;}
@@ -28,16 +33,19 @@ export interface SourceIteratedNativeRequest {generation:number;sequence:number;
 export type SourceIteratedNativeResponseBinding=Readonly<
  | (Owned&{kind:'create';count:number})
  | (Owned&{kind:'create-source';count:number})
- | (Checkpoint&{kind:'upload';uploaded:number})
+ | (Owned&{kind:'create-fragment';count:number})
+ | (Checkpoint&{kind:'advance-fragment';steps:number})
+ | (Checkpoint&Profile&{kind:'upload';uploaded:number})
  | (Checkpoint&{kind:'advance';steps:number})
- | (Checkpoint&{kind:'read';offset:number;count:number})
- | (Owned&{kind:'release';expectedIndex?:number;expectedCount?:number})
+ | (Checkpoint&Profile&{kind:'read';offset:number;count:number})
+ | (Owned&Profile&{kind:'release';expectedIndex?:number;expectedCount?:number})
 >;
 export interface SourceIteratedNativeResponse {
- resource:string;index:number;disposition:'owned'|'released'|'absent';uploaded:number;totalCount:number;offset:number;readCount:number;steps:number;
+ diagnosticUnit:SourceIteratedDiagnosticUnit;resource:string;index:number;disposition:'owned'|'released'|'absent';uploaded:number;totalCount:number;offset:number;readCount:number;steps:number;
  positionsAndMetric?:Float32Array;invalidCounts?:Uint32Array;validity?:Uint8Array;
 }
-const kinds={create:1,upload:2,advance:3,read:4,release:5,'create-source':6} as const;
+const kinds={create:1,upload:2,advance:3,read:4,release:5,'create-source':6,'create-fragment':7,'advance-fragment':8} as const;
+function fragment(op:SourceIteratedNativeOperation|SourceIteratedNativeResponseBinding):boolean{return op.kind==='create-fragment'||op.kind==='advance-fragment'||'profile' in op&&op.profile==='source-fragment';}
 const encoder=new TextEncoder(),decoder=new TextDecoder('utf-8',{fatal:true});
 const uint=(n:number)=>Number.isInteger(n)&&n>=0&&n<=0xffffffff;
 const count=(n:number)=>uint(n)&&n>0&&n<=8_000_000;
@@ -60,6 +68,9 @@ export function sourceIteratedNativeProgramBytes(shaders:SourceIteratedNativeSha
 export function sourceIteratedNativeSourceProgramBytes(shaders:SourceIteratedNativeSourceShaders):number {
  return shaderProgramBytes([shaders?.vertex,shaders?.fragment,shaders?.diagnosticVertex,shaders?.diagnosticFragment]);
 }
+export function sourceSymmetryNativeResidentBytes(particles:number,programBytes:number,bindingNames:readonly string[]=[]):number {
+ demand(count(particles)&&Number.isSafeInteger(programBytes)&&programBytes>=0,'原生 Symmetry 驻留容量无效');return Math.ceil(Math.sqrt(particles))**2*64+programBytes+SOURCE_ITERATED_NATIVE_FIXED_BYTES+sourceSymmetryNativeNamesBytes(bindingNames);
+}
 export function sourceIteratedNativeResidentBytes(particles:number,programBytes:number):number {
  demand(count(particles)&&Number.isSafeInteger(programBytes)&&programBytes>=0,'原生迭代驻留容量无效');return particles*64+programBytes+SOURCE_ITERATED_NATIVE_FIXED_BYTES;
 }
@@ -69,21 +80,23 @@ const responseBindings=new WeakSet<object>();
 export function captureSourceIteratedNativeResponseBinding(request:SourceIteratedNativeRequest):SourceIteratedNativeResponseBinding {
  demand(request&&uint(request.generation)&&request.generation>0&&uint(request.sequence)&&request.sequence>0,'原生迭代请求身份无效');
  const op=request.operation;demand(op&&Object.hasOwn(kinds,op.kind)&&typeof op.resource==='string'&&/^[a-f0-9]{32}$/.test(op.resource)&&op.resource!=='0'.repeat(32),'原生迭代资源身份无效');
+ demand(!('profile' in op)||op.profile===undefined||(['upload','read','release'].includes(op.kind)&&op.profile==='source-fragment'),'原生迭代资源 profile 无效');
+ const profile=fragment(op)?{profile:'source-fragment' as const}:{};
  let binding:SourceIteratedNativeResponseBinding;
- if(op.kind==='create'||op.kind==='create-source'){demand(count(op.count),'原生迭代粒子数无效');binding={kind:op.kind,resource:op.resource,count:op.count};}
+ if(op.kind==='create'||op.kind==='create-source'||op.kind==='create-fragment'){demand(count(op.count),'原生迭代粒子数无效');binding={kind:op.kind,resource:op.resource,count:op.count};}
  else if(op.kind==='release'){
   demand(op.expectedIndex===undefined||uint(op.expectedIndex),'原生迭代释放检查点无效');demand(op.expectedCount===undefined||count(op.expectedCount),'原生迭代释放粒子数无效');
-  binding={kind:op.kind,resource:op.resource,...(op.expectedIndex===undefined?{}:{expectedIndex:op.expectedIndex}),...(op.expectedCount===undefined?{}:{expectedCount:op.expectedCount})};
+  binding={...profile,kind:op.kind,resource:op.resource,...(op.expectedIndex===undefined?{}:{expectedIndex:op.expectedIndex}),...(op.expectedCount===undefined?{}:{expectedCount:op.expectedCount})};
  }else{
   demand(uint(op.expectedIndex)&&count(op.expectedCount),'原生迭代检查点或粒子数无效');
-  const base={resource:op.resource,expectedIndex:op.expectedIndex,expectedCount:op.expectedCount};
+  const base={...profile,resource:op.resource,expectedIndex:op.expectedIndex,expectedCount:op.expectedCount};
   if(op.kind==='upload'){
    const a=op.positionsAndMetric;
    demand(op.expectedIndex===0&&a instanceof Float32Array&&a.buffer instanceof ArrayBuffer&&a.length>0&&a.length%4===0&&a.length/4<=SOURCE_ITERATED_NATIVE_CHUNK_PARTICLES,'原生迭代上传块无效');
    demand(uint(op.offset)&&op.offset<=op.expectedCount&&a.length/4<=op.expectedCount-op.offset,'原生迭代上传范围无效');
    binding={...base,kind:op.kind,uploaded:op.offset+a.length/4};
-  }else if(op.kind==='advance'){
-   demand(op.expectedIndex<0xffffffff&&uint(op.steps)&&op.steps<=256,'原生迭代推进检查点或步骤无效');binding={...base,kind:op.kind,steps:op.steps};
+  }else if(op.kind==='advance'||op.kind==='advance-fragment'){
+   demand(op.expectedIndex<0xffffffff&&uint(op.steps)&&op.steps<=(op.kind==='advance-fragment'?16:256),'原生迭代推进检查点或步骤无效');binding={...base,kind:op.kind,steps:op.steps};
   }else{
    demand(uint(op.offset)&&uint(op.count)&&op.count>0&&op.count<=SOURCE_ITERATED_NATIVE_CHUNK_PARTICLES&&op.offset<=op.expectedCount&&op.count<=op.expectedCount-op.offset,'原生迭代读取范围无效');
    binding={...base,kind:op.kind,offset:op.offset,count:op.count};
@@ -94,6 +107,8 @@ export function captureSourceIteratedNativeResponseBinding(request:SourceIterate
 function validate(request:SourceIteratedNativeRequest){
  captureSourceIteratedNativeResponseBinding(request);const op=request.operation;
  if(op.kind==='upload')demand(op.positionsAndMetric.every(Number.isFinite),'原生迭代上传块须为有限 canonical seed');
+ if(op.kind==='create-fragment')sourceSymmetryNativeNamesBytes(op.bindingNames);
+ if(op.kind==='advance-fragment'){demand(typeof op.reset==='boolean'&&typeof op.resetCounter==='boolean'&&(!op.reset||op.resetCounter),'Symmetry 推进配置无效');sourceSymmetryNativeBindingsBytes(op.bindings);}
  if(op.kind==='advance'){
   demand(typeof op.reset==='boolean'&&(op.dimension===2||op.dimension===3)&&(op.resetCounter===undefined||typeof op.resetCounter==='boolean'&&(!op.reset||op.resetCounter)),'原生迭代推进配置无效');
   demand(Array.isArray(op.uniforms)&&op.uniforms.length<=65536,'原生迭代 uniform 集合无效');const names=new Set<string>();
@@ -110,8 +125,8 @@ export function encodeSourceIteratedNativeRequest(request:SourceIteratedNativeRe
  try{
   const check=()=>{if(options.isCancelled?.())throw new SourceNativeError('cancelled','原生迭代事务编码已取消');};check();validate(request);
   const retained=options.retainedBytes??0;demand(Number.isSafeInteger(retained)&&retained>=0,'原生迭代保留容量无效');const op=request.operation;
-  const resident=op.kind==='create'||op.kind==='create-source'?retained+sourceIteratedNativeResidentBytes(op.count,op.kind==='create-source'?sourceIteratedNativeSourceProgramBytes(op):sourceIteratedNativeProgramBytes(op)):op.kind==='release'?0:Math.max(retained,sourceIteratedNativeResidentBytes(op.expectedCount,0));
-  const transient=op.kind==='read'?48*op.count:0;capacity(resident+transient);
+  const resident=op.kind==='create-fragment'?retained+sourceSymmetryNativeResidentBytes(op.count,sourceIteratedNativeProgramBytes(op),op.bindingNames):op.kind==='create'||op.kind==='create-source'?retained+sourceIteratedNativeResidentBytes(op.count,op.kind==='create-source'?sourceIteratedNativeSourceProgramBytes(op):sourceIteratedNativeProgramBytes(op)):op.kind==='release'?0:Math.max(retained,(fragment(op)?sourceSymmetryNativeResidentBytes:sourceIteratedNativeResidentBytes)(op.expectedCount,0));
+  const transient=op.kind==='read'?48*op.count:op.kind==='advance-fragment'?sourceSymmetryNativeBindingsBytes(op.bindings):0;capacity(resident+transient);
   let offset=0,out:Uint8Array|undefined,view:DataView|undefined;
   const reserve=(bytes:number)=>{capacity(offset+bytes);const at=offset;offset+=bytes;return at;};
   const word=(value:number)=>{const at=reserve(4);view?.setUint32(at,value,true);};
@@ -126,11 +141,12 @@ export function encodeSourceIteratedNativeRequest(request:SourceIteratedNativeRe
    if(view){const bits=new Uint32Array(values.buffer,values.byteOffset,values.length);for(let i=0;i<bits.length;i++){if((i&16383)===0)check();view.setUint32(at+i*4,bits[i],true);}}
   };
   const emit=()=>{
-   check();word(SOURCE_FRAME_MAGIC);word(op.kind==='create-source'||op.kind==='advance'&&op.resetCounter!==undefined?7:SOURCE_ITERATED_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(1);word(1);for(let i=0;i<8;i++)word(0);
+   check();word(SOURCE_FRAME_MAGIC);word(fragment(op)?8:op.kind==='create-source'||op.kind==='advance'&&op.resetCounter!==undefined?7:SOURCE_ITERATED_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(1);word(1);for(let i=0;i<8;i++)word(0);
    word(SOURCE_ITERATED_NATIVE_FAMILY);word(kinds[op.kind]);block(Uint8Array.from(op.resource.match(/../g)!,v=>parseInt(v,16)));
-   if(op.kind==='create'||op.kind==='create-source'){word(op.count);text(op.vertex);text(op.fragment);if(op.kind==='create-source'){text(op.diagnosticVertex);text(op.diagnosticFragment);}}
+   if(op.kind==='create'||op.kind==='create-source'||op.kind==='create-fragment'){word(op.count);text(op.vertex);text(op.fragment);if(op.kind==='create-source'){text(op.diagnosticVertex);text(op.diagnosticFragment);}if(op.kind==='create-fragment'){word(op.bindingNames.length);for(const name of op.bindingNames)text(name);}}
    if(op.kind==='upload'){word(op.expectedIndex);word(op.offset);floats(op.positionsAndMetric);}
    if(op.kind==='advance'){word(op.expectedIndex);word(op.reset?1:0);if(op.resetCounter!==undefined)word(op.resetCounter?1:0);word(op.dimension);word(op.steps);word(op.uniforms.length);for(const u of op.uniforms){check();text(u.name);float(u.value);}}
+   if(op.kind==='advance-fragment'){word(op.expectedIndex);word(op.reset?1:0);word(op.resetCounter?1:0);word(op.steps);word(op.bindings.length);for(const binding of op.bindings){check();text(binding.name);word(binding.type);word(binding.values.length);for(const n of binding.values){if(SOURCE_SYMMETRY_BINDING_TYPES[binding.type].integer)word(n>>>0);else float(n);}}}
    if(op.kind==='read'){word(op.expectedIndex);word(op.offset);word(op.count);}
   };
   emit();const size=offset;capacity(resident+transient+size*6);out=new Uint8Array(size);view=new DataView(out.buffer);offset=0;emit();check();return{ok:true,value:out};
@@ -149,20 +165,20 @@ export function decodeSourceIteratedNativeResponse(raw:Uint8Array,request:Source
  fail(raw instanceof Uint8Array&&raw.buffer instanceof ArrayBuffer&&raw.byteLength===64+readCount*24,'原生迭代响应长度无效');
  const v=new DataView(raw.buffer,raw.byteOffset,raw.byteLength),u=(at:number)=>v.getUint32(at,true),resource=Array.from(raw.subarray(8,24),n=>n.toString(16).padStart(2,'0')).join('');
  fail(u(0)===SOURCE_ITERATED_NATIVE_FAMILY&&u(4)===kinds[op.kind]&&resource===op.resource,'原生迭代响应身份不符');
- fail(u(52)===0&&u(56)===0&&u(60)===0,'原生迭代响应保留字段非零');
+ const profile=fragment(op)?1:0;fail(u(52)===profile&&u(56)===profile&&u(60)===0,'原生迭代响应诊断单位、profile 或保留字段不符');
  const index=u(24),d=u(28),uploaded=u(32),totalCount=u(36),offset=u(40),returnedCount=u(44),steps=u(48);
  fail(returnedCount===readCount&&offset===(op.kind==='read'?op.offset:0),'原生迭代响应读取范围不符');
- fail(steps===(op.kind==='advance'?op.steps:0),'原生迭代响应步骤数不符');
+ fail(steps===(op.kind==='advance'||op.kind==='advance-fragment'?op.steps:0),'原生迭代响应步骤数不符');
  if(op.kind==='release'){
   fail(d===1||d===2,'原生迭代释放响应状态无效');
   if(d===2)fail(index===0&&uploaded===0&&totalCount===0,'原生迭代不存在资源响应含有状态');
   else fail(count(totalCount)&&uploaded<=totalCount&&(op.expectedIndex===undefined||index===op.expectedIndex)&&(op.expectedCount===undefined||totalCount===op.expectedCount),'原生迭代释放响应检查点或容量不符');
  }else{
-  const expectedCount=(op.kind==='create'||op.kind==='create-source')?op.count:op.expectedCount,expectedIndex=(op.kind==='create'||op.kind==='create-source')?0:op.expectedIndex+(op.kind==='advance'?1:0);
-  const expectedUploaded=(op.kind==='create'||op.kind==='create-source')?0:op.kind==='upload'?op.uploaded:expectedCount;
+  const expectedCount=(op.kind==='create'||op.kind==='create-source'||op.kind==='create-fragment')?op.count:op.expectedCount,expectedIndex=(op.kind==='create'||op.kind==='create-source'||op.kind==='create-fragment')?0:op.expectedIndex+(op.kind==='advance'||op.kind==='advance-fragment'?1:0);
+  const expectedUploaded=(op.kind==='create'||op.kind==='create-source'||op.kind==='create-fragment')?0:op.kind==='upload'?op.uploaded:expectedCount;
   fail(d===0&&totalCount===expectedCount&&index===expectedIndex&&uploaded===expectedUploaded,'原生迭代响应检查点或上传进度不符');
  }
- const result:SourceIteratedNativeResponse={resource,index,disposition:d===0?'owned':d===1?'released':'absent',uploaded,totalCount,offset,readCount:returnedCount,steps};
+ const result:SourceIteratedNativeResponse={diagnosticUnit:profile?'completed-pass':'iteration',resource,index,disposition:d===0?'owned':d===1?'released':'absent',uploaded,totalCount,offset,readCount:returnedCount,steps};
  if(op.kind==='read'){
   // Validate the entire interleaved payload before publishing any partial state.
   for(let i=0;i<readCount;i++)fail(u(64+i*24+20)<=1,'原生迭代粒子有效性必须为 0 或 1');

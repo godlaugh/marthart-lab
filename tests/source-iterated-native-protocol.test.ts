@@ -13,7 +13,7 @@ const read=(offset=0,count=2)=>request({kind:'read',resource,expectedIndex:7,exp
 const release=()=>request({kind:'release',resource});
 const bytes=(input:SourceIteratedNativeRequest,options:Parameters<typeof encodeSourceIteratedNativeRequest>[1]={})=>{const result=encodeSourceIteratedNativeRequest(input,options);if(!result.ok)throw Error(result.error.reason);return result.value;};
 function response(input:SourceIteratedNativeRequest,changes:Record<number,number>={}){
- const op=input.operation,readCount=op.kind==='read'?op.count:0,out=new Uint8Array(64+readCount*24),v=new DataView(out.buffer),set=(at:number,n:number)=>v.setUint32(at,n,true);
+ const op=input.operation;if(op.kind==='create-fragment'||op.kind==='advance-fragment')throw Error('Legacy fixture only');const readCount=op.kind==='read'?op.count:0,out=new Uint8Array(64+readCount*24),v=new DataView(out.buffer),set=(at:number,n:number)=>v.setUint32(at,n,true);
  set(0,2);set(4,{create:1,upload:2,advance:3,read:4,release:5,'create-source':6}[op.kind]);out.set(Uint8Array.from(resource.match(/../g)!,n=>parseInt(n,16)),8);
  set(24,(op.kind==='create'||op.kind==='create-source')?0:op.kind==='release'?7:op.expectedIndex+(op.kind==='advance'?1:0));set(28,op.kind==='release'?1:0);
  set(32,(op.kind==='create'||op.kind==='create-source')?0:op.kind==='upload'?op.offset+op.positionsAndMetric.length/4:2);set(36,(op.kind==='create'||op.kind==='create-source')?op.count:op.kind==='release'?2:op.expectedCount);

@@ -21,6 +21,14 @@ typedef struct {
 -(void)dispose;
 @end
 
+@protocol SourceCglIteratedStateOwner <SourceCglIteratedSampling>
+@property(readonly) NSString *executionProfile;
+-(void)prepare:(NSDictionary*)operation;
+-(void)upload:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes;
+-(void)advance:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes;
+-(NSData*)read:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes;
+@end
+
 static const uint32_t IteratedStateChunk=65536,IteratedStateScratch=4096;
 static const uint64_t IteratedStateFixedBytes=1024*1024;
 static uint32_t iteratedStateWord(NSDictionary *operation,NSString *key){

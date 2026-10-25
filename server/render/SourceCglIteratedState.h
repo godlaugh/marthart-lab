@@ -3,7 +3,7 @@
 // owner retains its exact CGL context and all provisional GL handles.
 #include "SourceCglIteratedSupport.h"
 
-@interface SourceCglIteratedState:NSObject <SourceCglIteratedSampling> {
+@interface SourceCglIteratedState:NSObject <SourceCglIteratedStateOwner> {
  CGLContextObj _context;
  GLuint _program,_diagnosticProgram,_shaders[4],_seed,_positions[2],_metadata[2],_vao,_feedback,_framebuffer,_colorBuffer;
  uint32_t _count,_uploaded,_index,_current,_metadataCurrent;
@@ -38,6 +38,7 @@
 
 @implementation SourceCglIteratedState
 -(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_count*64+_programBytes+IteratedStateFixedBytes+_viewRetainedBytes;}
+-(NSString*)executionProfile{return @"transform-feedback";}
 -(NSString*)diagnosticUnit{return @"iteration";}
 -(uint32_t)drawViewWidth{return MIN(2048,_count);}
 -(uint32_t)drawViewHeight{uint32_t width=[self drawViewWidth];return width?(_count+width-1)/width:0;}

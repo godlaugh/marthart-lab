@@ -4,11 +4,11 @@
 // Raw source-fragment state. The composition layer supplies parsed source
 // bindings, including any Processing context uniforms. This owner never
 // infers those values from text or silently initializes unmatched uniforms.
-@interface SourceCglSymmetryState:NSObject <SourceCglIteratedSampling> {
+@interface SourceCglSymmetryState:NSObject <SourceCglIteratedStateOwner> {
  CGLContextObj _context;
  GLuint _program,_diagnostic,_shaders[4],_seed,_positions[2],_metadata[2],_framebuffer,_vao,_quad;
  uint32_t _count,_size,_uploaded,_index,_current,_metadataCurrent;
- uint64_t _programBytes,_observations;
+ uint64_t _programBytes,_observations,_bindingNameBytes;
  BOOL _prepared,_failed,_disposed;
  NSString *_vertex,*_fragment;NSArray<NSString*> *_bindingNames;NSDictionary *_activeUniforms;
 }
@@ -33,12 +33,10 @@ static const char *SymmetryDiagnosticFragment=
  "void main(){ivec2 p=ivec2(gl_FragCoord.xy);uvec2 old=texelFetch(counters,p,0).rg;uint n=resetCounter==1?0u:old.r;"
  "if(observe==0){result=uvec2(n,old.g);return;}vec4 v=texelFetch(landed,p,0);"
  "bool ok=finiteFloat(v.x)&&finiteFloat(v.y)&&finiteFloat(v.z)&&finiteFloat(v.w);result=uvec2(n+uint(!ok),ok?1u:0u);}\n";
-static NSUInteger symmetryUniformWidth(GLenum type){
- switch(type){case GL_FLOAT:case GL_INT:case GL_BOOL:case GL_SAMPLER_2D:return 1;case GL_FLOAT_VEC2:case GL_INT_VEC2:return 2;case GL_FLOAT_VEC3:case GL_INT_VEC3:return 3;case GL_FLOAT_VEC4:case GL_INT_VEC4:return 4;case GL_FLOAT_MAT3:return 9;case GL_FLOAT_MAT4:return 16;default:return 0;}
-}
 @implementation SourceCglSymmetryState
--(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_size*_size*64+_programBytes+IteratedStateFixedBytes;}
+-(uint64_t)retainedBytes{return _disposed?0:(uint64_t)_size*_size*64+_programBytes+_bindingNameBytes+IteratedStateFixedBytes;}
 -(uint64_t)drawViewAllocationBytes{return 0;}
+-(NSString*)executionProfile{return @"source-fragment";}
 -(NSString*)diagnosticUnit{return @"completed-pass";}
 -(uint32_t)count{return _count;}-(uint32_t)uploaded{return _uploaded;}-(uint32_t)index{return _index;}
 -(uint32_t)drawViewWidth{return _size;}-(uint32_t)drawViewHeight{return _size;}
@@ -46,7 +44,7 @@ static NSUInteger symmetryUniformWidth(GLenum type){
  self=[super init];if(!self)return nil;_count=iteratedStateWord(operation,@"count");INPUT(_count>0&&_count<=8000000,@"Invalid symmetry count");_size=(uint32_t)ceil(sqrt((double)_count));
  _programBytes=iteratedStateProgramBytes(operation);ensure(self.retainedBytes<=Budget,@"capacity",@"Symmetry square state exceeds memory budget");
  id names=operation[@"bindingNames"];INPUT([names isKindOfClass:NSArray.class]&&[(NSArray*)names count]<=65536,@"Symmetry matched bindings invalid");NSMutableSet *seen=[NSMutableSet new];
- for(id name in names){INPUT([name isKindOfClass:NSString.class]&&nameValid(name)&&![seen containsObject:name],@"Symmetry matched binding name invalid or duplicate");[seen addObject:name];}
+ for(id name in names){INPUT([name isKindOfClass:NSString.class]&&symmetryBindingName(name)&&![seen containsObject:name],@"Symmetry matched binding name invalid or duplicate");[seen addObject:name];_bindingNameBytes+=symmetryNameBytes(name);ensure(self.retainedBytes<=Budget,@"capacity",@"Symmetry names exceed memory budget");}
  _bindingNames=[names copy];_vertex=[operation[@"vertex"]copy];_fragment=[operation[@"fragment"]copy];
  ensure(CFByteOrderGetCurrent()==CFByteOrderLittleEndian,@"unsupported",@"Symmetry seed requires little-endian host");_context=CGLGetCurrentContext();RUNTIME(_context,@"Symmetry state needs current context");_context=CGLRetainContext(_context);RUNTIME(_context,@"Cannot retain symmetry context");return self;
 }
@@ -104,13 +102,13 @@ static NSUInteger symmetryUniformWidth(GLenum type){
 -(NSArray*)bindings:(id)raw{
  INPUT([raw isKindOfClass:NSArray.class]&&[(NSArray*)raw count]<=65536,@"Symmetry typed bindings invalid");NSMutableDictionary *byName=[NSMutableDictionary new];NSUInteger valueCount=0;
  for(id item in raw){INPUT([item isKindOfClass:NSDictionary.class],@"Symmetry binding must be a record");NSString *name=item[@"name"];INPUT([name isKindOfClass:NSString.class]&&nameValid(name)&&!byName[name]&&![name isEqual:@"stateTex"]&&![name isEqual:@"iterations"],@"Symmetry binding name invalid, duplicate or owner-controlled");GLenum type=iteratedStateWord(item,@"type");NSUInteger width=symmetryUniformWidth(type);NSArray *values=item[@"values"];INPUT(width&&[values isKindOfClass:NSArray.class]&&values.count>0&&values.count%width==0&&values.count<=65536,@"Symmetry binding shape invalid");
-  valueCount+=values.count;INPUT(valueCount<=65536,@"Symmetry complete binding values exceed scratch budget");NSDictionary *active=_activeUniforms[name];INPUT(!active||([active[@"type"]unsignedIntValue]==type&&[active[@"size"]unsignedIntValue]>=values.count/width),@"Symmetry binding differs from linked type");BOOL integer=type==GL_INT||type==GL_BOOL||type==GL_SAMPLER_2D||type==GL_INT_VEC2||type==GL_INT_VEC3||type==GL_INT_VEC4;
+  valueCount+=values.count;INPUT(valueCount<=65536,@"Symmetry complete binding values exceed scratch budget");NSDictionary *active=_activeUniforms[name];INPUT(!active||([active[@"type"]unsignedIntValue]==type&&[active[@"size"]unsignedIntValue]>=values.count/width),@"Symmetry binding differs from linked type");BOOL integer=symmetryIntegerType(type);
   for(id value in values){INPUT([value isKindOfClass:NSNumber.class]&&CFGetTypeID((__bridge CFTypeRef)value)!=CFBooleanGetTypeID(),@"Symmetry binding must be numeric");double n=[value doubleValue];INPUT(isfinite(n)&&isfinite((float)n)&&(!integer||(n>=INT32_MIN&&n<=INT32_MAX&&floor(n)==n)),@"Symmetry binding exceeds scalar range");if(type==GL_SAMPLER_2D)INPUT(n==0,@"Symmetry sampler must use owned state unit 0");if(type==GL_BOOL)INPUT(n==0||n==1,@"Symmetry boolean binding invalid");}byName[name]=item;
  }
  for(NSString *name in _bindingNames){NSDictionary *item=byName[name];INPUT(item&&[item[@"type"]unsignedIntValue]==GL_FLOAT&&[(NSArray*)item[@"values"]count]==1,@"Matched symmetry float must have an explicit value");}return raw;
 }
 -(void)bind:(NSArray*)bindings{
- for(NSDictionary *item in bindings){@autoreleasepool{NSDictionary *active=_activeUniforms[item[@"name"]];if(!active)continue;GLint location=[active[@"location"]intValue];GLenum type=[item[@"type"]unsignedIntValue];NSArray *values=item[@"values"];NSMutableData *data=[NSMutableData dataWithLength:values.count*4];GLfloat *f=data.mutableBytes;GLint *n=data.mutableBytes;BOOL integer=type==GL_INT||type==GL_BOOL||type==GL_SAMPLER_2D||type==GL_INT_VEC2||type==GL_INT_VEC3||type==GL_INT_VEC4;for(NSUInteger i=0;i<values.count;i++){if(integer)n[i]=[values[i]intValue];else f[i]=[values[i]floatValue];}GLsizei count=(GLsizei)(values.count/symmetryUniformWidth(type));
+ for(NSDictionary *item in bindings){@autoreleasepool{NSDictionary *active=_activeUniforms[item[@"name"]];if(!active)continue;GLint location=[active[@"location"]intValue];GLenum type=[item[@"type"]unsignedIntValue];NSArray *values=item[@"values"];NSMutableData *data=[NSMutableData dataWithLength:values.count*4];GLfloat *f=data.mutableBytes;GLint *n=data.mutableBytes;BOOL integer=symmetryIntegerType(type);for(NSUInteger i=0;i<values.count;i++){if(integer)n[i]=[values[i]intValue];else f[i]=[values[i]floatValue];}GLsizei count=(GLsizei)(values.count/symmetryUniformWidth(type));
   switch(type){case GL_FLOAT:glUniform1fv(location,count,f);break;case GL_FLOAT_VEC2:glUniform2fv(location,count,f);break;case GL_FLOAT_VEC3:glUniform3fv(location,count,f);break;case GL_FLOAT_VEC4:glUniform4fv(location,count,f);break;case GL_FLOAT_MAT3:glUniformMatrix3fv(location,count,GL_FALSE,f);break;case GL_FLOAT_MAT4:glUniformMatrix4fv(location,count,GL_FALSE,f);break;case GL_INT_VEC2:glUniform2iv(location,count,n);break;case GL_INT_VEC3:glUniform3iv(location,count,n);break;case GL_INT_VEC4:glUniform4iv(location,count,n);break;default:glUniform1iv(location,count,n);}
  }}[self checkGl];
 }
@@ -118,7 +116,7 @@ static NSUInteger symmetryUniformWidth(GLenum type){
  uint32_t next=1-_metadataCurrent;[self target:_metadata[next]];glUseProgram(_diagnostic);glUniform1i(glGetUniformLocation(_diagnostic,"landed"),0);glUniform1i(glGetUniformLocation(_diagnostic,"counters"),1);glUniform1i(glGetUniformLocation(_diagnostic,"resetCounter"),reset);glUniform1i(glGetUniformLocation(_diagnostic,"observe"),observe);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,landed);glActiveTexture(GL_TEXTURE1);glBindTexture(GL_TEXTURE_2D,_metadata[_metadataCurrent]);glDrawArrays(GL_TRIANGLE_STRIP,0,4);[self checkGl];_metadataCurrent=next;
 }
 -(void)advance:(NSDictionary*)operation retained:(uint64_t)retained packetBytes:(uint64_t)packetBytes{
- [self ready];uint32_t index=iteratedStateWord(operation,@"index"),steps=iteratedStateWord(operation,@"steps"),reset=iteratedStateWord(operation,@"reset"),resetCounter=iteratedStateWord(operation,@"resetCounter");INPUT(index==_index&&index<UINT32_MAX&&steps<=16&&reset<=1&&resetCounter<=1&&(!reset||resetCounter),@"Symmetry advance checkpoint/controls invalid");uint64_t observed=steps?1:0,observations=resetCounter?observed:_observations+observed;INPUT(observations<=UINT32_MAX,@"Symmetry diagnostic interval exhausted");NSArray *bindings=[self bindings:operation[@"bindings"]];INPUT(retained>=self.retainedBytes,@"Symmetry advance omits state storage");iteratedStateBudget(retained,packetBytes,262144);
+ [self ready];uint32_t index=iteratedStateWord(operation,@"index"),steps=iteratedStateWord(operation,@"steps"),reset=iteratedStateWord(operation,@"reset"),resetCounter=iteratedStateWord(operation,@"resetCounter");INPUT(index==_index&&index<UINT32_MAX&&steps<=16&&reset<=1&&resetCounter<=1&&(!reset||resetCounter),@"Symmetry advance checkpoint/controls invalid");uint64_t observed=steps?1:0,observations=resetCounter?observed:_observations+observed;INPUT(observations<=UINT32_MAX,@"Symmetry diagnostic interval exhausted");NSArray *bindings=[self bindings:operation[@"bindings"]];INPUT(retained>=self.retainedBytes,@"Symmetry advance omits state storage");uint64_t bindingBytes=262144;for(NSDictionary *item in bindings)bindingBytes+=symmetryNameBytes(item[@"name"])+[(NSArray*)item[@"values"]count]*32;iteratedStateBudget(retained,packetBytes,bindingBytes);
  [self perform:^{samilaRaster(self->_size,self->_size);glDisable(GL_BLEND);glPixelStorei(GL_UNPACK_SWAP_BYTES,GL_FALSE);glBindSampler(0,0);glBindSampler(1,0);glBindVertexArray(self->_vao);
   if(reset){glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,self->_positions[0]);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,self->_seed);glTexSubImage2D(GL_TEXTURE_2D,0,0,0,self->_size,self->_size,GL_RGBA,GL_FLOAT,NULL);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);[self clearMetadata];self->_current=0;[self checkGl];}
   if(!steps){if(!reset&&resetCounter)[self classify:self->_positions[self->_current] reset:YES observe:NO];return;}

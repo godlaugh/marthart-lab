@@ -6,6 +6,8 @@ import {join,resolve} from 'node:path';
 import {iteratedInitialChunk} from '../src/engine/iteratedSeed';
 import {iteratedDensityGpuPrograms,sourceIteratedGpuPrograms,type IteratedGpuFieldSource} from '../src/engine/iteratedDensityGpuPrograms';
 import {sourceMapGpuField} from '../src/engine/sourceMapMath';
+import {prepareSourceSymmetryCustomProgram} from '../src/engine/sourceSymmetryCustom';
+import type {SourceSymmetryNativeBinding} from '../src/engine/sourceSymmetryNativeBindings';
 import {sourceSymmetryGpuField} from '../src/engine/sourceSymmetryMath';
 import {encodeSourceIteratedNativeRequest,decodeSourceIteratedNativeResponse,type SourceIteratedNativeOperation,type SourceIteratedNativeRequest} from '../src/engine/sourceIteratedNativeProtocol';
 import {encodeSourceDrawingFrame,type SourceDrawingFrame} from '../src/engine/sourceDrawingFrame';
@@ -18,12 +20,12 @@ const A='a1'.repeat(16),B='b2'.repeat(16),C='c3'.repeat(16);
 const field=sourceSymmetryGpuField({template:'standard',lambda:-2.5,alpha:2.5,beta:-.05,gamma:.35,omega:-.04,n:23});
 const uniforms=Object.entries(field.uniforms).map(([name,value])=>({name,value}));
 const shaders=iteratedDensityGpuPrograms('native-gl41').iteration(field);
-const create=(count:number,resource=A,source=shaders):SourceIteratedNativeOperation=>({kind:'create',resource,count,...source});
-const release=(resource=A):SourceIteratedNativeOperation=>({kind:'release',resource});
-const advance=(count:number,index:number,steps=1,reset=false,resource=A,values=uniforms):SourceIteratedNativeOperation=>({kind:'advance',resource,expectedCount:count,expectedIndex:index,steps,reset,dimension:2,uniforms:values});
-const read=(count:number,index:number,offset=0,length=count,resource=A):SourceIteratedNativeOperation=>({kind:'read',resource,expectedCount:count,expectedIndex:index,offset,count:length});
+const create=(count:number,resource=A,source=shaders):Extract<SourceIteratedNativeOperation,{kind:'create'}>=>({kind:'create',resource,count,...source});
+const release=(resource=A):Extract<SourceIteratedNativeOperation,{kind:'release'}>=>({kind:'release',resource});
+const advance=(count:number,index:number,steps=1,reset=false,resource=A,values=uniforms):Extract<SourceIteratedNativeOperation,{kind:'advance'}>=>({kind:'advance',resource,expectedCount:count,expectedIndex:index,steps,reset,dimension:2,uniforms:values});
+const read=(count:number,index:number,offset=0,length=count,resource=A):Extract<SourceIteratedNativeOperation,{kind:'read'}>=>({kind:'read',resource,expectedCount:count,expectedIndex:index,offset,count:length});
 const seed=(count:number,offset=0,length=count)=>iteratedInitialChunk({count,seed:7,sourceInitialSeed:'6403493509108980441',dimension:2,bounds:[[-.5,.5],[-.5,.5],[0,0]]},offset,length);
-const upload=(count:number,offset=0,length=count,resource=A):SourceIteratedNativeOperation=>({kind:'upload',resource,expectedCount:count,expectedIndex:0,offset,positionsAndMetric:seed(count,offset,length)});
+const upload=(count:number,offset=0,length=count,resource=A):Extract<SourceIteratedNativeOperation,{kind:'upload'}>=>({kind:'upload',resource,expectedCount:count,expectedIndex:0,offset,positionsAndMetric:seed(count,offset,length)});
 const bytes=(a:Float32Array)=>Buffer.from(a.buffer,a.byteOffset,a.byteLength);
 let backend:{executablePath:string;executableSha256:string};
 async function owner(){
@@ -172,6 +174,57 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated CGL lifecyc
   const build=spawnSync('/usr/bin/xcrun',['clang','-fobjc-arc','-fblocks','-O2','-Wall','-Wextra','-Werror','-Iserver/render','-framework','Foundation','-framework','OpenGL','tests/fixtures/source-iterated-prefix-boundaries/runner.m','-o',executable],{encoding:'utf8',timeout:30000});expect(build.error).toBeUndefined();expect(build.status,build.stderr).toBe(0);expect(build.stderr).toBe('');
   const source=sourceMapGpuField({dimension:3,equations:{x:'x+1',y:'y+1',z:'z+1'},parameters:{}}),packet=encodeSourceIteratedNativeRequest({generation:1,sequence:1,operation:{kind:'create-source',resource:A,count:2,...sourceIteratedGpuPrograms(source)}});if(!packet.ok)throw Error(packet.error.reason);const path=join(root,'create.bin');writeFileSync(path,packet.value);
   const run=spawnSync(executable,[path],{encoding:'utf8',timeout:15000});expect(run.error).toBeUndefined();expect(run.status,run.stderr).toBe(0);expect(run.stderr).toBe('');expect(JSON.parse(run.stdout)).toEqual({overflowPreflight:true,zeroAtLimit:true,counterReset:true,poisonedOwnerRetained:true,cleanup:true});
+ });
+
+ it('runs the v8 fragment profile with signed typed bindings, reset and exact release in the shared CGL service',async()=>{
+  const o=await owner(),count=65541,profile='source-fragment' as const;
+  const program=prepareSourceSymmetryCustomProgram('uniform float gain;uniform int signedCount;uniform vec2 supplied[2];uniform mat3 basis;uniform float linkDefault=.125;void calculate_next(in vec3 pos,out vec3 nextPos,out float metric){nextPos=pos+basis*vec3(gain+supplied[1].x,supplied[1].y,9.);metric=float(signedCount)+linkDefault+supplied[0].x;}',5);
+  const bindings:SourceSymmetryNativeBinding[]=[{name:'gain',type:5126,values:[.5]},{name:'signedCount',type:5124,values:[-2]},{name:'supplied',type:35664,values:[.25,.5,1,2]},{name:'basis',type:35675,values:[1,0,0,0,1,0,0,0,1]}];
+  const step=(index:number,steps:number,reset=false):SourceIteratedNativeOperation=>({kind:'advance-fragment',resource:A,expectedCount:count,expectedIndex:index,reset,resetCounter:reset,steps,bindings});
+  const scan=(index:number):SourceIteratedNativeOperation=>({...read(count,index,65530,11),profile});
+  try{
+   expect((await o.good({kind:'create-fragment',resource:A,count,...program})).decoded.diagnosticUnit).toBe('completed-pass');
+   await o.bad(upload(count,0,1),'ownership');await o.bad(release(),'ownership');
+   for(const [offset,n] of [[0,65536],[65536,5]])await o.good({...upload(count,offset,n),profile});
+   const initial=seed(count,65530,11);expect(bytes((await o.good(scan(0))).decoded.positionsAndMetric!)).toEqual(bytes(initial));
+   await o.bad(advance(count,0),'ownership');
+   await o.good(step(0,3));const first=(await o.good(scan(1))).decoded;
+   const expected=initial.slice();for(let i=0;i<11;i++){expected[i*4]=Math.fround(Math.fround(Math.fround(initial[i*4]+1.5)+1.5)+1.5);expected[i*4+1]=Math.fround(Math.fround(Math.fround(initial[i*4+1]+2)+2)+2);expected[i*4+2]=0;expected[i*4+3]=-1.625;}
+   expect(bytes(first.positionsAndMetric!)).toEqual(bytes(expected));expect(first.invalidCounts!.every(n=>n===0)).toBe(true);
+   // Parser failures must leave the completed checkpoint and values unchanged.
+   await o.bad(step(1,1),'input',b=>b.writeUInt32LE(0xffffffff,104));
+   await o.bad(step(1,1),'input',b=>b.writeUInt32LE(0x7fc00000,124)); // gain value
+   await o.bad({...step(1,1),bindings:[{name:'gain',type:35664,values:[1,2]}]} as SourceIteratedNativeOperation,'input');
+   expect(bytes((await o.good(scan(1))).decoded.positionsAndMetric!)).toEqual(bytes(expected));
+   await o.good(step(1,0,true));expect(bytes((await o.good(scan(2))).decoded.positionsAndMetric!)).toEqual(bytes(initial));
+   await o.good(step(2,3));expect(bytes((await o.good(scan(3))).decoded.positionsAndMetric!)).toEqual(bytes(first.positionsAndMetric!));
+   // A legacy owner may coexist, but the same token cannot switch profiles.
+   await o.good(create(2,B));await o.bad({...read(2,0,0,1,B),profile},'ownership');await o.good(release(B));
+   expect((await o.good({...release(),profile})).decoded).toMatchObject({disposition:'released',index:3,diagnosticUnit:'completed-pass'});
+   expect((await o.good({...release(),profile})).decoded.disposition).toBe('absent');
+  }finally{await o.close();}
+ });
+ it('keeps custom invalid observations in completed-pass units and rejects forged native profile requests',async()=>{
+  const o=await owner(),profile='source-fragment' as const;
+  const program=prepareSourceSymmetryCustomProgram('uniform float zero;void calculate_next(in vec3 pos,out vec3 nextPos,out float metric){nextPos=vec3(1./zero,pos.y+1.,9.);metric=-3.;}',5);
+  const step=(index:number,steps:number,resetCounter=false):SourceIteratedNativeOperation=>({kind:'advance-fragment',resource:A,expectedCount:1,expectedIndex:index,steps,reset:false,resetCounter,bindings:[{name:'zero',type:5126,values:[0]}]});
+  try{
+   await o.good({kind:'create-fragment',resource:A,count:1,...program});await o.good({...upload(1),profile});
+   await o.good(step(0,3));await o.good(step(1,3));
+   const r=(await o.good({...read(1,2),profile})).decoded;expect(r.diagnosticUnit).toBe('completed-pass');expect([...r.invalidCounts!]).toEqual([2]);expect([...r.validity!]).toEqual([0]);
+   await o.good(step(2,0,true));const zero=(await o.good({...read(1,3),profile})).decoded;expect(bytes(zero.positionsAndMetric!)).toEqual(bytes(r.positionsAndMetric!));expect([...zero.invalidCounts!]).toEqual([0]);expect([...zero.validity!]).toEqual([0]);
+   await o.bad(step(3,1),'input',b=>b.writeUInt32LE(3,64));
+   await o.bad({...read(1,3),profile},'ownership',b=>b.writeUInt32LE(6,4));
+   expect((await o.good({...read(1,3),profile})).decoded.index).toBe(3);await o.good({...release(),profile});
+  }finally{await o.close();}
+ });
+
+ it('retires failed fragment creation before permitting a new service owner',async()=>{
+  const o=await owner(),program=prepareSourceSymmetryCustomProgram('void calculate_next(in vec3 p,out vec3 q,out float m){q=p;m=0.;}',5),creation:SourceIteratedNativeOperation={kind:'create-fragment',resource:A,count:1,...program};
+  try{
+   await o.bad({...creation,fragment:'#version 410 core\nnot valid GLSL'},'runtime');expect(o.service.processCount).toBe(0);expect(o.service.retainedResourceCount).toBe(0);
+   await o.good(creation);await o.good({...release(),profile:'source-fragment'});
+  }finally{await o.close();}
  });
 
 });
