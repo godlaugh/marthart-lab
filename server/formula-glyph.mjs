@@ -51,8 +51,9 @@ function requestBytes(input){
 }
 /** One owner for each child handle until close. Explicit configuration only:
  * never searches MathArt.app or installs/falls back to a system Java. */
-export async function createFormulaGlyphService({javaHome,jarPath,helperJarPath,timeoutMs=10000,killGraceMs=1000,maxActive=1}={}){
+export async function createFormulaGlyphService({javaHome,jarPath,helperJarPath,helperJarSha256,timeoutMs=10000,killGraceMs=1000,maxActive=1}={}){
  if(![javaHome,jarPath,helperJarPath].every(p=>typeof p==='string'&&path.isAbsolute(p)))throw new Error('字形后端需要显式的独立运行时、上游库和自有 helper JAR 绝对路径');
+ if(helperJarSha256!==undefined&&(typeof helperJarSha256!=='string'||!/^[a-f0-9]{64}$/.test(helperJarSha256)))throw new Error('字形 helper 摘要格式无效');
  if(!Number.isInteger(timeoutMs)||timeoutMs<1||timeoutMs>60000||!Number.isInteger(killGraceMs)||killGraceMs<1||killGraceMs>5000||!Number.isInteger(maxActive)||maxActive<1||maxActive>2)throw new Error('字形进程资源设置无效');
  [javaHome,jarPath,helperJarPath]=await Promise.all([javaHome,jarPath,helperJarPath].map(p=>realpath(p)));
  if([jarPath,helperJarPath].some(file=>file.includes(path.delimiter)))throw new Error('字形 JAR 路径包含 Java classpath 分隔符');
@@ -61,6 +62,7 @@ export async function createFormulaGlyphService({javaHome,jarPath,helperJarPath,
  // caller symlink or added classpath-directory classes from changing execution.
  const files=[...runtime.files,jarPath,helperJarPath];
  const identities=[];for(const file of files)identities.push(await identity(file));
+ if(helperJarSha256!==undefined&&identities.find(file=>file.path===helperJarPath)?.sha256!==helperJarSha256)throw new Error('字形 helper 与指定摘要不符');
  if(identities.find(file=>file.path===jarPath)?.sha256!=='6d04c3843fc98d2eea9ba4cff0be7b80540ca75c5a4e0b3463fd1219c48cc65d')throw new Error('字形后端需要未经修改的官方 JLaTeXMath 1.0.7');
  const rendererIdentity=digest(Buffer.from(JSON.stringify({host:[process.platform,process.arch,os.release(),os.version()],layout:runtime.layout,files:identities.map(({path,sha256})=>({path,sha256}))})));
  const active=new Set();let closing=false,closePromise,freshnessPromise;

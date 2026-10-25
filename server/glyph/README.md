@@ -2,9 +2,10 @@
 
 This backend renders mathematical annotation textures with the unmodified
 official `org.scilab.forge:jlatexmath:1.0.7` library and a separately supplied
-Java 21 runtime. It does not load MathArt or Processing. It is an optional local
-service; the browser preview, PNG compositor, recording and desktop distribution
-have not yet switched to it.
+Java 21 runtime. It does not load MathArt or Processing. Source-compatible
+formula consumers use this local service. The Apple Silicon 2.0 preview package
+now includes a private runtime, library and helper; other entry points still
+require explicit configuration.
 
 Build with an explicitly supplied JDK and official upstream JAR:
 
@@ -20,6 +21,20 @@ directory, compiles this project's Java source and packages its classes into a
 sealed helper JAR. `backend.json` names the explicit runtime and both JARs.
 There is no automatic download, system Java installation or MathArt discovery.
 Keep these generated assets out of Git.
+
+Build the self-contained local desktop preview with this selection:
+
+```sh
+npm run desktop:build:v2 -- --glyph-backend /absolute/path/to/backend.json
+```
+
+The desktop build consumes `javaHome` and `jarPath` from that file, recompiles
+the current helper source, and runs the selected JDK's `jlink` for `java.desktop`.
+It preserves included runtime legal files and the unmodified library's notices,
+materializes internal runtime symlinks before packaging, and uses fixed relative
+resource names so the application can move. No system Java is installed or
+selected at application startup. `MATHART_GLYPH_BACKEND` remains an explicit
+runtime override; an invalid selection fails without fallback.
 
 Enable a source-checkout server with the resulting manifest:
 
@@ -46,7 +61,7 @@ limit and a 10-second default deadline. The owner retains every child until its
 `close` event, including after cancellation, deadline and service shutdown. A
 full concurrency slot returns a capacity error; requests are not queued.
 
-Renderer identity covers the selected runtime files/configuration, helper JAR,
+When supplied, `helperJarSha256` must match before execution. Renderer identity covers the selected runtime files/configuration, helper JAR,
 upstream JAR and host identity. Execution uses canonical paths, rejects ambiguous
 classpath separators and checks runtime layout/file freshness before spawning.
 The worker receives a minimal environment. No ambient environment snapshot is
@@ -70,6 +85,8 @@ canonical paths and real local HTTP transfer/disconnect/shutdown.
 The upstream library and fonts have their own license notices. Obtain assets from
 the [official JLaTeXMath project](https://github.com/opencollab/jlatexmath) and
 [Eclipse Temurin](https://github.com/adoptium/temurin21-binaries); retain their
-complete license/source materials when preparing a distribution. Current work
-uses private development assets and does not add them to the existing desktop
-package. See the [Chinese validation report](../../docs/source-formula-glyph-service-validation.zh-CN.md).
+complete license/source materials when preparing a distribution. The local 2.0
+preview includes the runtime's `legal/` files, upstream JAR notices, dependency
+links and helper source; it is ad hoc signed, not a notarized public release.
+See the [packaged validation report](../../docs/native-v2-glyph-packaging-validation.zh-CN.md)
+and the earlier [service report](../../docs/source-formula-glyph-service-validation.zh-CN.md).

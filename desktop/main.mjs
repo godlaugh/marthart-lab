@@ -8,6 +8,7 @@ import {createWorkspaceStore,STORAGE_KEYS} from './storage.mjs';
 import {createDesktopPreferences} from './preferences.mjs';
 import {configureDesktopGraphics} from './graphics.mjs';
 import {loadBundledSourceRendererBackend} from './native-backend.mjs';
+import {loadBundledFormulaGlyphBackend} from './glyph-backend.mjs';
 const directory=path.dirname(fileURLToPath(import.meta.url));
 const manifest=JSON.parse(await readFile(path.join(directory,'../package.json'),'utf8'));
 const name=manifest.productName??'MathArt Lab';
@@ -47,7 +48,8 @@ async function start(){try{
  const configuredFFmpeg=process.env.MATHART_FFMPEG??preferences.read().ffmpegPath;
  try{activeFFmpeg=await findFFmpeg(configuredFFmpeg);}catch(error){ffmpegWarning=`所选 FFmpeg 不可用：${error.message}`;console.error(ffmpegWarning);activeFFmpeg=configuredFFmpeg;}
  const sourceRendererBackend=process.env.MATHART_SOURCE_RENDERER_BACKEND?JSON.parse(await readFile(process.env.MATHART_SOURCE_RENDERER_BACKEND,'utf8')):nativeBundle?await loadBundledSourceRendererBackend({resourcesPath:process.resourcesPath}):undefined;
- host=await createDesktopHost({sourceRendererBackend,dist:path.join(directory,'../dist'),exportRoot:path.join(userData,'exports'),ffmpegPath:activeFFmpeg});
+ const glyphBackend=process.env.MATHART_GLYPH_BACKEND?JSON.parse(await readFile(process.env.MATHART_GLYPH_BACKEND,'utf8')):manifest.mathartRuntime?.formulaGlyph==='bundled-java'?await loadBundledFormulaGlyphBackend({resourcesPath:process.resourcesPath}):undefined;
+ host=await createDesktopHost({sourceRendererBackend,glyphBackend,dist:path.join(directory,'../dist'),exportRoot:path.join(userData,'exports'),ffmpegPath:activeFFmpeg});
  const browserSession=session.fromPartition('persist:mathart-lab');
  browserSession.setPermissionRequestHandler((contents,permission,callback)=>callback(permission==='clipboard-sanitized-write'&&contents?.getURL().startsWith(host.origin+'/')));
  browserSession.setPermissionCheckHandler((contents,permission,origin)=>permission==='clipboard-sanitized-write'&&origin===host.origin);

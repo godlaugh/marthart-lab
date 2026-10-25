@@ -21,6 +21,8 @@ try{
  check('health does not reserve or spawn',service.activeCount===0&&service.processCount===0);
  const initialHealth=await pendingHealth;
  check('fresh health exposes exact identity',initialHealth.available&&initialHealth.rendererIdentity===service.rendererIdentity&&initialHealth.fontSize===50&&initialHealth.format==='straight-rgba8'&&service.activeCount===0&&service.processCount===0);
+ await assert.rejects(createFormulaGlyphService({...backend,helperJarSha256:'0'.repeat(64)}),/指定摘要/);checks.push('explicit helper digest mismatch fails before execution');
+ await assert.rejects(createFormulaGlyphService({...backend,helperJarSha256:123}),/摘要格式/);checks.push('malformed helper digest fails before execution');
  for(const input of inputs){
   const actual=await service.render({latex:input.latex,color:input.color});assert.equal(actual.ok,true,JSON.stringify(actual));
   const expected=input;
