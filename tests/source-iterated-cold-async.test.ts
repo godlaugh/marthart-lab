@@ -29,6 +29,15 @@ function deferred<T>(){let resolve!:(value:T)=>void;const promise=new Promise<T>
 afterEach(()=>vi.restoreAllMocks());
 
 describe('source fixed-frame replay: shared scheduling and isolated async ownership (not GPU parity)',()=>{
+ it('carries completed-pass units to cold output and rejects changes within retained history',async()=>{
+  const b=backend(),s=scene('symmetry'),c=context(s),owner=new IteratedDensitySession({asyncBackend:b});
+  const originalStep=b.step.getMockImplementation()!;
+  b.step.mockImplementation(async(job,options)=>({...await originalStep(job,options),invalid:3,invalidUnit:'completed-pass'}));
+  try{
+   const output=await owner.generateAsync(s,c);expect(output.stats.invalidUnit).toBe('completed-pass');expect(output.warnings?.some(w=>w.includes('按计算批次末尾统计'))).toBe(true);expect(output.warnings?.some(w=>w.includes('重生'))).toBe(false);
+   b.step.mockImplementation(async(job,options)=>({...await originalStep(job,options),invalidUnit:'iteration'}));await expect(owner.generateAsync(s,{...c,time:.2})).rejects.toThrow('单位发生变化');
+  }finally{await owner.resetAsync();}
+ });
  for(const [family,dimension] of [['map',2],['map',3],['symmetry',2]] as const)it(`${family} ${dimension}D preserves synchronous frame plans, seeds, tone and captured view`,async()=>{
   const s=scene(family,dimension),c=context(s),b=backend(),sync=new IteratedDensitySession(),owner=new IteratedDensitySession({asyncBackend:b});
   const trace:ReturnType<typeof record>[]=[];

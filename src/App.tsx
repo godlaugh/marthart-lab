@@ -1968,7 +1968,7 @@ export default function App() {
         <span>{output?.stats.elapsedMs?.toFixed(0) ?? "—"} ms</span>
         {output?.density && <span title={t("累积 {value0} / {value1} 点；视口外 {value2} 点；最高 {value3} 点/像素",{value0:output.density.accepted.toLocaleString(),value1:output.density.examined.toLocaleString(),value2:output.density.clipped.toLocaleString(),value3:output.density.maxCount.toLocaleString()})}>{t("密度 ·")}{output.density.occupiedPixels.toLocaleString()}{t("像素")}</span>}
         {output?.stats.invalid ? (
-          <span className="warning-text">{t("已略过 {value0} 项无效结果",{value0:output.stats.invalid.toLocaleString()})}</span>
+          <span className="warning-text">{t(output.stats.invalidUnit==='completed-pass'?"计算批次结束时发现 {value0} 次无效粒子状态":"已略过 {value0} 项无效结果",{value0:output.stats.invalid.toLocaleString()})}</span>
         ) : null}
         <div className="spacer" />
         {output?.warnings?.length ? (

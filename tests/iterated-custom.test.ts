@@ -44,13 +44,15 @@ function customScene(){
  Object.assign(s.settings,{iteratedMode:'continuous',iteratedBackend:'auto',batchSize:4,burnIn:0,iterationsPerFrame:1,iteratedFps:10,densityView:'manual',densitySpan:20,degree:5});return s;
 }
 const context={time:0,width:13,height:9,quality:'export' as const};
+function budgetedPlan(job:IteratedFrameJob){if(job.field.kind!=='symmetry-custom'||job.field.plan.dialect!=='webgl2-glsl-es-300-budgeted-v1')throw Error('expected budgeted WebGL custom plan');return job.field.plan;}
+
 
 describe('custom Symmetry production boundary',()=>{
  it('separates authored compilation from runtime named uniforms and preserves raw parameter identity',()=>{
   const s=customScene(),runtime=structuredClone(s);runtime.settings.degree=9;runtime.parameters.gain=.123456789;runtime.parameters.symmetry_degree=11;runtime.parameters.time=7;
   const base=prepareIteratedFrame(s,0,0,s),animated=prepareIteratedFrame(runtime,.2,2,s);
   if(base.field.kind!=='symmetry-custom'||animated.field.kind!=='symmetry-custom')throw Error('custom field required');
-  expect(animated.field.plan.compileDegree).toBe(5);expect(animated.field.plan.programKey).toBe(base.field.plan.programKey);
+  expect(animated.field.plan.compileDegree).toBe(5);expect(budgetedPlan(animated).programKey).toBe(budgetedPlan(base).programKey);
   expect(animated.field.uniforms).toMatchObject({gain:Math.fround(.123456789),symmetry_degree:11,time:7});
   expect(animated.field.parameters.gain).toBe(.123456789);expect(animated.field.time).toBe(.2);
   expect(animated.fieldKey).not.toBe(base.fieldKey);
@@ -85,7 +87,7 @@ describe('custom Symmetry production boundary',()=>{
   const present=vi.spyOn(IteratedDensityGpu.prototype,'present').mockReturnValue({pixels:new Uint8ClampedArray(context.width*context.height*4),occupiedPixels:1,maxCount:1,toneBackend:'webgl2',warnings:[]});
   const owner=new IteratedDensitySession();try{
    const out=owner.generate(s,{...context,time:.2});expect(out.backend).toBe('webgl2');expect(jobs).toHaveLength(3);
-   for(const [index,job]of jobs.entries()){if(job.field.kind!=='symmetry-custom')throw Error();expect(job.field.plan.compileDegree).toBe(5);expect(job.field.uniforms.symmetry_degree).toBe([2,5,8][index]);expect(job.field.plan.programKey).toBe(jobs[0].field.kind==='symmetry-custom'?jobs[0].field.plan.programKey:'');}
+   for(const [index,job]of jobs.entries()){if(job.field.kind!=='symmetry-custom')throw Error();expect(job.field.plan.compileDegree).toBe(5);expect(job.field.uniforms.symmetry_degree).toBe([2,5,8][index]);expect(budgetedPlan(job).programKey).toBe(budgetedPlan(jobs[0]).programKey);}
    expect(prepareIteratedFrame(sceneAtTime(s,.2),.2,2,s).field).toEqual(jobs[2].field);
   }finally{owner.reset();step.mockRestore();present.mockRestore();}
  });

@@ -538,6 +538,9 @@ export type SceneOutput = (GeometryOutput | RasterOutput) & {
     samples: number;
     generated: number;
     invalid: number;
+    /** Invalid particle observations at each completed compute pass, distinct
+     * from the number of iterations or samples skipped during drawing. */
+    invalidUnit?: 'iteration' | 'completed-pass';
     elapsedMs?: number;
   };
   warnings?: string[];

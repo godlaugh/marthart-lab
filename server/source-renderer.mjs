@@ -30,25 +30,26 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6,7,8,9,10].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
- if(version===7&&b.readUInt32LE(60)===3){
-  const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
+ if((version===7||version===10)&&b.readUInt32LE(60)===3){
+  const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex'),fragmentProfile=version===10,shift=fragmentProfile?8:0;
+  if(fragmentProfile&&(b.length<96||b.readUInt32LE(88)!==1||b.readUInt32LE(92)!==1))return failure('input','迭代原生绘制 profile 或诊断单位无效');
   if(operation<1||operation>5||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生绘制头部无效');
-  if(operation===4){if(width!==1||height!==1||b.length!==88)return failure('input','迭代原生绘制释放范围无效');return{ok:true,value:{generation,sequence,width,height,samples,control:true,operation,resource,family:'iterated-render'}};}
-  if(b.length<{1:168,2:136,3:144,5:168}[operation]||b.readUInt32LE(88)!==16)return failure('input','迭代原生绘制请求截断');
-  const stateResource=b.subarray(92,108).toString('hex'),expectedIndex=b.readUInt32LE(108),expectedDisplays=b.readUInt32LE(112),totalCount=b.readUInt32LE(116),record=operation===2?b.readUInt32LE(124):undefined;
-  if(stateResource==='0'.repeat(32)||!totalCount||totalCount>8000000||operation===1&&expectedDisplays!==0||operation===2&&(expectedDisplays===0xffffffff||b.readUInt32LE(120)>1||record>1||!Number.isFinite(b.readFloatLE(128))||b.readFloatLE(128)<0||b.readFloatLE(128)>1||![1,2].includes(b.readUInt32LE(132)))||operation===3&&!expectedDisplays)return failure('input','迭代原生绘制检查点无效');
+  if(operation===4){if(width!==1||height!==1||b.length!==88+shift)return failure('input','迭代原生绘制释放范围无效');return{ok:true,value:{generation,sequence,width,height,samples,control:true,operation,resource,fragmentProfile,family:'iterated-render'}};}
+  if(b.length<{1:168,2:136,3:144,5:168}[operation]+shift||b.readUInt32LE(88+shift)!==16)return failure('input','迭代原生绘制请求截断');
+  const stateResource=b.subarray(92+shift,108+shift).toString('hex'),expectedIndex=b.readUInt32LE(108+shift),expectedDisplays=b.readUInt32LE(112+shift),totalCount=b.readUInt32LE(116+shift),record=operation===2?b.readUInt32LE(124+shift):undefined;
+  if(stateResource==='0'.repeat(32)||!totalCount||totalCount>8000000||operation===1&&expectedDisplays!==0||operation===2&&(expectedDisplays===0xffffffff||b.readUInt32LE(120+shift)>1||record>1||!Number.isFinite(b.readFloatLE(128+shift))||b.readFloatLE(128+shift)<0||b.readFloatLE(128+shift)>1||![1,2].includes(b.readUInt32LE(132+shift)))||operation===3&&!expectedDisplays)return failure('input','迭代原生绘制检查点无效');
   if(b.length*6+128+(operation===3?width*height*8:0)>BUDGET)return failure('capacity','迭代原生绘制协议与读取超过容量');
-  return{ok:true,value:{generation,sequence,width,height,samples,control:operation!==3,operation,resource,family:'iterated-render',stateResource,expectedIndex,expectedDisplays,totalCount,record:record===1}};
+  return{ok:true,value:{generation,sequence,width,height,samples,control:operation!==3,operation,resource,fragmentProfile,family:'iterated-render',stateResource,expectedIndex,expectedDisplays,totalCount,record:record===1}};
  }
  if(version>=6){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
-  if(version===9&&operation!==9||version===8&&![2,4,5,7,8].includes(operation)||version===7&&operation!==3&&operation!==6||version===6&&operation>5||width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>9||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
+  if(version===10||version===9&&operation!==9||version===8&&![2,4,5,7,8].includes(operation)||version===7&&operation!==3&&operation!==6||version===6&&operation>5||width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>9||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
   const create=operation===1||operation===6||operation===7,shift=version===7&&operation===3?4:0,minimum={1:100,2:116,3:108+shift,4:100,5:88,6:108,7:104,8:108,9:112}[operation];if(b.length<minimum)return failure('input','迭代原生计算请求截断');
   const expectedIndex=(operation>=2&&operation<=4)||operation===8||operation===9?b.readUInt32LE(88):undefined,totalCount=create?b.readUInt32LE(88):undefined,offset=operation===2||operation===4?b.readUInt32LE(92):0,readCount=operation===4?b.readUInt32LE(96):0,steps=operation===3?b.readUInt32LE(100+shift):(operation===8||operation===9)?b.readUInt32LE(100):0;
   const uploadBytes=operation===2?b.readUInt32LE(96):0;
@@ -106,18 +107,19 @@ function iteratedResponse(payload,expected){
 }
 function iteratedRenderResponse(payload,expected){
  const word=n=>payload.readUInt32LE(n),kind=expected.operation,stateResource=payload.subarray(24,40).toString('hex'),index=word(40),displays=word(44),disposition=word(48),count=word(52),width=word(56),height=word(60),invalid=word(64)+word(68)*4294967296,accepted=word(72),clipped=word(76),sampleInvalid=word(80),occupied=word(84),maxCount=payload.readFloatLE(88);
- const metadata={resource:expected.resource,family:'iterated-render',stateResource,index,displays,count,width,height};
- if(word(0)!==3||word(4)!==kind||payload.subarray(8,24).toString('hex')!==expected.resource||!payload.subarray(92,128).every(n=>n===0))return failure('protocol','迭代原生绘制响应身份或保留字段无效');
+ const fragment=expected.fragmentProfile,contract=fragment&&disposition!==2?1:0;
+ const metadata={resource:expected.resource,family:'iterated-render',stateResource,index,displays,count,width,height,...(disposition===2?{}:{diagnosticUnit:fragment?'completed-pass':'iteration',executionProfile:fragment?'source-fragment':'transform-feedback'})};
+ if(word(0)!==3||word(4)!==kind||payload.subarray(8,24).toString('hex')!==expected.resource||word(92)!==contract||word(96)!==contract||word(100)!==(fragment?1:0)||!payload.subarray(104,128).every(n=>n===0))return failure('protocol','迭代原生绘制响应身份、诊断单位或 profile 无效');
  if(kind===4){
-  if(![1,2].includes(disposition)||!payload.subarray(64,128).every(n=>n===0))return failure('protocol','迭代原生绘制释放未确认');
-  if(disposition===2){if(!payload.subarray(24,48).every(n=>n===0)||!payload.subarray(52,128).every(n=>n===0))return failure('protocol','不存在的迭代原生绘制资源包含状态');}
-  else if(stateResource==='0'.repeat(32)||!count||count>8000000||!width||width>16384||!height||height>16384||width*height>16000000||expected.owned&&['stateResource','index','displays','count','width','height'].some(k=>metadata[k]!==expected.owned[k]))return failure('protocol','迭代原生绘制释放不属于保留的资源');
+  if(![1,2].includes(disposition)||!payload.subarray(64,92).every(n=>n===0))return failure('protocol','迭代原生绘制释放未确认');
+  if(disposition===2){if(!payload.subarray(24,48).every(n=>n===0)||!payload.subarray(52,92).every(n=>n===0))return failure('protocol','不存在的迭代原生绘制资源包含状态');}
+  else if(stateResource==='0'.repeat(32)||!count||count>8000000||!width||width>16384||!height||height>16384||width*height>16000000||expected.owned&&['stateResource','index','displays','count','width','height','diagnosticUnit','executionProfile'].some(k=>metadata[k]!==expected.owned[k]))return failure('protocol','迭代原生绘制释放不属于保留的资源');
   return{ok:true,value:metadata};
  }
  if(disposition!==0||stateResource!==expected.stateResource||index!==expected.expectedIndex||displays!==expected.expectedDisplays+(kind===2?1:0)||count!==expected.totalCount||width!==expected.width||height!==expected.height)return failure('protocol','迭代原生绘制确认检查点或尺寸不符');
  // A later compute advance does not change the last index drawn into this ink.
- if(expected.owned&&(kind===1||['stateResource','count','width','height'].some(k=>metadata[k]!==expected.owned[k])||expected.expectedDisplays!==expected.owned.displays||(kind===3||kind===5)&&index!==expected.owned.index))return failure('protocol','迭代原生绘制确认与自有资源不符');
- if((kind===1||kind===5)&&!payload.subarray(64,128).every(n=>n===0)||kind===2&&(!Number.isSafeInteger(invalid)||accepted+clipped>count||sampleInvalid!==(expected.record?count-accepted-clipped:0)||!payload.subarray(84,128).every(n=>n===0))||kind===3&&(!payload.subarray(64,84).every(n=>n===0)||occupied>width*height||!Number.isFinite(maxCount)||maxCount<0))return failure('protocol','迭代原生绘制统计覆盖无效');
+ if(expected.owned&&(kind===1||['stateResource','count','width','height','diagnosticUnit','executionProfile'].some(k=>metadata[k]!==expected.owned[k])||expected.expectedDisplays!==expected.owned.displays||(kind===3||kind===5)&&index!==expected.owned.index))return failure('protocol','迭代原生绘制确认与自有资源不符');
+ if((kind===1||kind===5)&&!payload.subarray(64,92).every(n=>n===0)||kind===2&&(!Number.isSafeInteger(invalid)||accepted+clipped>count||sampleInvalid!==(expected.record?count-accepted-clipped:0)||!payload.subarray(84,92).every(n=>n===0))||kind===3&&(!payload.subarray(64,84).every(n=>n===0)||occupied>width*height||!Number.isFinite(maxCount)||maxCount<0))return failure('protocol','迭代原生绘制统计覆盖无效');
  return{ok:true,value:metadata};
 }
 const releaseOperation={bouncing:4,samila:3,iterated:5,'iterated-render':4};
@@ -207,6 +209,7 @@ export async function createSourceRendererService({executablePath,executableSha2
   const owned=retainedResources.get(header.value.family+':'+header.value.resource);
   // The acknowledged compute owner, not the packet version or caller, owns its
   // execution profile. Reject before any await, child write or sequence commit.
+  if(header.value.family==='iterated-render'&&owned&&header.value.fragmentProfile!==(owned.executionProfile==='source-fragment'))return Promise.resolve(failure('ownership','迭代绘制操作与自有资源的执行 profile 不符'));
   if(header.value.family==='iterated'&&owned&&header.value.fragmentProfile!==(owned.profile==='source-fragment'))return Promise.resolve(failure('ownership','迭代操作与自有资源的执行 profile 不符'));
   if(header.value.family==='iterated'&&header.value.operation===3&&owned?.profile==='source-prefix'&&header.value.steps>16)return Promise.resolve(failure('input','源迭代每次推进最多 16 步'));
   // Own the bytes before any await, so later caller edits cannot change a frame.

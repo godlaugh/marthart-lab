@@ -43,6 +43,14 @@ function pair(family:Family){const a=backend(),b=backend(),s=scene(family),c=con
 function semantic(d:ReturnType<SourceIteratedSession['diagnostics']>){const {inFlight:_i,resetting:_r,...rest}=d;return rest;}
 
 describe('one live iterated owner across sync and awaited effects',()=>{
+ it('publishes completed-pass counts separately from draw invalid samples and refuses a unit switch',async()=>{
+  const b=backend(),s=scene('symmetry'),c=context('symmetry'),owner=new SourceIteratedSession('symmetry',{asyncBackend:()=>b.async}),step=b.async.step;
+  b.async.step=async(job,options)=>({...await step(job,options),invalid:3,invalidUnit:'completed-pass'});
+  try{
+   const output=await owner.generateAsync(s,c);expect(output.stats).toMatchObject({invalid:3,invalidUnit:'completed-pass'});expect(output.density?.invalid).toBe(0);
+   b.async.step=step;await expect(owner.generateAsync(s,c)).rejects.toThrow('单位发生变化');
+  }finally{await owner.resetAsync();}
+ });
  for(const family of ['map','symmetry'] as const){
   it(family+' preserves pause, hot parameters, replay, capture restoration and resize order',async()=>{
    const p=pair(family),key=family==='map'?'mapLive':'symmetryLive';

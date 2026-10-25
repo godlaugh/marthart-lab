@@ -23,7 +23,7 @@ export interface SourceIteratedGpuProgramSource {vertex:string;fragment:string;d
 /** Coordinates and explicit sequential aliases use the existing safe AST emitter.
  * Parameter values remain uniforms and never enter a shader-cache key. */
 export function iteratedGpuFieldSource(field:IteratedField,profile:GpuShaderProfile='webgl2'):IteratedGpuFieldSource {
- if(field.kind==='symmetry-custom')return{source:symmetryCustomFragmentSource(field.plan,profile),uniforms:field.uniforms,key:field.plan.programKey,stage:'fragment',profile};
+ if(field.kind==='symmetry-custom'){if(field.plan.dialect!=='webgl2-glsl-es-300-budgeted-v1')throw Error('原生自定义 Symmetry 程序不能交给 WebGL 计算路径');return{source:symmetryCustomFragmentSource(field.plan,profile),uniforms:field.uniforms,key:field.plan.programKey,stage:'fragment',profile};}
  if(field.kind==='samila')return compileSamilaGpuField(field);
  if(field.kind==='symmetry'){
   if(field.mathModel)return sourceSymmetryGpuField(field.parameters);

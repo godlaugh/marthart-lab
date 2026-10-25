@@ -1,10 +1,11 @@
 import {SOURCE_FRAME_BUDGET,SOURCE_FRAME_MAGIC} from './sourceDrawingFrame';
 import type {SourceDrawingResult} from './sourceDrawingSnapshot';
 import {SourceNativeError} from './sourceNativeError';
-import {sourceIteratedNativeResidentBytes} from './sourceIteratedNativeProtocol';
+import {sourceIteratedNativeResidentBytes,sourceSymmetryNativeResidentBytes} from './sourceIteratedNativeProtocol';
 import type {SourceIteratedRenderUniform} from './sourceIteratedRenderPlan';
 
 export const SOURCE_ITERATED_RENDER_NATIVE_VERSION=7;
+export const SOURCE_ITERATED_RENDER_FRAGMENT_VERSION=10;
 export const SOURCE_ITERATED_RENDER_NATIVE_FAMILY=3;
 export const SOURCE_ITERATED_RENDER_PROGRAM_NAMES=['draw','statsFirst','statsReduce','present','presentReduce','decay'] as const;
 export type SourceIteratedRenderNativePrograms=Readonly<Record<typeof SOURCE_ITERATED_RENDER_PROGRAM_NAMES[number],{vertex:string;fragment:string}>>;
@@ -13,7 +14,7 @@ export interface SourceIteratedNativeDrawPlan {
  palette:{key:string;format:'source-rgb1024'|'local-rgba4097';values:Float32Array};noise:Uint8Array;primitive:'points'|'triangles';
 }
 export interface SourceIteratedNativePresentPlan {uniforms:readonly SourceIteratedRenderUniform[];clear:readonly number[];filter:'linear'|'nearest';}
-type Owned={resource:string};
+type Owned={resource:string;profile?:'source-fragment'};
 type Checkpoint=Owned&{stateResource:string;expectedIndex:number;expectedDisplays:number;expectedCount:number};
 export type SourceIteratedRenderNativeOperation=
  | (Checkpoint&{kind:'create';expectedDisplays:0;programs:SourceIteratedRenderNativePrograms})
@@ -27,6 +28,7 @@ export type SourceIteratedRenderNativeResponseBinding=Readonly<
  | (Checkpoint&{kind:'create'|'draw'|'present'|'replace-programs';width:number;height:number;record?:boolean})
 >;
 export interface SourceIteratedRenderNativeResponse {
+ diagnosticUnit?:'iteration'|'completed-pass';executionProfile?:'transform-feedback'|'source-fragment';
  resource:string;stateResource?:string;index:number;displays:number;disposition:'owned'|'released'|'absent';count:number;width:number;height:number;
  invalid:number;accepted:number;clipped:number;sampleInvalid:number;occupiedPixels:number;maxCount:number;pixels?:Uint8ClampedArray;
 }
@@ -47,24 +49,24 @@ export function sourceIteratedRenderNativeProgramBytes(programs:SourceIteratedRe
  for(const name of SOURCE_ITERATED_RENDER_PROGRAM_NAMES)for(const stage of ['vertex','fragment'] as const){const s=programs?.[name]?.[stage];demand(typeof s==='string'&&s.startsWith('#version 410 core\n'),'原生迭代绘制程序必须显式提供 GL 4.1 profile');n+=textBytes(s).length*3;capacity(n);}
  return n;
 }
-export function sourceIteratedNativeViewBytes(count:number):number {demand(particleCount(count),'原生迭代视图粒子数无效');const w=Math.min(2048,count);return w*Math.ceil(count/w)*24;}
+export function sourceIteratedNativeViewBytes(count:number,profile?:'source-fragment'):number {demand(particleCount(count),'原生迭代视图粒子数无效');if(profile==='source-fragment')return 0;const w=Math.min(2048,count);return w*Math.ceil(count/w)*24;}
 /** Known owned storage, not driver RSS/VRAM. Target creation coexists with any
  * previous target until its exact release is acknowledged. */
-export function sourceIteratedRenderNativeResidentBytes(count:number,width:number,height:number,programBytes=0):number {
+export function sourceIteratedRenderNativeResidentBytes(count:number,width:number,height:number,programBytes=0,profile?:'source-fragment'):number {
  demand(particleCount(count)&&dimensions(width,height)&&Number.isSafeInteger(programBytes)&&programBytes>=0,'原生迭代绘制容量参数无效');
- const w=Math.min(2048,count),h=Math.ceil(count/w),rw=Math.max(Math.ceil(w/2),Math.ceil(width/4)),rh=Math.max(Math.ceil(h/2),Math.ceil(height/4));
+ const w=profile==='source-fragment'?Math.ceil(Math.sqrt(count)):Math.min(2048,count),h=profile==='source-fragment'?w:Math.ceil(count/w),rw=Math.max(Math.ceil(w/2),Math.ceil(width/4)),rh=Math.max(Math.ceil(h/2),Math.ceil(height/4));
  return programBytes+width*height*36+rw*rh*32+4097*16+256+1024*1024;
 }
 const bindings=new WeakSet<object>();
 export function captureSourceIteratedRenderNativeResponseBinding(request:SourceIteratedRenderNativeRequest):SourceIteratedRenderNativeResponseBinding {
  demand(request&&uint(request.generation)&&request.generation>0&&uint(request.sequence)&&request.sequence>0&&dimensions(request.width,request.height),'原生迭代绘制请求身份或尺寸无效');
- const op=request.operation;demand(op&&Object.hasOwn(kinds,op.kind)&&token(op.resource),'原生迭代绘制资源身份无效');let binding:SourceIteratedRenderNativeResponseBinding;
- if(op.kind==='release'){demand(request.width===1&&request.height===1,'原生迭代绘制释放必须为 1×1');binding={kind:op.kind,resource:op.resource,width:1,height:1};}
+ const op=request.operation;demand(op&&Object.hasOwn(kinds,op.kind)&&token(op.resource),'原生迭代绘制资源身份无效');demand(op.profile===undefined||op.profile==='source-fragment','原生迭代绘制 profile 无效');const profile=op.profile===undefined?{}:{profile:op.profile};let binding:SourceIteratedRenderNativeResponseBinding;
+ if(op.kind==='release'){demand(request.width===1&&request.height===1,'原生迭代绘制释放必须为 1×1');binding={...profile,kind:op.kind,resource:op.resource,width:1,height:1};}
  else{
   demand(token(op.stateResource)&&particleCount(op.expectedCount)&&uint(op.expectedIndex)&&uint(op.expectedDisplays),'原生迭代绘制状态身份或检查点无效');
   demand(op.kind!=='create'||op.expectedDisplays===0,'原生迭代绘制创建检查点必须为零');demand(op.kind!=='draw'||op.expectedDisplays<0xffffffff,'原生迭代绘制检查点已耗尽');demand(op.kind!=='present'||op.expectedDisplays>0,'原生迭代呈现需要已完成的累积');
   if(op.kind==='draw')demand(typeof op.record==='boolean','原生迭代绘制记录标记无效');
-  binding={kind:op.kind,resource:op.resource,stateResource:op.stateResource,expectedIndex:op.expectedIndex,expectedDisplays:op.expectedDisplays,expectedCount:op.expectedCount,width:request.width,height:request.height,...(op.kind==='draw'?{record:op.record}:{})};
+  binding={...profile,kind:op.kind,resource:op.resource,stateResource:op.stateResource,expectedIndex:op.expectedIndex,expectedDisplays:op.expectedDisplays,expectedCount:op.expectedCount,width:request.width,height:request.height,...(op.kind==='draw'?{record:op.record}:{})};
  }
  Object.freeze(binding);bindings.add(binding);return binding;
 }
@@ -96,7 +98,8 @@ export function encodeSourceIteratedRenderNativeRequest(request:SourceIteratedRe
   const check=()=>{if(options.isCancelled?.())throw new SourceNativeError('cancelled','原生迭代绘制编码已取消');};check();validate(request);const op=request.operation,retained=options.retainedBytes??0;demand(Number.isSafeInteger(retained)&&retained>=0,'原生迭代绘制保留容量无效');
   // Reserve the borrowed state view conservatively even before first draw.
   // The native registry independently charges exact live storage across owners.
-  const resident=op.kind==='release'?0:op.kind==='create'?Math.max(retained,sourceIteratedNativeResidentBytes(op.expectedCount,0))+sourceIteratedNativeViewBytes(op.expectedCount)+sourceIteratedRenderNativeResidentBytes(op.expectedCount,request.width,request.height,sourceIteratedRenderNativeProgramBytes(op.programs)):Math.max(retained,sourceIteratedNativeResidentBytes(op.expectedCount,0)+sourceIteratedRenderNativeResidentBytes(op.expectedCount,request.width,request.height))+sourceIteratedNativeViewBytes(op.expectedCount);
+  const stateBytes=op.profile==='source-fragment'?sourceSymmetryNativeResidentBytes:sourceIteratedNativeResidentBytes;
+  const resident=op.kind==='release'?0:op.kind==='create'?Math.max(retained,stateBytes(op.expectedCount,0))+sourceIteratedNativeViewBytes(op.expectedCount,op.profile)+sourceIteratedRenderNativeResidentBytes(op.expectedCount,request.width,request.height,sourceIteratedRenderNativeProgramBytes(op.programs),op.profile):Math.max(retained,stateBytes(op.expectedCount,0)+sourceIteratedRenderNativeResidentBytes(op.expectedCount,request.width,request.height,0,op.profile))+sourceIteratedNativeViewBytes(op.expectedCount,op.profile);
   const replacement=op.kind==='replace-programs'?sourceIteratedRenderNativeProgramBytes(op.programs):0;
   const transient=replacement+128+(op.kind==='present'?request.width*request.height*8+request.width*4:0);capacity(resident+transient);
   let offset=0,out:Uint8Array|undefined,view:DataView|undefined;
@@ -109,8 +112,8 @@ export function encodeSourceIteratedRenderNativeRequest(request:SourceIteratedRe
   const palette=(v:Float32Array)=>{word(v.byteLength);const at=reserve(v.byteLength);if(view){const bits=new Uint32Array(v.buffer,v.byteOffset,v.length);for(let i=0;i<bits.length;i++){if((i&16383)===0)check();view.setUint32(at+i*4,bits[i],true);}}};
   const uniforms=(values:readonly SourceIteratedRenderUniform[])=>{word(values.length);for(const u of values){check();text(u.name);word(uniformKinds[u.kind]);word(components[u.kind]);if(samplerUniform(u))word(u.texture);else for(const n of u.values){if(u.kind==='int'||u.kind==='bool'||u.kind==='ivec2')word(n);else float(n);}}};
   const emit=()=>{
-   check();word(SOURCE_FRAME_MAGIC);word(SOURCE_ITERATED_RENDER_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(request.width);word(request.height);for(let i=0;i<8;i++)word(0);word(SOURCE_ITERATED_RENDER_NATIVE_FAMILY);word(kinds[op.kind]);id(op.resource);
-   if(op.kind==='release')return;id(op.stateResource);word(op.expectedIndex);word(op.expectedDisplays);word(op.expectedCount);
+   check();word(SOURCE_FRAME_MAGIC);word(op.profile==='source-fragment'?SOURCE_ITERATED_RENDER_FRAGMENT_VERSION:SOURCE_ITERATED_RENDER_NATIVE_VERSION);word(out?.length??0);word(request.generation);word(request.sequence);word(request.width);word(request.height);for(let i=0;i<8;i++)word(0);word(SOURCE_ITERATED_RENDER_NATIVE_FAMILY);word(kinds[op.kind]);id(op.resource);
+   if(op.profile==='source-fragment'){word(1);word(1);}if(op.kind==='release')return;id(op.stateResource);word(op.expectedIndex);word(op.expectedDisplays);word(op.expectedCount);
    if(op.kind==='create'||op.kind==='replace-programs')for(const name of SOURCE_ITERATED_RENDER_PROGRAM_NAMES)for(const stage of ['vertex','fragment'] as const)text(op.programs[name][stage]);
    if(op.kind==='draw'){word(op.clear?1:0);word(op.record?1:0);float(op.decay);word(op.plan.primitive==='points'?1:2);text(op.plan.palette.key);word(op.plan.palette.format==='source-rgb1024'?1:2);palette(op.plan.palette.values);block(op.plan.noise);uniforms(op.plan.drawUniforms);uniforms(op.plan.statsUniforms);}
    if(op.kind==='present'){word(op.plan.filter==='linear'?1:2);op.plan.clear.forEach(float);uniforms(op.plan.uniforms);}
@@ -126,16 +129,17 @@ export function decodeSourceIteratedRenderNativeResponse(raw:Uint8Array,request:
  const size=128+(op.kind==='present'?op.width*op.height*4:0);fail(raw instanceof Uint8Array&&raw.buffer instanceof ArrayBuffer&&raw.byteLength===size,'原生迭代绘制响应长度无效');
  const v=new DataView(raw.buffer,raw.byteOffset,raw.byteLength),u=(n:number)=>v.getUint32(n,true),id=(n:number)=>Array.from(raw.subarray(n,n+16),n=>n.toString(16).padStart(2,'0')).join('');
  const resource=id(8),stateResource=id(24),index=u(40),displays=u(44),disposition=u(48),count=u(52),width=u(56),height=u(60),invalid=u(64)+u(68)*4294967296,accepted=u(72),clipped=u(76),sampleInvalid=u(80),occupiedPixels=u(84),maxCount=v.getFloat32(88,true);
- fail(u(0)===3&&u(4)===kinds[op.kind]&&resource===op.resource&&raw.subarray(92,128).every(n=>n===0),'原生迭代绘制响应身份或保留字段无效');
+ const fragment=op.profile==='source-fragment',contract=fragment&&disposition!==2?1:0;
+ fail(u(0)===3&&u(4)===kinds[op.kind]&&resource===op.resource&&u(92)===contract&&u(96)===contract&&u(100)===(fragment?1:0)&&raw.subarray(104,128).every(n=>n===0),'原生迭代绘制响应身份、诊断单位或 profile 无效');
  if(op.kind==='release'){
-  fail(disposition===1||disposition===2,'原生迭代绘制释放未确认');fail(raw.subarray(64,128).every(n=>n===0),'原生迭代绘制释放含有未测量统计');
-  if(disposition===2)fail(raw.subarray(24,48).every(n=>n===0)&&raw.subarray(52,128).every(n=>n===0),'不存在的原生迭代绘制资源含有状态');
+  fail(disposition===1||disposition===2,'原生迭代绘制释放未确认');fail(raw.subarray(64,92).every(n=>n===0),'原生迭代绘制释放含有未测量统计');
+  if(disposition===2)fail(raw.subarray(24,48).every(n=>n===0)&&raw.subarray(52,92).every(n=>n===0),'不存在的原生迭代绘制资源含有状态');
   else fail(token(stateResource)&&particleCount(count)&&dimensions(width,height),'原生迭代绘制释放容量或父状态无效');
  }else{
   fail(disposition===0&&stateResource===op.stateResource&&index===op.expectedIndex&&displays===op.expectedDisplays+(op.kind==='draw'?1:0)&&count===op.expectedCount&&width===op.width&&height===op.height,'原生迭代绘制确认检查点或尺寸不符');
-  if(op.kind==='create'||op.kind==='replace-programs')fail(raw.subarray(64,128).every(n=>n===0),'原生迭代绘制创建含有未测量统计');
-  if(op.kind==='draw')fail(Number.isSafeInteger(invalid)&&accepted+clipped<=count&&sampleInvalid===(op.record?count-accepted-clipped:0)&&raw.subarray(84,128).every(n=>n===0),'原生迭代绘制统计覆盖不符');
+  if(op.kind==='create'||op.kind==='replace-programs')fail(raw.subarray(64,92).every(n=>n===0),'原生迭代绘制创建含有未测量统计');
+  if(op.kind==='draw')fail(Number.isSafeInteger(invalid)&&accepted+clipped<=count&&sampleInvalid===(op.record?count-accepted-clipped:0)&&raw.subarray(84,92).every(n=>n===0),'原生迭代绘制统计覆盖不符');
   if(op.kind==='present')fail(raw.subarray(64,84).every(n=>n===0)&&occupiedPixels<=width*height&&Number.isFinite(maxCount)&&maxCount>=0,'原生迭代呈现统计无效');
  }
- return{resource,...(disposition===2?{}:{stateResource}),index,displays,disposition:disposition===0?'owned':disposition===1?'released':'absent',count,width,height,invalid,accepted,clipped,sampleInvalid,occupiedPixels,maxCount,...(op.kind==='present'?{pixels:new Uint8ClampedArray(raw.buffer,raw.byteOffset+128,raw.byteLength-128)}:{})};
+ return{resource,...(disposition===2?{}:{stateResource,diagnosticUnit:fragment?'completed-pass' as const:'iteration' as const,executionProfile:fragment?'source-fragment' as const:'transform-feedback' as const}),index,displays,disposition:disposition===0?'owned':disposition===1?'released':'absent',count,width,height,invalid,accepted,clipped,sampleInvalid,occupiedPixels,maxCount,...(op.kind==='present'?{pixels:new Uint8ClampedArray(raw.buffer,raw.byteOffset+128,raw.byteLength-128)}:{})};
 }

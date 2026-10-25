@@ -27,12 +27,12 @@ type RenderOperation=SourceIteratedRenderNativeOperation;
 type RenderOptions={width?:number;height?:number;mutate?:(packet:Buffer)=>void};
 let executable:{executablePath:string;executableSha256:string};
 
-function fixture(count=8){
+function fixture(count=8,profile?:'source-fragment'){
  const scene=parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'Retained ink lifecycle',type:'SYMMETRY_CHAOS',settings:{batch_size:count,burn_in_steps:0,background_color:'#000000'},palette:['#ff0000','#ff0000']})).scene;
  const job=prepareIteratedFrame(scene,0,0),source=iteratedGpuFieldSource(job.field,'native-gl41');
  expect(source.sourceCalculateNext).toBe(true);
  const program=iteratedDensityGpuPrograms('native-gl41').iteration(source),uniforms=Object.entries(source.uniforms).map(([name,value])=>({name,value}));
- const target={width:WIDTH,height:HEIGHT,stateWidth:Math.min(2048,count),projection:'xy' as const,bounds:{minX:-1,maxX:1,minY:-1,maxY:1}};
+ const target={width:WIDTH,height:HEIGHT,stateWidth:profile==='source-fragment'?Math.ceil(Math.sqrt(count)):Math.min(2048,count),projection:'xy' as const,bounds:{minX:-1,maxX:1,minY:-1,maxY:1}};
  const prepared=prepareSourceIteratedDrawPlan(job,target),programs=sourceIteratedRenderPrograms('native-gl41','symmetry',prepared.sourceSplatProgram);
  const preparedPresent=prepareSourceIteratedPresentPlan(prepareSourceSymmetryTone(scene,{width:WIDTH,height:HEIGHT}),WIDTH,HEIGHT);
  const presentPlan:SourceIteratedNativePresentPlan={uniforms:preparedPresent.uniforms,clear:Array.from(preparedPresent.clear),filter:preparedPresent.filter};
@@ -40,7 +40,7 @@ function fixture(count=8){
   const plan=prepareSourceIteratedDrawPlan(value,target);
   return{drawUniforms:plan.drawUniforms,statsUniforms:plan.statsUniforms,palette:{key:plan.palette.key,format:plan.palette.format,values:plan.palette.createValues()},noise:plan.noisePermutation,primitive:plan.primitive};
  };
- const binding=(resource:string,index:number,displays:number)=>({resource,stateResource:STATE,expectedIndex:index,expectedDisplays:displays,expectedCount:count});
+ const binding=(resource:string,index:number,displays:number)=>({resource,stateResource:STATE,expectedIndex:index,expectedDisplays:displays,expectedCount:count,...(profile?{profile}:{})});
  return{count,job,source,program,programs,uniforms,drawPlan,
   renderPrograms:(value:IteratedFrameJob)=>sourceIteratedRenderPrograms('native-gl41','symmetry',prepareSourceIteratedDrawPlan(value,target).sourceSplatProgram),
   seeds:()=>iteratedInitialChunk(job.config,0,count),
@@ -238,11 +238,35 @@ describe.skipIf(process.platform!=='darwin')('real retained iterated render CGL 
    await o.setup(f);await o.good(f.create());await o.good(f.draw());expect((await o.good(f.present())).decoded.occupiedPixels).toBeGreaterThan(0);
   }finally{await o.close();}
  },30000);
+
+ it.each(['nonfinite-metric','NaN-position'] as const)('keeps completed-pass diagnostics and non-square particle coverage through lifecycle: %s',async boundary=>{
+  const o=await owner(),profile='source-fragment' as const,f=fixture(7,profile),badPosition=boundary==='NaN-position',program=prepareSourceSymmetryCustomProgram(`void calculate_next(in vec3 p,out vec3 q,out float m){q=vec3(0.);m=.5;if(gl_FragCoord.x<1.&&gl_FragCoord.y<1.){${badPosition?'q.x=uintBitsToFloat(0x7fc00000u);':'m=uintBitsToFloat(0x7f800000u);'}}}`,5);
+  const advance=(index:number,steps:number,resetCounter=false):SourceIteratedNativeOperation=>({kind:'advance-processing-fragment',resource:STATE,expectedIndex:index,expectedCount:f.count,reset:false,resetCounter,steps,automatic:[],parameters:[]});
+  try{
+   await o.computeGood({kind:'create-fragment',resource:STATE,count:f.count,...program});await o.computeGood({kind:'upload',resource:STATE,profile,expectedIndex:0,expectedCount:f.count,offset:0,positionsAndMetric:f.seeds()});await o.computeGood(advance(0,3));
+   expect((await o.good(f.create(INK_A,1))).decoded).toMatchObject({diagnosticUnit:'completed-pass',executionProfile:profile});
+   const first=(await o.good(f.draw(INK_A,1))).decoded;expect(first).toMatchObject({invalid:1,accepted:badPosition?6:7,clipped:0,sampleInvalid:badPosition?1:0,diagnosticUnit:'completed-pass'});
+   const original=Buffer.from(bytes((await o.good(f.present(INK_A,1))).decoded.pixels!));
+   await o.computeGood(advance(1,5));expect(bytes((await o.good(f.present(INK_A,1))).decoded.pixels!)).toEqual(original);
+   expect((await o.good(f.draw(INK_A,2,1))).decoded).toMatchObject({invalid:2,diagnosticUnit:'completed-pass'});
+   const before=Buffer.from(bytes((await o.good(f.present(INK_A,2,2))).decoded.pixels!));await o.computeGood(advance(2,0,true));
+   const noRecord={...f.job,config:{...f.job.config,record:false,decay:1}};
+   expect((await o.good(f.draw(INK_A,3,2,noRecord,false))).decoded).toMatchObject({invalid:0,accepted:0,clipped:0,sampleInvalid:0,diagnosticUnit:'completed-pass'});
+   expect((await o.good(f.replace(INK_A,3,3))).decoded).toMatchObject({diagnosticUnit:'completed-pass',executionProfile:profile});expect(bytes((await o.good(f.present(INK_A,3,3))).decoded.pixels!)).toEqual(before);
+   await o.rejected({...f.draw(INK_A,3,3),profile:undefined},{},'ownership');await o.rejected(releaseInk(),{},'ownership');expect(o.service.retainedResourceCount).toBe(2);
+   expect((await o.compute({kind:'release',resource:STATE,profile})).result).toMatchObject({ok:false,error:{kind:'ownership'}});
+   expect((await o.good({...releaseInk(),profile})).decoded).toMatchObject({disposition:'released',diagnosticUnit:'completed-pass',executionProfile:profile});
+   const absent=(await o.good({...releaseInk(),profile})).decoded;expect(absent.disposition).toBe('absent');expect(absent.diagnosticUnit).toBeUndefined();expect(absent.executionProfile).toBeUndefined();await o.computeGood({kind:'release',resource:STATE,profile});
+  }finally{await o.close();}
+ },30000);
+ it('rejects an explicitly fragment ink profile for a transform feedback state before ink allocation',async()=>{
+  const o=await owner(),f=fixture();try{await o.setup(f);await o.rejected({...f.create(),profile:'source-fragment'},{},'ownership');expect(o.service.retainedResourceCount).toBe(1);expect((await o.good(f.create())).decoded.diagnosticUnit).toBe('iteration');}finally{await o.close();}
+ });
  it('rejects completed-pass compute resources from the iteration-only ink protocol before allocating ink',async()=>{
   const o=await owner(),f=fixture(),profile='source-fragment' as const,program=prepareSourceSymmetryCustomProgram('void calculate_next(in vec3 p,out vec3 q,out float m){q=p;m=0.;}',5);
   try{
    await o.computeGood({kind:'create-fragment',resource:STATE,count:f.count,...program});await o.computeGood({kind:'upload',resource:STATE,profile,expectedIndex:0,expectedCount:f.count,offset:0,positionsAndMetric:f.seeds()});
-   await o.rejected(f.create());expect(o.service.retainedResourceCount).toBe(1);
+   await o.rejected(f.create(),{},'ownership');expect(o.service.retainedResourceCount).toBe(1);
    const r=await o.computeGood({kind:'read',resource:STATE,profile,expectedIndex:0,expectedCount:f.count,offset:0,count:f.count});expect(bytes(r.decoded.positionsAndMetric!)).toEqual(bytes(f.seeds()));
    await o.computeGood({kind:'release',resource:STATE,profile});
   }finally{await o.close();}

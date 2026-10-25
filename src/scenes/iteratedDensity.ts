@@ -34,6 +34,8 @@ import {applySamilaViewport,samilaViewportTransform,type PreparedSamilaViewport}
 import {samilaCameraEnabled,samilaCameraFrame,prepareSamilaView,parseSamilaCamera,samilaSamplingRotation} from '../engine/samilaCamera';
 import {mapDimension} from '../engine/mapDimension';
 import {hasSymmetryCustom,readSymmetryCustomSource,prepareSymmetryCustomSource,bindSymmetryCustomParameters,symmetryCustomCompileDegree,symmetryCustomParameterNameError,type PreparedSymmetryCustomSource} from '../engine/symmetryCustom';
+import {prepareSourceSymmetryCustomProgram,type SourceSymmetryCustomProgram} from '../engine/sourceSymmetryCustom';
+import type {SourceProcessingContextSnapshot} from '../engine/sourceProcessingContext';
 import type {ControlSpec,DensityBounds,DensityProjection,GenerateContext,SceneDocument,SceneKind,SceneOutput,Settings,Palette,SamilaViewportTransform} from '../types';
 import {compileReal,finite,numberSetting,existingParameterNameError,type RealEvaluator} from '../engine/expression';
 import {paletteColor,validatePalette} from '../engine/palette';
@@ -83,10 +85,11 @@ function config(scene:SceneDocument,authored:SceneDocument=scene):IteratedConfig
 export type IteratedField =
  | {kind:'map';mathModel?:typeof SOURCE_MAP_MATH;equations:{x:string;y:string;z?:string};parameters:Record<string,number>;dimension:2|3;time:number}
  | {kind:'symmetry';mathModel?:typeof SOURCE_SYMMETRY_MATH;parameters:SymmetryParameters;time:number}
- | {kind:'symmetry-custom';plan:PreparedSymmetryCustomSource;uniforms:Readonly<Record<string,number>>;parameters:Readonly<Record<string,number>>;time:number}
+ | {kind:'symmetry-custom';plan:PreparedSymmetryCustomSource|SourceSymmetryCustomProgram;uniforms:Readonly<Record<string,number>>;parameters:Readonly<Record<string,number>>;time:number}
  | {kind:'samila';mathModel?:SourceSamilaMathModel;equations:{f1:string;f2:string};parameters:Record<string,number>;mapping:string;projection:string;lo:number;hi:number;rotation:number;time:number};
-export interface IteratedFrameJob {iterationUpdates?:readonly IteratedField[];iterationFrame?:SourceIterationFramePlan;samilaSampling?:SourceSamilaSamplingFacts;densitySplat?:SourceDensitySplatFacts;symmetryPalette?:SourceSymmetryPaletteFacts;samilaSplat?:SourceSamilaSplatFacts;samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
-export function prepareIteratedField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:SceneDocument):IteratedField {
+export interface IteratedFrameJob {processingContext?:SourceProcessingContextSnapshot;iterationUpdates?:readonly IteratedField[];iterationFrame?:SourceIterationFramePlan;samilaSampling?:SourceSamilaSamplingFacts;densitySplat?:SourceDensitySplatFacts;symmetryPalette?:SourceSymmetryPaletteFacts;samilaSplat?:SourceSamilaSplatFacts;samilaProjection?:SamilaNdcProjection;sourceCamera?:PreparedDensityCameraFrame;history?:SamilaHistoryFrame;kind:IteratedKind;frame:number;time:number;config:IteratedConfig;field:IteratedField;transform:ParticleTransform;palette:Palette;fieldKey:string;structuralKey:string;}
+export interface IteratedFramePreparation {symmetryDialect?:'native-gl41';}
+export function prepareIteratedField(scene:SceneDocument,cfg:IteratedConfig,time:number,authored:SceneDocument,preparation:IteratedFramePreparation={}):IteratedField {
  const p={...scene.parameters};for(const [key,v]of Object.entries(p))finite(v,`参数 ${key}`);
  if(scene.kind==='symmetry'){
   // A template switch retains authored custom uniforms. Their names obey the
@@ -98,7 +101,7 @@ export function prepareIteratedField(scene:SceneDocument,cfg:IteratedConfig,time
    // The native text substitutions are authored configuration, while named
    // scalar uniforms are this frame's runtime parameter values. GLSL names do
    // not inherit the real-expression coordinate/function reserved-name rules.
-   const plan=prepareSymmetryCustomSource(raw,symmetryCustomCompileDegree(authored));
+   const degree=symmetryCustomCompileDegree(authored),plan=preparation.symmetryDialect==='native-gl41'?prepareSourceSymmetryCustomProgram(raw,degree):prepareSymmetryCustomSource(raw,degree);
    return{kind:'symmetry-custom',plan,uniforms:bindSymmetryCustomParameters(plan,p),parameters:p,time};
   }
  }
@@ -117,14 +120,14 @@ export function prepareIteratedField(scene:SceneDocument,cfg:IteratedConfig,time
 /** The sole normalized mathematical/render frame consumed by CPU and GPU owners.
  * Raw settings never enter a backend; time sampling and replay decisions belong
  * to IteratedDensitySession, not the GPU adapter. */
-export function prepareIteratedFrame(scene:SceneDocument,time:number,frame:number,authored:SceneDocument=scene):IteratedFrameJob {
+export function prepareIteratedFrame(scene:SceneDocument,time:number,frame:number,authored:SceneDocument=scene,preparation:IteratedFramePreparation={}):IteratedFrameJob {
  if(!['map','symmetry','samila'].includes(scene.kind))throw new Error('持续批次帧类型无效');finite(time,'持续帧时间');if(!Number.isSafeInteger(frame)||frame<0)throw new Error('持续帧索引无效');
- const cfg=config(scene,authored),field=prepareIteratedField(scene,cfg,time,authored),samilaProjection=prepareSamilaNdcProjection(scene),transform=samilaProjection?samilaNdcParticleTransform(samilaProjection):parseParticleTransform(scene.settings);
+ const cfg=config(scene,authored),field=prepareIteratedField(scene,cfg,time,authored,preparation),samilaProjection=prepareSamilaNdcProjection(scene),transform=samilaProjection?samilaNdcParticleTransform(samilaProjection):parseParticleTransform(scene.settings);
  const {time:ignored,...fieldIdentity}=field;
  // Parsed source has several retained representations. Its program identity
  // already owns their derivation; do not serialize all of them into each frame
  // key. Keep every original runtime parameter for accumulation invalidation.
- const mathematicalIdentity=field.kind==='symmetry-custom'?{kind:field.kind,programKey:field.plan.programKey,parameters:field.parameters}:fieldIdentity;
+ const mathematicalIdentity=field.kind==='symmetry-custom'?{kind:field.kind,programKey:field.plan.dialect==='webgl2-glsl-es-300-budgeted-v1'?field.plan.programKey:{dialect:field.plan.dialect,rawSource:field.plan.rawSource,compileDegree:field.plan.compileDegree},parameters:field.parameters}:fieldIdentity;
  // In v2 parameters have their own acknowledged-snapshot boundary. Other
  // mathematics still clears history immediately, without six-pass compensation.
  const identity=cfg.samilaHistoryModel==='bounded-v2'?{...mathematicalIdentity,parameters:undefined,...(samilaProjection?{samilaProjection}:{}),...(samilaCameraEnabled(scene)?{transform:[transform.sx,transform.sy,transform.sz,transform.ox,transform.oy,transform.oz,transform.co,transform.si]}:{})}:mathematicalIdentity;
@@ -148,7 +151,7 @@ function compileField(job:IteratedFrameJob,programs?:SamilaPrograms):Field {
 }
 
 function samilaToneFacts(cfg:IteratedConfig,width:number,height:number,completedPasses:number,splat?:SourceSamilaSplatFacts):SamilaToneFacts {return{kind:'samila',historyModel:'bounded-v2',width,height,completedPasses,baseBatchSize:cfg.count,alpha:cfg.alpha,combinedDecay:cfg.decay,splat:splat?{model:splat.model,nominalRadius:splat.nominalRadius}:{model:'local-feathered-disc-v1',radiusPixels:cfg.pointSize/2}};}
-interface State {iterationFrame?:SourceIterationFramePlan;samilaSampling?:SourceSamilaSamplingFacts;densitySplat?:SourceDensitySplatFacts;symmetryPalette?:SourceSymmetryPaletteFacts;samilaSplat?:SourceSamilaSplatFacts;sourceCameraAnchor?:CapturedDensityAnchor;samilaGeometry?:SamilaViewportTransform;samilaAnchor?:number;completedSamila?:SamilaToneFacts;history?:SamilaHistoryState;lastFramePasses:number;lastFrameSamples:number;frame:number;positions?:Float64Array;metrics?:Float64Array;valid?:Uint8Array;ink:Float64Array;bounds:DensityBounds;fieldKey:string;structuralKey:string;steps:number;invalid:number;deposited:number;accepted:number;clipped:number;sampleInvalid:number;replays:number;clears:number;recordedPasses:number;lastBatchSize:number;}
+interface State {invalidUnit?:'iteration'|'completed-pass';iterationFrame?:SourceIterationFramePlan;samilaSampling?:SourceSamilaSamplingFacts;densitySplat?:SourceDensitySplatFacts;symmetryPalette?:SourceSymmetryPaletteFacts;samilaSplat?:SourceSamilaSplatFacts;sourceCameraAnchor?:CapturedDensityAnchor;samilaGeometry?:SamilaViewportTransform;samilaAnchor?:number;completedSamila?:SamilaToneFacts;history?:SamilaHistoryState;lastFramePasses:number;lastFrameSamples:number;frame:number;positions?:Float64Array;metrics?:Float64Array;valid?:Uint8Array;ink:Float64Array;bounds:DensityBounds;fieldKey:string;structuralKey:string;steps:number;invalid:number;deposited:number;accepted:number;clipped:number;sampleInvalid:number;replays:number;clears:number;recordedPasses:number;lastBatchSize:number;}
 const stateBytes=(s:State)=>s.ink.byteLength+(s.positions?.byteLength??0)+(s.metrics?.byteLength??0)+(s.valid?.byteLength??0);
 const structure=(c:IteratedConfig)=>JSON.stringify([c.count,c.sourceInitialSeed,c.seed,c.dimension,c.burn,c.bounds]);
 function clearInk(s:State){s.ink.fill(0);s.accepted=0;s.clipped=0;s.deposited=0;s.sampleInvalid=0;s.recordedPasses=0;s.clears++;}
@@ -356,6 +359,8 @@ export class IteratedDensitySession {
      if(!displayView)throw Error('原生 Samila 冷重放缺少已解析相机');
      const result=(yield{kind:'step',prepared:{job,options,tone,view:displayView}}) as IteratedDensityAsyncStepResult;facts=result.facts;
     }else{this.gpu??=new IteratedDensityGpu();facts=this.gpu.step(job,options);}
+    if(s.frame>=0&&(s.invalidUnit??'iteration')!==(facts.invalidUnit??'iteration'))throw Error('持续密度无效计数单位发生变化');
+    s.invalidUnit=facts.invalidUnit;
     s.iterationFrame=job.iterationFrame;s.structuralKey=job.structuralKey;s.fieldKey=job.fieldKey;s.bounds=facts.bounds;s.steps+=facts.steps;s.invalid+=facts.invalid;s.accepted+=facts.accepted;s.clipped+=facts.clipped;s.sampleInvalid+=facts.sampleInvalid;s.deposited+=samples;s.recordedPasses+=passes;s.lastFramePasses=passes;s.lastFrameSamples=samples;s.history=job.history?.next;s.lastBatchSize=cfg.count;if(job.history)s.completedSamila=samilaToneFacts(cfg,width,height,s.recordedPasses,job.samilaSplat);s.densitySplat=job.densitySplat;s.symmetryPalette=job.symmetryPalette;s.samilaSplat=job.samilaSplat;s.samilaSampling=job.samilaSampling;s.frame=frame;newFrames++;continue;
    }
    const f=compileField(job,job.field.kind==='samila'?this.programs(job.field):undefined),structuralKey=job.structuralKey,transform=job.transform,palette=job.palette,noise=job.samilaSplat?undefined:createNoise(cfg.seed),[axisX,axisY]=AXES[view.projection];
@@ -427,9 +432,10 @@ export class IteratedDensitySession {
   if(s.densitySplat)warnings.push(usesSourceSymmetryGradient(baseScene)?'Symmetry 使用源覆盖与 1024 格色板；渐变按源队列更新并保留停止配色。编辑后的重建节奏、实时显示计数与原版完整窗口仍待对照。':'Symmetry 使用源点尺寸、原生点/三角形覆盖；静态 RGB/余弦使用源 1024 格色板，本地扩展保留独立采样；梯度动画、实时帧节奏与原版完整画面仍待对照。');
   if(backend==='webgl2'&&!s.samilaSplat&&!s.densitySplat)warnings.push('GPU 使用 float32 持久粒子与浮点密度、4097 点色板插值；混沌轨迹和颜色可能与 CPU 双精度不同，不承诺原版像素一致。');
   if(view.projection!=='xy')warnings.push(`当前密度投影为 ${view.projection.toUpperCase()}；三维坐标先做空间变换再投影。`);
-  if(s.invalid)warnings.push(usesSourceMapMath(base)?`${s.invalid} 次源 Map 非有限结果已跳过绘制；数学状态保留，未重生粒子。`:usesSourceSymmetryMath(base)?`${s.invalid} 次源 Symmetry 非有限结果已跳过绘制；数学状态保留，未重生粒子。`:base.kind==='samila'?`${s.invalid} 次无效 Samila 数学采样已跳过。`:`${s.invalid} 次无效数学结果已显式跳过；迭代粒子从确定的初始盒重生。`);
+  if(s.invalid&&s.invalidUnit==='completed-pass')warnings.push(`${s.invalid} 次无效粒子状态按计算批次末尾统计；与绘制时无效样本数分别记录。`);
+  if(s.invalid&&s.invalidUnit!=='completed-pass')warnings.push(usesSourceMapMath(base)?`${s.invalid} 次源 Map 非有限结果已跳过绘制；数学状态保留，未重生粒子。`:usesSourceSymmetryMath(base)?`${s.invalid} 次源 Symmetry 非有限结果已跳过绘制；数学状态保留，未重生粒子。`:base.kind==='samila'?`${s.invalid} 次无效 Samila 数学采样已跳过。`:`${s.invalid} 次无效数学结果已显式跳过；迭代粒子从确定的初始盒重生。`);
   if(s.clipped)warnings.push(`${s.clipped} 个样本完全位于密度视口之外。`);
-  return{type:'raster',cameraResolved:true,...(sourcePixelRenderer?{sourcePixelRenderer}:{}),...(s.iterationFrame?baseScene.kind==='map'?{mapFrame:{...s.iterationFrame}}:{symmetryFrame:{...s.iterationFrame}}:{}),...(s.samilaSampling?{samilaSampling:{...s.samilaSampling}}:{}),...(tone.sourcePresentation?{sourceSamilaPresentation:{model:SOURCE_SAMILA_PRESENTATION_MODEL,stage:'present-target-rgba8' as const,display:'opaque-rgb-copy' as const,backend:toneBackend==='native'?'native' as const:toneBackend==='webgl2'?'webgl2' as const:'cpu-derived' as const}}:{}),...(tone.sourceMapPresentation&&tone.model==='normalized-v2'?{sourceMapPresentation:{...tone.sourceMapPresentation,scale:tone.normalization.scale}}:{}),...(tone.sourceSymmetryPresentation&&tone.model==='normalized-v2'?{sourceSymmetryPresentation:{...tone.sourceSymmetryPresentation,scale:tone.normalization.scale}}:{}),...(s.densitySplat?baseScene.kind==='map'?{mapSplat:{...s.densitySplat}}:{symmetrySplat:{...s.densitySplat}}:{}),...(s.symmetryPalette?{symmetryPalette:{...s.symmetryPalette}}:{}),...(s.samilaSplat?{samilaSplat:{...s.samilaSplat}}:{}),...(sourceFrame?{sourceCameraFrame:sourceFrame}:{}),...(samilaView?{samilaView,samilaViewportTransform:s.samilaGeometry??samilaViewportTransform(current)}:{}),dimension:2,backend,width,height,pixels,density:{projection:view.projection,bounds:{...s.bounds},inputPoints:s.deposited,examined:s.deposited,accepted:s.accepted,clipped:s.clipped,invalid:s.sampleInvalid,occupiedPixels:occupied,maxCount,toneBackend,cancelled:false},temporal:{time:Math.min(c.time,shownTime),windowStart:initial.startTime,frames:Math.max(0,target+1),samplingFps:initial.fps,recordedPoints:s.deposited,cacheHits:this.hits},stats:{samples:s.steps,generated:s.accepted,invalid:s.invalid,elapsedMs:performance.now()-started},warnings};
+  return{type:'raster',cameraResolved:true,...(sourcePixelRenderer?{sourcePixelRenderer}:{}),...(s.iterationFrame?baseScene.kind==='map'?{mapFrame:{...s.iterationFrame}}:{symmetryFrame:{...s.iterationFrame}}:{}),...(s.samilaSampling?{samilaSampling:{...s.samilaSampling}}:{}),...(tone.sourcePresentation?{sourceSamilaPresentation:{model:SOURCE_SAMILA_PRESENTATION_MODEL,stage:'present-target-rgba8' as const,display:'opaque-rgb-copy' as const,backend:toneBackend==='native'?'native' as const:toneBackend==='webgl2'?'webgl2' as const:'cpu-derived' as const}}:{}),...(tone.sourceMapPresentation&&tone.model==='normalized-v2'?{sourceMapPresentation:{...tone.sourceMapPresentation,scale:tone.normalization.scale}}:{}),...(tone.sourceSymmetryPresentation&&tone.model==='normalized-v2'?{sourceSymmetryPresentation:{...tone.sourceSymmetryPresentation,scale:tone.normalization.scale}}:{}),...(s.densitySplat?baseScene.kind==='map'?{mapSplat:{...s.densitySplat}}:{symmetrySplat:{...s.densitySplat}}:{}),...(s.symmetryPalette?{symmetryPalette:{...s.symmetryPalette}}:{}),...(s.samilaSplat?{samilaSplat:{...s.samilaSplat}}:{}),...(sourceFrame?{sourceCameraFrame:sourceFrame}:{}),...(samilaView?{samilaView,samilaViewportTransform:s.samilaGeometry??samilaViewportTransform(current)}:{}),dimension:2,backend,width,height,pixels,density:{projection:view.projection,bounds:{...s.bounds},inputPoints:s.deposited,examined:s.deposited,accepted:s.accepted,clipped:s.clipped,invalid:s.sampleInvalid,occupiedPixels:occupied,maxCount,toneBackend,cancelled:false},temporal:{time:Math.min(c.time,shownTime),windowStart:initial.startTime,frames:Math.max(0,target+1),samplingFps:initial.fps,recordedPoints:s.deposited,cacheHits:this.hits},stats:{samples:s.steps,generated:s.accepted,invalid:s.invalid,...(s.invalidUnit?{invalidUnit:s.invalidUnit}:{}),elapsedMs:performance.now()-started},warnings};
  }
 }
 export function generateIteratedDensity(scene:SceneDocument,context:GenerateContext,session?:IteratedDensitySession):SceneOutput {if(session)return session.generate(scene,context);const owner=new IteratedDensitySession();try{return owner.generate(scene,context);}finally{owner.reset();}}

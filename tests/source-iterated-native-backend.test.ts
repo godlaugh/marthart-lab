@@ -4,6 +4,8 @@ vi.mock('../src/engine/sourceNativeClient',async actual=>({...await actual<typeo
 vi.mock('../src/engine/sourceNativeLease',()=>({ensureSourceNativeLease:async()=>{},sourceNativeLeaseToken:()=>undefined}));
 import {SourceIteratedNativeBackend} from '../src/engine/sourceIteratedNativeBackend';
 import {SourceIteratedSession} from '../src/engine/sourceIteratedSession';
+import {prepareIteratedFrame} from '../src/scenes/iteratedDensity';
+import {iteratedInitialChunk} from '../src/engine/iteratedSeed';
 import {parseProjectFile} from '../src/engine/legacyImport';
 import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
 import type {SourceIteratedNativeRequest} from '../src/engine/sourceIteratedNativeProtocol';
@@ -24,6 +26,19 @@ beforeEach(()=>{wire.compute.mockReset().mockImplementation(async r=>computeRepl
 afterEach(async()=>{wire.compute.mockImplementation(async r=>computeReply(r));wire.render.mockImplementation(async r=>renderReply(r));for(const b of backends.splice(0))await b.dispose();});
 
 describe('production iterated backend (real Session/plans, simulated transport)',()=>{
+ it('detaches later seed chunks, target and frame before an awaited create acknowledgement',async()=>{
+  const {backend}=owner(),s=scene(),job=prepareIteratedFrame(s,0,0);job.config={...job.config,count:65537,sourceInitialSeed:undefined};
+  const config=structuredClone(job.config),options={width:32,height:24,projection:'xy' as const,padding:0,bounds:{minX:-1,maxX:1,minY:-1,maxY:1},resetParticles:true,clearInk:true};
+  let acknowledge!:(value:ReturnType<typeof computeReply>)=>void,created:SourceIteratedNativeRequest|undefined;
+  wire.compute.mockImplementationOnce((r:SourceIteratedNativeRequest)=>{created=r;return new Promise(resolve=>{acknowledge=resolve;});});
+  const pending=backend.step(job,options);await vi.waitFor(()=>expect(created).toBeDefined());
+  job.frame=999;job.config.seed=999;job.config.bounds[0][0]=100;job.config.record=false;job.config.decay=0;options.width=99;options.bounds.minX=-99;
+  acknowledge(computeReply(created!));const result=await pending;
+  const chunks=computeOps().filter(op=>op.kind==='upload');expect(chunks.map(op=>op.offset)).toEqual([0,65536]);
+  for(const chunk of chunks)expect(chunk.positionsAndMetric).toEqual(iteratedInitialChunk(config,chunk.offset,chunk.positionsAndMetric.length/4));
+  expect(backend.diagnostics().frame).toBe(0);expect(result.bounds.minX).toBe(-1);expect(result.accepted).toBe(65537);expect(renderOps().at(-1)).toMatchObject({record:true,decay:config.decay});
+  expect(wire.render.mock.calls.every(([r])=>r.width===32&&r.height===24)).toBe(true);
+ });
  it('creates the explicit source profile with four charged shader blocks and preserves logical step counts',async()=>{
   const {session,backend,step}=owner(),c=context();c.symmetryLive!.clock.paused=false;await session.generateAsync(scene(),c);
   const created=computeOps()[0];expect(created.kind).toBe('create-source');if(created.kind!=='create-source')throw Error('source create absent');

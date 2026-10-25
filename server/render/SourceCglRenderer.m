@@ -51,20 +51,20 @@ static void samilaFloatBlock(NSData *data,NSUInteger length){INPUT(data.length==
 #include "SourceCglSymmetryProtocol.h"
 static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retainedBytes){
  FrameReader *r=[FrameReader new];r.data=packet;
- INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=9,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
+ INPUT([r word]==0x31464c4d,@"Unknown frame magic");uint32_t version=[r word];INPUT(version>=1&&version<=10,@"Unknown frame version");INPUT([r word]==packet.length,@"Packet length mismatch");
  uint32_t generation=[r word],sequence=[r word],width=[r word],height=[r word];INPUT(generation&&sequence,@"Missing frame identity");
  INPUT(width>0&&width<=16384&&height>0&&height<=16384&&(uint64_t)width*height<=16000000,@"Invalid physical frame dimensions");
  NSMutableArray *clear=[NSMutableArray new];for(int i=0;i<4;i++){float v=[r number];INPUT(v>=0&&v<=1,@"Invalid clear color");[clear addObject:@(v)];}
  NSUInteger nt=count(r,16),nd=count(r,40);uint32_t samples=version>=2?[r word]:0;INPUT(samples<=INT_MAX,@"Invalid sample count");uint32_t completion=version>=3?[r word]:0;INPUT(completion<=1&&(!completion||[clear[3]floatValue]==1),@"Invalid completion alpha policy");
- BOOL render=version==7&&packet.length>=68&&indexAt(packet,15,4)==3;
- BOOL iteratedRelease=((version==6||version==8)&&packet.length==88&&indexAt(packet,16,4)==5)||(render&&packet.length==88&&indexAt(packet,16,4)==4);
+ BOOL render=(version==7||version==10)&&packet.length>=68&&indexAt(packet,15,4)==3;
+ BOOL iteratedRelease=((version==6||version==8)&&packet.length==88&&indexAt(packet,16,4)==5)||(render&&packet.length==(version==10?96:88)&&indexAt(packet,16,4)==4);
  uint64_t responseBytes=render?128+(indexAt(packet,16,4)==3?(uint64_t)width*height*12:0):(uint64_t)width*height*(12+(uint64_t)8*samples);
  ensure((iteratedRelease?0:retainedBytes)+packet.length*(version>=4?6:4)+responseBytes<=Budget,@"capacity",@"Packet, copies, multisample GPU and frame buffers exceed budget");
  ensure(!trace||((uint64_t)nd+1)*width*height*4<=Budget,@"capacity",@"Diagnostic draw readbacks exceed budget");
  if(version>=6){
   INPUT(nt==0&&nd==0&&samples==0&&completion==0,@"Iterated envelope cannot contain generic draws");for(NSNumber *v in clear)INPUT(v.floatValue==0,@"Iterated envelope clear must be zero");
-  uint32_t family=[r word];if(version==7&&family==3){NSDictionary *op=parseIteratedRender(r,width,height);INPUT(r.offset==packet.length,@"Trailing iterated render bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"iteratedRender":op,@"packetBytes":@(packet.length)};}
-  INPUT(family==2&&width==1&&height==1,@"Unknown iterated native family/control dimensions");uint32_t kind=[r word];NSData *resource=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<resource.length;i++)if(((const uint8_t*)resource.bytes)[i])nonzero=YES;
+  uint32_t family=[r word];if((version==7||version==10)&&family==3){NSDictionary *op=parseIteratedRender(r,width,height,version);INPUT(r.offset==packet.length,@"Trailing iterated render bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"iteratedRender":op,@"packetBytes":@(packet.length)};}
+  INPUT(version!=10&&family==2&&width==1&&height==1,@"Unknown iterated native family/control dimensions");uint32_t kind=[r word];NSData *resource=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<resource.length;i++)if(((const uint8_t*)resource.bytes)[i])nonzero=YES;
   INPUT((version==6?(kind>=1&&kind<=5):version==7?(kind==3||kind==6):version==8?(kind==2||kind==4||kind==5||kind==7||kind==8):kind==9)&&resource.length==16&&nonzero,@"Invalid iterated operation/resource");NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource,@"fragmentProfile":@(version>=8)}mutableCopy];
   if(kind==1||kind==6||kind==7){uint32_t particles=[r word];INPUT(particles>=1&&particles<=8000000,@"Invalid iterated particle count");op[@"count"]=@(particles);uint64_t programBytes=0;
    for(NSString *key in (kind==6?@[@"vertex",@"fragment",@"diagnosticVertex",@"diagnosticFragment"]:@[@"vertex",@"fragment"])){NSString *source=[r text];INPUT([source hasPrefix:@"#version 410 core\n"],@"Iterated shader requires explicit native GL41 profile");op[key]=source;programBytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}
@@ -242,7 +242,7 @@ static NSData *iteratedReply(NSDictionary *operation,id<SourceCglIteratedStateOw
 // MLR1: 44-byte little-endian header followed by raw bottom-up RGBA8 or a
 // bounded UTF-8 error. Only one in-flight request is admitted by the host.
 static void reply(NSData *request,uint32_t status,uint32_t contextSerial,NSData *payload){
- uint32_t version=indexAt(request,1,4),format=status?0:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
+ uint32_t version=indexAt(request,1,4),format=status?0:version==10?5:version==7?(indexAt(request,15,4)==3?5:4):(version==6||version==8||version==9)?4:version==5?3:(version==4&&indexAt(request,15,4)!=3?2:1);
  uint32_t header[11]={0x31524c4d,1,(uint32_t)(44+payload.length),indexAt(request,3,4),indexAt(request,4,4),indexAt(request,5,4),indexAt(request,6,4),status,format,(uint32_t)payload.length,contextSerial};
  for(int i=0;i<11;i++)header[i]=CFSwapInt32HostToLittle(header[i]);
  RUNTIME(fwrite(header,1,sizeof(header),stdout)==sizeof(header)&&fwrite(payload.bytes,1,payload.length,stdout)==payload.length&&fflush(stdout)==0,@"Response pipe write failed");

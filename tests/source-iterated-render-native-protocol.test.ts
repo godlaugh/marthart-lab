@@ -11,6 +11,7 @@ const draw=():SourceIteratedRenderNativeRequest=>({...present(),operation:{...co
 // not evidence of native shaders or GPU mathematics.
 function reply(r:SourceIteratedRenderNativeRequest){
  const op=r.operation,b=new Uint8Array(128+(op.kind==='present'?r.width*r.height*4:0)),v=new DataView(b.buffer),u=(at:number,n:number)=>v.setUint32(at,n,true);
+ if(op.profile==='source-fragment'){u(100,1);if(op.kind!=='release'){u(92,1);u(96,1);}}
  u(0,3);u(4,{create:1,draw:2,present:3,release:4,'replace-programs':5}[op.kind]);b.set(Uint8Array.from(resource.match(/../g)!,s=>parseInt(s,16)),8);
  if(op.kind==='release'){u(48,2);return b;}
  b.set(Uint8Array.from(stateResource.match(/../g)!,s=>parseInt(s,16)),24);u(40,op.expectedIndex);u(44,op.expectedDisplays+(op.kind==='draw'?1:0));u(52,op.expectedCount);u(56,r.width);u(60,r.height);
@@ -23,6 +24,22 @@ function response(r:SourceIteratedRenderNativeRequest,raw=reply(r)){
 }
 afterEach(()=>vi.unstubAllGlobals());
 describe('v7 retained iterated drawing contract',()=>{
+ it('uses explicit v10 profile/unit words while keeping v7 bytes unchanged',()=>{
+  const legacy=present(),fragment=present();fragment.operation.profile='source-fragment';
+  const a=encodeSourceIteratedRenderNativeRequest(legacy),b=encodeSourceIteratedRenderNativeRequest(fragment);expect(a.ok&&b.ok).toBe(true);if(!a.ok||!b.ok)return;
+  const v=new DataView(b.value.buffer);expect([v.getUint32(4,true),v.getUint32(88,true),v.getUint32(92,true),v.getUint32(116,true)]).toEqual([10,1,1,7]);expect(b.value.length).toBe(a.value.length+8);expect(b.value.subarray(96)).toEqual(a.value.subarray(88));
+  expect(decodeSourceIteratedRenderNativeResponse(reply(fragment),fragment)).toMatchObject({diagnosticUnit:'completed-pass',executionProfile:'source-fragment'});
+  expect(decodeSourceIteratedRenderNativeResponse(reply(legacy),legacy)).toMatchObject({diagnosticUnit:'iteration',executionProfile:'transform-feedback'});
+ });
+ it.each([92,96,100,104])('rejects v10 unit/profile corruption at %s before publishing statistics',at=>{
+  const r=draw();r.operation.profile='source-fragment';const raw=reply(r);raw[at]^=1;expect(()=>decodeSourceIteratedRenderNativeResponse(raw,r)).toThrow();
+ });
+ it('does not invent a diagnostic unit for an absent fragment ink owner',()=>{
+  const r:SourceIteratedRenderNativeRequest={generation:1,sequence:1,width:1,height:1,operation:{kind:'release',resource,profile:'source-fragment'}};
+  const encoded=encodeSourceIteratedRenderNativeRequest(r,{retainedBytes:512*1024*1024});expect(encoded.ok&&encoded.value.length).toBe(96);
+  const raw=reply(r),decoded=decodeSourceIteratedRenderNativeResponse(raw,r);expect(decoded.disposition).toBe('absent');expect(decoded.diagnosticUnit).toBeUndefined();expect(decoded.executionProfile).toBeUndefined();raw[92]=1;expect(()=>decodeSourceIteratedRenderNativeResponse(raw,r)).toThrow();
+ });
+
  it('preserves v6 advance bytes unless independent counter reset is explicitly supplied',()=>{
   const base={generation:2,sequence:4,operation:{kind:'advance' as const,resource,expectedIndex:7,expectedCount:8,reset:false,dimension:2 as const,steps:5,uniforms:[]}};
   const old=encodeSourceIteratedNativeRequest(base),next=encodeSourceIteratedNativeRequest({...base,operation:{...base.operation,resetCounter:true}});expect(old.ok&&next.ok).toBe(true);if(!old.ok||!next.ok)return;
@@ -74,6 +91,11 @@ describe('v7 retained iterated drawing contract',()=>{
  });
 });
 describe('shared browser transport for retained ink',()=>{
+ it('preserves v10 profile identity across the public asynchronous HTTP client',async()=>{
+  const r=present();r.operation.profile='source-fragment';const ready=response(r);let resolve!:(v:Response)=>void;vi.stubGlobal('fetch',vi.fn(()=>new Promise<Response>(a=>{resolve=a;})));const pending=exchangeSourceIteratedRenderNative(r);
+  r.operation.profile=undefined;resolve(ready);expect(await pending).toMatchObject({diagnosticUnit:'completed-pass',executionProfile:'source-fragment',index:7});
+ });
+
  it('publishes top-down pixels once, with exact renderer and checkpoint metadata',async()=>{
   const r=present();vi.stubGlobal('fetch',vi.fn(async()=>response(r)));const result=await exchangeSourceIteratedRenderNative(r);
   expect(Array.from(result.pixels!).filter((_,i)=>i%4===0)).toEqual([4,5,6,1,2,3]);expect(result).toMatchObject({index:7,displays:3,contextSerial:1,sessionSerial:2,rendererIdentity:'a'.repeat(64),occupiedPixels:5,maxCount:4.5});

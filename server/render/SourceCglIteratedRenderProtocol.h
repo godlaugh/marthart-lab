@@ -1,4 +1,4 @@
-// Version 7's typed render input. The wire parser owns scalar/identity shape;
+// Version 7 retains iteration diagnostics; version 10 explicitly binds source-fragment/completed-pass. The wire parser owns scalar/identity shape;
 // the retained ink owner validates the linked shader ABI and its owned values.
 static NSData *iteratedRenderToken(FrameReader *r){
  NSData *token=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<token.length;i++)if(((const uint8_t*)token.bytes)[i])nonzero=YES;
@@ -18,9 +18,10 @@ static NSArray *iteratedRenderUniforms(FrameReader *r){
   [out addObject:@{@"name":name,@"kind":kinds[kind],@"values":values}];
  }return out;
 }
-static NSDictionary *parseIteratedRender(FrameReader *r,uint32_t width,uint32_t height){
+static NSDictionary *parseIteratedRender(FrameReader *r,uint32_t width,uint32_t height,uint32_t version){
  uint32_t kind=[r word];INPUT(kind>=1&&kind<=5,@"Unknown iterated render operation");NSData *resource=iteratedRenderToken(r);
- NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource}mutableCopy];
+ NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource,@"fragmentProfile":@(version==10)}mutableCopy];
+ if(version==10)INPUT([r word]==1&&[r word]==1,@"Unknown iterated render profile/diagnostic unit");
  if(kind==4){INPUT(width==1&&height==1,@"Iterated render release must use control dimensions");return op;}
  op[@"stateResource"]=iteratedRenderToken(r);op[@"index"]=@([r word]);uint32_t displays=[r word],particles=[r word];
  INPUT(particles>=1&&particles<=8000000&&(kind!=1||displays==0)&&(kind!=2||displays<UINT32_MAX)&&(kind!=3||displays>0),@"Invalid iterated render count/display checkpoint");op[@"displays"]=@(displays);op[@"count"]=@(particles);

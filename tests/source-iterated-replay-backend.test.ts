@@ -44,6 +44,16 @@ function deferred<T>(){let resolve!:(value:T)=>void,reject!:(error:unknown)=>voi
 const running=(frame:IteratedFrameJob):SourceIteratedDisplayEvent=>({...paused,paused:false,updates:[frame.field,{...frame.field}]});
 
 describe('one replay owner with synchronous and asynchronous execution (CPU-only boundary tests)',()=>{
+ it('preserves completed-pass units across replay phases and rejects mixed units',async()=>{
+  const b=asynchronous(),owner=new SourceIteratedReplaySession('symmetry',30,{asyncBackend:b.backend}),frame=job();
+  b.backend.step.mockImplementation(async j=>({...facts(j),invalidUnit:'completed-pass'}));
+  try{
+   expect((await owner.displayAsync(frame,options,paused)).gpu.invalidUnit).toBe('completed-pass');owner.requestReplay();
+   const replay=await owner.displayAsync(frame,options,running(frame));expect(replay.gpu.invalidUnit).toBe('completed-pass');expect(replay.gpu.invalid).toBe(replay.phases.length);
+   owner.requestReplay();b.backend.step.mockImplementationOnce(async j=>({...facts(j),invalidUnit:'iteration'}));
+   await expect(owner.displayAsync(frame,options,running(frame))).rejects.toThrow('单位发生变化');
+  }finally{await owner.resetAsync();}
+ });
  for(const family of ['map','symmetry'] as const)it(`${family}: shares ordered warmup/replay, burn-only frames, resize and counters`,async()=>{
   const a=synchronous(),b=asynchronous(),sync=new SourceIteratedReplaySession(family,1,{backend:a.backend}),async=new SourceIteratedReplaySession(family,1,{asyncBackend:b.backend}),frame=job(family);
   frame.config.burn=1000;

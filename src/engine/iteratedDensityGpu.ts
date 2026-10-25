@@ -22,7 +22,7 @@ const PROGRAMS=iteratedDensityGpuPrograms('webgl2');
 const {QUAD,EMPTY,HISTORY_COPY,BOUNDS_FIRST,BOUNDS_REDUCE,STATS_FIRST,STATS_REDUCE,CUSTOM_ERRORS_FIRST,CUSTOM_ERRORS_REDUCE,DRAW_VERTEX,DRAW_FRAGMENT,SOURCE_DRAW_VERTEX,SOURCE_DRAW_FRAGMENT,POINT_PROBE_VERTEX,POINT_PROBE_FRAGMENT,DIRECT_STATS_FIRST}=PROGRAMS;
 
 export interface IteratedGpuOptions {resetParticles:boolean;clearInk:boolean;width:number;height:number;projection:DensityProjection;padding:number;bounds?:DensityBounds;isCancelled?:()=>boolean;}
-export interface IteratedGpuFacts {bounds:DensityBounds;steps:number;invalid:number;accepted:number;clipped:number;sampleInvalid:number;}
+export interface IteratedGpuFacts {invalidUnit?:'iteration'|'completed-pass';bounds:DensityBounds;steps:number;invalid:number;accepted:number;clipped:number;sampleInvalid:number;}
 interface Program {value:WebGLProgram;locations:Map<string,WebGLUniformLocation|null>;customBindingsChecked?:boolean;}
 interface Resources {drawPaletteKey?:string;paletteFormat:'local-rgba4097'|'source-rgb1024';sourceNoise?:WebGLTexture;sourcePalette?:WebGLTexture;splatPath?:'points'|'quad';paletteKey?:string;count:number;capacity:number;tw:number;th:number;width:number;height:number;positions:WebGLBuffer[];counters:WebGLBuffer[];stateTextures:WebGLTexture[];counterTextures:WebGLTexture[];storage:'buffer'|'texture';ink:WebGLTexture;inkScratch?:WebGLTexture;palette:WebGLTexture;noise:WebGLTexture;floatReduce:WebGLTexture[];uintReduce:WebGLTexture[];framebuffer:WebGLFramebuffer;feedback:WebGLTransformFeedback;vao:WebGLVertexArrayObject;drawVao:WebGLVertexArrayObject;side:number;bytes:number;}
 const MAX_BYTES=768*1024*1024,CHUNK=65536,SEED_STAGING_BYTES=CHUNK*24,PALETTE_INTERVALS=4096;

@@ -136,7 +136,10 @@ export class SourceIteratedReplaySession {
    checkCancelled(options.isCancelled);
    const frame=this.gpuFrame,phase={...phaseJob(plan,kind,frame),config:{...cfg,record:draw,decay}};
    const result=(yield{kind:'step',job:phase,options:{...options,resetParticles,clearInk}}) as IteratedGpuFacts;
-   this.gpuFrame++;total.bounds=result.bounds;total.steps+=result.steps;total.invalid+=result.invalid;
+   this.gpuFrame++;
+   if(phases.length&&(total.invalidUnit??'iteration')!==(result.invalidUnit??'iteration'))throw Error('迭代场景同次显示的无效计数单位发生变化');
+   if(result.invalidUnit)total.invalidUnit=result.invalidUnit;
+   total.bounds=result.bounds;total.steps+=result.steps;total.invalid+=result.invalid;
    if(draw){total.accepted+=result.accepted;total.clipped+=result.clipped;total.sampleInvalid+=result.sampleInvalid;}
    phases.push({kind,warmupSteps:plan.warmupSteps,iterationSteps:plan.iterationSteps,draw,resetParticles});
    checkCancelled(options.isCancelled);

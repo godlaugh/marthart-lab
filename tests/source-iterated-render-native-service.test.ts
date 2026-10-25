@@ -40,7 +40,7 @@ async function fixture(mode='normal',cleanupMs=500){
 import {writeFileSync} from 'node:fs';
 const mode=${JSON.stringify(mode)},states=new Map(),inks=new Map();let input=Buffer.alloc(0);
 function handle(b){
- const family=b.readUInt32LE(60),kind=b.readUInt32LE(64),resource=b.subarray(72,88),key=resource.toString('hex');
+ const family=b.readUInt32LE(60),kind=b.readUInt32LE(64),resource=b.subarray(72,88),key=resource.toString('hex'),fragment=b.readUInt32LE(4)===10,shift=fragment?8:0;
  writeFileSync(${JSON.stringify(received)},String(b.readUInt32LE(16)));
  if(family===3&&(kind===2&&mode==='hang'||kind===5&&mode==='replace-hang'))return;
  let payload,status=0,format=family===3?5:4;
@@ -55,11 +55,12 @@ function handle(b){
   if(kind===3&&inks.size&&mode==='runtime-compute'){status=4;payload=Buffer.from('context failed with owned ink');}
  }else{
   let ink=inks.get(key);
-  if(kind===1){ink={state:Buffer.from(b.subarray(92,108)),index:b.readUInt32LE(108),displays:0,count:b.readUInt32LE(116),width:b.readUInt32LE(20),height:b.readUInt32LE(24)};inks.set(key,ink);}
-  if(kind===2&&ink){ink.index=b.readUInt32LE(108);ink.displays++;}
+  if(kind===1){ink={state:Buffer.from(b.subarray(92+shift,108+shift)),index:b.readUInt32LE(108+shift),displays:0,count:b.readUInt32LE(116+shift),width:b.readUInt32LE(20),height:b.readUInt32LE(24),fragment};inks.set(key,ink);}
+  if(kind===2&&ink){ink.index=b.readUInt32LE(108+shift);ink.displays++;}
   payload=Buffer.alloc(128+(kind===3?ink.width*ink.height*4:0));payload.writeUInt32LE(3,0);payload.writeUInt32LE(kind,4);resource.copy(payload,8);
   if(ink){ink.state.copy(payload,24);[ink.index,ink.displays,0,ink.count,ink.width,ink.height].forEach((n,i)=>payload.writeUInt32LE(n,40+i*4));}
-  if(kind===2){payload.writeUInt32LE(2,64);payload.writeUInt32LE(1,68);payload.writeUInt32LE(3,72);payload.writeUInt32LE(1,76);payload.writeUInt32LE(b.readUInt32LE(124)?2:0,80);}
+  if(fragment){payload.writeUInt32LE(1,100);if(ink){payload.writeUInt32LE(1,92);payload.writeUInt32LE(1,96);}}
+  if(kind===2){payload.writeUInt32LE(2,64);payload.writeUInt32LE(1,68);payload.writeUInt32LE(3,72);payload.writeUInt32LE(1,76);payload.writeUInt32LE(b.readUInt32LE(124+shift)?2:0,80);}
   if(kind===3){payload.writeUInt32LE(2,84);payload.writeFloatLE(3.5,88);for(let i=128;i<payload.length;i++)payload[i]=i-128;}
   if(kind===4){payload.writeUInt32LE(ink?1:2,48);inks.delete(key);}
   if(kind===1&&mode==='create-facts')payload.writeUInt32LE(1,64);
@@ -73,6 +74,7 @@ function handle(b){
    if(mode==='unmeasured-present')payload.writeUInt32LE(1,84);
    if(mode==='record-false')payload.writeUInt32LE(1,80);
    if(mode==='outer-format')format=4;
+   if(mode==='fragment-unit')payload.writeUInt32LE(0,92);if(mode==='fragment-profile')payload.writeUInt32LE(0,96);if(mode==='fragment-marker')payload.writeUInt32LE(0,100);if(mode==='fragment-reserved')payload.writeUInt32LE(1,104);
    if(mode==='extra')payload=Buffer.concat([payload,Buffer.from([1])]);
    if(mode==='runtime-ink'){status=4;payload=Buffer.from('cleanup unconfirmed');}
   }
@@ -90,7 +92,7 @@ function handle(b){
    if(mode==='replace-input'){status=1;payload=Buffer.from('candidate compile rejected; cleanup succeeded');}
    if(mode==='replace-runtime'){status=4;payload=Buffer.from('candidate cleanup failed');}
   }
-  if(kind===4){if(mode==='release-checkpoint'&&ink)payload.writeUInt32LE(ink.index+1,40);if(mode==='release-state'&&ink)payload[24]^=1;if(mode==='absent-dirty'&&!ink)payload.writeUInt32LE(1,52);}
+  if(kind===4){if(mode==='fragment-absent-unit'&&!ink)payload.writeUInt32LE(1,92);if(mode==='release-checkpoint'&&ink)payload.writeUInt32LE(ink.index+1,40);if(mode==='release-state'&&ink)payload[24]^=1;if(mode==='absent-dirty'&&!ink)payload.writeUInt32LE(1,52);}
  }
  if(status)format=0;
  const h=Buffer.alloc(44);[0x31524c4d,1,44+payload.length,b.readUInt32LE(12),b.readUInt32LE(16),b.readUInt32LE(20),b.readUInt32LE(24),status,format,payload.length,1].forEach((n,i)=>h.writeUInt32LE(n,i*4));
@@ -113,6 +115,25 @@ async function initialized(mode='normal',cleanupMs=500,withInk=true){
 }
 
 describe('v7 iterated render gateway through actual sealed CPU child pipes',()=>{
+ it.each(['fragment-unit','fragment-profile','fragment-marker','fragment-reserved'])('retires the exact child on malformed v10 %s ACK before accepting a display',async mode=>{
+  const f=await fixture(mode),profile='source-fragment' as const;try{
+   expect(await f.send({...create(),profile})).toMatchObject({ok:true});expect(await f.send({...draw(),profile})).toMatchObject({ok:false,error:{kind:'protocol'}});expect(f.service.processCount).toBe(0);expect(f.service.retainedResourceCount).toBe(0);
+  }finally{await f.close();}
+ });
+ it('binds all v10 ink operations to the acknowledged profile and leaves absent unit unknown',async()=>{
+  const f=await fixture(),profile='source-fragment' as const;try{
+   expect(await f.send({...create(),profile})).toMatchObject({ok:true});expect(await f.send(draw())).toMatchObject({ok:false,error:{kind:'ownership'}});expect(await f.send(release())).toMatchObject({ok:false,error:{kind:'ownership'}});expect(f.service.retainedResourceCount).toBe(1);
+   for(const operation of [draw(),replace(),present(),release()]){const op={...operation,profile},r=await f.send(op);expect(r).toMatchObject({ok:true});expect(decodeSourceIteratedRenderNativeResponse(r.value.pixels,packet(op).request)).toMatchObject({diagnosticUnit:'completed-pass',executionProfile:profile});}
+   const op={...release(),profile},r=await f.send(op);expect(r.ok).toBe(true);const decoded=decodeSourceIteratedRenderNativeResponse(r.value.pixels,packet(op).request);expect(decoded.disposition).toBe('absent');expect(decoded.diagnosticUnit).toBeUndefined();expect(decoded.executionProfile).toBeUndefined();expect(f.service.retainedResourceCount).toBe(0);
+  }finally{await f.close();}
+ });
+ it('rejects v10 absent-owner diagnostic claims and invalid explicit request words',async()=>{
+  const f=await fixture('fragment-absent-unit'),profile='source-fragment' as const;try{
+   for(const at of [88,92]){const wire=packet({...create(),profile}).packet;wire.writeUInt32LE(0,at);expect(await f.service.render(wire)).toMatchObject({ok:false,error:{kind:'input'}});expect(f.service.sessionStarts).toBe(0);}
+   expect(await f.send({...release(),profile})).toMatchObject({ok:false,error:{kind:'protocol'}});expect(f.service.processCount).toBe(0);
+  }finally{await f.close();}
+ });
+
  it('binds fragmented draw/present ACKs, preserves the last drawn checkpoint after compute advances, and releases each owner separately',async()=>{
   const f=await initialized('fragment');try{
    expect(f.service.retainedResource).toBe(token);expect(f.service.retainedResourceCount).toBe(2);expect(f.service.canAcquireLease).toBe(false);
