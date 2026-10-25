@@ -1,0 +1,591 @@
+{
+  "schemaVersion": 1,
+  "productCommit": "220d539f0e95f81a91a927b487cf033fffebe4b0",
+  "date": "2026-10-25",
+  "scope": "Native hidden App UI workflows and visible formula/parameter effects; no original runtime executed in these runs",
+  "runs": [
+    {
+      "name": "workflows",
+      "report": {
+        "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T08-58-39.717Z/report.json",
+        "sha256": "37c9d197ba30404a9f3a35352bfa79ce63a867bcbc12e1f781e64981b3053d91"
+      },
+      "timing": {
+        "path": ".cache/samila-native-hot-workflows-20261025/run3-time.log",
+        "sha256": "1177041490b67fd2cd749454e77ee7e66a086c7e8547948e2543927d1ec57bc0"
+      },
+      "harness": [
+        {
+          "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T08-58-39.717Z/verify-ui.mjs",
+          "sha256": "36f9c09e91ae9d6dd809fc4e621a6df99b5d8b937d681f2a80a637ed30feacbf"
+        },
+        {
+          "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T08-58-39.717Z/ui-bootstrap.mjs",
+          "sha256": "665beb461c59c99cd22cb18446dc50b2f94dd607747db5cf717a8ea84998c222"
+        },
+        {
+          "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T08-58-39.717Z/hidden-host.mjs",
+          "sha256": "bcd90b6acc5d62c92d1c326d3053bb35874e4cb2cf04ce737e4ef4bb7b2a6c5c"
+        }
+      ],
+      "runtime": {
+        "kind": "electron",
+        "electron": "44.7.2",
+        "chrome": "152.0.7977.149",
+        "features": "disableProgramCaching",
+        "visibleWindows": 0,
+        "directory": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-electron-host-gKDogp"
+      },
+      "renderer": {
+        "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-cold-export-20261024/renderer",
+        "executableSha256": "8716df02d4dbe5ad36f94528035da0d79528b466124a02d4905dd173cb0950d4"
+      },
+      "sourceFiles": 584,
+      "sourceManifestSha256": "b716cd98728d01120a67f3c1bb5f09f501083843d708eca66e0e71d541d24c4e",
+      "sourceStable": true,
+      "sourceMatchesCurrentTree": true,
+      "checks": [
+        {
+          "name": "hot-parameter-six-passes",
+          "status": "passed",
+          "after": {
+            "width": 674,
+            "height": 452,
+            "samples": 1536,
+            "session": {
+              "sessionId": "24ab55a2-c4a2-4afc-8c77-560f3da19951",
+              "target": "primary",
+              "displayIndex": 1,
+              "accumulationPasses": 6,
+              "anchorTheta": 0,
+              "parameterChanged": true,
+              "cleared": true,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 1,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 2,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "rotation-clears-once",
+          "status": "passed",
+          "after": {
+            "width": 674,
+            "height": 452,
+            "samples": 256,
+            "session": {
+              "sessionId": "24ab55a2-c4a2-4afc-8c77-560f3da19951",
+              "target": "primary",
+              "displayIndex": 2,
+              "accumulationPasses": 1,
+              "anchorTheta": 0,
+              "parameterChanged": false,
+              "cleared": true,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 1,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 3,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "tone-retains-ink",
+          "status": "passed",
+          "after": {
+            "width": 674,
+            "height": 452,
+            "samples": 256,
+            "session": {
+              "sessionId": "24ab55a2-c4a2-4afc-8c77-560f3da19951",
+              "target": "primary",
+              "displayIndex": 3,
+              "accumulationPasses": 2,
+              "anchorTheta": 0,
+              "parameterChanged": false,
+              "cleared": false,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 1,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 4,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "background-hot-shader-keeps-scene-constructor",
+          "status": "passed",
+          "after": {
+            "width": 674,
+            "height": 452,
+            "samples": 256,
+            "session": {
+              "sessionId": "24ab55a2-c4a2-4afc-8c77-560f3da19951",
+              "target": "primary",
+              "displayIndex": 4,
+              "accumulationPasses": 3,
+              "anchorTheta": 0,
+              "parameterChanged": false,
+              "cleared": false,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 1,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 5,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "rename-and-save-do-not-sample",
+          "status": "passed"
+        },
+        {
+          "name": "resized-current-png-and-return",
+          "status": "passed",
+          "fullPngRgbaExact": true
+        },
+        {
+          "name": "paused-window-resize",
+          "status": "passed",
+          "after": {
+            "width": 634,
+            "height": 432,
+            "samples": 256,
+            "session": {
+              "sessionId": "24ab55a2-c4a2-4afc-8c77-560f3da19951",
+              "target": "primary",
+              "displayIndex": 7,
+              "accumulationPasses": 1,
+              "anchorTheta": 0,
+              "parameterChanged": false,
+              "cleared": true,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 1,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 6,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "quality-density-round-trip",
+          "status": "passed"
+        },
+        {
+          "name": "library-switch-restores-working-document",
+          "status": "passed"
+        },
+        {
+          "name": "same-id-open-is-fresh-authority",
+          "status": "passed",
+          "after": {
+            "width": 634,
+            "height": 432,
+            "samples": 256,
+            "session": {
+              "sessionId": "f267372a-4ec8-4f48-9795-88168eaa372b",
+              "target": "primary",
+              "displayIndex": 0,
+              "accumulationPasses": 1,
+              "anchorTheta": 0,
+              "parameterChanged": false,
+              "cleared": true,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 0,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 1,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "pending-old-native-result-not-published",
+          "status": "passed"
+        }
+      ],
+      "checkCount": 11,
+      "measurements": {
+        "scriptSeconds": 7.326863707999999,
+        "wallSeconds": 7.69,
+        "userSeconds": 13.04,
+        "systemSeconds": 6.1,
+        "maximumRssBytes": 522616832
+      },
+      "cleanup": {
+        "publicCleanup": true,
+        "hostClosed": true,
+        "viteClosed": true,
+        "serviceClosed": true,
+        "ownedProcessesAfterClose": 0
+      }
+    },
+    {
+      "name": "apply",
+      "report": {
+        "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T09-04-21.398Z/report.json",
+        "sha256": "6fd403294ca1731fa1da24e23b714fa82f8ff81edb6c727509c7663d9f5df049"
+      },
+      "timing": {
+        "path": ".cache/samila-native-hot-workflows-20261025/apply-run2-time.log",
+        "sha256": "cbf135819589c73e5a7f7cb25179adf3af0dad2ad759f572054f78eef69a4fa1"
+      },
+      "harness": [
+        {
+          "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T09-04-21.398Z/verify-apply-ui.mjs",
+          "sha256": "c23732e961d200ee1116be7e53975465cd31be61b47c81bc5237dfe5f9c4210f"
+        },
+        {
+          "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T09-04-21.398Z/ui-bootstrap.mjs",
+          "sha256": "665beb461c59c99cd22cb18446dc50b2f94dd607747db5cf717a8ea84998c222"
+        },
+        {
+          "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T09-04-21.398Z/hidden-host.mjs",
+          "sha256": "bcd90b6acc5d62c92d1c326d3053bb35874e4cb2cf04ce737e4ef4bb7b2a6c5c"
+        }
+      ],
+      "runtime": {
+        "kind": "electron",
+        "electron": "44.7.2",
+        "chrome": "152.0.7977.149",
+        "features": "disableProgramCaching",
+        "visibleWindows": 0,
+        "directory": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-electron-host-faAcvl"
+      },
+      "renderer": {
+        "executablePath": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-cold-export-20261024/renderer",
+        "executableSha256": "8716df02d4dbe5ad36f94528035da0d79528b466124a02d4905dd173cb0950d4"
+      },
+      "sourceFiles": 584,
+      "sourceManifestSha256": "b716cd98728d01120a67f3c1bb5f09f501083843d708eca66e0e71d541d24c4e",
+      "sourceStable": true,
+      "sourceMatchesCurrentTree": true,
+      "checks": [
+        {
+          "name": "formula-draft-retains-image",
+          "status": "passed"
+        },
+        {
+          "name": "full-apply-recompiles-and-moves-image",
+          "status": "passed",
+          "beforeCentroid": {
+            "count": 18,
+            "x": 201.77777777777777,
+            "y": 225.5,
+            "bounds": [
+              200,
+              224,
+              204,
+              227
+            ],
+            "sha256": "efb4473dfdbc3e3966378831e752fc2bc7cbb35e51efce0c5391af5b38428a3f"
+          },
+          "afterCentroid": {
+            "count": 16,
+            "x": 336.5,
+            "y": 225.5,
+            "bounds": [
+              335,
+              224,
+              338,
+              227
+            ],
+            "sha256": "3f5dc389ca8624c2e11ab60ca9baa641273b879d8ae4cd0d8be7552c73512313"
+          },
+          "after": {
+            "width": 674,
+            "height": 452,
+            "samples": 256,
+            "session": {
+              "sessionId": "f16daf4d-4b6d-4099-b27c-36ca609b6082",
+              "target": "primary",
+              "displayIndex": 0,
+              "accumulationPasses": 1,
+              "anchorTheta": 0,
+              "parameterChanged": false,
+              "cleared": true,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 0,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 1,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "hot-parameter-moves-image-without-apply",
+          "status": "passed",
+          "beforeCentroid": {
+            "count": 16,
+            "x": 336.5,
+            "y": 225.5,
+            "bounds": [
+              335,
+              224,
+              338,
+              227
+            ],
+            "sha256": "3f5dc389ca8624c2e11ab60ca9baa641273b879d8ae4cd0d8be7552c73512313"
+          },
+          "afterCentroid": {
+            "count": 18,
+            "x": 471.22222222222223,
+            "y": 225.5,
+            "bounds": [
+              469,
+              224,
+              473,
+              227
+            ],
+            "sha256": "de38da5a2000314f858f59f589041b340c924a5626eab64eeb3b77221298fc03"
+          },
+          "after": {
+            "width": 674,
+            "height": 452,
+            "samples": 1536,
+            "session": {
+              "sessionId": "f16daf4d-4b6d-4099-b27c-36ca609b6082",
+              "target": "primary",
+              "displayIndex": 1,
+              "accumulationPasses": 6,
+              "anchorTheta": 0,
+              "parameterChanged": true,
+              "cleared": true,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 1,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 2,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "unchanged-full-apply-is-fresh-session",
+          "status": "passed",
+          "centroid": {
+            "count": 18,
+            "x": 471.22222222222223,
+            "y": 225.5,
+            "bounds": [
+              469,
+              224,
+              473,
+              227
+            ],
+            "sha256": "14ab5e5b5fd6c5b7d0f2e6b06d702299eaea092494c2cd40fedf2f561132e1ef"
+          },
+          "after": {
+            "width": 674,
+            "height": 452,
+            "samples": 256,
+            "session": {
+              "sessionId": "87af77a9-c989-48d6-b819-7d9cd9eef5df",
+              "target": "primary",
+              "displayIndex": 0,
+              "accumulationPasses": 1,
+              "anchorTheta": 0,
+              "parameterChanged": false,
+              "cleared": true,
+              "clock": "realtime-source-queue",
+              "runtime": {
+                "sceneTime": 0,
+                "rawDt": 0,
+                "activeDt": 0,
+                "queueIndex": 0,
+                "queueComplete": false,
+                "parameterWriteRevision": 0,
+                "phi": 1.5707963705062866,
+                "theta": 0,
+                "gamma": 0,
+                "paused": true,
+                "updates": 1,
+                "clockSource": "page-wall-clock"
+              }
+            }
+          }
+        },
+        {
+          "name": "new-parameter-binds-and-hot-updates",
+          "status": "passed",
+          "beforeCentroid": {
+            "count": 18,
+            "x": 471.22222222222223,
+            "y": 225.5,
+            "bounds": [
+              469,
+              224,
+              473,
+              227
+            ],
+            "sha256": "14ab5e5b5fd6c5b7d0f2e6b06d702299eaea092494c2cd40fedf2f561132e1ef"
+          },
+          "afterCentroid": {
+            "count": 16,
+            "x": 336.5,
+            "y": 225.5,
+            "bounds": [
+              335,
+              224,
+              338,
+              227
+            ],
+            "sha256": "3f5dc389ca8624c2e11ab60ca9baa641273b879d8ae4cd0d8be7552c73512313"
+          }
+        }
+      ],
+      "checkCount": 5,
+      "measurements": {
+        "scriptSeconds": 6.216537375,
+        "wallSeconds": 6.59,
+        "userSeconds": 10.8,
+        "systemSeconds": 6.03,
+        "maximumRssBytes": 488964096
+      },
+      "cleanup": {
+        "publicCleanup": true,
+        "hostClosed": true,
+        "viteClosed": true,
+        "serviceClosed": true,
+        "ownedProcessesAfterClose": 0
+      },
+      "input": {
+        "path": "/Users/hoo/AIStudio/mathartstudio-rea/studio/.cache/samila-native-hot-workflows-20261025/ui-2026-10-25T09-04-21.398Z/visual-apply.mathart.json",
+        "sha256": "93dd4ae3a087d834273c324913a7d82a93761274573cd91f3edea82bec3a6984"
+      }
+    }
+  ],
+  "limits": [
+    "Native opt-in path; default WebGL is not established as identical.",
+    "App workload batch 256 is workflow evidence, not a sustained high-load benchmark.",
+    "Current paused PNG is byte-compared with actual capture output; this run is not an independent original-image oracle.",
+    "Request delivery hold occurs after actual native rendering; arbitrary interruption points were not tested.",
+    "Fresh hidden hosts; OS and driver caches uncontrolled; time includes startup and UI/file checks.",
+    "time -l maximum RSS is not sampled concurrent process-family peak. GPU memory and agent tokens not measured."
+  ],
+  "checksPassed": 16,
+  "earlierAttempts": [
+    {
+      "report": {
+        "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T08-57-02.541Z/report.json",
+        "sha256": "6a4a0ca5b5f0a3514045f23524be4da13bafc246089e772373237f61875d638e"
+      },
+      "status": "failed-harness-locator",
+      "error": "locator.fill: Timeout 20000ms exceeded."
+    },
+    {
+      "report": {
+        "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T08-58-16.853Z/report.json",
+        "sha256": "84842e1a096a0e7270f1087f52732ee3f8e525b8889a65a7ca2b7edb699bbac6"
+      },
+      "status": "failed-harness-locator",
+      "error": "locator.click: Error: strict mode violation: getByRole('button', { name: /^My artworks/ }) resolved to 2 elements:"
+    },
+    {
+      "report": {
+        "path": ".cache/samila-native-hot-workflows-20261025/ui-2026-10-25T09-02-57.062Z/report.json",
+        "sha256": "9fcca5bf8d844e89b62a87514118dd068abfce44636dcffa13ec9d0f3383d406"
+      },
+      "status": "failed-harness-locator",
+      "error": "locator.click: Timeout 20000ms exceeded."
+    }
+  ],
+  "samilaRequirementAudit": {
+    "path": ".cache/samila-requirements-acceptance-audit-20261025.md",
+    "sha256": "5117406728792fd11a0311e2f421699ddf5796dcfb82ddee77bff0da5e8c570f"
+  },
+  "gradientDiagnostic": [
+    {
+      "path": ".cache/samila-preview-gradient-20261025/comparison-run1.json",
+      "sha256": "94e3ab21215c104272fdc57eba18db314f91d186541b89fd9bb491d245e6178b"
+    },
+    {
+      "path": ".cache/samila-preview-gradient-20261025/implicit-vs-fixed.json",
+      "sha256": "342e0791caf699fed9ae1e6f94a406a7a4c4319a7cf14d2e710a56fc3448b857"
+    },
+    {
+      "path": ".cache/samila-preview-gradient-20261025/index.json",
+      "sha256": "f3f2133145c5c6947da488f7cecca072801a9abd6ee53fea83807ce36466f3fd"
+    }
+  ]
+}

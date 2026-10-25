@@ -43,4 +43,12 @@
 
 每次使用新隐藏宿主，系统和驱动缓存未控制。前后案例数量、采样质量不同，不据此声称加速。新增过滤的纯 GPU 开销、进程族同时峰值、GPU 内存和代理 token 成本未测。
 
-本轮只修改开发分支的录制预览过滤，已安装的 1.0 和发行包没有更新。下一步保留上述合成图边界，并继续 Samila 预设/热编辑/resize/库切换、其他场景通用验收及 Apple Silicon 2.0 打包。
+本轮只修改开发分支的录制预览过滤，已安装的 1.0 和发行包没有更新。后续 [16 项原生界面验收](source-samila-native-workflow-validation.zh-CN.md)已补齐热编辑、Apply、resize、画质、库切换和同 ID 文件替换；其他明确需求和发行验收仍保留。
+
+## 后续梯度隔离：保留差异，排除错误修复
+
+同日追加 9 项最小实验，固定原合成输入、24×18→8×6、4 samples、RGBA32F，双方使用同一片段表达式。隐式采样各自逐位重现上一轮结果。插值 UV 有 1 个 Float32 分量不同，实际导数有 16 个不同；显式使用实际导数时，采样差异从 13 个分量降为 7 个。固定相同梯度后，CGL 与 ANGLE 的整个缓冲相等，固定 UV、关闭各向异性及 texelFetch 控制也相等。
+
+但 **CGL 的固定梯度结果相对其原隐式采样仍改变 13 个分量**；ANGLE 的这两种结果原本就相同。因此固定梯度会把 CGL 移向当前 ANGLE 结果，并未恢复原版行为，不能作为产品修复。证据把差异收窄到插值／导数或隐式 footprint 选择，不支持“相同显式输入下各向异性过滤仍不同”的解释。每采样点内部实现仍不可见。本次未改产品、未改容差，原 4 字节失败继续保留。
+
+见[9 项梯度隔离说明](../.cache/samila-preview-gradient-20261025/README.zh-CN.md)、[跨后端完整比较](../.cache/samila-preview-gradient-20261025/comparison-run1.json)及[同后端 implicit 与 fixed 比较](../.cache/samila-preview-gradient-20261025/implicit-vs-fixed.json)。
