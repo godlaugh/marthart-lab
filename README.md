@@ -25,6 +25,8 @@ npm run server
 
 ## 2.0 创作预览
 
+2026-10-26 自定义 Symmetry 已接通原生应用入口：实时预览、冷重放、GLSL 编辑验证、暂停截图和录制。158 项相关测试及隐藏 Electron 界面验收通过；实际下载的 3 倍 PNG 与原生捕获 RGBA 逐字节一致。原版整图对照、桌面重新打包仍待完成，M3 继续。见[原生应用入口中文验收](docs/source-symmetry-application-validation.zh-CN.md)。
+
 2026-10-26 绘制宿主已区分 graphics 身份、当前目标与 shader 首次绑定；原生重播分别使用普通更新和世界阶段上下文。115 项相关测试、13 组既有原版记录回归及 Web 构建通过。实时／冷生成入口仍待接入，M3 未完成，桌面包未更新。见[绘制宿主中文验收](docs/source-processing-host-validation.zh-CN.md)。
 
 2026-10-26 自定义 Symmetry 的生产原生后端已接通计算、墨迹和像素呈现；562,144 粒子、810×972 画布完成八帧实际运行，261 项相关测试通过。已区分计算批次与绘制无效样本的统计单位，并修复等待响应期间输入被修改的问题。宿主 graphics 生命周期和默认应用路由继续接入，桌面包未更新，M3 未完成。见[原生墨迹通路中文验收及实际输出](docs/source-symmetry-fragment-ink-validation.zh-CN.md)。

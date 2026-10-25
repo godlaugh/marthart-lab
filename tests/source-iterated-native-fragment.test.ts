@@ -11,6 +11,11 @@ import {SourceProcessingContext} from '../src/engine/sourceProcessingContext';
 import {SourceProcessingHost} from '../src/engine/sourceProcessingHost';
 import {prepareSourceCamera} from '../src/engine/sourceCamera';
 import {SourceIteratedReplaySession} from '../src/engine/sourceIteratedReplaySession';
+import {beginSymmetryCustomValidation} from '../src/engine/symmetryCustomValidation';
+import {Generator} from '../src/engine/client';
+import {ordinarySourceViewport} from '../src/engine/ordinarySourceCamera';
+import {editSourceSymmetryConfiguration} from '../src/engine/sourceSymmetryConfig';
+import type {GenerationInput} from '../src/types';
 import {prepareSourceSymmetryTone} from '../src/engine/sourceSymmetryPresentation';
 import * as transport from '../src/engine/sourceNativeClient';
 // @ts-expect-error Actual Node HTTP service lives outside browser contracts.
@@ -48,6 +53,31 @@ describe('production fragment frame boundary',()=>{
 });
 
 describe.skipIf(!native)('actual HTTP production custom owner → retained ink → pixels',()=>{
+ it('runs the application entry through live custom preview, edit, replay, PNG capture, recording and isolated cold reconstruction',async()=>{
+  const app=await createExportServer({root:mkdtempSync(resolve('.cache/native-custom-application-')),sourceRendererBackend:executable}),realFetch=globalThis.fetch,g=new Generator();
+  const compute=vi.spyOn(transport,'exchangeSourceIteratedNative');let restore:(()=>void)|undefined;
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');vi.stubGlobal('Worker',class{constructor(){throw Error('Unexpected Worker route for native source custom');}});
+  try{
+   const address=await app.listen(0),base=`http://127.0.0.1:${address.port}`,spy=vi.spyOn(globalThis,'fetch').mockImplementation((input,init)=>realFetch(new URL(String(input),base),init));restore=()=>spy.mockRestore();
+   const s=parseProjectFile(JSON.stringify({config_version:'1.0.0',name:'Application native custom',type:'SYMMETRY_CHAOS',equation:{glsl:scene().equations.glsl},parameters:{gain:.125},settings:{batch_size:7,burn_in_steps:0,iterations_per_frame:3,background_color:'#000000'},palette:['#ff0000','#ff0000'],timeline:[{type:'wait',duration:.1}]})).scene;
+   const c:GenerationInput={time:0,width:32,height:24,quality:'preview',sourcePointPixelDensity:1,sourceSymmetryToneReference:{width:32,height:24},sourceViewport:ordinarySourceViewport(s,32,24,'primary',24),symmetryLive:{sessionId:'real-native-custom',renderFps:30,replayRevision:0,clock:{paused:true,timestampMs:1000}}};
+   const first=await g.generate(s,c);expect(first).toMatchObject({backend:'native',stats:{invalidUnit:'completed-pass'},symmetryLive:{paused:true}});
+   await g.setSymmetryPaused(first,false,1000);const running=await g.generate(s,{...c,symmetryLive:{...c.symmetryLive!,clock:{paused:false,timestampMs:1100}}});expect(running.stats.samples).toBeGreaterThan(0);
+   await g.setSymmetryPaused(running,true,1200);const capture=await g.captureSymmetryPaused(running,{width:40,height:30},3);expect(capture.capture).toMatchObject({width:120,height:90,sourcePausedImage:{baseSize:[40,30],scale:3}});expect(capture.preview).toMatchObject({width:32,height:24,backend:'native'});
+   const hot=editSourceSymmetryConfiguration(s,{...s,parameters:{...s.parameters,gain:.25}},'parameters');await g.updateIteratedParameters(capture.preview,hot,[['gain',.25]]);
+   const replay=await g.generate(hot,{...c,symmetryLive:{...c.symmetryLive!,replayRevision:1,clock:{paused:true,timestampMs:1200}}});if(replay.type!=='raster')throw Error('Expected replay raster');expect(replay.symmetryLive?.display.replayed).toBe(true);
+   const start=await g.beginSourceRecording(replay,{width:20,height:16,simulationFps:30});expect(start.warmup).toMatchObject({backend:'native',width:60,height:48,iteratedRecording:{warmup:true}});
+   if(start.clock.completionReason!=='animation-queue')throw Error('Expected finite source queue clock');
+   for(let frame=1;frame<=start.clock.lastDisplayFrame;frame++)expect(await g.nextSourceRecordingFrame(start.handle,frame)).toMatchObject({backend:'native',iteratedRecording:{displayFrame:frame}});
+   const stop=await g.finishSourceRecording(start.handle,2000);expect(stop.preview).toMatchObject({backend:'native',width:32,height:24});
+   const cold={...c,time:.1,symmetryLive:undefined},batch=await g.generate(s,cold);expect(batch).toMatchObject({backend:'native',stats:{invalidUnit:'completed-pass'}});
+   await g.generate(s,{...cold,time:0});const incremental=await g.generate(s,cold);if(batch.type!=='raster'||incremental.type!=='raster')throw Error('expected real native raster');expect(incremental.pixels).toEqual(batch.pixels);expect(batch.pixels.some((v,i)=>i%4!==3&&v>0)).toBe(true);
+   const operations=compute.mock.calls.map(([r])=>r.operation);expect(operations.filter(o=>o.kind==='create-fragment').length).toBeGreaterThanOrEqual(4);expect(operations.some(o=>o.kind==='create-source'||o.kind==='read')).toBe(false);
+   const advances=operations.filter(o=>o.kind==='advance-processing-fragment');expect(advances.length).toBeGreaterThan(0);expect(advances.every(o=>o.automatic.some(a=>a.names[0]==='resolution'&&a.values[0]===32&&a.values[1]===24))).toBe(true);
+   // The editor uses an independent real native candidate and awaits retirement.
+   await beginSymmetryCustomValidation(s).promise;
+  }finally{g.dispose();await g.settledNativeCleanup();restore?.();compute.mockRestore();vi.unstubAllEnvs();vi.unstubAllGlobals();await app.close();expect(app.ownedProcessCount).toBe(0);}
+ },30000);
  it('binds ordinary update and world replay to separate host snapshots through the real native backend',async()=>{
   const app=await createExportServer({root:mkdtempSync(resolve('.cache/native-fragment-host-')),sourceRendererBackend:executable}),realFetch=globalThis.fetch,backend=new SourceIteratedNativeBackend(),session=new SourceIteratedReplaySession('symmetry',30,{asyncBackend:backend}),host=value(SourceProcessingHost.create(32,24));
   const compute=vi.spyOn(transport,'exchangeSourceIteratedNative');let restore:(()=>void)|undefined;

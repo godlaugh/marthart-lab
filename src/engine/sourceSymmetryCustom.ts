@@ -14,8 +14,8 @@ export interface SourceSymmetryCustomProgram extends SymmetryCustomInput {
  * results remain driver semantics. No TF wrapper, loop guard or reseeding.
  *
  * The producer and retained texture owner have separate native diagnostics.
- * Native compute and ink owners consume this profile. App routing still
- * requires explicit host graphics lifecycle and cancellation integration. Compilation alone neither
+ * Native compute, ink and application owners consume this profile with
+ * explicit host graphics lifecycle and cancellation ownership. Compilation alone neither
  * proves termination nor bounds arbitrary authored shader execution time. */
 export function prepareSourceSymmetryCustomProgram(rawSource:string,compileDegree:number):SourceSymmetryCustomProgram {
  const input=prepareSymmetryCustomInput(rawSource,compileDegree);

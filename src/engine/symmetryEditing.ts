@@ -1,15 +1,16 @@
+import {prepareSymmetryCustomAuthoring} from './symmetryCustomExecution';
 import {usesSourceSymmetryConfiguration} from './sourceSymmetryConfig';
 import {ordinarySourceViewport} from './ordinarySourceCamera';
 import type {SceneDocument,ControlSpec,GenerationInput} from '../types';
 import {SYMMETRY_DEFAULT_PARAMETERS,SYMMETRY_DEFAULT_SETTINGS} from '../scenes/symmetryParameters';
-import {hasSymmetryCustom,prepareSymmetryCustomSource,symmetryCustomCompileDegree} from './symmetryCustom';
+import {hasSymmetryCustom} from './symmetryCustom';
 
 /** Prepare one authored edit without changing caller-selected rendering settings.
  * Language/type validity is subsequently checked by the real worker/GPU before
  * the UI commits this document. The parser alone is not a GLSL compiler. */
 export function withSymmetryCustomSource(scene:SceneDocument,source:string):SceneDocument {
  if(scene.kind!=='symmetry')throw new Error('只有 Symmetry 支持对称模板');
- prepareSymmetryCustomSource(source,symmetryCustomCompileDegree(scene));
+ prepareSymmetryCustomAuthoring(scene,source);
  return {...scene,equations:{...scene.equations,glsl:source}};
 }
 

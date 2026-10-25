@@ -1,3 +1,4 @@
+import {beginSymmetryCustomValidation,type SymmetryCustomValidation} from './engine/symmetryCustomValidation';
 import {ensureSourceSamilaPaletteSession,writeSourceSamilaParameter,writeSourceSamilaSetting,syncSourceSamilaPaletteSession,openSourceSamilaPaletteEditor,applySourceSamilaPalette,restartSourceSamilaPalette,retainSourceSamilaPaletteOnSave} from './engine/sourceSamilaPaletteEditing';
 import {assertSymmetryPaletteRetention,ensureSymmetryPaletteSession,openSymmetryPaletteEditor,applySymmetrySourcePalette,restartSymmetrySourcePalette,retainSymmetryPaletteOnSave,retainSymmetryPaletteAfterRecording} from './engine/sourceSymmetryPaletteEditing';
 import {SourceSymmetryPaletteEditor} from './components/SourceSymmetryPaletteEditor';
@@ -155,7 +156,7 @@ import {rootsCompletionTime,rootsSchedule} from './scenes/rootsDensity';
 import {readyPlaybackStep} from './engine/previewPlayback';
 import {parseTrailAppearance} from './engine/trailAppearance';
 import {SymmetryFormula} from './components/SymmetryFormula';
-import {withSymmetryTemplate,symmetryAuthoringControls,symmetryCustomValidationInput} from './engine/symmetryEditing';
+import {withSymmetryTemplate,symmetryAuthoringControls} from './engine/symmetryEditing';
 import {hasSymmetryCustom,symmetryCustomParameterNameError} from './engine/symmetryCustom';
 import {hasContinuousDensity,hasProgressiveRoots} from './engine/sceneCamera';
 import {FractalControls} from './components/FractalControls';
@@ -222,10 +223,10 @@ export default function App() {
   const [iteratedDraft,setIteratedDraftState]=useState<SourceIteratedDraft|undefined>(initialDocument.iteratedDraft);
   const iteratedDraftRef=useRef(iteratedDraft);
   const editorScene=useMemo(()=>sourceIteratedEditorScene(scene,iteratedDraft),[scene,iteratedDraft]);
-  const applyCheck=useRef<Generator|null>(null),[applying,setApplying]=useState(false);
-  function cancelApplyCheck(){applyCheck.current?.dispose();applyCheck.current=null;setApplying(false);}
+  const applyCheck=useRef<SymmetryCustomValidation|null>(null),[applying,setApplying]=useState(false);
+  function cancelApplyCheck(){applyCheck.current?.cancel();applyCheck.current=null;setApplying(false);}
   function setIteratedDraft(value:SourceIteratedDraft|undefined){cancelApplyCheck();iteratedDraftRef.current=value;setIteratedDraftState(value);}
-  useEffect(()=>()=>applyCheck.current?.dispose(),[]);
+  useEffect(()=>()=>{const active=applyCheck.current;applyCheck.current=null;active?.cancel();},[]);
   const [saved, setSaved] = useState<SceneDocument[]>(restored?.scenes ?? []),
     [library,setLibrary]=useState<Library>(restored?.library??emptyLibrary()),
     [search, setSearch] = useState(""),
@@ -693,10 +694,10 @@ export default function App() {
       const candidate=editSourceMapScene(current,editSourceSymmetryConfiguration(current,prepared.value,'apply'),'apply');
       ordinarySourceCameraInitial(candidate);
       if(family==='symmetry'&&candidate.equations.glsl&&candidate.equations.glsl!==current.equations.glsl){
-        const generator=new Generator();applyCheck.current=generator;setApplying(true);
-        try{const output=await generator.generate(candidate,symmetryCustomValidationInput(candidate));if(output.backend!=='webgl2')throw Error('自定义 GLSL 需要 GPU 首帧验证');
-          if(applyCheck.current!==generator||sceneRef.current!==current||iteratedDraftRef.current!==draft)return;
-        }catch(error){if(applyCheck.current!==generator||sceneRef.current!==current||iteratedDraftRef.current!==draft)return;throw error;}finally{generator.dispose();if(applyCheck.current===generator){applyCheck.current=null;setApplying(false);}}
+        const validation=beginSymmetryCustomValidation(candidate);applyCheck.current=validation;setApplying(true);
+        try{await validation.promise;
+          if(applyCheck.current!==validation||sceneRef.current!==current||iteratedDraftRef.current!==draft)return;
+        }catch(error){if(applyCheck.current!==validation||sceneRef.current!==current||iteratedDraftRef.current!==draft)return;throw error;}finally{if(applyCheck.current===validation){applyCheck.current=null;setApplying(false);}}
       }
       pendingParameterWrites.current.clear();edit(candidate,false,true,'iterated-apply',null,true);
     }catch(error){notify(error instanceof Error?error.message:String(error));}

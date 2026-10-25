@@ -27,6 +27,9 @@ import type {PausedCaptureResult} from './generationProtocol';
 import {exactRasterDimensions} from './rasterDimensions';
 import {GenerationCleanupState} from './generationCleanup';
 import {SOURCE_MAP_RUNTIME_SETTINGS,sourceIteratedApplyIdentity,sourceIteratedReplayIdentity,sourceIteratedSceneIdentity} from './sourceIteratedLiveIdentity';
+import {hasSymmetryCustom} from './symmetryCustom';
+import type {SourceProcessingHost} from './sourceProcessingHost';
+import {beginSourceSymmetryProcessingFrame,beginSourceSymmetryProcessingRender,endSourceSymmetryProcessingFrame,endSourceSymmetryProcessingRender} from './sourceSymmetryProcessing';
 
 export interface SourceIteratedLiveContext {
  sessionId:string;renderFps:number;clock:SourceSceneClockRequest;
@@ -45,13 +48,13 @@ export interface SourceIteratedLiveFacts {
 type Raster=Extract<SceneOutput,{type:'raster'}>;
 export type SourceIteratedSessionOptions=(
  | {backend?:()=>SourceIteratedReplayBackend;asyncBackend?:never}
- | {backend?:never;asyncBackend:()=>SourceIteratedReplayAsyncBackend})&{hostClock?:{now:()=>number;source:'worker-wall-clock'|'page-wall-clock'}};
+ | {backend?:never;asyncBackend:()=>SourceIteratedReplayAsyncBackend})&{symmetryDialect?:'native-gl41';hostClock?:{now:()=>number;source:'worker-wall-clock'|'page-wall-clock'}};
 type DisplayResult={scene:SceneDocument;job:ReturnType<typeof prepareIteratedFrame>;sourceFrame:ReturnType<typeof ordinarySourceCameraFrame>;display:SourceIteratedDisplayFacts};
 type RecordingStart={handle:object;scene:SceneDocument;context:ReturnType<typeof snapshotGenerationInput>;clock:SourceQueueRecordingClock;warmup:Raster};
 type Effect=
  | {kind:'display';args:Parameters<SourceIteratedReplaySession['display']>}
  | {kind:'present';args:Parameters<SourceIteratedReplaySession['present']>}
- | {kind:'reset';failures?:readonly unknown[]};
+ | {kind:'reset';failures?:readonly unknown[];keepProcessing?:boolean};
 type Reply=SourceIteratedDisplayFacts|SourceIteratedPresented|void;
 type Operation<T>=Generator<Effect,T,Reply>;
 const identity=(value:unknown)=>JSON.stringify(value);
@@ -71,6 +74,7 @@ export class SourceIteratedSession {
  constructor(readonly family:'map'|'symmetry',private readonly backend:SourceIteratedSessionOptions={}){
   if(family!=='map'&&family!=='symmetry')throw Error('未知实时迭代场景');
   if(backend.backend&&backend.asyncBackend)throw Error('迭代场景不能同时拥有两个执行后端');
+  if(backend.symmetryDialect&&!backend.asyncBackend)throw Error('原生自定义 Symmetry 需要异步执行后端');
  }
  private inFlight?:Promise<unknown>;private resetting?:Promise<void>;private asyncRevision=0;
  private get executing(){return this.busy||!!this.inFlight||!!this.resetting;}
@@ -80,7 +84,7 @@ export class SourceIteratedSession {
   if(this.backend.asyncBackend)throw Error('异步迭代场景必须使用 Async 操作');
   let next=operation.next();
   while(!next.done){let reply:Reply=undefined;
-   try{const effect=next.value;if(effect.kind==='reset')this.reset(effect.failures);else if(effect.kind==='display')reply=this.replay!.display(...effect.args);else reply=this.replay!.present(...effect.args);}
+   try{const effect=next.value;if(effect.kind==='reset')this.resetSync(effect.failures,effect.keepProcessing);else if(effect.kind==='display')reply=this.replay!.display(...effect.args);else reply=this.replay!.present(...effect.args);}
    catch(error){next=operation.throw(error);continue;}next=operation.next(reply);
   }return next.value;
  }
@@ -91,21 +95,21 @@ export class SourceIteratedSession {
   const pending=Promise.resolve().then(async()=>{
    const iterator=operation(cancelled);let next=iterator.next();
    while(!next.done){let reply:Reply=undefined;
-    try{const effect=next.value;if(effect.kind==='reset')await this.releaseAsync(effect.failures);else if(effect.kind==='display')reply=await this.replay!.displayAsync(...effect.args);else reply=await this.replay!.presentAsync(...effect.args);}
+    try{const effect=next.value;if(effect.kind==='reset')await this.releaseAsync(effect.failures,effect.keepProcessing);else if(effect.kind==='display')reply=await this.replay!.displayAsync(...effect.args);else reply=await this.replay!.presentAsync(...effect.args);}
     catch(error){next=iterator.throw(error);continue;}next=iterator.next(reply);
    }return next.value;
   });
   this.inFlight=pending;void pending.then(()=>{if(this.inFlight===pending)this.inFlight=undefined;},()=>{if(this.inFlight===pending)this.inFlight=undefined;});return pending;
  }
  private snapshot(scene:SceneDocument,c:GenerateContext){return{scene:structuredClone(scene),context:snapshotGenerationInput(c),isCancelled:c.isCancelled};}
- private *resetOperation(failures:readonly unknown[]=[]):Operation<void>{
+ private *resetOperation(failures:readonly unknown[]=[],keepProcessing=false):Operation<void>{
   // A failed release is already a cleanup attempt. Preserve its owner and
   // error; only an explicit resetAsync may retry it.
   if(failures.length&&this.backend.asyncBackend&&this.failed)throw failures[0];
-  yield{kind:'reset',failures};
+  yield{kind:'reset',failures,keepProcessing};
  }
- private async releaseAsync(failures:readonly unknown[]=[]):Promise<void>{
-  this.failed=true;await this.replay?.resetAsync(failures);this.clear();
+ private async releaseAsync(failures:readonly unknown[]=[],keepProcessing=false):Promise<void>{
+  this.failed=true;await this.replay?.resetAsync(failures);this.clear(keepProcessing);
  }
  /** Revoke pending output, wait for its ACK/cleanup, then release exactly this
   * owner. No transport abort: other native families may share its context. */
@@ -120,6 +124,7 @@ export class SourceIteratedSession {
  private tone(scene:SceneDocument,c:GenerateContext){return this.family==='map'?prepareSourceMapTone(scene,c):prepareSourceSymmetryTone(scene,c);}
  private runtimeRevision=0;private dotSizeRevision=0;private runtimePointSize?:number;
  private readonly cleanup=new GenerationCleanupState();
+ private processing?:SourceProcessingHost;
  private timeline?:SourceIteratedTimelineSession;private replay?:SourceIteratedReplaySession;private clock?:SourceSceneHostClock<'worker-wall-clock'|'page-wall-clock'>;
  private applied?:SceneDocument;
  private particleConstruction?:Pick<SceneDocument,'mapSource'|'symmetrySource'>;
@@ -130,9 +135,10 @@ export class SourceIteratedSession {
  private steps=0;private accepted=0;private invalid=0;private clipped=0;private sampleInvalid=0;private deposited=0;private displays=0;
  private completed?:{context:GenerateContext;identity:string};private lastUpdatePaused=false;
  private requestSteps=0;private requestPixels=0;
- private clear(){this.replay=undefined;this.timeline?.reset();this.timeline=undefined;this.clock=undefined;this.authored=undefined;this.applied=undefined;this.particleConstruction=undefined;this.recording=undefined;this.completed=undefined;this.lastUpdatePaused=false;this.frame=undefined;this.anchor=undefined;this.sessionId='';this.shape='';this.startAt=undefined;this.revision=0;this.runtimeRevision=0;this.dotSizeRevision=0;this.runtimePointSize=undefined;this.invalidUnit=undefined;this.steps=0;this.accepted=0;this.invalid=0;this.clipped=0;this.sampleInvalid=0;this.deposited=0;this.displays=0;this.failed=false;}
- reset(failures:readonly unknown[]=[]){if(this.backend.asyncBackend)throw Error('异步迭代场景必须使用 resetAsync');this.failed=true;this.cleanup.reset(()=>{this.replay?.reset();this.clear();},failures);}
- diagnostics(){return{family:this.family,inFlight:!!this.inFlight,resetting:!!this.resetting,recording:this.recording?{next:this.recording.next,clock:{...this.recording.clock}}:undefined,runtimeRevision:this.runtimeRevision,dotSizeRevision:this.dotSizeRevision,runtimePointSize:this.runtimePointSize,failed:this.failed,sessionId:this.sessionId,displays:this.displays,steps:this.steps,clock:this.clock?.diagnostics(),replay:this.replay?.diagnostics(),frame:this.frame?structuredClone(this.frame):undefined,anchor:this.anchor?structuredClone(this.anchor):undefined,retainedBytes:(this.replay?.diagnostics().gpu.retainedBytes??0)+(this.authored?identity(this.authored).length*2:0)+(this.applied?identity(this.applied).length*2:0)+(this.particleConstruction?identity(this.particleConstruction).length*2:0)+this.shape.length*2+(this.completed?this.completed.identity.length*2:0)};}
+ private clear(keepProcessing=false){if(!keepProcessing){this.processing?.dispose();this.processing=undefined;}this.replay=undefined;this.timeline?.reset();this.timeline=undefined;this.clock=undefined;this.authored=undefined;this.applied=undefined;this.particleConstruction=undefined;this.recording=undefined;this.completed=undefined;this.lastUpdatePaused=false;this.frame=undefined;this.anchor=undefined;this.sessionId='';this.shape='';this.startAt=undefined;this.revision=0;this.runtimeRevision=0;this.dotSizeRevision=0;this.runtimePointSize=undefined;this.invalidUnit=undefined;this.steps=0;this.accepted=0;this.invalid=0;this.clipped=0;this.sampleInvalid=0;this.deposited=0;this.displays=0;this.failed=false;}
+ private resetSync(failures:readonly unknown[]=[],keepProcessing=false){if(this.backend.asyncBackend)throw Error('异步迭代场景必须使用 resetAsync');this.failed=true;this.cleanup.reset(()=>{this.replay?.reset();this.clear(keepProcessing);},failures);}
+ reset(failures:readonly unknown[]=[]){this.resetSync(failures);}
+ diagnostics(){return{...(this.processing?{processing:this.processing.diagnostics()}:{}),family:this.family,inFlight:!!this.inFlight,resetting:!!this.resetting,recording:this.recording?{next:this.recording.next,clock:{...this.recording.clock}}:undefined,runtimeRevision:this.runtimeRevision,dotSizeRevision:this.dotSizeRevision,runtimePointSize:this.runtimePointSize,failed:this.failed,sessionId:this.sessionId,displays:this.displays,steps:this.steps,clock:this.clock?.diagnostics(),replay:this.replay?.diagnostics(),frame:this.frame?structuredClone(this.frame):undefined,anchor:this.anchor?structuredClone(this.anchor):undefined,retainedBytes:(this.replay?.diagnostics().gpu.retainedBytes??0)+(this.authored?identity(this.authored).length*2:0)+(this.applied?identity(this.applied).length*2:0)+(this.particleConstruction?identity(this.particleConstruction).length*2:0)+this.shape.length*2+(this.completed?this.completed.identity.length*2:0)};}
  snapshotInk(){if(this.failed||!this.replay)throw Error('迭代场景 实时累积不可读');return this.replay.readback();}
  readParticles(){if(this.failed||!this.replay)throw Error('迭代场景 实时粒子不可读');return this.replay.readParticles();}
  setPaused(paused:boolean,timestampMs?:number){
@@ -167,10 +173,13 @@ export class SourceIteratedSession {
   try{this.timeline.writeViewport(next.value);return yield* this.present(c,yield* this.advance(c,0,true));}
   catch(error){yield* this.resetOperation([error]);throw error;}finally{this.busy=false;}
  }
- private *advance(c:GenerateContext,dt:number,paused:boolean,reconstructing=false):Operation<DisplayResult>{
+ private *advance(c:GenerateContext,dt:number,paused:boolean,reconstructing=false,host:{withinFrame?:boolean;previewCopy?:boolean}={}):Operation<DisplayResult>{
   cancel(c);const replaying=this.replay!.willReplayDisplay(c.width,c.height);
+  if(this.processing&&!host.withinFrame)this.processing=beginSourceSymmetryProcessingFrame(this.processing,c);
   const frame=this.timeline!.step(dt,{paused,acknowledgeParameters:!replaying});this.lastUpdatePaused=paused;
-  return yield* this.display(c,frame,paused,reconstructing);
+  const result=yield* this.display(c,frame,paused,reconstructing);
+  if(this.processing&&!host.withinFrame)endSourceSymmetryProcessingFrame(this.processing,host.previewCopy);
+  return result;
  }
  private *display(c:GenerateContext,frame:SourceIteratedTimelineResult,paused:boolean,reconstructing=false):Operation<DisplayResult>{
   cancel(c);const replaying=this.replay!.willReplayDisplay(c.width,c.height);this.frame=frame;
@@ -178,20 +187,22 @@ export class SourceIteratedSession {
   bindSourceIterationFrame(scene,frame.palette,frame.update,frame.parameters);
   const anchor={...this.authored!,...this.particleConstruction};
   if(anchor.mapSource&&this.authored!.mapSource)anchor.mapSource={...anchor.mapSource,construction:{...anchor.mapSource.construction,iterations:this.authored!.mapSource.construction.iterations}};
-  const sourceFrame=ordinarySourceCameraFrame(scene,c),plan=prepareOrdinarySourceFrame(sourceFrame),job=prepareIteratedFrame(scene,frame.frame.sceneTime,this.displays,anchor);
+  const sourceFrame=ordinarySourceCameraFrame(scene,c),plan=prepareOrdinarySourceFrame(sourceFrame),job=prepareIteratedFrame(scene,frame.frame.sceneTime,this.displays,anchor,{symmetryDialect:this.backend.symmetryDialect});
   // During replay native display skips camera capture and parameter snapshot.
   let cameraChanged=false;
   if(!replaying){const captured=prepareCapturedDensityCamera(this.family,plan,this.anchor);this.anchor=captured.anchor;cameraChanged=captured.clearInk;}
   job.sourceCamera={anchor:this.anchor!,clearInk:cameraChanged};
   job.densitySplat=prepareSourceDensitySplat(this.family,job.config.pointSize,plan.displayScale);
-  const updates=frame.update.calls.map(call=>prepareIteratedField({...scene,parameters:{...call.parameters!}},job.config,call.time,anchor));
+  const updates=frame.update.calls.map(call=>prepareIteratedField({...scene,parameters:{...call.parameters!}},job.config,call.time,anchor,{symmetryDialect:this.backend.symmetryDialect}));
   if(reconstructing){
    const planned=prepareSourceIterationFramePlan(this.family,{frameIndex:this.displays,updateCount:updates.length},this.replay!.diagnostics().warmupApplied,job.config.burn,job.config.iterations);
    this.requestSteps+=this.replay!.estimateWork({...job,iterationFrame:planned,iterationUpdates:updates},!this.replay!.diagnostics().initialized);
    this.requestPixels+=sourceDensitySplatPixelTests(job.densitySplat,job.config.count);
    if(this.requestSteps>2_000_000_000||this.requestPixels>2_000_000_000)throw Error('迭代场景 本地重建超过 20 亿工作预算');
   }
-  const display=(yield{kind:'display',args:[job,{width:c.width,height:c.height,projection:'xy',padding:0,bounds:{minX:-1,maxX:1,minY:-1,maxY:1},isCancelled:c.isCancelled},{updates,paused,parameterChanged:frame.parameters!.changed,cameraChanged}]}) as SourceIteratedDisplayFacts;
+  const processing=this.processing?beginSourceSymmetryProcessingRender(this.processing,plan,updates.length>0):undefined;
+  const display=(yield{kind:'display',args:[job,{width:c.width,height:c.height,projection:'xy',padding:0,bounds:{minX:-1,maxX:1,minY:-1,maxY:1},isCancelled:c.isCancelled},{updates,paused,parameterChanged:frame.parameters!.changed,cameraChanged,...(processing?{processing}:{})}]}) as SourceIteratedDisplayFacts;
+  if(this.processing)endSourceSymmetryProcessingRender(this.processing);
   if(this.displays&&(this.invalidUnit??'iteration')!==(display.gpu.invalidUnit??'iteration'))throw Error('迭代场景的无效计数单位发生变化');
   this.invalidUnit=display.gpu.invalidUnit;
   this.steps+=display.gpu.steps;this.accepted+=display.gpu.accepted;this.invalid+=display.gpu.invalid;this.clipped+=display.gpu.clipped;this.sampleInvalid+=display.gpu.sampleInvalid;this.deposited+=display.passes*job.config.count;this.displays++;
@@ -216,7 +227,7 @@ export class SourceIteratedSession {
   }
   this.busy=true;this.requestSteps=0;this.requestPixels=0;
   try{
-   if(replace)yield* this.initialize(scene,live);
+   if(replace)yield* this.initialize(scene,live,c);
    else{
     const before=ordinarySourceCameraInitial(this.authored!)!,after=ordinarySourceCameraInitial(scene)!;
     if(['phi','theta','gamma'].some(key=>before[key as 'phi']!==after[key as 'phi']))this.timeline!.writeAngles({phi:after.phi,theta:after.theta,gamma:after.gamma});
@@ -240,10 +251,13 @@ export class SourceIteratedSession {
    return output;
   }catch(error){yield* this.resetOperation([error]);throw error;}finally{this.busy=false;}
  }
- private *initialize(scene:SceneDocument,live:SourceIteratedLiveContext):Operation<void>{
+ private *initialize(scene:SceneDocument,live:SourceIteratedLiveContext,c:GenerateContext):Operation<void>{
   const applied=scene.symmetrySourcePalette?symmetryPaletteColdAnchor(scene):resetSourceSymmetryPointSize(scene);
   if(scene.symmetrySourcePalette)assertSymmetryPaletteRetention({input:scene,authored:scene,applied,construction:scene.symmetrySource});
-  yield* this.resetOperation();this.particleConstruction=structuredClone({mapSource:scene.mapSource,symmetrySource:scene.symmetrySourcePalette?applied.symmetrySource:scene.symmetrySource});this.applied=structuredClone(applied);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
+  yield* this.resetOperation([],true);
+  if(this.backend.symmetryDialect&&hasSymmetryCustom(scene)){this.processing=beginSourceSymmetryProcessingFrame(this.processing,c,true);endSourceSymmetryProcessingFrame(this.processing);}
+  else{this.processing?.dispose();this.processing=undefined;}
+  this.particleConstruction=structuredClone({mapSource:scene.mapSource,symmetrySource:scene.symmetrySourcePalette?applied.symmetrySource:scene.symmetrySource});this.applied=structuredClone(applied);this.authored=structuredClone(scene);this.shape=sourceIteratedApplyIdentity(scene);
   this.sessionId=live.sessionId;this.startAt=live.startAt;this.revision=live.replayRevision;
   this.timeline=new SourceIteratedTimelineSession(scene);this.frame=this.timeline.snapshot();
   this.clock=new SourceSceneHostClock(live.clock.paused,this.frame.frame.camera,this.backend.hostClock?.now,this.backend.hostClock?.source??'worker-wall-clock');this.replay=new SourceIteratedReplaySession(this.family,live.renderFps,this.backend.asyncBackend?{asyncBackend:this.backend.asyncBackend()}:{backend:this.backend.backend?.()});
@@ -273,14 +287,14 @@ export class SourceIteratedSession {
   const target:GenerateContext={...primary,width:size.width,height:size.height,quality:'export',sourceViewport:{...primary.sourceViewport!,logicalWidth:size.logicalWidth,logicalHeight:size.logicalHeight,target:'offscreen'},[toneKey]:{width:c.width,height:c.height}};
   this.tone(effective,target);this.busy=true;
   try{
-   yield* this.initialize(effective,live);this.recording={handle:Object.freeze({}),clock,primary,target,next:0};
+   yield* this.initialize(effective,live,primary);this.recording={handle:Object.freeze({}),clock,primary,target,next:0};
    const warmup=yield* this.advanceRecording(0);
    return{handle:this.recording.handle,scene:structuredClone(effective),context:snapshotGenerationInput(primary),clock:{...clock},warmup};
   }catch(error){yield* this.resetOperation([error]);throw error;}finally{this.busy=false;}
  }
  private *advanceRecording(displayFrame:number):Operation<Raster>{
   const record=this.recording!,c=record.target;cancel(c);
-  const output=yield* this.present(c,yield* this.advance(c,Math.fround(1/record.clock.simulationFps),false));
+  const output=yield* this.present(c,yield* this.advance(c,Math.fround(1/record.clock.simulationFps),false,false,{previewCopy:true}));
   output.iteratedRecording={displayFrame,warmup:displayFrame===0,complete:this.frame!.frame.queueComplete,simulationFps:record.clock.simulationFps};
   assertSourceIteratedRecordingFrame(output,record.clock,displayFrame);record.next=displayFrame+1;return output;
  }
@@ -335,10 +349,12 @@ export class SourceIteratedSession {
   try{
    // Native export render precedes Scene.update(true). Keep the last mobject
    // paused flag for that first display; controls alone do not update it.
+   if(this.processing)this.processing=beginSourceSymmetryProcessingFrame(this.processing,primary.context);
    const frame=this.timeline!.display(!this.replay!.willReplayDisplay(size.width,size.height));
    const capture=yield* this.present(captureContext,yield* this.display(captureContext,frame,this.lastUpdatePaused));
    const restored={...primary.context,isCancelled:c.isCancelled};
-   const preview=yield* this.present(restored,yield* this.advance(restored,0,true));
+   const preview=yield* this.present(restored,yield* this.advance(restored,0,true,false,{withinFrame:true}));
+   if(this.processing)endSourceSymmetryProcessingFrame(this.processing);
    this.completed=primary;return{capture,preview};
   }catch(error){yield* this.resetOperation([error]);throw error;}finally{this.busy=false;}
  }

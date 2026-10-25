@@ -1,6 +1,7 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,vi} from 'vitest';
+import {prepareSymmetryCustomAuthoring,symmetryCustomExecutionBackend} from '../src/engine/symmetryCustomExecution';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {parseLegacyScene as parseSourceScene} from '../src/engine/legacyImport';
+import {parseLegacyScene as parseSourceScene,parseProjectFile} from '../src/engine/legacyImport';
 import {parseScene,persistentScene,createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import {withSymmetryTemplate,withSymmetryCustomSource} from '../src/engine/symmetryEditing';
@@ -115,5 +116,25 @@ describe('custom Symmetry imported authoring and persistence',()=>{
   expect(html).not.toContain('maxLength');expect(html).not.toContain('maxlength');
   const explore=renderToStaticMarkup(<ExplorePanel scene={scene} onChange={()=>{}}/>);expect(explore).toMatch(/class="apply-button" disabled=""/);expect(explore).toContain('不能使用内置模板');
   const builtin=withSymmetryTemplate(scene,'standard');expect(renderToStaticMarkup(<ExplorePanel scene={builtin} onChange={()=>{}}/>)).not.toMatch(/class="apply-button" disabled=""/);
+ });
+});
+
+
+describe('native custom authoring execution choice',()=>{
+ it('preserves macros through editor diagnostics, parameter matching and saved source under the complete native contract',()=>{
+  vi.stubEnv('VITE_SOURCE_RENDERER','native');
+  try{
+   const raw='#define OFFSET .125\n'+source,s=parseProjectFile(JSON.stringify(legacy(raw))).scene;
+   expect(symmetryCustomExecutionBackend(s)).toBe('native');
+   expect(prepareSymmetryCustomAuthoring(s,raw).bindingNames).toContain('gain');
+   const edited=withSymmetryCustomSource(s,raw+'\n// edited');expect(edited.equations.glsl).toBe(raw+'\n// edited');
+   expect(edited.provenance).toEqual(s.provenance);expect(reload(edited).equations.glsl).toBe(edited.equations.glsl);
+   const markup=renderToStaticMarkup(<SymmetryFormula scene={s} onStage={()=>{}} onApply={()=>{}} customSelected/>);
+   expect(markup).not.toContain('role="alert"');expect(markup).not.toContain('disabled=""');
+   expect(parameterEditingSpecs(s).find(v=>v.name==='gain')?.customBinding).toBe('matched');
+   const oldScene={...s,symmetrySource:undefined};expect(symmetryCustomExecutionBackend(oldScene)).toBe('webgl2');
+   expect(()=>prepareSymmetryCustomAuthoring(oldScene,raw)).toThrow('预处理');
+   vi.stubEnv('VITE_SOURCE_RENDERER','webgl');expect(()=>prepareSymmetryCustomAuthoring(s,raw)).toThrow('预处理');
+  }finally{vi.unstubAllEnvs();}
  });
 });

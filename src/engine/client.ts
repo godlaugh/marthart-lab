@@ -1,8 +1,6 @@
 import {SourceIteratedSession} from './sourceIteratedSession';
 import {SourceIteratedNativeBackend} from './sourceIteratedNativeBackend';
 import {sourceIteratedLiveKind} from './sourceLivePreview';
-import {usesSourceSymmetryMath} from './sourceSymmetryMath';
-import {usesSourceMapMath} from './sourceMapMath';
 import {assertSourceIteratedRecordingFrame} from './sourceIteratedRecording';
 import {sourcePaletteRuntimeScene} from './sourcePaletteRuntimeScene';
 import {sourceSamilaOwnerScene} from './sourceSamilaPaletteEditing';
@@ -12,7 +10,8 @@ import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {SourceSamilaAsyncSession} from './sourceSamilaAsyncSession';
 import {SourceSamilaNativeBackend} from './sourceSamilaNativeBackend';
-import {IteratedDensitySession,sourceIteratedColdKind} from '../scenes/iteratedDensity';
+import {IteratedDensitySession} from '../scenes/iteratedDensity';
+import {sourceIteratedNativeKind} from './sourceIteratedNativeEligibility';
 import {usesSourceSamilaSampling} from './sourceSamilaSampling';
 import {usesSourceSamilaPresentation} from './sourceSamilaPresentation';
 import {usesSourceSamilaSplat} from './sourceSamilaSplat';
@@ -569,10 +568,12 @@ export class Generator {
     if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     const samilaNative=sourceDrawingPolicy()==='native'&&scene.kind==='samila'&&(!!context.samilaLive||usesSourceSamilaSampling(scene)&&usesSourceSamilaPresentation(scene)&&usesSourceSamilaSplat(scene));
     // Live and fixed reconstruction have distinct semantic/resource owners.
-    // Legacy models and custom Symmetry kernels keep their existing worker route.
-    const iteratedFamily=sourceDrawingPolicy()==='native'?sourceIteratedLiveKind(scene):undefined;
-    const iteratedNative=iteratedFamily==='map'&&context.mapLive&&usesSourceMapMath(scene)?'map':iteratedFamily==='symmetry'&&context.symmetryLive&&usesSourceSymmetryMath(scene)?'symmetry':undefined;
-    const iteratedCold=sourceDrawingPolicy()==='native'&&!context.mapLive&&!context.symmetryLive?sourceIteratedColdKind(scene):undefined;
+    // Legacy models retain their saved Worker contract. Source custom Symmetry
+    // uses the same native host/recording owner as source built-in kernels.
+    const nativeKind=sourceDrawingPolicy()==='native'?sourceIteratedNativeKind(scene):undefined;
+    const iteratedFamily=nativeKind&&sourceIteratedLiveKind(scene)===nativeKind?nativeKind:undefined;
+    const iteratedNative=iteratedFamily==='map'&&context.mapLive?'map':iteratedFamily==='symmetry'&&context.symmetryLive?'symmetry':undefined;
+    const iteratedCold=!context.mapLive&&!context.symmetryLive?nativeKind:undefined;
     if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative||iteratedCold)){
       if(this.pending.size)return Promise.reject(new Error('当前生成任务尚未结束'));
       this.worker?.terminate();this.worker=null;
@@ -593,7 +594,7 @@ export class Generator {
               const held=this.nativeIterated?.diagnostics(),live=iteratedNative==='map'?input.mapLive:input.symmetryLive;
               if(held?.failed){if(held.sessionId===live!.sessionId)throw new SourceNativeError('state-lost','迭代场景当前显示结果未知；请重新应用或重置场景');await this.releaseIterated();}
               if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
-              if(!this.nativeIterated){this.sessionId++;this.nativeIterated=new SourceIteratedSession(iteratedNative,{asyncBackend:()=>new SourceIteratedNativeBackend(),hostClock:{now:()=>Date.now()-nativePageOrigin,source:'page-wall-clock'}});}
+              if(!this.nativeIterated){this.sessionId++;this.nativeIterated=new SourceIteratedSession(iteratedNative,{symmetryDialect:'native-gl41',asyncBackend:()=>new SourceIteratedNativeBackend(),hostClock:{now:()=>Date.now()-nativePageOrigin,source:'page-wall-clock'}});}
               return this.nativeIterated.generateAsync(snapshot,{...input,isCancelled:()=>this.pending.get(id)!==pending});
             }
             await this.releaseIterated();

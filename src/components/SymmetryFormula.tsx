@@ -1,32 +1,30 @@
+import {prepareSymmetryCustomAuthoring} from '../engine/symmetryCustomExecution';
 import {useEffect,useRef,useState} from 'react';
 import type {SceneDocument} from '../types';
 import {symmetryFormula} from '../scenes/symmetryFormula';
 import {useI18n} from '../i18n';
-import {hasSymmetryCustom,prepareSymmetryCustomSource,symmetryCustomCompileDegree} from '../engine/symmetryCustom';
-import {withSymmetryTemplate,withSymmetryCustomSource,symmetryTemplateSelectionError,symmetryCustomValidationInput} from '../engine/symmetryEditing';
-import {Generator} from '../engine/client';
+import {hasSymmetryCustom} from '../engine/symmetryCustom';
+import {withSymmetryTemplate,withSymmetryCustomSource,symmetryTemplateSelectionError} from '../engine/symmetryEditing';
+import {beginSymmetryCustomValidation,type SymmetryCustomValidation} from '../engine/symmetryCustomValidation';
 
 function CustomSourceEditor({scene,onChange}:{scene:SceneDocument;onChange:(next:SceneDocument)=>void}){
  const {t}=useI18n(),[draft,setDraft]=useState(scene.equations.glsl??''),[failure,setFailure]=useState<string>(),[busy,setBusy]=useState(false);
- const active=useRef<Generator|null>(null),current=useRef(scene);current.current=scene;
+ const active=useRef<SymmetryCustomValidation|null>(null),current=useRef(scene);current.current=scene;
  // A changed document invalidates the exact candidate being checked, including
  // parameter edits and Undo. Never overwrite a newer document after GPU work.
- useEffect(()=>{active.current?.dispose();active.current=null;setBusy(false);return()=>{active.current?.dispose();active.current=null;};},[scene]);
- let syntax:string|undefined;try{prepareSymmetryCustomSource(draft,symmetryCustomCompileDegree(scene));}catch(e){syntax=e instanceof Error?e.message:String(e);}
+ useEffect(()=>{active.current?.cancel();active.current=null;setBusy(false);return()=>{active.current?.cancel();active.current=null;};},[scene]);
+ let syntax:string|undefined;try{prepareSymmetryCustomAuthoring(scene,draft);}catch(e){syntax=e instanceof Error?e.message:String(e);}
  const dirty=draft!==(scene.equations.glsl??'');
- const cancel=()=>{active.current?.dispose();active.current=null;setBusy(false);};
+ const cancel=()=>{active.current?.cancel();active.current=null;setBusy(false);};
  const apply=async()=>{
   if(busy||!dirty||syntax)return;
-  const base=scene,generator=new Generator();active.current=generator;setBusy(true);setFailure(undefined);
+  const base=scene,next=withSymmetryCustomSource(base,draft),validation=beginSymmetryCustomValidation(next);
+  active.current=validation;setBusy(true);setFailure(undefined);
   try{
-   const next=withSymmetryCustomSource(base,draft);
-   // Compile and execute the actual selected GPU path at the first frame.
-   // This is a small image, not a reduced particle/workload approximation.
-   const output=await generator.generate(next,symmetryCustomValidationInput(next));
-   if(output.backend!=='webgl2')throw new Error('尚未生成自定义 GLSL 的 GPU 首帧，请检查持续批次与 Replay 起点设置。');
-   if(active.current===generator&&current.current===base)onChange(next);
-  }catch(e){if(active.current===generator&&current.current===base)setFailure(e instanceof Error?e.message:String(e));}
-  finally{generator.dispose();if(active.current===generator){active.current=null;setBusy(false);}}
+   await validation.promise;
+   if(active.current===validation&&current.current===base)onChange(next);
+  }catch(e){if(active.current===validation&&current.current===base)setFailure(e instanceof Error?e.message:String(e));}
+  finally{if(active.current===validation){active.current=null;setBusy(false);}}
  };
  return <div className="equation-field">
   <textarea aria-label={t('自定义 GLSL 源码')} value={draft} spellCheck={false} autoComplete="off" autoCapitalize="off" rows={12} aria-invalid={!!(syntax||failure)} style={{width:'100%',fontFamily:'monospace',resize:'vertical'}} onChange={e=>{cancel();setDraft(e.target.value);setFailure(undefined);}}/>
@@ -41,7 +39,7 @@ function CustomSourceEditor({scene,onChange}:{scene:SceneDocument;onChange:(next
 interface StagedSourceProps {scene:SceneDocument;onStage:(next:SceneDocument)=>void;onApply:()=>void;appliedSource?:string;applying?:boolean}
 function StagedSourceEditor({scene,onStage,onApply,appliedSource,applying}:StagedSourceProps){
  const {t}=useI18n(),draft=scene.equations.glsl??'';
- let syntax:string|undefined;try{prepareSymmetryCustomSource(draft,symmetryCustomCompileDegree(scene));}catch(e){syntax=e instanceof Error?e.message:String(e);}
+ let syntax:string|undefined;try{prepareSymmetryCustomAuthoring(scene,draft);}catch(e){syntax=e instanceof Error?e.message:String(e);}
  return <div className="equation-field">
   <textarea aria-label={t('自定义 GLSL 源码')} value={draft} spellCheck={false} autoComplete="off" autoCapitalize="off" rows={12} aria-invalid={!!syntax} style={{width:'100%',fontFamily:'monospace',resize:'vertical'}} onChange={e=>onStage({...scene,equations:{...scene.equations,glsl:e.target.value}})}/>
   <p className="muted">{t('草稿不会改变当前画面。验证首帧成功后应用；需要 GPU 持续批次模式。')}</p>
@@ -58,7 +56,7 @@ export function SymmetryFormula({scene,onChange,onStage,onApply,customSelected,a
  if(customSelected??hasSymmetryCustom(scene)){
   const templateError=symmetryTemplateSelectionError(scene);
   let bindings:readonly string[]|undefined,error:string|undefined;
-  try{bindings=prepareSymmetryCustomSource(scene.equations.glsl,symmetryCustomCompileDegree(scene)).bindingNames;}catch(e){error=e instanceof Error?e.message:String(e);}
+  try{bindings=prepareSymmetryCustomAuthoring(scene,scene.equations.glsl).bindingNames;}catch(e){error=e instanceof Error?e.message:String(e);}
   return <details open className="inspector-section symmetry-formula"><summary>{t('自定义 GLSL 方程')}</summary><div className="section-body">
    {scene.equations.formula&&<p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{scene.equations.formula}</p>}
    {editor??<pre aria-label={t('自定义 GLSL 源码')} style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:'inherit'}}>{scene.equations.glsl}</pre>}

@@ -1,6 +1,7 @@
 import type {SceneDocument} from '../types';
 import type {SymmetryParameters} from '../scenes/iterated';
 import {hasSymmetryCustom} from './symmetryCustom';
+import {usesSourceSymmetryConfiguration} from './sourceSymmetryConfig';
 
 /** MathArt 1.7.8 SymmetryChaosFunctionGenerator class
  * SHA256 6a839bddc08c8ab095a6feccbf4542e4896e73d260d69d0c89e06c0cc8f0215a.
@@ -23,6 +24,11 @@ export function usesSourceSymmetryMath(scene:Pick<SceneDocument,'kind'|'settings
  // Explicit custom source owns its own kernel; retain the built-in selection
  // so clearing that source restores the same authored built-in contract.
  return !hasSymmetryCustom(scene);
+}
+/** Native custom requires the source constructor/seed contract as well as its
+ * GPU model. Older custom documents retain their saved Worker dialect. */
+export function usesSourceSymmetryNative(scene:Pick<SceneDocument,'kind'|'settings'|'equations'|'symmetrySource'>):boolean {
+ return usesSourceSymmetryGpu(scene)&&(!hasSymmetryCustom(scene)||usesSourceSymmetryConfiguration(scene));
 }
 const STANDARD=`uniform float lambda;
 uniform float alpha;

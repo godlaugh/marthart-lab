@@ -96,8 +96,9 @@ describe('source fixed-frame replay: shared scheduling and isolated async owners
   await expect(owner.generateAsync(s,context(s))).rejects.toThrow('清理未完成');expect(owner.diagnostics()).toMatchObject({frame:0,cleanupPending:true});
   await expect(owner.generateAsync(s,context(s))).rejects.toThrow('等待清理');expect(b.step).toHaveBeenCalledTimes(2);await owner.resetAsync();expect(owner.diagnostics().retainedBytes).toBe(0);
  });
- it('refuses legacy/custom source models before any native step',async()=>{
+ it('refuses custom source without constructor ownership before any native step',async()=>{
   const s=scene('symmetry'),b=backend(),owner=new IteratedDensitySession({asyncBackend:b});s.equations.glsl='void calculate_next(in vec3 p,out vec3 q,out float m){q=p;m=0.;}';
+  s.symmetrySource=undefined;
   try{await expect(owner.generateAsync(s,context(s))).rejects.toThrow('完整源 Map/Symmetry');expect(b.step).not.toHaveBeenCalled();}finally{await owner.resetAsync();}
  });
 });

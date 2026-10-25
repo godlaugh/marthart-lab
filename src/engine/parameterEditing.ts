@@ -1,13 +1,14 @@
+import {prepareSymmetryCustomAuthoring} from './symmetryCustomExecution';
 import type {SceneDocument,Settings} from '../types';
 import {existingParameterNameError} from './expression';
-import {hasSymmetryCustom,prepareSymmetryCustomSource,symmetryCustomCompileDegree} from './symmetryCustom';
+import {hasSymmetryCustom} from './symmetryCustom';
 import {parameterTimelineReferences} from './sceneParameters';
 
 /** Values remain exclusively in scene.parameters. This JSON only owns editing
  * and sampling bounds; it never constrains imported values or timeline ranges. */
 export interface ParameterRange {readonly min:number;readonly max:number;readonly step:number;}
 export type ParameterSamplingRanges=Readonly<Record<string,ParameterRange>>;
-type ParameterScene=Pick<SceneDocument,'kind'|'parameters'|'settings'>&Partial<Pick<SceneDocument,'equations'>>;
+type ParameterScene=Pick<SceneDocument,'kind'|'parameters'|'settings'>&Partial<Pick<SceneDocument,'equations'|'symmetrySource'>>;
 const customSymmetry=(scene:ParameterScene)=>hasSymmetryCustom({kind:scene.kind,equations:scene.equations??{}});
 export interface ParameterEditingSpec {name:string;value:number;range?:ParameterRange;rangeSource:'fixed'|'authored'|'default'|'none';editableRange:boolean;canDelete:boolean;displayDecimals?:number;customBinding?:'matched'|'unmatched'|'unknown';}
 export const PARAMETER_RANGES_KEY='parameterRanges';
@@ -42,7 +43,7 @@ function rows(scene:ParameterScene):ParameterEditingSpec[]{
  let bindingNames:Set<string>|undefined;
  // Source diagnostics must not hide editable authored values. The source panel
  // reports the preparation error; these rows retain explicit unknown binding.
- if(custom)try{bindingNames=new Set(prepareSymmetryCustomSource(scene.equations!.glsl,symmetryCustomCompileDegree(scene)).bindingNames);}catch{/* Retain values even when source cannot be prepared. */}
+ if(custom)try{bindingNames=new Set(prepareSymmetryCustomAuthoring(scene,scene.equations!.glsl).bindingNames);}catch{/* Retain values even when source cannot be prepared. */}
  return Object.entries(scene.parameters).filter(([name])=>scene.kind!=='symmetry'||custom||name!=='delta'||scene.settings.template==='modified').map(([name,value])=>{
   if(!Number.isFinite(value))throw new Error(`参数 ${name} 必须为有限数值`);
   const bound=scene.kind==='symmetry'&&!custom&&own(fixed,name)?fixed[name]:undefined;
