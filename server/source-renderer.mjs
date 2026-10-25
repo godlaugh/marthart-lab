@@ -12,12 +12,22 @@ export function inspectSourceFrameHeader(packet){
  if(!(packet instanceof Uint8Array)||!(packet.buffer instanceof ArrayBuffer)||packet.byteLength<52||packet.byteLength>BUDGET/4)return failure('input','原生帧缓冲无效');
  const b=Buffer.from(packet.buffer,packet.byteOffset,packet.byteLength);
  const version=b.readUInt32LE(4);
- if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version===5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
+ if(b.readUInt32LE(0)!==0x31464c4d||![1,2,3,4,5,6].includes(version)||b.readUInt32LE(8)!==b.length||(version>=2&&b.length<(version>=5?88:version===4?84:version===3?60:56)))return failure('input','原生帧头部无效');
  // v1 is retained for saved diagnostic evidence; it always means no MSAA.
  const samples=version>=2?b.readUInt32LE(52):0;
  if(samples>0x7fffffff)return failure('input','原生帧采样数无效');
  const generation=b.readUInt32LE(12),sequence=b.readUInt32LE(16),width=b.readUInt32LE(20),height=b.readUInt32LE(24);
  if(!generation||!sequence||!width||width>16384||!height||height>16384||width*height>16_000_000||b.length*4+width*height*(12+8*samples)>BUDGET)return failure('capacity','原生帧身份、尺寸或容量无效');
+ if(version===6){
+  const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex');
+  if(width!==1||height!==1||b.readUInt32LE(60)!==2||operation<1||operation>5||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0))return failure('input','迭代原生计算头部无效');
+  const minimum={1:100,2:116,3:108,4:100,5:88}[operation];if(b.length<minimum)return failure('input','迭代原生计算请求截断');
+  const expectedIndex=operation>=2&&operation<=4?b.readUInt32LE(88):undefined,totalCount=operation===1?b.readUInt32LE(88):undefined,offset=operation===2||operation===4?b.readUInt32LE(92):0,readCount=operation===4?b.readUInt32LE(96):0,steps=operation===3?b.readUInt32LE(100):0;
+  const uploadBytes=operation===2?b.readUInt32LE(96):0;
+  if(operation===1&&(totalCount<1||totalCount>8000000)||operation===2&&(expectedIndex!==0||!uploadBytes||uploadBytes%16||uploadBytes/16>65536||b.length!==100+uploadBytes)||operation===3&&(expectedIndex===0xffffffff||b.readUInt32LE(92)>1||b.readUInt32LE(96)!==2||steps>256)||operation===4&&(b.length!==100||!readCount||readCount>65536||offset+readCount>8000000)||operation===5&&b.length!==88)return failure('input','迭代原生计算范围或检查点无效');
+  if(b.length*6+readCount*48+64>BUDGET)return failure('capacity','迭代原生计算协议与读取超过容量');
+  return{ok:true,value:{generation,sequence,width,height,samples,control:true,operation,resource,family:'iterated',expectedIndex,totalCount,offset,readCount,steps,uploaded:operation===2?offset+uploadBytes/16:undefined}};
+ }
  if(version===5){
   const operation=b.readUInt32LE(64),resource=b.subarray(72,88).toString('hex'),control=operation!==2&&operation!==4,accumulate=operation===2||operation===5;
   if(b.readUInt32LE(60)!==1||operation<1||operation>5||b.readUInt32LE(68)!==16||resource==='0'.repeat(32)||!b.subarray(28,60).every(n=>n===0)||(operation===1||operation===3)&&(width!==1||height!==1)||accumulate&&b.length<108||operation===4&&b.length<96)return failure('input','Samila 原生帧头部无效');
@@ -35,7 +45,7 @@ function responseHeader(bytes,expected){
  if(bytes.readUInt32LE(0)!==0x31524c4d||bytes.readUInt32LE(4)!==1)return failure('protocol','原生响应版本无效');
  const length=bytes.readUInt32LE(8),generation=bytes.readUInt32LE(12),sequence=bytes.readUInt32LE(16),width=bytes.readUInt32LE(20),height=bytes.readUInt32LE(24),status=bytes.readUInt32LE(28),format=bytes.readUInt32LE(32),payloadBytes=bytes.readUInt32LE(36),contextSerial=bytes.readUInt32LE(40);
  if(generation!==expected.generation||sequence!==expected.sequence||width!==expected.width||height!==expected.height)return failure('protocol','原生响应不属于当前帧');
- if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
+ if(length!==HEADER+payloadBytes||status>6||(status===0?(format!==(expected.family==='iterated'?4:expected.family==='samila'?3:expected.control?2:1)||!contextSerial||payloadBytes!==(expected.family==='iterated'?64+expected.readCount*24:expected.family==='samila'?64+(expected.control?0:width*height*4):expected.control?4:width*height*4)):(format!==0||payloadBytes>MAX_ERROR)))return failure('protocol','原生响应长度或格式无效');
  return {ok:true,value:{generation,sequence,width,height,status,format,payloadBytes,contextSerial}};
 }
 function samilaResponse(payload,expected){
@@ -52,6 +62,15 @@ function samilaResponse(payload,expected){
  if(expected.operation===1||expected.operation===3){if(!payload.subarray(32,64).every(n=>n===0)||expected.operation===1&&(index!==0||disposition!==0)||expected.operation===3&&(disposition!==1&&disposition!==2||disposition===2&&index!==0))return failure('protocol','Samila 原生控制响应无效');}
  return {ok:true,value:{index,disposition}};
 }
+function iteratedResponse(payload,expected){
+ const word=n=>payload.readUInt32LE(n),index=word(24),disposition=word(28),uploaded=word(32),total=word(36),offset=word(40),count=word(44),steps=word(48),kind=expected.operation;
+ if(word(0)!==2||word(4)!==kind||payload.subarray(8,24).toString('hex')!==expected.resource||!payload.subarray(52,64).every(n=>n===0)||total>8000000||uploaded>total)return failure('protocol','迭代原生响应身份或容量无效');
+ if(kind===5){if((disposition!==1&&disposition!==2)||disposition===1&&!total||disposition===2&&(index||uploaded||total)||offset||count||steps)return failure('protocol','迭代原生释放响应无效');return{ok:true};}
+ if(disposition!==0||!total||steps!==expected.steps||offset!==(kind===4?expected.offset:0)||count!==expected.readCount)return failure('protocol','迭代原生响应操作范围无效');
+ if(kind===1&&(index!==0||uploaded!==0||total!==expected.totalCount)||kind===2&&(index!==0||uploaded!==expected.uploaded)||kind===3&&(index!==expected.expectedIndex+1||uploaded!==total)||kind===4&&(index!==expected.expectedIndex||uploaded!==total||offset+count>total))return failure('protocol','迭代原生确认进度无效');
+ for(let i=0;i<count;i++)if(word(64+i*24+20)>1)return failure('protocol','迭代原生有效标记无效');return{ok:true};
+}
+const releaseOperation={bouncing:4,samila:3,iterated:5};
 /** Owns the actual ChildProcess handle until close, never locates/kills a PID.
  * This helper executes no shell and spawns no subprocesses. A failed cleanup
  * retains its owner and blocks replacements. One request; no unbounded queue.
@@ -100,10 +119,11 @@ export async function createSourceRendererService({executablePath,executableSha2
      if(offset!==chunk.length){retire(o,failure('protocol','原生响应附带额外字节'));return;}
      const meta=o.response,pixels=o.payload;o.headerUsed=0;o.payload=undefined;o.response=undefined;
      let result;if(meta.status){let message;try{message=new TextDecoder('utf-8',{fatal:true}).decode(pixels);}catch{retire(o,failure('protocol','原生错误消息不是 UTF-8'));return;}result=failure({1:'input',2:'unsupported',3:'capacity',4:'runtime',5:'state-lost',6:'ownership'}[meta.status],message);}
+     else if(j.expected.family==='iterated'){const parsed=iteratedResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'iterated-v1',rowOrder:'none',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else if(j.expected.family==='samila'){const parsed=samilaResponse(pixels,j.expected);if(!parsed.ok){retire(o,parsed);return;}result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:'samila-v1',rowOrder:j.expected.control?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};}
      else result={ok:true,value:{generation:meta.generation,sequence:meta.sequence,width:meta.width,height:meta.height,pixels,format:meta.format===2?'u32le':'rgba8',rowOrder:meta.format===2?'none':'bottom-up',contextSerial:meta.contextSerial,sessionSerial:o.serial,rendererIdentity}};
      if(meta.status===4)retainedResources.clear();
-     if(result.ok&&j.expected.family){const key=j.expected.family+':'+j.expected.resource;if(j.expected.operation===(j.expected.family==='samila'?3:4))retainedResources.delete(key);else if(j.expected.operation===1)retainedResources.set(key,j.expected.resource);}
+     if(result.ok&&j.expected.family){const key=j.expected.family+':'+j.expected.resource;if(j.expected.operation===releaseOperation[j.expected.family])retainedResources.delete(key);else if(j.expected.operation===1)retainedResources.set(key,j.expected.resource);}
      finish(j,result);return;
     }
    }
