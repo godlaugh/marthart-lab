@@ -1,3 +1,4 @@
+import {sourceIteratedPreviewPixelDensity} from './engine/sourceIteratedPresentation';
 import {beginSymmetryCustomValidation,type SymmetryCustomValidation} from './engine/symmetryCustomValidation';
 import {ensureSourceSamilaPaletteSession,writeSourceSamilaParameter,writeSourceSamilaSetting,syncSourceSamilaPaletteSession,openSourceSamilaPaletteEditor,applySourceSamilaPalette,restartSourceSamilaPalette,retainSourceSamilaPaletteOnSave} from './engine/sourceSamilaPaletteEditing';
 import {assertSymmetryPaletteRetention,ensureSymmetryPaletteSession,openSymmetryPaletteEditor,applySymmetrySourcePalette,restartSymmetrySourcePalette,retainSymmetryPaletteOnSave,retainSymmetryPaletteAfterRecording} from './engine/sourceSymmetryPaletteEditing';
@@ -1562,7 +1563,7 @@ export default function App() {
               renderPending={generationActive}
               planeFrameReady={completedFrameReady}
               time={renderTime}
-              pixelRatio={sourceBouncing||usesSourceSamilaSampling(scene)||sourceLivePreviewKind(scene)==='domain'?Math.round(previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio):previewProfile(renderPreferences.quality,devicePixelRatio).pixelRatio}
+              pixelRatio={previewProfile(renderPreferences.quality,devicePixelRatio,{integerPixelDensity:sourceBouncing||usesSourceSamilaSampling(scene)||usesSourceMapPresentation(scene)||usesSourceSymmetryPresentation(scene)||sourceLivePreviewKind(scene)==='domain'}).pixelRatio}
               onCamera={cameraChanged}
               onSize={(width,height,resolution,pixelRatio=1)=>setViewportMeasurement(previous=>previous?.size[0]===width&&previous.size[1]===height&&previous.pixelRatio===pixelRatio&&sameProjectResolution(previous.resolution,resolution)?previous:{size:[width,height],resolution,pixelRatio})}
               onViewSettings={values=>setScene(current=>({...current,settings:{...current.settings,...values}}),sourceLivePreviewKind(sceneRef.current)==='fractal'?'fractal-hot':undefined)}
@@ -2033,7 +2034,7 @@ export default function App() {
           sourceSymmetryToneReference={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.sourceSymmetryPresentation?.reference:undefined}
           samilaPrimaryPixelHeight={presentedSource===scene&&presentedOutput?.type==='raster'?presentedOutput.samilaSplat?.primaryPixelHeight:undefined}
           samilaPixelDensity={usesSourceSamilaSampling(scene)?viewportMeasurement?.pixelRatio:undefined}
-          iteratedPixelDensity={iteratedLiveFacts?viewportMeasurement?.pixelRatio:undefined}
+          iteratedPixelDensity={presentedSource===scene?sourceIteratedPreviewPixelDensity(presentedOutput):undefined}
           domainPixelDensity={sourceLivePreviewKind(scene)==='domain'?viewportMeasurement?.pixelRatio:undefined}
           surfacePixelDensity={sourceLivePreviewKind(scene)==='surface'?viewportMeasurement?.pixelRatio:undefined}
           currentImplicitCapture={previewLiveKind(scene)==='implicit'?{

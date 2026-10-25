@@ -1,6 +1,19 @@
 import type {DensityNormalization,DensityNormalizationFacts} from './densityNormalization';
 import {MAX_RASTER_PIXELS} from './rasterDimensions';
+import type {SceneOutput} from '../types';
 export interface SourceIteratedToneReference {width:number;height:number;}
+
+/** Export consumes the completed primary image's dimensions, never a newer
+ * display measurement or an unrelated geometry response. Cold previews have
+ * the same facts even when they do not own a live iteration session. */
+export function sourceIteratedPreviewPixelDensity(output:SceneOutput|null|undefined):number|undefined {
+ if(output?.type!=='raster'||!output.sourceMapPresentation&&!output.sourceSymmetryPresentation)return;
+ const viewport=output.sourceCameraFrame?.viewport;if(viewport?.target!=='primary')return;
+ const values=[output.width,output.height,viewport.logicalWidth,viewport.logicalHeight];
+ if(!values.every(n=>Number.isSafeInteger(n)&&n>0)||viewport.referenceLogicalHeight!==viewport.logicalHeight)return;
+ const density=output.width/viewport.logicalWidth;
+ if(Number.isSafeInteger(density)&&density>=1&&output.height/viewport.logicalHeight===density)return density;
+}
 
 const size=(v:number)=>{if(!Number.isInteger(v)||v<1||v>16384)throw Error('源迭代密度 呈现参考尺寸必须是 1–16384 的物理像素整数');return v;};
 /** Both Map and Symmetry upload 1.0f - runtimeBrightness, after their

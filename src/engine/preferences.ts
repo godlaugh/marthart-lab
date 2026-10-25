@@ -10,10 +10,11 @@ export function parseRenderPreferences(value:unknown):RenderPreferences {
   return {frameRate:Number(data.frameRate),quality:data.quality as RenderQuality};
 }
 /** The quality choice controls both mathematical sampling and display pixels. */
-export function previewProfile(quality:RenderQuality,deviceRatio=1){
+export function previewProfile(quality:RenderQuality,deviceRatio=1,{integerPixelDensity=false}:{integerPixelDensity?:boolean}={}){
   if(quality==='low')return {width:480,height:360,pixelRatio:1,quality:'preview' as const};
   if(quality==='high')return {width:1920,height:1080,pixelRatio:2,quality:'export' as const};
-  return {width:720,height:540,pixelRatio:Math.max(1,Math.min(deviceRatio,2)),quality:'preview' as const};
+  const ratio=Math.max(1,Math.min(deviceRatio,2));
+  return {width:720,height:540,pixelRatio:integerPixelDensity?Math.round(ratio):ratio,quality:'preview' as const};
 }
 /** Keep the selected pixel budget while sampling the actual canvas aspect. */
 export function previewDimensions(quality:RenderQuality,width:number,height:number){

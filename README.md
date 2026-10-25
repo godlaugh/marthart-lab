@@ -25,7 +25,9 @@ npm run server
 
 ## 2.0 创作预览
 
-2026-10-26 自定义 Symmetry 已接通原生应用入口：实时预览、冷重放、GLSL 编辑验证、暂停截图和录制。158 项相关测试及隐藏 Electron 界面验收通过；实际下载的 3 倍 PNG 与原生捕获 RGBA 逐字节一致。原版整图对照、桌面重新打包仍待完成，M3 继续。见[原生应用入口中文验收](docs/source-symmetry-application-validation.zh-CN.md)。
+2026-10-26 自定义 Symmetry 的 13 组原版记录、104 帧完整艺术缓冲对照通过，303,918,112 个 RGBA 字节零差异。桌面 `2.0.0-preview.4` 已构建并通过实际编辑、播放、暂停截图、从初始状态重复导出及重开验收；修复了冷导出缺少主画布像素密度的问题。1.25 倍显示缩放补验通过，跨设备仍未验证。整窗、覆盖层和其它剩余要求继续，M3 未完成。见[整图对照与桌面预览版 4 中文验收](docs/source-symmetry-full-image-desktop-validation.zh-CN.md)。
+
+同日较早的原生应用接线通过 158 项相关测试和隐藏 Electron 验收，实际下载的 3 倍 PNG 与原生捕获 RGBA 一致；该轮未完成的整图与桌面打包已由上方新验收补充。见[原生应用入口中文验收](docs/source-symmetry-application-validation.zh-CN.md)。
 
 2026-10-26 绘制宿主已区分 graphics 身份、当前目标与 shader 首次绑定；原生重播分别使用普通更新和世界阶段上下文。115 项相关测试、13 组既有原版记录回归及 Web 构建通过。实时／冷生成入口仍待接入，M3 未完成，桌面包未更新。见[绘制宿主中文验收](docs/source-processing-host-validation.zh-CN.md)。
 
@@ -41,7 +43,7 @@ npm run server
 
 2026-10-26 自定义 Symmetry 的原生片元计算核通过四组、32 帧完整状态纹理对照，包含邻居、补齐单元、多次迭代及非有限结果，逐位零差异。计算核尚未接入应用，完整画面与生命周期继续验收；当前自定义场景仍走原有 Worker。见[自定义原生计算核中文记录](docs/source-symmetry-custom-native-validation.zh-CN.md)。
 
-2026-10-26 当前独立 Apple Silicon 预览版为 `2.0.0-preview.3`，输出 `dist-desktop-v2/MathArt Lab 2 Preview-darwin-arm64/MathArt Lab 2 Preview.app`，约 376 MiB。原生渲染器和独立公式字形服务均已随包提供，运行应用不需要外部后端配置。打包使用 `npm run desktop:build:v2 -- --glyph-backend /absolute/path/to/backend.json`，该 JSON 显式选择已有独立 JDK 的 `javaHome` 和官方 JLaTeXMath 的 `jarPath`，自有 helper 每次从源码重建；也可用 `MATHART_GLYPH_BACKEND` 指定该文件。工作区默认保存在 `~/Library/Application Support/MathArt Lab 2 Preview/`。字形原版对照、带公式的实际预览/PNG 和两个迭代场景的编辑、播放及重启恢复通过。Map/Symmetry 从初始状态重放现已使用独立原生资源，32 帧原版对照及实际桌面 PNG 导出通过；自定义 Symmetry 仍走 Worker。此包仍为 M3 预览，见[冷重放中文验收](docs/source-iterated-native-cold-validation.zh-CN.md)、[公式打包中文验收](docs/native-v2-glyph-packaging-validation.zh-CN.md)及[上一轮桌面验收](docs/native-v2-desktop-preview-validation.zh-CN.md)。
+当前独立 Apple Silicon 预览版为 `2.0.0-preview.4`，输出 `dist-desktop-v2/MathArt Lab 2 Preview-darwin-arm64/MathArt Lab 2 Preview.app`，约 374 MiB，包含自定义 Symmetry 原生通路。原生渲染器和独立公式字形服务均已随包提供，运行应用不需要外部后端配置。打包使用 `npm run desktop:build:v2 -- --glyph-backend /absolute/path/to/backend.json`，该 JSON 显式选择已有独立 JDK 的 `javaHome` 和官方 JLaTeXMath 的 `jarPath`，自有 helper 每次从源码重建；也可用 `MATHART_GLYPH_BACKEND` 指定该文件。工作区默认保存在 `~/Library/Application Support/MathArt Lab 2 Preview/`。当前结果见上方预览版 4 验收；预览版 3 的历史结果见[冷重放中文验收](docs/source-iterated-native-cold-validation.zh-CN.md)、[公式打包中文验收](docs/native-v2-glyph-packaging-validation.zh-CN.md)及[早期桌面验收](docs/native-v2-desktop-preview-validation.zh-CN.md)。
 
 2026-10-24 Samila 的可选原生后端已接通生产预览、参数热改和暂停截图；五个原版预设的 15 张完整场景缓冲 RGBA 逐字节一致。真实多会话、取消与资源清理检查通过，隐藏 Electron 的显示 RGB 和 PNG RGBA 也保持一致。普通默认入口尚未切换，冷重放导出、热录制和 2.0 打包继续；整体保持 M3，见[原生预览接入中文报告](docs/source-samila-native-integration-validation.zh-CN.md)。
 

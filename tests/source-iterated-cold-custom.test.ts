@@ -1,3 +1,4 @@
+import {sourceIteratedPreviewPixelDensity} from '../src/engine/sourceIteratedPresentation';
 import {sourceIteratedNativeKind} from '../src/engine/sourceIteratedNativeEligibility';
 import {describe,expect,it,vi} from 'vitest';
 import {IteratedDensitySession,type IteratedFrameJob} from '../src/scenes/iteratedDensity';
@@ -53,6 +54,11 @@ describe('native custom cold owner: real frame/context producers with mocked ren
    const blank=await owner.generateAsync(s,context(s));expect(blank.stats.samples).toBe(0);expect(b.step).not.toHaveBeenCalled();expect(owner.diagnostics().processing).toBeUndefined();
    await owner.generateAsync(s,{...context(s),time:1});expect(b.step).toHaveBeenCalledOnce();expect(b.step.mock.calls[0][0].config.record).toBe(false);expect(b.step.mock.calls[0][0].processingContext!.modelview).toEqual(identity);
   }finally{await owner.resetAsync();}
+ });
+ it('publishes measured primary density for delayed blank and record-disabled cold previews',async()=>{
+  const s=scene(),b=backend(),owner=new IteratedDensitySession({asyncBackend:b});s.settings.iteratedStartTime=1;s.settings.recordTrails=false;
+  const c={...context(s),sourceViewport:ordinarySourceViewport(s,17,13,'primary',13),sourcePointPixelDensity:2,sourceSymmetryToneReference:{width:34,height:26}};
+  try{expect(sourceIteratedPreviewPixelDensity(await owner.generateAsync(s,c))).toBe(2);expect(sourceIteratedPreviewPixelDensity(await owner.generateAsync(s,{...c,time:1}))).toBe(2);}finally{await owner.resetAsync();}
  });
  it('keeps cache hits frame-free and reproduces the same contexts after backward seek and explicit reset',async()=>{
   const s=scene(),c=context(s),b=backend(),owner=new IteratedDensitySession({asyncBackend:b});
