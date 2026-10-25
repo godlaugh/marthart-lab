@@ -1,0 +1,317 @@
+{
+  "status": "finite-app-palette-lifecycle-verified",
+  "baseline": {
+    "head": "9f5ae66415f26d55aaf6898a45b159557e44a7e0",
+    "node": "v24.18.0",
+    "chrome": "155.0.8059.85",
+    "deviceScope": "single Mac; hidden Chrome; DPR 1",
+    "productSourcePins": 589,
+    "sourceBeforeAfterExact": true
+  },
+  "scope": "Actual App/production Worker source Symmetry palette ownership: complete/cancelled recording, resize/profile, library return, same-ID replacement. No original execution/parity claim.",
+  "validation": {
+    "appChecks": 144,
+    "groups": 5,
+    "sourceStable": true,
+    "sourcePins": 589,
+    "cpuPreflightChecks": 10,
+    "cpuTests": 18,
+    "independentCpuEvidenceChecks": 43,
+    "remainingServiceProcesses": 0,
+    "cleanup": [
+      {
+        "resource": "context",
+        "status": "fulfilled"
+      },
+      {
+        "resource": "browser",
+        "status": "fulfilled"
+      },
+      {
+        "resource": "vite",
+        "status": "fulfilled"
+      },
+      {
+        "resource": "exportServer",
+        "status": "fulfilled"
+      }
+    ],
+    "elapsedMs": 29313.171833999997,
+    "pageErrors": 0,
+    "workerErrors": 0
+  },
+  "fixture": {
+    "sourceMember": {
+      "jar": "../.cache/mathart-investigation/MathArt.app/Contents/app/MathArt-1.7.8-b07191b3e97da6fe465555ef6e61a0be.jar",
+      "jarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+      "member": "data/SymmetryChaos/Emperors_Cloak.json",
+      "memberSha256": "31146f45ab32c9aa01045b78fb29314732167faadfce5b65a7442ac04bee1608",
+      "authority": "Read-only shipped JSON fixture extraction; original application not executed."
+    },
+    "authorChanges": {
+      "batch_size": 512,
+      "burn_in_steps": 32,
+      "iterations_per_frame": 16,
+      "dot_size": 6,
+      "timeline": [
+        {
+          "type": "wait",
+          "duration": 1
+        }
+      ],
+      "main_equation.enabled": false,
+      "paletteEditor": "Manual initial, imported cosine coefficients and two-point curves; hot B: cosine count 9, A.r .75, third curve node Y .9"
+    },
+    "originalExecuted": false
+  },
+  "groups": [
+    {
+      "name": "recording-complete",
+      "status": "passed",
+      "runtimePaletteBefore": "cosine",
+      "runtimePaletteAfter": "linear",
+      "authorPaletteAndEditorRetained": true,
+      "beforeWorker": 2,
+      "afterWorker": 2,
+      "beforeSession": "d8507f8f-854f-45b8-b522-a18073bee374",
+      "afterSession": "459e5214-3748-4617-8c3d-50bee60f1c7a",
+      "visibleEvidence": {
+        "path": ".cache/symmetry-control-final-ui-20261025/run-1/complete-after-app.png",
+        "sha256": "a0132acb225c33236601e5fb8a998f6de39cf01aa9ffe8e8152b3a4fb2268346",
+        "canvasSha256": "88f87d0f58f5358e25bc6d85a6d9543c20cf02d2ce2e5af53ea650ebec257845",
+        "nonuniformPixels": 56749
+      },
+      "clock": {
+        "simulationFps": 4,
+        "warmupUpdates": 1,
+        "updates": 4,
+        "encodedFrames": 3,
+        "firstEncodedUpdate": 2,
+        "lastDisplayFrame": 3,
+        "completionReason": "animation-queue"
+      },
+      "actualEncodedFrames": 3,
+      "rawTarget": [
+        291,
+        195
+      ],
+      "uploadedPngRgbaEqualsWorker": true,
+      "uploads": [
+        {
+          "index": 0,
+          "path": ".cache/symmetry-control-final-ui-20261025/run-1/complete-uploaded-0.png",
+          "pngSha256": "af5e40efa62a263b5a7f9e07ae13fb3d67e734fc2c4b2d01fc5d21b6b79d34de",
+          "rgbaSha256": "cb8423bdd4d11b4915dc7bdd7c741341d4ee46e456503fa8aa82b4fea95cd635"
+        },
+        {
+          "index": 1,
+          "path": ".cache/symmetry-control-final-ui-20261025/run-1/complete-uploaded-1.png",
+          "pngSha256": "a64c5ef80ae47902c18066cf447580339b3d4168438482b9628f42448113f1e9",
+          "rgbaSha256": "a24a142250b991f489bb2e50e7091db554106c03fe80e890378a81d243b202b2"
+        },
+        {
+          "index": 2,
+          "path": ".cache/symmetry-control-final-ui-20261025/run-1/complete-uploaded-2.png",
+          "pngSha256": "f371596c209d011fd5e96fe6b58c1537e0fb13ca60ed561dd091109b6890afc7",
+          "rgbaSha256": "c0a714ea206dec4d5a34560c01efe405f05044ca50bdbc73ef07fb282593527a"
+        }
+      ],
+      "coldRuntimeAWithAuthorB": true,
+      "finishRetainsRecordingIncarnation": true,
+      "stopClock": "realtime-source-queue",
+      "recordingTransportWorkerRetained": true,
+      "video": {
+        "metadata": {
+          "width": 96,
+          "height": 64,
+          "pix_fmt": "yuvj444p",
+          "r_frame_rate": "4/1",
+          "nb_read_frames": "3"
+        },
+        "sha256": "d2f49430f7d27ea53a4b87b8970dc297e5e36003f13866f5158bc00396cc7fba",
+        "decodedRgbSha256": "8324d53c77baeb6184f7e073a68bec453ad3ac9642ed8ff3bd815af265237b82"
+      },
+      "cancelAfterAcceptedFirstUpload": false,
+      "encoderDeleted": false
+    },
+    {
+      "name": "recording-cancel",
+      "status": "passed",
+      "runtimePaletteBefore": "linear",
+      "runtimePaletteAfter": "linear",
+      "authorPaletteAndEditorRetained": true,
+      "beforeWorker": 2,
+      "afterWorker": 2,
+      "beforeSession": "459e5214-3748-4617-8c3d-50bee60f1c7a",
+      "afterSession": "d7125469-236b-4d0d-8a63-4d77103ae187",
+      "visibleEvidence": {
+        "path": ".cache/symmetry-control-final-ui-20261025/run-1/cancel-after-app.png",
+        "sha256": "e95bfe5fe8ae38909fcdf54bf89ea0d15dcd3690e4a50de6fea49f24f846e1f2",
+        "canvasSha256": "036d2e8b8b4e182ad17caaf8ce3de8ec4241c5f6bc3be3ac4cfea3bd5720cc56",
+        "nonuniformPixels": 66629
+      },
+      "clock": {
+        "simulationFps": 4,
+        "warmupUpdates": 1,
+        "updates": 4,
+        "encodedFrames": 3,
+        "firstEncodedUpdate": 2,
+        "lastDisplayFrame": 3,
+        "completionReason": "animation-queue"
+      },
+      "actualEncodedFrames": 1,
+      "rawTarget": [
+        291,
+        195
+      ],
+      "uploadedPngRgbaEqualsWorker": true,
+      "uploads": [
+        {
+          "index": 0,
+          "path": ".cache/symmetry-control-final-ui-20261025/run-1/cancel-uploaded-0.png",
+          "pngSha256": "af5e40efa62a263b5a7f9e07ae13fb3d67e734fc2c4b2d01fc5d21b6b79d34de",
+          "rgbaSha256": "cb8423bdd4d11b4915dc7bdd7c741341d4ee46e456503fa8aa82b4fea95cd635"
+        }
+      ],
+      "coldRuntimeAWithAuthorB": true,
+      "finishRetainsRecordingIncarnation": true,
+      "stopClock": "realtime-source-queue",
+      "recordingTransportWorkerRetained": true,
+      "video": null,
+      "cancelAfterAcceptedFirstUpload": true,
+      "encoderDeleted": true
+    },
+    {
+      "name": "paused-resize-profile",
+      "status": "passed",
+      "runtimePaletteBefore": "linear",
+      "runtimePaletteAfter": "linear",
+      "authorPaletteAndEditorRetained": true,
+      "beforeWorker": 2,
+      "afterWorker": 2,
+      "beforeSession": "d7125469-236b-4d0d-8a63-4d77103ae187",
+      "afterSession": "d7125469-236b-4d0d-8a63-4d77103ae187",
+      "visibleEvidence": {
+        "path": ".cache/symmetry-control-final-ui-20261025/run-1/resize-profile-app.png",
+        "sha256": "750a45f70a6453c48ace8aebb30ca964faf145cee5677303bd4cd07e849fe92a",
+        "canvasSha256": "8b193e3486a00b284cf8108a4755e4442177ca17e5a6aebb46c6c31fc72108b7",
+        "nonuniformPixels": 12541
+      },
+      "resizeOutputSizes": [
+        [
+          862,
+          612
+        ],
+        [
+          782,
+          552
+        ]
+      ],
+      "profileOutputSizes": [
+        [
+          "high",
+          1564,
+          1104
+        ],
+        [
+          "low",
+          782,
+          552
+        ]
+      ],
+      "pausedNoUpdatesSessionTimeAndReplayRetained": true
+    },
+    {
+      "name": "library-roundtrip",
+      "status": "passed",
+      "runtimePaletteBefore": "linear",
+      "runtimePaletteAfter": "linear",
+      "authorPaletteAndEditorRetained": true,
+      "beforeWorker": 2,
+      "afterWorker": 4,
+      "beforeSession": "d7125469-236b-4d0d-8a63-4d77103ae187",
+      "afterSession": "60195e86-f271-441d-813d-30b50b4387ba",
+      "visibleEvidence": {
+        "path": ".cache/symmetry-control-final-ui-20261025/run-1/library-return-app.png",
+        "sha256": "8b6c4adb1dc9e5392868381c7d19579ff219500781d23501009c85c5f2a03526",
+        "canvasSha256": "e28c57e9f4d4a6548db44ff35defa5ef7ba71ea152ba79d04805052468bdc15c",
+        "nonuniformPixels": 12605
+      }
+    },
+    {
+      "name": "same-id-file-replacement",
+      "status": "passed",
+      "runtimePaletteBefore": "cosine",
+      "runtimePaletteAfter": "linear",
+      "authorPaletteAndEditorRetained": false,
+      "beforeWorker": 4,
+      "afterWorker": 5,
+      "beforeSession": "60195e86-f271-441d-813d-30b50b4387ba",
+      "afterSession": "5ff43c13-ef65-4a56-8935-ead503b44dd8",
+      "visibleEvidence": {
+        "path": ".cache/symmetry-control-final-ui-20261025/run-1/same-id-app.png",
+        "sha256": "498ee9094e9ada138abd1ed930e125fce21f53ea8ad53657adeeb7dfdb788d50",
+        "canvasSha256": "fb05ba6228527f17318bbe6241c1303bb5c64ffe011b6bb01b8b91ec2d02d12c",
+        "nonuniformPixels": 12606
+      },
+      "sameId": true,
+      "oldWorkerTerminated": true,
+      "freshEditorManualDefaultCosineAndCurve": true,
+      "newManualColors": [
+        "#FF0022",
+        "#00E0C0",
+        "#202040"
+      ],
+      "input": {
+        "path": ".cache/symmetry-control-final-ui-20261025/run-1/same-id-input.json",
+        "sha256": "53ec23d25ff88fa1093531ae5bfa20d89b67a538dedd96066b8c983c7e39ccde"
+      }
+    }
+  ],
+  "evidence": {
+    "index": {
+      "path": ".cache/symmetry-control-final-ui-20261025/index.json",
+      "sha256": "d478b6f06fc80ac194d8b1f4c0a2da1b6af83207cb94af847bad78f730dfce60"
+    },
+    "report": {
+      "path": ".cache/symmetry-control-final-ui-20261025/run-1/report.json",
+      "sha256": "565577d2a05c0d3a5192e36835a90735b2e429f85d14e92cc62c52e5d8416355"
+    },
+    "independentAudit": {
+      "path": ".cache/symmetry-control-final-ui-20261025/audit.json",
+      "sha256": "918c11f9900081632625905b782c6496afe2c763fa16ec544b764f143779e3e8"
+    },
+    "cpuTests": {
+      "path": ".cache/symmetry-control-final-ui-20261025/cpu-tests.json",
+      "sha256": "b46a73089f5034ba0f0d719d9c98a15eefddcbf036ee0b8a75d6c78db5fa3c5a"
+    },
+    "cpuPreflight": {
+      "path": ".cache/symmetry-control-final-ui-20261025/cpu-prepare-2/report.json",
+      "sha256": "cbfbe7c32ae8d17bd83e2a49eb98a3f10bc395bb495579167150d673bcc5165d"
+    }
+  },
+  "sourcePins": {
+    "src/App.tsx": "a69dae4772c42004cf2e2068ea9b18f35cba4e821713da1e0deb7b822802f56e",
+    "src/components/ExportDialog.tsx": "53228a192f916a0f3bbde28c55307897fdc6e688ad22e4c94a49faf539bacce6",
+    "src/components/ArtworkLibrary.tsx": "cb94e34faab1e53fdde068f28c103badeed2196286f109754676e54f55e33f41",
+    "src/engine/sourceSymmetryPaletteEditing.ts": "b8a8c0d6707b78aeeff40854437504c2af625eb1ef371a721997967bb8ce9cc3",
+    "src/engine/sourceIteratedSession.ts": "22a357d5e9a78b5afcc1879eaeaf53103f66a9ac60b2ee3f29bbcef850fbab2a",
+    "src/engine/sourceIteratedRecording.ts": "e19d17cb04dff8b340f4293cbf1e4b7a23b53ca330c0f635bf11999b5174a7af",
+    "src/engine/sourceIteratedLiveIdentity.ts": "23f3acbd9c1c8b15f01f82919a1ea0f52ab4af54a867cff355bbac9ad63d7c6c",
+    "src/engine/sourceIteratedDraft.ts": "430b0d8c6840d7c37a84003b9fef9a281c8a92f82d236453be7c912b3c5f25f7",
+    "src/engine/client.ts": "22afaff520eb602ec4e9d10b1df21c0b9fafd65016daa57231146576ec1fef3e",
+    "src/engine/generate.worker.ts": "445da4f4f9a4712fea3beed7ba8bdf7e8736e5fdbdf14f4f73b79eaef21759ec",
+    "src/engine/generationQueue.ts": "33781c8fedcc3dba3773f674bf0588997e99a1c1f366e17b7383691b56b2bae5",
+    "src/engine/renderer.ts": "55c95c268d90b0b73c5010ad207da5d2820fdee951e33a2fbbd6ba28ae91cebd"
+  },
+  "limits": [
+    "Single Mac and owned hidden Chrome; no original JVM/window or full-image parity.",
+    "Small Emperors_Cloak settings inherited from existing public recording workflow; not original full particle load or arbitrary formula coverage.",
+    "Only completed and first-frame-cancelled source recording; previous generic fault matrix is not repeated.",
+    "Images prove actual delivery and state-linked changes, not art quality. No independent original pixel oracle.",
+    "No CPU/GPU memory or performance claim; observers add hashing overhead.",
+    "Cancel export is distinct from preview cancel; this increment does not rerun the latter with the new palette owner.",
+    "A pause ACK need not create a frame: recording after.output can retain the last unpaused display metadata; subsequent resize/profile frames independently prove paused/no-update behavior.",
+    "No claim about original cold point diameter or subsequent fixes; only pinned 9f5ae66 production behavior was executed."
+  ]
+}
