@@ -15,6 +15,7 @@ const recorder=vi.hoisted(()=>({instances:[] as Array<{disposed:number;retained:
 vi.mock('../src/engine/sourceIteratedNativeBackend',()=>({SourceIteratedNativeBackend:class {
  width=0;height=0;disposed=0;retained=0;trace:unknown[]=[];
  constructor(){recorder.instances.push(this);}
+ estimateWork(job:IteratedFrameJob){return job.config.count*20;}
  async step(job:IteratedFrameJob,options:Omit<IteratedGpuOptions,'isCancelled'>){recorder.entered?.();await recorder.gate;this.trace.push({kind:'step',options,field:job.field});this.width=options.width;this.height=options.height;this.retained=1024;recorder.stepFailure?.();return{bounds:{minX:-1,maxX:1,minY:-1,maxY:1},steps:job.config.count*((job.iterationFrame?.warmupSteps??0)+(job.iterationFrame?.iterationSteps??0)),invalid:0,accepted:job.config.record?job.config.count:0,clipped:0,sampleInvalid:0};}
  async resizeAccumulation(width:number,height:number){this.width=width;this.height=height;this.trace.push({kind:'resize',width,height});}
  async present(){this.trace.push({kind:'present'});return{pixels:new Uint8ClampedArray(this.width*this.height*4),occupiedPixels:1,maxCount:1,toneBackend:'native' as const,warnings:[],sourcePixelRenderer:{backend:'native' as const,identity:'a'.repeat(64),generation:1,sequence:2,samples:0}};}
@@ -61,21 +62,30 @@ describe('native source iterated application dispatch',()=>{
    expect(FakeWorker.instances).toHaveLength(0);
   }finally{await cleanup(g);}
  });
- it('keeps legacy Map, custom kernels and cold reconstruction in the worker route under native policy',async()=>{
-  for(const kind of ['legacy-map','cold-map','custom','cold'] as const){
-   const g=setup(),map=kind==='legacy-map'||kind==='cold-map',s=map?mapScene():scene(),c=map?mapInput(s):input(s);
+ it('keeps legacy Map and custom kernels in the worker route under native policy',async()=>{
+  for(const kind of ['legacy-map','custom'] as const){
+   const g=setup(),map=kind==='legacy-map',s=map?mapScene():scene(),c=map?mapInput(s):input(s);
    if(kind==='legacy-map')s.settings.mapMathModel='legacy-v1';
-   if(kind==='cold-map')delete c.mapLive;
    if(kind==='custom')s.equations.glsl='void calculate_next(in vec3 p, out vec3 q, out float m){q=p;m=0.;}';
-   if(kind==='cold')delete c.symmetryLive;
    const pending=g.generate(s,c),failure=pending.catch(e=>e);expect(FakeWorker.instances).toHaveLength(1);expect(FakeWorker.instances[0].messages[0].operation).toBe('generate');expect(recorder.instances).toHaveLength(0);g.cancel();expect((await failure).name).toBe('AbortError');await cleanup(g);
   }
  });
  it('releases native owners before returning to the worker and terminates that worker before native reacquisition',async()=>{
   const g=setup(),s=scene(),c=input(s);try{
-   await g.generate(s,c);const cold={...c};delete cold.symmetryLive;const pending=g.generate(s,cold),failure=pending.catch(e=>e);
+   await g.generate(s,c);const legacy={...s,settings:{...s.settings,symmetryMathModel:'legacy-v1'}};const pending=g.generate(legacy,c),failure=pending.catch(e=>e);
    await vi.waitFor(()=>expect(FakeWorker.instances).toHaveLength(1));expect(recorder.instances[0].retained).toBe(0);g.cancel();await failure;
    expect(FakeWorker.instances[0].terminated).toBe(true);await g.generate(s,{...c,symmetryLive:{...c.symmetryLive!,sessionId:'replacement'}});expect(recorder.instances).toHaveLength(2);
+  }finally{await cleanup(g);}
+ });
+ for(const family of ['map','symmetry'] as const)it(`${family}: keeps cold replay separate from live ownership and rejects live-only capture of a cold frame`,async()=>{
+  const g=setup(),s=family==='map'?mapScene():scene(),c=family==='map'?mapInput(s):input(s),cold={...c,time:.07};delete cold.mapLive;delete cold.symmetryLive;
+  try{
+   await g.generate(s,c);const fixed=await g.generate(s,cold);
+   expect(fixed).toMatchObject({backend:'native',temporal:{frames:3}});expect(fixed).not.toHaveProperty('mapLive');expect(fixed).not.toHaveProperty('symmetryLive');
+   expect(recorder.instances).toHaveLength(2);expect(recorder.instances[0].retained).toBe(0);expect(FakeWorker.instances).toHaveLength(0);
+   await expect(family==='map'?g.captureMapPaused(fixed,{width:16,height:12}):g.captureSymmetryPaused(fixed,{width:16,height:12})).rejects.toThrow('当前');
+   await g.generate(s,{...cold,time:.075});expect(recorder.instances).toHaveLength(2);
+   await g.generate(s,c);expect(recorder.instances[1].retained).toBe(0);expect(recorder.instances).toHaveLength(3);expect(FakeWorker.instances).toHaveLength(0);
   }finally{await cleanup(g);}
  });
  it('waits for an in-flight native ACK during hard cancellation and suppresses its stale output before replacement',async()=>{

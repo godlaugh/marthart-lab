@@ -12,7 +12,7 @@ import {sourceDrawingPolicy} from './sourceDrawingPixels';
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {SourceSamilaAsyncSession} from './sourceSamilaAsyncSession';
 import {SourceSamilaNativeBackend} from './sourceSamilaNativeBackend';
-import {IteratedDensitySession} from '../scenes/iteratedDensity';
+import {IteratedDensitySession,sourceIteratedColdKind} from '../scenes/iteratedDensity';
 import {usesSourceSamilaSampling} from './sourceSamilaSampling';
 import {usesSourceSamilaPresentation} from './sourceSamilaPresentation';
 import {usesSourceSamilaSplat} from './sourceSamilaSplat';
@@ -244,12 +244,14 @@ export class Generator {
   private nativeSamila?:{backend:SourceSamilaNativeBackend;session:SourceSamilaAsyncSession};
   private nativeSamilaCold?:IteratedDensitySession;
   private nativeIterated?:SourceIteratedSession;
+  private nativeIteratedCold?:IteratedDensitySession;
+  private async releaseIteratedCold(){const owned=this.nativeIteratedCold;if(!owned)return;await owned.resetAsync();if(this.nativeIteratedCold===owned)this.nativeIteratedCold=undefined;}
   private async releaseIterated(){const owned=this.nativeIterated;if(!owned)return;await owned.resetAsync();if(this.nativeIterated===owned)this.nativeIterated=undefined;}
   private async releaseSamilaCold(){const owned=this.nativeSamilaCold;if(!owned)return;await owned.resetAsync();if(this.nativeSamilaCold===owned)this.nativeSamilaCold=undefined;}
   private async releaseSamila(){const owned=this.nativeSamila;if(!owned)return;await owned.session.release();if(this.nativeSamila===owned)this.nativeSamila=undefined;}
   private releaseNative(){
     const previous=this.nativeCleanup;this.nativeSamila?.backend.cancel();
-    this.nativeCleanup=(async()=>{await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();})();void this.nativeCleanup.catch(()=>{});
+    this.nativeCleanup=(async()=>{await previous?.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();})();void this.nativeCleanup.catch(()=>{});
   }
   private sessionId = 0;
   private pending = new Map<number, Pending>();
@@ -566,11 +568,12 @@ export class Generator {
     if(this.recording)return Promise.reject(this.recordingError('源场景录制期间不能生成其它场景'));
     if(this.playbackPending())return Promise.reject(new Error('实时场景播放状态切换尚未完成'));
     const samilaNative=sourceDrawingPolicy()==='native'&&scene.kind==='samila'&&(!!context.samilaLive||usesSourceSamilaSampling(scene)&&usesSourceSamilaPresentation(scene)&&usesSourceSamilaSplat(scene));
-    // Only retained source sessions use the native owner. Cold reconstruction
-    // and custom Symmetry kernels keep their existing worker route.
+    // Live and fixed reconstruction have distinct semantic/resource owners.
+    // Legacy models and custom Symmetry kernels keep their existing worker route.
     const iteratedFamily=sourceDrawingPolicy()==='native'?sourceIteratedLiveKind(scene):undefined;
     const iteratedNative=iteratedFamily==='map'&&context.mapLive&&usesSourceMapMath(scene)?'map':iteratedFamily==='symmetry'&&context.symmetryLive&&usesSourceSymmetryMath(scene)?'symmetry':undefined;
-    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative)){
+    const iteratedCold=sourceDrawingPolicy()==='native'&&!context.mapLive&&!context.symmetryLive?sourceIteratedColdKind(scene):undefined;
+    if(sourceDrawingPolicy()==='native'&&(usesSourceBouncing(scene)||samilaNative||iteratedNative||iteratedCold)){
       if(this.pending.size)return Promise.reject(new Error('当前生成任务尚未结束'));
       this.worker?.terminate();this.worker=null;
       const id=++this.counter;this.currentInputId=id;this.completed=undefined;
@@ -585,7 +588,7 @@ export class Generator {
             await sourceBouncingNativeSession.settleCancellation();
             if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
             if(iteratedNative){
-              await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();
+              await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIteratedCold();
               if(this.nativeIterated&&this.nativeIterated.family!==iteratedNative)await this.releaseIterated();
               const held=this.nativeIterated?.diagnostics(),live=iteratedNative==='map'?input.mapLive:input.symmetryLive;
               if(held?.failed){if(held.sessionId===live!.sessionId)throw new SourceNativeError('state-lost','迭代场景当前显示结果未知；请重新应用或重置场景');await this.releaseIterated();}
@@ -594,12 +597,19 @@ export class Generator {
               return this.nativeIterated.generateAsync(snapshot,{...input,isCancelled:()=>this.pending.get(id)!==pending});
             }
             await this.releaseIterated();
+            if(iteratedCold){
+              await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();
+              if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
+              if(!this.nativeIteratedCold){const backend=new SourceIteratedNativeBackend();this.nativeIteratedCold=new IteratedDensitySession({asyncBackend:{kind:'source-iterated',estimateWork:(job,reset)=>backend.estimateWork(job,reset),step:(job,options)=>backend.step(job,options),present:(tone,view)=>backend.present(tone,view),reset:()=>backend.dispose(),diagnostics:()=>backend.diagnostics()}});}
+              return this.nativeIteratedCold.generateAsync(snapshot,{...input,isCancelled:()=>this.pending.get(id)!==pending});
+            }
+            await this.releaseIteratedCold();
             if(!samilaNative){await this.releaseSamila();await this.releaseSamilaCold();return sourceBouncingNativeSession.generate(this,snapshot,input);}
             await sourceBouncingNativeSession.release(this);
             if(!input.samilaLive){
               await this.releaseSamila();
               if(this.pending.get(id)!==pending)throw new DOMException('已取消','AbortError');
-              if(!this.nativeSamilaCold){const backend=new SourceSamilaNativeBackend();this.nativeSamilaCold=new IteratedDensitySession({asyncBackend:{admitDisplay:budget=>backend.admitDisplay(budget),draw:display=>backend.step(display),present:prepared=>backend.present(prepared),reset:()=>backend.reset(),diagnostics:()=>backend.diagnostics()}});}
+              if(!this.nativeSamilaCold){const backend=new SourceSamilaNativeBackend();this.nativeSamilaCold=new IteratedDensitySession({asyncBackend:{kind:'samila',admitDisplay:budget=>backend.admitDisplay(budget),draw:display=>backend.step(display),present:prepared=>backend.present(prepared),reset:()=>backend.reset(),diagnostics:()=>backend.diagnostics()}});}
               return this.nativeSamilaCold.generateAsync(snapshot,{...input,isCancelled:()=>this.pending.get(id)!==pending});
             }
             await this.releaseSamilaCold();
@@ -622,7 +632,7 @@ export class Generator {
         }catch(error){this.pending.delete(id);reject(error);}
       });
     }
-    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold||this.nativeIterated){
+    if(sourceBouncingNativeSession.owns(this)||this.nativeSamila||this.nativeSamilaCold||this.nativeIterated||this.nativeIteratedCold){
       const transition=this.nativeTransition;this.releaseNative();
       return this.nativeCleanup!.then(()=>{if(this.nativeTransition!==transition)throw new DOMException('已取消','AbortError');return this.generate(scene,context,onProgress,onStatus);});
     }
@@ -1074,7 +1084,7 @@ export class Generator {
     }
     this.pending.clear();
   }
-  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();}
+  async settledNativeCleanup(){if(this.nativeCleanup)await this.nativeCleanup.catch(()=>{});await sourceBouncingNativeSession.release(this);await this.releaseSamila();await this.releaseSamilaCold();await this.releaseIterated();await this.releaseIteratedCold();}
   dispose() {
     this.invalidate(this.recording?new SourceRecordingOperationError('源场景录制后台已释放',false,false):new DOMException('已取消','AbortError'));
   }

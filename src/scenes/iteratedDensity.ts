@@ -25,8 +25,10 @@ import {CAPTURED_DENSITY_CAMERA_MODEL,usesCapturedDensityCamera} from '../engine
 import {ordinarySourceCameraFrame,prepareOrdinarySourceFrame} from '../engine/ordinarySourceCamera';
 import {prepareCapturedDensityCamera,prepareCapturedDensityView,projectCapturedDensityPoint,type CapturedDensityAnchor,type PreparedDensityCameraFrame} from '../engine/sourceDensityCamera';
 import {GenerationCleanupState} from '../engine/generationCleanup';
+import {snapshotGenerationInput} from '../engine/generationInput';
 import type {IteratedDensityAsyncBackend,IteratedDensityAsyncStepResult,IteratedDensityAsyncPresentResult,IteratedDensityPreparedPresent} from '../engine/iteratedDensityAsyncBackend';
 import type {SourceSamilaPreparedDisplay} from '../engine/sourceSamilaSession';
+import type {SourceIteratedReplayAsyncBackend} from '../engine/sourceIteratedReplayBackend';
 import {inputScene,identity,retainsIteratedCompiler} from '../engine/iteratedIdentity';
 import {applySamilaViewport,samilaViewportTransform,type PreparedSamilaViewport} from '../engine/samilaViewport';
 import {samilaCameraEnabled,samilaCameraFrame,prepareSamilaView,parseSamilaCamera,samilaSamplingRotation} from '../engine/samilaCamera';
@@ -150,7 +152,9 @@ interface State {iterationFrame?:SourceIterationFramePlan;samilaSampling?:Source
 const stateBytes=(s:State)=>s.ink.byteLength+(s.positions?.byteLength??0)+(s.metrics?.byteLength??0)+(s.valid?.byteLength??0);
 const structure=(c:IteratedConfig)=>JSON.stringify([c.count,c.sourceInitialSeed,c.seed,c.dimension,c.burn,c.bounds]);
 function clearInk(s:State){s.ink.fill(0);s.accepted=0;s.clipped=0;s.deposited=0;s.sampleInvalid=0;s.recordedPasses=0;s.clears++;}
-type ReplayEffect={kind:'reset'}|{kind:'step';prepared:SourceSamilaPreparedDisplay}|{kind:'present';prepared:IteratedDensityPreparedPresent};
+type ReplayEffect={kind:'reset'}|{kind:'step';prepared:SourceSamilaPreparedDisplay}|{kind:'present';prepared:IteratedDensityPreparedPresent}
+ |{kind:'iterated-step';job:IteratedFrameJob;options:Parameters<SourceIteratedReplayAsyncBackend['step']>[1]}
+ |{kind:'iterated-present';tone:DensityToneJob;view:Parameters<SourceIteratedReplayAsyncBackend['present']>[1]};
 type ReplayReply=IteratedDensityAsyncStepResult|IteratedDensityAsyncPresentResult|void;
 type ReplayOperation=Generator<ReplayEffect,SceneOutput,ReplayReply>;
 function completedTone(prepared:DensityToneJob,s:State,width:number,height:number):DensityToneJob {
@@ -159,6 +163,14 @@ function completedTone(prepared:DensityToneJob,s:State,width:number,height:numbe
 function replaySamilaView(current:SceneDocument,zero:SceneDocument,anchor:number|undefined,width:number,height:number,time:number,tone:DensityToneJob){
  const camera=samilaCameraFrame(current),view=camera?prepareSamilaView(camera,anchor??samilaCameraFrame(zero)?.theta??camera.theta,width,height,time):undefined;
  if(view&&tone.sourcePresentation){const {delta}=sourceSamilaDisplayTransform(view,width,height);view.delta=delta;view.cos=Math.cos(delta);view.sin=Math.sin(delta);}return view;
+}
+
+/** Full source fixed-frame models only. Delayed starts and disabled recording
+ * are valid cold inputs even though they cannot enter the live source owner. */
+export function sourceIteratedColdKind(scene:SceneDocument):'map'|'symmetry'|undefined {
+ if(scene.settings.iteratedBackend==='cpu')return;
+ if(usesSourceMapMath(scene)&&usesSourceMapParameters(scene)&&usesSourceMapPresentation(scene))return 'map';
+ if(usesSourceSymmetryMath(scene)&&usesSourceSymmetryParameters(scene)&&usesSourceSymmetryGradient(scene)&&usesSourceSymmetryPresentation(scene))return 'symmetry';
 }
 
 /** One worker/session owns continuous particles and floating RGB/mass. No output
@@ -193,11 +205,27 @@ export class IteratedDensitySession {
  generateAsync(scene:SceneDocument,context:GenerateContext):Promise<SceneOutput> {
   if(!this.asyncBackend)return Promise.reject(Error('异步持续密度缺少 backend'));
   if(this.inFlight||this.resetting||this.asyncBlocked)return Promise.reject(Error('异步持续密度正在执行或等待清理'));
-  const revision=this.asyncRevision,c={...context,isCancelled:()=>revision!==this.asyncRevision||Boolean(context.isCancelled?.())};
+  const revision=this.asyncRevision;
   const operation=(async()=>{
    try{
-    const replay=this.generateOperation(scene,c,true);let next=replay.next();
-    while(!next.done){const effect=next.value;let reply:ReplayReply;try{reply=effect.kind==='reset'?await this.asyncBackend!.reset():effect.kind==='step'?await this.asyncBackend!.draw(effect.prepared):await this.asyncBackend!.present(effect.prepared);}catch(error){if(effect.kind==='reset'){this.asyncBlocked=true;throw error;}next=replay.throw(error);continue;}next=replay.next(reply);}
+    const c={...snapshotGenerationInput(context),isCancelled:()=>revision!==this.asyncRevision||Boolean(context.isCancelled?.())};
+    const replay=this.generateOperation(structuredClone(scene),c,true);let next=replay.next();
+    while(!next.done){
+     const effect=next.value,backend=this.asyncBackend!;let reply:ReplayReply;
+     try{
+      if(effect.kind==='reset')reply=await backend.reset();
+      else if(effect.kind==='iterated-step'||effect.kind==='iterated-present'){
+       if(backend.kind!=='source-iterated')throw Error('迭代冷重放 backend 类型不匹配');
+       if(effect.kind==='iterated-step')reply={facts:await backend.step(effect.job,effect.options)};
+       else{const shown=await backend.present(effect.tone,effect.view);reply={shown,sourcePixelRenderer:shown.sourcePixelRenderer};}
+      }else{
+       if(backend.kind!=='samila')throw Error('Samila 冷重放 backend 类型不匹配');
+       reply=effect.kind==='step'?await backend.draw(effect.prepared):await backend.present(effect.prepared);
+      }
+     }catch(error){if(effect.kind==='reset'){this.asyncBlocked=true;throw error;}next=replay.throw(error);continue;}
+     // Commit the received ACK to the semantic owner before cancellation.
+     next=replay.next(reply);
+    }
     return next.value;
    }catch(error){if(this.asyncBlocked)throw error;try{await this.asyncBackend!.reset();this.resetRuntime([],true);}catch(cleanup){this.asyncBlocked=true;throw new AggregateError([error,cleanup],'持续密度失败且原生清理未完成；资源保留以便重试');}throw error;}
   })();this.inFlight=operation;void operation.then(()=>{if(this.inFlight===operation)this.inFlight=undefined;},()=>{if(this.inFlight===operation)this.inFlight=undefined;});return operation;
@@ -228,7 +256,12 @@ export class IteratedDensitySession {
    // Actual completed counts and raster dimensions are bound after simulation.
    const baseline=config(runtime.atTime(Number(baseScene.settings.iteratedStartTime??0)),baseScene);
    const tone=usesSourceMapPresentation(baseScene)?prepareSourceMapTone(current,c):usesSourceSymmetryPresentation(baseScene)?prepareSourceSymmetryTone(current,c):prepareDensityTone(current.palette,current.settings,baseScene.kind==='samila'&&baseline.samilaHistoryModel==='bounded-v2'?samilaToneFacts(baseline,c.width,c.height,0,prepareSourceSamilaSplat(current,{width:c.width,height:c.height,primaryPixelHeight:c.samilaPrimaryPixelHeight,path:'points'})):baseScene.kind==='map'||baseScene.kind==='symmetry'?{kind:baseScene.kind,width:c.width,height:c.height,recordedPasses:0,batchSize:1}:undefined);
-   if(external){if(!usesSourceSamilaSampling(baseScene)||!usesSourceSamilaPresentation(baseScene)||!usesSourceSamilaSplat(baseScene))throw Error('原生冷重放需要完整源 Samila 采样、点覆盖和呈现模型');return yield* this.run(baseScene,c,'native',current,tone,runtime);}
+   if(external){
+    if(this.asyncBackend!.kind==='samila'){
+     if(!usesSourceSamilaSampling(baseScene)||!usesSourceSamilaPresentation(baseScene)||!usesSourceSamilaSplat(baseScene))throw Error('原生冷重放需要完整源 Samila 采样、点覆盖和呈现模型');
+    }else if(!sourceIteratedColdKind(baseScene))throw Error('原生冷重放需要完整源 Map/Symmetry 数学、参数和呈现模型');
+    return yield* this.run(baseScene,c,'native',current,tone,runtime);
+   }
    const requested=option(baseScene.settings,'iteratedBackend','auto',['auto','cpu','gpu']),custom=hasSymmetryCustom(baseScene),sourceSymmetry=usesSourceSymmetryMath(baseScene),sourceMap=usesSourceMapMath(baseScene);
    if(sourceMap&&requested==='cpu')throw Error('源 Map 数学需要 GPU；CPU 数学不能替代源 GLSL。');
    if(sourceSymmetry&&requested==='cpu')throw new Error('源 Symmetry 数学需要 GPU；本地 CPU 极坐标实现不能替代原版复数迭代。');
@@ -296,7 +329,7 @@ export class IteratedDensitySession {
    // Compensation is charged before backend allocation, copying or sampling.
    if(job.history){preflight(samples);pixelTests+=samples*(Math.ceil(job.samilaSplat?Math.max(sourceSamilaPointDiameter(job.samilaSplat),Math.max(Math.fround(job.samilaSplat.radius*Math.fround(.6)),Math.fround(.8))):cfg.pointSize)+2)**2;if(!Number.isSafeInteger(pixelTests)||pixelTests>MAX_PIXEL_TESTS)throw new Error('Samila 历史补采超过 20 亿次像素测试；请减少点尺寸、批次或时间');}
    const frameBytes=backend==='native'?width*height*4:backend==='webgl2'?iteratedGpuBytes(cfg.count,width,height,2048,cfg.samilaHistoryModel==='bounded-v2',job.field.kind==='symmetry-custom',Boolean(job.samilaSplat),Boolean(preparedTone.sourcePresentation||preparedTone.sourceSymmetryPresentation||preparedTone.sourceMapPresentation),usesSourceSamilaSampling(baseScene))+width*height*4:(job.samilaSplat?256*256*4+1024*3*4:0)+(base.kind==='samila'?0:cfg.count*33)+width*height*36;if(frameBytes+(sourceSampling?this.sampling.projectedBytes(frame)+this.samplingKey.length*2:this.samplingBytes())>MAX_LIVE_BYTES)throw new Error('持续密度动画状态超过 768 MiB 工作预算');
-   if(backend==='native')this.asyncBackend!.admitDisplay({job,width,height,additionalBytes:width*height*4,stateBytes:stateBytes(s)+this.sampling.projectedBytes(frame)+this.samplingKey.length*2+this.key.length*2});
+   if(backend==='native'&&this.asyncBackend!.kind==='samila')this.asyncBackend!.admitDisplay({job,width,height,additionalBytes:width*height*4,stateBytes:stateBytes(s)+this.sampling.projectedBytes(frame)+this.samplingKey.length*2+this.key.length*2});
    if(sourceSampling)job.samilaSampling=prepareSourceSamilaSamplingBatch(this.sampling,frame,cfg.count,passes);
    if(backend!=='cpu'){
     const parameterFrame=sourceIterationParameterFrame(snapshot);
@@ -309,14 +342,16 @@ export class IteratedDensitySession {
      job.iterationUpdates=event.calls.map(call=>prepareIteratedField({...snapshot,parameters:call.parameters?{...call.parameters}:snapshot.parameters},cfg,call.time,baseScene));
      job.iterationFrame=prepareSourceIterationFramePlan(baseScene.kind==='map'?'map':'symmetry',{frameIndex:event.frameIndex,updateCount:event.calls.length},!resetParticles&&(s.iterationFrame?.warmupApplied??false),cfg.burn,cfg.iterations);
     }
-    if(!job.history)preflight(base.kind==='samila'?samples:cfg.count*(job.iterationFrame?job.iterationFrame.warmupSteps+job.iterationFrame.iterationSteps:cfg.iterations+(resetParticles?cfg.burn:0)));
+    if(!job.history)preflight(backend==='native'&&this.asyncBackend!.kind==='source-iterated'?this.asyncBackend!.estimateWork(job,resetParticles):base.kind==='samila'?samples:cfg.count*(job.iterationFrame?job.iterationFrame.warmupSteps+job.iterationFrame.iterationSteps:cfg.iterations+(resetParticles?cfg.burn:0)));
     if(cfg.record&&!job.history){pixelTests+=job.densitySplat?sourceDensitySplatPixelTests(job.densitySplat,cfg.count):cfg.count*(Math.ceil(job.samilaSplat?Math.max(sourceSamilaPointDiameter(job.samilaSplat),Math.max(Math.fround(job.samilaSplat.radius*Math.fround(.6)),Math.fround(.8))):cfg.pointSize)+2)**2;if(pixelTests>MAX_PIXEL_TESTS)throw new Error('GPU 持续密度单次累积像素测试上界超过 20 亿；请减少点尺寸、批次或时间');}
     if(clear)clearInk(s);if(resetParticles)s.replays++;
     // GPU float states and ink never coexist with CPU orbit state. WebGL keeps
     // its existing CPU fallback; an uncertain native step is never resubmitted.
     const options={resetParticles,clearInk:clear,width,height,projection:view.projection,padding:view.padding,bounds:view.bounds??(frame===0?undefined:s.bounds),...(backend==='webgl2'?{isCancelled:c.isCancelled}:{})};
     let facts:IteratedDensityAsyncStepResult['facts'];
-    if(backend==='native'){
+    if(backend==='native'&&this.asyncBackend!.kind==='source-iterated'){
+     facts=((yield{kind:'iterated-step',job,options}) as IteratedDensityAsyncStepResult).facts;
+    }else if(backend==='native'){
      const tone=completedTone(preparedTone,{...s,recordedPasses:s.recordedPasses+passes,lastBatchSize:cfg.count,completedSamila:samilaToneFacts(cfg,width,height,s.recordedPasses+passes,job.samilaSplat)},width,height),displayView=replaySamilaView(snapshot,zero,s.samilaAnchor,width,height,at,tone);
      if(!displayView)throw Error('原生 Samila 冷重放缺少已解析相机');
      const result=(yield{kind:'step',prepared:{job,options,tone,view:displayView}}) as IteratedDensityAsyncStepResult;facts=result.facts;
@@ -371,8 +406,10 @@ export class IteratedDensitySession {
   const sourceAnchor=sourceFrame?(s.sourceCameraAnchor??prepareCapturedDensityCamera(base.kind as 'map'|'symmetry',prepareOrdinarySourceFrame(sourceFrame)).anchor):undefined;
   const densityView=sourceFrame&&sourceAnchor?prepareCapturedDensityView(sourceAnchor,sourceFrame.camera,width,height):samilaView;
   if(backend==='native'){
-   if(!samilaView)throw Error('原生 Samila 冷呈现缺少已解析相机');
-   const result=(yield{kind:'present',prepared:{tone,view:samilaView,width,height}}) as IteratedDensityAsyncPresentResult,{shown}=result;cancelled(c);pixels=shown.pixels;occupied=shown.occupiedPixels;maxCount=shown.maxCount;toneBackend=shown.toneBackend;sourcePixelRenderer=result.sourcePixelRenderer;warnings.push(...shown.warnings);
+   let effect:ReplayEffect;
+   if(this.asyncBackend!.kind==='source-iterated')effect={kind:'iterated-present',tone,view:densityView};
+   else{if(!samilaView)throw Error('原生 Samila 冷呈现缺少已解析相机');effect={kind:'present',prepared:{tone,view:samilaView,width,height}};}
+   const result=(yield effect) as IteratedDensityAsyncPresentResult,{shown}=result;cancelled(c);pixels=shown.pixels;occupied=shown.occupiedPixels;maxCount=shown.maxCount;toneBackend=shown.toneBackend;sourcePixelRenderer=result.sourcePixelRenderer;warnings.push(...shown.warnings);
   }else if(backend==='webgl2'){const shown=this.gpu!.present(tone,c.isCancelled,densityView);pixels=shown.pixels;occupied=shown.occupiedPixels;maxCount=shown.maxCount;toneBackend=shown.toneBackend;warnings.push(...shown.warnings);}
   else if((tone.sourceSymmetryPresentation||tone.sourceMapPresentation)&&target<0){pixels=clearSourceIteratedTarget(width,height,tone.sceneBackground??tone.background,c.isCancelled);}
   else{pixels=toneDensityRgbaPrepared(width,height,s.ink,tone,c.isCancelled,undefined,densityView);for(let i=3;i<s.ink.length;i+=4){if((i&65535)===3)cancelled(c);if(s.ink[i]>0)occupied++;maxCount=Math.max(maxCount,s.ink[i]);}}

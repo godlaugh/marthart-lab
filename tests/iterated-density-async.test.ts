@@ -3,7 +3,7 @@ import {IteratedDensitySession} from '../src/scenes/iteratedDensity';
 import {createScene} from '../src/engine/document';
 import {definition} from '../src/scenes';
 import {initializeSamilaCamera} from '../src/engine/samilaCamera';
-import type {IteratedDensityAsyncBackend,IteratedDensityAsyncStepResult,IteratedDensityAsyncPresentResult} from '../src/engine/iteratedDensityAsyncBackend';
+import type {IteratedDensitySamilaAsyncBackend,IteratedDensityAsyncStepResult,IteratedDensityAsyncPresentResult} from '../src/engine/iteratedDensityAsyncBackend';
 import type {SourceSamilaPreparedDisplay} from '../src/engine/sourceSamilaSession';
 import type {GenerateContext} from '../src/types';
 
@@ -19,11 +19,11 @@ function scene(){
 }
 const c:GenerateContext={width:17,height:13,time:0,quality:'export',samilaPrimaryPixelHeight:1080};
 function stepResult(display:SourceSamilaPreparedDisplay):IteratedDensityAsyncStepResult {const samples=display.job.history!.samples;return{facts:{bounds:{minX:-1,maxX:1,minY:-1,maxY:1},steps:samples,accepted:samples,clipped:0,invalid:0,sampleInvalid:0}};}
-function backend(){return{
- admitDisplay:vi.fn<IteratedDensityAsyncBackend['admitDisplay']>(()=>{}),
- draw:vi.fn<IteratedDensityAsyncBackend['draw']>(async display=>stepResult(display)),
- present:vi.fn<IteratedDensityAsyncBackend['present']>(async display=>({shown:{pixels:new Uint8ClampedArray(display.width*display.height*4),occupiedPixels:3,maxCount:7,toneBackend:'native',warnings:[]},sourcePixelRenderer:{backend:'native',identity:'mock-native',generation:1,sequence:1,samples:0}})),
- reset:vi.fn<IteratedDensityAsyncBackend['reset']>(async()=>{}),
+function backend(){return{kind:'samila' as const,
+ admitDisplay:vi.fn<IteratedDensitySamilaAsyncBackend['admitDisplay']>(()=>{}),
+ draw:vi.fn<IteratedDensitySamilaAsyncBackend['draw']>(async display=>stepResult(display)),
+ present:vi.fn<IteratedDensitySamilaAsyncBackend['present']>(async display=>({shown:{pixels:new Uint8ClampedArray(display.width*display.height*4),occupiedPixels:3,maxCount:7,toneBackend:'native',warnings:[]},sourcePixelRenderer:{backend:'native',identity:'mock-native',generation:1,sequence:1,samples:0}})),
+ reset:vi.fn<IteratedDensitySamilaAsyncBackend['reset']>(async()=>{}),
  // Deliberately expose a destructive operation to prove cold ownership never
  // calls it. Native abort would retire preview's shared context as well.
  cancel:vi.fn(),
