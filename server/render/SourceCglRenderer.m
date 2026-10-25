@@ -7,6 +7,7 @@
 #import <OpenGL/gl3ext.h>
 #include <math.h>
 static const NSUInteger Budget=256*1024*1024;
+#include "SourceCglSamilaStatistics.h"
 static void ensure(BOOL ok,NSString *kind,NSString *reason){if(!ok)@throw [NSException exceptionWithName:kind reason:reason userInfo:nil];}
 #define INPUT(ok,reason) ensure((ok),@"input",(reason))
 #define RUNTIME(ok,reason) ensure((ok),@"runtime",(reason))
@@ -60,7 +61,7 @@ static NSDictionary *parseWithRetained(NSData *packet,BOOL trace,uint64_t retain
   INPUT([r word]==1,@"Unknown native resource family");uint32_t kind=[r word];NSData *resource=[r block];BOOL nonzero=NO;for(NSUInteger i=0;i<resource.length;i++)if(((const uint8_t*)resource.bytes)[i])nonzero=YES;
   INPUT(kind>=1&&kind<=5&&resource.length==16&&nonzero,@"Invalid Samila operation/resource");NSMutableDictionary *op=[@{@"kind":@(kind),@"resource":resource}mutableCopy];
   if(kind==1||kind==3)INPUT(width==1&&height==1,@"Invalid Samila control dimensions");
-  if(kind==1){uint64_t programBytes=0;for(NSString *key in @[@"historyVertex",@"historyFragment",@"sampleVertex",@"sampleFragment",@"presentVertex",@"presentFragment"]){NSString *source=[r text];INPUT([source rangeOfString:@"#version"].location==NSNotFound,@"Samila shaders must omit version directives");op[key]=source;programBytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}op[@"programBytes"]=@(programBytes);op[@"noise"]=[r block];op[@"palette"]=[r block];samilaFloatBlock(op[@"noise"],256*256*4);samilaFloatBlock(op[@"palette"],1024*3*4);ensure(retainedBytes+programBytes+256*256*4+1024*3*4+65532*16+packet.length*6<=Budget,@"capacity",@"Samila creation exceeds shared budget");}
+  if(kind==1){uint64_t programBytes=0;for(NSString *key in @[@"historyVertex",@"historyFragment",@"sampleVertex",@"sampleFragment",@"presentVertex",@"presentFragment"]){NSString *source=[r text];INPUT([source rangeOfString:@"#version"].location==NSNotFound,@"Samila shaders must omit version directives");op[key]=source;programBytes+=[source lengthOfBytesUsingEncoding:NSUTF8StringEncoding]*3;}op[@"programBytes"]=@(programBytes);op[@"noise"]=[r block];op[@"palette"]=[r block];samilaFloatBlock(op[@"noise"],256*256*4);samilaFloatBlock(op[@"palette"],1024*3*4);ensure(retainedBytes+programBytes+256*256*4+1024*3*4+SamilaStatsStorageBytes+samilaStatsProgramBytes()+packet.length*6<=Budget,@"capacity",@"Samila creation exceeds shared budget");}
   if(kind==2||kind==5){uint32_t index=[r word],clearInk=[r word],base=[r word],passes=[r word],seed=[r word];INPUT(index<UINT32_MAX&&clearInk<=1&&base>=1&&base<=8000000&&(passes==1||passes==6),@"Invalid Samila display checkpoint/batch");op[@"index"]=@(index);op[@"clear"]=@(clearInk);op[@"count"]=@(base*passes);op[@"seed"]=@(seed);NSData *palette=[r block];if(palette.length)samilaFloatBlock(palette,1024*3*4);op[@"palette"]=palette;op[@"history"]=samilaUniforms(r);op[@"sample"]=samilaUniforms(r);op[@"present"]=samilaUniforms(r);}
   if(kind==4){op[@"index"]=@([r word]);op[@"present"]=samilaUniforms(r);}
   INPUT(r.offset==packet.length,@"Trailing Samila frame bytes");return @{@"generation":@(generation),@"sequence":@(sequence),@"width":@(width),@"height":@(height),@"samples":@0,@"samila":op,@"packetBytes":@(packet.length)};

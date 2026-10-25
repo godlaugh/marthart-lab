@@ -1,0 +1,995 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "status": "integrated-statistics-calibration-verified-sustained-pending",
+  "scope": "Native Samila integer statistics reduction, explicit TypeScript/native accounting migration, real native boundary tests and two complete original calibration trace replays.",
+  "milestoneClosure": false,
+  "originalJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "originalReferenceOrigin": "Previously captured original 5-second calibration windows using normal license/policy; no new original run for candidate/integrated replay.",
+  "referenceLimits": [
+    "Original core captures retain pending GL1282 observations: 666 default, 102 high batch. Observer queries are checked separately; no claim of an error-free original host.",
+    "Image endpoint is full core RGBA before branding, not public OS window or video codec."
+  ],
+  "nativeExecutable": {
+    "path": ".cache/samila-native-statistics-integrated-20261025/renderer",
+    "sha256": "3fe7d77cbaf0ab0c25d1a9281516a4aa98ae9cf8cdce689ddee6f2c795771321",
+    "bytes": 140584
+  },
+  "candidateAndIntegratedExecutableIdentical": true,
+  "productSources": [
+    {
+      "path": "server/render/SourceCglRenderer.m",
+      "sha256": "8595cd0ae35417ed23ef1fbdacebc4a6bfbda787a34fbb5d3b0f067c5a9f446f",
+      "bytes": 36702
+    },
+    {
+      "path": "server/render/SourceCglSamilaState.h",
+      "sha256": "a521c7925a9d846c7e8f10302ab90bd8ff11fbc29bd08c8d09d16a55fd112303",
+      "bytes": 24861
+    },
+    {
+      "path": "server/render/SourceCglSamilaStatistics.h",
+      "sha256": "51e91cd7394ac525a4974b3715c687a3814a490a37ac61854d9ad449aaf5675f",
+      "bytes": 1671
+    },
+    {
+      "path": "src/engine/sourceSamilaNativeBackend.ts",
+      "sha256": "43da850b676f9f1083a4f69a7c36f17522b76169d7480a08d50723eaaed433ba",
+      "bytes": 10490
+    },
+    {
+      "path": "src/engine/sourceSamilaNativeProtocol.ts",
+      "sha256": "67c7a83aa6408033ebf11d1313bac27260ab080076ad18071c5a0e9c85335759",
+      "bytes": 14025
+    }
+  ],
+  "accounting": {
+    "nativeHeaderAndActualTypeScriptModuleEqual": true,
+    "statisticsStorageBytes": 2240000,
+    "internalShaderSourceChargeBytes": 1860,
+    "statisticsReadbackBytes": 16,
+    "oldStatisticsBufferBytes": 1048512,
+    "retainedIncreasePerOwnerBytes": 1193348,
+    "nativeAccountingProbe": {
+      "path": ".cache/samila-sustained-load-20261025/integrated-budget-cpu/report.json",
+      "sha256": "55c815187172502ed235eccc881d99a60608a4e7f217dc553e801588d3c99ae5",
+      "bytes": 3097
+    },
+    "probeScript": {
+      "path": ".cache/samila-sustained-load-20261025/check-integrated-budget.mjs",
+      "sha256": "50b3731dc967044a507a4966ce1b7683857f046872f9b16e0b2a4e86d621827c",
+      "bytes": 4232
+    },
+    "probeScope": "CPU-only Foundation program reads actual native header values; Vite SSR reads actual TypeScript exports/helper. No CGL context, renderer service or GPU.",
+    "cases": [
+      {
+        "name": "Samila",
+        "frames": 222,
+        "oldRetainedBytes": [
+          12874264
+        ],
+        "newRetainedBytes": [
+          14067612
+        ],
+        "differentFromExpectedDelta": 0
+      },
+      {
+        "name": "samila1",
+        "frames": 34,
+        "oldRetainedBytes": [
+          12874432
+        ],
+        "newRetainedBytes": [
+          14067780
+        ],
+        "differentFromExpectedDelta": 0
+      }
+    ],
+    "limits": [
+      "retainedBytes is conservative contractual accounting, not measured driver allocation.",
+      "Native retained formula is source-derived; display response does not return physical allocation bytes."
+    ]
+  },
+  "correctness": {
+    "comparedDisplays": 256,
+    "selectedFullCoreImages": 6,
+    "differentImageBytes": 0,
+    "pixelTolerance": 0,
+    "imageTransform": "Native GL bottom-up rows to top-down; all RGBA bytes unchanged otherwise.",
+    "comparedWith": [
+      "original selected full images and original runtime trace",
+      "production-run3",
+      "candidate-run1"
+    ],
+    "allSemanticFieldsExact": true,
+    "retainedBudgetComparedAsExplicitMigration": true,
+    "httpContractExact": true,
+    "allCalibrationSamplesAccepted": true,
+    "calibrationDoesNotCoverNonzeroInvalidOrClipped": true
+  },
+  "cases": [
+    {
+      "name": "Samila",
+      "baseBatch": 1262144,
+      "passesPerDisplay": 6,
+      "completedDisplays": 222,
+      "samplesPerDisplay": 7572864,
+      "completedSamples": 1681175808,
+      "dimensions": {
+        "primaryPhysical": [
+          810,
+          972
+        ],
+        "targetPhysical": [
+          576,
+          384
+        ],
+        "requestedOutput": [
+          192,
+          128
+        ],
+        "pixelDensity": 2,
+        "primaryPixelHeight": 972
+      },
+      "fixedSimulationDt": 0.016666666666666666,
+      "not60FpsPromise": true,
+      "sourceStableDuringRun": true,
+      "referencesStable": true,
+      "rendererStable": true,
+      "originalReference": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-calibration-run2/run.json",
+        "sha256": "31e19518e165c43cd87cf6bdf344b77a56f9335ecb846f4ac9337bf72d69b378",
+        "bytes": 23723
+      },
+      "originalSource": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-calibration-run2/source.json",
+        "sha256": "6cb986efe151e679bb7f51cf58c5bd74248781b16685eb7f3624f6c9b6821249",
+        "bytes": 2535
+      },
+      "originalTrace": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-calibration-run2/trace.jsonl",
+        "sha256": "54498bc7a426a6d364ee26683719e6331ec42d216471e7662faeadf327e9a907",
+        "bytes": 148203
+      },
+      "integratedReport": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-calibration-integrated-run1/report.json",
+        "sha256": "d5e3aaa626045283e976c23e40e43269adf8946eee4a9bec3660ae52ced351a7",
+        "bytes": 136205
+      },
+      "integratedTrace": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-calibration-integrated-run1/trace.jsonl",
+        "sha256": "8c35249533d496bae29727815d4245a9d7ad513ebb22f5c5ea283aeb0172a487",
+        "bytes": 372550
+      },
+      "comparison": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-calibration-integrated-run1/comparison.json",
+        "sha256": "11255e8d757cd219371d3703fb4172533311d827a2576076d0b9e80149a83ede",
+        "bytes": 24818
+      },
+      "summary": {
+        "path": ".cache/samila-sustained-load-20261025/Samila-calibration-integrated-run1/summary.json",
+        "sha256": "f4f690d7e7efba77da216e0694db7f60d8a7cde0732e636c83aa15ab489d4af4",
+        "bytes": 6277
+      },
+      "differentFramesByReference": {
+        "baseline": {
+          "displayIndex": 0,
+          "seed": 0,
+          "sampleCount": 0,
+          "cumulativeSamples": 0,
+          "runtime": 0,
+          "parameters": 0,
+          "density": 0,
+          "prepared": 0,
+          "sampleStatistics": 0,
+          "backendExceptRetainedBytes": 0,
+          "retainedBytesExpectedMigration": 0,
+          "httpResponseContract": 0
+        },
+        "candidate": {
+          "displayIndex": 0,
+          "seed": 0,
+          "sampleCount": 0,
+          "cumulativeSamples": 0,
+          "runtime": 0,
+          "parameters": 0,
+          "density": 0,
+          "prepared": 0,
+          "sampleStatistics": 0,
+          "backendExceptRetainedBytes": 0,
+          "retainedBytesExpectedMigration": 0,
+          "httpResponseContract": 0
+        }
+      },
+      "sourceDeltaPathsFromBaseline": [
+        "server/render/SourceCglRenderer.m",
+        "server/render/SourceCglSamilaState.h",
+        "server/render/SourceCglSamilaStatistics.h",
+        "src/App.tsx",
+        "src/components/Timeline.tsx",
+        "src/engine/sourceSamilaNativeBackend.ts",
+        "src/engine/sourceSamilaNativeProtocol.ts",
+        "src/locales/application.en.json"
+      ],
+      "parameterA": {
+        "first": 2.163062922152726,
+        "last": 2.359705865455765,
+        "minimum": 2.163062922152726,
+        "maximum": 2.359705865455765,
+        "changedFrames": 221
+      },
+      "theta": {
+        "first": 0.00011111112689832225,
+        "last": 0.3583330512046814,
+        "changedFrames": 221
+      },
+      "quality": [
+        {
+          "displayIndex": 0,
+          "dimensions": [
+            576,
+            384
+          ],
+          "bytes": 884736,
+          "differentBytes": {
+            "originalTopDown": 0,
+            "baseline": 0,
+            "candidate": 0
+          },
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-calibration-run2/quality-0/core.rgba",
+            "sha256": "c1eb043ccfef3046943ab13cbb9ae21832386f5e30e17beec5107267f3330c4c",
+            "bytes": 884736
+          },
+          "integrated": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-calibration-integrated-run1/quality-0.rgba",
+            "sha256": "2af783cb489ee135b466846f27c3bb4cdb56016f3eb768970764901fe58b61a5",
+            "bytes": 884736
+          }
+        },
+        {
+          "displayIndex": 102,
+          "dimensions": [
+            576,
+            384
+          ],
+          "bytes": 884736,
+          "differentBytes": {
+            "originalTopDown": 0,
+            "baseline": 0,
+            "candidate": 0
+          },
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-calibration-run2/quality-102/core.rgba",
+            "sha256": "b3ab679f104fa016892531422d234afa8baa841a429dc2cae5ab1b81dddac5f2",
+            "bytes": 884736
+          },
+          "integrated": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-calibration-integrated-run1/quality-102.rgba",
+            "sha256": "e33cf3e7e52d557832180508c2c6756d52e4fc1ea0b0b88528630ee02101a8db",
+            "bytes": 884736
+          }
+        },
+        {
+          "displayIndex": 221,
+          "dimensions": [
+            576,
+            384
+          ],
+          "bytes": 884736,
+          "differentBytes": {
+            "originalTopDown": 0,
+            "baseline": 0,
+            "candidate": 0
+          },
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-calibration-run2/quality-221/core.rgba",
+            "sha256": "113a46968e7bc587f8de85040da3009b810e5d5a14427cebca0df26b6fbdf858",
+            "bytes": 884736
+          },
+          "integrated": {
+            "path": ".cache/samila-sustained-load-20261025/Samila-calibration-integrated-run1/quality-221.rgba",
+            "sha256": "d8b9a3d3e089602837dcf119f21b854f122f3b76ecdf6c07734b72dd89810091",
+            "bytes": 884736
+          }
+        }
+      ],
+      "cost": {
+        "baseline": {
+          "wallSeconds": 55.986489457999994,
+          "firstGenerationSeconds": 0.47520108399999983,
+          "generationSeconds": {
+            "count": 222,
+            "min": 0.23534545800000023,
+            "p50": 0.24905579099999886,
+            "p95": 0.26545124999999825,
+            "max": 0.47520108399999983,
+            "mean": 0.25133952628378403
+          },
+          "steadyGenerationSeconds": {
+            "count": 221,
+            "min": 0.23534545800000023,
+            "p50": 0.24905579099999886,
+            "p95": 0.2645592919999999,
+            "max": 0.2763032089999997,
+            "mean": 0.2503265780588238
+          },
+          "steadyHeadersSeconds": {
+            "count": 221,
+            "min": 0.233137334,
+            "p50": 0.24723250000000188,
+            "p95": 0.262665500000001,
+            "max": 0.2745968750000011,
+            "mean": 0.24845927903167409
+          },
+          "steadyBodyAfterHeadersSeconds": {
+            "count": 221,
+            "min": 0.00038741599999775334,
+            "p50": 0.0004623750000027904,
+            "p95": 0.000750415999999865,
+            "max": 0.0021366250000010023,
+            "mean": 0.0005105520588235221
+          },
+          "steadyOwnerSeconds": {
+            "count": 221,
+            "min": 0.0007508749999979025,
+            "p50": 0.0008497919999990722,
+            "p95": 0.001038666999997051,
+            "max": 0.001351333999999954,
+            "mean": 0.0008671091176475362
+          },
+          "wholeRunCpuSeconds": 59.706936,
+          "wholeRunSeconds": 59.51731212507002,
+          "wholeRunPeakFamilyRssKiB": 715920
+        },
+        "candidate": {
+          "wallSeconds": 9.9186425,
+          "firstGenerationSeconds": 0.2725046250000005,
+          "generationSeconds": {
+            "count": 222,
+            "min": 0.03810991599999943,
+            "p50": 0.0422324580000004,
+            "p95": 0.04685183399999914,
+            "max": 0.2725046250000005,
+            "mean": 0.04402198986036031
+          },
+          "steadyGenerationSeconds": {
+            "count": 221,
+            "min": 0.03810991599999943,
+            "p50": 0.0422324580000004,
+            "p95": 0.04684320900000057,
+            "max": 0.09745195800000056,
+            "mean": 0.04298813178280538
+          },
+          "steadyHeadersSeconds": {
+            "count": 221,
+            "min": 0.036270292000001064,
+            "p50": 0.040341333000000305,
+            "p95": 0.044972874999999475,
+            "max": 0.09550412500000038,
+            "mean": 0.041137171348416296
+          },
+          "steadyBodyAfterHeadersSeconds": {
+            "count": 221,
+            "min": 0.0003779170000007062,
+            "p50": 0.0004941669999998372,
+            "p95": 0.0007050830000007446,
+            "max": 0.002037791999999171,
+            "mean": 0.0005232777692308321
+          },
+          "steadyOwnerSeconds": {
+            "count": 221,
+            "min": 0.0007110419999999049,
+            "p50": 0.000837582999999538,
+            "p95": 0.0010654169999997978,
+            "max": 0.0012470430000003085,
+            "mean": 0.0008654351719456715
+          },
+          "wholeRunCpuSeconds": 23.326925,
+          "wholeRunSeconds": 14.244950916967355,
+          "wholeRunPeakFamilyRssKiB": 748608
+        },
+        "integrated": {
+          "wallSeconds": 10.208392916000001,
+          "firstGenerationSeconds": 0.2778686250000001,
+          "generationSeconds": {
+            "count": 222,
+            "min": 0.03818874999999935,
+            "p50": 0.043158792000000175,
+            "p95": 0.051386625000000095,
+            "max": 0.2778686250000001,
+            "mean": 0.045290676445945886
+          },
+          "steadyGenerationSeconds": {
+            "count": 221,
+            "min": 0.03818874999999935,
+            "p50": 0.043158792000000175,
+            "p95": 0.05048225000000002,
+            "max": 0.08327233399999932,
+            "mean": 0.04423828753846148
+          },
+          "steadyHeadersSeconds": {
+            "count": 221,
+            "min": 0.036416667000001325,
+            "p50": 0.04142200000000048,
+            "p95": 0.0486815000000006,
+            "max": 0.07308141700000033,
+            "mean": 0.042266530950226304
+          },
+          "steadyBodyAfterHeadersSeconds": {
+            "count": 221,
+            "min": 0.00035649999999986387,
+            "p50": 0.00044854200000009337,
+            "p95": 0.0007428339999996786,
+            "max": 0.0011221249999998698,
+            "mean": 0.0004963031719456761
+          },
+          "steadyOwnerSeconds": {
+            "count": 221,
+            "min": 0.0007017080000005088,
+            "p50": 0.0008481240000000959,
+            "p95": 0.001059418000002553,
+            "max": 0.03122708399999829,
+            "mean": 0.0010137905656106897
+          },
+          "wholeRunCpuSeconds": 23.316633000000003,
+          "wholeRunSeconds": 14.243467125110328,
+          "wholeRunPeakFamilyRssKiB": 738240
+        }
+      },
+      "wallSpeedupVersusBaseline": 5.484358793659896,
+      "integratedWorkloadWindowRssPeakKiB": 738240,
+      "cleanup": {
+        "afterRelease": {
+          "creations": 2,
+          "displays": 224,
+          "steps": 0,
+          "presentations": 0,
+          "requestBytes": 918896,
+          "owned": false,
+          "active": false,
+          "cleanupPending": false,
+          "displayIndex": 0,
+          "retainedBytes": 0,
+          "resources": 0
+        },
+        "processesAfterClose": 0,
+        "processGroupAfter": []
+      }
+    },
+    {
+      "name": "samila1",
+      "baseBatch": 6562144,
+      "passesPerDisplay": 6,
+      "completedDisplays": 34,
+      "samplesPerDisplay": 39372864,
+      "completedSamples": 1338677376,
+      "dimensions": {
+        "primaryPhysical": [
+          810,
+          972
+        ],
+        "targetPhysical": [
+          576,
+          384
+        ],
+        "requestedOutput": [
+          192,
+          128
+        ],
+        "pixelDensity": 2,
+        "primaryPixelHeight": 972
+      },
+      "fixedSimulationDt": 0.016666666666666666,
+      "not60FpsPromise": true,
+      "sourceStableDuringRun": true,
+      "referencesStable": true,
+      "rendererStable": true,
+      "originalReference": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-calibration-run2/run.json",
+        "sha256": "7bb766d408746b57a0d3260d713fa1b234015de614b4807e0b4aa833bc83f7b6",
+        "bytes": 23754
+      },
+      "originalSource": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-calibration-run2/source.json",
+        "sha256": "7e51837ea6d893b26aa78d31d1f474726d71ae3ed4e450da6fcf17d5e2664d66",
+        "bytes": 2633
+      },
+      "originalTrace": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-calibration-run2/trace.jsonl",
+        "sha256": "8f254a930f45ccd248968f5baabaee54e162c12dd3ba714f6633c470abb61494",
+        "bytes": 23594
+      },
+      "integratedReport": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-calibration-integrated-run1/report.json",
+        "sha256": "cf3575be22550d69b5bb9f708eb04117debcde2e44a4acbbfc05c86cc24dbbd3",
+        "bytes": 136209
+      },
+      "integratedTrace": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-calibration-integrated-run1/trace.jsonl",
+        "sha256": "1690a0696851b764adf10364df0b07f1a002c26037daef6a93b572d979ba7724",
+        "bytes": 59019
+      },
+      "comparison": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-calibration-integrated-run1/comparison.json",
+        "sha256": "c9d6cdf9d0a4b9f97869ca3930f696e8840762d86c0877ba87c106db16a9e181",
+        "bytes": 24728
+      },
+      "summary": {
+        "path": ".cache/samila-sustained-load-20261025/samila1-calibration-integrated-run1/summary.json",
+        "sha256": "3c91f4d499aafaf6e2da2373aefbe2292b1de0cfd85fe6b24a127eb350a6bb82",
+        "bytes": 6207
+      },
+      "differentFramesByReference": {
+        "baseline": {
+          "displayIndex": 0,
+          "seed": 0,
+          "sampleCount": 0,
+          "cumulativeSamples": 0,
+          "runtime": 0,
+          "parameters": 0,
+          "density": 0,
+          "prepared": 0,
+          "sampleStatistics": 0,
+          "backendExceptRetainedBytes": 0,
+          "retainedBytesExpectedMigration": 0,
+          "httpResponseContract": 0
+        },
+        "candidate": {
+          "displayIndex": 0,
+          "seed": 0,
+          "sampleCount": 0,
+          "cumulativeSamples": 0,
+          "runtime": 0,
+          "parameters": 0,
+          "density": 0,
+          "prepared": 0,
+          "sampleStatistics": 0,
+          "backendExceptRetainedBytes": 0,
+          "retainedBytesExpectedMigration": 0,
+          "httpResponseContract": 0
+        }
+      },
+      "sourceDeltaPathsFromBaseline": [
+        "server/render/SourceCglRenderer.m",
+        "server/render/SourceCglSamilaState.h",
+        "server/render/SourceCglSamilaStatistics.h",
+        "src/App.tsx",
+        "src/components/Timeline.tsx",
+        "src/engine/sourceSamilaNativeBackend.ts",
+        "src/engine/sourceSamilaNativeProtocol.ts",
+        "src/locales/application.en.json"
+      ],
+      "parameterA": {
+        "first": 1.173059140038797,
+        "last": 1.1979811451192486,
+        "minimum": 1.173059140038797,
+        "maximum": 1.1979811451192486,
+        "changedFrames": 33
+      },
+      "theta": {
+        "first": 0.00011111112689832225,
+        "last": 0.04499999061226845,
+        "changedFrames": 33
+      },
+      "quality": [
+        {
+          "displayIndex": 0,
+          "dimensions": [
+            576,
+            384
+          ],
+          "bytes": 884736,
+          "differentBytes": {
+            "originalTopDown": 0,
+            "baseline": 0,
+            "candidate": 0
+          },
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-calibration-run2/quality-0/core.rgba",
+            "sha256": "e0b48de9a896c63a8b49beecff6c458b36132be51fec29668b8c22e3cbb69bba",
+            "bytes": 884736
+          },
+          "integrated": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-calibration-integrated-run1/quality-0.rgba",
+            "sha256": "a895d1f53a1d0f2e6093f9ffd8760ea2dbf043d1c927bebec9d9cb1a2e020fd2",
+            "bytes": 884736
+          }
+        },
+        {
+          "displayIndex": 14,
+          "dimensions": [
+            576,
+            384
+          ],
+          "bytes": 884736,
+          "differentBytes": {
+            "originalTopDown": 0,
+            "baseline": 0,
+            "candidate": 0
+          },
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-calibration-run2/quality-14/core.rgba",
+            "sha256": "c5b326ab361cda3bfad97b5f675f18596e525ec83b805a71b78869ab73f74c29",
+            "bytes": 884736
+          },
+          "integrated": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-calibration-integrated-run1/quality-14.rgba",
+            "sha256": "865b9dfe244c4f03c9e7b8f9f6f1766401f970906cc3708397bf375c1566a1db",
+            "bytes": 884736
+          }
+        },
+        {
+          "displayIndex": 33,
+          "dimensions": [
+            576,
+            384
+          ],
+          "bytes": 884736,
+          "differentBytes": {
+            "originalTopDown": 0,
+            "baseline": 0,
+            "candidate": 0
+          },
+          "original": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-calibration-run2/quality-33/core.rgba",
+            "sha256": "6f83f5c74841be5b04dafc6bf3bdf3c9a464142075bd0fd358af4eae5769c41a",
+            "bytes": 884736
+          },
+          "integrated": {
+            "path": ".cache/samila-sustained-load-20261025/samila1-calibration-integrated-run1/quality-33.rgba",
+            "sha256": "7b1faf8c6fe45827cff4a0f1b451fee3cfdb9f8764e1c82bc6af921530996aeb",
+            "bytes": 884736
+          }
+        }
+      ],
+      "cost": {
+        "baseline": {
+          "wallSeconds": 43.326018708,
+          "firstGenerationSeconds": 1.5518822920000002,
+          "generationSeconds": {
+            "count": 34,
+            "min": 1.2198582499999975,
+            "p50": 1.2580048750000006,
+            "p95": 1.3238675830000002,
+            "max": 1.5518822920000002,
+            "mean": 1.271247360294118
+          },
+          "steadyGenerationSeconds": {
+            "count": 33,
+            "min": 1.2198582499999975,
+            "p50": 1.2580048750000006,
+            "p95": 1.3144484170000033,
+            "max": 1.3238675830000002,
+            "mean": 1.2627432714545457
+          },
+          "steadyHeadersSeconds": {
+            "count": 33,
+            "min": 1.2171215420000008,
+            "p50": 1.255372874999999,
+            "p95": 1.3119996250000003,
+            "max": 1.3212530829999996,
+            "mean": 1.2601094369999999
+          },
+          "steadyBodyAfterHeadersSeconds": {
+            "count": 33,
+            "min": 0.0005098330000037343,
+            "p50": 0.0007003750000003084,
+            "p95": 0.0009699170000021518,
+            "max": 0.0009945000000006754,
+            "mean": 0.0007096186363638634
+          },
+          "steadyOwnerSeconds": {
+            "count": 33,
+            "min": 0.0008722080000007626,
+            "p50": 0.0010522920000002323,
+            "p95": 0.0014832920000000804,
+            "max": 0.001727667000001043,
+            "mean": 0.001080979757576312
+          },
+          "wholeRunCpuSeconds": 45.406139,
+          "wholeRunSeconds": 47.20900783292018,
+          "wholeRunPeakFamilyRssKiB": 665392
+        },
+        "candidate": {
+          "wallSeconds": 6.473269042,
+          "firstGenerationSeconds": 0.4513466659999999,
+          "generationSeconds": {
+            "count": 34,
+            "min": 0.16936175000000003,
+            "p50": 0.1774270829999996,
+            "p95": 0.197860584,
+            "max": 0.4513466659999999,
+            "mean": 0.1884401788529411
+          },
+          "steadyGenerationSeconds": {
+            "count": 33,
+            "min": 0.16936175000000003,
+            "p50": 0.1774270829999996,
+            "p95": 0.19692216700000062,
+            "max": 0.197860584,
+            "mean": 0.18047331560606053
+          },
+          "steadyHeadersSeconds": {
+            "count": 33,
+            "min": 0.1674192499999999,
+            "p50": 0.17541525000000002,
+            "p95": 0.1951242910000001,
+            "max": 0.19518675000000077,
+            "mean": 0.1782766767272726
+          },
+          "steadyBodyAfterHeadersSeconds": {
+            "count": 33,
+            "min": 0.0004216250000008692,
+            "p50": 0.0006457089999994392,
+            "p95": 0.0009444999999996262,
+            "max": 0.001394041999999901,
+            "mean": 0.0006529293030303507
+          },
+          "steadyOwnerSeconds": {
+            "count": 33,
+            "min": 0.0008377490000002763,
+            "p50": 0.0009247500000001407,
+            "p95": 0.0011909580000001307,
+            "max": 0.0014252499999997947,
+            "mean": 0.0009663460303030355
+          },
+          "wholeRunCpuSeconds": 16.650335,
+          "wholeRunSeconds": 9.680253875092603,
+          "wholeRunPeakFamilyRssKiB": 760016
+        },
+        "integrated": {
+          "wallSeconds": 6.477242834000001,
+          "firstGenerationSeconds": 0.4222345,
+          "generationSeconds": {
+            "count": 34,
+            "min": 0.17083183299999838,
+            "p50": 0.177714833,
+            "p95": 0.19350887499999953,
+            "max": 0.4222345,
+            "mean": 0.18773022308823523
+          },
+          "steadyGenerationSeconds": {
+            "count": 33,
+            "min": 0.17083183299999838,
+            "p50": 0.177714833,
+            "p95": 0.19193662500000028,
+            "max": 0.19350887499999953,
+            "mean": 0.1806240328787878
+          },
+          "steadyHeadersSeconds": {
+            "count": 33,
+            "min": 0.1689292919999989,
+            "p50": 0.1756902919999993,
+            "p95": 0.18925395900000058,
+            "max": 0.19161512500000027,
+            "mean": 0.17837825257575735
+          },
+          "steadyBodyAfterHeadersSeconds": {
+            "count": 33,
+            "min": 0.0004752090000001985,
+            "p50": 0.0006274580000008301,
+            "p95": 0.0010692920000001105,
+            "max": 0.0019766250000002317,
+            "mean": 0.0006995277878788273
+          },
+          "steadyOwnerSeconds": {
+            "count": 33,
+            "min": 0.0008235000000004211,
+            "p50": 0.000931791999999404,
+            "p95": 0.0013002079999987481,
+            "max": 0.001415958999999939,
+            "mean": 0.0009810531212120675
+          },
+          "wholeRunCpuSeconds": 16.908372,
+          "wholeRunSeconds": 10.163523375056684,
+          "wholeRunPeakFamilyRssKiB": 743680
+        }
+      },
+      "wallSpeedupVersusBaseline": 6.688960074273478,
+      "integratedWorkloadWindowRssPeakKiB": 728640,
+      "cleanup": {
+        "afterRelease": {
+          "creations": 2,
+          "displays": 36,
+          "steps": 0,
+          "presentations": 0,
+          "requestBytes": 638144,
+          "owned": false,
+          "active": false,
+          "cleanupPending": false,
+          "displayIndex": 0,
+          "retainedBytes": 0,
+          "resources": 0
+        },
+        "processesAfterClose": 0,
+        "processGroupAfter": []
+      }
+    }
+  ],
+  "verification": {
+    "tests": {
+      "status": "passed",
+      "files": 5,
+      "tests": 93,
+      "elapsedSeconds": 17.99,
+      "evidenceKind": "root-agent-executed-tool-output",
+      "provenance": "Parent/root task reported the actual tool output for this integration turn. No separate test log was retained; test source hashes below identify the reviewed test files, not a saved execution log.",
+      "retainedLog": null,
+      "suites": [
+        {
+          "suite": "real-native-lifecycle",
+          "passed": 8,
+          "source": {
+            "path": "tests/source-samila-native-lifecycle.test.ts",
+            "sha256": "445d593d68046179b71a9e4a866952ced68c6d6ee794b444b2f2dcd61aab936b",
+            "bytes": 19122
+          }
+        },
+        {
+          "suite": "backend",
+          "passed": 23,
+          "source": {
+            "path": "tests/source-samila-native-backend.test.ts",
+            "sha256": "478ab15de297a1bc1d4df30c71856bf04c350437b8a394a06638ce4896b2af61",
+            "bytes": 27720
+          }
+        },
+        {
+          "suite": "client",
+          "passed": 23,
+          "source": {
+            "path": "tests/source-samila-native-client.test.ts",
+            "sha256": "ca7907234cd162d9ef80b37e1d9536bd42a9c53d44bb90e60ed53c680dd4e6cb",
+            "bytes": 9735
+          }
+        },
+        {
+          "suite": "service",
+          "passed": 32,
+          "source": {
+            "path": "tests/source-samila-native-service.test.ts",
+            "sha256": "083c7a85b3a38fa118fefda86343dfce5fc3950713fa87d4c66f1a167c8a5bd2",
+            "bytes": 19330
+          }
+        },
+        {
+          "suite": "async-session",
+          "passed": 7,
+          "source": {
+            "path": "tests/source-samila-async-session.test.ts",
+            "sha256": "cd158a1bff650d0c566c9955fa44563796739fd523bf3bceb03632d696326209",
+            "bytes": 10134
+          }
+        }
+      ]
+    },
+    "build": {
+      "command": "npm run build:v2",
+      "status": "passed",
+      "log": {
+        "path": ".cache/samila-native-statistics-integrated-20261025/build-v2.log",
+        "sha256": "36090fea878060c0fa82b1c5b004dcb709f4a07a7c3787bc16ddda85f4925fb1",
+        "bytes": 1575
+      },
+      "warning": "Vite chunk size warning remains.",
+      "nativeBuild": {
+        "path": ".cache/samila-native-statistics-integrated-20261025/build.json",
+        "sha256": "1a0ea116e22abbf8d24a894b508fa9442f37390ee91b8817808700a2a021600f",
+        "bytes": 1089
+      }
+    },
+    "nativeFailureSemantics": {
+      "trigger": "Malformed sourceStats tuple in second sample chunk; aggregation may otherwise appear valid.",
+      "cases": [
+        "zero tuple",
+        "category value greater than one",
+        "nonzero malformed lane",
+        "multiple categories",
+        "UINT_MAX invalid tuple"
+      ],
+      "error": "runtime: Invalid Samila per-sample statistics",
+      "observedRecovery": [
+        "Native dispatcher disposes every owner and destroys the failed context before acknowledging runtime failure.",
+        "Gateway retained-resource registry becomes empty.",
+        "Subsequent original resource display returns state-lost.",
+        "Release returns absent.",
+        "Fresh create obtains a greater contextSerial; first display succeeds at committedDisplays=1."
+      ],
+      "detectionTiming": "End of bounded display; not claimed equal to old per-chunk failure timing."
+    },
+    "classificationAndTailCoverage": {
+      "counts": [
+        131065,
+        1,
+        65531,
+        65532,
+        65533,
+        2
+      ],
+      "categories": [
+        "invalid",
+        "accepted",
+        "clipped"
+      ],
+      "scope": "Real native integer reduction of deterministic per-sample tuples; shrinking counts exercises unwritten TF tails and old summary entries."
+    }
+  },
+  "measurements": {
+    "equivalentWorkloadComparison": true,
+    "timingIncludes": [
+      "recording planning/reset-create",
+      "HTTP/protocol and complete RGBA per frame",
+      "selected image validation/files",
+      "per-frame trace serialization/write"
+    ],
+    "timingExcludes": [
+      "Vite/server initialization",
+      "dummy preview",
+      "finishRecording primary handoff",
+      "release/close"
+    ],
+    "originalComparisonLimit": "Original observer reads only selected full images; production protocol transports full RGBA each frame. Not equivalent GPU-kernel timing.",
+    "cpuScope": "RUSAGE_CHILDREN for the entire supervised process family, including startup/cleanup, Node/Vite and ps sampling; not window-only renderer CPU.",
+    "rssScope": "Simultaneous process-family RSS sums sampled every 0.5 seconds; may double-count shared pages or miss short peaks. Whole-process and workload-window peaks are separate.",
+    "coldWarm": "New replay processes; uncontrolled OS/module/driver caches; one run per version, no statistical significance claim.",
+    "unmeasured": [
+      "native internal GPU stage durations",
+      "GPU physical allocation/VRAM",
+      "energy and thermal stability",
+      "agent tokens"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": ".cache/samila-sustained-load-20261025/INTEGRATED.zh-CN.md",
+      "sha256": "c9bf752f40848ebbba7cd8434f718b65c25f0ac5b4e7faa376389c01ed2f8cc9",
+      "bytes": 7949
+    },
+    {
+      "path": ".cache/samila-sustained-load-20261025/integrated-index.json",
+      "sha256": "46c6bc237f22191682cc3b02482f3cf72950a48c17536a2701c6d9dc439bf3f4",
+      "bytes": 40026
+    },
+    {
+      "path": ".cache/samila-sustained-load-20261025/CANDIDATE.zh-CN.md",
+      "sha256": "27d5ff3d1232a1e22be461767613eee78f18acf32b2c2199a60bbbda7aeefa8f",
+      "bytes": 7608
+    },
+    {
+      "path": ".cache/samila-sustained-load-20261025/candidate-index.json",
+      "sha256": "7ab412ab8cbe0c2b81727c3d33b7bcc6b99d2d872f71095dab6d0ac1efe3d738",
+      "bytes": 30054
+    },
+    {
+      "path": ".cache/samila-sustained-load-20261025/CALIBRATION.zh-CN.md",
+      "sha256": "9a240f3ccb2985c51572f6a928e7e25d4e20cb1f67a533d0fbd1668e1cb9a0ac",
+      "bytes": 8747
+    },
+    {
+      "path": ".cache/samila-sustained-load-20261025/calibration-index.json",
+      "sha256": "fd60903c8ae921de800f34b1d5f213139dc468de1b13f4bf361b50cb23f1483e",
+      "bytes": 46762
+    },
+    {
+      "path": ".cache/samila-sustained-load-20261025/compare-integrated.py",
+      "sha256": "3761208e79b9e095b6792274b9902fe2dc52d67e68ff320e989dd9227ff2c28b",
+      "bytes": 7493
+    },
+    {
+      "path": ".cache/samila-sustained-load-20261025/summarize.py",
+      "sha256": "d03118a3550573513182c1e8360526faeb8a38adc671e22c07997b0cff46f25a",
+      "bytes": 4412
+    },
+    {
+      "path": "docs/source-samila-native-statistics-validation.zh-CN.md",
+      "sha256": "00a8905bd2330648bc57eaa75753087c547d13d8cde553df276e8ef74f255ff1",
+      "bytes": 6419
+    }
+  ],
+  "remaining": [
+    "MAS-SAM-025 formal 300-second continuous parameter/rotation acceptance; running separately, not completed by this record",
+    "second supported device",
+    "broader Samila/App/package acceptance beyond this increment"
+  ]
+}

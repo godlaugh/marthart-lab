@@ -60,7 +60,14 @@ export function sourceSamilaNativeProgramBytes(shaders:SourceSamilaNativeShaders
 }
 /** Conservative resident accounting, not measured driver RSS. Targets include
  * two RGBA32F histories, RGBA8 output and the actual integer statistics MRT. */
-export function sourceSamilaNativeResidentBytes(programBytes:number,width=0,height=0):number {return programBytes+256*256*4+1024*3*4+65532*16+width*height*52;}
+// Fixed native-owner allocations: padded TF buffer/input texture, two reduction
+// targets and a summary covering all 48 million permitted samples. The internal
+// shader charge is its UTF-8 source length times three, as for caller programs.
+// The native lifecycle test reads the actual header's values to detect drift.
+export const SOURCE_SAMILA_NATIVE_STATISTICS_BYTES=2_240_000;
+export const SOURCE_SAMILA_NATIVE_STATISTICS_PROGRAM_BYTES=1_860;
+export const SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES=16;
+export function sourceSamilaNativeResidentBytes(programBytes:number,width=0,height=0):number {return programBytes+SOURCE_SAMILA_NATIVE_STATISTICS_PROGRAM_BYTES+256*256*4+1024*3*4+SOURCE_SAMILA_NATIVE_STATISTICS_BYTES+width*height*52;}
 export function encodeSourceSamilaNativeRequest(request:SourceSamilaNativeRequest,options:{isCancelled?:()=>boolean;retainedBytes?:number}={}):SourceDrawingResult<Uint8Array> {
  try{
   const check=()=>{if(options.isCancelled?.())throw new SourceNativeError('cancelled','Samila 原生事务编码已取消');};check();
@@ -72,7 +79,7 @@ export function encodeSourceSamilaNativeRequest(request:SourceSamilaNativeReques
   const floatBlock=(v:Float32Array,size:number)=>demand(v instanceof Float32Array&&v.buffer instanceof ArrayBuffer&&v.length===size&&v.every(Number.isFinite),'Samila 浮点纹理无效');
   let nativeExtra=0;
   if(op.kind==='create'){floatBlock(op.noise,65536);floatBlock(op.palette,3072);nativeExtra=sourceSamilaNativeResidentBytes(sourceSamilaNativeProgramBytes(op.shaders));}
-  if(op.kind==='display'||op.kind==='step'){validateSourceSamilaNativeDisplay(op,width,height);if(op.palette)floatBlock(op.palette,3072);nativeExtra=width*height*(op.kind==='display'?84:52)+65532*16;}
+  if(op.kind==='display'||op.kind==='step'){validateSourceSamilaNativeDisplay(op,width,height);if(op.palette)floatBlock(op.palette,3072);nativeExtra=width*height*(op.kind==='display'?84:52)+SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES;}
   if(op.kind==='present'){validateSourceSamilaNativePresent(op,width,height);nativeExtra=width*height*32;}
   let offset=0,out:Uint8Array|undefined,view:DataView|undefined;
   const reserve=(size:number)=>{capacity(offset+size);const at=offset;offset+=size;return at;};

@@ -3,7 +3,7 @@ import {exchangeSourceSamilaNative,type SourceNativeSamilaResponse,SourceNativeE
 import {sourceBouncingNativeSession} from './sourceBouncingNativeSession';
 import {SOURCE_FRAME_BUDGET} from './sourceDrawingFrame';
 import {prepareSourceSamilaNativeCreate,prepareSourceSamilaNativeDisplay,prepareSourceSamilaNativePresent,prepareSourceSamilaNativeProgram} from './sourceSamilaNativeProgram';
-import {sourceSamilaNativeProgramBytes,sourceSamilaNativeResidentBytes,type SourceSamilaNativeOperation} from './sourceSamilaNativeProtocol';
+import {sourceSamilaNativeProgramBytes,sourceSamilaNativeResidentBytes,SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES,type SourceSamilaNativeOperation} from './sourceSamilaNativeProtocol';
 import type {IteratedDensityAsyncStepResult,IteratedDensityAsyncPresentResult,IteratedDensityPreparedPresent} from './iteratedDensityAsyncBackend';
 import type {SourceSamilaAsyncBackend} from './sourceSamilaAsyncSession';
 import type {SourceSamilaPreparedDisplay,SourceSamilaDisplayBudget,SourceSamilaDisplayResult} from './sourceSamilaSession';
@@ -37,7 +37,7 @@ export class SourceSamilaNativeBackend implements SourceSamilaAsyncBackend {
   // stats readback and caller-owned preview/enhancement storage. Conservative;
   // not a GPU/RSS measurement. Native independently validates its whole registry.
   const createBytes=this.state?0:sourceSamilaNativeResidentBytes(programBytes)+(programBytes/3+256*256*4+1024*3*4+256)*6;
-  const peak=retainedBytes()+createBytes+width*height*84+65532*16+programBytes*2+additionalBytes+stateBytes;
+  const peak=retainedBytes()+createBytes+width*height*84+SOURCE_SAMILA_NATIVE_STATISTICS_READBACK_BYTES+programBytes*2+additionalBytes+stateBytes;
   if(!Number.isSafeInteger(peak)||peak>SOURCE_FRAME_BUDGET)throw new SourceNativeError('capacity','Samila 原生显示和保留图像超过 256 MiB 工作预算');
  }
  async draw(prepared:SourceSamilaPreparedDisplay):Promise<SourceSamilaDisplayResult> {return this.accumulate(prepared,'display') as Promise<SourceSamilaDisplayResult>;}

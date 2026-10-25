@@ -1,9 +1,9 @@
 // Dedicated Samila ink owner. Programs and LUTs survive displays/resizes; its
 // current context and every provisional allocation remain owned until deletion.
-static const uint32_t SamilaChunk=65532;
 @interface SourceCglSamilaState:NSObject {
  CGLContextObj _context;
- GLuint _programs[3],_shaders[6],_lut[2],_textures[4],_frames[3],_pendingTextures[4],_pendingFrames[3],_vao,_feedback,_statsBuffer;
+ GLuint _programs[4],_shaders[8],_lut[2],_textures[4],_frames[3],_pendingTextures[4],_pendingFrames[3],_vao,_feedback,_statsBuffer,_statsTextures[4],_statsFrame;
+ GLint _statsUniforms[3];
  uint32_t _width,_height,_current,_displays;
  uint64_t _programBytes,_pendingBytes;
  BOOL _prepared,_failed,_disposed;
@@ -40,9 +40,9 @@ static void samilaRaster(uint32_t width,uint32_t height){
  glBindBuffer(GL_PIXEL_PACK_BUFFER,0);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);glPixelStorei(GL_PACK_ALIGNMENT,1);glPixelStorei(GL_UNPACK_ALIGNMENT,1);glPixelStorei(GL_PACK_ROW_LENGTH,0);glPixelStorei(GL_UNPACK_ROW_LENGTH,0);glPixelStorei(GL_PACK_SKIP_ROWS,0);glPixelStorei(GL_PACK_SKIP_PIXELS,0);glPixelStorei(GL_UNPACK_SKIP_ROWS,0);glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
 }
 @implementation SourceCglSamilaState
--(uint64_t)retainedBytes{return _disposed?0:_programBytes+256*256*4+1024*3*4+(uint64_t)SamilaChunk*16+(uint64_t)_width*_height*52+_pendingBytes;}
+-(uint64_t)retainedBytes{return _disposed?0:_programBytes+256*256*4+1024*3*4+SamilaStatsStorageBytes+(uint64_t)_width*_height*52+_pendingBytes;}
 -(uint32_t)displays{return _displays;}-(NSData*)lastStats{return _lastStats;}
--(instancetype)initWithOperation:(NSDictionary*)operation{self=[super init];if(!self)return nil;_programBytes=[operation[@"programBytes"]unsignedLongLongValue];_context=CGLGetCurrentContext();RUNTIME(_context!=NULL,@"Samila requires an owned current context");_context=CGLRetainContext(_context);RUNTIME(_context!=NULL,@"Cannot retain Samila context");return self;}
+-(instancetype)initWithOperation:(NSDictionary*)operation{self=[super init];if(!self)return nil;_programBytes=[operation[@"programBytes"]unsignedLongLongValue]+samilaStatsProgramBytes();_context=CGLGetCurrentContext();RUNTIME(_context!=NULL,@"Samila requires an owned current context");_context=CGLRetainContext(_context);RUNTIME(_context!=NULL,@"Cannot retain Samila context");return self;}
 -(void)checkGl{if(glGetError()!=GL_NO_ERROR){_failed=YES;RUNTIME(NO,@"Samila GL operation failed");}}
 -(void)texture:(GLuint*)texture width:(uint32_t)width height:(uint32_t)height internal:(GLenum)internal format:(GLenum)format type:(GLenum)type bytes:(const void*)bytes linear:(BOOL)linear repeat:(BOOL)repeat{
  glGenTextures(1,texture);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,*texture);glTexImage2D(GL_TEXTURE_2D,0,internal,width,height,0,format,type,bytes);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,linear?GL_LINEAR:GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,linear?GL_LINEAR:GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,repeat?GL_REPEAT:GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_BASE_LEVEL,0);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAX_LEVEL,0);[self checkGl];
@@ -51,8 +51,13 @@ static void samilaRaster(uint32_t width,uint32_t height){
  INPUT(!_prepared&&!_failed&&!_disposed,@"Samila resource already prepared");RUNTIME(CGLGetCurrentContext()==_context,@"Samila preparation context mismatch");
  @try{GLint textures=0,buffers=0,feedback=0;glGetIntegerv(GL_MAX_TEXTURE_SIZE,&textures);glGetIntegerv(GL_MAX_DRAW_BUFFERS,&buffers);glGetIntegerv(GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS,&feedback);ensure(textures>=1024&&buffers>=2&&feedback>=4,@"unsupported",@"Native Samila texture/statistics capability unavailable");
   samilaProgram(&_programs[0],&_shaders[0],op[@"historyVertex"],op[@"historyFragment"],NO);samilaProgram(&_programs[1],&_shaders[2],op[@"sampleVertex"],op[@"sampleFragment"],YES);samilaProgram(&_programs[2],&_shaders[4],op[@"presentVertex"],op[@"presentFragment"],NO);RUNTIME(glGetFragDataLocation(_programs[0],"result")==0&&glGetFragDataLocation(_programs[1],"result")==0&&glGetFragDataLocation(_programs[2],"pixel")==0&&glGetFragDataLocation(_programs[2],"facts")==1,@"Samila fragment outputs do not match owned targets");
+  samilaProgram(&_programs[3],&_shaders[6],SamilaStatsVertex,SamilaStatsFragment,NO);RUNTIME(glGetFragDataLocation(_programs[3],"result")==0,@"Samila statistics output mismatch");glUseProgram(_programs[3]);GLint values=glGetUniformLocation(_programs[3],"values");RUNTIME(values>=0,@"Samila statistics sampler missing");glUniform1i(values,0);const char *statsNames[]={"sourceSize","count","validateSamples"};for(int i=0;i<3;i++){_statsUniforms[i]=glGetUniformLocation(_programs[3],statsNames[i]);RUNTIME(_statsUniforms[i]>=0,@"Samila statistics uniform missing");}
   samilaRaster(1,1);[self texture:&_lut[0] width:256 height:256 internal:GL_R32F format:GL_RED type:GL_FLOAT bytes:[op[@"noise"]bytes] linear:YES repeat:NO];[self texture:&_lut[1] width:1024 height:1 internal:GL_RGB32F format:GL_RGB type:GL_FLOAT bytes:[op[@"palette"]bytes] linear:YES repeat:YES];
-  glGenVertexArrays(1,&_vao);glGenTransformFeedbacks(1,&_feedback);glGenBuffers(1,&_statsBuffer);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,_statsBuffer);glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER,(GLsizeiptr)SamilaChunk*16,NULL,GL_STREAM_READ);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,0);[self checkGl];_prepared=YES;
+  glGenVertexArrays(1,&_vao);glGenTransformFeedbacks(1,&_feedback);glGenBuffers(1,&_statsBuffer);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,_statsBuffer);glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER,(GLsizeiptr)SamilaStatsSide*SamilaStatsSide*16,NULL,GL_DYNAMIC_COPY);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,0);
+  const uint32_t sw[4]={SamilaStatsSide,SamilaStatsReduceSide,SamilaStatsReduceSide,SamilaStatsSummaryWidth},sh[4]={SamilaStatsSide,SamilaStatsReduceSide,SamilaStatsReduceSide,SamilaStatsSummaryHeight};
+  glGenFramebuffers(1,&_statsFrame);glBindFramebuffer(GL_FRAMEBUFFER,_statsFrame);glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);
+  for(int i=0;i<4;i++){[self texture:&_statsTextures[i] width:sw[i] height:sh[i] internal:GL_RGBA32UI format:GL_RGBA_INTEGER type:GL_UNSIGNED_INT bytes:NULL linear:NO repeat:NO];glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,_statsTextures[i],0);RUNTIME(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE,@"Samila statistics framebuffer incomplete");}
+  glBindFramebuffer(GL_FRAMEBUFFER,0);[self checkGl];_prepared=YES;
  }@catch(NSException *e){_failed=YES;@throw;}
 }
 -(void)dropTextures:(GLuint*)textures frames:(GLuint*)frames{
@@ -72,7 +77,7 @@ static void samilaRaster(uint32_t width,uint32_t height){
  NSArray *history=op[@"history"],*sample=op[@"sample"],*present=op[@"present"];samilaSampler(history,@{@"previousInk":@0});samilaSampler(sample,@{@"noiseLUT":@3,@"paletteLUT":@2});samilaPresentBindings(present,width,height);float decay=samilaFloat(history,@"decay");INPUT(decay>=0&&decay<=1&&samilaFloat(history,@"densityCeiling")==300,@"Invalid Samila history policy");
  INPUT(samilaWord(sample,@"u_frameSeed",2)==[op[@"seed"]unsignedIntValue]&&samilaWord(sample,@"u_particleCount",2)==count&&samilaWord(sample,@"u_quadSplat",11)==0,@"Samila sample identity mismatch");NSData *viewport=samilaBinding(sample,@"u_viewportSize",3)[@"bytes"];float size[2];memcpy(size,viewport.bytes,sizeof(size));INPUT(size[0]==(float)width&&size[1]==(float)height&&samilaFloat(sample,@"u_aspectRatio")==((float)width/(float)height),@"Samila viewport identity mismatch");
  float radius=samilaFloat(sample,@"radius");INPUT(radius>0,@"Invalid Samila radius");double work=(double)count*pow(ceil(fmax(radius,1))+2,2);ensure(isfinite(work)&&work<=2000000000.,@"capacity",@"Samila point work exceeds budget");
- uint64_t pixels=(uint64_t)width*height;ensure(retained+(resized?pixels*52:0)+packetBytes*6+([op[@"kind"]unsignedIntValue]==5?0:pixels*32)+(uint64_t)SamilaChunk*16+64<=Budget,@"capacity",@"Samila targets, readbacks and shared owners exceed budget");
+ uint64_t pixels=(uint64_t)width*height;ensure(retained+(resized?pixels*52:0)+packetBytes*6+([op[@"kind"]unsignedIntValue]==5?0:pixels*32)+SamilaStatsReadbackBytes+64<=Budget,@"capacity",@"Samila targets, readbacks and shared owners exceed budget");
  GLint maximum=0,viewportMaximum[2]={0};GLfloat pointRange[2]={0};glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maximum);glGetIntegerv(GL_MAX_VIEWPORT_DIMS,viewportMaximum);glGetFloatv(GL_POINT_SIZE_RANGE,pointRange);ensure(width<=(uint32_t)maximum&&height<=(uint32_t)maximum&&width<=(uint32_t)viewportMaximum[0]&&height<=(uint32_t)viewportMaximum[1]&&fmax(radius,1)<=pointRange[1],@"unsupported",@"Samila target/point dimensions unavailable");
  @try{
   // Validate all active bindings before touching either retained ink texture.
@@ -82,14 +87,33 @@ static void samilaRaster(uint32_t width,uint32_t height){
   const GLfloat zero[4]={0,0,0,0};if(clear){glBindFramebuffer(GL_FRAMEBUFFER,_frames[_current]);glClearBufferfv(GL_COLOR,0,zero);}
   glUseProgram(_programs[0]);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,_textures[_current]);glBindFramebuffer(GL_FRAMEBUFFER,_frames[1-_current]);glDrawBuffer(GL_COLOR_ATTACHMENT0);glDrawArrays(GL_TRIANGLES,0,3);[self checkGl];_current=1-_current;
   glUseProgram(_programs[1]);glActiveTexture(GL_TEXTURE2);glBindTexture(GL_TEXTURE_2D,_lut[1]);glActiveTexture(GL_TEXTURE3);glBindTexture(GL_TEXTURE_2D,_lut[0]);glBindFramebuffer(GL_FRAMEBUFFER,_frames[_current]);glDrawBuffer(GL_COLOR_ATTACHMENT0);glEnable(GL_PROGRAM_POINT_SIZE);glEnable(GL_BLEND);glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);glBlendFuncSeparate(GL_ONE,GL_ONE,GL_ONE,GL_ONE);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,_feedback);
-  NSMutableData *scratch=[NSMutableData dataWithLength:(NSUInteger)SamilaChunk*16];uint64_t accepted=0,clipped=0,invalid=0;
-  for(uint32_t first=0;first<count;first+=SamilaChunk){uint32_t n=MIN(SamilaChunk,count-first);glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,0,_statsBuffer,0,(GLsizeiptr)n*16);glBeginTransformFeedback(GL_POINTS);glDrawArrays(GL_POINTS,(GLint)first,(GLsizei)n);glEndTransformFeedback();glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,_statsBuffer);glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER,0,(GLsizeiptr)n*16,scratch.mutableBytes);[self checkGl];const uint32_t *v=scratch.bytes;for(uint32_t i=0;i<n;i++){RUNTIME(v[i*4]<=1&&v[i*4+1]==0&&v[i*4+2]<=1&&v[i*4+3]<=1&&v[i*4]+v[i*4+2]+v[i*4+3]==1,@"Invalid Samila per-sample statistics");invalid+=(uint64_t)v[i*4]+((uint64_t)v[i*4+1]<<32);accepted+=v[i*4+2];clipped+=v[i*4+3];}}
-  RUNTIME(accepted+clipped+invalid==count&&invalid<=count&&accepted<=count&&clipped<=count,@"Samila sample statistics coverage mismatch");glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER,0,0);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,0);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,0);
+  uint32_t chunks=0;
+  for(uint32_t first=0;first<count;first+=SamilaChunk){uint32_t n=MIN(SamilaChunk,count-first);
+   // Reduction state is isolated; restore the identical sample draw state.
+   glUseProgram(_programs[1]);glBindFramebuffer(GL_FRAMEBUFFER,_frames[_current]);glDrawBuffer(GL_COLOR_ATTACHMENT0);glViewport(0,0,width,height);glEnable(GL_PROGRAM_POINT_SIZE);glEnable(GL_BLEND);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,_feedback);
+   glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,0,_statsBuffer,0,(GLsizeiptr)n*16);glBeginTransformFeedback(GL_POINTS);glDrawArrays(GL_POINTS,(GLint)first,(GLsizei)n);glEndTransformFeedback();
+   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER,0,0);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,0);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,0);
+   glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,_statsTextures[0]);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,_statsBuffer);glTexSubImage2D(GL_TEXTURE_2D,0,0,0,SamilaStatsSide,SamilaStatsSide,GL_RGBA_INTEGER,GL_UNSIGNED_INT,0);glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+   [self reduceStatistics:_statsTextures[0] width:SamilaStatsSide height:SamilaStatsSide count:n validate:YES];
+   RUNTIME(chunks<SamilaStatsSummaryWidth*SamilaStatsSummaryHeight,@"Samila statistics summary capacity mismatch");glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,_statsTextures[3]);glCopyTexSubImage2D(GL_TEXTURE_2D,0,chunks%SamilaStatsSummaryWidth,chunks/SamilaStatsSummaryWidth,0,0,1,1);[self checkGl];chunks++;
+  }
+  [self reduceStatistics:_statsTextures[3] width:SamilaStatsSummaryWidth height:SamilaStatsSummaryHeight count:chunks validate:NO];uint32_t totals[4]={0,0,0,0};glReadPixels(0,0,1,1,GL_RGBA_INTEGER,GL_UNSIGNED_INT,totals);[self checkGl];
+  RUNTIME(totals[1]==0,@"Invalid Samila per-sample statistics");uint64_t invalid=totals[0],accepted=totals[2],clipped=totals[3];
+  RUNTIME(accepted+clipped+invalid==count&&invalid<=count&&accepted<=count&&clipped<=count,@"Samila sample statistics coverage mismatch");glViewport(0,0,width,height);
   if([op[@"kind"]unsignedIntValue]==5){uint32_t stats[7]={count,(uint32_t)accepted,(uint32_t)clipped,(uint32_t)invalid,0,0,0};for(int i=0;i<7;i++)stats[i]=CFSwapInt32HostToLittle(stats[i]);_lastStats=[NSData dataWithBytes:stats length:sizeof(stats)];_displays++;return nil;}
   NSData *rgba=[self renderPresentCount:count accepted:(uint32_t)accepted clipped:(uint32_t)clipped invalid:(uint32_t)invalid];_displays++;return rgba;
  }@catch(NSException *e){_failed=YES;@throw;}@finally{[self unbind];}
 }
--(void)unbind{glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER,0,0);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,0);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,0);glBindFramebuffer(GL_FRAMEBUFFER,0);glBindVertexArray(0);glUseProgram(0);glDisable(GL_BLEND);glDisable(GL_PROGRAM_POINT_SIZE);glActiveTexture(GL_TEXTURE0);[self checkGl];}
+// The first level masks every unwritten slot. Every malformed sample becomes a
+// bounded error count, so neither arbitrary values nor stale padding can wrap.
+-(void)reduceStatistics:(GLuint)input width:(uint32_t)width height:(uint32_t)height count:(uint32_t)count validate:(BOOL)validate{
+ glDisable(GL_BLEND);glDisable(GL_PROGRAM_POINT_SIZE);glUseProgram(_programs[3]);glBindFramebuffer(GL_FRAMEBUFFER,_statsFrame);glDrawBuffer(GL_COLOR_ATTACHMENT0);glReadBuffer(GL_COLOR_ATTACHMENT0);
+ uint32_t side=0;BOOL first=YES;
+ do{uint32_t outWidth=(width+3)/4,outHeight=(height+3)/4;glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,input);glUniform2i(_statsUniforms[0],width,height);glUniform1i(_statsUniforms[1],count);glUniform1i(_statsUniforms[2],first&&validate);
+  GLuint output=_statsTextures[1+side];RUNTIME(input!=output&&outWidth<=SamilaStatsReduceSide&&outHeight<=SamilaStatsReduceSide,@"Samila reduction target alias/capacity mismatch");glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,output,0);glViewport(0,0,outWidth,outHeight);glDrawArrays(GL_TRIANGLES,0,3);input=output;width=outWidth;height=outHeight;count=width*height;side=1-side;first=NO;
+ }while(width>1||height>1);[self checkGl];
+}
+-(void)unbind{glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER,0,0);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,0);glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER,0);glBindFramebuffer(GL_FRAMEBUFFER,0);glBindVertexArray(0);glUseProgram(0);glDisable(GL_BLEND);glDisable(GL_PROGRAM_POINT_SIZE);glActiveTexture(GL_TEXTURE0);[self checkGl];}
 -(NSData*)renderPresentCount:(uint32_t)count accepted:(uint32_t)accepted clipped:(uint32_t)clipped invalid:(uint32_t)invalid{
  uint32_t width=_width,height=_height;uint64_t pixels=(uint64_t)width*height;const GLfloat zero[4]={0,0,0,0};
   glUseProgram(_programs[2]);glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,_textures[_current]);glBindFramebuffer(GL_FRAMEBUFFER,_frames[2]);const GLenum attachments[]={GL_COLOR_ATTACHMENT0,GL_COLOR_ATTACHMENT1};glDrawBuffers(2,attachments);const GLuint zeros[4]={0,0,0,0};glClearBufferfv(GL_COLOR,0,zero);glClearBufferuiv(GL_COLOR,1,zeros);glEnablei(GL_BLEND,0);glDisablei(GL_BLEND,1);glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);glDisable(GL_PROGRAM_POINT_SIZE);glDrawArrays(GL_TRIANGLE_STRIP,0,4);[self checkGl];
@@ -108,7 +132,7 @@ static void samilaRaster(uint32_t width,uint32_t height){
  glUseProgram(0);glBindVertexArray(0);glBindFramebuffer(GL_FRAMEBUFFER,0);glBindTransformFeedback(GL_TRANSFORM_FEEDBACK,0);glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER,0,0);[self checkGl];
  [self dropTextures:_pendingTextures frames:_pendingFrames];[self dropTextures:_textures frames:_frames];
  #define SAMILA_DROP(handle,operation) if(handle){operation;RUNTIME(glGetError()==GL_NO_ERROR,@"Samila cleanup failed; owner retained");handle=0;}
- for(int i=0;i<6;i++){SAMILA_DROP(_shaders[i],glDeleteShader(_shaders[i]));}for(int i=0;i<2;i++){SAMILA_DROP(_lut[i],glDeleteTextures(1,&_lut[i]));}for(int i=0;i<3;i++){SAMILA_DROP(_programs[i],glDeleteProgram(_programs[i]));}SAMILA_DROP(_statsBuffer,glDeleteBuffers(1,&_statsBuffer));SAMILA_DROP(_feedback,glDeleteTransformFeedbacks(1,&_feedback));SAMILA_DROP(_vao,glDeleteVertexArrays(1,&_vao));
+ for(int i=0;i<8;i++){SAMILA_DROP(_shaders[i],glDeleteShader(_shaders[i]));}for(int i=0;i<2;i++){SAMILA_DROP(_lut[i],glDeleteTextures(1,&_lut[i]));}for(int i=0;i<4;i++){SAMILA_DROP(_programs[i],glDeleteProgram(_programs[i]));}for(int i=0;i<4;i++){SAMILA_DROP(_statsTextures[i],glDeleteTextures(1,&_statsTextures[i]));}SAMILA_DROP(_statsFrame,glDeleteFramebuffers(1,&_statsFrame));SAMILA_DROP(_statsBuffer,glDeleteBuffers(1,&_statsBuffer));SAMILA_DROP(_feedback,glDeleteTransformFeedbacks(1,&_feedback));SAMILA_DROP(_vao,glDeleteVertexArrays(1,&_vao));
  #undef SAMILA_DROP
  _lastStats=nil;_disposed=YES;CGLReleaseContext(_context);_context=NULL;
 }
