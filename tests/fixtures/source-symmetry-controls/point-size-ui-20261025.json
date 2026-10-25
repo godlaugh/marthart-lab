@@ -1,0 +1,170 @@
+{
+  "status": "finite-app-point-size-lifecycle-verified",
+  "baseline": {
+    "head": "6a6bb3c73360433b8011c88d4b53585bb0c6e12b",
+    "uncommittedProductChanges": true,
+    "sourceBeforeAfterPins": 591,
+    "node": "v24.18.0",
+    "chrome": "155.0.8059.85"
+  },
+  "validation": {
+    "appChecks": 83,
+    "retainedSteps": 16,
+    "cpuPreparation": 5,
+    "cpuTests": 14,
+    "independentCpuAudit": 28,
+    "sourcePins": 591,
+    "sourceStable": true,
+    "cleanup": [
+      {
+        "resource": "context",
+        "status": "fulfilled"
+      },
+      {
+        "resource": "browser",
+        "status": "fulfilled"
+      },
+      {
+        "resource": "vite",
+        "status": "fulfilled"
+      },
+      {
+        "resource": "exportServer",
+        "status": "fulfilled"
+      }
+    ],
+    "remainingServiceProcesses": 0,
+    "elapsedMs": 13131.305417,
+    "pageErrors": 0,
+    "workerErrors": 0
+  },
+  "observations": {
+    "coldPointSize": 1.7999999523162842,
+    "authorInitial": 1.5,
+    "sameValueInputs": [
+      "1.50",
+      "0.50"
+    ],
+    "hotEffectiveValues": [
+      1.5,
+      1,
+      1
+    ],
+    "eachPausedHotEvent": {
+      "additionalDisplays": 1,
+      "objectUpdates": 0,
+      "replay": false,
+      "clear": false,
+      "retainsSession": true,
+      "retainsTime": true
+    },
+    "save": "May reuse existing display; actual subsequent retained capture proves hot state survives",
+    "fileReopen": {
+      "author": 0.5,
+      "effective": 1.7999999523162842,
+      "transientPresent": false
+    },
+    "png": {
+      "targetDisplayScale": 3,
+      "enhancementUpscale": 1,
+      "dotSize": 1,
+      "captureRadius": 3,
+      "restoreRadius": 1,
+      "fullDownloadedRgbaEqualsWorker": true
+    },
+    "coldBoundaries": [
+      "file reopen",
+      "full Apply",
+      "normal source recording",
+      "old source without raw palette restart",
+      "old source without raw palette recording",
+      "fixed preview Use template formula Apply"
+    ],
+    "fixedHotValue": 4,
+    "videos": [
+      {
+        "name": "normal-record-cold",
+        "path": ".cache/symmetry-point-size-ui-20261025/run-3/normal-record-cold.mp4",
+        "sha256": "e633b7df406619062cbc5cc43b0f00351f4dcfcc74a883ad625ea7b668e48dee",
+        "metadata": {
+          "width": 96,
+          "height": 64,
+          "pix_fmt": "yuvj444p",
+          "r_frame_rate": "4/1",
+          "nb_read_frames": "3"
+        }
+      },
+      {
+        "name": "old-record-cold",
+        "path": ".cache/symmetry-point-size-ui-20261025/run-3/old-record-cold.mp4",
+        "sha256": "e633b7df406619062cbc5cc43b0f00351f4dcfcc74a883ad625ea7b668e48dee",
+        "metadata": {
+          "width": 96,
+          "height": 64,
+          "pix_fmt": "yuvj444p",
+          "r_frame_rate": "4/1",
+          "nb_read_frames": "3"
+        }
+      }
+    ]
+  },
+  "failedRuns": [
+    {
+      "path": ".cache/symmetry-point-size-ui-20261025/run-1/report.json",
+      "classification": "verifier-selector",
+      "reason": "Point size is under Appearance, not Geometry",
+      "checksBeforeFailure": 2
+    },
+    {
+      "path": ".cache/symmetry-point-size-ui-20261025/run-2/report.json",
+      "classification": "verifier-save-redraw-assumption",
+      "reason": "Save need not trigger generate; same-value events had already passed. Final run verifies retained capture instead.",
+      "checksBeforeFailure": 20
+    }
+  ],
+  "artifacts": {
+    "index": {
+      "path": ".cache/symmetry-point-size-ui-20261025/index.json",
+      "sha256": "3ce1e4ebd20752e382bd3b004464483a69c3b316c822f3eef966645e7bcc0256"
+    },
+    "report": {
+      "path": ".cache/symmetry-point-size-ui-20261025/run-3/report.json",
+      "sha256": "955066285058cf24037a50c74e3cf4a1f4302b6cb73bd9bb820ac3229e2affe1"
+    },
+    "audit": {
+      "path": ".cache/symmetry-point-size-ui-20261025/audit.json",
+      "sha256": "8d822086888d4fe6a944d938e8e6147b931202e6f8e39ff287dc659df367901c"
+    },
+    "cpuTests": {
+      "path": ".cache/symmetry-point-size-ui-20261025/cpu-tests.json",
+      "sha256": "3f57dcba5b05c92d8a09e958337a490775918ac65e4df66229a99f0ce92a5f82"
+    },
+    "cpuPreparation": {
+      "path": ".cache/symmetry-point-size-ui-20261025/cpu-prepare.json",
+      "sha256": "8db1a6acb3d6cd3d0054c8c0c6a78f64d116b3c6e79da66324031c66cd2e7163"
+    },
+    "verifiedProductDiff": {
+      "path": ".cache/symmetry-point-size-ui-20261025/verified-product.diff",
+      "sha256": "5076dd070c5d9458ad2dd0bfe40910de32f5936b4bafc0703c9d9bed6e80da4c"
+    }
+  },
+  "sourcePins": {
+    "src/App.tsx": "a9115f31a907c3d6a5dde1829ec2416918636f03bb55ef88a66ada44f1560450",
+    "src/types.ts": "7a9d214926296b90f1e118155b3cfd8da183e451ae0ccb1c15105928521537ed",
+    "src/engine/document.ts": "361d7c08b885f701bb39ec1cf85b103606de13f8b6de08cfa6d3b3b81bc11b04",
+    "src/engine/sourceSymmetryConfig.ts": "d732d74108284b27b771c282e4e2c874027a61b93a93b87b943e5ca5e9ed750e",
+    "src/engine/sourceSymmetryPaletteEditing.ts": "7735b148037e1a6dea0a1370b370ae3888c15f6dee877b4cd94d57a8702b4cb3",
+    "src/engine/sourceIteratedSession.ts": "2473a9d5aa57a250bdab132e33755b957f0453ccd35e2e7ef87573c1dfbba8b6",
+    "src/engine/sourceIteratedLiveIdentity.ts": "d3126d63504253e2aa3cb127eee8d1a7d51a3b7bdbcfdaad9a5dcd0e043fc0af",
+    "src/engine/iteratedIdentity.ts": "ad0e90e9bee05aff7838eb700890efbf4a97ffc2bf43c31f36c14b9efec7c02d",
+    "src/engine/sourceIterationFramePlan.ts": "baf460138ebcbedf2b1ce054a428879d28563bf1050b6fb0b33e23dcd73f811c",
+    "src/scenes/iteratedDensity.ts": "8c5e5d3adac84b70fe92af3bd7db0864be63677cdbe83a4a97f97e4b91d38699"
+  },
+  "limits": [
+    "Single Mac hidden Chrome DPR1. Original application not executed and original full-image equivalence not asserted.",
+    "Actual library/undo combinations with new point-size state were not run; CPU/source reasoning only.",
+    "No full-load performance or second-device claim.",
+    "Prior palette144 App checks remain pinned to9f5ae66, not rerun after this product change.",
+    "Raw run3 stdout steps0 is an inherited summary counter mismatch:16 action snapshots have no per-step status;83 assertions and report.status passed are independently audited."
+  ]
+}
