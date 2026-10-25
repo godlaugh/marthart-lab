@@ -22,6 +22,21 @@ describe('Symmetry source point-size consumer',()=>{
   expect(facts.radius).toBe(6);expect(sourceDensityPointDiameter(facts)).toBe(6);
   expect(sourceDensityPointDiameter({...facts,path:'quad'})).toBe(Math.fround(6*Math.fround(.6)));
  });
+ it('shares the observed CGL point footprint without changing consumed radius or quad coverage',()=>{
+  // Independent native gl_PointCoord plateaus, three subpixel centers each:
+  // .cache/samila-driver-native-20261024/run2 (also used by the Symmetry audit).
+  for(const [input,diameter]of [[1.1,1],[1.49,1],[1.5,2],[1.51,2],[2.2606978,2],[2.5,3],[2.672,3]]){
+   for(const family of ['symmetry','map'] as const){
+    const facts=prepareSourceDensitySplat(family,input),before=structuredClone(facts);
+    expect(sourceDensityPointDiameter(facts)).toBe(diameter);
+    expect(sourceDensitySplatPixelTests(facts,1)).toBeGreaterThanOrEqual((diameter+2)**2);
+    facts.path='quad';expect(sourceDensityPointDiameter(facts)).toBe(Math.max(Math.fround(before.radius*Math.fround(.6)),Math.fround(.8)));
+    facts.path='points';expect(facts).toEqual(before);
+   }
+  }
+  // Quantize after export scaling, not before it.
+  expect(sourceDensityPointDiameter(prepareSourceDensitySplat('symmetry',1.8,3))).toBe(5);
+ });
  it('admits finite project values but enforces actual raster work before drawing',()=>{
   expect(sourceDensitySplatPixelTests(prepareSourceDensitySplat('symmetry',-2),8)).toBe(72);
   expect(sourceDensitySplatPixelTests(prepareSourceDensitySplat('symmetry',40),8)).toBe(14112);

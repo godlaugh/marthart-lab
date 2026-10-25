@@ -11,10 +11,14 @@ export function prepareSourceDensitySplat(family:'map'|'symmetry',dotSize:number
  return{model:`${family}-splat-1.7.8`,dotSize:dot,displayScale:scale,radius,path:'points',encoding:'rgb-mass'};
 }
 export function sourceDensityPointDiameter(facts:SourceDensitySplatFacts):number {
- return facts.path==='points'?facts.radius:Math.max(Math.fround(facts.radius*Math.fround(.6)),Math.fround(.8));
+ // The source CGL point rasterizer rounds the submitted diameter. ANGLE Metal
+ // retains fractions, so share the source footprint between drawing and stats.
+ // Keep the consumed Float32 radius intact for authoring and the quad kernel.
+ return facts.path==='points'?Math.round(facts.radius):Math.max(Math.fround(facts.radius*Math.fround(.6)),Math.fround(.8));
 }
 /** Conservative before driver probe: native points are wider than quad fallback.
- * The session accumulates this bound across all frames of one request. */
+ * ceil(radius) also bounds the rounded point diameter. The session accumulates
+ * this bound across all frames of one request. */
 export function sourceDensitySplatPixelTests(facts:SourceDensitySplatFacts,count:number):number {
  const tests=count*(Math.ceil(facts.radius)+2)**2;
  if(!Number.isSafeInteger(tests)||tests>2_000_000_000)throw Error('源密度 散点绘制超过 20 亿次像素测试；请减少点尺寸、批次或导出比例');

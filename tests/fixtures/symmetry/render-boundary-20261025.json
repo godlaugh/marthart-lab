@@ -1,0 +1,596 @@
+{
+  "status": "render-boundary-fixed; integrated-math-parity-unresolved",
+  "baselineHead": "b28d533afdc65fd1e96f3d1f6d15b779d2696ab2",
+  "sourceJarSha256": "a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018",
+  "sourceMemberSha256": "7cd4bceab0313426ba204b2366bfd980593874d8d0338664446f16dfeb7a586d",
+  "scope": {
+    "case": "Emperors_Cloak1",
+    "particles": 562144,
+    "size": [
+      810,
+      972
+    ],
+    "frames": 8,
+    "wholeWindowParity": false,
+    "wholeFamilyComplete": false,
+    "secondDevice": false,
+    "originalExportExecuted": false
+  },
+  "nativeCompute": {
+    "variants": [
+      "fragment16",
+      "production-tf256"
+    ],
+    "steps": [
+      16,
+      17,
+      18
+    ],
+    "float32Compared": 13491456,
+    "differentBits": 0,
+    "channels": [
+      "x",
+      "y",
+      "z",
+      "metric"
+    ],
+    "input": "original full initial state; no middle-state substitution",
+    "renderer": "Apple M2 Max / OpenGL 4.1 Metal90.5"
+  },
+  "webglStageDiagnostic": [
+    {
+      "mode": "tf",
+      "index": 0,
+      "original": {
+        "floats": 1641102,
+        "particles": 558628,
+        "channels": [
+          555075,
+          548375,
+          0,
+          537652
+        ],
+        "maxAbs": 0.0006922781467437744
+      },
+      "production": {
+        "floats": 0,
+        "particles": 0,
+        "channels": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "maxAbs": 0
+      }
+    },
+    {
+      "mode": "tf",
+      "index": 1,
+      "original": {
+        "floats": 1654063,
+        "particles": 559782,
+        "channels": [
+          557102,
+          552242,
+          0,
+          544719
+        ],
+        "maxAbs": 0.0017493963241577148
+      },
+      "production": {
+        "floats": 0,
+        "particles": 0,
+        "channels": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "maxAbs": 0
+      }
+    },
+    {
+      "mode": "tf",
+      "index": 2,
+      "original": {
+        "floats": 1662761,
+        "particles": 560472,
+        "channels": [
+          558625,
+          555256,
+          0,
+          548880
+        ],
+        "maxAbs": 0.003773987293243408
+      },
+      "production": {
+        "floats": 0,
+        "particles": 0,
+        "channels": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "maxAbs": 0
+      }
+    },
+    {
+      "mode": "fragment",
+      "index": 0,
+      "original": {
+        "floats": 1668505,
+        "particles": 561713,
+        "channels": [
+          559654,
+          558332,
+          0,
+          550519
+        ],
+        "maxAbs": 0.0009421110153198242
+      },
+      "production": {
+        "floats": 1572761,
+        "particles": 541254,
+        "channels": [
+          526838,
+          533855,
+          0,
+          512068
+        ],
+        "maxAbs": 0.000695347785949707
+      }
+    },
+    {
+      "mode": "fragment",
+      "index": 1,
+      "original": {
+        "floats": 1674504,
+        "particles": 561869,
+        "channels": [
+          560554,
+          559576,
+          0,
+          554374
+        ],
+        "maxAbs": 0.002220332622528076
+      },
+      "production": {
+        "floats": 1595650,
+        "particles": 545600,
+        "channels": [
+          533805,
+          539466,
+          0,
+          522379
+        ],
+        "maxAbs": 0.0017129778861999512
+      }
+    },
+    {
+      "mode": "fragment",
+      "index": 2,
+      "original": {
+        "floats": 1678171,
+        "particles": 561978,
+        "channels": [
+          561102,
+          560608,
+          0,
+          556461
+        ],
+        "maxAbs": 0.0037168562412261963
+      },
+      "production": {
+        "floats": 1613900,
+        "particles": 549045,
+        "channels": [
+          539646,
+          544283,
+          0,
+          529971
+        ],
+        "maxAbs": 0.0028454065322875977
+      }
+    }
+  ],
+  "glFlagDiagnostic": {
+    "firstAttempt": "shader compilation failed; preserved",
+    "secondAttemptRenderer": [
+      "Google Inc. (Google)",
+      "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+    ],
+    "nativeOpenGlSelected": false
+  },
+  "renderComparisons": {
+    "downstream": {
+      "status": "differences-observed",
+      "originalStateSubstitution": true,
+      "runtimeShaderOrRadiusPatch": false,
+      "frames": [
+        {
+          "index": 0,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 659265,
+          "rgbaDifferentPixels": 161646,
+          "rgbaMaxDifference": 253
+        },
+        {
+          "index": 1,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 801918,
+          "rgbaDifferentPixels": 197689,
+          "rgbaMaxDifference": 230
+        },
+        {
+          "index": 2,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 895687,
+          "rgbaDifferentPixels": 221180,
+          "rgbaMaxDifference": 188
+        },
+        {
+          "index": 3,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 969766,
+          "rgbaDifferentPixels": 239733,
+          "rgbaMaxDifference": 174
+        },
+        {
+          "index": 4,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 1034894,
+          "rgbaDifferentPixels": 256133,
+          "rgbaMaxDifference": 174
+        },
+        {
+          "index": 5,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 1094293,
+          "rgbaDifferentPixels": 270788,
+          "rgbaMaxDifference": 172
+        },
+        {
+          "index": 6,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 1150340,
+          "rgbaDifferentPixels": 284755,
+          "rgbaMaxDifference": 170
+        },
+        {
+          "index": 7,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 1202908,
+          "rgbaDifferentPixels": 297851,
+          "rgbaMaxDifference": 169
+        }
+      ]
+    },
+    "downstream-roundpoint": {
+      "status": "differences-observed",
+      "originalStateSubstitution": true,
+      "runtimeShaderOrRadiusPatch": true,
+      "frames": [
+        {
+          "index": 0,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 16782,
+          "rgbaDifferentPixels": 1017,
+          "rgbaMaxDifference": 24
+        },
+        {
+          "index": 1,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 32375,
+          "rgbaDifferentPixels": 1193,
+          "rgbaMaxDifference": 31
+        },
+        {
+          "index": 2,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 47267,
+          "rgbaDifferentPixels": 1297,
+          "rgbaMaxDifference": 27
+        },
+        {
+          "index": 3,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 60926,
+          "rgbaDifferentPixels": 1442,
+          "rgbaMaxDifference": 20
+        },
+        {
+          "index": 4,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 73759,
+          "rgbaDifferentPixels": 1478,
+          "rgbaMaxDifference": 20
+        },
+        {
+          "index": 5,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 86251,
+          "rgbaDifferentPixels": 1518,
+          "rgbaMaxDifference": 18
+        },
+        {
+          "index": 6,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 98107,
+          "rgbaDifferentPixels": 1659,
+          "rgbaMaxDifference": 17
+        },
+        {
+          "index": 7,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 109617,
+          "rgbaDifferentPixels": 1738,
+          "rgbaMaxDifference": 16
+        }
+      ]
+    },
+    "downstream-directclip": {
+      "status": "exact",
+      "originalStateSubstitution": true,
+      "runtimeShaderOrRadiusPatch": true,
+      "frames": [
+        {
+          "index": 0,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 1,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 2,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 3,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 4,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 5,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 6,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 7,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        }
+      ]
+    },
+    "product-render-boundary": {
+      "status": "exact",
+      "originalStateSubstitution": true,
+      "runtimeShaderOrRadiusPatch": false,
+      "frames": [
+        {
+          "index": 0,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 1,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 2,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 3,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 4,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 5,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 6,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        },
+        {
+          "index": 7,
+          "particleDifferentBits": 0,
+          "inkDifferentBits": 0,
+          "rgbaDifferentPixels": 0,
+          "rgbaMaxDifference": 0
+        }
+      ]
+    },
+    "product-integrated": {
+      "status": "differences-observed",
+      "originalStateSubstitution": false,
+      "runtimeShaderOrRadiusPatch": false,
+      "frames": [
+        {
+          "index": 0,
+          "particleDifferentBits": 1662761,
+          "inkDifferentBits": 720130,
+          "rgbaDifferentPixels": 110390,
+          "rgbaMaxDifference": 203
+        },
+        {
+          "index": 1,
+          "particleDifferentBits": 1674070,
+          "inkDifferentBits": 886490,
+          "rgbaDifferentPixels": 167571,
+          "rgbaMaxDifference": 190
+        },
+        {
+          "index": 2,
+          "particleDifferentBits": 1680507,
+          "inkDifferentBits": 1009445,
+          "rgbaDifferentPixels": 217993,
+          "rgbaMaxDifference": 191
+        },
+        {
+          "index": 3,
+          "particleDifferentBits": 1683309,
+          "inkDifferentBits": 1113954,
+          "rgbaDifferentPixels": 257145,
+          "rgbaMaxDifference": 185
+        },
+        {
+          "index": 4,
+          "particleDifferentBits": 1684838,
+          "inkDifferentBits": 1204818,
+          "rgbaDifferentPixels": 286790,
+          "rgbaMaxDifference": 206
+        },
+        {
+          "index": 5,
+          "particleDifferentBits": 1685654,
+          "inkDifferentBits": 1282990,
+          "rgbaDifferentPixels": 310051,
+          "rgbaMaxDifference": 193
+        },
+        {
+          "index": 6,
+          "particleDifferentBits": 1686038,
+          "inkDifferentBits": 1352341,
+          "rgbaDifferentPixels": 329453,
+          "rgbaMaxDifference": 168
+        },
+        {
+          "index": 7,
+          "particleDifferentBits": 1686251,
+          "inkDifferentBits": 1411313,
+          "rgbaDifferentPixels": 345506,
+          "rgbaMaxDifference": 173
+        }
+      ]
+    }
+  },
+  "validation": {
+    "cpu": {
+      "files": 4,
+      "tests": 86,
+      "status": "passed"
+    },
+    "buildV2": "passed; existing large-chunk warning",
+    "mapReplay": {
+      "groups": 6,
+      "frames": 219,
+      "representativeParticles": 4096,
+      "representativeFrames": 30,
+      "resizeCases": 2,
+      "status": "passed"
+    },
+    "symmetryReplay": {
+      "groups": 6,
+      "frames": 219,
+      "representativeParticles": 65536,
+      "representativeFrames": 30,
+      "cancellationPassed": true,
+      "status": "passed"
+    },
+    "publicApp": {
+      "checks": 83,
+      "run": ".cache/symmetry-point-size-ui-20261025/run-5",
+      "status": "passed",
+      "remainingServiceProcesses": 0
+    },
+    "mapLive": {
+      "status": "passed",
+      "scope": "real SourceIteratedSession and Worker; captured camera, hot edits, paused capture/restore, reconstruction",
+      "elapsedMs": 2945.745166
+    }
+  },
+  "limits": [
+    "Only product-render-boundary is repaired production downstream with original particle substitution, not end-to-end product parity.",
+    "Native computation prototype is not integrated; production still uses WebGL arithmetic.",
+    "Point diameter and direct clip follow observed source CGL semantics; whole-image evidence is this one case/viewport on this Mac.",
+    "No relaxed comparison tolerance, expected-image replacement or original export.",
+    "No throughput, whole-process memory, GPU memory or token-cost improvement claim."
+  ],
+  "evidencePins": {
+    ".cache/source-symmetry-webgl-stage-20261025/default-run1/report.json": "d3bd7b1fc6765755fe68c26afafa81a564dba10ad565d6b157e0ea0bd66083ab",
+    ".cache/source-symmetry-webgl-stage-20261025/gl-run1/report.json": "cfc0d72b578c4553da8495053907d402a92a1faa6aca03705d140026593bc94f",
+    ".cache/source-symmetry-webgl-stage-20261025/gl-run2/report.json": "09d7f77462c42a4d4399040e3af31f5ad0b64686d4f628799744e3bbac8da0dd",
+    ".cache/source-symmetry-webgl-stage-20261025/downstream-comparison.json": "5e51731a7b6a551150bc1f32cad3e236f869e1be61ad36bf1c356aa085647d84",
+    ".cache/source-symmetry-webgl-stage-20261025/downstream-roundpoint-comparison.json": "7a8cf4b3ae1a0b9f09ccd496d7fc408feca5462a70e6cc618f347f7fe51b6577",
+    ".cache/source-symmetry-webgl-stage-20261025/downstream-directclip-comparison.json": "5a3b5cd73b6d8054c920ae25b10057480c9db8b6cb0789d1c0e7abf6acdaf9ee",
+    ".cache/source-symmetry-webgl-stage-20261025/product-render-boundary-comparison.json": "b7a1edb0d447f3a0519056f9317e85ef685ea21a5463918399d5d0f87ad2ad2a",
+    ".cache/source-symmetry-webgl-stage-20261025/product-integrated-comparison.json": "0e636826dbb10d5af429d129d05c652bffe31cab0b490187bed0a3400d506d41",
+    ".cache/source-symmetry-webgl-stage-20261025/product-render-boundary-run1/report.json": "8ad4a3b467d6c94b487a9df638312045c1fbfb0df83fa0b8664d4165525c34bf",
+    ".cache/source-symmetry-webgl-stage-20261025/product-integrated-run1/report.json": "f2268c0bfbdde9ff8c01b76001efe2d6bf39a1d8733727edd2f2ce7871d6e378",
+    ".cache/source-symmetry-webgl-stage-20261025/map-replay-run1/report.json": "85fa1b3b864a300cc1b10f9b06273e9dcd794bcce0ec2f9b940c7ed296949a70",
+    ".cache/source-symmetry-webgl-stage-20261025/symmetry-replay-run1/report.json": "512c83b85daa4eabf9303a25a07c8dfd4eda057ff917cddb653d80c9ad845b4d",
+    ".cache/source-symmetry-native-cgl-20261025/index.json": "ec143614ca77337ab4b52ef5bec06e94f22788c00c785596ca5814bb6c87b0c3",
+    ".cache/source-symmetry-native-cgl-20261025/comparison.json": "8557e225ba580c98435f595f53aad3fab889d66e64db4f2c1409ce0d4cadfe4a",
+    ".cache/source-symmetry-downstream-audit-20261025/report.json": "8b703a70515f0eaafe457f48958d2a130b1d2c8acd06f44676021251f22a5b6f",
+    ".cache/source-symmetry-point-audit-20261025/README.zh-CN.md": "a6816a99d944be4a8f9b573db69962f34e82345b2203179b66183894768b1bf1",
+    ".cache/symmetry-native-architecture-20261025/index.json": "f099692a63989922f0039f73f3cf2f39515d42695d25fa35fed58794bd47f967",
+    ".cache/symmetry-point-size-ui-20261025/run-5/report.json": "a8e96eaaaf5f14610fadadad3be7af7cc956f38d08af8d364b901d3b0861b695",
+    ".cache/source-symmetry-webgl-stage-20261025/product-audit/report.json": "94305902f5710586d7db0ed191261ba29f8e43a2eeef22c7e3ef96157d1c84d7",
+    ".cache/source-symmetry-webgl-stage-20261025/map-live-run1/report.json": "62d7d141a9a37086cd130f734bec3e8906cd493aab2fab5bdf7f63d95b4db5d4"
+  },
+  "productionAudit": {
+    "renderBoundaryOnlyParticleSubstitution": true,
+    "renderBoundaryBytesCompared": 197925632,
+    "integratedNoInjection": true,
+    "integratedAllEightParticleStatesEqualPriorProduct": true,
+    "sourcePinsEach": 575,
+    "artifactsVerified": 66,
+    "retainedBytesAfterReset": 0
+  }
+}

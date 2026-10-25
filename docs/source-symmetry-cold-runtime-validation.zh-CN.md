@@ -2,6 +2,8 @@
 
 2026-10-25：原版完整输入的八帧离屏预览确认并修复两处生产错误：**冷对象点径错误、普通首帧预热执行过多**。作者数据保留原值；效果一致性仍未通过，不将本次修复视为 Symmetry 全部完成。
 
+后续进展见 [点绘制修复与原生计算对照](source-symmetry-render-boundary-validation.zh-CN.md)：绘图边界的八帧隔离验证已逐位一致，正常产品的数学轨迹差异仍待解决。本文保留冷启动修复当时的原始基线。
+
 ## 原版观察
 
 使用未修改 MathArt 1.7.8 JAR（SHA-256 `a6e1da3acfc05c347d2529c1d590657e2dd798e16d38c55df3dc61312be24018`），原 `Emperors_Cloak1.json` 保留 562,144 粒子、degree 23、burn-in 100、每次迭代 1、作者 dot_size 1.5 和 Wait 10。正常 ProjectState → MathArt.initScene → Scene.runFrame(false)，原驱动 Apple M2 Max / OpenGL 4.1 Metal90.5。
